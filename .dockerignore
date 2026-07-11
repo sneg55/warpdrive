@@ -1,0 +1,32 @@
+# Keep secrets, VCS, and local-only material out of image layers (F20). The build stage
+# does `COPY . .`, so anything not excluded here is baked into the image and the runtime
+# filesystem. Exclude env files, git history, caches, test/evidence output, and node_modules
+# (deps are installed in a dedicated stage from the lockfile).
+.env
+.env.*
+!.env.example
+.git
+.gitignore
+node_modules
+**/node_modules
+.next
+dist
+build
+coverage
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Local harness / self-improvement scratch (gitignored, must never ship).
+.harness
+.superpowers
+
+# Editor / OS cruft
+.vscode
+.idea
+.DS_Store
+
+# Tests and docs are not needed at runtime.
+**/*.test.ts
+**/*.test-helpers.ts
+docs

@@ -1,0 +1,2 @@
+CREATE UNIQUE INDEX "permission_sets_name_uq" ON "permission_sets" USING btree ("name");--> statement-breakpoint
+CREATE UNIQUE INDEX "visibility_groups_name_uq" ON "visibility_groups" USING btree ("name");

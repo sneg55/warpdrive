@@ -1,0 +1,1 @@
+ALTER TABLE "import_rows" ADD COLUMN "created_org_id" uuid;

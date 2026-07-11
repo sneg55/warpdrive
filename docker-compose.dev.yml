@@ -1,0 +1,25 @@
+# Local/dev overrides. Deliberately NOT named docker-compose.override.yml: an override file is
+# auto-merged into every `docker compose up`, which would leak these host-port and no-TLS settings
+# onto the production box. Opt in explicitly instead:
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+# This exposes the backing services (and the app/ws) to the host and skips Caddy/TLS, so you can
+# reach the app at http://localhost:3000 and connect the WS at ws://localhost:8080 directly.
+services:
+  postgres:
+    ports: ["5433:5432"]
+
+  minio:
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+
+  app:
+    ports: ["3000:3000"]
+
+  ws:
+    ports: ["8080:8080"]
+
+  # Caddy is unnecessary locally (no domain, no TLS). A profile that is never activated keeps it
+  # out of the dev stack while leaving the production file untouched.
+  caddy:
+    profiles: ["never"]

@@ -1,0 +1,1 @@
+ALTER TABLE "activity_types" ADD COLUMN "archived_at" timestamp with time zone;

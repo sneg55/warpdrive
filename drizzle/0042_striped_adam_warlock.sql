@@ -1,0 +1,1 @@
+ALTER TABLE "activities" ADD COLUMN "end_at" timestamp with time zone;

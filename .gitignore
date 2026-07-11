@@ -1,0 +1,18 @@
+node_modules
+.next
+dist
+.env
+.env.*
+!.env.example
+!.env.example.test.ts
+*.tsbuildinfo
+.harness/ledger.jsonl
+drizzle/meta/_journal.json.bak
+next-env.d.ts
+.smoke/
+.claude/scheduled_tasks.lock
+# Pipedrive parity reference screenshots: contain real account PII (names, emails,
+# billing/card data). Kept local only, never committed. See memory reference-pipedrive-parity-source.
+/pd-*.png
+# Parity capture folders (PD + WD screenshots, may contain real account PII). Local only.
+docs/parity-captures/

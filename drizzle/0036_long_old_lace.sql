@@ -1,0 +1,2 @@
+ALTER TABLE "custom_field_defs" ADD COLUMN "is_important" boolean DEFAULT false NOT NULL;--> statement-breakpoint
+ALTER TABLE "custom_field_defs" ADD COLUMN "show_in_add_form" boolean DEFAULT false NOT NULL;

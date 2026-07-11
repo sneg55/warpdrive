@@ -1,0 +1,1 @@
+DROP TABLE "deal_saved_filters" CASCADE;

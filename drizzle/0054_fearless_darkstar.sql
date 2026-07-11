@@ -1,0 +1,1 @@
+ALTER TABLE "email_templates" ADD COLUMN "sort_order" integer;

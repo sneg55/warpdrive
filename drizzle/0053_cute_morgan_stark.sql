@@ -1,0 +1,1 @@
+ALTER TABLE "email_threads" ADD COLUMN "trashed_at" timestamp with time zone;

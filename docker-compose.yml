@@ -1,0 +1,142 @@
+# Production single-box topology. `docker compose up -d --build` brings up the full stack behind
+# Caddy (auto-HTTPS). Postgres and MinIO stay on the internal network only (no host ports); the
+# public surface is Caddy on 80/443. For local dev, opt into docker-compose.dev.yml explicitly
+# (`-f docker-compose.yml -f docker-compose.dev.yml`); it is deliberately NOT named
+# docker-compose.override.yml so its host-port/no-TLS settings never auto-merge here. See
+# docs/deploy.md.
+
+# Shared build config: pass NEXT_PUBLIC_WS_URL as a build arg so Next inlines it into the client
+# bundle at build time (F29). A runtime-only env_file does NOT reach the client bundle.
+x-app-build: &app-build
+  context: .
+  args:
+    NEXT_PUBLIC_WS_URL: ${NEXT_PUBLIC_WS_URL:-}
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      # Substituted into the Caddyfile as {$APP_DOMAIN} / {$ACME_EMAIL}. Compose auto-loads
+      # these from the project .env for interpolation.
+      APP_DOMAIN: ${APP_DOMAIN}
+      ACME_EMAIL: ${ACME_EMAIL}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddydata:/data
+      - caddyconfig:/config
+    depends_on:
+      app:
+        condition: service_healthy
+      ws:
+        condition: service_started
+
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: warpdrive
+      POSTGRES_PASSWORD: warpdrive
+      POSTGRES_DB: warpdrive
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U warpdrive"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  minio:
+    image: minio/minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
+      # Browser uploads/downloads hit MinIO cross-origin (app on APP_DOMAIN, storage on
+      # s3.APP_DOMAIN), so the S3 API must return CORS headers or the upload fetch rejects.
+      MINIO_API_CORS_ALLOW_ORIGIN: ${BASE_URL}
+    # Caddy reaches MinIO over the internal network (see Caddyfile s3.<domain> vhost); no host
+    # port publish needed. MINIO_ENDPOINT must be the public https://s3.<domain> URL.
+    volumes: [miniodata:/data]
+
+  # One-shot: create the app bucket idempotently and keep it private. The app itself never
+  # creates the bucket, so on a fresh box uploads would fail without this step.
+  createbuckets:
+    image: minio/mc
+    depends_on:
+      minio:
+        condition: service_started
+    env_file: .env
+    # $$VAR (not $VAR) so Compose passes the literal to the shell, which expands it from the
+    # container env (env_file), not from the host at parse time.
+    entrypoint: >
+      /bin/sh -c "
+      until mc alias set local http://minio:9000 $$MINIO_ACCESS_KEY $$MINIO_SECRET_KEY; do
+        echo 'waiting for minio'; sleep 2;
+      done;
+      mc mb --ignore-existing local/$$MINIO_BUCKET;
+      mc anonymous set none local/$$MINIO_BUCKET;
+      "
+
+  # One-shot: apply forward-only Drizzle migrations, then exit. Gates the long-running tier.
+  migrate:
+    build: *app-build
+    command: ["node", "dist/migrate.mjs"]
+    env_file: .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  app:
+    build: *app-build
+    restart: unless-stopped
+    command: ["node_modules/.bin/next", "start"]
+    env_file: .env
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:3000/api/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      createbuckets:
+        condition: service_completed_successfully
+
+  ws:
+    build: *app-build
+    restart: unless-stopped
+    command: ["node", "dist/ws.mjs"]
+    env_file: .env
+    healthcheck:
+      test:
+        - "CMD"
+        - "node"
+        - "-e"
+        - "require('node:net').connect(8080,'127.0.0.1').on('connect',()=>process.exit(0)).on('error',()=>process.exit(1))"
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  worker:
+    build: *app-build
+    restart: unless-stopped
+    command: ["node", "dist/worker.mjs"]
+    env_file: .env
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+volumes:
+  pgdata:
+  miniodata:
+  caddydata:
+  caddyconfig:

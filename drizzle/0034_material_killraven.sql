@@ -1,0 +1,2 @@
+ALTER TABLE "leads" ADD COLUMN "search_tsv" "tsvector" GENERATED ALWAYS AS (to_tsvector('simple', coalesce(title, ''))) STORED NOT NULL;--> statement-breakpoint
+CREATE INDEX "leads_search_idx" ON "leads" USING gin ("search_tsv");

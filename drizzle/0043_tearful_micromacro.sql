@@ -1,0 +1,1 @@
+ALTER TABLE "activities" ADD COLUMN "video_call_url" text;

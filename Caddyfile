@@ -1,0 +1,24 @@
+# Auto-HTTPS reverse proxy for the single-box deploy. APP_DOMAIN / ACME_EMAIL come from the
+# environment (compose passes them from .env). Caddy provisions and renews the Let's Encrypt
+# certificate for APP_DOMAIN automatically.
+{$APP_DOMAIN} {
+	tls {$ACME_EMAIL}
+
+	# WebSocket server on the same domain under /_ws, so there is one DNS record and one cert.
+	# The WS server binds a port and does not route on path, so proxy straight through (the
+	# upgrade and ?ticket= query are preserved). Browser connects to wss://<domain>/_ws.
+	@ws path /_ws*
+	reverse_proxy @ws ws:8080
+
+	# Everything else is the Next.js app.
+	reverse_proxy app:3000
+}
+
+# Object storage on its own subdomain. The browser POSTs presigned uploads (CSV import, avatars,
+# email attachments) and GETs downloads directly to MinIO, so it must be publicly reachable at the
+# exact host MINIO_ENDPOINT signs with. Point MINIO_ENDPOINT=https://s3.{$APP_DOMAIN} and add an
+# s3.<domain> DNS record. MinIO returns CORS headers via MINIO_API_CORS_ALLOW_ORIGIN in compose.
+s3.{$APP_DOMAIN} {
+	tls {$ACME_EMAIL}
+	reverse_proxy minio:9000
+}
