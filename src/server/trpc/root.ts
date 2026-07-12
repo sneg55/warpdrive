@@ -3,6 +3,7 @@ import { collaborationRouter } from "@/features/collaboration/router";
 import { contactsRouter } from "@/features/contacts/router";
 import { customFieldsRouter } from "@/features/custom-fields/router";
 import { dealRouter } from "@/features/deals/dealRouter";
+import { mailLabelsRouter } from "@/features/email/mailLabelsRouter";
 import { emailRouter } from "@/features/email/router";
 import { filesRouter } from "@/features/files/router";
 import { importRouter } from "@/features/import/router";
@@ -27,6 +28,7 @@ export const appRouter = router({
   activities: activitiesRouter,
   import: importRouter,
   labels: labelsRouter,
+  mailLabels: mailLabelsRouter,
   lead: leadRouter,
   email: emailRouter,
   files: filesRouter,

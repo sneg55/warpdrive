@@ -22,6 +22,7 @@ export * from "./importRows";
 export * from "./labels";
 export * from "./leads";
 export * from "./lostReasons";
+export * from "./mailLabels";
 export * from "./mentions";
 export * from "./notes";
 export * from "./notificationPreferences";

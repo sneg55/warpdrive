@@ -94,6 +94,59 @@ describe("draft repository", () => {
     });
   });
 
+  it("round-trips the compose visibility so a private draft resumes private (codex P1)", async () => {
+    await withTestDb(async (db) => {
+      const owner = await seedUser(db, { email: "o@gunsnation.com" });
+      const acctId = await seedAccount(db, owner.id);
+      const actor = actorOf(owner.id);
+
+      const priv = await saveDraft(
+        db,
+        {
+          actor,
+          draft: {
+            accountId: acctId,
+            subject: "Secret",
+            bodyHtml: "<p>hush</p>",
+            toEmails: [],
+            ccEmails: [],
+            visibility: "private",
+          },
+        },
+        SIG(),
+      );
+      if (!priv.ok) throw new Error("save failed");
+
+      const list = await listDrafts(db, actor, SIG());
+      expect(list.find((d) => d.id === priv.value.id)?.visibility).toBe("private");
+    });
+  });
+
+  it("defaults a draft with no explicit visibility to shared", async () => {
+    await withTestDb(async (db) => {
+      const owner = await seedUser(db, { email: "o@gunsnation.com" });
+      const acctId = await seedAccount(db, owner.id);
+      const actor = actorOf(owner.id);
+      const res = await saveDraft(
+        db,
+        {
+          actor,
+          draft: {
+            accountId: acctId,
+            subject: "Hi",
+            bodyHtml: "<p>x</p>",
+            toEmails: [],
+            ccEmails: [],
+          },
+        },
+        SIG(),
+      );
+      if (!res.ok) throw new Error("save failed");
+      const list = await listDrafts(db, actor, SIG());
+      expect(list.find((d) => d.id === res.value.id)?.visibility).toBe("shared");
+    });
+  });
+
   it("saving a draft with a foreign/nonexistent threadId returns a Result, not an FK throw", async () => {
     await withTestDb(async (db) => {
       const owner = await seedUser(db, { email: "o@gunsnation.com" });

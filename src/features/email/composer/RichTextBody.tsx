@@ -30,6 +30,13 @@ interface RichTextBodyProps {
   // Extra classes for the editable content surface. The activity composer uses this to give the
   // note its Pipedrive-style yellow background; the email composer leaves it unset (transparent).
   contentClassName?: string;
+  // Classes for the outer editor frame (toolbar + content). Defaults to a bottom border only.
+  // The email composer passes a white rounded-card treatment to match PD's framed editor.
+  frameClassName?: string;
+  // When true, the editor stretches to fill its (flex-column) parent's height and scrolls its
+  // content internally, so a full-pane composer fills the viewport instead of floating as a short
+  // box over dead space. Opt-in: settings/activity-note callers keep their intrinsic height.
+  grow?: boolean;
 }
 
 export function RichTextBody({
@@ -37,6 +44,8 @@ export function RichTextBody({
   onChange,
   insertToken,
   contentClassName,
+  frameClassName,
+  grow = false,
 }: RichTextBodyProps): React.ReactNode {
   // Track the last HTML we emitted so we can distinguish "parent changed the
   // prop" from "our own typing round-tripped back through state".
@@ -90,15 +99,25 @@ export function RichTextBody({
   }, [insertToken, editor]);
 
   return (
-    <div className="flex flex-col border-b border-border">
-      {editor !== null && <FormatToolbar editor={editor} />}
+    <div
+      className={cn(
+        "flex flex-col",
+        grow && "min-h-0 flex-1",
+        frameClassName ?? "border-b border-border",
+      )}
+    >
+      {/* PD docks the format toolbar BELOW the body: editor content first, then the toolbar. */}
       <EditorContent
         editor={editor}
         className={cn(
           "min-h-24 px-2 py-2 text-sm [&_.ProseMirror]:outline-none [&_.ProseMirror]:min-h-24",
+          // When growing, the content area fills the frame and scrolls internally so the format
+          // toolbar stays docked at the bottom and the ProseMirror surface is a full-height target.
+          grow && "min-h-0 flex-1 overflow-y-auto [&_.ProseMirror]:min-h-full",
           contentClassName,
         )}
       />
+      {editor !== null && <FormatToolbar editor={editor} />}
     </div>
   );
 }

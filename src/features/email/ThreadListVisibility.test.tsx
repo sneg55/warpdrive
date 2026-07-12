@@ -30,6 +30,7 @@ const invalidateFoldersArchive = vi.fn();
 const invalidateSearch = vi.fn();
 vi.mock("@/lib/trpc-client", () => ({
   trpc: {
+    mailLabels: { list: { useQuery: () => ({ data: [] }) } },
     email: {
       inbox: {
         list: {

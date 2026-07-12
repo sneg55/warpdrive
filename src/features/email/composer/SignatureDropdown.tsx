@@ -14,8 +14,10 @@ interface SignatureDropdownProps {
   onChange: (id: string) => void;
 }
 
-// Footer signature picker: an icon button that opens a menu of "None" + each signature.
-// Opens upward (side="top") so it clears the composer footer. value "" means no signature.
+// Toolbar signature picker: an icon button that opens a menu of "None" + each signature.
+// Rendered as a composer toolbar control (next to SaveAsTemplateDialog) so it is always
+// present, even before any signature exists, offering "None" as the explicit empty choice.
+// value "" means no signature.
 export function SignatureDropdown({
   signatures,
   value,
@@ -43,7 +45,7 @@ export function SignatureDropdown({
           <path d="M3 17c3 0 3-8 6-8s3 8 6 8 3-4 6-4" />
         </svg>
       </DropdownMenuTrigger>
-      <DropdownMenuContent side="top" align="start" className="min-w-32">
+      <DropdownMenuContent align="start" className="min-w-32">
         <DropdownMenuItem
           aria-label={COMPOSER_STRINGS.signatureNoneLabel}
           className="text-xs"

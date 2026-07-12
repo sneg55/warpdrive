@@ -1,4 +1,4 @@
-import { and, eq, isNull, or } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { AppError, ERROR_IDS } from "@/constants/errorIds";
 import type { Db } from "@/db/client";
 import { emailAccounts, emailThreadReads, emailThreads } from "@/db/schema";
@@ -73,9 +73,9 @@ export async function markThreadUnread(
   return ok({ threadId: args.threadId });
 }
 
-// Candidate rows = threads the actor owns PLUS all shared threads (same candidate set
-// listInbox uses), each then re-checked through canSeeEmail so a shared thread linked to a
-// deal/person the actor cannot see is never counted (mailbox-privacy rule, no shortcuts).
+// Candidate rows = threads in the actor's OWN mailbox only (same candidate set as listInbox, which
+// is a personal folder). A colleague's shared thread is not part of the actor's unread badge; it
+// reaches them on the linked record instead. canSeeEmail still re-checks each row.
 interface UnreadCandidateRow extends ThreadVisibilityRow {
   ownerId: string;
   archivedAt: Date | null;
@@ -109,12 +109,7 @@ export async function inboxUnreadCount(
         eq(emailThreadReads.userId, args.actor.id),
       ),
     )
-    .where(
-      and(
-        isNull(emailThreads.trashedAt),
-        or(eq(emailAccounts.userId, args.actor.id), eq(emailThreads.visibility, "shared")),
-      ),
-    );
+    .where(and(isNull(emailThreads.trashedAt), eq(emailAccounts.userId, args.actor.id)));
   signal.throwIfAborted();
 
   let n = 0;

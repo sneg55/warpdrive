@@ -155,6 +155,32 @@ describe("AddDealModal", () => {
     await waitFor(() => expect(routerPush).toHaveBeenCalledWith("/deals/d1"));
   });
 
+  it("suppresses the open-details navigation when suppressDetailNav is set, even with the leadDeal flag on", async () => {
+    const onCreated = vi.fn();
+    render(
+      <InterfacePrefsProvider
+        value={{
+          ...INTERFACE_PREFS_DEFAULT,
+          openDetailsAfterCreate: { leadDeal: true, person: false, org: false },
+        }}
+      >
+        <QueryClientProvider client={new QueryClient()}>
+          <AddDealModal
+            pipelineId={PIPE}
+            pipelines={[{ id: PIPE, name: "Sales", stages: [{ id: STAGE_A, name: "Qualified" }] }]}
+            onClose={vi.fn()}
+            onCreated={onCreated}
+            suppressDetailNav
+          />
+        </QueryClientProvider>
+      </InterfacePrefsProvider>,
+    );
+    fireEvent.change(screen.getByLabelText("Deal title"), { target: { value: "Big deal" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() => expect(onCreated).toHaveBeenCalledWith("d1", "Big deal"));
+    expect(routerPush).not.toHaveBeenCalled();
+  });
+
   it("picks the expected close date via the DatePicker and submits it as YYYY-MM-DD", async () => {
     const { onCreated } = renderModal();
     fireEvent.change(screen.getByLabelText("Deal title"), { target: { value: "Big deal" } });

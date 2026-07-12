@@ -3,7 +3,19 @@
 // drift. Holds no queries, so it can be imported from either side without a cycle.
 import type { ThreadVisibilityRow } from "./emailVisibility";
 
-export type InboxFilter = "all" | "unmatched" | "needs_linking";
+// Linking tabs (all/unmatched/needs_linking) are decided post-query in matchesInboxFilter; the U5
+// quick-filters (shared/private/tracked/to_me/from_contact/linked_open_deal) are decided in SQL in
+// inboxList.ts, so matchesInboxFilter lets them pass. Single-select: picking one clears the others.
+export type InboxFilter =
+  | "all"
+  | "unmatched"
+  | "needs_linking"
+  | "shared"
+  | "private"
+  | "tracked"
+  | "to_me"
+  | "from_contact"
+  | "linked_open_deal";
 
 export interface InboxThread {
   id: string;

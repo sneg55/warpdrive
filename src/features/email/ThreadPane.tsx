@@ -1,20 +1,17 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Avatar } from "@/components/ui/Avatar";
 import { STRINGS } from "@/constants/strings";
 import { trpc } from "@/lib/trpc-client";
 import { readCsrfToken } from "@/utils/csrfCookie";
-import { InboundAttachmentList } from "./InboundAttachmentList";
 import { InboxReaderSidebar } from "./InboxReaderSidebar";
-import { formatReaderDate } from "./inboxDate";
-import { MessageBodyFrame } from "./MessageBodyFrame";
-import { MessageTrackingHistory } from "./MessageTrackingHistory";
 import { primaryCounterparty } from "./primaryCounterparty";
 import { ReaderActions } from "./ReaderActions";
+import { ReaderMessageCard } from "./ReaderMessageCard";
 import { ReaderTopBar } from "./ReaderTopBar";
 import { markThreadReadAction, markThreadUnreadAction } from "./readActions";
 import { ThreadFollowUpControls } from "./ThreadFollowUpControls";
+import { ThreadPrivacyToggle } from "./ThreadPrivacyToggle";
 
 interface ThreadPaneProps {
   threadId: string;
@@ -91,6 +88,17 @@ export function ThreadPane({ threadId, trackingBadge }: ThreadPaneProps): React.
             {markUnreadError !== null && (
               <p className="text-xs text-destructive">{markUnreadError}</p>
             )}
+            {/* Owner-only thread privacy (B2). Same canCompose gate as the follow-up controls: only
+                the mailbox owner may flip visibility, and the server re-checks ownership. Reuses the
+                shared ThreadPrivacyToggle (also used per-row in ThreadList), which surfaces a failed
+                flip through the app-wide ActionError provider. */}
+            {canCompose && (
+              <ThreadPrivacyToggle
+                threadId={inboxThread.id}
+                visibility={inboxThread.visibility}
+                onChanged={() => void refetch()}
+              />
+            )}
             <button
               type="button"
               onClick={() => void handleMarkUnread()}
@@ -142,74 +150,39 @@ export function ThreadPane({ threadId, trackingBadge }: ThreadPaneProps): React.
       <div className="flex min-h-0 flex-1">
         {/* Message list + composer (center); conversation context (right). */}
         <div className="flex min-w-0 flex-1 flex-col">
-          <div className="flex-1 overflow-y-auto divide-y divide-border">
-            {messages.map((msg) => (
-              <article key={msg.gmailMessageId} className="p-4">
-                <div className="flex items-center justify-between mb-2 gap-2 text-xs text-muted-foreground">
-                  <span className="flex min-w-0 items-center gap-2">
-                    {/* Per-message avatar (Pipedrive shows one beside each sender). */}
-                    <Avatar
-                      name={msg.fromName ?? msg.fromEmail}
-                      className="h-7 w-7 shrink-0 text-[10px]"
-                    />
-                    <span className="min-w-0 truncate">
-                      {/* PD shows "Name <email>": name in the strong slot, address alongside. */}
-                      <span className="font-medium text-foreground">
-                        {msg.fromName ?? msg.fromEmail}
-                      </span>
-                      {msg.fromName !== null && (
-                        <span className="ml-1.5 text-muted-foreground">{msg.fromEmail}</span>
-                      )}
-                      {msg.direction === "outbound" && (
-                        <span className="ml-1 px-1 rounded bg-accent text-accent-foreground">
-                          Sent
-                        </span>
-                      )}
-                    </span>
-                  </span>
-                  <span className="shrink-0 tabular-nums">{formatReaderDate(msg.sentAt)}</span>
-                </div>
-                {msg.toEmails.length > 0 && (
-                  // Recipients line (Pipedrive shows To: / Cc: in the message header). Matters most
-                  // on sent mail, where the row above is the counterparty but the body doesn't say
-                  // who it went to.
-                  <div className="mb-2 text-xs text-muted-foreground">
-                    <span className="font-medium">To:</span> <span>{msg.toEmails.join(", ")}</span>
-                    {msg.ccEmails.length > 0 && (
-                      <>
-                        {" · "}
-                        <span className="font-medium">Cc:</span>{" "}
-                        <span>{msg.ccEmails.join(", ")}</span>
-                      </>
-                    )}
-                  </div>
-                )}
-                <MessageBodyFrame
-                  html={msg.bodyHtml}
+          {/* B8: the reply footer lives INSIDE this scroller (as the last child of the constrained
+              column), so it flows immediately under the last message instead of floating at the page
+              bottom below a flex-1 spacer. B10: the column is width-constrained and centered, with
+              each message + the reply footer as its own bordered card. */}
+          <div data-reader-scroll className="flex-1 overflow-y-auto">
+            <div
+              data-reader-column
+              className="mx-auto flex w-full max-w-[640px] flex-col gap-3 p-4"
+            >
+              {messages.map((msg) => (
+                <ReaderMessageCard
+                  key={msg.gmailMessageId}
+                  message={msg}
                   allowRemote={allowRemote}
                   onShowRemote={() => setAllowRemote(true)}
                 />
-                {msg.attachments.length > 0 && (
-                  <InboundAttachmentList attachments={msg.attachments} />
-                )}
-                {msg.direction === "outbound" && <MessageTrackingHistory tracking={msg.tracking} />}
-              </article>
-            ))}
-          </div>
+              ))}
 
-          {/* latestMessage guard is defensive: getThread only returns threads with at least
-              one email_messages row today, but nothing enforces that invariant at the DB
-              level, so this avoids handing ReaderActions an undefined message if that ever
-              changes. */}
-          {canCompose && latestMessage !== undefined && (
-            <ReaderActions
-              message={latestMessage}
-              selfEmail={ownerEmail}
-              accountId={accountId}
-              threadId={threadId}
-              onSent={() => void refetch()}
-            />
-          )}
+              {/* latestMessage guard is defensive: getThread only returns threads with at least
+                  one email_messages row today, but nothing enforces that invariant at the DB
+                  level, so this avoids handing ReaderActions an undefined message if that ever
+                  changes. */}
+              {canCompose && latestMessage !== undefined && (
+                <ReaderActions
+                  message={latestMessage}
+                  selfEmail={ownerEmail}
+                  accountId={accountId}
+                  threadId={threadId}
+                  onSent={() => void refetch()}
+                />
+              )}
+            </div>
+          </div>
         </div>
 
         <InboxReaderSidebar

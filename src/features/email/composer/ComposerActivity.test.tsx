@@ -37,7 +37,14 @@ vi.mock("@/features/email/actions", () => ({
 vi.mock("@/utils/csrfCookie", () => ({ readCsrfToken: () => "csrf" }));
 
 // Accepts the input arg so mock.calls[0] captures it for assertion in tests.
-type ActivityInput = { dealId: string; subject: string; typeId: string };
+// dealId/personId/orgId are nullable: a standalone (inbox) activity sends all three as null.
+type ActivityInput = {
+  dealId: string | null;
+  personId: string | null;
+  orgId: string | null;
+  subject: string;
+  typeId: string;
+};
 type ActivityResult = { ok: true; value: { id: string } } | { ok: false; error: { id: string } };
 const createActivityMock = vi.fn<(input: ActivityInput) => Promise<ActivityResult>>(() =>
   Promise.resolve({ ok: true, value: { id: "act-1" } }),
@@ -59,9 +66,9 @@ describe("Composer – add-as-activity toggle (Phase 5)", () => {
     );
   });
 
-  it("toggle is absent for inbox context", () => {
-    render(<Composer accountId="a1" context={{ kind: "inbox" }} />);
-    expect(screen.queryByRole("checkbox", { name: /add as activity/i })).not.toBeInTheDocument();
+  it("toggle is present for inbox context (no deal)", () => {
+    render(<Composer accountId="a1" />);
+    expect(screen.getByRole("checkbox", { name: /add as activity/i })).toBeInTheDocument();
   });
 
   it("toggle is present for deal context", () => {
@@ -87,6 +94,27 @@ describe("Composer – add-as-activity toggle (Phase 5)", () => {
     const [inputArg] = createActivityMock.mock.calls[0] as [{ dealId: string; subject: string }];
     expect(inputArg.dealId).toBe("deal-42");
     expect(inputArg.subject).toMatch(/email sent/i);
+  });
+
+  it("with toggle ON in inbox context, successful send creates a standalone activity (dealId/personId/orgId null)", async () => {
+    render(<Composer accountId="a1" />);
+
+    // Recipient required for canSend; RecipientsRow "to" field is a combobox input.
+    const input = screen
+      .getAllByRole("combobox")
+      .find((el) => el.tagName === "INPUT") as HTMLInputElement;
+    fireEvent.change(input, { target: { value: "a@b.com" } });
+    fireEvent.keyDown(input, { key: "Enter" });
+
+    fireEvent.click(screen.getByRole("checkbox", { name: /add as activity/i }));
+    fireEvent.click(screen.getByRole("button", { name: /^send$/i }));
+
+    await waitFor(() => expect(createActivityMock).toHaveBeenCalledTimes(1));
+
+    const [inputArg] = createActivityMock.mock.calls[0] as [ActivityInput];
+    expect(inputArg.dealId).toBeNull();
+    expect(inputArg.personId).toBeNull();
+    expect(inputArg.orgId).toBeNull();
   });
 
   it("with toggle OFF, successful send does NOT call createActivityAction", async () => {

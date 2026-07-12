@@ -23,6 +23,7 @@ const base = () => ({
   body: "",
   toList: [] as string[],
   ccList: [] as string[],
+  visibility: "shared" as const,
   initialDraftId: undefined as string | undefined,
   draftIdRef: { current: undefined as string | undefined },
   inFlightRef: { current: null as Promise<void> | null },

@@ -1,16 +1,19 @@
-// ComposerFooter: right-aligned Send split (Send + Send later) and Discard.
+// ComposerFooter: right-aligned Discard then the Send split (Send + Send later), matching PD's
+// action-bar order (Discard sits to the left of Send).
 // Phase 7: Send later is enabled when onSendLater is provided and a send is possible;
 // clicking it opens a datetime-local picker (min = now). Choosing a strictly-future
 // time calls onSendLater(Date); a past/now time shows an inline validation message.
-// Left slot holds open-tracking, link-tracking toggles, and (deal only) add-as-activity.
+// Left slot holds open-tracking and link-tracking toggles plus add-as-activity (available
+// from both deal and inbox context). The signature picker lives in the composer toolbar,
+// not here, see Composer.tsx.
 // Right cluster includes the read-only VisibilityControl.
 
 import { useState } from "react";
 import { Switch } from "@/components/ui/Switch";
 import { STRINGS } from "@/constants/strings";
+import type { EmailVisibility } from "../threadVisibility";
 import { AddActivityToggle } from "./AddActivityToggle";
 import { COMPOSER_STRINGS } from "./composer.constants";
-import { SignatureDropdown } from "./SignatureDropdown";
 import { VisibilityControl } from "./VisibilityControl";
 
 interface ComposerFooterProps {
@@ -22,16 +25,20 @@ interface ComposerFooterProps {
   onTrackOpensChange: (v: boolean) => void;
   trackLinks: boolean;
   onTrackLinksChange: (v: boolean) => void;
-  // Deal context only: show add-as-activity toggle.
+  // Available from both deal and inbox context: show add-as-activity toggle.
   showAddAsActivity?: boolean;
   addAsActivity?: boolean;
   onAddAsActivityChange?: (v: boolean) => void;
   // Phase 7: when provided, enables the Send later button and handles scheduled send.
   onSendLater?: (scheduledAt: Date) => void;
-  // Signature footer picker: when both are provided, render the signature dropdown.
-  signatures?: { id: string; name: string }[];
-  signatureId?: string;
-  onSignatureChange?: (id: string) => void;
+  // C1: interactive compose privacy. Optional (defaults to shared) so existing render sites and
+  // tests that predate the control keep working; Composer always supplies both.
+  visibility?: EmailVisibility;
+  onVisibilityChange?: (v: EmailVisibility) => void;
+  // Hidden on a reply to an existing thread: the send path preserves that thread's visibility, so
+  // the picker would be a no-op there (the reader's thread-privacy toggle governs instead). Defaults
+  // to shown for a new compose (codex P2).
+  showVisibility?: boolean;
 }
 
 export function ComposerFooter({
@@ -47,9 +54,9 @@ export function ComposerFooter({
   addAsActivity = false,
   onAddAsActivityChange,
   onSendLater,
-  signatures,
-  signatureId,
-  onSignatureChange,
+  visibility = "shared",
+  onVisibilityChange,
+  showVisibility = true,
 }: ComposerFooterProps): React.ReactNode {
   const [showPicker, setShowPicker] = useState(false);
   const [pickerValue, setPickerValue] = useState("");
@@ -79,7 +86,7 @@ export function ComposerFooter({
 
   return (
     <div className="flex items-center gap-3 flex-wrap">
-      {/* Left slot: tracking toggles + add-as-activity (deal context only). */}
+      {/* Left slot: tracking toggles + add-as-activity (available from deal and inbox context). */}
       <div className="flex items-center gap-2">
         <span className="flex items-center gap-1 text-xs text-muted-foreground">
           <Switch checked={trackOpens} onCheckedChange={onTrackOpensChange} label="Track opens" />
@@ -92,18 +99,23 @@ export function ComposerFooter({
         {showAddAsActivity && onAddAsActivityChange !== undefined && (
           <AddActivityToggle checked={addAsActivity} onChange={onAddAsActivityChange} />
         )}
-        {signatures !== undefined && signatures.length > 0 && onSignatureChange !== undefined && (
-          <SignatureDropdown
-            signatures={signatures}
-            value={signatureId ?? ""}
-            onChange={onSignatureChange}
-          />
-        )}
       </div>
 
       <div className="ml-auto flex items-center gap-2">
-        {/* Read-only visibility indicator (right cluster). */}
-        <VisibilityControl label={COMPOSER_STRINGS.visibilityLabel} />
+        {/* Interactive privacy picker (right cluster): Private / Shared, threaded into the send. */}
+        {showVisibility && (
+          <VisibilityControl value={visibility} onChange={(v) => onVisibilityChange?.(v)} />
+        )}
+
+        {/* Discard sits to the LEFT of the Send split to match PD's action-bar order. */}
+        <button
+          type="button"
+          onClick={onDiscard}
+          className="px-3 py-1.5 rounded-md border border-border text-sm text-muted-foreground transition-[transform,background-color,color] hover:bg-accent hover:text-foreground active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          aria-label="Discard"
+        >
+          Discard
+        </button>
 
         <div className="flex flex-col items-end gap-1">
           <div className="flex items-center gap-1">
@@ -168,15 +180,6 @@ export function ComposerFooter({
             </div>
           )}
         </div>
-
-        <button
-          type="button"
-          onClick={onDiscard}
-          className="px-3 py-1.5 rounded-md border border-border text-sm text-muted-foreground transition-[transform,background-color,color] hover:bg-accent hover:text-foreground active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          aria-label="Discard"
-        >
-          Discard
-        </button>
       </div>
     </div>
   );

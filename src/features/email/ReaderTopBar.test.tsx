@@ -134,6 +134,21 @@ it("surfaces a failed delete and stays put (no silent no-op)", async () => {
   expect(push).not.toHaveBeenCalled();
 });
 
+it("groups Archive and Delete together on the left, not pushed to the far right (B3)", () => {
+  render(<ReaderTopBar threadId="t1" canManage />);
+  const archive = screen.getByRole("button", { name: "Archive" });
+  const del = screen.getByRole("button", { name: "Delete" });
+  // PD groups the reader actions top-left; WD previously pushed Archive right with ml-auto.
+  expect(archive.className).not.toMatch(/ml-auto/);
+  // Archive + Delete share one action group wrapper (grouped per PD), distinct from the Back link.
+  const group = archive.closest("[data-reader-actions-group]");
+  expect(group).not.toBeNull();
+  expect(del.closest("[data-reader-actions-group]")).toBe(group);
+  expect(
+    screen.getByRole("link", { name: /back/i }).closest("[data-reader-actions-group]"),
+  ).toBeNull();
+});
+
 it("hides Archive and Delete for a non-owner (canManage false)", () => {
   render(<ReaderTopBar threadId="t1" canManage={false} />);
   expect(screen.queryByRole("button", { name: "Archive" })).toBeNull();

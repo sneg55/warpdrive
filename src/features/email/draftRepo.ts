@@ -3,6 +3,7 @@ import { AppError, ERROR_IDS } from "@/constants/errorIds";
 import type { Db } from "@/db/client";
 import type { AuthUser } from "@/features/permissions/types";
 import { err, ok, type Result } from "@/types/result";
+import type { EmailVisibility } from "./threadVisibility";
 
 export interface DraftInput {
   id?: string;
@@ -12,6 +13,9 @@ export interface DraftInput {
   bodyHtml: string;
   toEmails: string[];
   ccEmails: string[];
+  // Compose privacy in progress. Omitted defaults to "shared" (the column default) so an old draft
+  // or a caller that does not set it still round-trips a valid value.
+  visibility?: EmailVisibility;
 }
 
 export interface DraftSummary {
@@ -22,6 +26,7 @@ export interface DraftSummary {
   ccEmails: string[];
   threadId: string | null;
   accountId: string;
+  visibility: EmailVisibility;
   updatedAt: string;
 }
 
@@ -51,13 +56,14 @@ export async function saveDraft(
   }
   const to = JSON.stringify(d.toEmails);
   const cc = JSON.stringify(d.ccEmails);
+  const visibility = d.visibility ?? "shared";
   if (d.id !== undefined) {
     const row = (
       await db.execute(sql`
         UPDATE email_drafts
         SET subject = ${d.subject}, body_html = ${d.bodyHtml},
             to_emails = ${to}::jsonb, cc_emails = ${cc}::jsonb,
-            thread_id = ${d.threadId ?? null}, updated_at = now()
+            thread_id = ${d.threadId ?? null}, visibility = ${visibility}, updated_at = now()
         WHERE id = ${d.id} AND account_id = ${d.accountId}
         RETURNING id
       `)
@@ -68,8 +74,8 @@ export async function saveDraft(
   }
   const inserted = (
     await db.execute(sql`
-      INSERT INTO email_drafts (account_id, thread_id, subject, body_html, to_emails, cc_emails)
-      VALUES (${d.accountId}, ${d.threadId ?? null}, ${d.subject}, ${d.bodyHtml}, ${to}::jsonb, ${cc}::jsonb)
+      INSERT INTO email_drafts (account_id, thread_id, subject, body_html, to_emails, cc_emails, visibility)
+      VALUES (${d.accountId}, ${d.threadId ?? null}, ${d.subject}, ${d.bodyHtml}, ${to}::jsonb, ${cc}::jsonb, ${visibility})
       RETURNING id
     `)
   ).rows[0] as { id: string } | undefined;
@@ -86,6 +92,7 @@ interface DraftRow {
   cc_emails: unknown;
   thread_id: string | null;
   account_id: string;
+  visibility: EmailVisibility;
   updated_at: string;
 }
 
@@ -101,7 +108,8 @@ export async function listDrafts(
   signal.throwIfAborted();
   const rows = (
     await db.execute(sql`
-      SELECT d.id, d.subject, d.body_html, d.to_emails, d.cc_emails, d.thread_id, d.account_id, d.updated_at
+      SELECT d.id, d.subject, d.body_html, d.to_emails, d.cc_emails, d.thread_id, d.account_id,
+             d.visibility, d.updated_at
       FROM email_drafts d JOIN email_accounts a ON a.id = d.account_id
       WHERE a.user_id = ${actor.id}
       ORDER BY d.updated_at DESC
@@ -116,6 +124,7 @@ export async function listDrafts(
     ccEmails: asStrings(r.cc_emails),
     threadId: r.thread_id,
     accountId: r.account_id,
+    visibility: r.visibility,
     updatedAt: r.updated_at,
   }));
 }

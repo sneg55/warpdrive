@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { withTestDb } from "@/db/testing";
 import { seedUser } from "@/db/testing/factories";
 import type { AuthUser } from "@/features/permissions/types";
-import { listInbox } from "./emailReads";
+import { getThread, listInbox } from "./emailReads";
 import { listArchivedThreads } from "./folderReads";
 import { archiveThread, unarchiveThread } from "./threadArchive";
 
@@ -75,7 +75,7 @@ describe("archive/unarchive", () => {
     });
   });
 
-  it("archiving a SHARED thread keeps it in a co-viewer's Inbox (archive is owner-local)", async () => {
+  it("a co-viewer never sees the owner's shared thread in their personal Inbox, and the owner's archive stays readable via getThread", async () => {
     await withTestDb(async (db) => {
       const owner = await seedUser(db, { email: "o@gunsnation.com" });
       const viewer = await seedUser(db, { email: "v@gunsnation.com" });
@@ -85,21 +85,21 @@ describe("archive/unarchive", () => {
       const ownerActor = actorOf(owner.id);
       const viewerActor = actorOf(viewer.id);
 
-      // Both see the shared thread before archive.
+      // The Inbox folder is personal: the co-viewer never sees the owner's shared thread there,
+      // before OR after archive (it reaches them on the linked contact record instead).
       expect(
         (await listInbox(db, { actor: viewerActor, filter: "all" }, SIG())).threads,
-      ).toHaveLength(1);
+      ).toHaveLength(0);
 
       expect((await archiveThread(db, { actor: ownerActor, threadId }, SIG())).ok).toBe(true);
 
-      // The owner archived it: gone from the owner's Inbox, but archive is a per-owner local flag,
-      // so a co-viewer must still see the shared thread (they have no owner Archive folder for it).
+      // Owner archived it: gone from the owner's Inbox. archived_at is owner-local, so it does not
+      // revoke the co-viewer's read access, which flows through canSeeEmail (getThread succeeds).
       expect(
         (await listInbox(db, { actor: ownerActor, filter: "all" }, SIG())).threads,
       ).toHaveLength(0);
-      expect(
-        (await listInbox(db, { actor: viewerActor, filter: "all" }, SIG())).threads,
-      ).toHaveLength(1);
+      const got = await getThread(db, { actor: viewerActor, threadId, allowRemote: false }, SIG());
+      expect(got.ok).toBe(true);
     });
   });
 

@@ -14,10 +14,51 @@ interface ThreadRow {
   owner_user_id?: string;
   follow_up_status: string | null;
   labels: string[];
+  // Correspondent (the OTHER party), projected the same way inboxList.ts does so Sent/Archive rows
+  // lead with the counterparty, never the mailbox owner's own address. Null when a thread genuinely
+  // has no other party. toInboxThread reads these into senderEmail/senderName.
+  sender_email?: string | null;
+  sender_name?: string | null;
   // The column the folder orders by (archived_at, or the thread's latest outbound sent_at),
   // projected under a common name so one cursor shape serves both folders.
   cursor_at?: string;
 }
+
+// Correspondent lateral joins + name preference, mirroring inboxList.ts's `co`/`lm` logic so the
+// folder reads cannot drift from the Inbox projection. `co` = the latest message NOT from the
+// mailbox owner (an inbound reply); `lm` = the latest message overall. Address prefers the
+// counterparty's From, then the latest message's first recipient (a thread the owner started, no
+// reply yet), then the latest sender as a last resort. Name prefers the linked contact, then the
+// counterparty's From name. Requires `email_accounts a` and `email_threads t` in scope, plus a
+// `LEFT JOIN persons p ON p.id = t.person_id`.
+const CORRESPONDENT_SELECT = sql`
+  COALESCE(co.from_email, lm.to_emails->>0, lm.from_email) AS sender_email,
+  COALESCE(NULLIF(p.name, ''), co.from_name) AS sender_name`;
+
+// Aggregate form for GROUP BY queries (Sent): the lateral values are constant per thread, so
+// wrapping them in MAX() keeps them out of the GROUP BY list without changing the value.
+const CORRESPONDENT_SELECT_AGG = sql`
+  COALESCE(MAX(co.from_email), MAX(lm.to_emails->>0), MAX(lm.from_email)) AS sender_email,
+  COALESCE(NULLIF(MAX(p.name), ''), MAX(co.from_name)) AS sender_name`;
+
+// The two lateral joins the correspondent projection reads from. Inner aliases are distinct from
+// any `m` alias the outer query may already use for its own message join.
+const CORRESPONDENT_JOINS = sql`
+  LEFT JOIN persons p ON p.id = t.person_id
+  LEFT JOIN LATERAL (
+    SELECT lmsg.from_email, lmsg.to_emails
+    FROM email_messages lmsg
+    WHERE lmsg.thread_id = t.id
+    ORDER BY lmsg.sent_at DESC NULLS LAST, lmsg.created_at DESC
+    LIMIT 1
+  ) lm ON true
+  LEFT JOIN LATERAL (
+    SELECT cmsg.from_email, cmsg.from_name
+    FROM email_messages cmsg
+    WHERE cmsg.thread_id = t.id AND lower(cmsg.from_email) <> lower(a.email_address)
+    ORDER BY cmsg.sent_at DESC NULLS LAST, cmsg.created_at DESC
+    LIMIT 1
+  ) co ON true`;
 
 // Position in a folder's (ordered_at DESC, id DESC) ordering. `id` breaks ties so a page boundary
 // can neither skip nor repeat a thread when two share a timestamp.
@@ -74,8 +115,10 @@ export async function listArchivedThreads(
   const rows = (
     await db.execute(sql`
       SELECT t.id, t.subject, t.last_message_at, t.person_id, t.deal_id, t.visibility,
-             a.user_id AS owner_user_id, t.follow_up_status, t.labels, t.archived_at AS cursor_at
+             a.user_id AS owner_user_id, t.follow_up_status, t.labels, t.archived_at AS cursor_at,
+             ${CORRESPONDENT_SELECT}
       FROM email_threads t JOIN email_accounts a ON a.id = t.account_id
+        ${CORRESPONDENT_JOINS}
       WHERE t.archived_at IS NOT NULL AND t.trashed_at IS NULL AND a.user_id = ${actor.id}
         AND ${afterCursor(cursor, sql`t.archived_at`)}
       ORDER BY t.archived_at DESC, t.id DESC
@@ -106,10 +149,12 @@ export async function listSentThreads(
   const rows = (
     await db.execute(sql`
       SELECT t.id, t.subject, t.last_message_at, t.person_id, t.deal_id, t.visibility,
-             a.user_id AS owner_user_id, t.follow_up_status, t.labels, MAX(m.sent_at) AS cursor_at
+             a.user_id AS owner_user_id, t.follow_up_status, t.labels, MAX(m.sent_at) AS cursor_at,
+             ${CORRESPONDENT_SELECT_AGG}
       FROM email_threads t
         JOIN email_accounts a ON a.id = t.account_id
         JOIN email_messages m ON m.thread_id = t.id
+        ${CORRESPONDENT_JOINS}
       WHERE a.user_id = ${actor.id} AND m.direction = 'outbound' AND m.sent_at IS NOT NULL
         AND t.trashed_at IS NULL
       GROUP BY t.id, t.subject, t.last_message_at, t.person_id, t.deal_id, t.visibility,

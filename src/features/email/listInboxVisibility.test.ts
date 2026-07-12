@@ -78,3 +78,51 @@ it("shows the owner their own mailbox at any visibility", async () => {
   expect(subjects).toContain("carol-private");
   expect(subjects).toContain("carol-shared");
 });
+
+// The Inbox folder is PERSONAL (like Sent/Archive, which are already owner-only): it shows only
+// the actor's OWN mailbox. A colleague's shared thread stays visible on the linked deal/contact
+// record (the forDeal/forContact read path), never injected into another user's Inbox folder.
+async function seedVisiblePersonLinkedThread(
+  ownerAccountId: string,
+  ownerId: string,
+  subject: string,
+): Promise<void> {
+  const person = (
+    await h.db.execute(
+      sql`INSERT INTO persons (name, primary_email, owner_id, visibility_level)
+          VALUES (${`p-${subject}`}, ${`${subject}@acme.com`}, ${ownerId}, 'all') RETURNING id`,
+    )
+  ).rows[0] as { id: string };
+  await h.db.execute(
+    sql`INSERT INTO email_threads (account_id, gmail_thread_id, subject, visibility, person_id, last_message_at)
+        VALUES (${ownerAccountId}, ${subject}, ${subject}, 'shared', ${person.id}, now())`,
+  );
+}
+
+it("hides another user's shared thread from the personal Inbox even when its linked person is visible", async () => {
+  const alice = await seedUserWithMailbox("alice2");
+  const bob = await seedUserWithMailbox("bob2");
+  await seedVisiblePersonLinkedThread(bob.accountId, bob.actor.id, "bob-shared-linked");
+
+  const subjects = (
+    await listInbox(h.db, { actor: alice.actor, filter: "all" }, sig())
+  ).threads.map((t) => t.subject);
+
+  expect(subjects).not.toContain("bob-shared-linked");
+});
+
+it("shows an empty Inbox to a user who owns no mailbox, even with a visible shared thread", async () => {
+  // The evgeny case: a user with NO email_accounts row must not see another user's Inbox.
+  const u = (
+    await h.db.execute(
+      sql`INSERT INTO users (email, name, google_sub)
+          VALUES ('evgeny@acme.com', 'evgeny', 'sub-evgeny') RETURNING id`,
+    )
+  ).rows[0] as { id: string };
+  const evgeny: AuthUser = { id: u.id, type: "regular", isActive: true, groupIds: new Set() };
+  const nick = await seedUserWithMailbox("nick2");
+  await seedVisiblePersonLinkedThread(nick.accountId, nick.actor.id, "nick-shared-linked");
+
+  const page = await listInbox(h.db, { actor: evgeny, filter: "all" }, sig());
+  expect(page.threads).toEqual([]);
+});

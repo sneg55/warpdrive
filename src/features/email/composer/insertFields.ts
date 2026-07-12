@@ -16,6 +16,8 @@ export const INSERT_FIELD_LABELS = {
 export interface InsertFieldEntry {
   label: string;
   value: string;
+  // Entity the field belongs to, drives the Insert-field category tabs (PD parity).
+  category?: "Person" | "Deal" | "Organization";
 }
 
 // Extended deal context that carries resolved person/org values for the insert menu.
@@ -42,19 +44,19 @@ export type InsertFieldContext =
 export function insertFields(context: InsertFieldContext): InsertFieldEntry[] {
   if (context.kind === "inbox") return [];
 
-  const candidates: Array<[string, string | undefined]> = [
-    [INSERT_FIELD_LABELS.DEAL_TITLE, context.dealTitle],
-    [INSERT_FIELD_LABELS.DEAL_VALUE, context.dealValue],
-    [INSERT_FIELD_LABELS.FIRST_NAME, context.personFirstName],
-    [INSERT_FIELD_LABELS.LAST_NAME, context.personLastName],
-    [INSERT_FIELD_LABELS.CONTACT_EMAIL, context.personEmail],
-    [INSERT_FIELD_LABELS.ORG_NAME, context.orgName],
+  const candidates: Array<[string, string | undefined, InsertFieldEntry["category"]]> = [
+    [INSERT_FIELD_LABELS.DEAL_TITLE, context.dealTitle, "Deal"],
+    [INSERT_FIELD_LABELS.DEAL_VALUE, context.dealValue, "Deal"],
+    [INSERT_FIELD_LABELS.FIRST_NAME, context.personFirstName, "Person"],
+    [INSERT_FIELD_LABELS.LAST_NAME, context.personLastName, "Person"],
+    [INSERT_FIELD_LABELS.CONTACT_EMAIL, context.personEmail, "Person"],
+    [INSERT_FIELD_LABELS.ORG_NAME, context.orgName, "Organization"],
   ];
 
   return candidates
-    .filter((entry): entry is [string, string] => {
+    .filter((entry): entry is [string, string, InsertFieldEntry["category"]] => {
       const value = entry[1];
       return value !== undefined && value.length > 0;
     })
-    .map(([label, value]) => ({ label, value }));
+    .map(([label, value, category]) => ({ label, value, category }));
 }

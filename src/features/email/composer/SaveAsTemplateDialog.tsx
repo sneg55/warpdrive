@@ -22,15 +22,27 @@ import { readCsrfToken } from "@/utils/csrfCookie";
 interface SaveAsTemplateDialogProps {
   subject: string;
   bodyHtml: string;
+  // Controlled mode: when `open`/`onOpenChange` are supplied (e.g. opened from the template
+  // dropdown footer), the default "Save as template" trigger button is omitted.
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 export function SaveAsTemplateDialog({
   subject,
   bodyHtml,
+  open: openProp,
+  onOpenChange,
 }: SaveAsTemplateDialogProps): React.ReactNode {
   const reportError = useActionError();
   const utils = trpc.useUtils();
-  const [open, setOpen] = useState(false);
+  const controlled = openProp !== undefined;
+  const [openState, setOpenState] = useState(false);
+  const open = controlled ? openProp : openState;
+  const setOpen = (next: boolean): void => {
+    if (controlled) onOpenChange?.(next);
+    else setOpenState(next);
+  };
   const [name, setName] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -56,11 +68,13 @@ export function SaveAsTemplateDialog({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button type="button" variant="outline" size="sm">
-          Save as template
-        </Button>
-      </DialogTrigger>
+      {!controlled && (
+        <DialogTrigger asChild>
+          <Button type="button" variant="outline" size="sm">
+            Save as template
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Save as template</DialogTitle>

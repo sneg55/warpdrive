@@ -12,21 +12,11 @@ import type { Result } from "@/types/result";
 import { readCsrfToken } from "@/utils/csrfCookie";
 import type { InboxFilter, InboxThread } from "./emailReads";
 import { archiveThreadAction, unarchiveThreadAction } from "./folderActions";
-import { InboxAttributeFilters } from "./InboxAttributeFilters";
 import { markThreadReadAction, markThreadUnreadAction } from "./readActions";
+import { ThreadListToolbar } from "./ThreadListToolbar";
 import { canArchiveInFolder, canSelectInFolder, type ThreadFolder, ThreadRow } from "./ThreadRow";
 import { filterByAttributes, NO_ATTRIBUTE_FILTER } from "./threadAttributeFilter";
-
-const FILTERS: { key: InboxFilter; label: string }[] = [
-  { key: "all", label: STRINGS.inbox.filterAll },
-  { key: "unmatched", label: STRINGS.inbox.filterUnmatched },
-  { key: "needs_linking", label: STRINGS.inbox.filterNeedsLinking },
-];
-
-// Shared by all three bulk actions: no per-cause copy since the user just needs to know
-// some of the selected threads need retrying, not why (each action already has its own
-// specific server-side AppError id for anyone digging into logs).
-const BULK_ACTION_ERROR = "Couldn't update some threads. Please try again.";
+import { BULK_ACTION_ERROR, runBulk } from "./threadBulkActions";
 
 interface ThreadListProps {
   // Which backed read feeds the list: Inbox (email.inbox.list), Sent, Archive, or "linked"
@@ -41,6 +31,12 @@ interface ThreadListProps {
   onSelect?: (threadId: string) => void;
   // When provided, render exactly these threads instead of fetching (used by "linked" views).
   threads?: InboxThread[];
+  // The active quick-filter (all/unmatched/needs_linking + the U5 quick-filters). Lifted to the
+  // caller (InboxListClient) so an active in-mail search can narrow by the SAME filter (codex
+  // review); it feeds both the inbox feed and the filter toolbar. Optional: callers that only render
+  // "linked" views leave it uncontrolled and ThreadList keeps its own local state.
+  quickFilter?: InboxFilter;
+  onQuickFilterChange?: (next: InboxFilter) => void;
 }
 
 interface ThreadFeed {
@@ -75,17 +71,6 @@ function useThreads(folder: ThreadFolder, filter: InboxFilter): ThreadFeed {
   };
 }
 
-// Runs `action` for every id in parallel and returns the ids whose action failed, so the
-// caller can keep exactly those selected instead of silently dropping the partial failure
-// (mirrors PeopleList's bulk-delete semantics).
-async function runBulk(
-  ids: readonly string[],
-  action: (threadId: string) => Promise<Result<{ threadId: string }, AppError>>,
-): Promise<string[]> {
-  const outcomes = await Promise.all(ids.map(async (id) => ({ id, result: await action(id) })));
-  return outcomes.filter((o) => !o.result.ok).map((o) => o.id);
-}
-
 export function ThreadList({
   folder,
   activeThreadId,
@@ -94,10 +79,15 @@ export function ThreadList({
   selectHref = (id) => `/inbox/${id}?folder=${folder}`,
   onSelect,
   threads: providedThreads,
+  quickFilter,
+  onQuickFilterChange,
 }: ThreadListProps): React.ReactNode {
   const router = useRouter();
   const utils = trpc.useUtils();
-  const [filter, setFilter] = useState<InboxFilter>("all");
+  // Controlled when the caller lifts the quick-filter (InboxListClient), uncontrolled otherwise.
+  const [localFilter, setLocalFilter] = useState<InboxFilter>("all");
+  const filter = quickFilter ?? localFilter;
+  const setFilter = onQuickFilterChange ?? setLocalFilter;
   const [attrFilter, setAttrFilter] = useState(NO_ATTRIBUTE_FILTER);
   const [bulkError, setBulkError] = useState<string | null>(null);
   const [bulkBusy, setBulkBusy] = useState(false);
@@ -118,6 +108,26 @@ export function ThreadList({
   }
 
   function afterReadChange(): void {
+    void utils.email.inbox.unreadCount.invalidate();
+  }
+
+  // Manual Refresh (A1, Pipedrive parity): re-pull the current folder's feed without a full
+  // navigation. Realtime already nudges these, but a user-driven refetch matches PD and covers the
+  // gap between poll cycles. Folder-aware so Sent/Archive refetch their own read (D2), not the inbox.
+  function refreshFolder(): void {
+    // In-mail search overrides whichever folder tab is active (InboxListClient feeds email.search
+    // results to this list), so refresh must invalidate search regardless of the folder or the
+    // displayed results never update (codex P2). A no-op when no search query is mounted.
+    void utils.email.search.invalidate();
+    if (folder === "sent") {
+      void utils.email.folders.sent.invalidate();
+      return;
+    }
+    if (folder === "archive") {
+      void utils.email.folders.archive.invalidate();
+      return;
+    }
+    void utils.email.inbox.list.invalidate();
     void utils.email.inbox.unreadCount.invalidate();
   }
 
@@ -173,32 +183,14 @@ export function ThreadList({
 
   return (
     <div className="flex flex-col h-full">
-      {folder === "inbox" && (
-        // Pipedrive keeps its inbox filters on one compact row; keep the match/needs-linking tabs
-        // and the follow-up/label selects together instead of stacking them (A1 parity).
-        <div className="flex flex-wrap items-center gap-2 border-b p-2">
-          <nav aria-label="inbox filters" className="flex gap-1">
-            {FILTERS.map((f) => (
-              <button
-                key={f.key}
-                type="button"
-                aria-pressed={filter === f.key}
-                onClick={() => setFilter(f.key)}
-                className={
-                  filter === f.key
-                    ? "rounded bg-accent px-3 py-1 text-sm font-medium text-accent-foreground transition-transform active:scale-[0.96]"
-                    : "rounded px-3 py-1 text-sm text-muted-foreground transition-transform hover:bg-accent/60 active:scale-[0.96]"
-                }
-              >
-                {f.label}
-              </button>
-            ))}
-          </nav>
-          <div className="ml-auto">
-            <InboxAttributeFilters value={attrFilter} onChange={setAttrFilter} />
-          </div>
-        </div>
-      )}
+      <ThreadListToolbar
+        folder={folder}
+        filter={filter}
+        onFilterChange={setFilter}
+        attrFilter={attrFilter}
+        onAttrFilterChange={setAttrFilter}
+        onRefresh={refreshFolder}
+      />
 
       <div className="flex items-center justify-between border-b px-3 py-1.5 text-xs text-muted-foreground">
         <div className="flex items-center gap-2">

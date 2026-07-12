@@ -8,6 +8,15 @@ import { SignatureDropdown } from "./SignatureDropdown";
 afterEach(cleanup);
 
 describe("SignatureDropdown", () => {
+  it("offers a None option even when the signatures list is empty", async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(<SignatureDropdown signatures={[]} value="" onChange={onChange} />);
+    await user.click(screen.getByRole("button", { name: /signature/i }));
+    await user.click(screen.getByRole("menuitem", { name: "None" }));
+    expect(onChange).toHaveBeenCalledWith("");
+  });
+
   it("opens the menu and selects a signature", async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();

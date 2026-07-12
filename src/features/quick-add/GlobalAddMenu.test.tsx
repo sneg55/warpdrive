@@ -138,6 +138,6 @@ describe("GlobalAddMenu", () => {
     render(<GlobalAddMenu />);
     await user.click(screen.getByRole("button", { name: "Quick add" }));
     await user.click(screen.getByRole("menuitem", { name: /Email/ }));
-    expect(push).toHaveBeenCalledWith("/inbox?compose=1");
+    expect(push).toHaveBeenCalledWith("/inbox/compose");
   });
 });

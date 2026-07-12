@@ -33,6 +33,9 @@ export interface StoreOutboundArgs {
   gmail: GmailClient;
   // Optional: link a NEW thread to a person/deal. Omitted => thread stays unlinked.
   link?: OutboundLinkContext;
+  // Optional compose privacy (C1): applied to a NEW thread only. Omitted => DB default ("private").
+  // A reply threads into an existing row and never changes its visibility.
+  visibility?: "private" | "shared" | null;
   signal: AbortSignal;
 }
 
@@ -57,6 +60,7 @@ export async function storeOutboundCopy(
     subject: args.input.subject,
     fromEmail: args.fromEmail,
     link: args.link,
+    visibility: args.visibility,
     signal: args.signal,
   });
   if (!thread.ok) return thread;
@@ -134,6 +138,7 @@ async function upsertThread(
     subject: string;
     fromEmail: string;
     link: OutboundLinkContext | undefined;
+    visibility?: "private" | "shared" | null;
     signal: AbortSignal;
   },
 ): Promise<Result<string, AppError>> {
@@ -151,9 +156,16 @@ async function upsertThread(
       ? { personId: null, dealId: null }
       : await resolveNewThreadLink(db, args.fromEmail, args.link, args.signal);
 
+  // Apply the composer's visibility to the new thread; fall back to the column default ('private')
+  // when the caller did not supply one (old rows, reply paths). COALESCE keeps the default in one
+  // place rather than branching the SQL.
+  const visibility = args.visibility ?? null;
   const created = await db.execute(sql`
-    INSERT INTO email_threads (gmail_thread_id, account_id, subject, person_id, deal_id, last_message_at)
-    VALUES (${args.gmailThreadId}, ${args.accountId}, ${args.subject}, ${personId}, ${dealId}, now())
+    INSERT INTO email_threads (gmail_thread_id, account_id, subject, person_id, deal_id, visibility, last_message_at)
+    VALUES (
+      ${args.gmailThreadId}, ${args.accountId}, ${args.subject}, ${personId}, ${dealId},
+      COALESCE(${visibility}::email_visibility, 'private'), now()
+    )
     ON CONFLICT (account_id, gmail_thread_id) DO UPDATE SET updated_at=now()
     RETURNING id
   `);

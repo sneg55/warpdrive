@@ -30,6 +30,22 @@ const inboxCursorSchema = z.object({
   id: z.string().uuid(),
 });
 
+// The linking tabs (all/unmatched/needs_linking) plus the U5 quick-filters. Shared by inbox.list and
+// search so both narrow the same way (codex review); default "all" = no quick-filter narrowing.
+const inboxFilterSchema = z
+  .enum([
+    "all",
+    "unmatched",
+    "needs_linking",
+    "shared",
+    "private",
+    "tracked",
+    "to_me",
+    "from_contact",
+    "linked_open_deal",
+  ])
+  .default("all");
+
 const folderPageInput = z.object({
   limit: z.number().int().min(1).max(INBOX_PAGE_SIZE).optional(),
   cursor: z.object({ at: z.string(), id: z.string().uuid() }).nullish(),
@@ -40,7 +56,7 @@ export const emailRouter = router({
     list: protectedProcedure
       .input(
         z.object({
-          filter: z.enum(["all", "unmatched", "needs_linking"]).default("all"),
+          filter: inboxFilterSchema,
           limit: z.number().int().min(1).max(INBOX_PAGE_SIZE).optional(),
           // Named `cursor` so TanStack's useInfiniteQuery can inject it.
           cursor: inboxCursorSchema.nullish(),
@@ -142,6 +158,8 @@ export const emailRouter = router({
   // In-mail search across subject/body/participants, gated by the same canSeeEmail
   // visibility rule as the Inbox. Feeds InboxSearchBar via InboxListClient.
   search: protectedProcedure
-    .input(z.object({ q: z.string().min(1).max(200) }))
-    .query(({ ctx, input }) => searchInbox(ctx.db, { actor: ctx.actor, q: input.q }, SIG())),
+    .input(z.object({ q: z.string().min(1).max(200), filter: inboxFilterSchema }))
+    .query(({ ctx, input }) =>
+      searchInbox(ctx.db, { actor: ctx.actor, q: input.q, filter: input.filter }, SIG()),
+    ),
 });

@@ -26,6 +26,16 @@ export interface SendPayload {
   trackLinks?: boolean;
   // Phase 6: attachment metadata resolved at send time, stored for replay.
   attachments?: PayloadAttachment[];
+  // Explicit CRM link context from the composer (see SendEmailInput.linkPersonId/linkDealId).
+  // Persisted so a SCHEDULED send can restore it in the worker path (performWorkerSendCrm),
+  // which has no in-scope access to the original SendEmailInput. Re-verified for visibility
+  // downstream via canSeeLinkedPerson/canSeeLinkedDeal, never trusted blindly.
+  linkPersonId?: string | null;
+  linkDealId?: string | null;
+  // Compose privacy (C1). Persisted so the worker (performWorkerSendCrm) and replay-repair CRM-copy
+  // paths create a NEW thread with the visibility the author picked, instead of the DB default.
+  // Applied to new threads only; null/undefined => DB default. Old rows lack the field.
+  visibility?: "private" | "shared" | null;
 }
 
 // Token-guarded claim: lease the attempt so a dead worker's claim can be reclaimed

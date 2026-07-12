@@ -3,9 +3,18 @@ import type React from "react";
 import { useId } from "react";
 import { Button } from "@/components/ui/Button";
 import { Checkbox } from "@/components/ui/Checkbox";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Select, type SelectOption } from "@/components/ui/Select";
 import { MAIL_LABELS } from "@/constants/email";
 import { STRINGS } from "@/constants/strings";
+import type { InboxFilter } from "./emailReads";
 import {
   type AttributeFilterState,
   type DateRangePreset,
@@ -16,6 +25,62 @@ import {
 // intentionally omitted: followUpStatus null (unset) is distinct from the explicit "none" value,
 // so a single "None" filter option would be ambiguous. See implementation notes.
 const FOLLOW_UP_FILTER_STATES = ["waiting", "replied", "closed"] as const;
+
+// U5 quick-filters (A12): server-side single-select narrowing surfaced in a shadcn DropdownMenu
+// (never a native control). "none" maps back to the "all" InboxFilter so the linking tabs regain
+// control. Copy is local (owned-file constant) rather than STRINGS.inbox to keep this change
+// scoped to the files U5 owns.
+const QUICK_FILTER_OPTIONS: { value: InboxFilter; label: string }[] = [
+  { value: "shared", label: "Shared" },
+  { value: "private", label: "Private" },
+  { value: "tracked", label: "Tracked emails" },
+  { value: "to_me", label: "To: me" },
+  { value: "from_contact", label: "From an existing contact" },
+  { value: "linked_open_deal", label: "Linked with an open deal" },
+];
+const QUICK_FILTER_TRIGGER = "More filters";
+const QUICK_FILTER_NONE = "none";
+
+// The dropdown only owns the six quick-filters; when the active InboxFilter is a linking tab
+// (all/unmatched/needs_linking) no radio is checked and the "None" reset is selected.
+function isQuickFilter(f: InboxFilter): boolean {
+  return QUICK_FILTER_OPTIONS.some((o) => o.value === f);
+}
+
+function QuickFilterMenu({
+  quickFilter,
+  onQuickFilterChange,
+}: {
+  quickFilter: InboxFilter;
+  onQuickFilterChange: (next: InboxFilter) => void;
+}): React.ReactNode {
+  const radioValue = isQuickFilter(quickFilter) ? quickFilter : QUICK_FILTER_NONE;
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="outline" size="sm">
+          {QUICK_FILTER_TRIGGER}
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuLabel>{QUICK_FILTER_TRIGGER}</DropdownMenuLabel>
+        <DropdownMenuRadioGroup
+          value={radioValue}
+          onValueChange={(v) =>
+            onQuickFilterChange(v === QUICK_FILTER_NONE ? "all" : (v as InboxFilter))
+          }
+        >
+          <DropdownMenuRadioItem value={QUICK_FILTER_NONE}>None</DropdownMenuRadioItem>
+          {QUICK_FILTER_OPTIONS.map((o) => (
+            <DropdownMenuRadioItem key={o.value} value={o.value}>
+              {o.label}
+            </DropdownMenuRadioItem>
+          ))}
+        </DropdownMenuRadioGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
 
 // Toggle label + its accessible name paired with a labelled checkbox (design-system control).
 function FilterToggle({
@@ -41,9 +106,15 @@ function FilterToggle({
 export function InboxAttributeFilters({
   value,
   onChange,
+  // U5 server-side quick-filter (single-select). Optional so existing callers that only drive the
+  // client-side attribute filters keep working; defaults to "all" (no quick-filter) + a no-op.
+  quickFilter = "all",
+  onQuickFilterChange = () => {},
 }: {
   value: AttributeFilterState;
   onChange: (next: AttributeFilterState) => void;
+  quickFilter?: InboxFilter;
+  onQuickFilterChange?: (next: InboxFilter) => void;
 }): React.ReactNode {
   const inbox = STRINGS.inbox;
   const statusNames = inbox.followUpStatusNames;
@@ -97,7 +168,18 @@ export function InboxAttributeFilters({
         options={dateRangeOptions}
         triggerClassName="w-auto"
       />
-      <Button variant="ghost" size="sm" onClick={() => onChange(NO_ATTRIBUTE_FILTER)}>
+      <QuickFilterMenu quickFilter={quickFilter} onQuickFilterChange={onQuickFilterChange} />
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => {
+          // Clear resets BOTH the client-side attribute filters and the server-side quick-filter;
+          // resetting only the former left the list narrowed by a still-active quick-filter (codex
+          // review). "all" is the no-quick-filter state (the linking tabs regain control).
+          onChange(NO_ATTRIBUTE_FILTER);
+          onQuickFilterChange("all");
+        }}
+      >
         {inbox.clearFilters}
       </Button>
     </div>

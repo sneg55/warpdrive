@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { EMAIL_VISIBILITY } from "@/constants/email";
 import { AppError, ERROR_IDS } from "@/constants/errorIds";
 import type { Db } from "@/db/client";
 import type { StorageClient } from "@/features/files/storage";
@@ -53,6 +54,9 @@ export const sendEmailInput = z.object({
   // plain inbox compose, which falls back to recipient-based auto-linking.
   linkPersonId: z.string().uuid().optional(),
   linkDealId: z.string().uuid().optional(),
+  // visibility: the composer's privacy pick (C1). Applied to a NEW outbound thread only; a reply
+  // (threadId set) inherits the existing thread's visibility. Omitted => DB default ("private").
+  visibility: z.enum(EMAIL_VISIBILITY).optional(),
 });
 
 export type SendEmailInput = z.infer<typeof sendEmailInput>;
@@ -161,6 +165,13 @@ async function runSend(
       trackOpens: resolvedTrackOpens,
       trackLinks: resolvedTrackLinks,
       attachments: resolvedAttachments.length > 0 ? resolvedAttachments : undefined,
+      // Carried through so a SCHEDULED send can restore the composer's explicit link in the
+      // worker path (performWorkerSendCrm), which has no in-scope SendEmailInput to read from.
+      linkPersonId: input.linkPersonId ?? null,
+      linkDealId: input.linkDealId ?? null,
+      // Same reason for visibility: the worker/replay CRM-copy paths read it from the payload so a
+      // scheduled or replayed PRIVATE compose still lands a private thread (not silently shared).
+      visibility: input.visibility ?? null,
     },
     threadId: input.threadId ?? null,
     scheduledAt: input.scheduledSendAt ?? null,
@@ -231,6 +242,8 @@ async function runSend(
       input: { ...input, subject: mergedSubject },
       resolvedTrackingEnabled: resolvedTrackOpens || resolvedTrackLinks,
       bodyHtml: bodyForCopy,
+      // Create a NEW thread with the composer's chosen visibility (C1).
+      visibility: input.visibility,
       gmail: args.gmail,
       link: {
         owner: actor,

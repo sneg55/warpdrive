@@ -27,6 +27,9 @@ vi.mock("./threadAttributesActions", () => ({
   setFollowUpStatusAction: (...a: unknown[]) => setFollowUpStatusMock(...(a as [])),
   setThreadLabelsAction: (...a: unknown[]) => setThreadLabelsMock(...(a as [])),
 }));
+// B2: ThreadPane mounts ThreadPrivacyToggle, which imports this server-action module; stub it so
+// these tests load. Toggle show/hide + failure surfacing live in ThreadPane.privacy.test.tsx.
+vi.mock("./threadVisibilityActions", () => ({ setThreadVisibilityAction: vi.fn() }));
 vi.mock("@/utils/csrfCookie", () => ({ readCsrfToken: () => "csrf" }));
 // The reader now renders ReaderTopBar (Back + Archive), which uses the Next router.
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
@@ -66,15 +69,16 @@ const threadData = {
 };
 const invalidateInboxList = vi.fn();
 const invalidateUnreadCount = vi.fn();
+vi.mock("./mailLabelsActions", () => ({ createMailLabelAction: vi.fn() }));
 vi.mock("@/lib/trpc-client", () => ({
   trpc: {
-    email: {
-      thread: { get: { useQuery: () => ({ data: threadData, refetch: vi.fn() }) } },
-    },
+    mailLabels: { list: { useQuery: () => ({ data: [] }) } },
+    email: { thread: { get: { useQuery: () => ({ data: threadData, refetch: vi.fn() }) } } },
     // Sidebar SidebarLinkPanel loads pipelines (Add-new-deal) + the global search (owner-only).
     pipeline: { list: { useQuery: () => ({ data: [] }) } },
     search: { query: { useQuery: () => ({ data: undefined }) } },
     useUtils: () => ({
+      mailLabels: { list: { invalidate: vi.fn() } },
       email: {
         inbox: {
           list: { invalidate: invalidateInboxList },
@@ -117,9 +121,8 @@ describe("ThreadPane", () => {
   });
 
   it("invalidates the inbox list (not just the unread count) after marking read on open", async () => {
-    // Regression: the opened row's unread dot/bold is read from the cached inbox.list query
-    // (ThreadRow), so invalidating only unreadCount leaves the row looking unread until some
-    // other refetch happens to occur. Mirror the mark-unread path, which invalidates both.
+    // Regression: the opened row's unread dot/bold is read from the cached inbox.list query, so
+    // invalidating only unreadCount leaves it looking unread. Mirror mark-unread: invalidate both.
     render(<ThreadPane threadId="t1" trackingBadge={null} />);
     await waitFor(() => expect(invalidateUnreadCount).toHaveBeenCalledTimes(1));
     expect(invalidateInboxList).toHaveBeenCalledTimes(1);
@@ -127,8 +130,7 @@ describe("ThreadPane", () => {
 
   it("clicking Mark as unread calls markThreadUnreadAction and invalidates list + count", async () => {
     render(<ThreadPane threadId="t1" trackingBadge={null} />);
-    // Let the mark-read-on-open effect settle first so its own invalidation doesn't
-    // get counted as evidence of the click-driven invalidation below.
+    // Let the mark-read-on-open effect settle so its invalidation isn't counted as the click's.
     await waitFor(() => expect(invalidateUnreadCount).toHaveBeenCalledTimes(1));
     invalidateUnreadCount.mockClear();
 
@@ -141,8 +143,7 @@ describe("ThreadPane", () => {
   it("shows an inline error and skips invalidation when marking unread fails", async () => {
     markUnreadMock.mockResolvedValueOnce({ ok: false, error: "boom" });
     render(<ThreadPane threadId="t1" trackingBadge={null} />);
-    // Let the mark-read-on-open effect settle first (it invalidates both queries on success)
-    // so its invalidations aren't mistaken for evidence of the click-driven path below.
+    // Let the mark-read-on-open effect settle so its invalidations aren't mistaken for the click.
     await waitFor(() => expect(invalidateUnreadCount).toHaveBeenCalledTimes(1));
     invalidateUnreadCount.mockClear();
     invalidateInboxList.mockClear();
@@ -263,9 +264,8 @@ describe("ThreadPane", () => {
   });
 
   it("hides the label / follow-up controls on a thread the user cannot compose to", () => {
-    // A thread in another user's mailbox is viewable but its attribute mutations are rejected
-    // server-side (ownership gate). Offering clickable label/follow-up controls that always fail
-    // is the F5-7 defect: gate them behind canCompose, like the reply bar already is.
+    // A non-owned but viewable thread rejects attribute mutations server-side (F5-7): gate the
+    // controls behind canCompose so we never offer a clickable control the backend will reject.
     threadData.canCompose = false;
     render(<ThreadPane threadId="t1" trackingBadge={null} />);
     expect(screen.queryByLabelText(STRINGS.inbox.followUpStatusLabel)).not.toBeInTheDocument();

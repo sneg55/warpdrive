@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { readCsrfToken } from "@/utils/csrfCookie";
 import { deleteDraftAction, saveDraftAction } from "../folderActions";
+import type { EmailVisibility } from "../threadVisibility";
 
 const DEBOUNCE_MS = 1500;
 
@@ -13,6 +14,7 @@ export interface DraftAutosaveDeps {
   body: string;
   toList: string[];
   ccList: string[];
+  visibility: EmailVisibility;
   initialDraftId: string | undefined;
   // Shared with the send path so delete-on-send targets the id autosave created/resumed.
   draftIdRef: { current: string | undefined };
@@ -38,7 +40,7 @@ function hasContent(d: {
 // draft and clear the ref. Last-write-wins across tabs (no conflict resolution).
 export function useDraftAutosave(deps: DraftAutosaveDeps): void {
   const { accountId, threadId, subject, body, toList, ccList, initialDraftId, draftIdRef } = deps;
-  const { inFlightRef } = deps;
+  const { visibility, inFlightRef } = deps;
   // Seed the shared draft id once. Writing a ref during render is unsafe under concurrent
   // rendering (and react-hooks/refs flags it); this effect is declared before the autosave effect,
   // so the id is in place well before that effect's debounce timer can fire.
@@ -65,6 +67,7 @@ export function useDraftAutosave(deps: DraftAutosaveDeps): void {
             bodyHtml: body,
             toEmails: toList,
             ccEmails: ccList,
+            visibility,
           });
           if (res.ok) draftIdRef.current = res.value.id;
           return;
@@ -82,5 +85,5 @@ export function useDraftAutosave(deps: DraftAutosaveDeps): void {
     return () => clearTimeout(timer);
     // Depend on the tracked primitives (and stable refs) only. NOT the deps object literal, whose
     // fresh identity every render would otherwise reset the debounce on any unrelated re-render.
-  }, [accountId, threadId, subject, body, toList, ccList, draftIdRef, inFlightRef]);
+  }, [accountId, threadId, subject, body, toList, ccList, visibility, draftIdRef, inFlightRef]);
 }

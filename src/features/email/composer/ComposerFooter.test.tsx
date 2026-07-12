@@ -6,8 +6,29 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 afterEach(cleanup);
 
 import { ComposerFooter } from "./ComposerFooter";
+import { COMPOSER_STRINGS } from "./composer.constants";
 
 describe("ComposerFooter", () => {
+  it("hides the privacy picker when showVisibility is false (reply to an existing thread)", () => {
+    // On a reply the send path preserves the existing thread's visibility, so the interactive
+    // compose picker is a no-op and must not be shown (codex P2). The reader's thread-privacy
+    // toggle governs an existing thread instead.
+    render(
+      <ComposerFooter
+        canSend={true}
+        sending={false}
+        onSend={vi.fn()}
+        onDiscard={vi.fn()}
+        trackOpens={false}
+        onTrackOpensChange={vi.fn()}
+        trackLinks={false}
+        onTrackLinksChange={vi.fn()}
+        showVisibility={false}
+      />,
+    );
+    expect(screen.queryByLabelText(COMPOSER_STRINGS.visibilityPickerLabel)).not.toBeInTheDocument();
+  });
+
   it("renders a Send button that is enabled when canSend is true", () => {
     render(
       <ComposerFooter
@@ -94,35 +115,6 @@ describe("ComposerFooter", () => {
   });
 });
 
-describe("ComposerFooter signature picker", () => {
-  const base = {
-    canSend: true,
-    sending: false,
-    onSend: vi.fn(),
-    onDiscard: vi.fn(),
-    trackOpens: false,
-    onTrackOpensChange: vi.fn(),
-    trackLinks: false,
-    onTrackLinksChange: vi.fn(),
-  };
-
-  it("hides the signature picker when there are no signatures", () => {
-    render(<ComposerFooter {...base} signatures={[]} onSignatureChange={vi.fn()} />);
-    expect(screen.queryByRole("button", { name: /^signature$/i })).not.toBeInTheDocument();
-  });
-
-  it("shows the signature picker when at least one signature exists", () => {
-    render(
-      <ComposerFooter
-        {...base}
-        signatures={[{ id: "s1", name: "Sig" }]}
-        onSignatureChange={vi.fn()}
-      />,
-    );
-    expect(screen.getByRole("button", { name: /^signature$/i })).toBeInTheDocument();
-  });
-});
-
 describe("ComposerFooter tracking toggles", () => {
   it("renders an open-tracking toggle with correct checked state", () => {
     render(
@@ -192,5 +184,25 @@ describe("ComposerFooter tracking toggles", () => {
     );
     fireEvent.click(screen.getByRole("switch", { name: /track links/i }));
     expect(onTrackLinksChange).toHaveBeenCalledWith(true);
+  });
+
+  it("orders Discard before the Send split to match PD's action bar", () => {
+    render(
+      <ComposerFooter
+        canSend={true}
+        sending={false}
+        onSend={vi.fn()}
+        onDiscard={vi.fn()}
+        trackOpens={false}
+        onTrackOpensChange={vi.fn()}
+        trackLinks={false}
+        onTrackLinksChange={vi.fn()}
+      />,
+    );
+    const discard = screen.getByRole("button", { name: "Discard" });
+    const send = screen.getByRole("button", { name: /^Send$/ });
+    // Flex row with no `order` styling, so DOM order equals visual left-to-right order.
+    // PD places Discard to the LEFT of the Send split; Send must follow Discard in the document.
+    expect(discard.compareDocumentPosition(send) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 });

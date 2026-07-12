@@ -69,6 +69,48 @@ describe("setFollowUpStatus / setThreadLabels", () => {
     });
   });
 
+  it("rejects a label key that is not in the mail_labels catalog and persists nothing", async () => {
+    await withTestDb(async (db) => {
+      const owner = await seedUser(db, { email: "o@gunsnation.com" });
+      const acctId = await seedAccount(db, owner.id);
+      const threadId = await seedThread(db, acctId);
+      const actor = actorOf(owner.id);
+
+      const res = await setThreadLabels(
+        db,
+        { actor, threadId, labels: ["not_a_real_catalog_key"] },
+        SIG(),
+      );
+      expect(res.ok).toBe(false);
+      if (!res.ok) expect(res.error.id).toBe("E_GMAIL_025");
+
+      const row = (await db.execute(sql`SELECT labels FROM email_threads WHERE id=${threadId}`))
+        .rows[0] as { labels: string[] };
+      expect(row.labels).toEqual([]);
+    });
+  });
+
+  it("rejects a mix of a valid catalog key and an unknown key, persisting neither", async () => {
+    await withTestDb(async (db) => {
+      const owner = await seedUser(db, { email: "o@gunsnation.com" });
+      const acctId = await seedAccount(db, owner.id);
+      const threadId = await seedThread(db, acctId);
+      const actor = actorOf(owner.id);
+
+      const res = await setThreadLabels(
+        db,
+        { actor, threadId, labels: ["important", "bogus_key"] },
+        SIG(),
+      );
+      expect(res.ok).toBe(false);
+      if (!res.ok) expect(res.error.id).toBe("E_GMAIL_025");
+
+      const row = (await db.execute(sql`SELECT labels FROM email_threads WHERE id=${threadId}`))
+        .rows[0] as { labels: string[] };
+      expect(row.labels).toEqual([]);
+    });
+  });
+
   it("a stranger setting follow-up status on a non-owned thread gets E_GMAIL_011", async () => {
     await withTestDb(async (db) => {
       const owner = await seedUser(db, { email: "o@gunsnation.com" });

@@ -42,6 +42,7 @@ const infiniteState = {
 
 vi.mock("@/lib/trpc-client", () => ({
   trpc: {
+    mailLabels: { list: { useQuery: () => ({ data: [] }) } },
     email: {
       inbox: { list: { useInfiniteQuery: () => infiniteState } },
       folders: {

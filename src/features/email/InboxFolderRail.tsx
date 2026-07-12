@@ -1,9 +1,25 @@
 "use client";
 import Link from "next/link";
+import { usePathname, useSearchParams } from "next/navigation";
 import type React from "react";
+import { STRINGS } from "@/constants/strings";
 import { trpc } from "@/lib/trpc-client";
 import { cn } from "@/lib/utils";
-import { FOLDER_KEYS, FOLDER_LABELS, type FolderKey } from "./inboxFolders";
+import { FOLDER_KEYS, FOLDER_LABELS, type FolderKey, parseFolder } from "./inboxFolders";
+
+const COMPOSE_PATH = "/inbox/compose";
+
+// The rail lives in the persistent /inbox layout, so it reads the active state straight from the
+// router (it never remounts on navigation). Compose highlights the New email action; a reader route
+// (/inbox/<threadId>) keeps Inbox lit; the list route reflects its ?folder= param.
+function deriveActive(
+  pathname: string,
+  params: URLSearchParams,
+): { folder: FolderKey | null; composeActive: boolean } {
+  if (pathname === COMPOSE_PATH) return { folder: null, composeActive: true };
+  if (pathname.startsWith("/inbox/")) return { folder: "inbox", composeActive: false };
+  return { folder: parseFolder(params.get("folder")), composeActive: false };
+}
 
 // Icon paths keyed by folder. Kept inline (small) so the rail stays a single file.
 const ICONS: Record<FolderKey, string> = {
@@ -31,30 +47,45 @@ function Icon({ d }: { d: string }): React.ReactNode {
   );
 }
 
+const NEW_EMAIL_BUTTON_CLASSES =
+  "mb-2 flex items-center justify-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground transition-transform active:scale-[0.96]";
+
 export function InboxFolderRail({
-  activeFolder,
   newEmailEnabled,
-  onNewEmail,
 }: {
-  activeFolder: FolderKey;
   newEmailEnabled: boolean;
-  onNewEmail: () => void;
 }): React.ReactNode {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const { folder: activeFolder, composeActive } = deriveActive(pathname, searchParams);
   const unreadCount = trpc.email.inbox.unreadCount.useQuery().data ?? 0;
   return (
-    <nav aria-label="Mail folders" className="flex w-52 shrink-0 flex-col gap-1 border-r p-3">
-      <button
-        type="button"
-        disabled={!newEmailEnabled}
-        onClick={onNewEmail}
-        title={newEmailEnabled ? "Compose a new email" : "Compose needs a connected mailbox"}
-        className={cn(
-          "mb-2 flex items-center justify-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground transition-transform active:scale-[0.96]",
-          !newEmailEnabled && "cursor-not-allowed opacity-60",
-        )}
-      >
-        <span aria-hidden="true">+</span> New email
-      </button>
+    <nav aria-label="Mail folders" className="flex w-60 shrink-0 flex-col gap-1 border-r p-3">
+      {/* A disabled Link has no real-world meaning (it would still be clickable), so the
+          no-mailbox state renders a genuinely inert disabled button instead of a navigable
+          link; only the enabled state navigates to the full-pane compose route. */}
+      {newEmailEnabled ? (
+        <Link
+          href="/inbox/compose"
+          title="Compose a new email"
+          aria-current={composeActive ? "page" : undefined}
+          className={cn(
+            NEW_EMAIL_BUTTON_CLASSES,
+            composeActive && "ring-2 ring-ring ring-offset-1",
+          )}
+        >
+          <span aria-hidden="true">+</span> {STRINGS.inbox.composeTitle}
+        </Link>
+      ) : (
+        <button
+          type="button"
+          disabled
+          title="Compose needs a connected mailbox"
+          className={cn(NEW_EMAIL_BUTTON_CLASSES, "cursor-not-allowed opacity-60")}
+        >
+          <span aria-hidden="true">+</span> {STRINGS.inbox.composeTitle}
+        </button>
+      )}
 
       {FOLDER_KEYS.map((key) => (
         <Link

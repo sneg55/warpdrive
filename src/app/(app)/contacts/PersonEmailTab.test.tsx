@@ -15,6 +15,7 @@ interface ForContactState {
 const forContactData = vi.fn<() => ForContactState>();
 vi.mock("@/lib/trpc-client", () => ({
   trpc: {
+    mailLabels: { list: { useQuery: () => ({ data: [] }) } },
     email: {
       forContact: { useQuery: () => forContactData() },
       inbox: {

@@ -1,0 +1,1 @@
+ALTER TABLE "email_drafts" ADD COLUMN "visibility" "email_visibility" DEFAULT 'shared' NOT NULL;

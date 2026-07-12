@@ -6,6 +6,7 @@ import type { GmailClient } from "./gmailClient";
 import type { SendPayload } from "./outboxClaim";
 import type { SendEmailInput } from "./send";
 import { storeOutboundCopy } from "./sendStore";
+import { hydrateOwner } from "./syncCursor";
 import { backfillTokens } from "./tracking";
 
 interface ReplayRepairArgs {
@@ -31,11 +32,18 @@ export async function ensureLocalCopyForReplay(
 ): Promise<Result<{ messageId?: string }, AppError>> {
   const row = (
     await db.execute(sql`
-      SELECT gmail_message_id, idempotency_key, payload
-      FROM email_send_attempts WHERE id=${args.attemptId}
+      SELECT s.gmail_message_id, s.idempotency_key, s.payload, a.user_id AS user_id
+      FROM email_send_attempts s
+      JOIN email_accounts a ON a.id = s.account_id
+      WHERE s.id=${args.attemptId}
     `)
   ).rows[0] as
-    | { gmail_message_id: string | null; idempotency_key: string; payload: SendPayload }
+    | {
+        gmail_message_id: string | null;
+        idempotency_key: string;
+        payload: SendPayload;
+        user_id: string;
+      }
     | undefined;
   // No gmail id means nothing reached Gmail; there is no accepted send to reconcile against.
   if (row === undefined || row.gmail_message_id === null) {
@@ -69,6 +77,21 @@ export async function ensureLocalCopyForReplay(
     subject: payload.subject,
     bodyHtml: payload.html,
   };
+
+  // Restore the composer's explicit deal/person link from the stored payload, mirroring
+  // performWorkerSendCrm (workerSendCrm.ts): the explicit id is re-verified for visibility
+  // downstream (canSeeLinkedPerson/canSeeLinkedDeal in sendStore.ts), never trusted blindly.
+  // A hydration failure must not lose the CRM copy, so fall back to an unlinked store.
+  const owner = await hydrateOwner(db, row.user_id, args.signal);
+  const link = owner.ok
+    ? {
+        owner: owner.value,
+        recipients: [...payload.to, ...(payload.cc ?? []), ...(payload.bcc ?? [])],
+        explicitPersonId: payload.linkPersonId ?? null,
+        explicitDealId: payload.linkDealId ?? null,
+      }
+    : undefined;
+
   const stored = await storeOutboundCopy(db, {
     accountId: args.accountId,
     fromEmail: args.fromEmail,
@@ -77,6 +100,10 @@ export async function ensureLocalCopyForReplay(
     resolvedTrackingEnabled,
     bodyHtml: payload.html,
     gmail: args.gmail,
+    link,
+    // Restore the composer's privacy pick from the stored payload so a repaired thread keeps the
+    // author's chosen visibility instead of falling back to the default (matches linkDealId repair).
+    visibility: payload.visibility ?? null,
     signal: args.signal,
   });
   if (!stored.ok) return stored;

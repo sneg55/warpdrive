@@ -2,13 +2,12 @@
 
 import { useState } from "react";
 import { Select, type SelectOption } from "@/components/ui/Select";
-import { MAIL_FOLLOW_UP_STATUS, MAIL_LABELS } from "@/constants/email";
+import { MAIL_FOLLOW_UP_STATUS } from "@/constants/email";
 import { STRINGS } from "@/constants/strings";
-import { cn } from "@/lib/utils";
 import { readCsrfToken } from "@/utils/csrfCookie";
+import { MailLabelPicker } from "./MailLabelPicker";
+import { ThreadLabelChips } from "./ThreadLabelChips";
 import { setFollowUpStatusAction, setThreadLabelsAction } from "./threadAttributesActions";
-
-type MailLabel = (typeof MAIL_LABELS)[number];
 
 interface ThreadFollowUpControlsProps {
   threadId: string;
@@ -25,11 +24,10 @@ const STATUS_OPTIONS: SelectOption[] = MAIL_FOLLOW_UP_STATUS.map((s) => ({
   label: STRINGS.inbox.followUpStatusNames[s],
 }));
 
-const LABEL_VALUES = MAIL_LABELS;
-
-// Reader follow-up controls (B1): a status Select plus toggleable label chips, both
-// persisted via owner-scoped server actions. Split out of ThreadPane to keep that file
-// under the line-count target.
+// Reader follow-up controls (B1): a status Select plus the mail-label catalog picker (U6). Applied
+// labels render as chips; the picker adds/removes them (searchable, inline "+ Add label"). Both
+// persist via owner-scoped server actions. Split out of ThreadPane to keep that file under the
+// line-count target.
 export function ThreadFollowUpControls({
   threadId,
   followUpStatus,
@@ -48,8 +46,7 @@ export function ThreadFollowUpControls({
     onChanged();
   }
 
-  async function handleToggleLabel(label: MailLabel): Promise<void> {
-    const next = labels.includes(label) ? labels.filter((l) => l !== label) : [...labels, label];
+  async function handleLabelsChange(next: string[]): Promise<void> {
     const res = await setThreadLabelsAction(readCsrfToken(), { threadId, labels: next });
     if (!res.ok) {
       setError(STRINGS.inbox.errorSetLabels);
@@ -69,26 +66,9 @@ export function ThreadFollowUpControls({
           options={STATUS_OPTIONS}
         />
       </div>
-      <div className="flex gap-1">
-        {LABEL_VALUES.map((label) => {
-          const active = labels.includes(label);
-          return (
-            <button
-              key={label}
-              type="button"
-              aria-pressed={active}
-              onClick={() => void handleToggleLabel(label)}
-              className={cn(
-                "rounded-full border px-2 py-0.5 text-xs transition-transform active:scale-[0.96]",
-                active
-                  ? "border-primary bg-primary text-primary-foreground"
-                  : "border-border text-muted-foreground hover:bg-accent",
-              )}
-            >
-              {STRINGS.inbox.labelNames[label]}
-            </button>
-          );
-        })}
+      <div className="flex flex-wrap items-center gap-1">
+        <ThreadLabelChips labels={labels} />
+        <MailLabelPicker value={labels} onChange={(next) => void handleLabelsChange(next)} />
       </div>
       {error !== null && <p className="text-xs text-destructive">{error}</p>}
     </div>

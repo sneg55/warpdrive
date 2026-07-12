@@ -24,6 +24,7 @@ const forDealState = vi.fn<() => { isLoading: boolean; isError: boolean }>(() =>
 const invalidate = vi.fn();
 vi.mock("@/lib/trpc-client", () => ({
   trpc: {
+    mailLabels: { list: { useQuery: () => ({ data: [] }) } },
     email: {
       forDeal: { useQuery: () => ({ data: forDealData(), ...forDealState() }) },
       inbox: {

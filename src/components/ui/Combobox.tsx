@@ -21,6 +21,9 @@ interface ComboboxProps {
   options: ComboboxOption[];
   ariaLabel: string;
   placeholder?: string;
+  // Optional actions rendered below the option list (e.g. "Save as template" / "Manage templates").
+  // Receives a `close` callback so an action can dismiss the popover.
+  footer?: (close: () => void) => React.ReactNode;
 }
 
 // Searchable single-select with avatars (owner/assignee picker). Popover + cmdk.
@@ -30,6 +33,7 @@ export function Combobox({
   options,
   ariaLabel,
   placeholder = "Select",
+  footer,
 }: ComboboxProps): React.ReactNode {
   const [open, setOpen] = useState(false);
   const selected = options.find((o) => o.value === value);
@@ -85,6 +89,7 @@ export function Combobox({
             </CommandGroup>
           </CommandList>
         </Command>
+        {footer !== undefined && <div className="border-t p-1">{footer(() => setOpen(false))}</div>}
       </PopoverContent>
     </Popover>
   );

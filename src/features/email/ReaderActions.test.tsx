@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 beforeAll(() => {
@@ -53,6 +53,17 @@ describe("ReaderActions", () => {
     expect(screen.getByRole("button", { name: "Reply all" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Forward" })).toBeInTheDocument();
     expect(screen.queryByTestId("composer-stub")).not.toBeInTheDocument();
+  });
+
+  it("renders the reply affordance as a bordered footer card with the sender avatar (B10)", () => {
+    render(
+      <ReaderActions message={message} selfEmail="me@ex.com" accountId="acct-1" threadId="t1" />,
+    );
+    const footer = screen.getByTestId("reader-reply-footer");
+    // PD's reply affordance is a persistent bordered footer card, not a plain button row.
+    expect(footer).toHaveClass("border", "rounded-md");
+    // The sender's avatar (initials from the from-address) sits at the footer's left, PD-style.
+    expect(within(footer).getByRole("img", { name: "ann@acme.com" })).toBeInTheDocument();
   });
 
   it("clicking Reply opens the composer targeting only the sender, on the same thread", () => {

@@ -9,6 +9,12 @@ beforeAll(() => {
   Element.prototype.scrollIntoView = vi.fn();
   Element.prototype.hasPointerCapture = vi.fn(() => false);
   Element.prototype.releasePointerCapture = vi.fn();
+  // The insert-field menu is now a Popover + cmdk combobox; cmdk observes its list size.
+  global.ResizeObserver = class {
+    observe = vi.fn();
+    unobserve = vi.fn();
+    disconnect = vi.fn();
+  };
 });
 
 afterEach(() => {
@@ -111,7 +117,7 @@ describe("TemplatesSettingsClient", () => {
     render(<TemplatesSettingsClient templates={[]} canShare={true} />);
     await user.click(screen.getByRole("button", { name: "New template" }));
     await user.click(screen.getByRole("button", { name: "Insert field" }));
-    await user.click(screen.getByRole("menuitem", { name: "First name" }));
+    await user.click(screen.getByRole("option", { name: "First name" }));
     await waitFor(() =>
       expect(screen.getByTestId("inserted")).toHaveTextContent("{{person.first_name}}"),
     );

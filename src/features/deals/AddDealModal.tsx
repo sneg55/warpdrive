@@ -34,14 +34,22 @@ export interface AddDealModalProps {
   // Optional initial title (inbox sidebar seeds this from the thread subject). Locks title autofill.
   prefillTitle?: string;
   onClose: () => void;
-  // Receives the new deal id so a caller can auto-link (inbox sidebar); existing callers that pass a
-  // zero-arg refresh handler stay assignable (a function may ignore trailing parameters).
-  onCreated: (id: string) => void;
+  // Receives the new deal's id and (validated, post-trim) title so a caller can auto-link and
+  // display it without a second fetch (inbox sidebar, compose-time link sidebar); existing
+  // callers that pass a zero-arg refresh handler stay assignable (a function may ignore
+  // trailing parameters).
+  onCreated: (id: string, title: string) => void;
+  // Skip the "jump to /deals/:id after create" navigation even when the user's
+  // openDetailsAfterCreate.leadDeal preference is on. Defaults to false so every existing
+  // caller keeps navigating. Set true by callers whose surface would be abandoned by a
+  // full-page nav away, e.g. the inbox compose link sidebar (ComposeLinkSidebar): the deal
+  // link is only local state there until the email is sent, so navigating away loses it.
+  suppressDetailNav?: boolean;
 }
 
 export function AddDealModal(props: AddDealModalProps): React.ReactNode {
   const { pipelineId, pipelines, baseCurrency = "USD", stageId, prefillTitle } = props;
-  const { onClose, onCreated } = props;
+  const { onClose, onCreated, suppressDetailNav = false } = props;
   const router = useRouter();
   const { autoPrefixLeadDealTitles, openDetailsAfterCreate } = useInterfacePrefs();
   const firstStage = pipelines.find((p) => p.id === pipelineId)?.stages[0]?.id ?? "";
@@ -125,11 +133,15 @@ export function AddDealModal(props: AddDealModalProps): React.ReactNode {
         setError(`Could not create deal (${result.error.id})`);
         return;
       }
-      onCreated(result.deal.id);
+      onCreated(result.deal.id, parsed.input.title);
       onClose();
       // "Open details view after creating a new item" (personal preference): jump to the new deal
       // when the lead/deal flag is on. Otherwise the caller's onCreated handles the refresh.
-      if (openDetailsAfterCreate.leadDeal) router.push(`/deals/${result.deal.id}`);
+      // suppressDetailNav opts a caller out entirely (e.g. the inbox compose sidebar, where the
+      // deal link is unsent local state that a full-page nav would abandon).
+      if (openDetailsAfterCreate.leadDeal && !suppressDetailNav) {
+        router.push(`/deals/${result.deal.id}`);
+      }
     } finally {
       setPending(false);
     }

@@ -42,11 +42,78 @@ function afterCursor(cursor: InboxCursor | null): SQL {
   )`;
 }
 
-// Candidate set = threads the actor OWNS (mailbox owner) PLUS all shared threads. The shared ones
-// are narrowed afterwards by canSeeEmail; owner threads are always visible.
+// SQL narrowing for the U5 quick-filters (A12). ADDITIVE to the owner-scoping WHERE, never a
+// replacement: each fragment is AND-ed into the candidate scan. The linking tabs
+// (all/unmatched/needs_linking) are still decided post-query in matchesInboxFilter, so they return
+// the always-true fragment here. `a` (email_accounts) and `t` (email_threads) are in scope.
+// Exported so searchInbox applies the SAME narrowing (search results feed the same ThreadList as the
+// inbox, so the active quick-filter must narrow both), without duplicating the SQL (codex review).
+export function quickFilterPredicate(filter: InboxFilter): SQL {
+  switch (filter) {
+    case "shared":
+      return sql`t.visibility = 'shared'`;
+    case "private":
+      return sql`t.visibility = 'private'`;
+    // Tracked = the thread has at least one minted tracking token. A token reaches its thread via
+    // the delivered MESSAGE (backfillTokens sets token.message_id after send), NOT via the send
+    // attempt: a newly-composed send enqueues with attempt.thread_id=NULL (no local thread yet) and
+    // never backfills it, so joining on the attempt would miss the normal new-send case (codex P1).
+    case "tracked":
+      return sql`EXISTS (
+        SELECT 1 FROM email_tracking_tokens tk
+          JOIN email_messages tm ON tm.id = tk.message_id
+        WHERE tm.thread_id = t.id
+      )`;
+    // To: me = the mailbox owner's address is a direct recipient of some message. to_emails is a
+    // jsonb array of address strings; ::citext makes the comparison case-insensitive.
+    case "to_me":
+      return sql`EXISTS (
+        SELECT 1 FROM email_messages m
+        WHERE m.thread_id = t.id
+          AND EXISTS (
+            SELECT 1 FROM jsonb_array_elements_text(m.to_emails) AS rcpt(addr)
+            WHERE rcpt.addr::citext = a.email_address
+          )
+      )`;
+    // From an existing contact = some non-owner sender address matches a persons row (primary_email
+    // or one of the jsonb emails[].value). citext columns compare case-insensitively.
+    case "from_contact":
+      return sql`EXISTS (
+        SELECT 1 FROM email_messages m
+          JOIN persons pc ON pc.deleted_at IS NULL AND (
+            pc.primary_email = m.from_email
+            OR EXISTS (
+              SELECT 1 FROM jsonb_array_elements(pc.emails) AS pe
+              WHERE (pe->>'value')::citext = m.from_email
+            )
+          )
+        WHERE m.thread_id = t.id
+          AND m.from_email <> a.email_address
+      )`;
+    // Linked with an open deal = the linked deal is neither won nor lost (status = 'open') and not
+    // soft-deleted.
+    case "linked_open_deal":
+      return sql`EXISTS (
+        SELECT 1 FROM deals d
+        WHERE d.id = t.deal_id AND d.status = 'open' AND d.deleted_at IS NULL
+      )`;
+    // Linking tabs are decided post-query in matchesInboxFilter; no SQL narrowing here.
+    case "all":
+    case "unmatched":
+    case "needs_linking":
+      return sql`true`;
+  }
+}
+
+// Candidate set = threads in the actor's OWN mailbox only. The Inbox folder is personal (like Sent
+// and Archive, which are already owner-scoped): a colleague's shared thread is NOT injected into
+// another user's Inbox. Shared threads still reach co-workers on the linked deal/contact record via
+// listThreadsForDeal / listThreadsForContact (router forDeal/forContact). canSeeEmail still runs per
+// row below, but for an owned mailbox it is always satisfied by the owner branch.
 async function scanCandidates(
   db: Db,
   actorId: string,
+  filter: InboxFilter,
   cursor: InboxCursor | null,
   chunk: number,
 ): Promise<ThreadRow[]> {
@@ -91,13 +158,13 @@ async function scanCandidates(
           ORDER BY m.sent_at DESC NULLS LAST, m.created_at DESC
           LIMIT 1
         ) co ON true
-      WHERE (a.user_id = ${actorId} OR t.visibility = 'shared')
-        -- archived_at is a per-OWNER local flag: it hides a thread from the owner's Inbox only,
-        -- never from a co-viewer of a shared thread (who has no owner Archive folder to recover it).
-        AND (a.user_id <> ${actorId} OR t.archived_at IS NULL)
-        -- trashed_at (P4) is a real Gmail-Trash move: the thread is gone for everyone, so exclude it
-        -- unconditionally (unlike the per-owner archive flag).
+      WHERE a.user_id = ${actorId}
+        -- archived_at hides a thread from its owner's Inbox (the Archive folder shows it instead).
+        AND t.archived_at IS NULL
+        -- trashed_at (P4) is a real Gmail-Trash move: exclude it unconditionally.
         AND t.trashed_at IS NULL
+        -- U5 quick-filter narrowing (true for the linking tabs), ADDITIVE to the owner scope above.
+        AND ${quickFilterPredicate(filter)}
         AND ${afterCursor(cursor)}
       ORDER BY t.last_message_at DESC NULLS LAST, t.id DESC
       LIMIT ${chunk}
@@ -130,7 +197,7 @@ export async function listInbox(
   let consumedEveryScannedRow = true;
 
   while (threads.length < limit && !exhausted) {
-    const rows = await scanCandidates(db, args.actor.id, cursor, INBOX_SCAN_CHUNK);
+    const rows = await scanCandidates(db, args.actor.id, args.filter, cursor, INBOX_SCAN_CHUNK);
     signal.throwIfAborted();
     // A short chunk means the candidate set is finished; a full one may have more behind it.
     exhausted = rows.length < INBOX_SCAN_CHUNK;

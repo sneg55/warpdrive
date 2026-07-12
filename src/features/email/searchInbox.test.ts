@@ -175,6 +175,46 @@ describe("searchInbox", () => {
     });
   });
 
+  // Regression (codex review, P2 quick-filters): when the search box is active, ThreadList shows
+  // email.search results, so the active quick-filter must narrow the SAME way it narrows the inbox
+  // feed. searchInbox reuses quickFilterPredicate, so filter="private" must drop a shared match even
+  // when its subject/body matches the query.
+  it("filter=private excludes a shared thread that matches the query", async () => {
+    await withTestDb(async (db) => {
+      const owner = await seedUser(db, { email: "o@gunsnation.com" });
+      const acctId = await seedAccount(db, owner.id);
+      const sharedT = await seedThread(db, acctId, "t1", "Budget shared", "shared");
+      await seedMessage(db, sharedT, acctId, "m1", "alice@x.com", "budget shared");
+      const privateT = await seedThread(db, acctId, "t2", "Budget private", "private");
+      await seedMessage(db, privateT, acctId, "m2", "bob@x.com", "budget private");
+
+      const results = await searchInbox(
+        db,
+        { actor: actorOf(owner.id), q: "budget", filter: "private" },
+        SIG(),
+      );
+      expect(results.map((t) => t.subject)).toEqual(["Budget private"]);
+    });
+  });
+
+  it("filter=shared excludes a private thread that matches the query", async () => {
+    await withTestDb(async (db) => {
+      const owner = await seedUser(db, { email: "o@gunsnation.com" });
+      const acctId = await seedAccount(db, owner.id);
+      const sharedT = await seedThread(db, acctId, "t1", "Budget shared", "shared");
+      await seedMessage(db, sharedT, acctId, "m1", "alice@x.com", "budget shared");
+      const privateT = await seedThread(db, acctId, "t2", "Budget private", "private");
+      await seedMessage(db, privateT, acctId, "m2", "bob@x.com", "budget private");
+
+      const results = await searchInbox(
+        db,
+        { actor: actorOf(owner.id), q: "budget", filter: "shared" },
+        SIG(),
+      );
+      expect(results.map((t) => t.subject)).toEqual(["Budget shared"]);
+    });
+  });
+
   it("projects unread=false once the owner has read the thread", async () => {
     await withTestDb(async (db) => {
       const owner = await seedUser(db, { email: "o@gunsnation.com" });

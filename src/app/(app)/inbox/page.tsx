@@ -1,13 +1,13 @@
 import { redirect } from "next/navigation";
 import { STRINGS } from "@/constants/strings";
-import { db } from "@/db/client";
 import { parseFolder } from "@/features/email/inboxFolders";
-import { getActorMailbox } from "@/features/email/mailboxOwnership";
 import { createContext } from "@/server/trpc/context";
 import { InboxListClient } from "./InboxListClient";
 
 export const metadata = { title: STRINGS.inbox.title };
 
+// Mailbox presence (for the rail's New email button) is read once in the shared inbox layout, not
+// here, so this route only resolves the active folder for the conversation column.
 export default async function InboxPage({
   searchParams,
 }: {
@@ -19,6 +19,5 @@ export default async function InboxPage({
   }
   const sp = await searchParams;
   const folder = parseFolder(typeof sp.folder === "string" ? sp.folder : undefined);
-  const mailbox = await getActorMailbox(db, ctx.actor.id, AbortSignal.timeout(8000));
-  return <InboxListClient selfActorId={ctx.actor.id} folder={folder} mailbox={mailbox} />;
+  return <InboxListClient selfActorId={ctx.actor.id} folder={folder} />;
 }

@@ -1,7 +1,7 @@
 "use server";
 
 import { z } from "zod";
-import { MAIL_FOLLOW_UP_STATUS, MAIL_LABELS } from "@/constants/email";
+import { MAIL_FOLLOW_UP_STATUS } from "@/constants/email";
 import { AppError, ERROR_IDS } from "@/constants/errorIds";
 import { db } from "@/db/client";
 import { guardCsrf } from "@/features/identity/actions/shared";
@@ -18,9 +18,11 @@ const followUpStatusInput = z.object({
 
 const threadLabelsInput = z.object({
   threadId: z.string().uuid(),
-  // Dedupe so repeated picks (e.g. a double-click race) persist the label once instead of
-  // storing the same value multiple times in the labels array.
-  labels: z.array(z.enum(MAIL_LABELS)).transform((labels) => Array.from(new Set(labels))),
+  // Mail-label catalog keys (U6): built-in tokens or custom slugs, not a fixed enum. Dedupe so
+  // repeated picks (e.g. a double-click race) persist the label once instead of storing it twice.
+  labels: z
+    .array(z.string().trim().min(1).max(120))
+    .transform((labels: string[]) => Array.from(new Set(labels))),
 });
 
 async function actor(csrfToken: string | null): Promise<Result<AuthUser, AppError>> {

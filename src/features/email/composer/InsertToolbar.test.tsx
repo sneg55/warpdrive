@@ -6,16 +6,22 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
-// Radix Select (branded dropdown) needs these jsdom polyfills.
+// The Combobox (Popover + cmdk) needs these jsdom polyfills.
 beforeAll(() => {
   Element.prototype.scrollIntoView = vi.fn();
   Element.prototype.hasPointerCapture = vi.fn(() => false);
   Element.prototype.releasePointerCapture = vi.fn();
+  // cmdk observes its list size; jsdom has no ResizeObserver.
+  global.ResizeObserver = class {
+    observe = vi.fn();
+    unobserve = vi.fn();
+    disconnect = vi.fn();
+  };
 });
 
 afterEach(cleanup);
 
-// Opens the branded Select by its trigger label, then clicks the option by its text.
+// Opens the template combobox by its trigger label, then clicks the option by its text.
 function pickTemplate(optionText: string): void {
   fireEvent.click(screen.getByLabelText(/choose template/i));
   fireEvent.click(screen.getByRole("option", { name: optionText }));
@@ -51,6 +57,13 @@ vi.mock("@/lib/trpc-client", () => ({
   },
 }));
 
+// SaveAsTemplateDialog pulls in trpc.useUtils + the ActionError context; stub it to a marker that
+// only appears while `open`, so the footer's "Save draft as a template" action is observable.
+vi.mock("./SaveAsTemplateDialog", () => ({
+  SaveAsTemplateDialog: (props: { open?: boolean }) =>
+    props.open === true ? <div data-testid="save-template-dialog" /> : null,
+}));
+
 import { InsertToolbar } from "./InsertToolbar";
 import type { InsertFieldContext } from "./insertFields";
 
@@ -69,10 +82,40 @@ describe("InsertToolbar - Choose template", () => {
     render(<InsertToolbar onSubjectChange={vi.fn()} onBodyChange={vi.fn()} />);
     const trigger = screen.getByLabelText(/choose template/i);
     expect(trigger).toBeInTheDocument();
-    // The branded Select only mounts its option list once opened.
+    // The combobox only mounts its option list once opened.
     fireEvent.click(trigger);
     expect(screen.getByRole("option", { name: /welcome/i })).toBeInTheDocument();
     expect(screen.getByRole("option", { name: /follow up/i })).toBeInTheDocument();
+  });
+
+  it("offers Save draft as a template + Manage templates in the dropdown footer (PD parity)", async () => {
+    const user = userEvent.setup();
+    getTemplateMock.mockReturnValue({ data: undefined });
+    render(
+      <InsertToolbar
+        onSubjectChange={vi.fn()}
+        onBodyChange={vi.fn()}
+        subject="Hi"
+        bodyHtml="<p>x</p>"
+      />,
+    );
+    await user.click(screen.getByLabelText(/choose template/i));
+    expect(screen.getByRole("link", { name: /manage templates/i })).toHaveAttribute(
+      "href",
+      "/settings/email",
+    );
+    // Clicking "Save draft as a template" opens the (stubbed) save dialog.
+    await user.click(screen.getByRole("button", { name: /save draft as a template/i }));
+    expect(screen.getByTestId("save-template-dialog")).toBeInTheDocument();
+  });
+
+  it("filters templates by the combobox search box (PD parity)", () => {
+    getTemplateMock.mockReturnValue({ data: undefined });
+    render(<InsertToolbar onSubjectChange={vi.fn()} onBodyChange={vi.fn()} />);
+    fireEvent.click(screen.getByLabelText(/choose template/i));
+    fireEvent.change(screen.getByPlaceholderText(/search/i), { target: { value: "follow" } });
+    expect(screen.getByRole("option", { name: /follow up/i })).toBeInTheDocument();
+    expect(screen.queryByRole("option", { name: /welcome/i })).toBeNull();
   });
 
   it("calls onSubjectChange and onBodyChange when a template is selected and data loads", async () => {
@@ -168,17 +211,50 @@ describe("InsertToolbar - Insert field", () => {
     expect(screen.getByRole("button", { name: /insert field/i })).toBeInTheDocument();
   });
 
-  it("does not render Insert field button for inbox context", () => {
+  // Task 2 (inbox compose parity): the inbox composer used to get an empty item list here
+  // ([] from insertFields for kind:"inbox", same for undefined context) so InsertFieldMenu
+  // rendered nothing. It now offers the merge-token catalog as literal {{token}} placeholders
+  // (mirrors TemplateDraftEditor.tsx), so this scenario flips from "not rendered" to "rendered".
+  it("renders Insert field with the merge-token catalog for inbox context", async () => {
     getTemplateMock.mockReturnValue({ data: undefined });
+    const user = userEvent.setup();
+    const onInsert = vi.fn();
     render(
       <InsertToolbar
         onSubjectChange={vi.fn()}
         onBodyChange={vi.fn()}
         context={{ kind: "inbox" }}
-        onInsertField={vi.fn()}
+        onInsertField={onInsert}
       />,
     );
-    expect(screen.queryByRole("button", { name: /insert field/i })).not.toBeInTheDocument();
+
+    const trigger = screen.getByRole("button", { name: /insert field/i });
+    await user.click(trigger);
+
+    const firstNameOption = await screen.findByRole("option", { name: /first name/i });
+    await user.click(firstNameOption);
+
+    expect(onInsert).toHaveBeenCalledWith("{{person.first_name}}");
+  });
+
+  // No context prop at all is how the inbox compose route (/inbox/compose) renders
+  // InsertToolbar today: Composer receives no `context` prop, so it passes `undefined`
+  // through. Same merge-token catalog must appear as for explicit kind:"inbox".
+  it("renders Insert field with the merge-token catalog when no context is provided", async () => {
+    getTemplateMock.mockReturnValue({ data: undefined });
+    const user = userEvent.setup();
+    const onInsert = vi.fn();
+    render(
+      <InsertToolbar onSubjectChange={vi.fn()} onBodyChange={vi.fn()} onInsertField={onInsert} />,
+    );
+
+    const trigger = screen.getByRole("button", { name: /insert field/i });
+    await user.click(trigger);
+
+    const firstNameOption = await screen.findByRole("option", { name: /first name/i });
+    await user.click(firstNameOption);
+
+    expect(onInsert).toHaveBeenCalledWith("{{person.first_name}}");
   });
 
   it("calls onInsertField with the field value when a field is chosen", async () => {
@@ -198,7 +274,7 @@ describe("InsertToolbar - Insert field", () => {
     await user.click(screen.getByRole("button", { name: /insert field/i }));
 
     // The menu items should appear; click "Deal title"
-    const dealTitleOption = await screen.findByRole("menuitem", { name: /deal title/i });
+    const dealTitleOption = await screen.findByRole("option", { name: /deal title/i });
     await user.click(dealTitleOption);
 
     expect(onInsert).toHaveBeenCalledWith("Acme Deal");

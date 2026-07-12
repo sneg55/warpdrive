@@ -1,8 +1,9 @@
 import { sql } from "drizzle-orm";
 import type { Db } from "@/db/client";
 import type { AuthUser } from "@/features/permissions/types";
-import { type InboxThread, toInboxThread } from "./emailReads";
+import { type InboxFilter, type InboxThread, toInboxThread } from "./emailReads";
 import { canSeeEmail } from "./emailVisibility";
+import { quickFilterPredicate } from "./inboxList";
 
 interface SearchThreadRow {
   id: string;
@@ -22,17 +23,19 @@ interface SearchThreadRow {
 // In-mail search over the actor's visible threads: matches subject, any message's
 // body_text/snippet, or a message's from_email/from_name (case-insensitive substring).
 // from_name is searched too: the sender's display name lives there (from_email is the bare
-// address), so a name query must match it. Candidate
-// set mirrors listInbox (owned OR shared visibility) so the query stays index-friendly;
-// each candidate is then re-checked with canSeeEmail so a shared thread linked to a
-// deal/person the actor can no longer see never leaks into results.
+// address), so a name query must match it. Candidate set mirrors listInbox: the Inbox is personal,
+// so search is scoped to the actor's OWN mailbox (owner-only). canSeeEmail still re-checks each row.
 export async function searchInbox(
   db: Db,
-  args: { actor: AuthUser; q: string },
+  // `filter` is the active quick-filter. Optional so existing callers default to no narrowing;
+  // the router validates and defaults it to "all". The linking tabs (all/unmatched/needs_linking)
+  // map to the always-true predicate, so they leave search results unnarrowed here.
+  args: { actor: AuthUser; q: string; filter?: InboxFilter },
   signal: AbortSignal,
 ): Promise<InboxThread[]> {
   signal.throwIfAborted();
   const like = `%${args.q.trim()}%`;
+  const filter: InboxFilter = args.filter ?? "all";
   const rows = (
     await db.execute(sql`
       SELECT t.id, t.subject, t.last_message_at, t.person_id, t.deal_id, t.visibility,
@@ -49,7 +52,10 @@ export async function searchInbox(
       JOIN email_accounts a ON a.id = t.account_id
       LEFT JOIN email_thread_reads r ON r.thread_id = t.id AND r.user_id = ${args.actor.id}
       WHERE t.trashed_at IS NULL
-        AND (a.user_id = ${args.actor.id} OR t.visibility = 'shared')
+        AND a.user_id = ${args.actor.id}
+        -- Same quick-filter narrowing as listInbox (true for the linking tabs), so search results
+        -- honor the active quick-filter instead of showing rows it excludes (codex review).
+        AND ${quickFilterPredicate(filter)}
         AND (
           t.subject ILIKE ${like}
           OR EXISTS (

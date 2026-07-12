@@ -49,6 +49,29 @@ it("a fresh thread is unread; marking read clears it; marking unread restores it
   expect(await inboxUnreadCount(ctx.db, { actor }, SIG())).toBe(1);
 });
 
+it("does not count another user's shared thread in the actor's unread badge (Inbox is personal)", async () => {
+  // The unread badge must match the personal Inbox list: a colleague's shared thread, even one the
+  // actor could open via the linked record, is NOT part of the actor's own mailbox count.
+  const owner = await seedUser(ctx.db, { email: "ub-owner@ex.com" });
+  const viewer = await seedUser(ctx.db, { email: "ub-viewer@ex.com" });
+  // viewer has their own (empty) mailbox, so any count must come from their own threads only.
+  await ctx.db.execute(sql`INSERT INTO email_accounts (user_id, email_address, status)
+    VALUES (${viewer.id}, 'ub-viewer-box@ex.com', 'connected')`);
+  const acct = (
+    await ctx.db.execute(sql`INSERT INTO email_accounts (user_id, email_address, status)
+      VALUES (${owner.id}, 'ub-owner-box@ex.com', 'connected') RETURNING id`)
+  ).rows[0] as { id: string };
+  const person = (
+    await ctx.db.execute(sql`INSERT INTO persons (name, primary_email, owner_id, visibility_level)
+      VALUES ('Pub', 'pub@ex.com', ${owner.id}, 'all') RETURNING id`)
+  ).rows[0] as { id: string };
+  // Owner's shared, unread thread linked to a person the viewer can see.
+  await ctx.db.execute(sql`INSERT INTO email_threads (gmail_thread_id, account_id, subject, visibility, person_id, last_message_at)
+    VALUES ('gshared', ${acct.id}, 'Shared', 'shared', ${person.id}, now())`);
+
+  expect(await inboxUnreadCount(ctx.db, { actor: actorOf(viewer.id) }, SIG())).toBe(0);
+});
+
 it("marking an invisible thread read is 404-on-invisible", async () => {
   const owner = await seedUser(ctx.db, { email: "o2@ex.com" });
   const stranger = await seedUser(ctx.db, { email: "s2@ex.com" });

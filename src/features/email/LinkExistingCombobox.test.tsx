@@ -45,7 +45,7 @@ describe("LinkExistingCombobox", () => {
     expect(screen.queryByText("Acme Inc")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByText("Jane Doe"));
-    expect(onPick).toHaveBeenCalledWith("p1");
+    expect(onPick).toHaveBeenCalledWith("p1", "Jane Doe");
   });
 
   it("shows only deal results and emits the picked deal id", async () => {
@@ -59,6 +59,6 @@ describe("LinkExistingCombobox", () => {
     expect(screen.queryByText("Jane Doe")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByText("Big Deal"));
-    expect(onPick).toHaveBeenCalledWith("d1");
+    expect(onPick).toHaveBeenCalledWith("d1", "Big Deal");
   });
 });

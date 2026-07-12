@@ -72,9 +72,9 @@ export function GlobalAddMenu(): React.ReactNode {
     (entry: Entry): void => {
       if (isDisabled(entry)) return;
       setOpen(false);
-      // Email has no entity-less create modal: route to the standalone inbox compose surface.
+      // Email has no entity-less create modal: route to the full-pane inbox compose surface.
       if (entry.key === "email") {
-        router.push("/inbox?compose=1");
+        router.push("/inbox/compose");
         return;
       }
       setModal(entry.key as ModalKind);

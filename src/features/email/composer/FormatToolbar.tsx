@@ -12,6 +12,7 @@
 // schemes: http, https, and data:image/ (inline images).
 import type { Editor } from "@tiptap/react";
 import {
+  ALargeSmall,
   Bold,
   Image as ImageIcon,
   Indent,
@@ -25,6 +26,7 @@ import {
   Redo2,
   RemoveFormatting,
   Strikethrough,
+  Type,
   Underline,
   Undo2,
 } from "lucide-react";
@@ -32,6 +34,12 @@ import { useState } from "react";
 import { Select, type SelectOption } from "@/components/ui/Select";
 
 const DEFAULT_FONT_LABEL = "Default";
+
+// PD-style compact trigger classes for the font-family/size Selects: no border/bg, icon-width
+// instead of the branded Select's default full-width bordered look, matching ToolButton's h-7
+// footprint so the two controls sit flush with the icon-only buttons on either side.
+const COMPACT_TRIGGER_CLASSNAME =
+  "h-7 w-auto justify-start gap-0.5 rounded-md border-0 bg-transparent px-1.5 py-0 text-muted-foreground hover:bg-accent hover:text-accent-foreground";
 
 // Named constants so option lists are not inline magic arrays.
 const FONT_FAMILY_OPTIONS: SelectOption[] = [
@@ -183,26 +191,27 @@ export function FormatToolbar({ editor }: FormatToolbarProps): React.ReactNode {
       <ToolButton label="Redo" icon={Redo2} onClick={handleRedo} />
       <Divider />
 
-      {/* Group: font family + size + color. The Select primitive is w-full internally, so
-          each is wrapped in a fixed-width box to keep the toolbar row compact. */}
-      <div className="w-32">
-        <Select
-          ariaLabel="Font family"
-          value={fontFamily}
-          onChange={handleFontFamily}
-          placeholder={DEFAULT_FONT_LABEL}
-          options={FONT_FAMILY_OPTIONS}
-        />
-      </div>
-      <div className="w-20">
-        <Select
-          ariaLabel="Font size"
-          value={fontSize}
-          onChange={handleFontSize}
-          placeholder={DEFAULT_FONT_LABEL}
-          options={FONT_SIZE_OPTIONS}
-        />
-      </div>
+      {/* Group: font family + size. PD-style compact triggers: a static glyph + caret
+          (never the selected option's label), so these stay icon-width like the ToolButtons
+          instead of the old wide "Default ▾" comboboxes. */}
+      <Select
+        ariaLabel="Font family"
+        triggerTitle="Font family"
+        triggerContent={<Type className="h-4 w-4" />}
+        triggerClassName={COMPACT_TRIGGER_CLASSNAME}
+        value={fontFamily}
+        onChange={handleFontFamily}
+        options={FONT_FAMILY_OPTIONS}
+      />
+      <Select
+        ariaLabel="Font size"
+        triggerTitle="Font size"
+        triggerContent={<ALargeSmall className="h-4 w-4" />}
+        triggerClassName={COMPACT_TRIGGER_CLASSNAME}
+        value={fontSize}
+        onChange={handleFontSize}
+        options={FONT_SIZE_OPTIONS}
+      />
       <label className="flex items-center gap-0.5 text-xs text-muted-foreground">
         <span className="sr-only">Text color</span>
         <input

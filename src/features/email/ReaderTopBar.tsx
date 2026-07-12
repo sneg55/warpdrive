@@ -132,43 +132,45 @@ export function ReaderTopBar({
         </div>
       )}
 
+      {/* B3: PD groups the reader actions top-left, adjacent to Back + pager, rather than pushing
+          Archive/Delete to the far right. Archive + Delete share one action group. */}
       {canManage && (
-        <button
-          type="button"
-          disabled={busy}
-          onClick={() => void archive()}
-          className="ml-auto rounded-md border border-border px-3 py-1 text-sm transition-transform hover:bg-accent active:scale-[0.96] disabled:opacity-50"
-        >
-          {STRINGS.inbox.archive}
-        </button>
-      )}
-
-      {canManage && (
-        <AlertDialog>
-          <AlertDialogTrigger
+        <div data-reader-actions-group className="flex items-center gap-1">
+          <button
+            type="button"
             disabled={busy}
-            className="rounded-md border border-border px-3 py-1 text-sm text-destructive transition-transform hover:bg-destructive/10 active:scale-[0.96] disabled:opacity-50"
+            onClick={() => void archive()}
+            className="rounded-md border border-border px-3 py-1 text-sm transition-transform hover:bg-accent active:scale-[0.96] disabled:opacity-50"
           >
-            {STRINGS.inbox.delete}
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>{STRINGS.inbox.deleteConfirmTitle}</AlertDialogTitle>
-              <AlertDialogDescription>{STRINGS.inbox.deleteConfirmBody}</AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel className="rounded-md border border-border px-3 py-1.5 text-sm transition-transform hover:bg-accent active:scale-[0.96]">
-                {STRINGS.inbox.deleteCancel}
-              </AlertDialogCancel>
-              <AlertDialogAction
-                onClick={() => void del()}
-                className="rounded-md bg-destructive px-3 py-1.5 text-sm font-medium text-destructive-foreground transition-transform hover:bg-destructive/90 active:scale-[0.96]"
-              >
-                {STRINGS.inbox.deleteConfirmAction}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+            {STRINGS.inbox.archive}
+          </button>
+
+          <AlertDialog>
+            <AlertDialogTrigger
+              disabled={busy}
+              className="rounded-md border border-border px-3 py-1 text-sm text-destructive transition-transform hover:bg-destructive/10 active:scale-[0.96] disabled:opacity-50"
+            >
+              {STRINGS.inbox.delete}
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>{STRINGS.inbox.deleteConfirmTitle}</AlertDialogTitle>
+                <AlertDialogDescription>{STRINGS.inbox.deleteConfirmBody}</AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel className="rounded-md border border-border px-3 py-1.5 text-sm transition-transform hover:bg-accent active:scale-[0.96]">
+                  {STRINGS.inbox.deleteCancel}
+                </AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => void del()}
+                  className="rounded-md bg-destructive px-3 py-1.5 text-sm font-medium text-destructive-foreground transition-transform hover:bg-destructive/90 active:scale-[0.96]"
+                >
+                  {STRINGS.inbox.deleteConfirmAction}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
       )}
     </div>
   );

@@ -164,3 +164,60 @@ describe("RichTextBody – sanitise on the way out", () => {
     expect(lastCall).not.toContain("onerror");
   });
 });
+
+describe("RichTextBody – toolbar placement", () => {
+  it("places the format toolbar below the editor body (PD parity)", async () => {
+    const { RichTextBody } = await import("./RichTextBody");
+    render(<RichTextBody html="<p>x</p>" onChange={vi.fn()} />);
+    await waitFor(() => {
+      expect(document.querySelector("[contenteditable]")).toBeInTheDocument();
+    });
+    const editor = document.querySelector("[contenteditable]");
+    const toolbar = document.querySelector('[role="toolbar"]');
+    expect(toolbar).not.toBeNull();
+    // The toolbar must come AFTER the editor content in the document (PD docks it below the body).
+    expect(
+      editor && toolbar
+        ? editor.compareDocumentPosition(toolbar) & Node.DOCUMENT_POSITION_FOLLOWING
+        : 0,
+    ).toBeTruthy();
+  });
+});
+
+describe("RichTextBody – editor frame", () => {
+  it("applies frameClassName to the editor frame wrapper (email composer card)", async () => {
+    const { RichTextBody } = await import("./RichTextBody");
+    const { container } = render(
+      <RichTextBody html="" onChange={vi.fn()} frameClassName="rounded-md border bg-background" />,
+    );
+    await waitFor(() => {
+      expect(document.querySelector("[contenteditable]")).toBeInTheDocument();
+    });
+    // The email composer frames the editor as a white rounded card (PD parity); the wrapper
+    // carries the passed classes instead of the default bottom-border-only style.
+    expect(container.querySelector("div.rounded-md.border.bg-background")).not.toBeNull();
+  });
+
+  it("makes the editor fill available height when grow is set (full-pane composer)", async () => {
+    const { RichTextBody } = await import("./RichTextBody");
+    const { container } = render(<RichTextBody html="" onChange={vi.fn()} grow />);
+    await waitFor(() => {
+      expect(document.querySelector("[contenteditable]")).toBeInTheDocument();
+    });
+    // The full-pane email composer must stretch the editor so the card fills the viewport
+    // height instead of floating as a short box over dead space. The frame becomes a flex-1
+    // column and the content scrolls internally.
+    const frame = container.querySelector("div.flex-1.min-h-0");
+    expect(frame).not.toBeNull();
+    expect(container.querySelector("div.flex-1.min-h-0 .overflow-y-auto")).not.toBeNull();
+  });
+
+  it("does not stretch the editor by default (settings/activity note keep intrinsic height)", async () => {
+    const { RichTextBody } = await import("./RichTextBody");
+    const { container } = render(<RichTextBody html="" onChange={vi.fn()} />);
+    await waitFor(() => {
+      expect(document.querySelector("[contenteditable]")).toBeInTheDocument();
+    });
+    expect(container.querySelector("div.flex-1")).toBeNull();
+  });
+});

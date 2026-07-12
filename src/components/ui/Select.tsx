@@ -23,6 +23,16 @@ interface SelectProps {
   // Override/extend the trigger classes (twMerge dedupes), e.g. to drop the border and bg when
   // the select is composed inside a larger segmented control.
   triggerClassName?: string;
+  // Custom content to show in the trigger instead of the selected option's label (e.g. a
+  // static icon for a compact icon-only trigger). Radix's SelectValue portals the selected
+  // item's label into the trigger only when it has no children of its own, so passing
+  // children here switches the trigger to always showing this content regardless of
+  // selection. Omitting it (the default for all existing callers) keeps the label portal,
+  // so behavior is unchanged.
+  triggerContent?: React.ReactNode;
+  // Native hover tooltip on the trigger, for icon-only triggers that need a title alongside
+  // ariaLabel (mirrors the title on other icon-only controls). Omitted by default.
+  triggerTitle?: string;
 }
 
 // Radix reserves value="" on RadixSelect.Item/Root to mean "nothing selected, show the
@@ -121,17 +131,20 @@ export function Select({
   ariaLabel,
   placeholder = "Select",
   triggerClassName,
+  triggerContent,
+  triggerTitle,
 }: SelectProps): React.ReactNode {
   return (
     <RadixSelect.Root value={toInternal(value)} onValueChange={(v) => onChange(fromInternal(v))}>
       <RadixSelect.Trigger
         aria-label={ariaLabel}
+        title={triggerTitle}
         className={cn(
           "flex w-full items-center justify-between rounded-md border bg-card px-2.5 py-1.5 text-sm outline-none focus:ring-2 focus:ring-ring/50",
           triggerClassName,
         )}
       >
-        <RadixSelect.Value placeholder={placeholder} />
+        <RadixSelect.Value placeholder={placeholder}>{triggerContent}</RadixSelect.Value>
         <RadixSelect.Icon>
           <ChevronDown className="h-4 w-4 text-muted-foreground" />
         </RadixSelect.Icon>

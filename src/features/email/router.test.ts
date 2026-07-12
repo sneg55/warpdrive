@@ -26,26 +26,9 @@ async function seedAccount(
   return acct.id;
 }
 
+// Mailbox-visibility rules (private/shared/admin, and the personal-Inbox scoping) live in
+// emailReadsVisibility.test.ts. This file covers thread.get content projection and folder reads.
 describe("email reads", () => {
-  it("a private thread is visible to the owner but not to a non-owner", async () => {
-    await withTestDb(async (db) => {
-      const owner = await seedUser(db, { email: "o@gunsnation.com" });
-      const other = await seedUser(db, { email: "x@gunsnation.com" });
-      const acctId = await seedAccount(db, owner.id);
-      await db.execute(sql`
-        INSERT INTO email_threads (gmail_thread_id, account_id, visibility, subject, last_message_at)
-        VALUES ('t1', ${acctId}, 'private', 'Secret', now())
-      `);
-
-      const ownerView = (await listInbox(db, { actor: actorOf(owner.id), filter: "all" }, SIG()))
-        .threads;
-      const otherView = (await listInbox(db, { actor: actorOf(other.id), filter: "all" }, SIG()))
-        .threads;
-      expect(ownerView.length).toBe(1);
-      expect(otherView.length).toBe(0);
-    });
-  });
-
   it("thread.get returns messages newest-first with sanitized bodies", async () => {
     await withTestDb(async (db) => {
       const owner = await seedUser(db, { email: "o@gunsnation.com" });
@@ -165,80 +148,6 @@ describe("email reads", () => {
       );
       expect(out.ok).toBe(false);
       if (!out.ok) expect(out.error.id).toBe("E_GMAIL_011");
-    });
-  });
-
-  it("a shared thread linked to a person the actor can see is visible to that actor", async () => {
-    await withTestDb(async (db) => {
-      const owner = await seedUser(db, { email: "o@gunsnation.com" });
-      const other = await seedUser(db, { email: "x@gunsnation.com" });
-      const acctId = await seedAccount(db, owner.id);
-      // A person visible to all, so the non-owner can see it via the shared path.
-      const person = (
-        await db.execute(sql`
-          INSERT INTO persons (name, primary_email, owner_id, visibility_level)
-          VALUES ('Jane','jane@acme.com',${owner.id},'all') RETURNING id
-        `)
-      ).rows[0] as { id: string };
-      await db.execute(sql`
-        INSERT INTO email_threads (gmail_thread_id, account_id, visibility, person_id, last_message_at)
-        VALUES ('t1', ${acctId}, 'shared', ${person.id}, now())
-      `);
-
-      const otherView = (await listInbox(db, { actor: actorOf(other.id), filter: "all" }, SIG()))
-        .threads;
-      expect(otherView.length).toBe(1); // shared + visible person
-    });
-  });
-
-  it("a shared thread with no visible link is NOT visible to a non-owner", async () => {
-    await withTestDb(async (db) => {
-      const owner = await seedUser(db, { email: "o@gunsnation.com" });
-      const other = await seedUser(db, { email: "x@gunsnation.com" });
-      const acctId = await seedAccount(db, owner.id);
-      // shared but unlinked: nothing for the non-owner to see through.
-      await db.execute(sql`
-        INSERT INTO email_threads (gmail_thread_id, account_id, visibility, last_message_at)
-        VALUES ('t1', ${acctId}, 'shared', now())
-      `);
-
-      const otherView = (await listInbox(db, { actor: actorOf(other.id), filter: "all" }, SIG()))
-        .threads;
-      expect(otherView.length).toBe(0);
-    });
-  });
-
-  it("an ADMIN cannot see a private thread they do not own (no admin bypass, rule 675)", async () => {
-    await withTestDb(async (db) => {
-      const owner = await seedUser(db, { email: "o@gunsnation.com" });
-      const admin = await seedUser(db, { email: "admin@gunsnation.com", isAdmin: true });
-      const acctId = await seedAccount(db, owner.id);
-      const thr = (
-        await db.execute(sql`
-          INSERT INTO email_threads (gmail_thread_id, account_id, visibility, subject, last_message_at)
-          VALUES ('t1', ${acctId}, 'private', 'Secret', now()) RETURNING id
-        `)
-      ).rows[0] as { id: string };
-
-      const adminActor: AuthUser = {
-        id: admin.id,
-        type: "admin",
-        isActive: true,
-        groupIds: new Set(),
-      };
-
-      // getThread: a private thread the admin does not own is 404-on-invisible.
-      const got = await getThread(
-        db,
-        { actor: adminActor, threadId: thr.id, allowRemote: false },
-        SIG(),
-      );
-      expect(got.ok).toBe(false);
-      if (!got.ok) expect(got.error.id).toBe("E_GMAIL_011");
-
-      // listInbox: the private non-owned thread never appears for the admin.
-      const adminView = (await listInbox(db, { actor: adminActor, filter: "all" }, SIG())).threads;
-      expect(adminView).toEqual([]);
     });
   });
 

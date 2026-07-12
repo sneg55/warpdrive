@@ -115,10 +115,11 @@ export function ThreadRow({
         className={`flex min-w-0 flex-1 items-center gap-3 py-2.5 text-left ${canSelectInFolder(folder) ? "" : "pl-3"}`}
         onClick={() => onOpen(thread.id)}
       >
-        {/* Sender column (Pipedrive leads each row with the counterparty). Only the Inbox list
-            projects it; other folders leave it blank. */}
+        {/* Correspondent column (Pipedrive leads each row with the counterparty). Projected by the
+            Inbox AND the Sent/Archive folder reads (folderReads.ts); rendered whenever a
+            correspondent address is present, blank only when a thread genuinely has no other party. */}
         {thread.senderEmail !== null && (
-          <span className={`w-44 shrink-0 truncate text-sm text-foreground ${weight}`}>
+          <span className={`max-w-56 shrink-0 truncate text-sm text-foreground ${weight}`}>
             {thread.unread && (
               <span
                 aria-hidden="true"
@@ -130,6 +131,8 @@ export function ThreadRow({
             {thread.senderName ?? thread.senderEmail}
           </span>
         )}
+        {/* A15: the label chip leads the subject (Pipedrive positions it before, not after). */}
+        <ThreadLabelChips labels={thread.labels} />
         {/* Subject + inline snippet preview, subject bolded when unread. */}
         <span className="min-w-0 flex-1 truncate text-sm">
           {thread.senderEmail === null && thread.unread && (
@@ -143,7 +146,6 @@ export function ThreadRow({
             <span className="text-muted-foreground"> {thread.snippet}</span>
           )}
         </span>
-        <ThreadLabelChips labels={thread.labels} />
         {thread.personId === null && thread.dealId === null && (
           <span className="shrink-0 rounded bg-warning/20 px-1.5 py-0.5 text-xs text-warning-foreground">
             Unlinked
@@ -165,20 +167,36 @@ export function ThreadRow({
           <path d="M21.44 11.05 12.25 20.24a5 5 0 0 1-7.07-7.07l8.49-8.49a3 3 0 0 1 4.24 4.24l-8.49 8.49a1 1 0 0 1-1.41-1.41l7.78-7.78" />
         </svg>
       )}
-      {/* Privacy toggle stays visible (the lock reflects private/shared at a glance); owner-only. */}
+      {/* Privacy toggle stays visible (the lock reflects private/shared at a glance); owner-only.
+          A16: a caret sits next to the lock so the affordance reads as a dropdown (the lock is the
+          real DropdownMenu trigger; the caret is decorative). */}
       {thread.isOwner && (
-        <div className="shrink-0">
+        <div className="flex shrink-0 items-center text-muted-foreground">
           <ThreadPrivacyToggle
             threadId={thread.id}
             visibility={thread.visibility}
             onChanged={onVisibilityChanged}
           />
+          <svg
+            data-privacy-caret="true"
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+            className="-ml-1 h-3 w-3"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="m6 9 6 6 6-6" />
+          </svg>
         </div>
       )}
       <div className="shrink-0 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
         <RowArchiveButton folder={folder} threadId={thread.id} onDone={onArchiveDone} />
       </div>
-      <span className="w-14 shrink-0 text-right text-xs text-muted-foreground tabular-nums">
+      {/* A14: row date at the larger 14px font (text-sm) to match Pipedrive's list. */}
+      <span className="w-16 shrink-0 text-right text-sm text-muted-foreground tabular-nums">
         {formatInboxListDate(thread.lastMessageAt)}
       </span>
     </li>

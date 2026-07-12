@@ -84,17 +84,21 @@ export async function performWorkerSendCrm(
     bodyHtml: payload.html,
   };
 
-  // Link a NEW thread the same way the interactive path does. A scheduled send carries no
-  // explicit composer context in its payload, so we rely on recipient-based auto-linking,
-  // scoped to the mailbox owner's visibility (hydrated the same way the sync path does). A
-  // hydration failure must not lose the CRM copy, so fall back to an unlinked store.
+  // Link a NEW thread the same way the interactive path does. A scheduled send DOES carry
+  // the composer's explicit link context (linkPersonId/linkDealId), persisted onto the
+  // payload at enqueue time (send.ts) since this worker path has no in-scope SendEmailInput
+  // to read from. When absent, we fall back to recipient-based auto-linking, scoped to the
+  // mailbox owner's visibility (hydrated the same way the sync path does). Either way the
+  // explicit id is re-verified for visibility downstream (canSeeLinkedPerson/canSeeLinkedDeal
+  // in sendStore.ts), never trusted blindly. A hydration failure must not lose the CRM copy,
+  // so fall back to an unlinked store.
   const owner = await hydrateOwner(db, row.user_id, args.signal);
   const link = owner.ok
     ? {
         owner: owner.value,
         recipients: [...payload.to, ...(payload.cc ?? []), ...(payload.bcc ?? [])],
-        explicitPersonId: null,
-        explicitDealId: null,
+        explicitPersonId: payload.linkPersonId ?? null,
+        explicitDealId: payload.linkDealId ?? null,
       }
     : undefined;
 
@@ -107,6 +111,9 @@ export async function performWorkerSendCrm(
     bodyHtml: payload.html,
     gmail: args.gmail,
     link,
+    // Restore the composer's privacy pick from the stored payload so a SCHEDULED private compose
+    // still lands a private thread when the worker delivers it (P1-shaped trap).
+    visibility: payload.visibility ?? null,
     signal: args.signal,
   });
   if (!stored.ok) return stored;

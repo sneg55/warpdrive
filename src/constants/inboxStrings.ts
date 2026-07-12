@@ -3,6 +3,14 @@
 // STRINGS.inbox.
 export const INBOX_STRINGS = {
   title: "Inbox",
+  // Full-pane compose route (/inbox/compose): page heading, metadata title, and the
+  // folder-rail "New email" launch control all share this one label (Pipedrive parity).
+  composeTitle: "New email",
+  // Shown in place of the composer while resuming a draft (?draft=<id>) and the drafts.list
+  // query that supplies its seed is still in flight (ComposePageClient). Prevents an
+  // interactive blank composer from mounting and then remounting once the draft arrives,
+  // which would discard any edits the user started during that window.
+  loadingDraft: "Loading draft...",
   filterAll: "All",
   filterUnmatched: "Unmatched",
   filterNeedsLinking: "Needs linking",
@@ -30,6 +38,14 @@ export const INBOX_STRINGS = {
   noMatches: "No matches.",
   viewContact: "View contact",
   viewDeal: "View deal",
+  // Full-pane compose sidebar (Pipedrive parity): links a not-yet-sent draft to a deal so the
+  // NEW thread carries that deal at send time (composer/ComposeLinkSidebar.tsx). Distinct from
+  // sidebarDealHeading above, which titles the reader's post-send link panel.
+  // PD titles this "Link to a deal, lead or project"; warpdrive has no Projects (out of scope), so
+  // the heading + helper cover deal and lead only.
+  linkDealSidebarHeading: "Link to a deal or lead",
+  linkDealSidebarHelper: "Find an existing deal or lead or create a new one.",
+  unlinkDeal: "Unlink",
   // Fallbacks for the reader's linked-record chips when the name/title didn't load (never the
   // type noun "Person"/"Deal", which reads as a placeholder).
   linkedPersonFallback: "Linked contact",
@@ -59,6 +75,10 @@ export const INBOX_STRINGS = {
   followUpStatusLabel: "Follow-up",
   errorSetFollowUpStatus: "Failed to set follow-up status. Please try again.",
   errorSetLabels: "Failed to update labels. Please try again.",
+  errorCreateLabel: "Couldn't create the label. Please try again.",
+  addLabel: "+ Add label",
+  searchOrCreateLabel: "Search or create a label",
+  createLabel: (name: string): string => `Create "${name}"`,
   followUpStatusNames: {
     none: "None",
     waiting: "Waiting",

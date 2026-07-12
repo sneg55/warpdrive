@@ -1,7 +1,9 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import type { InboxFilter } from "./emailReads";
 import { InboxAttributeFilters } from "./InboxAttributeFilters";
 import { type AttributeFilterState, NO_ATTRIBUTE_FILTER } from "./threadAttributeFilter";
 
@@ -68,6 +70,63 @@ describe("InboxAttributeFilters", () => {
     expect(screen.getByLabelText("Date range")).toHaveTextContent("Last 7 days");
   });
 
+  it("renders the quick-filter dropdown trigger (shadcn, not a native select)", () => {
+    render(<InboxAttributeFilters value={NO_ATTRIBUTE_FILTER} onChange={noop} />);
+    const trigger = screen.getByRole("button", { name: "More filters" });
+    expect(trigger).toBeInTheDocument();
+    // No native <select> anywhere in the control (design-system hard rule).
+    expect(document.querySelector("select")).toBeNull();
+  });
+
+  it("opens the dropdown and lists the new server-side filter options", async () => {
+    const user = userEvent.setup();
+    render(<InboxAttributeFilters value={NO_ATTRIBUTE_FILTER} onChange={noop} />);
+    await user.click(screen.getByRole("button", { name: "More filters" }));
+    for (const label of [
+      "Shared",
+      "Private",
+      "Tracked emails",
+      "To: me",
+      "From an existing contact",
+      "Linked with an open deal",
+    ]) {
+      expect(await screen.findByRole("menuitemradio", { name: label })).toBeInTheDocument();
+    }
+  });
+
+  it("selecting a quick-filter option calls onQuickFilterChange with that filter", async () => {
+    const user = userEvent.setup();
+    const onQuickFilterChange = vi.fn<(next: InboxFilter) => void>();
+    render(
+      <InboxAttributeFilters
+        value={NO_ATTRIBUTE_FILTER}
+        onChange={noop}
+        quickFilter="all"
+        onQuickFilterChange={onQuickFilterChange}
+      />,
+    );
+    await user.click(screen.getByRole("button", { name: "More filters" }));
+    await user.click(await screen.findByRole("menuitemradio", { name: "Shared" }));
+    expect(onQuickFilterChange).toHaveBeenCalledWith("shared");
+  });
+
+  it("reflects the active quick-filter as the checked radio option", async () => {
+    const user = userEvent.setup();
+    render(
+      <InboxAttributeFilters
+        value={NO_ATTRIBUTE_FILTER}
+        onChange={noop}
+        quickFilter="tracked"
+        onQuickFilterChange={noop}
+      />,
+    );
+    await user.click(screen.getByRole("button", { name: "More filters" }));
+    expect(await screen.findByRole("menuitemradio", { name: "Tracked emails" })).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
+  });
+
   it("Clear resets to NO_ATTRIBUTE_FILTER", () => {
     const onChange = vi.fn<(next: AttributeFilterState) => void>();
     render(
@@ -78,5 +137,21 @@ describe("InboxAttributeFilters", () => {
     );
     fireEvent.click(screen.getByRole("button", { name: "Clear" }));
     expect(onChange).toHaveBeenCalledWith(NO_ATTRIBUTE_FILTER);
+  });
+
+  // Regression (codex review): Clear previously reset only the client-side attribute filters,
+  // leaving the server-side quick-filter active so the list stayed narrowed. Clear must reset both.
+  it("Clear also resets the quick filter to all", () => {
+    const onQuickFilterChange = vi.fn<(next: InboxFilter) => void>();
+    render(
+      <InboxAttributeFilters
+        value={{ ...NO_ATTRIBUTE_FILTER, unreadOnly: true }}
+        onChange={noop}
+        quickFilter="private"
+        onQuickFilterChange={onQuickFilterChange}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Clear" }));
+    expect(onQuickFilterChange).toHaveBeenCalledWith("all");
   });
 });

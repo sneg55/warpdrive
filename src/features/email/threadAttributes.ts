@@ -1,12 +1,12 @@
 import { sql } from "drizzle-orm";
-import type { MAIL_FOLLOW_UP_STATUS, MAIL_LABELS } from "@/constants/email";
+import type { MAIL_FOLLOW_UP_STATUS } from "@/constants/email";
 import { AppError, ERROR_IDS } from "@/constants/errorIds";
 import type { Db } from "@/db/client";
 import type { AuthUser } from "@/features/permissions/types";
 import { err, ok, type Result } from "@/types/result";
+import { findUnknownMailLabelKeys } from "./mailLabelsRepo";
 
 export type MailFollowUpStatus = (typeof MAIL_FOLLOW_UP_STATUS)[number];
-export type MailLabel = (typeof MAIL_LABELS)[number];
 
 // node-postgres does not auto-encode a bare JS array parameter as a Postgres array literal
 // for db.execute (raw sql tag), unlike inserts through the drizzle query builder. Build the
@@ -57,11 +57,22 @@ export function setFollowUpStatus(
   );
 }
 
-export function setThreadLabels(
+export async function setThreadLabels(
   db: Db,
-  args: { actor: AuthUser; threadId: string; labels: MailLabel[] },
+  // labels are mail-label catalog keys (built-in tokens like "important" or custom slugs), not a
+  // fixed enum: the catalog is user-managed (U6). Shape/dedupe is validated at the action; here we
+  // reject any key that has no catalog row so a stray token can never persist as invisible,
+  // unremovable metadata (resolveMailLabelChips silently drops unknown keys on read).
+  args: { actor: AuthUser; threadId: string; labels: string[] },
   signal: AbortSignal,
 ): Promise<Result<{ threadId: string }, AppError>> {
+  const unknown = await findUnknownMailLabelKeys(db, args.labels, signal);
+  if (unknown.length > 0)
+    return err(
+      new AppError(ERROR_IDS.GMAIL_MAIL_LABEL_UNKNOWN, "unknown mail label key(s)", {
+        keys: unknown,
+      }),
+    );
   return updateOwnedThread(
     db,
     args.actor,

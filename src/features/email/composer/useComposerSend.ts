@@ -9,6 +9,7 @@ import { createActivityAction } from "@/features/activities/actions";
 import { readCsrfToken } from "@/utils/csrfCookie";
 import { sendEmail } from "../actions";
 import { deleteDraftAction } from "../folderActions";
+import type { EmailVisibility } from "../threadVisibility";
 import { COMPOSER_STRINGS } from "./composer.constants";
 import type { ComposerContext } from "./composer.types";
 
@@ -22,9 +23,15 @@ export interface ComposerSendDeps {
   body: string;
   trackOpens: boolean;
   trackLinks: boolean;
+  // C1: compose privacy, threaded into the send payload so the created thread's visibility matches.
+  visibility: EmailVisibility;
   signatureId: string;
   attachments: { fileId: string }[];
   context: ComposerContext | undefined;
+  // Inbox compose's deal-linking sidebar (ComposeLinkSidebar). Takes priority over the deal
+  // context's own dealId (which only exists for the deal-workspace composer) so a plain inbox
+  // compose can still pin the new thread to a picked deal.
+  linkDealId?: string;
   activityTypes: { id: string; key: string }[];
   addAsActivity: boolean;
   setSending: (v: boolean) => void;
@@ -49,9 +56,11 @@ export function buildSendHandlers(deps: ComposerSendDeps) {
     body,
     trackOpens,
     trackLinks,
+    visibility,
     signatureId,
     attachments,
     context,
+    linkDealId,
     activityTypes,
     addAsActivity,
     setSending,
@@ -87,21 +96,30 @@ export function buildSendHandlers(deps: ComposerSendDeps) {
       threadId: resolvedThreadId,
       trackOpens,
       trackLinks,
+      // C1: the composer's privacy pick. A NEW thread is created with this visibility; a reply
+      // (resolvedThreadId set) inherits the existing thread's visibility server-side.
+      visibility,
       signatureId: signatureId.length > 0 ? signatureId : undefined,
       attachments: attachments.length > 0 ? attachments : undefined,
       scheduledSendAt,
       // Deal-workspace composes carry their deal (and, when known, its primary contact) so a
-      // new thread links to THAT deal even when the recipient has several open deals. A plain
-      // inbox compose sends neither and falls back to recipient-based auto-linking server-side.
-      linkDealId: context?.kind === "deal" ? context.dealId : undefined,
+      // new thread links to THAT deal even when the recipient has several open deals. An inbox
+      // compose has no deal context but can still pin a deal via ComposeLinkSidebar (the
+      // `linkDealId` dep); with neither, the send falls back to recipient-based auto-linking
+      // server-side.
+      linkDealId: linkDealId ?? (context?.kind === "deal" ? context.dealId : undefined),
       linkPersonId: context?.kind === "deal" ? context.personId : undefined,
     };
   }
 
-  // Fire-and-forget add-as-activity. Gated on the toggle AND deal context. Subject must be
-  // captured by the caller BEFORE resetDraft clears it. Shared by immediate and scheduled sends.
+  // Fire-and-forget add-as-activity. Gated on the toggle only: deal context logs a deal-linked
+  // activity; an inbox compose falls back to linkDealId (the ComposeLinkSidebar pick, the same
+  // value buildInput uses for the email thread link) so add-as-activity stays consistent with
+  // the deal the thread was linked to. With neither, the activity is standalone (dealId/personId/
+  // orgId null). Subject must be captured by the caller BEFORE resetDraft clears it. Shared by
+  // immediate and scheduled sends.
   function fireActivity(capturedSubject: string, scheduled: boolean): void {
-    if (!addAsActivity || context?.kind !== "deal") return;
+    if (!addAsActivity) return;
 
     const emailType = activityTypes.find((t) => t.key === COMPOSER_STRINGS.emailActivityTypeKey);
     const typeId = emailType?.id ?? activityTypes[0]?.id;
@@ -119,9 +137,9 @@ export function buildSendHandlers(deps: ComposerSendDeps) {
         priority: null,
         dueAt: null,
         durationMinutes: null,
-        dealId: context.dealId,
-        personId: context.personId ?? null,
-        orgId: context.orgId ?? null,
+        dealId: context?.kind === "deal" ? context.dealId : (linkDealId ?? null),
+        personId: context?.kind === "deal" ? (context.personId ?? null) : null,
+        orgId: context?.kind === "deal" ? (context.orgId ?? null) : null,
         guestPersonIds: [],
         participantUserIds: [],
         customFields: {},

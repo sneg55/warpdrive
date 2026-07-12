@@ -14,7 +14,10 @@ const S = STRINGS.inbox;
 interface LinkExistingComboboxProps {
   kind: "person" | "deal";
   triggerLabel: string;
-  onPick: (id: string) => void;
+  // label is the matched item's display name (SearchResult.primary), passed alongside id so a
+  // caller with no other way to know the record's name (e.g. the compose-time link sidebar,
+  // which has no thread row to read it back from) can render it without a second round trip.
+  onPick: (id: string, label: string) => void;
 }
 
 // Search-as-you-type picker that links the thread to an existing person or deal. Backed by the
@@ -45,8 +48,8 @@ export function LinkExistingCombobox({
   const placeholder = kind === "person" ? S.searchPeoplePlaceholder : S.searchDealsPlaceholder;
   const showList = debounced.trim().length > 0;
 
-  function pick(id: string): void {
-    onPick(id);
+  function pick(id: string, label: string): void {
+    onPick(id, label);
     setOpen(false);
     setQ("");
     setDebounced("");
@@ -83,7 +86,7 @@ export function LinkExistingCombobox({
                   <CommandItem
                     key={it.id}
                     value={it.id}
-                    onSelect={() => pick(it.id)}
+                    onSelect={() => pick(it.id, it.primary)}
                     className="flex cursor-pointer flex-col items-start gap-0.5 rounded px-2 py-1.5 text-sm data-[selected=true]:bg-accent"
                   >
                     <span className="truncate">{it.primary}</span>

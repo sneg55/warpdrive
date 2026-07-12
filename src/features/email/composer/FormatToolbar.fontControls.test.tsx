@@ -107,6 +107,39 @@ describe("FormatToolbar – font/size/color controls present (Spec 6.5)", () => 
 });
 
 // ---------------------------------------------------------------------------
+// PD parity: font-family/size triggers are compact icon controls, not wide
+// "Default ▾" text comboboxes. The trigger's accessible name comes from
+// aria-label; it must never fall back to rendering the option's label text.
+// ---------------------------------------------------------------------------
+
+describe("FormatToolbar – compact icon-style font triggers (PD parity)", () => {
+  it("font-family trigger is an icon control identified by aria-label, not a wide text label", async () => {
+    const { FormatToolbar } = await import("./FormatToolbar");
+    render(<FormatToolbar editor={makeFullStubEditor(vi.fn())} />);
+    const trigger = screen.getByRole("combobox", { name: "Font family" });
+    expect(trigger).not.toHaveTextContent("Default");
+    expect(trigger.querySelector("svg")).not.toBeNull();
+  });
+
+  it("font-size trigger is an icon control identified by aria-label, not a wide text label", async () => {
+    const { FormatToolbar } = await import("./FormatToolbar");
+    render(<FormatToolbar editor={makeFullStubEditor(vi.fn())} />);
+    const trigger = screen.getByRole("combobox", { name: "Font size" });
+    expect(trigger).not.toHaveTextContent("Default");
+    expect(trigger.querySelector("svg")).not.toBeNull();
+  });
+
+  it("font-family trigger stays icon-only after picking a family (does not grow into the option's label text)", async () => {
+    const { FormatToolbar } = await import("./FormatToolbar");
+    render(<FormatToolbar editor={makeFullStubEditor(vi.fn())} />);
+    pickOption("font", "Georgia");
+    const trigger = screen.getByRole("combobox", { name: "Font family" });
+    expect(trigger).not.toHaveTextContent("Georgia");
+    expect(trigger.querySelector("svg")).not.toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Spec 6.5: controls fire the right editor commands
 // ---------------------------------------------------------------------------
 
