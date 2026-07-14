@@ -147,7 +147,7 @@ export function GlobalContactModal({
             type="button"
             disabled={pending}
             onClick={() => void submit()}
-            className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+            className="rounded-md bg-action px-3 py-1.5 text-sm font-medium text-action-foreground hover:bg-action/90 disabled:opacity-50"
           >
             {pending ? "Adding..." : "Add"}
           </button>

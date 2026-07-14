@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type React from "react";
+import { Tip } from "@/components/ui/tooltip";
 import { ActivityTypeIcon } from "@/features/activities/ActivityTypeIcon";
 import type { ContactEntity, EngagementLane } from "@/features/contacts/engagementTimeline";
 import { cn } from "@/lib/utils";
@@ -33,18 +34,18 @@ export function EngagementLaneRow({
         return (
           <div key={key} className="flex flex-wrap items-center gap-1 border-b border-l px-3 py-2">
             {markers.map((m) => (
-              <span
-                key={m.id}
-                role="img"
-                aria-label={m.subject}
-                title={m.subject}
-                className={cn(
-                  "inline-flex h-6 w-6 items-center justify-center rounded-full",
-                  m.done ? "bg-muted text-muted-foreground" : "bg-accent text-accent-foreground",
-                )}
-              >
-                <ActivityTypeIcon typeKey={m.typeKey} />
-              </span>
+              <Tip key={m.id} label={m.subject}>
+                <span
+                  role="img"
+                  aria-label={m.subject}
+                  className={cn(
+                    "inline-flex h-6 w-6 items-center justify-center rounded-full",
+                    m.done ? "bg-muted text-muted-foreground" : "bg-accent text-accent-foreground",
+                  )}
+                >
+                  <ActivityTypeIcon typeKey={m.typeKey} />
+                </span>
+              </Tip>
             ))}
           </div>
         );

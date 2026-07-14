@@ -52,6 +52,23 @@ const LEAD = {
   updatedAt: new Date("2026-06-01T00:00:00Z"),
 } as unknown as LeadDetail;
 
+describe("LeadHeader PD lead-drawer parity", () => {
+  it("does not render the owner in the header (PD shows owner as a sidebar field, not a header badge)", () => {
+    render(<LeadHeader lead={LEAD} />);
+    // Owner lives in the Summary sidebar row, so the header must not duplicate it.
+    expect(screen.queryByText("Nick")).not.toBeInTheDocument();
+    // The primary title still renders.
+    expect(screen.getByRole("heading", { name: "Acme lead" })).toBeInTheDocument();
+  });
+
+  it("styles Convert to deal as a positive/success action (PD's green convert button)", () => {
+    render(<LeadHeader lead={LEAD} />);
+    const btn = screen.getByRole("button", { name: "Convert to deal" });
+    expect(btn.className).toContain("bg-success");
+    expect(btn.className).not.toContain("bg-primary");
+  });
+});
+
 describe("LeadHeader error surfacing", () => {
   it("surfaces a failed convert through the shared error reporter", async () => {
     const { convertLeadAction } = await import("../leadServerActions");

@@ -46,6 +46,15 @@
    */
   --color-save: rgb(45 134 71);
   --color-save-muted: rgb(130 184 134);
+
+  /*
+   * Brand accent for primary/action buttons (emerald-600). Deliberately separate from
+   * --primary (near-black slate), which still drives non-button emphasis: checkbox fill,
+   * calendar selection, toggles, count badges, progress bars, unread dots, wizard steps.
+   * Literal rgb (like --color-save) so the /90 hover modifier and computed styles stay exact.
+   */
+  --color-action: rgb(5 150 105);
+  --color-action-foreground: rgb(255 255 255);
   --color-field-hover: rgb(236 236 237);
   --color-field-border: rgba(33, 35, 44, 0.24);
 

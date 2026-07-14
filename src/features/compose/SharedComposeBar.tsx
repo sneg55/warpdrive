@@ -2,6 +2,7 @@
 import Link from "next/link";
 import type React from "react";
 import { useState } from "react";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ActivityComposerInline } from "@/features/deal-workspace/composer/ActivityComposerInline";
 import {
   ActivityIcon,
@@ -47,14 +48,27 @@ const PROMPTS: Partial<Record<ComposeTab, string>> = {
 };
 
 // Activity and Notes are enabled for every scope; Email and Files are scope-gated
-// (see emailTabEnabled/fileTabEnabled in composeScope.ts). "activity" is always
-// present, so the tab state's "activity" default (below) never points at a hidden tab.
+// (see emailTabEnabled/fileTabEnabled in composeScope.ts). The default tab is the FIRST enabled tab
+// (see the tab state below), so both the order and the default follow from this list.
 function tabsForScope(scope: ComposeScope): TabDef[] {
-  return ALL_TABS.filter((t) => {
+  const enabled = ALL_TABS.filter((t) => {
     if (t.id === "email") return emailTabEnabled(scope);
     if (t.id === "files") return fileTabEnabled(scope);
     return true;
   });
+  // PD's lead drawer leads with Notes (its default state is the "Take a note..." prompt), unlike the
+  // deal/person/org composer which leads with Activity. Reorder Notes ahead of Activity for leads.
+  if (scope.entityType === "lead") {
+    return [...enabled].sort((a, b) => rank(a.id) - rank(b.id));
+  }
+  return enabled;
+}
+
+// Lead tab order: Notes, then Activity; everything else keeps its ALL_TABS position.
+function rank(id: ComposeTab): number {
+  if (id === "notes") return 0;
+  if (id === "activity") return 1;
+  return 2;
 }
 
 interface Props {
@@ -86,8 +100,10 @@ export function SharedComposeBar({
   onNoteCreated,
 }: Props): React.ReactNode {
   const [expanded, setExpanded] = useState(false);
-  const [tab, setTab] = useState<ComposeTab>("activity");
   const tabs = tabsForScope(scope);
+  // Default to the first enabled tab for this scope (Activity for deal/person/org, Notes for leads).
+  // Activity is enabled for every scope, so tabs is never empty; the ?? keeps the type checker happy.
+  const [tab, setTab] = useState<ComposeTab>(() => tabs[0]?.id ?? "activity");
 
   // PD expands the clicked tab's editor immediately, even from the collapsed prompt.
   function openTab(id: ComposeTab): void {
@@ -107,25 +123,25 @@ export function SharedComposeBar({
 
   return (
     <section aria-label="compose" className="mb-4 rounded border bg-card">
-      <div role="tablist" className="flex items-center overflow-x-auto border-b">
-        {tabs.map(({ id, label, Icon }) => (
-          <button
-            key={id}
-            type="button"
-            role="tab"
-            aria-selected={tab === id}
-            onClick={() => openTab(id)}
-            className={
-              tab === id
-                ? "-mb-px flex h-10 items-center gap-2 whitespace-nowrap border-b-2 border-[#2b74da] px-3 text-start text-sm font-[450] text-link"
-                : "-mb-px flex h-10 items-center gap-2 whitespace-nowrap border-b-2 border-transparent px-3 text-start text-sm font-[450] text-muted-foreground hover:text-foreground"
-            }
-          >
-            <Icon />
-            {label}
-          </button>
-        ))}
-      </div>
+      <Tabs value={tab} onValueChange={(v) => openTab(v as ComposeTab)}>
+        <TabsList className="overflow-x-auto border-b">
+          {tabs.map(({ id, label, Icon }) => (
+            <TabsTrigger
+              key={id}
+              value={id}
+              // Unlike a plain tab strip, clicking a compose tab also EXPANDS its editor from the
+              // collapsed prompt, including the already-active tab (leads default to Notes collapsed).
+              // Radix onValueChange does not fire on a same-value click, so drive openTab from onClick;
+              // onValueChange still handles keyboard arrow switching.
+              onClick={() => openTab(id)}
+              className="-mb-px flex h-10 items-center gap-2 whitespace-nowrap border-b-2 border-transparent px-3 text-start font-[450] text-muted-foreground hover:text-foreground data-[state=active]:border-[#2b74da] data-[state=active]:text-link"
+            >
+              <Icon />
+              {label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+      </Tabs>
 
       {showPrompt ? (
         <ComposeCollapsedTrigger

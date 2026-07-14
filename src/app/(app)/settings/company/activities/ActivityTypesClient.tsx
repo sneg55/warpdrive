@@ -2,6 +2,7 @@
 import { useRouter } from "next/navigation";
 import type React from "react";
 import { useState } from "react";
+import { Button } from "@/components/ui/Button";
 import { Select, type SelectOption } from "@/components/ui/Select";
 import { Switch } from "@/components/ui/Switch";
 import { ERROR_IDS } from "@/constants/errorIds";
@@ -204,14 +205,16 @@ export function ActivityTypesClient({
             options={ACTIVITY_ICON_OPTIONS}
           />
         </div>
-        <button
+        <Button
           type="button"
+          variant="default"
+          size="sm"
+          className="px-3"
           disabled={pending}
           onClick={() => void add()}
-          className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground transition-transform hover:opacity-90 active:not-disabled:scale-[0.96] disabled:opacity-50"
         >
           {S.addActivityType}
-        </button>
+        </Button>
       </div>
     </div>
   );

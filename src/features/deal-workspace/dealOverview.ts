@@ -1,4 +1,4 @@
-const DAY = 86_400_000;
+import { calendarDaysBetween } from "@/lib/calendarDays";
 
 export interface DealOverview {
   ageDays: number; // days since the deal was created
@@ -13,8 +13,8 @@ export function dealOverview(
   lastActivityAt: Date | null,
   now: Date,
 ): DealOverview {
-  const ageDays = Math.max(0, Math.floor((now.getTime() - createdAt.getTime()) / DAY));
+  const ageDays = Math.max(0, calendarDaysBetween(createdAt, now));
   const since = lastActivityAt ?? createdAt;
-  const inactiveDays = Math.max(0, Math.floor((now.getTime() - since.getTime()) / DAY));
+  const inactiveDays = Math.max(0, calendarDaysBetween(since, now));
   return { ageDays, inactiveDays };
 }

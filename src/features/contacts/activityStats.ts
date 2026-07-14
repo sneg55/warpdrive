@@ -1,16 +1,16 @@
 // Per-contact activity stats for the person/org detail "Overview" section (CO-2). Reuses
 // listActivitiesForEntity so the counts stay visibility-consistent with the Activity feed, then
 // folds them into totals + per-type counts + a last-activity/inactive-days pair. The inactive-days
-// math mirrors dealOverview.ts (whole-day floor), but is activity-scoped: with no completed activity
-// there is nothing to date from, so lastActivityAt/inactiveDays are null (no createdAt fallback).
+// math mirrors dealOverview.ts (calendar-day count), but is activity-scoped: with no completed
+// activity there is nothing to date from, so lastActivityAt/inactiveDays are null (no createdAt
+// fallback).
 import type { Db } from "@/db/client";
 import type { CalendarActivity } from "@/features/activities/calendar";
 import { listActivitiesForEntity } from "@/features/activities/forEntity";
 import type { PermSetUser } from "@/features/permissions/effective";
 import { assertReferenceVisible } from "@/features/permissions/referenceCheck";
+import { calendarDaysBetween } from "@/lib/calendarDays";
 import { toRefActor } from "./actorAdapters";
-
-const DAY = 86_400_000;
 
 // Pipedrive's Overview shows up to this many "Most active users".
 const MAX_ACTIVE_USERS = 3;
@@ -66,9 +66,7 @@ export function computeActivityStats(list: CalendarActivity[], now: Date): Conta
     .slice(0, MAX_ACTIVE_USERS);
 
   const inactiveDays =
-    lastActivityAt === null
-      ? null
-      : Math.max(0, Math.floor((now.getTime() - lastActivityAt.getTime()) / DAY));
+    lastActivityAt === null ? null : Math.max(0, calendarDaysBetween(lastActivityAt, now));
 
   return {
     total: list.length,

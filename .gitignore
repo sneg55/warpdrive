@@ -16,3 +16,6 @@ next-env.d.ts
 /pd-*.png
 # Parity capture folders (PD + WD screenshots, may contain real account PII). Local only.
 docs/parity-captures/
+
+# Brainstorming visual companion
+.superpowers/

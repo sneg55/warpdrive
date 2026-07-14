@@ -1,5 +1,6 @@
 "use client";
 import type React from "react";
+import type { Organization, Person } from "@/db/schema";
 import { SharedComposeBar } from "@/features/compose/SharedComposeBar";
 import { LeadHeader } from "@/features/leads/detail/LeadHeader";
 import { LeadSidebar } from "@/features/leads/detail/LeadSidebar";
@@ -9,11 +10,23 @@ import { trpc } from "@/lib/trpc-client";
 
 export interface LeadWorkspaceClientProps {
   lead: LeadDetail;
+  // Fully-loaded linked contact records + Settings > Data fields hides, threaded to the sidebar's
+  // Person/Organization blocks. null when the lead has no (or a soft-deleted) person/org.
+  person: Person | null;
+  org: Organization | null;
+  hiddenPersonFields: ReadonlySet<string>;
+  hiddenOrgFields: ReadonlySet<string>;
 }
 
 // Lead detail workspace, mirroring DealWorkspaceClient: header actions, a person/value sidebar, and
 // a notes/activities/email timeline fed by the leadTimeline tRPC read.
-export function LeadWorkspaceClient({ lead }: LeadWorkspaceClientProps): React.ReactNode {
+export function LeadWorkspaceClient({
+  lead,
+  person,
+  org,
+  hiddenPersonFields,
+  hiddenOrgFields,
+}: LeadWorkspaceClientProps): React.ReactNode {
   const timelineQ = trpc.lead.leadTimeline.useQuery({ leadId: lead.id });
   const timeline = timelineQ.data ?? { items: [], emails: [] };
   // Assignable users for the sidebar's Owner picker (LeadSummaryEditPanel); the write path
@@ -25,7 +38,14 @@ export function LeadWorkspaceClient({ lead }: LeadWorkspaceClientProps): React.R
     <div className="flex h-full flex-col p-4">
       <LeadHeader lead={lead} />
       <div className="grid min-h-0 flex-1 grid-cols-1 gap-6 lg:grid-cols-[34fr_66fr]">
-        <LeadSidebar lead={lead} owners={owners} />
+        <LeadSidebar
+          lead={lead}
+          owners={owners}
+          person={person}
+          org={org}
+          hiddenPersonFields={hiddenPersonFields}
+          hiddenOrgFields={hiddenOrgFields}
+        />
         <div className="min-w-0">
           {/* Compose toolbar (Pipedrive): collapse-by-default Activity/Notes for the lead
               scope. Email/Files stay hidden (lead has neither a mailbox thread nor a file

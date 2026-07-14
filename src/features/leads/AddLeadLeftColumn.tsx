@@ -1,10 +1,11 @@
 "use client";
 import type React from "react";
+import { useId } from "react";
 import { Combobox, type ComboboxOption } from "@/components/ui/Combobox";
 import { DatePicker } from "@/components/ui/DatePicker";
+import { Input } from "@/components/ui/Input";
 import { Select, type SelectOption } from "@/components/ui/Select";
 import { TITLE_MAX_LEN } from "@/constants/fieldLimits";
-import { FIELD_INPUT as FIELD } from "@/constants/formStyles";
 import { SOURCE_CHANNEL_KEYS, SOURCE_CHANNELS } from "@/constants/sourceChannels";
 import { STRINGS } from "@/constants/strings";
 import { LabelField } from "@/features/labels/LabelField";
@@ -36,6 +37,8 @@ interface AddLeadLeftColumnProps {
 // date, source, visibility. No pipeline/stage (leads live outside pipelines). Presentational.
 export function AddLeadLeftColumn(props: AddLeadLeftColumnProps): React.ReactNode {
   const { state, set, onTitleChange, people, orgs, owners, groups, baseCurrency } = props;
+  const titleId = useId();
+  const sourceChannelIdId = useId();
   return (
     <div className="flex flex-col gap-3 text-sm">
       <EntityCombobox
@@ -60,9 +63,10 @@ export function AddLeadLeftColumn(props: AddLeadLeftColumnProps): React.ReactNod
         onClear={() => set({ orgMode: "existing", orgId: "", newOrgName: "" })}
       />
 
-      <label className="block">
+      <label className="block" htmlFor={titleId}>
         <span className="mb-1 block font-medium">{L.titleLabel}</span>
-        <input
+        <Input
+          id={titleId}
           aria-label={L.leadTitle}
           value={state.title}
           onChange={(e) =>
@@ -70,7 +74,6 @@ export function AddLeadLeftColumn(props: AddLeadLeftColumnProps): React.ReactNod
           }
           placeholder={L.leadTitle}
           maxLength={TITLE_MAX_LEN}
-          className={FIELD}
         />
         <span className="mt-0.5 block text-right text-xs tabular-nums text-muted-foreground">
           {state.title.length}/{TITLE_MAX_LEN}
@@ -80,13 +83,12 @@ export function AddLeadLeftColumn(props: AddLeadLeftColumnProps): React.ReactNod
       <div>
         <span className="mb-1 block font-medium">{L.valueLabel}</span>
         <div className="flex gap-2">
-          <input
+          <Input
             aria-label={L.leadValue}
             inputMode="decimal"
             value={state.value}
             onChange={(e) => set({ value: e.target.value })}
             placeholder={L.valuePlaceholder}
-            className={FIELD}
           />
           <span className="flex items-center rounded-md border bg-muted px-2.5 text-sm text-muted-foreground">
             {baseCurrency}
@@ -144,14 +146,14 @@ export function AddLeadLeftColumn(props: AddLeadLeftColumnProps): React.ReactNod
         />
       </div>
 
-      <label className="block">
+      <label className="block" htmlFor={sourceChannelIdId}>
         <span className="mb-1 block font-medium">{L.sourceChannelId}</span>
-        <input
+        <Input
+          id={sourceChannelIdId}
           aria-label={L.sourceChannelId}
           value={state.sourceChannelId}
           onChange={(e) => set({ sourceChannelId: e.target.value })}
           placeholder={L.sourceChannelIdPlaceholder}
-          className={FIELD}
         />
       </label>
 

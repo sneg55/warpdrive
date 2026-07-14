@@ -1,10 +1,11 @@
 "use client";
 import type React from "react";
+import { useId } from "react";
 import { Combobox, type ComboboxOption } from "@/components/ui/Combobox";
 import { DatePicker } from "@/components/ui/DatePicker";
+import { Input } from "@/components/ui/Input";
 import { Select, type SelectOption } from "@/components/ui/Select";
 import { TITLE_MAX_LEN } from "@/constants/fieldLimits";
-import { FIELD_INPUT as FIELD } from "@/constants/formStyles";
 import { SOURCE_CHANNEL_KEYS, SOURCE_CHANNELS } from "@/constants/sourceChannels";
 import { EntityCombobox } from "@/features/entity-create/EntityCombobox";
 import { LabelField } from "@/features/labels/LabelField";
@@ -53,6 +54,8 @@ export function AddDealLeftColumn(props: AddDealLeftColumnProps): React.ReactNod
     groups,
     baseCurrency,
   } = props;
+  const titleId = useId();
+  const sourceChannelIdId = useId();
   return (
     <div className="flex flex-col gap-3 text-sm">
       <EntityCombobox
@@ -77,9 +80,10 @@ export function AddDealLeftColumn(props: AddDealLeftColumnProps): React.ReactNod
         onClear={() => set({ orgMode: "existing", orgId: "", newOrgName: "" })}
       />
 
-      <label className="block">
+      <label className="block" htmlFor={titleId}>
         <span className="mb-1 block font-medium">Title</span>
-        <input
+        <Input
+          id={titleId}
           aria-label="Deal title"
           value={state.title}
           onChange={(e) =>
@@ -87,7 +91,6 @@ export function AddDealLeftColumn(props: AddDealLeftColumnProps): React.ReactNod
           }
           placeholder="Deal title"
           maxLength={TITLE_MAX_LEN}
-          className={FIELD}
         />
         <span className="mt-0.5 block text-right text-xs tabular-nums text-muted-foreground">
           {state.title.length}/{TITLE_MAX_LEN}
@@ -97,13 +100,12 @@ export function AddDealLeftColumn(props: AddDealLeftColumnProps): React.ReactNod
       <div>
         <span className="mb-1 block font-medium">Value</span>
         <div className="flex gap-2">
-          <input
+          <Input
             aria-label="Deal value"
             inputMode="decimal"
             value={state.value}
             onChange={(e) => set({ value: e.target.value })}
             placeholder="0"
-            className={FIELD}
           />
           <span className="flex items-center rounded-md border bg-muted px-2.5 text-sm text-muted-foreground">
             {baseCurrency}
@@ -186,14 +188,14 @@ export function AddDealLeftColumn(props: AddDealLeftColumnProps): React.ReactNod
         />
       </div>
 
-      <label className="block">
+      <label className="block" htmlFor={sourceChannelIdId}>
         <span className="mb-1 block font-medium">Source channel ID</span>
-        <input
+        <Input
+          id={sourceChannelIdId}
           aria-label="Source channel ID"
           value={state.sourceChannelId}
           onChange={(e) => set({ sourceChannelId: e.target.value })}
           placeholder="Reference / campaign id"
-          className={FIELD}
         />
       </label>
 

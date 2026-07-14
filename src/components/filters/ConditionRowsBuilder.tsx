@@ -198,7 +198,7 @@ export function ConditionRowsBuilder({
           <button
             type="button"
             onClick={apply}
-            className="rounded-md bg-primary px-3 py-1 text-sm text-primary-foreground active:scale-[0.96] transition-transform"
+            className="rounded-md bg-action px-3 py-1 text-sm text-action-foreground active:scale-[0.96] transition-transform"
           >
             Apply
           </button>

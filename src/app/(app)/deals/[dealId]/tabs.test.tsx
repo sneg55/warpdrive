@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { Deal } from "@/db/schema";
 import type { CalendarActivity } from "@/features/activities/calendar";
@@ -176,7 +177,7 @@ describe("WorkspaceTabs", () => {
     expect(screen.getByText("Stage: Demo → Proposal")).toBeInTheDocument();
   });
 
-  it("switches tabs via the onTab callback", () => {
+  it("switches tabs via the onTab callback", async () => {
     const onTab = vi.fn();
     render(
       <WorkspaceTabs
@@ -188,7 +189,7 @@ describe("WorkspaceTabs", () => {
         createdActorName="Nick"
       />,
     );
-    fireEvent.click(screen.getByRole("tab", { name: "Notes (1)" }));
+    await userEvent.click(screen.getByRole("tab", { name: "Notes (1)" }));
     expect(onTab).toHaveBeenCalledWith("notes");
   });
 

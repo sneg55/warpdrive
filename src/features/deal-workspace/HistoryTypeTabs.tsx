@@ -1,4 +1,5 @@
 import type React from "react";
+import { PILL_TAB, Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { HistoryFeed } from "@/features/deal-workspace/HistoryFeed";
 import type { HistoryItem } from "@/features/deal-workspace/historyTimeline";
 import { DealEmailTab } from "@/features/email/DealEmailTab";
@@ -48,31 +49,20 @@ export function HistoryTypeTabs({
   onNoteChanged,
 }: HistoryTypeTabsProps): React.ReactNode {
   return (
-    <div>
-      <div role="tablist" className="flex flex-wrap gap-1">
+    <Tabs value={tab} onValueChange={(v) => onTab(v as HistoryTab)}>
+      <TabsList className="flex-wrap gap-1">
         {TABS.map((t) => {
           const count = counts[t];
           return (
-            <button
-              key={t}
-              type="button"
-              role="tab"
-              aria-selected={tab === t}
-              onClick={() => onTab(t)}
-              className={
-                tab === t
-                  ? "rounded-md bg-primary/10 px-2.5 py-1 text-sm font-medium text-primary"
-                  : "rounded-md px-2.5 py-1 text-sm text-muted-foreground hover:bg-accent/50 hover:text-foreground"
-              }
-            >
+            <TabsTrigger key={t} value={t} className={PILL_TAB}>
               {TAB_LABELS[t]}
               {count !== undefined ? ` (${count})` : ""}
-            </button>
+            </TabsTrigger>
           );
         })}
-      </div>
+      </TabsList>
 
-      <div role="tabpanel" className="pt-4">
+      <div className="pt-4">
         {tab === "email" && <DealEmailTab dealId={dealId} />}
         {/* History is a view of what is attached, not a compose surface: read-only so the
             deal page shows one uploader (the compose bar's Files tab), not two. */}
@@ -86,6 +76,6 @@ export function HistoryTypeTabs({
           />
         )}
       </div>
-    </div>
+    </Tabs>
   );
 }

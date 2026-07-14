@@ -138,3 +138,28 @@ it("surfaces a permission-specific message when the edit is denied (E_PERM_001)"
   // The editor stays open on failure so the draft is not lost.
   expect(screen.getByLabelText("editor-firstName")).toBeInTheDocument();
 });
+
+// The lead drawer reuses PersonBlock but matches PD's compact lead-person section, which shows the
+// display Name only (no First name / Last name split). Deal/contact surfaces keep the split.
+it("hides the First name and Last name rows when hideNameParts is set (lead drawer parity)", () => {
+  render(
+    <HideEmptyContext.Provider value={false}>
+      <PersonBlock person={{ ...blankPerson, firstName: "Mia", lastName: "Roe" }} hideNameParts />
+    </HideEmptyContext.Provider>,
+  );
+  expect(screen.queryByText("First name")).not.toBeInTheDocument();
+  expect(screen.queryByText("Last name")).not.toBeInTheDocument();
+  // Name, Phone, Email still render.
+  expect(screen.getByText("Name")).toBeInTheDocument();
+  expect(screen.getByText("Email")).toBeInTheDocument();
+});
+
+it("renders provided label chips under the section (PD's per-person Labels row)", () => {
+  render(
+    <HideEmptyContext.Provider value={false}>
+      <PersonBlock person={blankPerson} labels={[{ name: "Hot", classes: "bg-red-100" }]} />
+    </HideEmptyContext.Provider>,
+  );
+  expect(screen.getByText("Labels")).toBeInTheDocument();
+  expect(screen.getByText("Hot")).toBeInTheDocument();
+});

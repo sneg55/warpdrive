@@ -26,7 +26,7 @@ export default async function ImportPage(): Promise<ReactNode> {
         actions={
           <Link
             href="/settings/import/new"
-            className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground transition-transform hover:opacity-90 active:scale-[0.96]"
+            className="rounded-md bg-action px-3 py-1.5 text-sm font-medium text-action-foreground transition-transform hover:opacity-90 active:scale-[0.96]"
           >
             {STRINGS.settings.importer.newImport}
           </Link>

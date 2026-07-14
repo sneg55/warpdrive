@@ -2,6 +2,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import type React from "react";
 import { useState } from "react";
+import { Button } from "@/components/ui/Button";
 import { AddDealModal } from "./AddDealModal";
 import { BOARD_QUERY_KEY } from "./useDealMove";
 
@@ -29,13 +30,15 @@ export function NewDealButton({
 
   return (
     <>
-      <button
+      <Button
         type="button"
+        variant="default"
+        size="sm"
+        className="px-3"
         onClick={() => setOpen(true)}
-        className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground transition hover:opacity-90 active:scale-[0.96]"
       >
         + Deal
-      </button>
+      </Button>
 
       {open && (
         <AddDealModal

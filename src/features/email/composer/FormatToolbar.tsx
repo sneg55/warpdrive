@@ -32,6 +32,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { Select, type SelectOption } from "@/components/ui/Select";
+import { Tip } from "@/components/ui/tooltip";
 
 const DEFAULT_FONT_LABEL = "Default";
 
@@ -86,15 +87,16 @@ interface ToolButtonProps {
 // button is accessible and testable by name while staying compact and unlabeled.
 function ToolButton({ label, icon: Icon, onClick, title }: ToolButtonProps): React.ReactNode {
   return (
-    <button
-      type="button"
-      aria-label={label}
-      title={title ?? label}
-      onClick={onClick}
-      className="flex h-7 w-7 items-center justify-center rounded text-muted-foreground transition-[transform,background-color,color] hover:bg-accent hover:text-accent-foreground active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-    >
-      <Icon className="h-4 w-4" />
-    </button>
+    <Tip label={title ?? label}>
+      <button
+        type="button"
+        aria-label={label}
+        onClick={onClick}
+        className="flex h-7 w-7 items-center justify-center rounded text-muted-foreground transition-[transform,background-color,color] hover:bg-accent hover:text-accent-foreground active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        <Icon className="h-4 w-4" />
+      </button>
+    </Tip>
   );
 }
 

@@ -134,3 +134,13 @@ it("hides a built-in firmographic row whose key is in the hidden set, keeps the 
   expect(screen.getByText("Number of employees")).toBeInTheDocument();
   expect(screen.getByText("Name")).toBeInTheDocument();
 });
+
+it("renders provided label chips under the section (PD's per-organization Labels row)", () => {
+  render(
+    <HideEmptyContext.Provider value={false}>
+      <OrgBlock org={blankOrg} labels={[{ name: "Partner", classes: "bg-blue-100" }]} />
+    </HideEmptyContext.Provider>,
+  );
+  expect(screen.getByText("Labels")).toBeInTheDocument();
+  expect(screen.getByText("Partner")).toBeInTheDocument();
+});

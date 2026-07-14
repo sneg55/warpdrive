@@ -83,7 +83,7 @@ export function TemplateDraftEditor({
       <div className="flex gap-2">
         <button
           type="button"
-          className="rounded-md bg-primary px-3 py-1.5 text-sm text-primary-foreground transition-transform active:scale-[0.96]"
+          className="rounded-md bg-action px-3 py-1.5 text-sm text-action-foreground transition-transform active:scale-[0.96]"
           onClick={onSave}
         >
           {S.save}

@@ -6,6 +6,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Tip } from "@/components/ui/tooltip";
 import { COMPOSER_STRINGS } from "./composer.constants";
 
 interface SignatureDropdownProps {
@@ -27,24 +28,25 @@ export function SignatureDropdown({
     signatures.find((s) => s.id === value)?.name ?? COMPOSER_STRINGS.signatureNoneLabel;
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger
-        aria-label={COMPOSER_STRINGS.signaturePickerLabel}
-        title={COMPOSER_STRINGS.signatureTitle(current)}
-        className="flex items-center gap-1 rounded border border-border px-1.5 py-1 text-xs text-muted-foreground hover:bg-accent"
-      >
-        <svg
-          aria-hidden="true"
-          viewBox="0 0 24 24"
-          className="h-3.5 w-3.5"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.75"
-          strokeLinecap="round"
-          strokeLinejoin="round"
+      <Tip label={COMPOSER_STRINGS.signatureTitle(current)}>
+        <DropdownMenuTrigger
+          aria-label={COMPOSER_STRINGS.signaturePickerLabel}
+          className="flex items-center gap-1 rounded border border-border px-1.5 py-1 text-xs text-muted-foreground hover:bg-accent"
         >
-          <path d="M3 17c3 0 3-8 6-8s3 8 6 8 3-4 6-4" />
-        </svg>
-      </DropdownMenuTrigger>
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+            className="h-3.5 w-3.5"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.75"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M3 17c3 0 3-8 6-8s3 8 6 8 3-4 6-4" />
+          </svg>
+        </DropdownMenuTrigger>
+      </Tip>
       <DropdownMenuContent align="start" className="min-w-32">
         <DropdownMenuItem
           aria-label={COMPOSER_STRINGS.signatureNoneLabel}

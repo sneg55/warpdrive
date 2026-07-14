@@ -9,7 +9,7 @@ export default function LoginPage(): React.ReactNode {
         <p className="text-pretty text-sm text-muted-foreground">{STRINGS.auth.domainOnly}</p>
         <a
           href="/auth/start"
-          className="inline-flex w-full items-center justify-center rounded-md bg-primary px-4 py-2 text-sm text-primary-foreground transition-transform active:scale-[0.96]"
+          className="inline-flex w-full items-center justify-center rounded-md bg-action px-4 py-2 text-sm text-action-foreground transition-transform active:scale-[0.96]"
         >
           {STRINGS.auth.signInWithGoogle}
         </a>

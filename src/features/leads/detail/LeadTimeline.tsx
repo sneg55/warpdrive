@@ -1,6 +1,7 @@
 "use client";
 import type React from "react";
 import { useMemo, useState } from "react";
+import { PILL_TAB, Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { HistoryFeed } from "@/features/deal-workspace/HistoryFeed";
 import type { HistoryItem } from "@/features/deal-workspace/historyTimeline";
 import { partitionFocusHistory } from "@/features/deal-workspace/historyTimeline";
@@ -59,27 +60,16 @@ export function LeadTimeline({
       {view === "focus" ? (
         <HistoryFeed items={focus} emptyLabel="Nothing needs your attention" />
       ) : (
-        <div>
-          <div role="tablist" className="mb-3 flex flex-wrap gap-1">
+        <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)}>
+          <TabsList className="mb-3 flex-wrap gap-1">
             {TABS.map((t) => (
-              <button
-                key={t.key}
-                type="button"
-                role="tab"
-                aria-selected={tab === t.key}
-                onClick={() => setTab(t.key)}
-                className={
-                  tab === t.key
-                    ? "rounded-md bg-primary/10 px-2.5 py-1 text-sm font-medium text-primary"
-                    : "rounded-md px-2.5 py-1 text-sm text-muted-foreground hover:bg-accent/50 hover:text-foreground"
-                }
-              >
+              <TabsTrigger key={t.key} value={t.key} className={PILL_TAB}>
                 {t.label}
-              </button>
+              </TabsTrigger>
             ))}
-          </div>
+          </TabsList>
 
-          <div role="tabpanel">
+          <div>
             {tab === "all" && <HistoryFeed items={history} emptyLabel="No history yet." />}
             {tab === "activities" && (
               <HistoryFeed items={activities} emptyLabel="No activities yet." />
@@ -87,7 +77,7 @@ export function LeadTimeline({
             {tab === "notes" && <HistoryFeed items={notes} emptyLabel="No notes yet." />}
             {tab === "email" && <EmailList emails={emails} />}
           </div>
-        </div>
+        </Tabs>
       )}
     </TimelineTabs>
   );

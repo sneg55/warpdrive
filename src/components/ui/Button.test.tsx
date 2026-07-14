@@ -17,4 +17,11 @@ describe("Button", () => {
   it("buttonVariants includes the outline classes for variant=outline", () => {
     expect(buttonVariants({ variant: "outline" })).toContain("border");
   });
+
+  it("default variant uses the emerald action accent, not the slate primary", () => {
+    const classes = buttonVariants({ variant: "default" });
+    expect(classes).toContain("bg-action");
+    expect(classes).toContain("text-action-foreground");
+    expect(classes).not.toContain("bg-primary");
+  });
 });

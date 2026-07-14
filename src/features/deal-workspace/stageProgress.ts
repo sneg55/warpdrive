@@ -1,4 +1,4 @@
-const MS_PER_DAY = 86_400_000;
+import { calendarDaysBetween } from "@/lib/calendarDays";
 
 type StageRow = { id: string; name: string; order: number; rottingDays: number | null };
 type DealLike = { stageId: string; stageEnteredAt: Date };
@@ -20,7 +20,7 @@ export type StageProgress = {
 };
 
 export function timeInStageDays(stageEnteredAt: Date, now: Date = new Date()): number {
-  return Math.floor((now.getTime() - stageEnteredAt.getTime()) / MS_PER_DAY);
+  return Math.max(0, calendarDaysBetween(stageEnteredAt, now));
 }
 
 export function buildStageProgress(

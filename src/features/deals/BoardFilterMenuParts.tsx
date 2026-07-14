@@ -1,37 +1,20 @@
 import type React from "react";
 import { Avatar } from "@/components/ui/Avatar";
+import { TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import type { SavedFilterView as SavedFilter } from "./savedFilterView";
 
 export type Tab = "favorites" | "owners" | "filters";
 
-export function TabButton({
-  id,
-  active,
-  onSelect,
-  label,
-}: {
-  id: Tab;
-  active: Tab;
-  onSelect: (t: Tab) => void;
-  label: string;
-}): React.ReactNode {
-  const isActive = active === id;
+// Rendered inside the menu's <Tabs>/<TabsList>; Radix drives the active state.
+export function TabButton({ id, label }: { id: Tab; label: string }): React.ReactNode {
   return (
-    <button
-      type="button"
-      role="tab"
-      aria-selected={isActive}
-      onClick={() => onSelect(id)}
-      className={cn(
-        "flex-1 border-b-2 px-2 py-1.5 text-sm transition-colors",
-        isActive
-          ? "border-primary font-medium text-foreground"
-          : "border-transparent text-muted-foreground hover:text-foreground",
-      )}
+    <TabsTrigger
+      value={id}
+      className="flex-1 border-b-2 border-transparent px-2 py-1.5 text-muted-foreground transition-colors hover:text-foreground data-[state=active]:border-primary data-[state=active]:font-medium data-[state=active]:text-foreground"
     >
       {label}
-    </button>
+    </TabsTrigger>
   );
 }
 

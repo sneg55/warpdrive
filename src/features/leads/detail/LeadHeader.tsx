@@ -3,7 +3,6 @@ import { useRouter } from "next/navigation";
 import type React from "react";
 import { useState } from "react";
 import { useActionError } from "@/components/shell/ActionErrorProvider";
-import { OwnerBadge } from "@/features/identity/OwnerBadge";
 import { useLabelChipResolver } from "@/features/labels/useLabelChipResolver";
 import { readCsrfToken } from "@/utils/csrfCookie";
 import { POP_ITEM, PopMenu } from "../inbox/PopMenu";
@@ -55,8 +54,9 @@ export function LeadHeader({ lead }: { lead: LeadDetail }): React.ReactNode {
     <header className="mb-4 flex flex-wrap items-start gap-3 border-b pb-4">
       <div className="min-w-0 flex-1">
         <h1 className="truncate text-xl font-semibold text-foreground">{lead.title}</h1>
-        <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-          <OwnerBadge name={lead.ownerName} />
+        {/* Owner is not duplicated here: PD's lead drawer shows it only as a sidebar field
+            (Summary > Owner), so the header carries just labels + archived state. */}
+        <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground empty:hidden">
           {labels.map((label) => (
             <span
               key={label.name}
@@ -74,7 +74,7 @@ export function LeadHeader({ lead }: { lead: LeadDetail }): React.ReactNode {
           type="button"
           disabled={pending || converted}
           onClick={() => void convert()}
-          className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground transition hover:opacity-90 active:scale-[0.96] disabled:opacity-50"
+          className="rounded-md bg-success px-3 py-1.5 text-sm font-medium text-success-foreground transition hover:opacity-90 active:scale-[0.96] disabled:opacity-50"
         >
           {converted ? "Converted" : "Convert to deal"}
         </button>

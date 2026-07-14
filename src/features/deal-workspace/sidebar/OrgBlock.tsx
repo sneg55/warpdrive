@@ -5,6 +5,7 @@ import type { Organization } from "@/db/schema";
 import { updateOrgAction } from "@/features/contacts/actions";
 import { readCsrfToken } from "@/utils/csrfCookie";
 import { externalHref, LinkValue } from "./contactLinks";
+import { LabelChips, type ResolvedLabelChip } from "./LabelChips";
 import { OrgAddressField } from "./OrgAddressField";
 import { OrgBulkEditor } from "./OrgBulkEditor";
 import { SidebarFieldRow } from "./SidebarFieldRow";
@@ -42,6 +43,7 @@ export function OrgBlock({
   bulkEditing = false,
   onExitBulk,
   hidden = NONE,
+  labels,
 }: {
   org: Organization;
   bulkEditing?: boolean;
@@ -49,6 +51,9 @@ export function OrgBlock({
   // Built-in field keys hidden in Settings > Data fields (see BUILTIN_FIELDS.organization). A hidden
   // firmographic row is neither shown nor offered in bulk edit, mirroring the org detail page.
   hidden?: ReadonlySet<string>;
+  // Resolved label chips shown as a Labels row under Name. undefined on the deal sidebar; PD shows
+  // per-organization labels on the lead drawer.
+  labels?: ResolvedLabelChip[];
 }): React.ReactNode {
   const router = useRouter();
   const address = formatAddress(org.address);
@@ -93,6 +98,9 @@ export function OrgBlock({
         renderEditor={textEditor("editor-name")}
         onSave={(draft) => save({ name: draft.trim() })}
       />
+      {labels !== undefined && (
+        <SidebarFieldRow label="Labels" value={<LabelChips labels={labels} />} readOnly />
+      )}
       {!hidden.has("domain") && (
         <SidebarFieldRow
           label="Website"

@@ -15,8 +15,8 @@ describe("PresenceAvatars", () => {
         selfId="me"
       />,
     );
-    expect(screen.getByTitle("Bob")).toBeInTheDocument();
-    expect(screen.queryByTitle("Me")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Bob")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Me")).not.toBeInTheDocument();
   });
 
   it("collapses overflow past 3 into +N", () => {

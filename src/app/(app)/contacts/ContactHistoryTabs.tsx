@@ -1,6 +1,7 @@
 "use client";
 import type React from "react";
 import { useState } from "react";
+import { PILL_TAB, Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { HistoryFeed } from "@/features/deal-workspace/HistoryFeed";
 import type { HistoryTab } from "@/features/deal-workspace/HistoryTypeTabs";
 import type { HistoryItem } from "@/features/deal-workspace/historyTimeline";
@@ -51,31 +52,20 @@ export function ContactHistoryTabs({
   const [tab, setTab] = useState<HistoryTab>("all");
 
   return (
-    <div>
-      <div role="tablist" className="flex flex-wrap gap-1">
+    <Tabs value={tab} onValueChange={(v) => setTab(v as HistoryTab)}>
+      <TabsList className="flex-wrap gap-1">
         {TABS.map((t) => {
           const count = counts[t];
           return (
-            <button
-              key={t}
-              type="button"
-              role="tab"
-              aria-selected={tab === t}
-              onClick={() => setTab(t)}
-              className={
-                tab === t
-                  ? "rounded-md bg-primary/10 px-2.5 py-1 text-sm font-medium text-primary"
-                  : "rounded-md px-2.5 py-1 text-sm text-muted-foreground hover:bg-accent/50 hover:text-foreground"
-              }
-            >
+            <TabsTrigger key={t} value={t} className={PILL_TAB}>
               {TAB_LABELS[t]}
               {count !== undefined ? ` (${count})` : ""}
-            </button>
+            </TabsTrigger>
           );
         })}
-      </div>
+      </TabsList>
 
-      <div role="tabpanel" className="pt-4">
+      <div className="pt-4">
         {tab === "email" && emailPanel}
         {/* History is a view of what is attached, not a compose surface: read-only, mirroring
             the deal page's Files filter. */}
@@ -91,6 +81,6 @@ export function ContactHistoryTabs({
           />
         )}
       </div>
-    </div>
+    </Tabs>
   );
 }

@@ -10,6 +10,7 @@
 
 import { useState } from "react";
 import { Switch } from "@/components/ui/Switch";
+import { Tip } from "@/components/ui/tooltip";
 import { STRINGS } from "@/constants/strings";
 import type { EmailVisibility } from "../threadVisibility";
 import { AddActivityToggle } from "./AddActivityToggle";
@@ -128,29 +129,30 @@ export function ComposerFooter({
             >
               {STRINGS.inbox.send}
             </button>
-            <button
-              type="button"
-              disabled={sending || !canSend || onSendLater === undefined}
-              title={onSendLater === undefined ? "Coming soon" : "Send later"}
-              aria-label="Send later"
-              onClick={() => {
-                if (onSendLater !== undefined) setShowPicker((p) => !p);
-              }}
-              className="px-2 py-1.5 rounded-r-md border-l border-success-foreground/20 bg-success text-success-foreground text-sm font-medium transition-[transform,opacity] hover:opacity-90 active:scale-[0.96] disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
-            >
-              <svg
-                aria-hidden="true"
-                viewBox="0 0 24 24"
-                className="h-3.5 w-3.5"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
+            <Tip label={onSendLater === undefined ? "Coming soon" : "Send later"}>
+              <button
+                type="button"
+                disabled={sending || !canSend || onSendLater === undefined}
+                aria-label="Send later"
+                onClick={() => {
+                  if (onSendLater !== undefined) setShowPicker((p) => !p);
+                }}
+                className="px-2 py-1.5 rounded-r-md border-l border-success-foreground/20 bg-success text-success-foreground text-sm font-medium transition-[transform,opacity] hover:opacity-90 active:scale-[0.96] disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
               >
-                <path d="M6 9l6 6 6-6" />
-              </svg>
-            </button>
+                <svg
+                  aria-hidden="true"
+                  viewBox="0 0 24 24"
+                  className="h-3.5 w-3.5"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M6 9l6 6 6-6" />
+                </svg>
+              </button>
+            </Tip>
           </div>
           {showPicker && (
             <div className="flex flex-col items-end gap-1 mt-1">
@@ -169,7 +171,7 @@ export function ComposerFooter({
                 <button
                   type="button"
                   onClick={handleSchedule}
-                  className="ml-1 rounded-md bg-primary px-2 py-1 text-sm text-primary-foreground transition-transform hover:opacity-90 active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+                  className="ml-1 rounded-md bg-action px-2 py-1 text-sm text-action-foreground transition-transform hover:opacity-90 active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
                 >
                   Schedule
                 </button>

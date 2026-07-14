@@ -21,6 +21,13 @@ export interface EntityComboboxProps {
   hideLabel?: boolean;
 }
 
+// Custom autocomplete panel (kept, not migrated to ui/Combobox). The cmdk-based Combobox is a
+// pick-from-a-known-list picker (trigger button + chevron popover) that owns its input internally
+// and only emits a chosen option value. This field is fundamentally different: it is an inline
+// editable text input that (a) commits arbitrary free text as a create-new record, (b) hands the
+// live query text back to the parent every keystroke (for createLabel + onCreateNew/onClear), and
+// (c) runs a bespoke Levenshtein "Review" mode surfacing near-duplicates that are not substrings of
+// the query. cmdk models none of that, and swapping to a trigger button would break pixel parity.
 const MENU =
   "absolute left-0 right-0 top-full z-10 mt-1 max-h-56 overflow-auto rounded-md border bg-popover shadow-md";
 const ROW = "block w-full px-2.5 py-1.5 text-left text-sm hover:bg-accent";

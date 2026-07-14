@@ -1,4 +1,5 @@
 import type React from "react";
+import { PILL_TAB, Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export type TimelineView = "focus" | "history";
 
@@ -18,26 +19,15 @@ const VIEWS: { key: TimelineView; label: string }[] = [
 // for the active view (the History side nests its own per-type filter tabs).
 export function TimelineTabs({ view, onView, children }: TimelineTabsProps): React.ReactNode {
   return (
-    <div>
-      <div role="tablist" aria-label="Timeline view" className="mb-3 flex gap-1">
+    <Tabs value={view} onValueChange={(v) => onView(v as TimelineView)}>
+      <TabsList aria-label="Timeline view" className="mb-3 gap-1">
         {VIEWS.map((v) => (
-          <button
-            key={v.key}
-            type="button"
-            role="tab"
-            aria-selected={view === v.key}
-            onClick={() => onView(v.key)}
-            className={
-              view === v.key
-                ? "rounded-md bg-primary/10 px-2.5 py-1 text-sm font-medium text-primary"
-                : "rounded-md px-2.5 py-1 text-sm text-muted-foreground hover:bg-accent/50 hover:text-foreground"
-            }
-          >
+          <TabsTrigger key={v.key} value={v.key} className={PILL_TAB}>
             {v.label}
-          </button>
+          </TabsTrigger>
         ))}
-      </div>
+      </TabsList>
       {children}
-    </div>
+    </Tabs>
   );
 }

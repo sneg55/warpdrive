@@ -13,6 +13,12 @@ interface RecipientFieldProps {
   onChange: (v: string[]) => void;
 }
 
+// Custom chip input + autocomplete panel (kept, not migrated to ui/MultiCombobox). MultiCombobox
+// can only toggle values that exist in a fixed option list, so it cannot represent the two things a
+// recipient field must do: accept an arbitrary free-typed email (type + Enter, validated) that is
+// not a known contact, and render that email as a chip. Its value model is email strings, not
+// option ids, and its options are remote-fetched contacts (the async-search case the spec flags as
+// legitimately custom). A trigger-button popover would also break the inline "To:" pixel parity.
 export function RecipientField({ label, values, onChange }: RecipientFieldProps): React.ReactNode {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);

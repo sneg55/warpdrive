@@ -1,7 +1,8 @@
 import { notFound, redirect } from "next/navigation";
 import type React from "react";
 import { db } from "@/db/client";
-import { getLeadById } from "@/features/leads/leadRepo";
+import { listHiddenBuiltins } from "@/features/custom-fields/hiddenBuiltinsRepo";
+import { getLeadById, getLeadRelations } from "@/features/leads/leadRepo";
 import { createContext } from "@/server/trpc/context";
 import type { DealVisibilitySession } from "@/types/session";
 import { LeadWorkspaceClient } from "./LeadWorkspaceClient";
@@ -40,9 +41,24 @@ export async function LeadDetailView({ leadId }: { leadId: string }): Promise<Re
   if (loaded.kind === "unauth") redirect("/login");
   if (loaded.kind === "notfound") notFound();
 
+  // Load the linked person/org records and the Settings > Data fields hides so the sidebar's
+  // Person/Organization blocks render the contact's full field set (PD parity), dropping the same
+  // built-in rows the contact detail pages do. The lead visibility gate above is the authority.
+  const signal = AbortSignal.timeout(10_000);
+  const [relations, hidden] = await Promise.all([
+    getLeadRelations(db, loaded.lead, signal),
+    listHiddenBuiltins(db, signal),
+  ]);
+
   return (
     <main aria-label="Lead" className="h-full">
-      <LeadWorkspaceClient lead={loaded.lead} />
+      <LeadWorkspaceClient
+        lead={loaded.lead}
+        person={relations.person}
+        org={relations.org}
+        hiddenPersonFields={hidden.person}
+        hiddenOrgFields={hidden.organization}
+      />
     </main>
   );
 }

@@ -3,6 +3,7 @@ import { useRouter } from "next/navigation";
 import type React from "react";
 import { useState } from "react";
 import { useActionError } from "@/components/shell/ActionErrorProvider";
+import { Button } from "@/components/ui/Button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/RadioGroup";
 import { Select, type SelectOption } from "@/components/ui/Select";
 import { STRINGS } from "@/constants/strings";
@@ -147,14 +148,16 @@ export function ProfileClient(props: ProfileClientProps): React.ReactNode {
       </fieldset>
 
       <div className="flex items-center gap-3">
-        <button
+        <Button
           type="button"
+          variant="default"
+          size="sm"
+          className="px-3"
           disabled={pending}
           onClick={() => void save()}
-          className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground transition-transform hover:opacity-90 active:not-disabled:scale-[0.96] disabled:opacity-50"
         >
           {STRINGS.settings.save}
-        </button>
+        </Button>
         {saved && <span className="text-sm text-muted-foreground">{STRINGS.settings.saved}</span>}
       </div>
     </div>

@@ -82,7 +82,7 @@ export function QuickAddContact({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 active:scale-[0.96] transition-transform"
+        className="rounded-md bg-action px-3 py-1.5 text-sm font-medium text-action-foreground hover:bg-action/90 active:scale-[0.96] transition-transform"
       >
         {label}
       </button>
@@ -125,7 +125,7 @@ export function QuickAddContact({
                 type="button"
                 disabled={pending}
                 onClick={() => void submit()}
-                className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 active:not-disabled:scale-[0.96] transition-transform"
+                className="rounded-md bg-action px-3 py-1.5 text-sm font-medium text-action-foreground hover:bg-action/90 disabled:opacity-50 active:not-disabled:scale-[0.96] transition-transform"
               >
                 {S.add}
               </button>

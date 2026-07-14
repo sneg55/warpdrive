@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { TimelineTabs } from "./TimelineTabs";
 
@@ -27,25 +28,25 @@ describe("TimelineTabs", () => {
     expect(screen.getByRole("tab", { name: "Focus" })).toHaveAttribute("aria-selected", "false");
   });
 
-  it("calls onView with 'focus' when the Focus tab is clicked", () => {
+  it("calls onView with 'focus' when the Focus tab is clicked", async () => {
     const onView = vi.fn();
     render(
       <TimelineTabs view="history" onView={onView}>
         <p>content</p>
       </TimelineTabs>,
     );
-    fireEvent.click(screen.getByRole("tab", { name: "Focus" }));
+    await userEvent.click(screen.getByRole("tab", { name: "Focus" }));
     expect(onView).toHaveBeenCalledWith("focus");
   });
 
-  it("calls onView with 'history' when the History tab is clicked", () => {
+  it("calls onView with 'history' when the History tab is clicked", async () => {
     const onView = vi.fn();
     render(
       <TimelineTabs view="focus" onView={onView}>
         <p>content</p>
       </TimelineTabs>,
     );
-    fireEvent.click(screen.getByRole("tab", { name: "History" }));
+    await userEvent.click(screen.getByRole("tab", { name: "History" }));
     expect(onView).toHaveBeenCalledWith("history");
   });
 

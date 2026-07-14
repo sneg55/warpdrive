@@ -38,6 +38,18 @@ describe("DetailDrawer", () => {
     expect(dialog.className).toContain("max-w-[1280px]");
   });
 
+  it("applies a caller-provided contentClassName so a specific surface (the lead drawer) can be wider", () => {
+    render(
+      <DetailDrawer title="Lead details" contentClassName="w-[75vw] max-w-[1280px]">
+        <p>lead content</p>
+      </DetailDrawer>,
+    );
+    const dialog = screen.getByRole("dialog");
+    // The lead drawer opts into PD's wider (~75vw) footprint; the default person/org width is unchanged.
+    expect(dialog.className).toContain("w-[75vw]");
+    expect(dialog.className).not.toContain("w-[66vw]");
+  });
+
   it("calls router.back() when closed via Escape (returns to the list)", () => {
     render(
       <DetailDrawer title="Person details">

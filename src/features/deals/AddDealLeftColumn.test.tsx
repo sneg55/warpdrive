@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { TITLE_MAX_LEN } from "@/constants/fieldLimits";
 
@@ -66,6 +67,17 @@ describe("AddDealLeftColumn owner picker", () => {
     fireEvent.click(screen.getByLabelText("Pipeline"));
     fireEvent.click(screen.getByText("Partnerships"));
     expect(set).toHaveBeenCalledWith({ pipelineId: "p2", stageId: "s2" });
+  });
+});
+
+describe("AddDealLeftColumn title label association", () => {
+  it("focuses the title input when its visible Title label is clicked", async () => {
+    const user = userEvent.setup();
+    render(<AddDealLeftColumn {...baseProps()} />);
+    const input = screen.getByRole("textbox", { name: "Deal title" });
+    expect(input).not.toHaveFocus();
+    await user.click(screen.getByText("Title"));
+    expect(input).toHaveFocus();
   });
 });
 

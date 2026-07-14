@@ -88,7 +88,7 @@ export function EntityCreateModalShell(props: EntityCreateModalShellProps): Reac
             type="button"
             onClick={onSubmit}
             disabled={pending}
-            className="rounded-md bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground transition hover:opacity-90 active:scale-[0.96] disabled:opacity-50"
+            className="rounded-md bg-action px-4 py-1.5 text-sm font-medium text-action-foreground transition hover:opacity-90 active:scale-[0.96] disabled:opacity-50"
           >
             {pending ? "Saving..." : "Save"}
           </button>

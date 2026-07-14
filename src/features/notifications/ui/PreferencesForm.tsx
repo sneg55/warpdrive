@@ -1,5 +1,7 @@
 "use client";
 
+import { useId } from "react";
+import { Switch } from "@/components/ui/Switch";
 import type { NotificationType } from "@/constants/notificationTypes";
 import { NOTIFICATION_TYPES } from "@/constants/notificationTypes";
 import { STRINGS } from "@/constants/strings";
@@ -13,31 +15,14 @@ type ToggleProps = {
 };
 
 function Toggle({ label, checked, onChange }: ToggleProps) {
+  const id = useId();
   return (
-    <label className="flex cursor-pointer items-center gap-2 text-sm select-none">
-      <span className="text-muted-foreground">{label}</span>
-      <button
-        type="button"
-        role="switch"
-        aria-checked={checked}
-        aria-label={label}
-        onClick={() => onChange(!checked)}
-        className={[
-          "relative inline-flex h-5 w-9 shrink-0 rounded-full border-2 border-transparent",
-          "transition-colors focus-visible:outline-none focus-visible:ring-2",
-          "focus-visible:ring-ring focus-visible:ring-offset-2",
-          checked ? "bg-primary" : "bg-input",
-        ].join(" ")}
-      >
-        <span
-          aria-hidden="true"
-          className={[
-            "pointer-events-none block h-4 w-4 rounded-full bg-white shadow-lg ring-0 transition-transform",
-            checked ? "translate-x-4" : "translate-x-0",
-          ].join(" ")}
-        />
-      </button>
-    </label>
+    <span className="flex items-center gap-2 text-sm select-none">
+      <label htmlFor={id} className="cursor-pointer text-muted-foreground">
+        {label}
+      </label>
+      <Switch id={id} checked={checked} onCheckedChange={onChange} label={label} />
+    </span>
   );
 }
 

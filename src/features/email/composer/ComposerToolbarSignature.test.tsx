@@ -71,11 +71,15 @@ describe("Composer toolbar signature picker (Task 4)", () => {
     render(<Composer accountId="a1" context={{ kind: "inbox" }} />);
     const toolbarRow = getToolbarRow();
     const trigger = within(toolbarRow).getByRole("button", { name: /^signature$/i });
-    expect(trigger).toHaveAttribute("title", "Signature: None");
+    // The current-signature hint moved from a native title= to the Tooltip label.
+    await user.hover(trigger);
+    expect(await screen.findByRole("tooltip")).toHaveTextContent("Signature: None");
+    await user.unhover(trigger);
 
     await user.click(trigger);
     await user.click(screen.getByRole("menuitem", { name: "Work" }));
 
-    expect(trigger).toHaveAttribute("title", "Signature: Work");
+    await user.hover(trigger);
+    expect(await screen.findByRole("tooltip")).toHaveTextContent("Signature: Work");
   });
 });

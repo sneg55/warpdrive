@@ -30,6 +30,11 @@ vi.mock("@/features/leads/leadServerActions", () => ({
   bulkUpdateLeadsAction: vi.fn(),
 }));
 vi.mock("@/utils/csrfCookie", () => ({ readCsrfToken: () => "csrf" }));
+// The sidebar's Person/Organization blocks (reused from the deal sidebar) save through these.
+vi.mock("@/features/contacts/actions", () => ({
+  updatePersonAction: vi.fn(() => Promise.resolve({ ok: true, value: {} })),
+  updateOrgAction: vi.fn(() => Promise.resolve({ ok: true, value: {} })),
+}));
 
 const { createActivityAction } = vi.hoisted(() => ({
   createActivityAction: vi.fn(() => Promise.resolve({ ok: true as const, value: { id: "a1" } })),
@@ -76,7 +81,65 @@ vi.mock("@/lib/trpc-client", () => ({
   },
 }));
 
+import type { Organization, Person } from "@/db/schema";
 import { LeadWorkspaceClient } from "./LeadWorkspaceClient";
+
+const person: Person = {
+  id: "pe1",
+  name: "Jane Roe",
+  firstName: "Jane",
+  lastName: "Roe",
+  primaryEmail: "jane@acme.com",
+  emails: [],
+  phones: [],
+  orgId: "o1",
+  ownerId: "u1",
+  visibilityLevel: "owner",
+  visibilityGroupId: null,
+  visibleToUserIds: [],
+  labels: [],
+  customFields: {},
+  searchTsv: "",
+  createdAt: new Date("2026-06-01T00:00:00Z"),
+  updatedAt: new Date("2026-06-01T00:00:00Z"),
+  deletedAt: null,
+};
+
+const org: Organization = {
+  id: "o1",
+  name: "Acme Inc",
+  address: null,
+  domain: null,
+  industry: null,
+  employeeCount: null,
+  annualRevenue: null,
+  linkedinUrl: null,
+  ownerId: "u1",
+  visibilityLevel: "owner",
+  visibilityGroupId: null,
+  visibleToUserIds: [],
+  labels: [],
+  customFields: {},
+  searchTsv: "",
+  createdAt: new Date("2026-06-01T00:00:00Z"),
+  updatedAt: new Date("2026-06-01T00:00:00Z"),
+  deletedAt: null,
+};
+
+const NONE: ReadonlySet<string> = new Set();
+
+// Render the workspace with the linked contact records + no hidden fields (the common case).
+function renderClient(over: Partial<LeadDetail> = {}) {
+  return render(
+    <LeadWorkspaceClient
+      lead={{ ...lead, ...over }}
+      person={person}
+      org={org}
+      hiddenPersonFields={NONE}
+      hiddenOrgFields={NONE}
+    />,
+  );
+}
 
 const lead: LeadDetail = {
   id: "l1",
@@ -108,7 +171,7 @@ const lead: LeadDetail = {
 
 describe("LeadWorkspaceClient", () => {
   it("renders the lead title, sidebar contacts, Convert/Archive actions, and timeline tabs", () => {
-    render(<LeadWorkspaceClient lead={lead} />);
+    renderClient();
     expect(screen.getByText("Acme lead")).toBeInTheDocument();
     expect(screen.getByText("Jane Roe")).toBeInTheDocument();
     expect(screen.getByText("Acme Inc")).toBeInTheDocument();
@@ -123,18 +186,19 @@ describe("LeadWorkspaceClient", () => {
   });
 
   it("mounts the compose bar in the PD default state, scoped to the lead", () => {
-    const { container } = render(<LeadWorkspaceClient lead={lead} />);
+    const { container } = renderClient();
     const composeSection = container.querySelector('section[aria-label="compose"]');
     if (composeSection === null) throw new Error("compose section not found");
     const compose = within(composeSection as HTMLElement);
     // The compose tab strip is always visible (the timeline below has its own unrelated
-    // All/Activities/Notes/Email tablist, hence the compose-scoped queries).
-    expect(compose.getByRole("tab", { name: "Activity" })).toBeInTheDocument();
-    expect(
-      compose.getByRole("button", { name: "Click here to add an activity..." }),
-    ).toBeInTheDocument();
-    // Collapsed: the activity editor itself is not mounted yet.
-    expect(compose.queryByLabelText("Subject")).not.toBeInTheDocument();
+    // All/Activities/Notes/Email tablist, hence the compose-scoped queries). PD's lead drawer
+    // defaults to Notes (its "Take a note..." prompt), so Notes is first and selected here.
+    const tabs = compose.getAllByRole("tab");
+    expect(tabs.map((t) => t.textContent)).toEqual(["Notes", "Activity"]);
+    expect(tabs[0]).toHaveAttribute("aria-selected", "true");
+    expect(compose.getByRole("button", { name: "Take a note..." })).toBeInTheDocument();
+    // Collapsed: the note editor itself is not mounted yet.
+    expect(compose.queryByRole("textbox", { name: "Note" })).not.toBeInTheDocument();
   });
 
   // MANDATORY seam test (Task 14 reviewer directive): SharedComposeBar.test.tsx mocks
@@ -144,8 +208,10 @@ describe("LeadWorkspaceClient", () => {
   // leadId (and no dealId) in the created-activity payload, so it files under this lead
   // and not a phantom deal.
   it("logs an activity from the lead's compose bar with leadId (and no dealId) in the payload", async () => {
-    render(<LeadWorkspaceClient lead={lead} />);
-    fireEvent.click(screen.getByRole("button", { name: "Click here to add an activity..." }));
+    renderClient();
+    // The lead composer defaults to Notes (PD parity), so switch to the Activity tab first; clicking
+    // a tab expands its editor directly.
+    fireEvent.click(screen.getByRole("tab", { name: "Activity" }));
     fireEvent.change(screen.getByLabelText("Subject"), { target: { value: "Intro call" } });
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
 
@@ -164,7 +230,7 @@ describe("LeadWorkspaceClient", () => {
   });
 
   it("shows 'Converted' (disabled) when the lead already has a converted deal", () => {
-    render(<LeadWorkspaceClient lead={{ ...lead, convertedDealId: "d9" }} />);
+    renderClient({ convertedDealId: "d9" });
     const btn = screen.getByRole("button", { name: "Converted" });
     expect(btn).toBeDisabled();
   });

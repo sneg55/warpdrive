@@ -2,6 +2,7 @@
 import { useRouter } from "next/navigation";
 import type React from "react";
 import { useState } from "react";
+import { Tip } from "@/components/ui/tooltip";
 import { AddActivityModal } from "@/features/activities/AddActivityModal";
 import { useDealActionError } from "@/features/deal-workspace/DealActionErrorProvider";
 import { MarkLostDialog } from "@/features/deal-workspace/MarkLostDialog";
@@ -81,9 +82,9 @@ export function DealCloseActions({
           {status}
         </span>
         {reasonLabel !== "" && (
-          <span className="max-w-48 truncate text-xs text-muted-foreground" title={reasonLabel}>
-            {reasonLabel}
-          </span>
+          <Tip label={reasonLabel}>
+            <span className="max-w-48 truncate text-xs text-muted-foreground">{reasonLabel}</span>
+          </Tip>
         )}
         <button
           type="button"

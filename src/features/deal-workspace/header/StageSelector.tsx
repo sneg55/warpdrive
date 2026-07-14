@@ -2,6 +2,7 @@
 import { useRouter } from "next/navigation";
 import type React from "react";
 import { useState } from "react";
+import { Tip } from "@/components/ui/tooltip";
 import { changeStageAction } from "@/features/deal-workspace/actions";
 import { useDealActionError } from "@/features/deal-workspace/DealActionErrorProvider";
 import { stageSegmentStyle } from "@/features/deals/boardStageHeader";
@@ -76,37 +77,37 @@ export function StageSelector({
       {chips.map((chip, idx) => {
         const fill = stageSegmentStyle(idx, segmentState(chip));
         return (
-          <button
-            key={chip.id}
-            type="button"
-            role="option"
-            aria-selected={chip.current}
-            aria-current={chip.current ? "step" : undefined}
-            disabled={pending}
-            onClick={() => void select(chip)}
-            title={chip.name}
-            className={[
-              "relative flex min-w-0 flex-col items-start truncate px-4 py-1 text-xs leading-tight text-foreground transition-transform hover:opacity-90 disabled:cursor-default disabled:opacity-70",
-              idx > 0 ? "-ml-2 pl-6" : "",
-              // The current stage pops out of the row: slightly enlarged and raised above the
-              // interlocking neighbours (which use z-0 so the scaled segment overlaps them).
-              chip.current ? "z-10 scale-[1.08] drop-shadow-sm" : "z-0",
-            ]
-              .join(" ")
-              .trim()}
-            style={{
-              clipPath: idx === 0 ? FIRST_CLIP : MID_CLIP,
-              backgroundColor: fill.backgroundColor,
-              fontWeight: fill.fontWeight,
-            }}
-          >
-            <span className="max-w-full truncate">{chip.name}</span>
-            {/* C3 (Pipedrive parity): day-count at 12px (PD shows day-counts only; warpdrive keeps
+          <Tip key={chip.id} label={chip.name}>
+            <button
+              type="button"
+              role="option"
+              aria-selected={chip.current}
+              aria-current={chip.current ? "step" : undefined}
+              disabled={pending}
+              onClick={() => void select(chip)}
+              className={[
+                "relative flex min-w-0 flex-col items-start truncate px-4 py-1 text-xs leading-tight text-foreground transition-transform hover:opacity-90 disabled:cursor-default disabled:opacity-70",
+                idx > 0 ? "-ml-2 pl-6" : "",
+                // The current stage pops out of the row: slightly enlarged and raised above the
+                // interlocking neighbours (which use z-0 so the scaled segment overlaps them).
+                chip.current ? "z-10 scale-[1.08] drop-shadow-sm" : "z-0",
+              ]
+                .join(" ")
+                .trim()}
+              style={{
+                clipPath: idx === 0 ? FIRST_CLIP : MID_CLIP,
+                backgroundColor: fill.backgroundColor,
+                fontWeight: fill.fontWeight,
+              }}
+            >
+              <span className="max-w-full truncate">{chip.name}</span>
+              {/* C3 (Pipedrive parity): day-count at 12px (PD shows day-counts only; warpdrive keeps
                 the stage name above it as an extra affordance). */}
-            <span className="text-xs tabular-nums opacity-80">
-              {chip.days} {chip.days === 1 ? "day" : "days"}
-            </span>
-          </button>
+              <span className="text-xs tabular-nums opacity-80">
+                {chip.days} {chip.days === 1 ? "day" : "days"}
+              </span>
+            </button>
+          </Tip>
         );
       })}
     </div>

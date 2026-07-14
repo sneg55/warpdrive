@@ -118,7 +118,7 @@ export function NoteCard({
               type="button"
               disabled={busy}
               onClick={() => void save()}
-              className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground transition-transform hover:opacity-90 active:scale-[0.96] disabled:opacity-50"
+              className="rounded-md bg-action px-3 py-1.5 text-sm font-medium text-action-foreground transition-transform hover:opacity-90 active:scale-[0.96] disabled:opacity-50"
             >
               Save
             </button>

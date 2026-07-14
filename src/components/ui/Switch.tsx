@@ -6,12 +6,16 @@ interface SwitchProps {
   checked: boolean;
   onCheckedChange: (v: boolean) => void;
   label: string;
+  // Optional id so a visible <label htmlFor> can forward clicks to this control
+  // (restores click-to-toggle on the label text without a wrapping <label>).
+  id?: string;
 }
 
 // Minimal accessible toggle switch (no external dep). Token-styled; on = success.
-export function Switch({ checked, onCheckedChange, label }: SwitchProps): React.ReactNode {
+export function Switch({ checked, onCheckedChange, label, id }: SwitchProps): React.ReactNode {
   return (
     <button
+      id={id}
       type="button"
       role="switch"
       aria-checked={checked}

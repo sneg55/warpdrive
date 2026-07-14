@@ -13,7 +13,12 @@ export default async function InterceptedLeadPage({
 }): Promise<React.ReactNode> {
   const { leadId } = await params;
   return (
-    <DetailDrawer title="Lead details">
+    // Wider than the default person/org drawer: PD's lead slide-over is ~75vw and its two-column
+    // overview (detail sidebar + activity timeline) needs the room.
+    <DetailDrawer
+      title="Lead details"
+      contentClassName="w-full sm:w-[94vw] md:w-[85vw] lg:w-[80vw] xl:w-[75vw] max-w-[1280px]"
+    >
       <Suspense fallback={<DetailDrawerSkeleton />}>
         <LeadDetailView leadId={leadId} />
       </Suspense>

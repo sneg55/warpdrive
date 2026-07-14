@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { CalendarActivity } from "@/features/activities/calendar";
 import type { HistoryItem } from "@/features/deal-workspace/historyTimeline";
@@ -70,9 +71,9 @@ describe("LeadTimeline", () => {
     expect(screen.getByRole("tab", { name: "Email" })).toBeInTheDocument();
   });
 
-  it("Focus view shows only the open activity and hides the type-filter row", () => {
+  it("Focus view shows only the open activity and hides the type-filter row", async () => {
     render(<LeadTimeline items={makeItems(makeActivity({ done: false }))} emails={emails} />);
-    fireEvent.click(screen.getByRole("tab", { name: "Focus" }));
+    await userEvent.click(screen.getByRole("tab", { name: "Focus" }));
 
     expect(screen.getByText("Follow-up call")).toBeInTheDocument();
     expect(screen.queryByText("Called them")).not.toBeInTheDocument();
@@ -80,9 +81,9 @@ describe("LeadTimeline", () => {
     expect(screen.queryByRole("tab", { name: "Notes" })).not.toBeInTheDocument();
   });
 
-  it("Focus view shows the empty label when there are no open activities", () => {
+  it("Focus view shows the empty label when there are no open activities", async () => {
     render(<LeadTimeline items={makeItems(makeActivity({ done: true }))} emails={emails} />);
-    fireEvent.click(screen.getByRole("tab", { name: "Focus" }));
+    await userEvent.click(screen.getByRole("tab", { name: "Focus" }));
     expect(screen.getByText("Nothing needs your attention")).toBeInTheDocument();
   });
 
@@ -93,10 +94,10 @@ describe("LeadTimeline", () => {
     expect(screen.getByText("Labels: (none) → Hot")).toBeInTheDocument();
   });
 
-  it("returning to History restores the type-filter tabs and the full log", () => {
+  it("returning to History restores the type-filter tabs and the full log", async () => {
     render(<LeadTimeline items={makeItems(makeActivity({ done: true }))} emails={emails} />);
-    fireEvent.click(screen.getByRole("tab", { name: "Focus" }));
-    fireEvent.click(screen.getByRole("tab", { name: "History" }));
+    await userEvent.click(screen.getByRole("tab", { name: "Focus" }));
+    await userEvent.click(screen.getByRole("tab", { name: "History" }));
 
     expect(screen.getByRole("tab", { name: "Notes" })).toBeInTheDocument();
     expect(screen.getByText("Called them")).toBeInTheDocument();

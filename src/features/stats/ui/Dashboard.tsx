@@ -4,6 +4,7 @@ import type React from "react";
 import { useState } from "react";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { Select } from "@/components/ui/Select";
+import { Tip } from "@/components/ui/tooltip";
 import { STRINGS } from "@/constants/strings";
 import { trpc } from "@/lib/trpc-client";
 import { ActivitiesWidget, DealPerformanceWidget, FunnelWidget, StageSumsWidget } from "./widgets";
@@ -85,24 +86,27 @@ export function Dashboard({ canViewOthers, currency }: DashboardProps) {
     <div className="p-6">
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <h1 className="text-balance text-lg font-medium">{STRINGS.dashboard.title}</h1>
-        <button
-          type="button"
-          disabled={!canViewOthers}
-          onClick={() => {
-            setOwnerScope((s) => (s === "me" ? "all" : "me"));
-          }}
-          className="rounded border px-2 py-1 text-sm transition-transform active:scale-[0.96] disabled:opacity-50"
-          title={
+        <Tip
+          label={
             canViewOthers
               ? STRINGS.dashboard.ownerToggleTitle
               : STRINGS.dashboard.ownerToggleDisabledTitle
           }
         >
-          {STRINGS.dashboard.ownerToggleLabel}{" "}
-          {(result?.effectiveOwnerScope ?? ownerScope) === "all"
-            ? STRINGS.dashboard.ownerAll
-            : STRINGS.dashboard.ownerMe}
-        </button>
+          <button
+            type="button"
+            disabled={!canViewOthers}
+            onClick={() => {
+              setOwnerScope((s) => (s === "me" ? "all" : "me"));
+            }}
+            className="rounded border px-2 py-1 text-sm transition-transform active:scale-[0.96] disabled:opacity-50"
+          >
+            {STRINGS.dashboard.ownerToggleLabel}{" "}
+            {(result?.effectiveOwnerScope ?? ownerScope) === "all"
+              ? STRINGS.dashboard.ownerAll
+              : STRINGS.dashboard.ownerMe}
+          </button>
+        </Tip>
         <div className="flex items-center gap-2">
           <DatePicker
             ariaLabel={STRINGS.dashboard.rangeStartLabel}

@@ -3,6 +3,7 @@ import { useRouter } from "next/navigation";
 import type React from "react";
 import { useState } from "react";
 import { useActionError } from "@/components/shell/ActionErrorProvider";
+import { Button } from "@/components/ui/Button";
 import { Select } from "@/components/ui/Select";
 import { ERROR_IDS } from "@/constants/errorIds";
 import { FIELD_INPUT } from "@/constants/formStyles";
@@ -149,13 +150,15 @@ export function LabelsClient({ rows: initial }: { rows: Row[] }): React.ReactNod
                     options={LABEL_COLOR_OPTIONS}
                   />
                 </div>
-                <button
+                <Button
                   type="button"
+                  variant="default"
+                  size="sm"
+                  className="px-3"
                   onClick={() => void add(target)}
-                  className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground transition-transform hover:opacity-90 active:scale-[0.96]"
                 >
                   {S.addLabel}
-                </button>
+                </Button>
               </li>
             </ul>
           </section>

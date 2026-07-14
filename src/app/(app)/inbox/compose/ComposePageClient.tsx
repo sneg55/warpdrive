@@ -92,8 +92,8 @@ export function ComposePageClient({
         </Link>
         <h1 className="text-lg font-semibold">{STRINGS.inbox.composeTitle}</h1>
       </div>
-      <div className="flex min-h-0 flex-1 gap-4 overflow-hidden p-4">
-        <div className="flex min-h-0 w-full max-w-[640px] flex-col">
+      <div className="flex min-h-0 flex-1 items-start gap-6 overflow-y-auto p-4">
+        <div className="flex min-w-0 flex-1 flex-col">
           {waitingForDraft ? (
             <p className="p-3 text-sm text-muted-foreground">{STRINGS.inbox.loadingDraft}</p>
           ) : (
@@ -108,7 +108,7 @@ export function ComposePageClient({
             />
           )}
         </div>
-        <div className="hidden w-[336px] shrink-0 lg:block">
+        <div className="hidden w-[280px] shrink-0 lg:block">
           <ComposeLinkSidebar
             dealId={linkedDeal?.id ?? null}
             dealTitle={linkedDeal?.title ?? null}

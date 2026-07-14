@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { CalendarActivity } from "@/features/activities/calendar";
 import type { HistoryItem } from "@/features/deal-workspace/historyTimeline";
@@ -91,7 +92,7 @@ describe("ContactTimelinePanel", () => {
     expect(screen.getByText("Called Jane")).toBeInTheDocument();
   });
 
-  it("renders the deal-page history filter row and filters the History bucket by type", () => {
+  it("renders the deal-page history filter row and filters the History bucket by type", async () => {
     // CO-1: the contact Activity feed gets the same per-type filter row the deal page has
     // (All/Activities/Notes/Email/Files/Changelog). The filter buckets the History side only;
     // Focus (open activities) is unaffected.
@@ -109,7 +110,7 @@ describe("ContactTimelinePanel", () => {
     expect(screen.getByText("Called Jane")).toBeInTheDocument();
 
     // Click "Notes": only the note remains in History; the done activity is filtered out.
-    fireEvent.click(screen.getByRole("tab", { name: /Notes/ }));
+    await userEvent.click(screen.getByRole("tab", { name: /Notes/ }));
     expect(screen.getByText("Called Jane")).toBeInTheDocument();
     expect(screen.queryByText("Done call")).not.toBeInTheDocument();
     // Focus is above the filter row and unaffected by it.

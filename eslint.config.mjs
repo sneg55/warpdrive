@@ -36,6 +36,21 @@ const DESIGN_SYSTEM_RESTRICTED_SYNTAX = [
     message:
       "Hand-rolled modal overlays are banned. Use the shadcn Dialog primitive (src/components/ui/dialog.tsx) instead of a `fixed inset-0` overlay.",
   },
+  {
+    // Hand-rolled tab strips: any role="tablist"/"tab" written in JSX. Radix supplies these
+    // roles at runtime, so the sanctioned Tabs primitive never trips this.
+    selector: "JSXAttribute[name.name='role'][value.value=/^tab(list)?$/]",
+    message:
+      'Hand-rolled tabs are banned. Use the Tabs primitive (src/components/ui/tabs.tsx) instead of role="tablist"/"tab".',
+  },
+  {
+    // Native `title` tooltips on host elements. <iframe title> is exempt (a required a11y name),
+    // and `title` props on Capitalized components are not host attributes so they never match.
+    selector:
+      "JSXOpeningElement[name.name=/^[a-z]/]:not([name.name='iframe']) > JSXAttribute[name.name='title']",
+    message:
+      "Native `title` tooltips are banned. Use the Tip/Tooltip primitive (src/components/ui/tooltip.tsx). (<iframe title> is exempt.)",
+  },
 ];
 
 export default tseslint.config(

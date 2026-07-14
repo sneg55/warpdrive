@@ -1,5 +1,6 @@
 "use client";
 
+import { Tip } from "@/components/ui/tooltip";
 import type { PresenceUser } from "@/types/presence";
 import { usePresence } from "./usePresence";
 
@@ -18,13 +19,15 @@ export function PresenceAvatars({ users, selfId }: PresenceAvatarsProps): React.
   return (
     <div className="flex items-center -space-x-2">
       {shown.map((u) => (
-        <span
-          key={u.userId}
-          title={u.name}
-          className="grid size-6 place-items-center rounded-full border border-gray-300 bg-gray-200 text-xs font-medium text-gray-700"
-        >
-          {u.name.slice(0, 1).toUpperCase()}
-        </span>
+        <Tip key={u.userId} label={u.name}>
+          <span
+            role="img"
+            aria-label={u.name}
+            className="grid size-6 place-items-center rounded-full border border-gray-300 bg-gray-200 text-xs font-medium text-gray-700"
+          >
+            {u.name.slice(0, 1).toUpperCase()}
+          </span>
+        </Tip>
       ))}
       {overflow > 0 ? (
         <span className="grid size-6 place-items-center rounded-full border border-gray-300 bg-gray-100 text-xs font-medium text-gray-600 tabular-nums">

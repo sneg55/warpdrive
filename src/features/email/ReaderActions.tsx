@@ -52,7 +52,7 @@ export function ReaderActions({
       <button
         type="button"
         onClick={() => setMode("reply")}
-        className="flex items-center gap-1.5 rounded bg-primary px-3 py-1 text-sm font-medium text-primary-foreground transition-transform hover:opacity-90 active:scale-[0.96]"
+        className="flex items-center gap-1.5 rounded bg-action px-3 py-1 text-sm font-medium text-action-foreground transition-transform hover:opacity-90 active:scale-[0.96]"
       >
         <ReplyGlyph />
         {STRINGS.inbox.replyAction}

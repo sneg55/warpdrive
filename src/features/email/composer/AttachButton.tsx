@@ -5,6 +5,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { Tip } from "@/components/ui/tooltip";
 import { ALLOWED_CONTENT_TYPES } from "@/features/files/contentTypes";
 import { confirmUploadAction, requestUploadAction } from "@/features/files/serverActions";
 import { readCsrfToken } from "@/utils/csrfCookie";
@@ -106,27 +107,28 @@ export function AttachButton({
           {error}
         </p>
       )}
-      <button
-        type="button"
-        aria-label="Attach file"
-        title="Attach file"
-        onClick={() => inputRef.current?.click()}
-        className="p-1 rounded hover:bg-accent text-muted-foreground"
-      >
-        {/* Paperclip icon */}
-        <svg
-          aria-hidden="true"
-          viewBox="0 0 24 24"
-          className="h-4 w-4"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
+      <Tip label="Attach file">
+        <button
+          type="button"
+          aria-label="Attach file"
+          onClick={() => inputRef.current?.click()}
+          className="p-1 rounded hover:bg-accent text-muted-foreground"
         >
-          <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
-        </svg>
-      </button>
+          {/* Paperclip icon */}
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+            className="h-4 w-4"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+          </svg>
+        </button>
+      </Tip>
       <input
         ref={inputRef}
         type="file"

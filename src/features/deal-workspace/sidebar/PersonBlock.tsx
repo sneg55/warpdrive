@@ -7,6 +7,7 @@ import { primaryValue, setPrimaryPoint } from "@/features/contacts/PersonSummary
 import type { ContactPoint } from "@/types/contactPoint";
 import { readCsrfToken } from "@/utils/csrfCookie";
 import { LinkValue, mailtoHref, telHref } from "./contactLinks";
+import { LabelChips, type ResolvedLabelChip } from "./LabelChips";
 import { PersonBulkEditor } from "./PersonBulkEditor";
 import { SidebarFieldRow } from "./SidebarFieldRow";
 import { refreshQuietly, textEditor } from "./sidebarEditors";
@@ -31,6 +32,8 @@ export function PersonBlock({
   bulkEditing = false,
   onExitBulk,
   hidden = NONE,
+  hideNameParts = false,
+  labels,
 }: {
   person: Person;
   bulkEditing?: boolean;
@@ -38,6 +41,12 @@ export function PersonBlock({
   // Built-in field keys hidden in Settings > Data fields (see BUILTIN_FIELDS.person). A hidden
   // contact-point row is neither shown nor offered in bulk edit, mirroring the person detail page.
   hidden?: ReadonlySet<string>;
+  // Lead-drawer parity: PD's lead PERSON section shows the display Name only. When set, the
+  // First name / Last name rows are dropped (deal + contact surfaces keep them).
+  hideNameParts?: boolean;
+  // Resolved label chips (name + Tailwind classes) shown as a Labels row under Name. undefined on
+  // surfaces that do not surface person labels (the deal sidebar); PD shows them on the lead drawer.
+  labels?: ResolvedLabelChip[];
 }): React.ReactNode {
   const router = useRouter();
 
@@ -83,28 +92,35 @@ export function PersonBlock({
         }
         readOnly
       />
-      <SidebarFieldRow
-        label="First name"
-        value={person.firstName ?? "-"}
-        empty={person.firstName === null}
-        initialDraft={person.firstName ?? ""}
-        renderEditor={textEditor("editor-firstName")}
-        onSave={(draft) => {
-          const trimmed = draft.trim();
-          return save({ firstName: trimmed === "" ? null : trimmed });
-        }}
-      />
-      <SidebarFieldRow
-        label="Last name"
-        value={person.lastName ?? "-"}
-        empty={person.lastName === null}
-        initialDraft={person.lastName ?? ""}
-        renderEditor={textEditor("editor-lastName")}
-        onSave={(draft) => {
-          const trimmed = draft.trim();
-          return save({ lastName: trimmed === "" ? null : trimmed });
-        }}
-      />
+      {labels !== undefined && (
+        <SidebarFieldRow label="Labels" value={<LabelChips labels={labels} />} readOnly />
+      )}
+      {!hideNameParts && (
+        <SidebarFieldRow
+          label="First name"
+          value={person.firstName ?? "-"}
+          empty={person.firstName === null}
+          initialDraft={person.firstName ?? ""}
+          renderEditor={textEditor("editor-firstName")}
+          onSave={(draft) => {
+            const trimmed = draft.trim();
+            return save({ firstName: trimmed === "" ? null : trimmed });
+          }}
+        />
+      )}
+      {!hideNameParts && (
+        <SidebarFieldRow
+          label="Last name"
+          value={person.lastName ?? "-"}
+          empty={person.lastName === null}
+          initialDraft={person.lastName ?? ""}
+          renderEditor={textEditor("editor-lastName")}
+          onSave={(draft) => {
+            const trimmed = draft.trim();
+            return save({ lastName: trimmed === "" ? null : trimmed });
+          }}
+        />
+      )}
       {!hidden.has("phones") && (
         <SidebarFieldRow
           label="Phone"

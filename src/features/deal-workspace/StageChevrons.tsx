@@ -1,4 +1,5 @@
 import type React from "react";
+import { Tip } from "@/components/ui/tooltip";
 import { stageSegmentStyle } from "@/features/deals/boardStageHeader";
 
 // Pipedrive's signature deal-detail element: a connected chevron pipeline where
@@ -34,24 +35,24 @@ export function StageChevrons({ chips }: { chips: StageChip[] }): React.ReactNod
       {chips.map((chip, idx) => {
         const fill = stageSegmentStyle(idx, segmentState(chip));
         return (
-          <li
-            key={chip.id}
-            aria-current={chip.current ? "step" : undefined}
-            title={chip.name}
-            className={[
-              "truncate px-4 py-1 text-xs leading-5 text-foreground",
-              idx > 0 ? "-ml-2 pl-6" : "",
-            ]
-              .join(" ")
-              .trim()}
-            style={{
-              clipPath: idx === 0 ? FIRST_CLIP : MID_CLIP,
-              backgroundColor: fill.backgroundColor,
-              fontWeight: fill.fontWeight,
-            }}
-          >
-            {chip.name}
-          </li>
+          <Tip key={chip.id} label={chip.name}>
+            <li
+              aria-current={chip.current ? "step" : undefined}
+              className={[
+                "truncate px-4 py-1 text-xs leading-5 text-foreground",
+                idx > 0 ? "-ml-2 pl-6" : "",
+              ]
+                .join(" ")
+                .trim()}
+              style={{
+                clipPath: idx === 0 ? FIRST_CLIP : MID_CLIP,
+                backgroundColor: fill.backgroundColor,
+                fontWeight: fill.fontWeight,
+              }}
+            >
+              {chip.name}
+            </li>
+          </Tip>
         );
       })}
     </ol>

@@ -1,6 +1,7 @@
 "use client";
 import type React from "react";
 import { Select, type SelectOption } from "@/components/ui/Select";
+import { Tip } from "@/components/ui/tooltip";
 import { STRINGS } from "@/constants/strings";
 import { cn } from "@/lib/utils";
 import { BOARD_SORT_KEYS, type BoardSortKey, type SortDirection } from "./boardSort";
@@ -39,28 +40,29 @@ export function BoardSortControl(props: BoardSortControlProps): React.ReactNode 
           }))}
           triggerClassName="w-auto rounded-r-none border-0 bg-transparent"
         />
-        <button
-          type="button"
-          aria-label={toggleLabel}
-          title={toggleLabel}
-          onClick={onToggleDirection}
-          className="flex items-center justify-center rounded-r-md border-l px-2 py-1.5 text-muted-foreground transition hover:text-foreground active:scale-[0.96]"
-        >
-          <svg
-            aria-hidden="true"
-            viewBox="0 0 24 24"
-            className={cn("h-4 w-4 transition-transform", direction === "desc" && "rotate-180")}
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
+        <Tip label={toggleLabel}>
+          <button
+            type="button"
+            aria-label={toggleLabel}
+            onClick={onToggleDirection}
+            className="flex items-center justify-center rounded-r-md border-l px-2 py-1.5 text-muted-foreground transition hover:text-foreground active:scale-[0.96]"
           >
-            {/* Up arrow = ascending; rotated 180deg for descending. */}
-            <path d="M12 19V5" />
-            <path d="M5 12l7-7 7 7" />
-          </svg>
-        </button>
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 24 24"
+              className={cn("h-4 w-4 transition-transform", direction === "desc" && "rotate-180")}
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              {/* Up arrow = ascending; rotated 180deg for descending. */}
+              <path d="M12 19V5" />
+              <path d="M5 12l7-7 7 7" />
+            </svg>
+          </button>
+        </Tip>
       </div>
     </div>
   );

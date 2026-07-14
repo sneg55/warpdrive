@@ -3,6 +3,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type React from "react";
 import { useEffect, useState } from "react";
+import { Tip } from "@/components/ui/tooltip";
 import { STRINGS } from "@/constants/strings";
 import { cn } from "@/lib/utils";
 import {
@@ -117,12 +118,12 @@ export function LeftNav(): React.ReactNode {
     >
       {ITEMS.map((item) => {
         const active = pathname === item.section || pathname.startsWith(`${item.section}/`);
-        return (
+        const el = (
           <Link
             key={item.href}
             href={item.href}
             aria-current={active ? "page" : undefined}
-            title={expanded ? undefined : item.label}
+            aria-label={expanded ? undefined : item.label}
             className={cn(
               "flex items-center rounded-lg transition-colors",
               expanded ? "h-10 gap-3 px-3" : "h-10 w-10 justify-center",
@@ -136,6 +137,14 @@ export function LeftNav(): React.ReactNode {
               {item.label}
             </span>
           </Link>
+        );
+        // Collapsed rail is icon-only, so surface the label as a hover tooltip; expanded shows it inline.
+        return expanded ? (
+          el
+        ) : (
+          <Tip key={item.href} label={item.label}>
+            {el}
+          </Tip>
         );
       })}
 

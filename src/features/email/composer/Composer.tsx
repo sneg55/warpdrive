@@ -189,7 +189,7 @@ export function Composer({
   return (
     <section
       aria-label="compose email"
-      className="rounded-md border border-border bg-background p-3 flex flex-1 min-h-0 flex-col gap-2 text-sm"
+      className="rounded-md border border-border bg-background p-3 flex flex-col gap-2 text-sm"
     >
       <ComposerHeader
         onClose={
@@ -238,9 +238,10 @@ export function Composer({
         insertToken={insertToken}
         // Frame the editor as a white rounded 14px card to match PD's composer body.
         frameClassName="rounded-md border border-border bg-background text-sm"
-        // Fill the full-pane composer's height so the writing area is large and the card does not
-        // float as a short box over dead space.
-        grow
+        // PD keeps the composer compact and top-anchored: the editor is a fixed writing area with the
+        // format toolbar docked right below it near the top of the page, NOT a full-viewport box that
+        // pushes the toolbar to the bottom. A modest min-height gives room to write without stretching.
+        contentClassName="min-h-40 [&_.ProseMirror]:min-h-40"
       />
       {/* Confirmed attachments list above the footer action row. */}
       <AttachmentList

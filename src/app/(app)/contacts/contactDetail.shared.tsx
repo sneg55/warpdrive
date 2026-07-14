@@ -4,6 +4,7 @@
 // the tab strip / placeholder copy cannot drift between the two pages.
 import type React from "react";
 import { bucketByType } from "@/app/(app)/deals/[dealId]/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CollapsibleSection } from "@/features/deal-workspace/CollapsibleSection";
 import { HistoryFeed } from "@/features/deal-workspace/HistoryFeed";
 import { partitionFocusHistory } from "@/features/deal-workspace/historyTimeline";
@@ -28,24 +29,19 @@ export function TabStrip<T extends string>({
   onSelect: (t: T) => void;
 }): React.ReactNode {
   return (
-    <div role="tablist" className="flex gap-2 border-b border-gray-200 mb-3">
-      {tabs.map((t) => (
-        <button
-          key={t}
-          type="button"
-          role="tab"
-          aria-selected={active === t}
-          onClick={() => onSelect(t)}
-          className={
-            active === t
-              ? "px-3 py-2 text-sm font-medium border-b-2 border-blue-600 text-blue-700"
-              : "px-3 py-2 text-sm text-gray-600 hover:text-gray-900"
-          }
-        >
-          {labels[t]}
-        </button>
-      ))}
-    </div>
+    <Tabs value={active} onValueChange={(v) => onSelect(v as T)}>
+      <TabsList className="gap-2 border-b border-gray-200 mb-3">
+        {tabs.map((t) => (
+          <TabsTrigger
+            key={t}
+            value={t}
+            className="px-3 py-2 text-gray-600 hover:text-gray-900 data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:font-medium data-[state=active]:text-blue-700"
+          >
+            {labels[t]}
+          </TabsTrigger>
+        ))}
+      </TabsList>
+    </Tabs>
   );
 }
 

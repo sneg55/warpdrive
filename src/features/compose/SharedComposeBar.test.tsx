@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 beforeAll(() => {
@@ -78,6 +79,22 @@ describe("SharedComposeBar (Pipedrive default-state model)", () => {
     expect(screen.queryByTestId("activity-form")).not.toBeInTheDocument();
   });
 
+  it("orders Notes before Activity and selects Notes by default for lead scope (PD lead-drawer parity)", () => {
+    renderBar({ scope: leadScope });
+    const tabs = screen.getAllByRole("tab");
+    expect(tabs.map((t) => t.textContent)).toEqual(["Notes", "Activity"]);
+    expect(tabs[0]).toHaveAttribute("aria-selected", "true");
+    // The collapsed prompt is the note prompt, matching PD's "Take a note..." default state.
+    expect(screen.getByRole("button", { name: "Take a note..." })).toBeInTheDocument();
+  });
+
+  it("keeps Activity first and selected by default for deal scope (unchanged)", () => {
+    renderBar();
+    const tabs = screen.getAllByRole("tab");
+    expect(tabs[0]).toHaveTextContent("Activity");
+    expect(tabs[0]).toHaveAttribute("aria-selected", "true");
+  });
+
   it("has no collapse control in the tab row (PD collapses via the editor's Cancel only)", () => {
     renderBar();
     expect(screen.queryByRole("button", { name: "Collapse composer" })).not.toBeInTheDocument();
@@ -94,15 +111,15 @@ describe("SharedComposeBar (Pipedrive default-state model)", () => {
     ).toBeInTheDocument();
   });
 
-  it("clicking the Notes tab while collapsed expands the note editor directly (PD behavior)", () => {
+  it("clicking the Notes tab while collapsed expands the note editor directly (PD behavior)", async () => {
     renderBar();
-    fireEvent.click(screen.getByRole("tab", { name: "Notes" }));
+    await userEvent.click(screen.getByRole("tab", { name: "Notes" }));
     expect(screen.getByRole("textbox", { name: "Note" })).toBeInTheDocument();
   });
 
-  it("note Cancel collapses to the Notes prompt with the tab strip still visible", () => {
+  it("note Cancel collapses to the Notes prompt with the tab strip still visible", async () => {
     renderBar();
-    fireEvent.click(screen.getByRole("tab", { name: "Notes" }));
+    await userEvent.click(screen.getByRole("tab", { name: "Notes" }));
     fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
     expect(screen.queryByRole("textbox", { name: "Note" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Take a note..." })).toBeInTheDocument();
@@ -112,7 +129,7 @@ describe("SharedComposeBar (Pipedrive default-state model)", () => {
   it("flows a note through createNoteAction using the scope's entityType/entityId", async () => {
     const onNoteCreated = vi.fn();
     renderBar({ onNoteCreated });
-    fireEvent.click(screen.getByRole("tab", { name: "Notes" }));
+    await userEvent.click(screen.getByRole("tab", { name: "Notes" }));
     fireEvent.change(screen.getByRole("textbox", { name: "Note" }), {
       target: { value: "Follow up next week" },
     });
@@ -127,15 +144,15 @@ describe("SharedComposeBar (Pipedrive default-state model)", () => {
     await waitFor(() => expect(onNoteCreated).toHaveBeenCalled());
   });
 
-  it("shows the email composer directly on Email tab click (no collapsed prompt)", () => {
+  it("shows the email composer directly on Email tab click (no collapsed prompt)", async () => {
     renderBar({ emailAccountId: "acct-1" });
-    fireEvent.click(screen.getByRole("tab", { name: "Email" }));
+    await userEvent.click(screen.getByRole("tab", { name: "Email" }));
     expect(screen.getByTestId("email-composer")).toHaveTextContent("composer:acct-1");
   });
 
-  it("returns to the collapsed Activity prompt after sending an email (not an expanded editor)", () => {
+  it("returns to the collapsed Activity prompt after sending an email (not an expanded editor)", async () => {
     renderBar({ emailAccountId: "acct-1" });
-    fireEvent.click(screen.getByRole("tab", { name: "Email" }));
+    await userEvent.click(screen.getByRole("tab", { name: "Email" }));
     fireEvent.click(screen.getByRole("button", { name: "Send" }));
     expect(screen.getByRole("tab", { name: "Activity" })).toHaveAttribute("aria-selected", "true");
     expect(
@@ -144,9 +161,9 @@ describe("SharedComposeBar (Pipedrive default-state model)", () => {
     expect(screen.queryByTestId("activity-form")).not.toBeInTheDocument();
   });
 
-  it("prompts to connect a mailbox when no email account is linked", () => {
+  it("prompts to connect a mailbox when no email account is linked", async () => {
     renderBar();
-    fireEvent.click(screen.getByRole("tab", { name: "Email" }));
+    await userEvent.click(screen.getByRole("tab", { name: "Email" }));
     expect(screen.queryByTestId("email-composer")).not.toBeInTheDocument();
     expect(screen.getByText(/connect a gmail mailbox/i)).toBeInTheDocument();
   });
@@ -162,7 +179,7 @@ describe("SharedComposeBar (Pipedrive default-state model)", () => {
   it("flows a lead-scoped note through createNoteAction with entityType lead", async () => {
     const onNoteCreated = vi.fn();
     renderBar({ scope: leadScope, onNoteCreated });
-    fireEvent.click(screen.getByRole("tab", { name: "Notes" }));
+    await userEvent.click(screen.getByRole("tab", { name: "Notes" }));
     fireEvent.change(screen.getByRole("textbox", { name: "Note" }), {
       target: { value: "Qualify next" },
     });

@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import type React from "react";
+import { Tip } from "@/components/ui/tooltip";
 import { STRINGS } from "@/constants/strings";
 import { trpc } from "@/lib/trpc-client";
 import { cn } from "@/lib/utils";
@@ -48,7 +49,7 @@ function Icon({ d }: { d: string }): React.ReactNode {
 }
 
 const NEW_EMAIL_BUTTON_CLASSES =
-  "mb-2 flex items-center justify-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground transition-transform active:scale-[0.96]";
+  "mb-2 flex items-center justify-center gap-2 rounded-md bg-action px-3 py-2 text-sm font-medium text-action-foreground transition-transform active:scale-[0.96]";
 
 export function InboxFolderRail({
   newEmailEnabled,
@@ -65,26 +66,28 @@ export function InboxFolderRail({
           no-mailbox state renders a genuinely inert disabled button instead of a navigable
           link; only the enabled state navigates to the full-pane compose route. */}
       {newEmailEnabled ? (
-        <Link
-          href="/inbox/compose"
-          title="Compose a new email"
-          aria-current={composeActive ? "page" : undefined}
-          className={cn(
-            NEW_EMAIL_BUTTON_CLASSES,
-            composeActive && "ring-2 ring-ring ring-offset-1",
-          )}
-        >
-          <span aria-hidden="true">+</span> {STRINGS.inbox.composeTitle}
-        </Link>
+        <Tip label="Compose a new email">
+          <Link
+            href="/inbox/compose"
+            aria-current={composeActive ? "page" : undefined}
+            className={cn(
+              NEW_EMAIL_BUTTON_CLASSES,
+              composeActive && "ring-2 ring-ring ring-offset-1",
+            )}
+          >
+            <span aria-hidden="true">+</span> {STRINGS.inbox.composeTitle}
+          </Link>
+        </Tip>
       ) : (
-        <button
-          type="button"
-          disabled
-          title="Compose needs a connected mailbox"
-          className={cn(NEW_EMAIL_BUTTON_CLASSES, "cursor-not-allowed opacity-60")}
-        >
-          <span aria-hidden="true">+</span> {STRINGS.inbox.composeTitle}
-        </button>
+        <Tip label="Compose needs a connected mailbox">
+          <button
+            type="button"
+            disabled
+            className={cn(NEW_EMAIL_BUTTON_CLASSES, "cursor-not-allowed opacity-60")}
+          >
+            <span aria-hidden="true">+</span> {STRINGS.inbox.composeTitle}
+          </button>
+        </Tip>
       )}
 
       {FOLDER_KEYS.map((key) => (

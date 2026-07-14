@@ -14,7 +14,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { FIELD_INPUT } from "@/constants/formStyles";
+import { Input } from "@/components/ui/Input";
 import { createTemplateAction } from "@/features/email/authoringActions";
 import { trpc } from "@/lib/trpc-client";
 import { readCsrfToken } from "@/utils/csrfCookie";
@@ -79,12 +79,11 @@ export function SaveAsTemplateDialog({
         <DialogHeader>
           <DialogTitle>Save as template</DialogTitle>
         </DialogHeader>
-        <input
+        <Input
           aria-label="Template name"
           placeholder="Template name"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className={FIELD_INPUT}
         />
         <DialogFooter>
           <Button type="button" disabled={!canSave} onClick={() => void save()}>

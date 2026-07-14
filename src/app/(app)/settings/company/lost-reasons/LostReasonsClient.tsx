@@ -3,6 +3,7 @@ import { useRouter } from "next/navigation";
 import type React from "react";
 import { useState } from "react";
 import { useActionError } from "@/components/shell/ActionErrorProvider";
+import { Button } from "@/components/ui/Button";
 import { FIELD_INPUT } from "@/constants/formStyles";
 import { STRINGS } from "@/constants/strings";
 import {
@@ -156,14 +157,16 @@ export function LostReasonsClient({ rows: initial }: { rows: LostReasonRow[] }):
             className={FIELD_INPUT}
           />
         </label>
-        <button
+        <Button
           type="button"
+          variant="default"
+          size="sm"
+          className="px-3"
           disabled={pending}
           onClick={() => void add()}
-          className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground transition-transform hover:opacity-90 active:not-disabled:scale-[0.96] disabled:opacity-50"
         >
           {S.addLostReason}
-        </button>
+        </Button>
       </div>
     </div>
   );

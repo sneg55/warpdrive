@@ -15,8 +15,8 @@ import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import type * as schema from "@/db/schema";
 import { users } from "@/db/schema/identity";
 import { type Lead, leads } from "@/db/schema/leads";
-import { organizations } from "@/db/schema/organizations";
-import { persons } from "@/db/schema/persons";
+import { type Organization, organizations } from "@/db/schema/organizations";
+import { type Person, persons } from "@/db/schema/persons";
 import { isUuidParam } from "@/lib/isUuidParam";
 import { assertNever } from "@/types/result";
 import type { DealVisibilitySession } from "@/types/session";
@@ -71,6 +71,41 @@ export type LeadDetail = Lead & {
   orgName: string | null;
   ownerName: string | null;
 };
+
+// The fully-loaded linked person + organization records for the lead sidebar's Person/Organization
+// blocks (reused from the deal workspace so the lead surfaces the contact's whole field set, not
+// just the name). Loaded by id like summaryRepo.getWorkspace does for deals: the lead's own
+// visibility gate (getLeadById) is the authority, so the contact reads are ungated here.
+export interface LeadRelations {
+  person: Person | null;
+  org: Organization | null;
+}
+
+// Load the linked person + org for a lead. Soft-deleted contacts are filtered so the sidebar never
+// renders a link to a detail page that 404s, matching summaryRepo's deletedAt filter for deals.
+export async function getLeadRelations(
+  db: Db,
+  lead: Pick<Lead, "personId" | "orgId">,
+  signal: AbortSignal,
+): Promise<LeadRelations> {
+  signal.throwIfAborted();
+  const [personRows, orgRows] = await Promise.all([
+    lead.personId !== null
+      ? db
+          .select()
+          .from(persons)
+          .where(and(eq(persons.id, lead.personId), isNull(persons.deletedAt)))
+      : Promise.resolve([]),
+    lead.orgId !== null
+      ? db
+          .select()
+          .from(organizations)
+          .where(and(eq(organizations.id, lead.orgId), isNull(organizations.deletedAt)))
+      : Promise.resolve([]),
+  ]);
+  signal.throwIfAborted();
+  return { person: personRows[0] ?? null, org: orgRows[0] ?? null };
+}
 
 // A single visible lead with resolved names, or null when not visible (404-on-invisible:
 // never leak existence to an actor who cannot see the lead).

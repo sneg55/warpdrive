@@ -32,7 +32,7 @@ describe("AddActivityToggle", () => {
   it("renders an info tooltip element", () => {
     render(<AddActivityToggle checked={false} onChange={vi.fn()} />);
     // Info tooltip should be present (a title attribute or aria-label on an info icon)
-    const infoEl = screen.getByTitle(/activity will be logged/i);
+    const infoEl = screen.getByLabelText(/activity will be logged/i);
     expect(infoEl).toBeInTheDocument();
   });
 

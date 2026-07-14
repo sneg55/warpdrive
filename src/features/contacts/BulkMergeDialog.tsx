@@ -90,7 +90,7 @@ export function BulkMergeDialog({
               type="button"
               disabled={pending}
               onClick={() => void confirm()}
-              className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground transition hover:opacity-90 disabled:opacity-50 active:not-disabled:scale-[0.96]"
+              className="rounded-md bg-action px-3 py-1.5 text-sm font-medium text-action-foreground transition hover:opacity-90 disabled:opacity-50 active:not-disabled:scale-[0.96]"
             >
               Merge
             </button>
