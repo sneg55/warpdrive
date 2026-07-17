@@ -158,12 +158,12 @@ export async function insertDeals(
     const { level, group } = vis(d.visibility, groupId);
     const [row] = await db.q<{ id: string }>(
       `INSERT INTO deals
-         (title, status, value, probability, expected_close_date, custom_fields,
+         (title, status, value, expected_close_date, custom_fields,
           pipeline_id, stage_id, board_position, stage_entered_at,
           person_id, org_id, owner_id, visibility_level, visibility_group_id,
           won_time, lost_time)
-       VALUES ($1, $2::deal_status, $3, $4, $5, $6::jsonb, $7, $8, $9,
-         now() - ($10::int * interval '1 day'), $11, $12, $13, $14, $15,
+       VALUES ($1, $2::deal_status, $3, $4, $5::jsonb, $6, $7, $8,
+         now() - ($9::int * interval '1 day'), $10, $11, $12, $13, $14,
          CASE WHEN $2 = 'won' THEN now() ELSE NULL END,
          CASE WHEN $2 = 'lost' THEN now() ELSE NULL END)
        RETURNING id`,
@@ -171,7 +171,6 @@ export async function insertDeals(
         d.title,
         d.status,
         d.value,
-        d.probability,
         d.expectedCloseDate,
         JSON.stringify(d.customFields),
         pipelineId,
