@@ -1,0 +1,202 @@
+@import "tailwindcss";
+
+/*
+ * Tailwind v4 theme mapping. The shadcn tokens below are declared as HSL channels on :root/.dark;
+ * without this block Tailwind v4 never generates the semantic color utilities (bg-card,
+ * text-muted-foreground, border-border, etc.) from them, so they silently no-op. "inline" so
+ * utilities reference var(--token) at runtime. This is the landing subset of the app's token set
+ * (the CRM's parity literals, calendar, and density variables are not needed here).
+ */
+@theme inline {
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-success: hsl(var(--success));
+  --color-success-foreground: hsl(var(--success-foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+
+  --radius-sm: calc(var(--radius) - 2px);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) + 2px);
+
+  /*
+   * Inter is the typeface, matching the app so the screenshots and the surrounding chrome share one
+   * font. `--font-inter` is provided by next/font/local (self-hosted, set via a class on <html> in
+   * layout.tsx); Tailwind's font-sans utility resolves --font-sans.
+   */
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+}
+
+@layer base {
+  :root {
+    --radius: 0.5rem;
+
+    /* shadcn new-york slate base tokens */
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 222.2 47.4% 11.2%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222.2 84% 4.9%;
+
+    /* Success role (used by the comparison + self-host checkmarks); not shipped by shadcn. */
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 100%;
+  }
+
+  /* Paint the page with the semantic tokens (Tailwind v4 Preflight leaves body transparent and
+   * borders currentColor by default). */
+  * {
+    border-color: hsl(var(--border));
+  }
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/*
+ * Subtle 1px edge on images/logos for consistent depth. Inset so it follows border-radius. Literal
+ * rgba, not hsl(var(--x) / a): Lightning CSS drops alpha-with-var rules here.
+ */
+.img-outline {
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.1);
+}
+
+/*
+ * Landing hero entrance: staged fade/rise per semantic chunk (~80ms apart), a keyframe sequence
+ * because it runs once on load. Scoped behind the reduced-motion guard so users opting out get the
+ * content instantly.
+ */
+@keyframes landing-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .landing-rise {
+    animation: landing-rise 0.6s cubic-bezier(0.2, 0, 0, 1) both;
+  }
+  .landing-rise-1 {
+    animation-delay: 0.08s;
+  }
+  .landing-rise-2 {
+    animation-delay: 0.16s;
+  }
+  .landing-rise-3 {
+    animation-delay: 0.24s;
+  }
+  .landing-rise-4 {
+    animation-delay: 0.36s;
+  }
+  /* Scroll-reveal for below-fold sections: Reveal.tsx adds -pending (hidden) and swaps it for the
+   * animation when the target nears the viewport. Both live behind the guard so reduced-motion
+   * users always see the settled state. */
+  .landing-reveal-pending {
+    opacity: 0;
+  }
+  .landing-reveal {
+    animation: landing-rise 0.6s cubic-bezier(0.2, 0, 0, 1) both;
+  }
+}
+
+/*
+ * Dialog (ShotFrame lightbox) enter/exit: overlay fades, content fades while scaling from 0.96. The
+ * data-state hooks let Radix Presence hold the closing mount until animationend. Reduced motion
+ * keeps the fade and drops the scale.
+ */
+@keyframes dialog-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes dialog-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+@keyframes dialog-content-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@keyframes dialog-content-out {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+
+.dialog-overlay[data-state="open"] {
+  animation: dialog-fade-in 0.2s ease-out;
+}
+.dialog-overlay[data-state="closed"] {
+  animation: dialog-fade-out 0.12s ease-in;
+}
+.dialog-content[data-state="open"] {
+  animation: dialog-content-in 0.25s cubic-bezier(0.2, 0, 0, 1);
+}
+.dialog-content[data-state="closed"] {
+  animation: dialog-content-out 0.15s ease-in;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dialog-content[data-state="open"] {
+    animation-name: dialog-fade-in;
+  }
+  .dialog-content[data-state="closed"] {
+    animation-name: dialog-fade-out;
+  }
+}

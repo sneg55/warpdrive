@@ -1,0 +1,12 @@
+# Dependencies
+/node_modules
+
+# Next.js build + static export output (Cloudflare builds this fresh)
+/.next
+/out
+next-env.d.ts
+
+# Test + misc
+/coverage
+*.tsbuildinfo
+.DS_Store

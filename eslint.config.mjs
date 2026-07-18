@@ -55,8 +55,10 @@ const DESIGN_SYSTEM_RESTRICTED_SYNTAX = [
 
 export default tseslint.config(
   {
-    // Exclude build artifacts, generated output, and dev-only parity analysis scripts.
-    ignores: ["drizzle/**", ".next/**", "node_modules/**", "**/parity-tools/**"],
+    // Exclude build artifacts, generated output, and dev-only parity analysis scripts. site/ is
+    // the standalone marketing site (its own package + toolchain), so the app's type-aware config
+    // does not apply to it. See docs/superpowers/specs/2026-07-18-landing-cloudflare-pages-design.md.
+    ignores: ["drizzle/**", ".next/**", "node_modules/**", "**/parity-tools/**", "site/**"],
   },
   ...tseslint.configs.recommendedTypeChecked,
   {
