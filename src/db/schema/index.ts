@@ -32,6 +32,7 @@ export * from "./organizations";
 export * from "./persons";
 export * from "./pipelines";
 export * from "./realtime";
+export * from "./release";
 export * from "./savedFilters";
 export * from "./stages";
 export * from "./system";

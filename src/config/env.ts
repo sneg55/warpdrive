@@ -47,6 +47,12 @@ const base = z.object({
   BASE_CURRENCY: z.string().length(3).default("USD"),
   SEED_ADMIN_EMAIL: z.string().email().or(z.literal("")).default(""),
   ALLOW_FIRST_LOGIN_ADMIN: boolFromString.default(false),
+  // Optional build-time stamp of the running version (e.g. a release tag). Empty when unstamped;
+  // the release feature then falls back to package.json, then "dev". See resolveVersion.
+  APP_VERSION: z.string().default(""),
+  // Kill switch for the GitHub update-check banner. A hosted/managed deployment sets this true;
+  // OSS self-hosters leave it false to get the banner.
+  DISABLE_UPDATE_CHECK: boolFromString.default(false),
 });
 
 // Production guardrails for the first-run bootstrap (ops spec E6).

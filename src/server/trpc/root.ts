@@ -11,6 +11,7 @@ import { labelsRouter } from "@/features/labels/router";
 import { leadRouter } from "@/features/leads/leadRouter";
 import { notificationsRouter } from "@/features/notifications/router";
 import { pipelineRouter } from "@/features/pipelines/pipelineRouter";
+import { versionRouter } from "@/features/release/router";
 import { searchRouter } from "@/features/search/router";
 import { statsRouter } from "@/features/stats/router";
 import { identityRouter } from "./routers/identity";
@@ -35,6 +36,7 @@ export const appRouter = router({
   notifications: notificationsRouter,
   search: searchRouter,
   stats: statsRouter,
+  version: versionRouter,
 });
 
 export type AppRouter = typeof appRouter;

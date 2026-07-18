@@ -57,6 +57,28 @@ describe("env boundary", () => {
     expect(result.ok).toBe(true);
   });
 
+  test("defaults APP_VERSION empty and DISABLE_UPDATE_CHECK false", () => {
+    const result = parseEnv({ ...process.env });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.APP_VERSION).toBe("");
+      expect(result.value.DISABLE_UPDATE_CHECK).toBe(false);
+    }
+  });
+
+  test("parses an APP_VERSION stamp and DISABLE_UPDATE_CHECK=true", () => {
+    const result = parseEnv({
+      ...process.env,
+      APP_VERSION: "v1.2.0",
+      DISABLE_UPDATE_CHECK: "true",
+    });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.APP_VERSION).toBe("v1.2.0");
+      expect(result.value.DISABLE_UPDATE_CHECK).toBe(true);
+    }
+  });
+
   describe("Docker secret <VAR>_FILE resolution", () => {
     let dir: string;
 

@@ -11,6 +11,8 @@ x-app-build: &app-build
   context: .
   args:
     NEXT_PUBLIC_WS_URL: ${NEXT_PUBLIC_WS_URL:-}
+    # Optional version stamp for the update-check banner. Unset falls back to package.json, then "dev".
+    APP_VERSION: ${APP_VERSION:-}
 
 services:
   caddy:

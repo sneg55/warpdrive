@@ -13,6 +13,7 @@ import { CSRF_COOKIE } from "@/features/auth/csrf";
 import { InterfacePrefsProvider } from "@/features/identity/InterfacePrefsProvider";
 import { interfacePrefsFromUi } from "@/features/identity/interfacePrefs";
 import { getPreferencesForActor } from "@/features/identity/preferencesForActor";
+import { VersionBanner } from "@/features/release/ui/VersionBanner";
 import { CommandPalette } from "@/features/search/ui/CommandPalette";
 import { createContext } from "@/server/trpc/context";
 
@@ -38,6 +39,7 @@ export default async function AppLayout({ children }: { children: ReactNode }): 
       <InterfacePrefsProvider value={interfacePrefsFromUi(prefs.ui)}>
         <div data-density={prefs.density} className="flex h-screen flex-col">
           <CsrfRefresher hasCsrf={hasCsrf} />
+          {ctx.actor.type === "admin" && <VersionBanner />}
           <ReconnectBanner />
           <TopBar userId={ctx.actor.id} userName={me?.name} avatarUrl={me?.avatarUrl} />
           <div className="flex min-h-0 flex-1">

@@ -12,6 +12,7 @@ import {
   PGBOSS_QUEUE_EMAIL_SEND,
   PGBOSS_QUEUE_EMAIL_SYNC,
   PGBOSS_QUEUE_FILE_REAPER,
+  PGBOSS_QUEUE_RELEASE_CHECK,
 } from "@/constants/jobNames";
 import { makeTestDb } from "@/test/db";
 import { registerAllJobs } from "./worker";
@@ -104,6 +105,11 @@ describe("registerAllJobs", () => {
       const scheduled = fakeBoss.schedules.find((s) => s.name === PGBOSS_QUEUE_FILE_REAPER);
       expect(scheduled).toBeDefined();
       expect(scheduled?.cron).toBe("0 * * * *");
+
+      // The release-check job is enabled in the test env (DISABLE_UPDATE_CHECK unset), so its
+      // queue is created and scheduled alongside the reaper.
+      expect(queueNames).toContain(PGBOSS_QUEUE_RELEASE_CHECK);
+      expect(fakeBoss.schedules.some((s) => s.name === PGBOSS_QUEUE_RELEASE_CHECK)).toBe(true);
     } finally {
       testDbHolder.db = null;
       await h.close();

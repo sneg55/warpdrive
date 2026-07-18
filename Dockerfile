@@ -56,6 +56,11 @@ RUN NODE_ENV=production \
 # --- runtime: minimal, non-root ---
 FROM base AS runtime
 ENV NODE_ENV=production
+# Optional version stamp for the update-check banner (e.g. a release tag). When unset, the app
+# falls back to the bundled package.json version, then "dev" (banner disabled). Not compile-time
+# inlined: it is a server-only runtime env, read via src/config/env.ts.
+ARG APP_VERSION=
+ENV APP_VERSION=${APP_VERSION}
 # `next start` must bind all interfaces (not localhost) to be reachable across the compose
 # network / from the Caddy proxy.
 ENV HOSTNAME=0.0.0.0

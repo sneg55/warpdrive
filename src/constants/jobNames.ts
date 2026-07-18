@@ -21,6 +21,10 @@ export const PGBOSS_QUEUE_FILE_REAPER = "file.reaper";
 // Task 7 registers the worker that consumes this queue.
 export const EMAIL_NOTIFICATION_QUEUE = "notification.email";
 
+// Self-hoster update check: poll GitHub for the latest release and cache it. Fixed queue name,
+// cron-scheduled (see RELEASE_CHECK_CRON) plus one immediate run on worker boot. No payload.
+export const PGBOSS_QUEUE_RELEASE_CHECK = "release.check";
+
 // Import overhaul: four background phases, each its own queue (payload { batchId }),
 // deduped by singletonKey = batchId.
 export const PGBOSS_QUEUE_IMPORT_PREPARE = "import.prepare";
