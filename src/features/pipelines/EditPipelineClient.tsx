@@ -1,7 +1,8 @@
 "use client";
 import { useRouter } from "next/navigation";
 import type React from "react";
-import { useState } from "react";
+import { useId, useState } from "react";
+import { Input } from "@/components/ui/Input";
 import { readCsrfToken } from "@/utils/csrfCookie";
 import {
   createStageAction,
@@ -40,6 +41,7 @@ export function EditPipelineClient({
   stages,
 }: EditPipelineClientProps): React.ReactNode {
   const router = useRouter();
+  const nameId = useId();
   const originalName = pipelineName;
   const originalById = Object.fromEntries(
     stages.map((s) => [s.id, { name: s.name, rottingDays: s.rottingDays }]),
@@ -109,15 +111,18 @@ export function EditPipelineClient({
   return (
     <div className="flex h-full flex-col">
       <div className="mb-4 flex items-center gap-3">
-        <label className="flex-1 text-sm">
-          <span className="mb-1 block font-medium">Pipeline name</span>
-          <input
+        <div className="flex-1 text-sm">
+          <label htmlFor={nameId} className="mb-1 block font-medium">
+            Pipeline name
+          </label>
+          <Input
+            id={nameId}
             aria-label="Pipeline name"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full max-w-md rounded-md border px-2.5 py-1.5 text-sm"
+            className="max-w-md"
           />
-        </label>
+        </div>
         <div className="flex items-center gap-2 self-end">
           <button
             type="button"

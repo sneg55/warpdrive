@@ -3,6 +3,7 @@ import { useRouter } from "next/navigation";
 import type React from "react";
 import { useState } from "react";
 import { useActionError } from "@/components/shell/ActionErrorProvider";
+import { Input } from "@/components/ui/Input";
 import { STRINGS } from "@/constants/strings";
 import {
   addOptionAction,
@@ -55,13 +56,13 @@ export function OptionEditor({
       <ul className="space-y-1">
         {options.map((o) => (
           <li key={o.id} className="flex items-center gap-2">
-            <input
+            <Input
               aria-label={`${S.optionLabel}: ${o.label}`}
               defaultValue={o.label}
               disabled={o.archived === true}
               maxLength={255}
               onBlur={(e) => void rename(o.id, e.target.value, o.label)}
-              className="flex-1 rounded border px-2 py-1 text-sm disabled:opacity-50"
+              className="flex-1"
             />
             {o.archived === true ? (
               <span className="text-xs text-muted-foreground">{S.optionArchived}</span>
@@ -78,13 +79,13 @@ export function OptionEditor({
         ))}
       </ul>
       <div className="flex items-end gap-2">
-        <input
+        <Input
           aria-label={S.newOption}
           value={newLabel}
           onChange={(e) => setNewLabel(e.target.value)}
           maxLength={255}
           placeholder={S.newOption}
-          className="flex-1 rounded border px-2 py-1 text-sm"
+          className="flex-1"
         />
         <button
           type="button"

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { Button } from "@/components/ui/Button";
 import { Checkbox } from "@/components/ui/Checkbox";
 import {
   GLOBAL_FLAGS,
@@ -142,14 +143,9 @@ export function FlagEditor({ setId, name, flags, onSaved }: Props): React.ReactE
         </fieldset>
       </div>
       <div className="mt-4 flex items-center gap-3">
-        <button
-          type="button"
-          onClick={save}
-          disabled={isPending}
-          className="rounded bg-blue-600 px-4 py-1.5 text-sm text-white transition-transform active:not-disabled:scale-[0.96] disabled:opacity-50"
-        >
+        <Button type="button" onClick={save} disabled={isPending}>
           {isPending ? T.saving : T.save}
-        </button>
+        </Button>
         {error !== null && (
           <span role="alert" className="text-sm text-red-600">
             {error}

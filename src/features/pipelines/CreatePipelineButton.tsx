@@ -1,7 +1,7 @@
 "use client";
 import { useRouter } from "next/navigation";
 import type React from "react";
-import { useState } from "react";
+import { useId, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import {
   Dialog,
@@ -12,6 +12,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/Input";
 import { STRINGS } from "@/constants/strings";
 import { readCsrfToken } from "@/utils/csrfCookie";
 import { createPipelineAction } from "./pipelineEditActions";
@@ -38,6 +39,7 @@ export function CreatePipelineButton({
 }: CreatePipelineButtonProps): React.ReactNode {
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const nameId = useId();
   const [name, setName] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -86,17 +88,17 @@ export function CreatePipelineButton({
             void submit();
           }}
         >
-          <label className="block text-sm">
-            <span className="mb-1 block font-medium">{STRINGS.settings.pipelineNameLabel}</span>
-            <input
-              aria-label={STRINGS.settings.pipelineNameLabel}
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder={STRINGS.settings.pipelineNamePlaceholder}
-              maxLength={255}
-              className="w-full rounded-md border px-2.5 py-1.5 text-sm"
-            />
+          <label htmlFor={nameId} className="mb-1 block text-sm font-medium">
+            {STRINGS.settings.pipelineNameLabel}
           </label>
+          <Input
+            id={nameId}
+            aria-label={STRINGS.settings.pipelineNameLabel}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder={STRINGS.settings.pipelineNamePlaceholder}
+            maxLength={255}
+          />
           {error !== null && (
             <p
               role="alert"

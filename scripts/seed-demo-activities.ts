@@ -69,10 +69,9 @@ export async function ensureDemoPipeline(
       stageIds.push(existing.id);
       continue;
     }
-    const prob = Math.round(((i + 1) / STAGES.length) * 100);
     const [row] = await db.q<{ id: string }>(
-      `INSERT INTO stages (pipeline_id, name, "order", probability) VALUES ($1, $2, $3, $4) RETURNING id`,
-      [p.id, name, i, prob],
+      `INSERT INTO stages (pipeline_id, name, "order") VALUES ($1, $2, $3) RETURNING id`,
+      [p.id, name, i],
     );
     if (!row) throw new Error(`stage insert failed: ${name}`);
     stageIds.push(row.id);

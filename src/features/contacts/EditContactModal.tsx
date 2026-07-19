@@ -3,6 +3,7 @@
 // and wires submit to the (already Result-typed, self-gating) updatePerson/updateOrg actions.
 import type React from "react";
 import { useState } from "react";
+import { Button } from "@/components/ui/Button";
 import type { Organization, Person } from "@/db/schema";
 import { trpc } from "@/lib/trpc-client";
 import type { CustomFieldDef } from "@/types/customFields";
@@ -172,21 +173,12 @@ export function EditContactModal(props: EditContactModalProps): React.ReactNode 
       )}
 
       <div className="flex justify-end gap-2">
-        <button
-          type="button"
-          onClick={onClose}
-          className="rounded border border-gray-300 px-3 py-1 text-sm text-gray-700 hover:bg-gray-50 active:scale-[0.96] transition-transform"
-        >
+        <Button type="button" variant="outline" size="sm" onClick={onClose}>
           Cancel
-        </button>
-        <button
-          type="button"
-          disabled={pending}
-          onClick={() => void submit()}
-          className="rounded bg-blue-600 px-3 py-1 text-sm text-white disabled:opacity-50 active:not-disabled:scale-[0.96] transition-transform"
-        >
+        </Button>
+        <Button type="button" size="sm" disabled={pending} onClick={() => void submit()}>
           {pending ? "Saving..." : "Save"}
-        </button>
+        </Button>
       </div>
     </div>
   );

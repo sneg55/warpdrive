@@ -1,6 +1,8 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 import { Switch } from "@/components/ui/Switch";
 import { ERROR_IDS } from "@/constants/errorIds";
 import { inviteUserAction } from "@/features/identity/actions/invite";
@@ -86,13 +88,13 @@ export function InviteUserForm({ onInvited }: Props): React.ReactElement {
           <label htmlFor="invite-email" className="text-xs font-medium">
             {T.emailLabel}
           </label>
-          <input
+          <Input
             ref={emailRef}
             id="invite-email"
             type="email"
             required
             placeholder={T.emailPlaceholder}
-            className="rounded border px-3 py-1.5 text-sm"
+            className="w-auto px-3"
             disabled={isPending}
           />
         </div>
@@ -100,14 +102,14 @@ export function InviteUserForm({ onInvited }: Props): React.ReactElement {
           <label htmlFor="invite-name" className="text-xs font-medium">
             {T.nameLabel}
           </label>
-          <input
+          <Input
             ref={nameRef}
             id="invite-name"
             type="text"
             required
             maxLength={120}
             placeholder={T.namePlaceholder}
-            className="rounded border px-3 py-1.5 text-sm"
+            className="w-auto px-3"
             disabled={isPending}
           />
         </div>
@@ -115,13 +117,9 @@ export function InviteUserForm({ onInvited }: Props): React.ReactElement {
           <Switch checked={isAdmin} onCheckedChange={setIsAdmin} label={T.admin} />
           {T.admin}
         </span>
-        <button
-          type="submit"
-          disabled={isPending}
-          className="rounded bg-blue-600 px-4 py-1.5 text-sm text-white transition-transform active:not-disabled:scale-[0.96] disabled:opacity-50"
-        >
+        <Button type="submit" disabled={isPending}>
           {isPending ? T.inviting : T.invite}
-        </button>
+        </Button>
       </div>
       {error !== null && (
         <p role="alert" className="text-sm text-red-600">
@@ -134,20 +132,22 @@ export function InviteUserForm({ onInvited }: Props): React.ReactElement {
             {noEmailNotice(invited.name, invited.email)}
           </p>
           <div className="flex items-center gap-2">
-            <input
+            <Input
               readOnly
               aria-label={T.inviteLinkLabel}
               value={loginUrl}
               onFocus={(e) => e.currentTarget.select()}
-              className="min-w-0 flex-1 rounded border bg-background px-2.5 py-1.5 text-sm"
+              className="min-w-0 flex-1 bg-background"
             />
-            <button
+            <Button
               type="button"
+              variant="outline"
+              size="sm"
+              className="shrink-0"
               onClick={() => void copyLink()}
-              className="shrink-0 rounded border px-3 py-1.5 text-sm font-medium transition-transform hover:bg-muted active:scale-[0.96]"
             >
               {copied ? T.copied : T.copy}
-            </button>
+            </Button>
           </div>
         </div>
       )}

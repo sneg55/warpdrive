@@ -3,6 +3,7 @@ import { useRouter } from "next/navigation";
 import type React from "react";
 import { useId, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/Input";
 import { createOrgAction, createPersonAction } from "@/features/contacts/actions";
 import {
   AddressFields,
@@ -105,7 +106,7 @@ export function GlobalContactModal({
             <label htmlFor={nameId} className="block text-sm font-medium">
               Name
             </label>
-            <input
+            <Input
               id={nameId}
               autoFocus
               value={name}
@@ -113,7 +114,6 @@ export function GlobalContactModal({
               onKeyDown={(e) => {
                 if (e.key === "Enter") void submit();
               }}
-              className="w-full rounded border px-2 py-1 text-sm"
             />
           </div>
           {kind === "person" ? (

@@ -3,6 +3,7 @@ import { useRouter } from "next/navigation";
 import type React from "react";
 import { useId, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/Input";
 import { STRINGS } from "@/constants/strings";
 import { readCsrfToken } from "@/utils/csrfCookie";
 import { createOrgAction, createPersonAction } from "./actions";
@@ -101,7 +102,7 @@ export function QuickAddContact({
             <label htmlFor={nameId} className="mb-1 block text-sm font-medium">
               {S.nameLabel}
             </label>
-            <input
+            <Input
               id={nameId}
               required
               maxLength={255}
@@ -110,7 +111,6 @@ export function QuickAddContact({
               onKeyDown={(e) => {
                 if (e.key === "Enter") void submit();
               }}
-              className="w-full rounded border px-2 py-1 text-sm"
             />
             {error !== null && <p className="mt-2 text-xs text-destructive">{error}</p>}
             <div className="mt-3 flex justify-end gap-2">

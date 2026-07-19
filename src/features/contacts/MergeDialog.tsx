@@ -5,6 +5,7 @@
 // a survivor and sends an empty fieldChoices; the survivor keeps its name.
 import type React from "react";
 import { useState } from "react";
+import { Button } from "@/components/ui/Button";
 import { Select, type SelectOption } from "@/components/ui/Select";
 import { trpc } from "@/lib/trpc-client";
 import { readCsrfToken } from "@/utils/csrfCookie";
@@ -103,22 +104,13 @@ export function MergeDialog({
 
       <div className="flex justify-end gap-2">
         {onClose !== undefined && (
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded border border-gray-300 px-3 py-1 text-sm text-gray-700 hover:bg-gray-50 active:scale-[0.96] transition-transform"
-          >
+          <Button type="button" variant="outline" size="sm" onClick={onClose}>
             Cancel
-          </button>
+          </Button>
         )}
-        <button
-          type="button"
-          disabled={!canConfirm}
-          onClick={() => void confirm()}
-          className="rounded bg-blue-600 px-3 py-1 text-sm text-white disabled:opacity-50 active:not-disabled:scale-[0.96] transition-transform"
-        >
+        <Button type="button" size="sm" disabled={!canConfirm} onClick={() => void confirm()}>
           Merge
-        </button>
+        </Button>
       </div>
     </div>
   );

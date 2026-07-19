@@ -1,5 +1,6 @@
 "use client";
 import type React from "react";
+import { Input } from "@/components/ui/Input";
 import { Select, type SelectOption } from "@/components/ui/Select";
 import { MAX_EMAIL_LEN, MAX_PHONE_LEN } from "@/features/contacts/fieldBounds";
 
@@ -79,7 +80,7 @@ function ContactRows({
           // Positional rows for an ephemeral create form.
           // biome-ignore lint/suspicious/noArrayIndexKey: positional contact rows
           <div key={idx} className="flex items-center gap-2">
-            <input
+            <Input
               aria-label={`${kind} ${idx + 1}`}
               type={kind === "Phone" ? "tel" : "email"}
               maxLength={kind === "Phone" ? MAX_PHONE_LEN : MAX_EMAIL_LEN}
@@ -87,7 +88,7 @@ function ContactRows({
               value={row.value}
               onChange={(e) => update(idx, { value: e.target.value })}
               placeholder={kind === "Phone" ? "+1 555 0100" : "name@company.com"}
-              className="min-w-0 flex-1 rounded-md border px-2.5 py-1.5 disabled:bg-muted disabled:opacity-60"
+              className="min-w-0 flex-1 disabled:bg-muted disabled:opacity-60"
             />
             {/* Select has no disabled prop (primitive is not modified for this sweep); a
                 pointer-events-none wrapper reproduces the disabled input's read-only behavior. */}

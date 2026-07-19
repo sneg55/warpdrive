@@ -11,6 +11,11 @@ export const IDENTITY_SETTINGS_STRINGS = {
     saving: "Saving...",
   },
   teamEditor: {
+    createTitle: "Create a team",
+    nameLabel: "Team name",
+    namePlaceholder: "New team name",
+    create: "Create",
+    creating: "Creating...",
     manager: "Manager",
     managerNone: "No manager",
     members: "Members",

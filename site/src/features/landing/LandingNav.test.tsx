@@ -31,6 +31,24 @@ describe("LandingNav", () => {
     await waitFor(() => expect(link).toHaveTextContent("1.2K"));
   });
 
+  it("links Docs at the documentation site", () => {
+    stubFetch(500, {});
+    render(<LandingNav />);
+    const link = screen.getByRole("link", { name: LANDING_STRINGS.nav.docs });
+    expect(link).toHaveAttribute("href", LANDING_STRINGS.nav.docsHref);
+  });
+
+  it("keeps the Docs link visible on mobile", () => {
+    // The sibling nav items are in-page anchors and carry `hidden sm:inline`, which
+    // costs a phone visitor nothing because they can still scroll. Docs is an
+    // external destination and LandingFooter has no link columns, so the nav is the
+    // only route to it. Hiding it below `sm` would strand mobile visitors entirely.
+    stubFetch(500, {});
+    render(<LandingNav />);
+    const link = screen.getByRole("link", { name: LANDING_STRINGS.nav.docs });
+    expect(link.className).not.toMatch(/(^|\s)hidden(\s|$)/);
+  });
+
   it("shows no star badge when the star fetch fails", async () => {
     const spy = stubFetch(404, {});
     render(<LandingNav />);

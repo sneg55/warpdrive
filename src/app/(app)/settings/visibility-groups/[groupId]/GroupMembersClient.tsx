@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
+import { Button } from "@/components/ui/Button";
 import { Combobox, type ComboboxOption } from "@/components/ui/Combobox";
 import { identityErrorMessage } from "@/constants/settingsIdentity";
 import { addGroupMemberAction, removeGroupMemberAction } from "@/features/identity/actions/groups";
@@ -71,15 +72,17 @@ export function GroupMembersClient({ groupId, members, allUsers }: Props): React
         {members.map((m) => (
           <li key={m.userId} className="flex items-center justify-between gap-2 border-b pb-2">
             <span className="text-sm">{m.name}</span>
-            <button
+            <Button
               type="button"
+              variant="outline"
+              size="sm"
               aria-label={`Remove ${m.name}`}
               disabled={isPending}
               onClick={() => handleRemove(m.userId)}
-              className="rounded border px-3 py-1 text-sm text-red-600 transition-transform active:not-disabled:scale-[0.96] disabled:opacity-50"
+              className="text-red-600"
             >
               Remove
-            </button>
+            </Button>
           </li>
         ))}
       </ul>
@@ -100,14 +103,9 @@ export function GroupMembersClient({ groupId, members, allUsers }: Props): React
             }))}
           />
         </div>
-        <button
-          type="button"
-          disabled={isPending || selectedUserId === ""}
-          onClick={handleAdd}
-          className="rounded bg-blue-600 px-4 py-1.5 text-sm text-white transition-transform active:not-disabled:scale-[0.96] disabled:opacity-50"
-        >
+        <Button type="button" disabled={isPending || selectedUserId === ""} onClick={handleAdd}>
           Add
-        </button>
+        </Button>
       </div>
 
       {error !== null && (

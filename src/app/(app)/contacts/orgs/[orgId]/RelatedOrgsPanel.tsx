@@ -2,6 +2,7 @@
 import type React from "react";
 import { useState } from "react";
 import { Combobox, type ComboboxOption } from "@/components/ui/Combobox";
+import { Input } from "@/components/ui/Input";
 import { ROW_ACTION_BUTTON } from "@/constants/formStyles";
 import {
   addOrgRelationAction,
@@ -116,12 +117,12 @@ export function RelatedOrgsPanel({
             placeholder="Choose org"
           />
         </div>
-        <input
+        <Input
           aria-label="Relation type"
           value={relationType}
           onChange={(e) => setRelationType(e.target.value)}
           placeholder="e.g. partner"
-          className="w-28 shrink-0 rounded-md border px-2 py-1.5 text-sm"
+          className="w-28 shrink-0 px-2"
         />
         <button
           type="button"

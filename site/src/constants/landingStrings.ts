@@ -7,6 +7,8 @@ export const LANDING_STRINGS = {
     features: "Features",
     tour: "Tour",
     compare: "Warpdrive vs Pipedrive",
+    docs: "Docs",
+    docsHref: "https://docs.warpdrivecrm.com",
     github: "GitHub",
     githubStarsSuffix: "stars",
     skipToContent: "Skip to content",

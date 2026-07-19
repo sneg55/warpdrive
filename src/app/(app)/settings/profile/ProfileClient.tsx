@@ -1,9 +1,10 @@
 "use client";
 import { useRouter } from "next/navigation";
 import type React from "react";
-import { useState } from "react";
+import { useId, useState } from "react";
 import { useActionError } from "@/components/shell/ActionErrorProvider";
 import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/RadioGroup";
 import { Select, type SelectOption } from "@/components/ui/Select";
 import { STRINGS } from "@/constants/strings";
@@ -48,6 +49,7 @@ export function ProfileClient(props: ProfileClientProps): React.ReactNode {
   const [pending, setPending] = useState(false);
   const [saved, setSaved] = useState(false);
 
+  const nameFieldId = useId();
   const [draftName, setDraftName] = useState(props.name);
   const [nameSaving, setNameSaving] = useState(false);
   const [nameSaved, setNameSaved] = useState(false);
@@ -85,14 +87,10 @@ export function ProfileClient(props: ProfileClientProps): React.ReactNode {
     <div className="space-y-4">
       <AvatarUpload name={props.name} avatarUrl={props.avatarUrl} />
       <div>
-        <label className="block">
-          <span className="mb-1 block text-sm font-medium">{STRINGS.settings.name}</span>
-          <input
-            value={draftName}
-            onChange={(e) => setDraftName(e.target.value)}
-            className="w-full rounded-md border px-2.5 py-1.5 text-sm"
-          />
+        <label htmlFor={nameFieldId} className="mb-1 block text-sm font-medium">
+          {STRINGS.settings.name}
         </label>
+        <Input id={nameFieldId} value={draftName} onChange={(e) => setDraftName(e.target.value)} />
         {nameError !== null && (
           <p role="alert" className="mt-1 text-xs text-destructive">
             {`Could not save name (${nameError})`}

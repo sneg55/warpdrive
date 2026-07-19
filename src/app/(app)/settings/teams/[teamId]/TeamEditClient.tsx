@@ -2,6 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 import { MultiCombobox } from "@/components/ui/MultiCombobox";
 import { Select } from "@/components/ui/Select";
 import { IDENTITY_SETTINGS_STRINGS, identityErrorMessage } from "@/constants/settingsIdentity";
@@ -102,14 +104,14 @@ export function TeamEditClient({
 
   return (
     <div className="mt-2 flex max-w-2xl flex-col gap-4">
-      <input
+      <Input
         aria-label="Team name"
         type="text"
         value={name}
         maxLength={80}
         disabled={isPending}
         onChange={(e) => setName(e.target.value)}
-        className="rounded border px-3 py-1.5 text-lg font-semibold"
+        className="px-3 text-lg font-semibold"
       />
 
       <div className="flex flex-col gap-1">
@@ -144,22 +146,18 @@ export function TeamEditClient({
       )}
 
       <div className="flex items-center justify-between gap-2">
-        <button
-          type="button"
-          disabled={isPending}
-          onClick={save}
-          className="rounded bg-blue-600 px-4 py-1.5 text-sm text-white transition-transform active:not-disabled:scale-[0.96] disabled:opacity-50"
-        >
+        <Button type="button" disabled={isPending} onClick={save}>
           {isPending ? "Saving..." : "Save changes"}
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
+          variant="outline"
           disabled={isPending}
           onClick={remove}
-          className="rounded border px-4 py-1.5 text-sm text-red-600 transition-transform active:not-disabled:scale-[0.96] disabled:opacity-50"
+          className="text-red-600"
         >
           Delete team
-        </button>
+        </Button>
       </div>
     </div>
   );

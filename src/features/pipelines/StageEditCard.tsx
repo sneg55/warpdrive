@@ -1,6 +1,8 @@
 "use client";
 import type React from "react";
+import { useId } from "react";
 import { Checkbox } from "@/components/ui/Checkbox";
+import { Input } from "@/components/ui/Input";
 import { DEFAULT_ROTTING_DAYS } from "@/constants/pipelineDefaults";
 import type { StageRow } from "./stageDiff";
 
@@ -23,6 +25,7 @@ export function StageEditCard({
   onDelete,
 }: StageEditCardProps): React.ReactNode {
   const rottingEnabled = row.rottingDays !== null;
+  const nameId = useId();
   return (
     <div className="flex w-64 shrink-0 flex-col gap-3 rounded-lg border bg-card p-3">
       <div className="flex items-center justify-between">
@@ -38,15 +41,17 @@ export function StageEditCard({
         </button>
       </div>
 
-      <label className="block text-sm">
-        <span className="mb-1 block font-medium">Stage name</span>
-        <input
+      <div className="text-sm">
+        <label htmlFor={nameId} className="mb-1 block font-medium">
+          Stage name
+        </label>
+        <Input
+          id={nameId}
           aria-label={`Stage ${index + 1} name`}
           value={row.name}
           onChange={(e) => onChange({ name: e.target.value })}
-          className="w-full rounded-md border px-2.5 py-1.5 text-sm"
         />
-      </label>
+      </div>
 
       <div className="text-sm">
         <div className="flex items-center gap-2">
@@ -58,13 +63,13 @@ export function StageEditCard({
           <span className="font-medium">Rotting in (days)</span>
         </div>
         {rottingEnabled && (
-          <input
+          <Input
             aria-label={`Stage ${index + 1} rotting days`}
             type="number"
             min={1}
             value={row.rottingDays ?? DEFAULT_ROTTING_DAYS}
             onChange={(e) => onChange({ rottingDays: Math.max(1, Number(e.target.value) || 1) })}
-            className="mt-2 w-full rounded-md border px-2.5 py-1.5 text-sm"
+            className="mt-2"
           />
         )}
       </div>

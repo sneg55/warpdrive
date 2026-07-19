@@ -1,6 +1,8 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 import { identityErrorMessage } from "@/constants/settingsIdentity";
 import { createPermissionSetAction } from "@/features/identity/actions/permission-sets";
 import { readCsrfToken } from "@/utils/csrfCookie";
@@ -32,28 +34,26 @@ export function CreatePermissionSetForm({ onCreated }: Props): React.ReactElemen
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-2">
+    // Constrained column: the name field is short, so stretching it the full content width read as
+    // an unstyled form (matches the Teams create-team treatment).
+    <form onSubmit={handleSubmit} className="mt-6 flex max-w-md flex-col gap-2">
       <div className="flex gap-2">
         <label htmlFor="ps-name" className="sr-only">
           Permission set name
         </label>
-        <input
+        <Input
           ref={ref}
           id="ps-name"
           type="text"
           required
           maxLength={80}
           placeholder="New permission set name"
-          className="flex-1 rounded border px-3 py-1.5 text-sm"
+          className="min-w-0 flex-1"
           disabled={isPending}
         />
-        <button
-          type="submit"
-          disabled={isPending}
-          className="rounded bg-blue-600 px-4 py-1.5 text-sm text-white transition-transform active:not-disabled:scale-[0.96] disabled:opacity-50"
-        >
+        <Button type="submit" disabled={isPending}>
           {isPending ? "Creating..." : "Create"}
-        </button>
+        </Button>
       </div>
       {error !== null && (
         <p role="alert" className="text-sm text-red-600">

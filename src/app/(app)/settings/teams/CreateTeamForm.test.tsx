@@ -90,6 +90,22 @@ describe("CreateTeamForm", () => {
     expect(screen.queryByRole("option", { name: BOB.name })).not.toBeInTheDocument();
   });
 
+  it("toggles a member by clicking their name, not only the checkbox", async () => {
+    // The member name must be a real label tied to the checkbox, so clicking the name (a much
+    // larger hit target than the 16px box) selects that member. Regression guard for the name
+    // shipping as an inert <span>.
+    render(<CreateTeamForm users={USERS} onCreated={vi.fn()} />);
+    fireEvent.change(screen.getByLabelText("Team name"), { target: { value: "Sales" } });
+    fireEvent.click(screen.getByText(BOB.name, { selector: "label" }));
+    fireEvent.click(screen.getByRole("button", { name: "Create" }));
+    await waitFor(() =>
+      expect(setTeamMembersAction).toHaveBeenCalledWith("csrf", {
+        teamId: "team-new",
+        userIds: [BOB.id],
+      }),
+    );
+  });
+
   it("shows an inline error when creation fails", async () => {
     createTeamAction.mockResolvedValueOnce({ ok: false as const, error: "unauthorized" });
     render(<CreateTeamForm users={USERS} onCreated={vi.fn()} />);

@@ -56,6 +56,15 @@ export function LandingNav(): ReactNode {
           >
             {S.compare}
           </a>
+          {/* Unlike the anchors above, this is an external destination and the footer has no
+              link columns, so this nav is the only route to the docs. It deliberately omits
+              `hidden sm:inline` so it stays reachable on a phone. */}
+          <a
+            href={S.docsHref}
+            className="rounded-sm text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+          >
+            {S.docs}
+          </a>
           <a
             href={HERO.ctaHref}
             target="_blank"

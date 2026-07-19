@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import type React from "react";
 import { useState } from "react";
 import { useActionError } from "@/components/shell/ActionErrorProvider";
+import { Input } from "@/components/ui/Input";
 import { Switch } from "@/components/ui/Switch";
 import { STRINGS } from "@/constants/strings";
 import {
@@ -71,11 +72,11 @@ export function FieldRowItem({ row }: { row: FieldRow }): React.ReactNode {
           ::
         </button>
         {editing ? (
-          <input
+          <Input
             aria-label={S.rename}
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
-            className="flex-1 rounded border px-2 py-1 text-sm"
+            className="flex-1"
           />
         ) : (
           <span className="flex-1 text-sm font-medium">{row.name}</span>

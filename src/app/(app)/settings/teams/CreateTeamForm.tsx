@@ -1,7 +1,9 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { useId, useRef, useState, useTransition } from "react";
+import { Button } from "@/components/ui/Button";
 import { Checkbox } from "@/components/ui/Checkbox";
+import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { IDENTITY_SETTINGS_STRINGS, identityErrorMessage } from "@/constants/settingsIdentity";
 import { createTeamAction, setTeamMembersAction } from "@/features/identity/actions/teams";
@@ -22,6 +24,8 @@ interface Props {
 
 export function CreateTeamForm({ users, onCreated }: Props): React.ReactElement {
   const ref = useRef<HTMLInputElement>(null);
+  // Stable prefix so each member checkbox gets a unique id its name <label htmlFor> can target.
+  const memberPrefix = useId();
   const [managerId, setManagerId] = useState<string>("");
   const [memberIds, setMemberIds] = useState<string[]>([]);
   const [isPending, startTransition] = useTransition();
@@ -68,28 +72,30 @@ export function CreateTeamForm({ users, onCreated }: Props): React.ReactElement 
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-3">
-      <div className="flex gap-2">
-        <label htmlFor="team-name" className="sr-only">
-          Team name
+    // Constrained to a single readable column: these are short fields, so letting them stretch the
+    // full content width (as they used to) read as an unstyled/broken form.
+    <form onSubmit={handleSubmit} className="mt-8 flex max-w-md flex-col gap-4">
+      <h2 className="text-sm font-semibold">{T.createTitle}</h2>
+
+      <div className="flex flex-col gap-1">
+        <label htmlFor="team-name" className="text-sm font-medium">
+          {T.nameLabel}
         </label>
-        <input
-          ref={ref}
-          id="team-name"
-          type="text"
-          required
-          maxLength={80}
-          placeholder="New team name"
-          className="flex-1 rounded border px-3 py-1.5 text-sm"
-          disabled={isPending}
-        />
-        <button
-          type="submit"
-          disabled={isPending}
-          className="rounded bg-blue-600 px-4 py-1.5 text-sm text-white transition-transform active:not-disabled:scale-[0.96] disabled:opacity-50"
-        >
-          {isPending ? "Creating..." : "Create"}
-        </button>
+        <div className="flex gap-2">
+          <Input
+            ref={ref}
+            id="team-name"
+            type="text"
+            required
+            maxLength={80}
+            placeholder={T.namePlaceholder}
+            className="min-w-0 flex-1"
+            disabled={isPending}
+          />
+          <Button type="submit" disabled={isPending}>
+            {isPending ? T.creating : T.create}
+          </Button>
+        </div>
       </div>
 
       <div className="flex flex-col gap-1">
@@ -107,19 +113,25 @@ export function CreateTeamForm({ users, onCreated }: Props): React.ReactElement 
 
       <fieldset className="flex flex-col gap-1">
         <legend className="text-sm font-medium">{T.members}</legend>
-        <p className="text-xs text-gray-500">{T.membersHelp}</p>
-        <div className="flex flex-col gap-1">
-          {users.map((u) => (
-            <div key={u.id} className="flex items-center gap-2 text-sm">
-              <Checkbox
-                label={u.name}
-                checked={memberIds.includes(u.id)}
-                disabled={isPending}
-                onCheckedChange={() => toggleMember(u.id)}
-              />
-              <span>{u.name}</span>
-            </div>
-          ))}
+        <p className="text-xs text-muted-foreground">{T.membersHelp}</p>
+        <div className="mt-1 flex flex-col gap-1.5">
+          {users.map((u) => {
+            const id = `${memberPrefix}-${u.id}`;
+            return (
+              <div key={u.id} className="flex items-center gap-2 text-sm">
+                <Checkbox
+                  id={id}
+                  label={u.name}
+                  checked={memberIds.includes(u.id)}
+                  disabled={isPending}
+                  onCheckedChange={() => toggleMember(u.id)}
+                />
+                <label htmlFor={id} className="cursor-pointer select-none">
+                  {u.name}
+                </label>
+              </div>
+            );
+          })}
         </div>
       </fieldset>
 
