@@ -8,7 +8,9 @@ interface BoardSummaryProps {
   dealCount: number;
 }
 
-const SHOW_TOTAL_KEY = "wd.board.showTotal";
+const SHOW_TOTAL_KEY = "wd.board.showTotal:v1";
+// Legacy unversioned key, read once as a fallback so an existing choice survives the version bump.
+const SHOW_TOTAL_KEY_LEGACY = "wd.board.showTotal";
 
 // Pipedrive hides the total value by default and shows only the deal count, with an info button
 // to reveal the total. The preference sticks per browser via localStorage. Starts hidden on the
@@ -22,8 +24,12 @@ export function BoardSummary(props: BoardSummaryProps): React.ReactNode {
     try {
       // localStorage does not exist on the server, so reading it during render would break
       // hydration. Runs once on mount; the cascading render it costs is the price of correctness.
+
+      const stored =
+        globalThis.localStorage.getItem(SHOW_TOTAL_KEY) ??
+        globalThis.localStorage.getItem(SHOW_TOTAL_KEY_LEGACY);
       // eslint-disable-next-line react-hooks/set-state-in-effect -- hydration-safe mount read
-      if (globalThis.localStorage.getItem(SHOW_TOTAL_KEY) === "1") setShowTotal(true);
+      if (stored === "1") setShowTotal(true);
     } catch {
       // no stored preference available; stay hidden
     }

@@ -146,6 +146,22 @@ describe("DealList", () => {
     );
   });
 
+  it("caps painted rows to the render window and reveals the rest on Show more", () => {
+    const many: DealListRow[] = Array.from({ length: 60 }, (_, i) => ({
+      ...row,
+      id: `d${i}`,
+      title: `Deal ${i}`,
+    }));
+    const titleLinks = (): HTMLElement[] =>
+      screen.getAllByRole("link").filter((l) => /^Deal \d+$/.test(l.textContent ?? ""));
+    render(<DealList {...props} rows={many} total={60} />);
+    // Only the first window (50) of the 60 rows is mounted; the rest wait behind Show more.
+    expect(titleLinks()).toHaveLength(50);
+    fireEvent.click(screen.getByRole("button", { name: /show more/i }));
+    expect(titleLinks()).toHaveLength(60);
+    expect(screen.queryByRole("button", { name: /show more/i })).not.toBeInTheDocument();
+  });
+
   it("keeps the selection when a bulk stage move fails (does not falsely signal success)", async () => {
     const onBulkStage = vi.fn(() => Promise.resolve(false));
     render(<DealList {...props} onBulkStage={onBulkStage} />);

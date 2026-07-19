@@ -48,13 +48,15 @@ export default async function PipelineArchivedPage({
   // A nonexistent (or hidden) pipeline 404s like the entity detail routes, not a 200 soft-404.
   const pipeline = resolveVisiblePipeline(pipelines, id);
 
-  const list = await createCaller(ctx).deal.list({
-    pipelineId: id,
-    offset: 0,
-    limit: 50,
-    archived: true,
-  });
-  const prefs = await getPreferencesForActor(ctx.db, ctx.actor.id);
+  const [list, prefs] = await Promise.all([
+    createCaller(ctx).deal.list({
+      pipelineId: id,
+      offset: 0,
+      limit: 50,
+      archived: true,
+    }),
+    getPreferencesForActor(ctx.db, ctx.actor.id),
+  ]);
   const stages = pipeline.stages.map((s) => ({ id: s.id, name: s.name }));
   const pipelineOptions = pipelines.map((p) => ({
     id: p.id,

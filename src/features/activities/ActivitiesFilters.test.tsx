@@ -99,13 +99,14 @@ describe("ActivitiesFilters", () => {
     expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({ done: "done" }));
   });
 
-  it("picking a From date sets filter.from", () => {
+  it("picking a From date sets filter.from", async () => {
     const onChange = vi.fn();
     render(
       <ActivitiesFilters filter={baseFilter} onChange={onChange} owners={owners} types={types} />,
     );
     fireEvent.click(screen.getByLabelText("From"));
-    fireEvent.click(screen.getByText("15"));
+    // findByText: the calendar is a next/dynamic chunk that loads on open.
+    fireEvent.click(await screen.findByText("15"));
     expect(onChange).toHaveBeenLastCalledWith(
       expect.objectContaining({ from: expect.any(String) }),
     );

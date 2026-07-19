@@ -118,11 +118,12 @@ describe("ActivitiesTable filter toolbar", () => {
     expect(useQuery).toHaveBeenLastCalledWith(expect.objectContaining({ done: "done" }));
   });
 
-  it("picking a From date re-queries listRows with the new from value", () => {
+  it("picking a From date re-queries listRows with the new from value", async () => {
     useQuery.mockReturnValue({ data: [row({})], refetch });
     render(<ActivitiesTable />);
     fireEvent.click(screen.getByLabelText("From"));
-    fireEvent.click(screen.getByText("15"));
+    // findByText: the calendar is a next/dynamic chunk that loads on open.
+    fireEvent.click(await screen.findByText("15"));
     expect(useQuery).toHaveBeenLastCalledWith(
       expect.objectContaining({ from: expect.any(String) }),
     );

@@ -35,7 +35,8 @@ export function PersonBlock({
   hideNameParts = false,
   labels,
 }: {
-  person: Person;
+  // custom_fields is stripped upstream (getWorkspace) because this block never renders it.
+  person: Omit<Person, "customFields">;
   bulkEditing?: boolean;
   onExitBulk?: () => void;
   // Built-in field keys hidden in Settings > Data fields (see BUILTIN_FIELDS.person). A hidden

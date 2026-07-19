@@ -10,7 +10,7 @@ import { notifications } from "@/db/schema";
 import { withTestDb } from "@/db/testing";
 import { seedPipelineWithStages, seedUser } from "@/db/testing/factories";
 import { CSRF_COOKIE } from "@/features/auth/csrf";
-import type { PermSetUser } from "@/features/permissions/effective";
+import type { HydratedActor } from "@/server/hydrateActor";
 import { createCaller } from "@/server/trpc/root";
 
 // ---- CSRF mock setup (mirrors dealActions.csrf.test.ts) ----
@@ -52,13 +52,15 @@ beforeEach(() => {
 
 // ---- tRPC router tests (real DB) ----
 
-// Build a PermSetUser-compatible actor from a seeded user row.
+// Build a HydratedActor-compatible actor from a seeded user row (name/avatar are placeholders).
 // Empty flags/groupIds sets are fine: read-feed tests do not exercise flag checks.
-function makeActor(u: { id: string; isAdmin: boolean; isActive: boolean }): PermSetUser {
+function makeActor(u: { id: string; isAdmin: boolean; isActive: boolean }): HydratedActor {
   return {
     id: u.id,
     type: u.isAdmin ? ("admin" as const) : ("regular" as const),
     isActive: u.isActive,
+    name: "Test User",
+    avatarUrl: null,
     flags: new Set<PermissionFlagKey>(),
     groupIds: new Set<string>(),
   };

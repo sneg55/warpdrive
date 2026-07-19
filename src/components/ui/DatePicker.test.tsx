@@ -23,14 +23,15 @@ describe("DatePicker", () => {
     expect(screen.getByLabelText("Start date")).toHaveTextContent("07/04/2026");
   });
 
-  it("emits YYYY-MM-DD when a day is picked", () => {
+  it("emits YYYY-MM-DD when a day is picked", async () => {
     const onChange = vi.fn();
     render(<DatePicker value="2026-07-04" onChange={onChange} ariaLabel="Start date" />);
     fireEvent.click(screen.getByLabelText("Start date"));
     // v10's DayButton sets aria-label to the full formatted date ("PPPP", e.g.
     // "Wednesday, July 15th, 2026") for a11y, so the accessible *name* is not
     // "15"; the visible day-of-month is the button's text content instead.
-    fireEvent.click(screen.getByText("15"));
+    // findByText (not getByText): the calendar is a next/dynamic chunk that loads on open.
+    fireEvent.click(await screen.findByText("15"));
     expect(onChange).toHaveBeenCalledWith("2026-07-15");
   });
 
@@ -42,7 +43,7 @@ describe("DatePicker", () => {
     expect(onChange).toHaveBeenCalledWith(null);
   });
 
-  it("allows navigating into a future year via the next-month control", () => {
+  it("allows navigating into a future year via the next-month control", async () => {
     // Regression for: captionLayout="dropdown" without startMonth/endMonth
     // caps react-day-picker v10's navigable range at Dec 31 of the current
     // year, so the next-month chevron silently no-ops there and future
@@ -54,7 +55,8 @@ describe("DatePicker", () => {
       <DatePicker value={`${currentYear}-12-01`} onChange={onChange} ariaLabel="Start date" />,
     );
     fireEvent.click(screen.getByLabelText("Start date"));
-    fireEvent.click(screen.getByRole("button", { name: "Go to the Next Month" }));
+    // findByRole: the calendar (a next/dynamic chunk) loads on open; once awaited it is present.
+    fireEvent.click(await screen.findByRole("button", { name: "Go to the Next Month" }));
     fireEvent.click(screen.getByText("15"));
     expect(onChange).toHaveBeenCalledWith(`${currentYear + 1}-01-15`);
   });

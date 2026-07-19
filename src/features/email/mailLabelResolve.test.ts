@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
-import { resolveMailLabelChips } from "./mailLabelResolve";
+import { buildMailLabelIndex, resolveMailLabelChips } from "./mailLabelResolve";
 
 const catalog = [
   { key: "important", name: "Important", color: "red" as const },
@@ -28,5 +28,13 @@ describe("resolveMailLabelChips", () => {
 
   it("returns an empty list for no applied keys", () => {
     expect(resolveMailLabelChips(catalog, [])).toEqual([]);
+  });
+
+  it("reuses one index per catalog reference so the inbox does not rebuild it per row", () => {
+    // The inbox renders one ThreadLabelChips per thread, all sharing the same catalog array; the
+    // index must be built once and shared, not rebuilt O(threads) times.
+    expect(buildMailLabelIndex(catalog)).toBe(buildMailLabelIndex(catalog));
+    // A different catalog array gets its own index.
+    expect(buildMailLabelIndex(catalog)).not.toBe(buildMailLabelIndex([...catalog]));
   });
 });

@@ -42,7 +42,7 @@ describe("Dashboard heading", () => {
 });
 
 describe("Dashboard date range", () => {
-  it("passes a from/to range into the stats query and updates it when a date is picked", () => {
+  it("passes a from/to range into the stats query and updates it when a date is picked", async () => {
     render(<Dashboard canViewOthers currency="USD" />);
     // Default range is the current calendar year.
     const year = new Date().getFullYear();
@@ -54,7 +54,7 @@ describe("Dashboard date range", () => {
     // January 15th, 2026"); the visible "15" is plain text content, so match
     // on text rather than accessible name (same convention as
     // AddActivityModal.test.tsx's DatePicker interactions).
-    fireEvent.click(screen.getAllByText("15")[0]!);
+    fireEvent.click((await screen.findAllByText("15"))[0]!);
     expect(useQuery).toHaveBeenLastCalledWith(
       expect.objectContaining({ from: expect.stringMatching(/-15$/) }),
     );

@@ -195,38 +195,42 @@ export async function listDeals(
       AND ${filterClause}
   `;
 
-  const rowsRes = await db.execute(sql`
-    SELECT
-      d.id,
-      d.title,
-      d.value,
-      d.labels,
-      d.stage_id        AS "stageId",
-      d.board_position  AS "boardPosition",
-      d.owner_id        AS "ownerId",
-      d.person_id       AS "personId",
-      d.org_id          AS "orgId",
-      u.name            AS "ownerName",
-      u.avatar_url      AS "ownerAvatarUrl",
-      pe.name           AS "personName",
-      o.name            AS "orgName",
-      d.next_activity_at   AS "nextActivityAt",
-      d.last_activity_at   AS "lastActivityAt",
-      d.expected_close_date AS "expectedCloseDate",
-      d.stage_entered_at   AS "stageEnteredAt",
-      d.updated_at         AS "updatedAt"
-    ${base}
-    ORDER BY d.updated_at DESC
-    LIMIT ${opts.limit} OFFSET ${opts.offset}
-  `);
-  signal.throwIfAborted();
-
-  const aggRes = await db.execute(sql`
-    SELECT
-      count(*)::int                                    AS total,
-      coalesce(sum(d.value), 0)::numeric(14,2)        AS "totalValue"
-    ${base}
-  `);
+  // The page query and the full-set aggregate are independent and both derive from `base`,
+  // so run them concurrently. On a pooled read connection (the only caller path) this is two
+  // parallel round trips instead of two serial ones; on a single tx connection node-postgres
+  // queues them, so it is never worse.
+  const [rowsRes, aggRes] = await Promise.all([
+    db.execute(sql`
+      SELECT
+        d.id,
+        d.title,
+        d.value,
+        d.labels,
+        d.stage_id        AS "stageId",
+        d.board_position  AS "boardPosition",
+        d.owner_id        AS "ownerId",
+        d.person_id       AS "personId",
+        d.org_id          AS "orgId",
+        u.name            AS "ownerName",
+        u.avatar_url      AS "ownerAvatarUrl",
+        pe.name           AS "personName",
+        o.name            AS "orgName",
+        d.next_activity_at   AS "nextActivityAt",
+        d.last_activity_at   AS "lastActivityAt",
+        d.expected_close_date AS "expectedCloseDate",
+        d.stage_entered_at   AS "stageEnteredAt",
+        d.updated_at         AS "updatedAt"
+      ${base}
+      ORDER BY d.updated_at DESC
+      LIMIT ${opts.limit} OFFSET ${opts.offset}
+    `),
+    db.execute(sql`
+      SELECT
+        count(*)::int                                    AS total,
+        coalesce(sum(d.value), 0)::numeric(14,2)        AS "totalValue"
+      ${base}
+    `),
+  ]);
   signal.throwIfAborted();
 
   const agg = (aggRes as unknown as { rows: Array<{ total: number; totalValue: string }> }).rows[0];

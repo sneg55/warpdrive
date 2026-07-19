@@ -41,8 +41,10 @@ export default async function OrgsListPage(): Promise<React.ReactNode> {
 async function OrgsSection({ actorId }: { actorId: string }): Promise<React.ReactNode> {
   const ctx = await createContext();
   const caller = createCaller(ctx);
-  const { rows, total } = await caller.contacts.listOrgs({ offset: 0, limit: 50 });
-  const prefs = await getPreferencesForActor(ctx.db, actorId);
+  const [{ rows, total }, prefs] = await Promise.all([
+    caller.contacts.listOrgs({ offset: 0, limit: 50 }),
+    getPreferencesForActor(ctx.db, actorId),
+  ]);
   return (
     <OrgsList
       rows={rows.map((r) => ({

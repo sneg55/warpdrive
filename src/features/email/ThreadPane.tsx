@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { STRINGS } from "@/constants/strings";
-import { trpc } from "@/lib/trpc-client";
+import { type RouterOutputs, trpc } from "@/lib/trpc-client";
 import { readCsrfToken } from "@/utils/csrfCookie";
 import { InboxReaderSidebar } from "./InboxReaderSidebar";
 import { primaryCounterparty } from "./primaryCounterparty";
@@ -20,11 +20,22 @@ interface ThreadPaneProps {
   // persisted per-message history (source of record, survives reload) is rendered per
   // message below via MessageTrackingHistory, fed by message.tracking.
   trackingBadge: { kind: "open" | "click" } | null;
+  // Server-prefetched thread (allowRemote:false) so the reader paints without a client round trip.
+  initialThread?: RouterOutputs["email"]["thread"]["get"];
 }
 
-export function ThreadPane({ threadId, trackingBadge }: ThreadPaneProps): React.ReactNode {
+export function ThreadPane({
+  threadId,
+  trackingBadge,
+  initialThread,
+}: ThreadPaneProps): React.ReactNode {
   const [allowRemote, setAllowRemote] = useState(false);
-  const { data, refetch } = trpc.email.thread.get.useQuery({ threadId, allowRemote });
+  const { data, refetch } = trpc.email.thread.get.useQuery(
+    { threadId, allowRemote },
+    // Seed only the initial (allowRemote:false) key with the server prefetch; toggling remote
+    // images fires a fresh fetch. useInboxRealtime still invalidates on inbound events.
+    { initialData: allowRemote === false ? initialThread : undefined },
+  );
   const utils = trpc.useUtils();
   // Guards mark-read-on-open to fire once per thread: re-renders (e.g. from a Composer send
   // triggering refetch()) share the same threadId and must not re-fire the action.

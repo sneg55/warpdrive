@@ -60,8 +60,9 @@ it("submits an end date for a multi-day activity", async () => {
   fireEvent.change(screen.getByLabelText("Subject"), { target: { value: "Conf" } });
   fireEvent.click(screen.getByLabelText("End date"));
   // react-day-picker's day button carries the full date as its aria-label, so match the
-  // visible day-of-month text (mirrors the DatePicker component test).
-  fireEvent.click(screen.getByText("15"));
+  // visible day-of-month text (mirrors the DatePicker component test). findByText: the calendar
+  // is a next/dynamic chunk that loads on open.
+  fireEvent.click(await screen.findByText("15"));
   fireEvent.click(screen.getByRole("button", { name: "Save" }));
 
   await vi.waitFor(() => expect(createActivityAction).toHaveBeenCalled());

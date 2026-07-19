@@ -13,7 +13,10 @@ export const LANDING_STRINGS = {
   },
   hero: {
     badge: "Open source · Self-hosted · MIT licensed",
-    title: "Your pipeline. Your infrastructure.",
+    // H1 leads with the primary category query so search and AI answer engines can match and lift it.
+    title: "The open-source, self-hosted Pipedrive alternative",
+    // Brand line kept as a prominent subhead under the H1 so the voice is not lost to the keyword H1.
+    tagline: "Your pipeline. Your infrastructure.",
     subtitle:
       "Warpdrive is an open-source, self-hosted Pipedrive alternative for business-development teams: pipeline management, a deal workspace, contacts, and two-way Gmail, running entirely on your own infrastructure.",
     cta: "View on GitHub",
@@ -130,6 +133,44 @@ export const LANDING_STRINGS = {
       "tRPC",
       "Tailwind",
       "shadcn/ui",
+    ],
+  },
+  faq: {
+    heading: "Frequently asked questions",
+    sub: "Straight answers about what Warpdrive is, what it costs, and how to run it.",
+    items: [
+      {
+        q: "What is Warpdrive?",
+        a: "Warpdrive is an open-source, self-hosted CRM for business-development teams and a free alternative to Pipedrive. It covers pipeline management, a deal workspace, contacts and organizations, two-way Gmail, permissions, and stats, and it runs entirely on your own infrastructure under the MIT license.",
+      },
+      {
+        q: "Is Warpdrive free?",
+        a: "Yes. Warpdrive is MIT-licensed and free to run. There is no per-seat pricing and no vendor subscription: you pay only for the server you host it on.",
+      },
+      {
+        q: "How do I self-host Warpdrive?",
+        a: "Warpdrive ships as a single Docker Compose file. Copy .env.example to .env, set your domain and Google OAuth, then run docker compose up -d --build. That starts the app, WebSocket server, background worker, Postgres, and MinIO, with Caddy provisioning HTTPS for your domain automatically.",
+      },
+      {
+        q: "Does Warpdrive have two-way Gmail sync?",
+        a: "Yes. Warpdrive connects to Gmail over OAuth and links threads to deals and people in both directions. It supports open and click tracking, templates, scheduled send, and follow-up labels, using your own Google Workspace accounts and consent screen.",
+      },
+      {
+        q: "How is Warpdrive different from Pipedrive?",
+        a: "Warpdrive is open source (MIT), self-hosted, and free, and your customer data never leaves your infrastructure. Pipedrive is proprietary, vendor-hosted, and billed per seat. Warpdrive focuses on the core business-development loop and leaves products, invoicing, forecasts, and workflow automation deliberately out of scope.",
+      },
+      {
+        q: "What is Warpdrive built on?",
+        a: "Warpdrive is built on Next.js, React, and TypeScript, with Postgres and Drizzle, tRPC, Tailwind, and shadcn/ui. Realtime runs on a self-hosted WebSocket server with Postgres LISTEN/NOTIFY, and files are stored in MinIO or any S3-compatible store.",
+      },
+      {
+        q: "Who is Warpdrive for?",
+        a: "Warpdrive is built for business-development and sales teams that want to own their pipeline and their data, run on their own infrastructure, and avoid per-seat SaaS billing.",
+      },
+      {
+        q: "Is Warpdrive affiliated with Pipedrive?",
+        a: "No. Warpdrive is an independent open-source project and is not affiliated with or endorsed by Pipedrive. Pipedrive is used only as a point of comparison.",
+      },
     ],
   },
   shot: {

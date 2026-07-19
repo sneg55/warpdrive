@@ -45,7 +45,8 @@ export function OrgBlock({
   hidden = NONE,
   labels,
 }: {
-  org: Organization;
+  // custom_fields is stripped upstream (getWorkspace) because this block never renders it.
+  org: Omit<Organization, "customFields">;
   bulkEditing?: boolean;
   onExitBulk?: () => void;
   // Built-in field keys hidden in Settings > Data fields (see BUILTIN_FIELDS.organization). A hidden

@@ -152,7 +152,14 @@ export function BoardColumn(props: BoardColumnProps): React.ReactNode {
         <>
           <ul className="flex flex-col gap-2" aria-label={`${stageName} deals`}>
             {cards.map((card) => (
-              <li key={card.id}>
+              // content-visibility lets the browser skip layout+paint for off-screen cards in a
+              // long lane. Cards are draggables, not drop targets (the stage column and the
+              // DragDropZones are the droppables), and a card is always on-screen when a drag
+              // starts, so skipping off-screen cards does not affect drag/drop measurement.
+              <li
+                key={card.id}
+                className="[content-visibility:auto] [contain-intrinsic-size:auto_96px]"
+              >
                 <DraggableCard card={card} rottingDays={rottingDays} density={density} now={now} />
               </li>
             ))}

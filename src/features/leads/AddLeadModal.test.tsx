@@ -80,7 +80,8 @@ describe("AddLeadModal", () => {
     render(<AddLeadModal onClose={vi.fn()} onCreated={onCreated} />);
     fireEvent.change(screen.getByLabelText("Lead title"), { target: { value: "New lead" } });
     fireEvent.click(screen.getByLabelText("Expected close date"));
-    fireEvent.click(screen.getByText("15"));
+    // findByText: the calendar is a next/dynamic chunk that loads on open.
+    fireEvent.click(await screen.findByText("15"));
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
     await waitFor(() =>
       expect(createLeadAction).toHaveBeenCalledWith(

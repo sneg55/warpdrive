@@ -2,13 +2,12 @@ import { cookies } from "next/headers";
 import { cache } from "react";
 import { type Db, db } from "@/db/client";
 import { loadLiveSession, SESSION_COOKIE } from "@/features/auth/session";
-import type { PermSetUser } from "@/features/permissions/effective";
-import { hydrateActor } from "@/server/hydrateActor";
+import { type HydratedActor, hydrateActor } from "@/server/hydrateActor";
 
 export interface AppContext {
   db: Db;
   session: { userId: string; sessionId: string } | null;
-  actor: PermSetUser | null;
+  actor: HydratedActor | null;
 }
 
 /**

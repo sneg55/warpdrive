@@ -19,11 +19,13 @@ export default async function ProfilePage(): Promise<ReactNode> {
   if (actor === null)
     return <p className="text-sm text-red-600">{STRINGS.settings.requiresAuth}</p>;
 
-  const [me] = await db
-    .select({ name: users.name, email: users.email, avatarUrl: users.avatarUrl })
-    .from(users)
-    .where(eq(users.id, actor.id));
-  const prefs = await getPreferencesForActor(db, actor.id);
+  const [[me], prefs] = await Promise.all([
+    db
+      .select({ name: users.name, email: users.email, avatarUrl: users.avatarUrl })
+      .from(users)
+      .where(eq(users.id, actor.id)),
+    getPreferencesForActor(db, actor.id),
+  ]);
 
   return (
     <section className="max-w-xl">

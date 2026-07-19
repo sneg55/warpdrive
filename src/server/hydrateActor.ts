@@ -4,14 +4,23 @@ import type { Db } from "@/db/client";
 import { permissionSets, teamMembers, teams, users, visibilityGroupMembers } from "@/db/schema";
 import type { PermSetUser } from "@/features/permissions/effective";
 
-// Build a PermSetUser from a userId with no request/session context. Used by
+// A hydrated actor plus the display fields already present on the user row hydrateActor reads.
+// Exposing them here lets the app shell render the avatar from ctx.actor instead of re-reading the
+// same users row per authenticated page. HydratedActor extends PermSetUser, so every permissions
+// call site that expects a PermSetUser is unaffected.
+export interface HydratedActor extends PermSetUser {
+  name: string;
+  avatarUrl: string | null;
+}
+
+// Build a HydratedActor from a userId with no request/session context. Used by
 // createContext (request path) AND by import background jobs (no cookies available),
 // so it takes db explicitly and never imports next/headers.
 export async function hydrateActor(
   db: Db,
   userId: string,
   signal: AbortSignal,
-): Promise<PermSetUser | null> {
+): Promise<HydratedActor | null> {
   signal.throwIfAborted();
   const [u] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
   signal.throwIfAborted();
@@ -54,6 +63,8 @@ export async function hydrateActor(
     id: u.id,
     type: u.isAdmin ? "admin" : "regular",
     isActive: u.isActive,
+    name: u.name,
+    avatarUrl: u.avatarUrl,
     flags,
     groupIds: new Set(groupRows.map((r) => r.groupId)),
     managedUserIds,

@@ -22,7 +22,10 @@ export function HeroSection(): ReactNode {
           <h1 className="landing-rise landing-rise-1 mt-5 text-balance text-4xl font-semibold tracking-tight sm:text-5xl">
             {S.title}
           </h1>
-          <p className="landing-rise landing-rise-2 mt-4 max-w-xl text-pretty text-lg text-muted-foreground">
+          <p className="landing-rise landing-rise-2 mt-4 text-balance text-xl font-medium tracking-tight text-foreground/90">
+            {S.tagline}
+          </p>
+          <p className="landing-rise landing-rise-3 mt-4 max-w-xl text-pretty text-lg text-muted-foreground">
             {S.subtitle}
           </p>
           <div className="landing-rise landing-rise-3 mt-8 flex flex-wrap items-center gap-3">

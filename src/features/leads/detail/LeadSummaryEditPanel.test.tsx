@@ -106,7 +106,8 @@ describe("LeadSummaryEditPanel", () => {
       <LeadSummaryEditPanel lead={{ ...lead, expectedCloseDate: "2026-07-04" }} owners={owners} />,
     );
     fireEvent.click(screen.getByRole("button", { name: "Edit Expected close" }));
-    fireEvent.click(screen.getByText("15"));
+    // findByText: the calendar is a next/dynamic chunk that loads on open.
+    fireEvent.click(await screen.findByText("15"));
     expect(updateLeadAction).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
 

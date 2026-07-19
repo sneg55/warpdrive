@@ -1,11 +1,26 @@
 "use client";
+import dynamic from "next/dynamic";
 import type React from "react";
 import { useState } from "react";
-import { DayPicker } from "react-day-picker";
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "./Button";
 import { formatMdy, parseYmd, toYmd } from "./dateFormat";
 import { Popover, PopoverContent, PopoverTrigger } from "./Popover";
+
+// react-day-picker is a mid-weight calendar lib that only renders inside the popover, i.e. after
+// the user opens it. Code-split it so every route that merely mounts a DatePicker (deal page,
+// dashboard, inline date edits, add-deal/add-lead forms) does not ship the calendar in its initial
+// chunk. It is warmed on trigger hover/focus (preloadDayPicker) so the popover opens without a
+// load flash in the common case.
+const DayPicker = dynamic(async () => (await import("react-day-picker")).DayPicker, {
+  ssr: false,
+  loading: () => <div className="min-h-[18rem]" aria-hidden="true" />,
+});
+
+let dayPickerChunk: Promise<unknown> | null = null;
+function preloadDayPicker(): void {
+  dayPickerChunk ??= import("react-day-picker");
+}
 
 // react-day-picker v10's captionLayout="dropdown" defaults navEnd to Dec 31
 // of the current year when startMonth/endMonth are omitted, which caps the
@@ -56,6 +71,8 @@ export function DatePicker({
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger
         aria-label={ariaLabel}
+        onMouseEnter={preloadDayPicker}
+        onFocus={preloadDayPicker}
         className={
           triggerClassName ?? cn(buttonVariants({ variant: "outline", size: "sm" }), "font-normal")
         }

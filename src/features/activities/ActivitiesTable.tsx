@@ -4,14 +4,15 @@ import type React from "react";
 import { useMemo, useState } from "react";
 import { BulkActionBar } from "@/components/data-table/BulkActionBar";
 import { type ColumnSort, useColumnSort } from "@/components/data-table/useColumnSort";
+import { RENDER_WINDOW_STEP, useRenderWindow } from "@/components/data-table/useRenderWindow";
 import { useRowSelection } from "@/components/data-table/useRowSelection";
 import { trpc } from "@/lib/trpc-client";
 import { readCsrfToken } from "@/utils/csrfCookie";
 import { ActivitiesFilters } from "./ActivitiesFilters";
 import { ActivitiesTableHead } from "./ActivitiesTableHead";
-import { ActivityDayGroups } from "./ActivityDayGroups";
 import { ActivityEditModal } from "./ActivityEditModal";
 import { ActivityRow } from "./ActivityRow";
+import { ActivityTableBody } from "./ActivityTableBody";
 import { AddActivityModal } from "./AddActivityModal";
 import { completeActivityAction } from "./actions";
 import type { ActivityTableRow } from "./activityRows";
@@ -48,6 +49,10 @@ export function ActivitiesTable(): React.ReactNode {
   const ownersQ = trpc.identity.assignableUsers.useQuery();
   const { error, bulkMarkDone, bulkDelete } = useActivityBulkActions(selection, rowsQ.refetch);
   const rows = useMemo(() => rowsQ.data ?? [], [rowsQ.data]);
+  // Cap how many rows are painted; the count header, select-all, and bulk actions all operate
+  // over the full `rows` set, so this bounds render cost only. listRows is pagination-free, so
+  // without this the default open-activities view mounts every row at once.
+  const rowWindow = useRenderWindow(rows, RENDER_WINDOW_STEP);
   // A transient batched-401 (the F5-1 class) leaves data undefined AND isError=true. Painting that
   // as the empty state makes a recoverable failure look like a genuinely empty to-do list with no
   // way back, so we branch loading/error/empty explicitly (only when we have no rows to fall back
@@ -160,50 +165,15 @@ export function ActivitiesTable(): React.ReactNode {
             onToggleAll={() => selection.toggleAll(visibleIds)}
           />
           <tbody>
-            {loadFailed ? (
-              <tr>
-                <td
-                  colSpan={ACTIVITY_TABLE_COLUMN_COUNT}
-                  role="alert"
-                  className="px-3 py-10 text-center text-muted-foreground"
-                >
-                  Couldn&apos;t load activities.{" "}
-                  <button
-                    type="button"
-                    onClick={() => void rowsQ.refetch()}
-                    className="font-medium text-primary underline underline-offset-2 hover:opacity-90"
-                  >
-                    Retry
-                  </button>
-                </td>
-              </tr>
-            ) : loadPending ? (
-              <tr>
-                <td
-                  colSpan={ACTIVITY_TABLE_COLUMN_COUNT}
-                  className="px-3 py-10 text-center text-muted-foreground"
-                >
-                  Loading activities&hellip;
-                </td>
-              </tr>
-            ) : rows.length === 0 ? (
-              <tr>
-                <td
-                  colSpan={ACTIVITY_TABLE_COLUMN_COUNT}
-                  className="px-3 py-10 text-center text-muted-foreground"
-                >
-                  No activities in this view.
-                </td>
-              </tr>
-            ) : groupByDay ? (
-              <ActivityDayGroups
-                rows={rows}
-                columnCount={ACTIVITY_TABLE_COLUMN_COUNT}
-                renderRow={renderRow}
-              />
-            ) : (
-              rows.map(renderRow)
-            )}
+            <ActivityTableBody
+              loadFailed={loadFailed}
+              loadPending={loadPending}
+              rowWindow={rowWindow}
+              groupByDay={groupByDay}
+              renderRow={renderRow}
+              columnCount={ACTIVITY_TABLE_COLUMN_COUNT}
+              onRetry={() => void rowsQ.refetch()}
+            />
           </tbody>
         </table>
       </div>

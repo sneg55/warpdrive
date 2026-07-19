@@ -88,7 +88,8 @@ describe("AddActivityModal", () => {
     render(<AddActivityModal onClose={vi.fn()} onCreated={vi.fn()} leadId="lead-1" />);
     fireEvent.change(screen.getByLabelText("Subject"), { target: { value: "Log a call" } });
     fireEvent.click(screen.getByLabelText("Due date"));
-    fireEvent.click(screen.getByText("10"));
+    // findByText: the calendar is a next/dynamic chunk that loads on open.
+    fireEvent.click(await screen.findByText("10"));
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
     await waitFor(() =>
       expect(createActivityAction).toHaveBeenCalledWith(

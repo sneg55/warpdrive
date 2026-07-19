@@ -15,6 +15,8 @@ describe("appRouter deal namespace", () => {
           id: u.id,
           type: "admin" as const,
           isActive: true,
+          name: "Test User",
+          avatarUrl: null,
           flags: new Set(),
           groupIds: new Set(),
         },

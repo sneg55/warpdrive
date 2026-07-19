@@ -38,8 +38,10 @@ export type DealWorkspace = {
   pipelineVisibilityGroupId: string | null;
   ownerName: string | null; // kept for the sidebar; mirrors owner.name
   owner: UserRef | null;
-  person: Person | null;
-  org: Organization | null;
+  // custom_fields is stripped: the workspace sidebar renders only fixed person/org fields, so
+  // shipping those jsonb blobs in the deal-open RSC payload was dead weight.
+  person: Omit<Person, "customFields"> | null;
+  org: Omit<Organization, "customFields"> | null;
   stageProgress: StageProgress;
   followers: UserRef[];
   isFollowedBySelf: boolean;
@@ -48,6 +50,14 @@ export type DealWorkspace = {
   lostReasonOptions: Array<{ id: string; name: string }>;
   customFieldDefs: CustomFieldDef[];
 };
+
+// Drop the custom_fields jsonb from a person/org row before it enters the workspace RSC payload;
+// the sidebar renders only fixed fields, so those blobs were serialized for nothing.
+function withoutCustomFields<T extends { customFields: unknown }>(row: T): Omit<T, "customFields"> {
+  const rest = { ...row };
+  delete (rest as { customFields?: unknown }).customFields;
+  return rest;
+}
 
 export async function getWorkspace(
   db: Db,
@@ -151,8 +161,8 @@ export async function getWorkspace(
     pipelineVisibilityGroupId: pipe.vg,
     ownerName: owner?.name ?? null,
     owner: owner ?? null,
-    person: person ?? null,
-    org: org ?? null,
+    person: person !== undefined ? withoutCustomFields(person) : null,
+    org: org !== undefined ? withoutCustomFields(org) : null,
     stageProgress: buildStageProgress(deal, stageRows),
     followers,
     isFollowedBySelf,

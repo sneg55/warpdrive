@@ -34,11 +34,20 @@ export default async function DataFieldsPage({
   }
 
   const signal = AbortSignal.timeout(5000);
-  const hidden = await listHiddenBuiltins(db, signal);
+  // The hidden-builtins read and the four per-target def reads are all independent; run them
+  // concurrently instead of five serial round trips (one listHiddenBuiltins + a listDefs loop).
+  const [hidden, defsPerTarget] = await Promise.all([
+    listHiddenBuiltins(db, signal),
+    Promise.all(
+      CUSTOM_FIELD_TARGETS.map(async (target) => ({
+        target,
+        defs: await listDefs(db, target, {}, signal),
+      })),
+    ),
+  ]);
   const byTarget: Record<string, FieldRow[]> = {};
   const builtinByTarget: Record<string, BuiltinRow[]> = {};
-  for (const target of CUSTOM_FIELD_TARGETS) {
-    const defs = await listDefs(db, target, {}, signal);
+  for (const { target, defs } of defsPerTarget) {
     byTarget[target] = defs.map((d) => ({
       id: d.id,
       name: d.name,

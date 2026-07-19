@@ -1,4 +1,3 @@
-import { eq } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
@@ -8,7 +7,6 @@ import { LeftNav } from "@/components/shell/LeftNav";
 import { ReconnectBanner } from "@/components/shell/ReconnectBanner";
 import { TopBar } from "@/components/shell/TopBar";
 import { db } from "@/db/client";
-import { users } from "@/db/schema/identity";
 import { CSRF_COOKIE } from "@/features/auth/csrf";
 import { InterfacePrefsProvider } from "@/features/identity/InterfacePrefsProvider";
 import { interfacePrefsFromUi } from "@/features/identity/interfacePrefs";
@@ -22,18 +20,11 @@ export default async function AppLayout({ children }: { children: ReactNode }): 
   if (ctx.actor === null) redirect("/login");
   const jar = await cookies();
   const hasCsrf = jar.get(CSRF_COOKIE) !== undefined;
-  // Both reads need only the actor id. This layout runs on every authenticated page, so a
-  // serialized round trip here is a tax paid app-wide; issue them together.
-  const [[me], prefs] = await Promise.all([
-    // The actor carries only ids/flags; read the display name + uploaded photo for the avatar.
-    db
-      .select({ name: users.name, avatarUrl: users.avatarUrl })
-      .from(users)
-      .where(eq(users.id, ctx.actor.id)),
-    // Interface density is a per-user preference (Settings > Personal preferences); default
-    // comfortable when no row exists. DealCard/Board read this via the data-density attribute.
-    getPreferencesForActor(db, ctx.actor.id),
-  ]);
+  // The avatar name + photo now ride along on the hydrated actor (createContext already read the
+  // user row), so the shell no longer re-reads that row per authenticated page. Only the per-user
+  // interface preferences remain; default comfortable when no row exists (DealCard/Board read the
+  // density via the data-density attribute).
+  const prefs = await getPreferencesForActor(db, ctx.actor.id);
   return (
     <ActionErrorProvider>
       <InterfacePrefsProvider value={interfacePrefsFromUi(prefs.ui)}>
@@ -41,7 +32,7 @@ export default async function AppLayout({ children }: { children: ReactNode }): 
           <CsrfRefresher hasCsrf={hasCsrf} />
           {ctx.actor.type === "admin" && <VersionBanner />}
           <ReconnectBanner />
-          <TopBar userId={ctx.actor.id} userName={me?.name} avatarUrl={me?.avatarUrl} />
+          <TopBar userId={ctx.actor.id} userName={ctx.actor.name} avatarUrl={ctx.actor.avatarUrl} />
           <div className="flex min-h-0 flex-1">
             <LeftNav />
             <main className="min-w-0 flex-1 overflow-auto bg-muted/70 p-6">{children}</main>

@@ -143,12 +143,12 @@ describe("InlineDateField (PD mechanism)", () => {
     expect(screen.getByRole("button", { name: "Edit Expected close date" })).toBeInTheDocument();
   });
 
-  it("picking a day does NOT autosave; Save commits it", () => {
+  it("picking a day does NOT autosave; Save commits it", async () => {
     const onSave = vi.fn(() => Promise.resolve(ok(undefined)));
     render(<InlineDateField label="Expected close date" value="2026-07-04" onSave={onSave} />);
     fireEvent.click(screen.getByRole("button", { name: "Edit Expected close date" }));
     // Editor opens with the calendar already showing (PD behavior).
-    fireEvent.click(screen.getByText("15"));
+    fireEvent.click(await screen.findByText("15"));
     expect(onSave).not.toHaveBeenCalled();
     const save = screen.getByRole("button", { name: "Save" });
     expect(save).toBeEnabled();
@@ -156,11 +156,11 @@ describe("InlineDateField (PD mechanism)", () => {
     expect(onSave).toHaveBeenCalledWith("2026-07-15");
   });
 
-  it("Cancel discards the picked day", () => {
+  it("Cancel discards the picked day", async () => {
     const onSave = vi.fn(() => Promise.resolve(ok(undefined)));
     render(<InlineDateField label="Expected close date" value="2026-07-04" onSave={onSave} />);
     fireEvent.click(screen.getByRole("button", { name: "Edit Expected close date" }));
-    fireEvent.click(screen.getByText("15"));
+    fireEvent.click(await screen.findByText("15"));
     fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
     expect(onSave).not.toHaveBeenCalled();
     expect(screen.getByText("07/04/2026")).toBeInTheDocument();

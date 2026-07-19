@@ -31,6 +31,28 @@ it("freezes a slug key from the name and rejects a duplicate", async () => {
   });
 });
 
+it("serves a cached def list within the TTL and invalidates it on a mutation", async () => {
+  await withTestDb(async (db) => {
+    const sig = (): AbortSignal => new AbortController().signal;
+    const first = await listDefs(db, "deal", {}, sig());
+    const second = await listDefs(db, "deal", {}, sig());
+    // Built once per (db, target) within the window, not rebuilt on every call.
+    expect(second).toBe(first);
+
+    const created = await createDef(
+      db,
+      { targetEntity: "deal", type: "text", name: "Region" },
+      sig(),
+    );
+    if (created.ok === false) throw new Error("setup failed");
+
+    const afterCreate = await listDefs(db, "deal", {}, sig());
+    // The mutation invalidated the cache, so the new def is visible immediately (not stale).
+    expect(afterCreate).not.toBe(first);
+    expect(afterCreate.find((d) => d.id === created.value.id)).toBeDefined();
+  });
+});
+
 it("archives a def so it disappears from the default list but stays addressable", async () => {
   await withTestDb(async (db) => {
     const created = await createDef(

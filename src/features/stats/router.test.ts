@@ -8,15 +8,18 @@ import { ERROR_IDS } from "@/constants/errorIds";
 import type { PermissionFlagKey } from "@/constants/permissionFlags";
 import { withTestDb } from "@/db/testing";
 import { seedPipelineWithStages, seedUser } from "@/db/testing/factories";
-import type { PermSetUser } from "@/features/permissions/effective";
+import type { HydratedActor } from "@/server/hydrateActor";
 import { createCaller } from "@/server/trpc/root";
 
-// Build a PermSetUser-compatible actor from a seeded user row.
-function makeActor(u: { id: string; isAdmin: boolean; isActive: boolean }): PermSetUser {
+// Build a HydratedActor-compatible actor from a seeded user row (name/avatar are placeholders;
+// the stats procedures use only the permission-relevant fields).
+function makeActor(u: { id: string; isAdmin: boolean; isActive: boolean }): HydratedActor {
   return {
     id: u.id,
     type: u.isAdmin ? ("admin" as const) : ("regular" as const),
     isActive: u.isActive,
+    name: "Test User",
+    avatarUrl: null,
     flags: new Set<PermissionFlagKey>(),
     groupIds: new Set<string>(),
   };

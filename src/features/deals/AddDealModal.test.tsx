@@ -185,7 +185,8 @@ describe("AddDealModal", () => {
     const { onCreated } = renderModal();
     fireEvent.change(screen.getByLabelText("Deal title"), { target: { value: "Big deal" } });
     fireEvent.click(screen.getByLabelText("Expected close date"));
-    fireEvent.click(screen.getByText("15"));
+    // findByText: the calendar is a next/dynamic chunk that loads on open.
+    fireEvent.click(await screen.findByText("15"));
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
     await waitFor(() =>
       expect(createDealAction).toHaveBeenCalledWith(

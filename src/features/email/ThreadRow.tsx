@@ -99,7 +99,7 @@ export function ThreadRow({
   // on the right (archive appears on hover). No persistent reading pane; the row opens the thread.
   return (
     <li
-      className={`group flex items-center gap-2 pr-2 ${active ? "bg-accent" : "hover:bg-muted/50"}`}
+      className={`group flex items-center gap-2 pr-2 [content-visibility:auto] [contain-intrinsic-size:auto_52px] ${active ? "bg-accent" : "hover:bg-muted/50"}`}
     >
       {canSelectInFolder(folder) && (
         <div className="flex items-center px-2 py-2.5">

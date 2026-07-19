@@ -23,8 +23,10 @@ export default async function LeadsPage(): Promise<React.ReactNode> {
   if (ctx.actor === null) {
     return <main>Unauthorized</main>;
   }
-  const baseCurrency = await readBaseCurrency(db, AbortSignal.timeout(8000));
-  const prefs = await getPreferencesForActor(db, ctx.actor.id);
+  const [baseCurrency, prefs] = await Promise.all([
+    readBaseCurrency(db, AbortSignal.timeout(8000)),
+    getPreferencesForActor(db, ctx.actor.id),
+  ]);
   const stored = prefs.ui.leadsView;
   const sort = stored !== undefined ? toLeadSort(stored.sort.field, stored.sort.dir) : null;
   const initialView =

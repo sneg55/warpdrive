@@ -20,7 +20,11 @@ function collectTests(dir: string, acc: string[] = []): string[] {
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) {
       // Skip node_modules and dot-dirs (.git/.next/...); dot-FILES like .env.example.test.ts stay.
-      if (entry.name === "node_modules" || entry.name.startsWith(".")) continue;
+      // Skip the `site` sub-app too: it is a self-contained package with its own vitest.config.ts
+      // and `@` -> `site/src` alias, so sweeping it into this project resolves `@` to the wrong root
+      // and breaks collection. Its tests run via `pnpm -C site test`.
+      if (entry.name === "node_modules" || entry.name === "site" || entry.name.startsWith("."))
+        continue;
       collectTests(full, acc);
     } else if (/\.test\.tsx?$/.test(entry.name) && entry.name !== "testHarness.test.ts") {
       acc.push(full);

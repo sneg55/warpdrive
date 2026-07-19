@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import { AppError, ERROR_IDS } from "@/constants/errorIds";
 import type { Db } from "@/db/client";
 import { type Settings, settings } from "@/db/schema/system";
+import { invalidateBaseCurrencyCache } from "./readBaseCurrency";
 
 // The settings singleton is guarded by CHECK (id = true); every write targets that one row.
 // upsert so a fresh install (no row yet) still lands the patch.
@@ -28,6 +29,9 @@ export async function updateSettings(
     .onConflictDoUpdate({ target: settings.id, set })
     .returning();
   signal.throwIfAborted();
+  // Any settings write invalidates the cached base currency for this Db (over-invalidation is
+  // harmless: the next read re-populates from the singleton).
+  invalidateBaseCurrencyCache(db);
   if (row === undefined) {
     // The singleton always yields a row on upsert; re-read defensively.
     const [existing] = await db.select().from(settings).where(eq(settings.id, true));

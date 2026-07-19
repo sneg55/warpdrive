@@ -17,6 +17,16 @@ afterEach(() => {
 });
 
 describe("LandingPage", () => {
+  it("leads the H1 with the category and keeps the brand line as a subhead", () => {
+    render(<LandingPage />);
+    const heading = screen.getByRole("heading", { level: 1 });
+    // The H1 must carry the primary category query, not only brand poetry.
+    expect(heading).toHaveTextContent(LANDING_STRINGS.hero.title);
+    expect(heading.textContent ?? "").toMatch(/Pipedrive alternative/i);
+    // The poetic brand line survives as a distinct element, not lost.
+    expect(screen.getByText(LANDING_STRINGS.hero.tagline)).toBeInTheDocument();
+  });
+
   it("renders the hero pitch with a CTA pointing at the GitHub repo", () => {
     render(<LandingPage />);
     const heading = screen.getByRole("heading", { level: 1 });
@@ -93,5 +103,23 @@ describe("LandingPage", () => {
       expect(screen.getByText(row.pipedrive)).toBeInTheDocument();
     }
     expect(screen.getByText(LANDING_STRINGS.comparison.disclaimer)).toBeInTheDocument();
+  });
+
+  it("answers the priority questions in an anchored FAQ section", () => {
+    const { container } = render(<LandingPage />);
+    expect(container.querySelector("#faq")).not.toBeNull();
+    const [first] = LANDING_STRINGS.faq.items;
+    if (first === undefined) expect.unreachable("no faq items in copy constants");
+    expect(screen.getByRole("heading", { name: first.q })).toBeInTheDocument();
+  });
+
+  it("embeds JSON-LD structured data including a FAQPage", () => {
+    const { container } = render(<LandingPage />);
+    const script = container.querySelector('script[type="application/ld+json"]');
+    expect(script).not.toBeNull();
+    const data = JSON.parse(script?.textContent ?? "{}") as {
+      "@graph": Array<{ "@type": string }>;
+    };
+    expect(data["@graph"].some((node) => node["@type"] === "FAQPage")).toBe(true);
   });
 });

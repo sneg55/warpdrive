@@ -54,3 +54,17 @@ it("leaves managedUserIds EMPTY when the manager lacks team.viewMembers (grant i
   expect(actor?.managedUserIds?.has(memberId)).toBe(false);
   expect(actor?.managedUserIds?.size).toBe(0);
 });
+
+it("carries the user's display name and avatar so the app shell need not re-read the row", async () => {
+  const [u] = await h.db
+    .insert(users)
+    .values({
+      email: `disp-${Math.random()}@x.com`,
+      name: "Display Name",
+      avatarUrl: "https://example.test/a.png",
+    })
+    .returning();
+  const actor = await hydrateActor(h.db, u?.id ?? "", SIG());
+  expect(actor?.name).toBe("Display Name");
+  expect(actor?.avatarUrl).toBe("https://example.test/a.png");
+});

@@ -45,7 +45,9 @@ const ITEMS = [
 
 // Preference key for the collapsed/expanded rail. Read after mount (not during SSR) so the
 // server and first client render agree on the collapsed default and no hydration mismatch occurs.
-const NAV_PREF_KEY = "wd.nav.expanded";
+const NAV_PREF_KEY = "wd.nav.expanded:v1";
+// Legacy unversioned key, read once as a fallback so an existing choice survives the version bump.
+const NAV_PREF_KEY_LEGACY = "wd.nav.expanded";
 // Below this viewport width the rail auto-collapses unless the user has explicitly chosen a state.
 // The nav is open by default on normal/large screens; small screens get the compact icon rail.
 const EXPAND_AT_MIN_WIDTH = 1024;
@@ -55,7 +57,9 @@ const EXPAND_AT_MIN_WIDTH = 1024;
 // ("1"/"0") or null when the user has not toggled the rail (so we follow the responsive default).
 function readPref(): boolean | null {
   try {
-    const v = globalThis.localStorage.getItem(NAV_PREF_KEY);
+    const v =
+      globalThis.localStorage.getItem(NAV_PREF_KEY) ??
+      globalThis.localStorage.getItem(NAV_PREF_KEY_LEGACY);
     return v === "1" ? true : v === "0" ? false : null;
   } catch {
     return null;

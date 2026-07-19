@@ -1,26 +1,18 @@
 "use client";
 
-// Thin wiring layer: mints a WS ticket, subscribes to the user channel, and
-// invalidates TanStack Query caches on email_arrived and email_tracking events.
-// Modeled closely on useBoardRealtime.ts. This hook is untested-ok (same rationale
-// as useBoardRealtime: the wiring layer is trivial; logic lives in the server).
-import { useEffect } from "react";
-import { clientEnv } from "@/config/clientEnv";
+// Thin wiring layer: subscribes to the user channel over the shared tab socket and invalidates the
+// email caches on email_arrived and email_tracking events. This hook is untested-ok (the wiring is
+// trivial; the logic lives server-side).
+import { useCallback } from "react";
 import { wsChannel } from "@/constants/wsChannels";
+import { useRealtimeChannel } from "@/features/realtime/useRealtimeChannel";
+import type { WsFrame } from "@/features/realtime/wsMultiplexer";
 import { trpc } from "@/lib/trpc-client";
-import type { PublishedEvent } from "@/server/ws/payload";
-
-type ServerFrame =
-  | { kind: "auth_ok" }
-  | { kind: "subscribed"; channel: string }
-  | { kind: "event"; event: PublishedEvent & { seq: number } }
-  | { kind: "resync" }
-  | { kind: "error"; channel: string };
 
 interface UseInboxRealtimeArgs {
   selfActorId: string;
-  // openThreadId: the threadId currently displayed, if any. Used to also invalidate
-  // the thread.get query when an email_arrived event targets that thread.
+  // openThreadId: the threadId currently displayed, if any. Used to also invalidate the thread.get
+  // query when an email_arrived event targets that thread.
   openThreadId?: string;
   // onTrackingEvent: called when an email_tracking event arrives for the open thread.
   onTrackingEvent?: (kind: "open" | "click") => void;
@@ -32,87 +24,40 @@ export function useInboxRealtime({
   onTrackingEvent,
 }: UseInboxRealtimeArgs): void {
   const utils = trpc.useUtils();
-  const ticketMutation = trpc.realtime.ticket.useMutation();
-  const mutateAsync = ticketMutation.mutateAsync;
 
-  useEffect(() => {
-    let socket: WebSocket | null = null;
-    let dead = false;
-
-    async function connect(): Promise<void> {
-      let ticket: string;
-      try {
-        const result = await mutateAsync();
-        ticket = result.ticket;
-      } catch {
-        // On ticket failure, invalidate so the UI re-fetches fresh data.
+  const onFrame = useCallback(
+    (frame: WsFrame) => {
+      if (frame.kind === "reconnect") {
+        // Socket dropped: cover events missed while offline (the old onclose path).
+        void utils.email.inbox.list.invalidate();
+        if (openThreadId !== undefined) {
+          void utils.email.thread.get.invalidate({ threadId: openThreadId });
+        }
+        return;
+      }
+      if (frame.kind === "resync") {
         void utils.email.inbox.list.invalidate();
         return;
       }
-      if (dead) return;
-
-      const ws = new WebSocket(clientEnv.WS_PUBLIC_URL);
-      socket = ws;
-
-      ws.onopen = () => {
-        ws.send(JSON.stringify({ kind: "auth", ticket }));
-      };
-
-      ws.onmessage = (evt: MessageEvent<string>) => {
-        let frame: ServerFrame;
-        try {
-          frame = JSON.parse(evt.data) as ServerFrame;
-        } catch {
-          return;
+      if (frame.kind !== "event" || frame.event === undefined) return;
+      const event = frame.event;
+      if (event.type === "email_arrived") {
+        void utils.email.inbox.list.invalidate();
+        const data = event.data as { threadId?: string };
+        if (openThreadId !== undefined && data.threadId === openThreadId) {
+          void utils.email.thread.get.invalidate({ threadId: openThreadId });
         }
-
-        if (frame.kind === "auth_ok") {
-          ws.send(JSON.stringify({ kind: "subscribe", channel: wsChannel.user(selfActorId) }));
-          return;
+      }
+      if (event.type === "email_tracking") {
+        if (openThreadId !== undefined) {
+          void utils.email.thread.get.invalidate({ threadId: openThreadId });
+          const data = event.data as { kind: "open" | "click" };
+          onTrackingEvent?.(data.kind);
         }
+      }
+    },
+    [utils, openThreadId, onTrackingEvent],
+  );
 
-        if (frame.kind === "event") {
-          const { event } = frame;
-
-          if (event.type === "email_arrived") {
-            void utils.email.inbox.list.invalidate();
-            if (openThreadId !== undefined && event.data.threadId === openThreadId) {
-              void utils.email.thread.get.invalidate({ threadId: openThreadId });
-            }
-          }
-
-          if (event.type === "email_tracking") {
-            if (openThreadId !== undefined) {
-              void utils.email.thread.get.invalidate({ threadId: openThreadId });
-              onTrackingEvent?.(event.data.kind);
-            }
-          }
-
-          return;
-        }
-
-        if (frame.kind === "resync") {
-          void utils.email.inbox.list.invalidate();
-          return;
-        }
-      };
-
-      // On disconnect, invalidate to cover events missed while offline.
-      ws.onclose = () => {
-        if (!dead) {
-          void utils.email.inbox.list.invalidate();
-          if (openThreadId !== undefined) {
-            void utils.email.thread.get.invalidate({ threadId: openThreadId });
-          }
-        }
-      };
-    }
-
-    void connect();
-
-    return () => {
-      dead = true;
-      socket?.close();
-    };
-  }, [selfActorId, openThreadId, onTrackingEvent, utils, mutateAsync]);
+  useRealtimeChannel(wsChannel.user(selfActorId), onFrame);
 }

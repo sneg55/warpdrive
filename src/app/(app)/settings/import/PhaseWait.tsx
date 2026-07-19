@@ -1,5 +1,5 @@
 "use client";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { ERROR_IDS } from "@/constants/errorIds";
 import { STRINGS } from "@/constants/strings";
 import { useImportProgress } from "@/features/import/useImportProgress";
@@ -46,11 +46,24 @@ export function PhaseWait({
     },
   ).data;
 
+  // Mirror the polled batch into a ref (written after commit, not during render, per concurrent-
+  // safe ref rules) so the transition effect can read the full batch without depending on its
+  // identity. getBatch's data reference changes on every 1s poll tick (progress fields), but the
+  // transition should fire only when the phase status actually changes.
+  const batchRef = useRef(batch);
   useEffect(() => {
-    if (batch === undefined) return;
-    if (batch.status === until) onReady(batch);
-    else if (batch.status === "failed") onError(ERROR_IDS.IMPORT_PARSE_FAILED);
-  }, [batch, until, onReady, onError]);
+    batchRef.current = batch;
+  });
+  useEffect(() => {
+    // Read status (the trigger) reactively; read the full batch payload from the ref so this only
+    // fires on a phase transition, not on every progress-updating poll tick.
+    const status = batch?.status;
+    if (status === undefined) return;
+    const b = batchRef.current;
+    if (b === undefined) return;
+    if (status === until) onReady(b);
+    else if (status === "failed") onError(ERROR_IDS.IMPORT_PARSE_FAILED);
+  }, [batch?.status, until, onReady, onError]);
 
   return (
     <section className="space-y-3">

@@ -1,0 +1,8 @@
+# Cloudflare Pages response headers (read from the deploy root, i.e. out/_headers).
+# The next/og social card is emitted by the app/opengraph-image route as an extensionless file
+# (out/opengraph-image). CF Pages sets Content-Type from the file extension and does not sniff, so
+# without this it would serve as application/octet-stream and every OG / Twitter / AI-answer card
+# would fail to render. Pin the type; the content-hash query string busts caches on change.
+/opengraph-image
+  Content-Type: image/png
+  Cache-Control: public, max-age=86400

@@ -4,10 +4,12 @@ import Link from "next/link";
 import type React from "react";
 import { useState } from "react";
 import type { ColumnDef } from "@/components/data-table/columnModel";
+import { RENDER_WINDOW_STEP, useRenderWindow } from "@/components/data-table/useRenderWindow";
 import { Avatar } from "@/components/ui/Avatar";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { Select, type SelectOption } from "@/components/ui/Select";
 import { formatCurrency } from "@/lib/formatCurrency";
+import { fmtDate, fmtDateOnly } from "./dealListFormat";
 import type { BoardCard } from "./dealRepo";
 import { useInlineEdit } from "./useInlineEdit";
 
@@ -44,31 +46,6 @@ export interface DealListProps {
   onUnarchive?: (dealId: string) => void;
 }
 
-// Short activity date, tolerant of a Date or a serialized string crossing the SSR boundary.
-function fmtDate(d: Date | string | null): string {
-  if (d === null) return "";
-  const dt = typeof d === "string" ? new Date(d) : d;
-  return dt.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
-}
-
-// Expected close is a date-only column (YYYY-MM-DD). Parse the parts as a LOCAL date so a
-// browser in a negative-UTC timezone does not render the previous day (new Date("2026-08-01")
-// is parsed as UTC midnight, which would shift back a day west of Greenwich).
-function fmtDateOnly(d: string | null | undefined): string {
-  if (d === null || d === undefined || d === "") return "";
-  const parts = d.split("-");
-  if (parts.length !== 3) return "";
-  const y = Number(parts[0]);
-  const m = Number(parts[1]);
-  const day = Number(parts[2]);
-  if (!Number.isFinite(y) || !Number.isFinite(m) || !Number.isFinite(day)) return "";
-  return new Date(y, m - 1, day).toLocaleDateString(undefined, {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
-
 export function DealList(props: DealListProps) {
   const { pipelineId, rows, total, totalValue, stages, onBulkStage, onUnarchive } = props;
   const { visibleColumns, columnsMenu } = props;
@@ -77,6 +54,10 @@ export function DealList(props: DealListProps) {
   // Which row's title is in inline-edit mode. Pipedrive opens the deal on title
   // click, so edit is behind an explicit control rather than the cell itself.
   const [editingId, setEditingId] = useState<string | null>(null);
+  // Cap how many rows are painted to the DOM. Filtering, sorting, selection, and the footer
+  // totals all operate over the full `rows`/`total` above, so this bounds render cost only: a
+  // pipeline with hundreds of deals no longer mounts every <tr> up front.
+  const rowWindow = useRenderWindow(rows, RENDER_WINDOW_STEP);
 
   function saveTitle(row: DealListRow, value: string) {
     setEditingId(null);
@@ -239,7 +220,7 @@ export function DealList(props: DealListProps) {
           </tr>
         </thead>
         <tbody>
-          {rows.map((row) => (
+          {rowWindow.visible.map((row) => (
             <tr
               key={row.id}
               className={`border-b last:border-0 hover:bg-muted/50 ${selected.has(row.id) ? "bg-accent/50" : ""}`}
@@ -269,6 +250,19 @@ export function DealList(props: DealListProps) {
               ) : null}
             </tr>
           ))}
+          {rowWindow.hasMore ? (
+            <tr>
+              <td colSpan={bodyColSpan} className="px-3 py-3 text-center">
+                <button
+                  type="button"
+                  onClick={rowWindow.showMore}
+                  className="rounded-md border px-4 py-1.5 text-sm transition-transform hover:bg-accent active:scale-[0.96]"
+                >
+                  Show more ({rowWindow.remaining} more)
+                </button>
+              </td>
+            </tr>
+          ) : null}
         </tbody>
         <tfoot>
           <tr className="border-t bg-muted/60 font-medium text-foreground">

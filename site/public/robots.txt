@@ -1,4 +1,42 @@
+# Warpdrive marketing site. Everything here is public and meant to be indexed and cited, including
+# by AI answer engines, so all crawlers are allowed. The AI user-agents are listed explicitly so the
+# intent is unambiguous and survives any future Disallow added under the wildcard group.
+
 User-agent: *
+Allow: /
+
+# Search + AI answer engines (OpenAI, Anthropic, Perplexity, Google-Extended, Apple, Common Crawl).
+User-agent: GPTBot
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Claude-Web
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Perplexity-User
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+User-agent: CCBot
 Allow: /
 
 Sitemap: https://warpdrivecrm.com/sitemap.xml

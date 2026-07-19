@@ -23,7 +23,12 @@ function actorOf(id: string, type: "regular" | "admin" = "regular"): PermSetUser
 }
 
 function callerFor(db: TestDb, actor: PermSetUser) {
-  return createCaller({ db, session: { userId: actor.id, sessionId: "test-session" }, actor });
+  return createCaller({
+    db,
+    session: { userId: actor.id, sessionId: "test-session" },
+    // Context actor carries display fields (used only by the app shell); placeholders here.
+    actor: { ...actor, name: "Test User", avatarUrl: null },
+  });
 }
 
 async function seedAccount(

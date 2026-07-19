@@ -210,8 +210,9 @@ it("value editor: blur does not commit and Cancel discards (PD: only Cancel/Save
 it("close date: prompt click opens the editor; picking a day needs Save to commit", async () => {
   renderList();
   fireEvent.click(screen.getByRole("button", { name: "Set expected close date" }));
-  // Calendar opens immediately (PD behavior); picking a day only fills the draft.
-  fireEvent.click(screen.getByText("15"));
+  // Calendar opens immediately (PD behavior); picking a day only fills the draft. findByText:
+  // the calendar is a next/dynamic chunk that loads on open.
+  fireEvent.click(await screen.findByText("15"));
   expect(updateDealAction).not.toHaveBeenCalled();
   fireEvent.click(screen.getByRole("button", { name: "Save" }));
   await vi.waitFor(() => expect(updateDealAction).toHaveBeenCalled());

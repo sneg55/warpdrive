@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { LANDING_STRINGS } from "./landingStrings";
 import { STRINGS } from "./strings";
 
 // Canonical origin for the marketing site. Kept as a constant so the layout, sitemap, and robots
@@ -11,7 +10,12 @@ export const SITE_URL = "https://warpdrivecrm.com";
 export const GA_MEASUREMENT_ID = "G-WN9BMJ5QD6";
 
 const TITLE = `${STRINGS.app.name}, the open-source self-hosted Pipedrive alternative`;
-const DESCRIPTION = LANDING_STRINGS.hero.subtitle;
+
+// The SERP/social/AI-card description. Deliberately separate from the (longer, richer) visible hero
+// subtitle: Google truncates the snippet near 160 chars, so this is written to fit and front-loads
+// the money keywords ("free, open-source, self-hosted Pipedrive alternative").
+const DESCRIPTION =
+  "Warpdrive is a free, open-source, self-hosted Pipedrive alternative: pipelines, deals, contacts, and two-way Gmail on your own infrastructure.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -25,12 +29,13 @@ export const metadata: Metadata = {
     siteName: STRINGS.app.name,
     title: TITLE,
     description: DESCRIPTION,
-    images: [{ url: "/icon.png", width: 512, height: 512, alt: STRINGS.app.name }],
+    // The 1200x630 card is generated at build by app/opengraph-image.tsx (file-based metadata), which
+    // Next injects as og:image. Twitter/X and AI answer-engine cards fall back to og:image, so there
+    // is no separate twitter image. Do not also set images here or the tags duplicate.
   },
   twitter: {
     card: "summary_large_image",
     title: TITLE,
     description: DESCRIPTION,
-    images: ["/icon.png"],
   },
 };

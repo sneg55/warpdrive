@@ -75,7 +75,7 @@ describe("DateControl", () => {
     expect(screen.getByLabelText("Renewal")).toBeInTheDocument();
   });
 
-  it("emits the picked date via onChange", () => {
+  it("emits the picked date via onChange", async () => {
     const onChange = vi.fn();
     render(
       <DateControl
@@ -86,7 +86,8 @@ describe("DateControl", () => {
       />,
     );
     fireEvent.click(screen.getByLabelText("Renewal"));
-    fireEvent.click(screen.getByText("15"));
+    // findByText: the calendar is a next/dynamic chunk that loads on open.
+    fireEvent.click(await screen.findByText("15"));
     expect(onChange).toHaveBeenCalledWith(expect.stringMatching(/-15$/));
   });
 

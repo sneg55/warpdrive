@@ -14,7 +14,12 @@ export interface ResolvedLabel {
 
 type CatalogEntry = { name: string; color: LabelColor };
 
-function colorByName(catalog: CatalogEntry[]): Map<string, LabelColor> {
+export type LabelColorIndex = Map<string, LabelColor>;
+
+// Build a case-insensitive name -> color index from the catalog ONCE. Callers that resolve labels
+// for many rows (board cards, lead cells) build this a single time in their hook and reuse it, so
+// per-row resolution is O(applied) lookups instead of rebuilding the whole index on every call.
+export function buildLabelColorIndex(catalog: CatalogEntry[]): LabelColorIndex {
   const byName = new Map<string, LabelColor>();
   for (const entry of catalog) {
     byName.set(entry.name.toLowerCase(), entry.color);
@@ -22,23 +27,34 @@ function colorByName(catalog: CatalogEntry[]): Map<string, LabelColor> {
   return byName;
 }
 
-export function resolveLabelChips(catalog: CatalogEntry[], applied: string[]): ResolvedLabel[] {
-  const byName = colorByName(catalog);
+// Resolve against a prebuilt index (the hot path: called once per row/card).
+export function resolveLabelChipsWith(index: LabelColorIndex, applied: string[]): ResolvedLabel[] {
   return applied.map((name) => {
-    const color = byName.get(name.toLowerCase());
+    const color = index.get(name.toLowerCase());
     return { name, classes: LABEL_COLOR_CLASSES[color ?? "gray"] };
   });
 }
 
-// Same resolution but projecting to a solid hex fill, for the deal board card chips (white text on
-// a saturated background rather than the light class chips).
+// Same, projecting to a solid hex fill for the deal board card chips (white text on a saturated
+// background rather than the light class chips).
+export function resolveLabelColorsWith(
+  index: LabelColorIndex,
+  applied: string[],
+): Array<{ name: string; color: string }> {
+  return applied.map((name) => {
+    const color = index.get(name.toLowerCase());
+    return { name, color: LABEL_COLOR_HEX[color ?? "gray"] };
+  });
+}
+
+// Convenience wrappers for single-call sites (resolve once per component, not per row).
+export function resolveLabelChips(catalog: CatalogEntry[], applied: string[]): ResolvedLabel[] {
+  return resolveLabelChipsWith(buildLabelColorIndex(catalog), applied);
+}
+
 export function resolveLabelColors(
   catalog: CatalogEntry[],
   applied: string[],
 ): Array<{ name: string; color: string }> {
-  const byName = colorByName(catalog);
-  return applied.map((name) => {
-    const color = byName.get(name.toLowerCase());
-    return { name, color: LABEL_COLOR_HEX[color ?? "gray"] };
-  });
+  return resolveLabelColorsWith(buildLabelColorIndex(catalog), applied);
 }

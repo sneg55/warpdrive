@@ -39,17 +39,32 @@ export default async function PipelineBoardPage({
   params: Promise<{ id: string }>;
 }): Promise<React.ReactNode> {
   const { id } = await params;
-  const loaded = await load();
-  if (loaded.kind === "unauth") {
+  const ctx = await createContext();
+  if (ctx.actor === null) {
     return <main>Unauthorized</main>;
   }
-  const { ctx, actor, pipelines } = loaded;
+  const actor = ctx.actor;
+
+  // Start the heaviest query (the board cards) up front so it runs concurrently with the
+  // pipeline-list metadata read in load() instead of waiting behind it. deal.board depends only
+  // on ctx + id and carries its own visibility clause, so it is safe to fire before the
+  // resolveVisiblePipeline 404 guard below. The no-op catch keeps that guard's throw from
+  // surfacing as an unhandled rejection on the board promise if we 404 before awaiting it; the
+  // real result (and any real error) is still consumed by the Promise.all below.
+  const boardPromise = createCaller(ctx).deal.board({ pipelineId: id });
+  void boardPromise.catch(() => {});
+
+  const loaded = await load();
+  if (loaded.kind !== "ok") {
+    return <main>Unauthorized</main>;
+  }
+  const { pipelines } = loaded;
 
   // A nonexistent (or hidden) pipeline 404s like the entity detail routes, not a 200 soft-404.
   const pipeline = resolveVisiblePipeline(pipelines, id);
 
   const [board, baseCurrency, prefs] = await Promise.all([
-    createCaller(ctx).deal.board({ pipelineId: id }),
+    boardPromise,
     readBaseCurrency(db, AbortSignal.timeout(8000)),
     getPreferencesForActor(db, actor.id),
   ]);

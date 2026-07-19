@@ -81,11 +81,13 @@ export function startWsServer(port: number, deps: WsServerDeps): WebSocketServer
 class SocketSession {
   private conn: WsConnection | null = null;
   private readonly subs = new Map<string, RelayListener>();
-  // Per-socket delivery counter (ops spec A4). Stamped onto every relay event this
-  // socket actually receives. Presence frames NEVER advance this counter.
-  // CRITICAL: only advance when a relay event is delivered. The per-recipient canSee
-  // filter (deliver()) must NOT increment nextSeq for suppressed events.
-  private nextSeq = 0;
+  // Per-CHANNEL delivery counter (ops spec A4), so one socket can carry several channels and each
+  // client handler still sees a gap-free seq for its own channel (the client multiplexes a single
+  // socket across board/presence/notifications/inbox/import). Stamped onto every relay event this
+  // socket actually delivers; presence frames NEVER advance it.
+  // CRITICAL: only advance when a relay event is delivered. The per-recipient canSee filter
+  // (deliver()) must NOT increment the counter for suppressed events (no telltale gap).
+  private readonly nextSeqByChannel = new Map<string, number>();
   // Per-socket delivery chain: relay events fire synchronously but the per-recipient
   // canSee re-check is async (a live DB read). Chaining serializes deliveries so seq is
   // assigned in arrival order and a suppressed event never reorders or skips a seq.
@@ -229,8 +231,12 @@ class SocketSession {
       const authz = await authorizeDeal(this.deps.db, conn, dealId, AbortSignal.timeout(5000));
       if (!authz.ok) return; // drop: no payload, no seq advance
     }
-    const frame: ClientEvent = { ...event, seq: this.nextSeq++ };
-    this.socket.send(JSON.stringify({ kind: "event", event: frame }));
+    const seq = this.nextSeqByChannel.get(channel) ?? 0;
+    this.nextSeqByChannel.set(channel, seq + 1);
+    const frame: ClientEvent = { ...event, seq };
+    // channel tags the frame so a multiplexed client routes it to the right handler; existing
+    // single-channel clients ignore the extra field.
+    this.socket.send(JSON.stringify({ kind: "event", channel, event: frame }));
   }
 
   private async handleUnsubscribe(channel: string): Promise<void> {
