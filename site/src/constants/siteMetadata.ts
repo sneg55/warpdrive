@@ -6,6 +6,10 @@ import { STRINGS } from "./strings";
 // all agree. Extracted from layout.tsx (which pulls in the next/font macro) so it stays unit-testable.
 export const SITE_URL = "https://warpdrivecrm.com";
 
+// Google Analytics 4 measurement ID for the marketing site. Loaded via next/script in the root
+// layout. Public by design (it ships in the client bundle), so it lives here, not in env.
+export const GA_MEASUREMENT_ID = "G-WN9BMJ5QD6";
+
 const TITLE = `${STRINGS.app.name}, the open-source self-hosted Pipedrive alternative`;
 const DESCRIPTION = LANDING_STRINGS.hero.subtitle;
 
