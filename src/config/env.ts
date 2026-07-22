@@ -9,6 +9,7 @@ const SECRET_FILE_VARS = [
   "TOKEN_ENCRYPTION_KEY",
   "MINIO_SECRET_KEY",
   "DATABASE_URL",
+  "OAUTH_SIGNING_KEY",
 ] as const;
 
 function resolveFileVars(raw: NodeJS.ProcessEnv): Record<string, string | undefined> {
@@ -44,12 +45,23 @@ const base = z.object({
   TOKEN_ENCRYPTION_KEY: z
     .string()
     .refine((v) => Buffer.from(v, "base64").length === 32, "must be base64 of exactly 32 bytes"),
+  MCP_ENABLED: boolFromString.default(true),
+  OAUTH_SIGNING_KEY: z.string().default(""),
   BASE_CURRENCY: z.string().length(3).default("USD"),
   SEED_ADMIN_EMAIL: z.string().email().or(z.literal("")).default(""),
   ALLOW_FIRST_LOGIN_ADMIN: boolFromString.default(false),
   // Optional build-time stamp of the running version (e.g. a release tag). Empty when unstamped;
   // the release feature then falls back to package.json, then "dev". See resolveVersion.
   APP_VERSION: z.string().default(""),
+  // Client PostHog config is passed to the browser via the server layout (props), not
+  // NEXT_PUBLIC vars, so this stays the single env boundary. Empty key disables telemetry.
+  POSTHOG_KEY: z.string().default(""),
+  POSTHOG_HOST: z.string().default(""),
+  DISABLE_TELEMETRY: boolFromString.default(false),
+  // Console.warn/error forwarding is off by default (widens the event surface); opt in per deploy.
+  TELEMETRY_CONSOLE_FORWARDING: boolFromString.default(false),
+  // Git SHA of the running build, for regression attribution alongside APP_VERSION.
+  APP_COMMIT: z.string().default(""),
   // Kill switch for the GitHub update-check banner. A hosted/managed deployment sets this true;
   // OSS self-hosters leave it false to get the banner.
   DISABLE_UPDATE_CHECK: boolFromString.default(false),
@@ -57,6 +69,13 @@ const base = z.object({
 
 // Production guardrails for the first-run bootstrap (ops spec E6).
 const schema = base.superRefine((v, ctx) => {
+  if (v.MCP_ENABLED && Buffer.from(v.OAUTH_SIGNING_KEY, "base64").length !== 32) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["OAUTH_SIGNING_KEY"],
+      message: "OAUTH_SIGNING_KEY (base64 32 bytes) is required when MCP_ENABLED",
+    });
+  }
   if (v.NODE_ENV === "production") {
     if (v.ALLOW_FIRST_LOGIN_ADMIN) {
       ctx.addIssue({

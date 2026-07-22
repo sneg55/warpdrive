@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { activityState, rottingState } from "./cardIndicators";
+import { activityState, activityTooltip, rottingState } from "./cardIndicators";
 
 const now = new Date("2026-06-29T12:00:00Z");
 
@@ -24,6 +24,48 @@ describe("activityState", () => {
 
   it("upcoming when on a later day", () => {
     expect(activityState(new Date("2026-07-02T09:00:00Z"), now)).toBe("upcoming");
+  });
+});
+
+describe("activityTooltip", () => {
+  const subject = "Call Acme back";
+
+  it("says nothing is scheduled when there is no next activity", () => {
+    expect(activityTooltip(subject, null, now)).toBe("No activity scheduled");
+  });
+
+  it("names the activity and 'today' when due the same UTC day", () => {
+    expect(activityTooltip(subject, new Date("2026-06-29T09:00:00Z"), now)).toBe(
+      "Call Acme back · today",
+    );
+  });
+
+  it("counts a single upcoming day in the singular", () => {
+    expect(activityTooltip(subject, new Date("2026-06-30T09:00:00Z"), now)).toBe(
+      "Call Acme back · in 1 day",
+    );
+  });
+
+  it("counts several upcoming days in the plural", () => {
+    expect(activityTooltip(subject, new Date("2026-07-03T09:00:00Z"), now)).toBe(
+      "Call Acme back · in 4 days",
+    );
+  });
+
+  it("counts a single overdue day in the singular", () => {
+    expect(activityTooltip(subject, new Date("2026-06-28T09:00:00Z"), now)).toBe(
+      "Call Acme back · 1 day overdue",
+    );
+  });
+
+  it("counts several overdue days in the plural", () => {
+    expect(activityTooltip(subject, new Date("2026-06-26T09:00:00Z"), now)).toBe(
+      "Call Acme back · 3 days overdue",
+    );
+  });
+
+  it("falls back to a generic noun when the subject is unknown", () => {
+    expect(activityTooltip(null, new Date("2026-06-29T09:00:00Z"), now)).toBe("Activity · today");
   });
 });
 

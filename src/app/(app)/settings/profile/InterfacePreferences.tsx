@@ -14,6 +14,7 @@ import {
 import type { OpenDetailsAfterCreate, UiFlagKey } from "@/features/identity/preferencesSchema";
 import { cn } from "@/lib/utils";
 import { readCsrfToken } from "@/utils/csrfCookie";
+import { SettingsCard, SettingsCardBody, SettingsCardHeader } from "../SettingsSurface";
 
 const S = STRINGS.settings.interface;
 
@@ -110,46 +111,51 @@ export function InterfacePreferences({
   const allOpen = openDetails.leadDeal && openDetails.person && openDetails.org;
 
   return (
-    <div className="space-y-3 border-t pt-4">
-      <h3 className="text-sm font-semibold">{STRINGS.settings.interfaceHeading}</h3>
-      <Row
-        label={STRINGS.settings.scheduleFollowUpAfterWon}
-        checked={scheduleFollowUp}
-        onToggle={(v) => void toggleScheduleFollowUp(v)}
+    <SettingsCard>
+      <SettingsCardHeader
+        title={STRINGS.settings.interfaceHeading}
+        description="Choose how creation, navigation, formatting, and notifications behave."
       />
-      <Row
-        label={S.openDetailsAfterCreate}
-        checked={allOpen}
-        onToggle={(v) => void writeOpenDetails({ leadDeal: v, person: v, org: v })}
-      />
-      <div className="space-y-2">
+      <SettingsCardBody className="space-y-4">
         <Row
-          indent
-          label={S.openDetailsLeadDeal}
-          checked={openDetails.leadDeal}
-          onToggle={(v) => void writeOpenDetails({ ...openDetails, leadDeal: v })}
+          label={STRINGS.settings.scheduleFollowUpAfterWon}
+          checked={scheduleFollowUp}
+          onToggle={(v) => void toggleScheduleFollowUp(v)}
         />
         <Row
-          indent
-          label={S.openDetailsPerson}
-          checked={openDetails.person}
-          onToggle={(v) => void writeOpenDetails({ ...openDetails, person: v })}
+          label={S.openDetailsAfterCreate}
+          checked={allOpen}
+          onToggle={(v) => void writeOpenDetails({ leadDeal: v, person: v, org: v })}
         />
-        <Row
-          indent
-          label={S.openDetailsOrg}
-          checked={openDetails.org}
-          onToggle={(v) => void writeOpenDetails({ ...openDetails, org: v })}
-        />
-      </div>
-      {FLAG_ROWS.map((row) => (
-        <Row
-          key={row.key}
-          label={row.label}
-          checked={flags[row.key]}
-          onToggle={(v) => void toggleFlag(row.key, v)}
-        />
-      ))}
-    </div>
+        <div className="space-y-2">
+          <Row
+            indent
+            label={S.openDetailsLeadDeal}
+            checked={openDetails.leadDeal}
+            onToggle={(v) => void writeOpenDetails({ ...openDetails, leadDeal: v })}
+          />
+          <Row
+            indent
+            label={S.openDetailsPerson}
+            checked={openDetails.person}
+            onToggle={(v) => void writeOpenDetails({ ...openDetails, person: v })}
+          />
+          <Row
+            indent
+            label={S.openDetailsOrg}
+            checked={openDetails.org}
+            onToggle={(v) => void writeOpenDetails({ ...openDetails, org: v })}
+          />
+        </div>
+        {FLAG_ROWS.map((row) => (
+          <Row
+            key={row.key}
+            label={row.label}
+            checked={flags[row.key]}
+            onToggle={(v) => void toggleFlag(row.key, v)}
+          />
+        ))}
+      </SettingsCardBody>
+    </SettingsCard>
   );
 }

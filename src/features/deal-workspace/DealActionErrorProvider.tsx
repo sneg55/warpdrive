@@ -8,6 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { withActionTelemetry } from "@/features/observability/resultSeam";
 import { dealActionErrorContent } from "./dealActionError";
 
 // Report a failed deal action so the shared modal can explain it. errorId is the AppError id from
@@ -33,7 +34,7 @@ export function DealActionErrorProvider({
 }): React.ReactNode {
   // null = no error showing. A reported error stores its id (or "" when the action gave none).
   const [errorId, setErrorId] = useState<string | null>(null);
-  const report: ReportDealActionError = (id) => setErrorId(id ?? "");
+  const report: ReportDealActionError = withActionTelemetry((id) => setErrorId(id ?? ""), "deal");
   const content = dealActionErrorContent(errorId ?? undefined);
 
   return (

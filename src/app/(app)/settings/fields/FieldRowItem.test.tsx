@@ -51,7 +51,7 @@ function renderRow(row: FieldRow): ReturnType<typeof render> {
     <DndContext>
       <SortableContext items={[row.id]}>
         <ul>
-          <FieldRowItem row={row} />
+          <FieldRowItem row={row} isFirst isLast onMove={vi.fn()} />
         </ul>
       </SortableContext>
     </DndContext>,
@@ -59,6 +59,18 @@ function renderRow(row: FieldRow): ReturnType<typeof render> {
 }
 
 describe("FieldRowItem placement toggles", () => {
+  it("uses the shared arrow reorder controls", () => {
+    const onMove = vi.fn();
+    render(
+      <ul>
+        <FieldRowItem row={ROW} isFirst={false} isLast onMove={onMove} />
+      </ul>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: S.moveUp }));
+    expect(onMove).toHaveBeenCalledWith("up");
+    expect(screen.getByRole("button", { name: S.moveDown })).toBeDisabled();
+  });
+
   it("toggles Important via setDefFlagsAction, sending the full flag pair", async () => {
     renderRow(ROW);
     fireEvent.click(screen.getByRole("switch", { name: "Important" }));

@@ -129,13 +129,9 @@ it("reports a deal row missing the required title as invalid (not silently dropp
   });
 });
 
-// Confirms the reviewed-and-accepted pre-existing gap: dealCreateInput has no customFields
-// field at all (unlike activityCreateInput/personCreateInput/orgCreateInput), so a mapped deal
-// custom field is validated at Map/Validate time but never reaches createDeal. Unlike activity
-// (which DOES validate customFields inside createActivity and so failed CLOSED on every row when
-// a required field was silently dropped), a REQUIRED deal custom field must NOT block import:
-// createDeal simply never looks at customFields, so there is nothing to fail validation on.
-it("imports a deal row with a mapped REQUIRED custom field (value not persisted, a pre-existing gap; import must not be blocked)", async () => {
+// Deal imports must retain the custom fields validated during mapping. createDeal applies the
+// current definition rules again at its trust boundary and persists the parsed values.
+it("imports and persists a mapped required deal custom field", async () => {
   await withTestDb(async (db) => {
     const signal = new AbortController().signal;
     const user = await seedUser(db);
@@ -161,8 +157,6 @@ it("imports a deal row with a mapped REQUIRED custom field (value not persisted,
 
     const created = await db.select().from(deals).where(eq(deals.title, "CF-mapped deal"));
     expect(created).toHaveLength(1);
-    // Documents the gap rather than silently letting it drift: no deal customFields write path
-    // exists anywhere today, so the column stays at its default.
-    expect(created[0]?.customFields).toEqual({});
+    expect(created[0]?.customFields).toEqual({ deal_source_note: "Inbound referral" });
   });
 });

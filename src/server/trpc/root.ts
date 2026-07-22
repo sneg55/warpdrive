@@ -10,6 +10,7 @@ import { importRouter } from "@/features/import/router";
 import { labelsRouter } from "@/features/labels/router";
 import { leadRouter } from "@/features/leads/leadRouter";
 import { notificationsRouter } from "@/features/notifications/router";
+import { oauthRouter } from "@/features/oauth/router";
 import { pipelineRouter } from "@/features/pipelines/pipelineRouter";
 import { versionRouter } from "@/features/release/router";
 import { searchRouter } from "@/features/search/router";
@@ -34,6 +35,7 @@ export const appRouter = router({
   email: emailRouter,
   files: filesRouter,
   notifications: notificationsRouter,
+  oauth: oauthRouter,
   search: searchRouter,
   stats: statsRouter,
   version: versionRouter,

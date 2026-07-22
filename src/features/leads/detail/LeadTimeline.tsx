@@ -5,8 +5,11 @@ import { PILL_TAB, Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { HistoryFeed } from "@/features/deal-workspace/HistoryFeed";
 import type { HistoryItem } from "@/features/deal-workspace/historyTimeline";
 import { partitionFocusHistory } from "@/features/deal-workspace/historyTimeline";
+import { PinnedNotesSection } from "@/features/deal-workspace/PinnedNotesSection";
 import type { TimelineView } from "@/features/deal-workspace/TimelineTabs";
 import { TimelineTabs } from "@/features/deal-workspace/TimelineTabs";
+import { MASK_CLASS } from "@/features/observability/replayMasking";
+import { cn } from "@/lib/utils";
 import type { LeadTimelineEmail } from "../leadTimeline";
 
 type Tab = "all" | "activities" | "notes" | "email";
@@ -30,7 +33,9 @@ function EmailList({ emails }: { emails: LeadTimelineEmail[] }): React.ReactNode
           <p className="text-xs text-muted-foreground">
             {e.direction} · {e.fromEmail}
           </p>
-          {e.snippet !== null && <p className="mt-1 text-sm text-muted-foreground">{e.snippet}</p>}
+          {e.snippet !== null && (
+            <p className={cn("mt-1 text-sm text-muted-foreground", MASK_CLASS)}>{e.snippet}</p>
+          )}
         </li>
       ))}
     </ul>
@@ -45,40 +50,57 @@ function EmailList({ emails }: { emails: LeadTimelineEmail[] }): React.ReactNode
 export function LeadTimeline({
   items,
   emails,
+  onNoteChanged,
 }: {
   items: HistoryItem[];
   emails: LeadTimelineEmail[];
+  onNoteChanged?: () => void;
 }): React.ReactNode {
   const [view, setView] = useState<TimelineView>("history");
   const [tab, setTab] = useState<Tab>("all");
-  const { focus, history } = useMemo(() => partitionFocusHistory(items), [items]);
+  const { pinned, focus, history } = useMemo(() => partitionFocusHistory(items), [items]);
   const activities = history.filter((i) => i.kind === "activity");
   const notes = history.filter((i) => i.kind === "note");
 
   return (
-    <TimelineTabs view={view} onView={setView}>
-      {view === "focus" ? (
-        <HistoryFeed items={focus} emptyLabel="Nothing needs your attention" />
-      ) : (
-        <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)}>
-          <TabsList className="mb-3 flex-wrap gap-1">
-            {TABS.map((t) => (
-              <TabsTrigger key={t.key} value={t.key} className={PILL_TAB}>
-                {t.label}
-              </TabsTrigger>
-            ))}
-          </TabsList>
+    <div className="space-y-6">
+      <PinnedNotesSection items={pinned} onNoteChanged={onNoteChanged} />
+      <TimelineTabs view={view} onView={setView}>
+        {view === "focus" ? (
+          <HistoryFeed items={focus} emptyLabel="Nothing needs your attention" />
+        ) : (
+          <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)}>
+            <TabsList className="mb-3 flex-wrap gap-1">
+              {TABS.map((t) => (
+                <TabsTrigger key={t.key} value={t.key} className={PILL_TAB}>
+                  {t.label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
 
-          <div>
-            {tab === "all" && <HistoryFeed items={history} emptyLabel="No history yet." />}
-            {tab === "activities" && (
-              <HistoryFeed items={activities} emptyLabel="No activities yet." />
-            )}
-            {tab === "notes" && <HistoryFeed items={notes} emptyLabel="No notes yet." />}
-            {tab === "email" && <EmailList emails={emails} />}
-          </div>
-        </Tabs>
-      )}
-    </TimelineTabs>
+            <div>
+              {tab === "all" && (
+                <HistoryFeed
+                  items={history}
+                  emptyLabel="No history yet."
+                  onNoteChanged={onNoteChanged}
+                />
+              )}
+              {tab === "activities" && (
+                <HistoryFeed items={activities} emptyLabel="No activities yet." />
+              )}
+              {tab === "notes" && (
+                <HistoryFeed
+                  items={notes}
+                  emptyLabel="No notes yet."
+                  onNoteChanged={onNoteChanged}
+                />
+              )}
+              {tab === "email" && <EmailList emails={emails} />}
+            </div>
+          </Tabs>
+        )}
+      </TimelineTabs>
+    </div>
   );
 }

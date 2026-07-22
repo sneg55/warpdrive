@@ -81,8 +81,8 @@ function SelectItem({ option }: { option: SelectOption }): React.ReactNode {
     <RadixSelect.Item
       value={toInternal(option.value)}
       className={cn(
-        "flex cursor-pointer items-center gap-1.5 rounded px-2 py-1.5 text-sm outline-none",
-        "data-[highlighted]:bg-accent",
+        "flex cursor-pointer items-center gap-1.5 rounded px-2 py-1.5 text-sm outline-none transition-colors duration-150",
+        "data-[highlighted]:bg-accent data-[state=checked]:font-medium",
       )}
     >
       {option.icon}
@@ -140,20 +140,22 @@ export function Select({
         aria-label={ariaLabel}
         title={triggerTitle}
         className={cn(
-          "flex w-full items-center justify-between rounded-md border bg-card px-2.5 py-1.5 text-sm outline-none focus:ring-2 focus:ring-ring/50",
+          "group flex w-full items-center justify-between rounded-md border bg-card px-2.5 py-1.5 text-sm outline-none transition-[border-color,box-shadow,background-color] duration-150 ease-out focus:border-ring focus:ring-2 focus:ring-ring/50 motion-reduce:transition-none",
           triggerClassName,
         )}
       >
         <RadixSelect.Value placeholder={placeholder}>{triggerContent}</RadixSelect.Value>
         <RadixSelect.Icon>
-          <ChevronDown className="h-4 w-4 text-muted-foreground" />
+          <span className="block transition-transform duration-150 ease-out group-data-[state=open]:rotate-180 motion-reduce:transition-none">
+            <ChevronDown className="h-4 w-4 text-muted-foreground" />
+          </span>
         </RadixSelect.Icon>
       </RadixSelect.Trigger>
       <RadixSelect.Portal>
         <RadixSelect.Content
           position="popper"
           sideOffset={4}
-          className="z-50 overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md"
+          className="z-50 overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 [transform-origin:var(--radix-select-content-transform-origin)] motion-reduce:animate-none"
         >
           <RadixSelect.Viewport className="p-1">
             {groupOptions(options).map((section) => (

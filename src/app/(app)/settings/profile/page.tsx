@@ -7,6 +7,7 @@ import { interfacePrefsFromUi } from "@/features/identity/interfacePrefs";
 import { getPreferencesForActor } from "@/features/identity/preferencesForActor";
 import { createContext } from "@/server/trpc/context";
 import { SettingsHeading } from "../SettingsHeading";
+import { SettingsPage } from "../SettingsSurface";
 import { InterfacePreferences } from "./InterfacePreferences";
 import { ProfileClient } from "./ProfileClient";
 
@@ -28,7 +29,7 @@ export default async function ProfilePage(): Promise<ReactNode> {
   ]);
 
   return (
-    <section className="max-w-xl">
+    <SettingsPage>
       <SettingsHeading
         title={STRINGS.settings.profile}
         description={STRINGS.settings.profileDescription}
@@ -44,6 +45,6 @@ export default async function ProfilePage(): Promise<ReactNode> {
         prefs={interfacePrefsFromUi(prefs.ui)}
         scheduleFollowUpAfterWon={prefs.ui.scheduleFollowUpAfterWon ?? false}
       />
-    </section>
+    </SettingsPage>
   );
 }

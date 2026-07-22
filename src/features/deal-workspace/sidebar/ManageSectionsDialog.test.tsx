@@ -35,15 +35,15 @@ it("reorders, hides a section, and saves the sidebar section preferences", async
   );
 
   expect(screen.getByText("Summary")).toBeInTheDocument();
-  expect(screen.getByText("Details")).toBeInTheDocument();
   expect(screen.getByText("Source")).toBeInTheDocument();
+  expect(screen.queryByText("Details")).not.toBeInTheDocument();
 
-  await user.click(screen.getByRole("button", { name: "Move Details up" }));
-  await user.click(screen.getByRole("checkbox", { name: "Show Details" }));
+  await user.click(screen.getByRole("button", { name: "Move Source up" }));
+  await user.click(screen.getByRole("checkbox", { name: "Show Source" }));
   await user.click(screen.getByRole("button", { name: "Save" }));
 
   const expected = [
-    { id: "details", visible: false },
+    { id: "source", visible: false },
     { id: "summary", visible: true },
     ...DEFAULT_DEAL_SIDEBAR_SECTIONS.slice(2),
   ];

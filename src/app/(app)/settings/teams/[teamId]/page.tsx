@@ -6,6 +6,8 @@ import { STRINGS } from "@/constants/strings";
 import { listTeamMembers, listTeams } from "@/features/identity/teams.service";
 import { listAssignableUsers } from "@/features/identity/users.service";
 import { createContext } from "@/server/trpc/context";
+import { SettingsHeading } from "../../SettingsHeading";
+import { SettingsPage } from "../../SettingsSurface";
 import { TeamEditClient } from "./TeamEditClient";
 
 export const metadata = { title: STRINGS.settings.teams };
@@ -32,10 +34,14 @@ export default async function TeamDetailPage({
   ]);
 
   return (
-    <section>
-      <Link href="/settings/teams" className="text-sm text-blue-600 hover:underline">
+    <SettingsPage>
+      <Link
+        href="/settings/teams"
+        className="text-sm text-primary underline-offset-4 hover:underline"
+      >
         &larr; {STRINGS.settings.teams}
       </Link>
+      <SettingsHeading title={team.name} description="Update the team manager and membership." />
       <TeamEditClient
         teamId={teamId}
         name={team.name}
@@ -43,6 +49,6 @@ export default async function TeamDetailPage({
         members={members}
         assignableUsers={assignableUsers}
       />
-    </section>
+    </SettingsPage>
   );
 }

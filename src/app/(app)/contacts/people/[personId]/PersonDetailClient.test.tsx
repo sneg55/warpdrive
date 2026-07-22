@@ -65,7 +65,15 @@ vi.mock("@/lib/trpc-client", () => ({
     contacts: {
       dealsForPerson: {
         useQuery: () => ({
-          data: [{ id: "d1", title: "Acme renewal", stageId: "s2", value: "25000.00" }],
+          data: [
+            {
+              id: "d1",
+              title: "Acme renewal",
+              status: "won",
+              stageId: "s2",
+              value: "25000.00",
+            },
+          ],
         }),
       },
       orgOptions: { useQuery: () => ({ data: [{ id: "o1", name: "Acme Inc" }] }) },
@@ -104,6 +112,8 @@ vi.mock("@/lib/trpc-client", () => ({
 const person = {
   id: "pe1",
   name: "Jane Roe",
+  firstName: "Jane",
+  lastName: "Roe",
   primaryEmail: "jane@acme.com",
   emails: [{ label: "work", value: "jane@acme.com", primary: true }],
   phones: [{ label: "mobile", value: "+14155550100", primary: true }],
@@ -116,7 +126,7 @@ const person = {
 import { PersonDetailClient } from "./PersonDetailClient";
 
 describe("PersonDetailClient", () => {
-  it("renders name, contact points, the linked deals on the default Deals tab, and a merge action", async () => {
+  it("renders linked deals in the sidebar and opens the main panel on Activity", async () => {
     render(
       <PersonDetailClient
         person={person as never}
@@ -130,7 +140,17 @@ describe("PersonDetailClient", () => {
     expect(screen.getAllByText("Jane Roe").length).toBeGreaterThan(0);
     expect(screen.getByText("jane@acme.com")).toBeInTheDocument();
     expect(screen.getByText("+14155550100")).toBeInTheDocument();
-    expect(screen.getByText("Acme renewal")).toBeInTheDocument();
+    const header = screen.getByRole("banner");
+    expect(header.parentElement?.firstElementChild).toBe(header);
+    const dealsSection = within(screen.getByRole("region", { name: "Deals" }));
+    expect(dealsSection.getByRole("link", { name: "Acme renewal, status won" })).toHaveAttribute(
+      "href",
+      "/deals/d1",
+    );
+    expect(dealsSection.getByLabelText("Deal status: Won")).toBeInTheDocument();
+    expect(screen.queryByRole("tab", { name: "Deals" })).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Focus" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "History" })).toBeInTheDocument();
     // Merge is now inside the header Options overflow (CO-3), not a standalone button.
     const user = userEvent.setup();
     await user.click(screen.getByRole("button", { name: /contact actions/i }));
@@ -139,10 +159,7 @@ describe("PersonDetailClient", () => {
 
   // Wave 4, Task 5: the header shows who owns the person via the shared OwnerBadge.
 
-  // CO-2: the sidebar Contact block is a collapsible section with the section kebab (Customize
-  // fields) + hide-empty funnel. The old "Edit section" pencil was removed (it only duplicated the
-  // funnel's reveal while its label implied a non-existent section edit mode).
-  it("renders the sidebar Contact section as a collapsible region with a kebab (no dead edit pencil)", () => {
+  it("renders the same complete Person section and bulk-edit action as the deal workspace", () => {
     render(
       <PersonDetailClient
         person={person as never}
@@ -152,9 +169,13 @@ describe("PersonDetailClient", () => {
         baseCurrency="USD"
       />,
     );
-    expect(screen.getByRole("region", { name: "Contact" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Contact options/i })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /Edit Contact section/i })).not.toBeInTheDocument();
+    const personSection = within(screen.getByRole("region", { name: "Person" }));
+    expect(personSection.getByText("First name")).toBeInTheDocument();
+    expect(personSection.getByText("Last name")).toBeInTheDocument();
+    expect(personSection.getByRole("button", { name: /Person options/i })).toBeInTheDocument();
+    fireEvent.click(personSection.getByRole("button", { name: /Edit Person section/i }));
+    expect(personSection.getByLabelText("First name")).toHaveValue("Jane");
+    expect(personSection.getByLabelText("Last name")).toHaveValue("Roe");
   });
 
   it("renders a person Overview section sourced from activityStats", () => {
@@ -173,7 +194,7 @@ describe("PersonDetailClient", () => {
     expect(overview.getByText("Inactive")).toBeInTheDocument();
   });
 
-  it("opens the edit dialog, prefilled, when the Edit button is clicked", () => {
+  it("omits the redundant header Edit action while keeping the Person section editable", () => {
     render(
       <PersonDetailClient
         person={person as never}
@@ -183,16 +204,15 @@ describe("PersonDetailClient", () => {
         baseCurrency="USD"
       />,
     );
-    expect(screen.queryByRole("dialog", { name: /edit person/i })).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: /^edit$/i }));
-    const dialog = screen.getByRole("dialog", { name: /edit person/i });
-    expect(dialog).toBeInTheDocument();
-    expect(screen.getByLabelText(/name/i, { selector: "input" })).toHaveValue("Jane Roe");
+    expect(
+      within(screen.getByRole("banner")).queryByRole("button", { name: /^edit$/i }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Edit Person section/i })).toBeInTheDocument();
   });
 });
 
-describe("PersonDetailClient composer + inline summary", () => {
-  it("mounts the collapsed compose prompt and the inline-editable Name field", () => {
+describe("PersonDetailClient composer + inline person section", () => {
+  it("mounts the collapsed compose prompt and shared person field rows", () => {
     render(
       <PersonDetailClient
         person={person as never}
@@ -205,9 +225,10 @@ describe("PersonDetailClient composer + inline summary", () => {
     expect(
       screen.getByRole("button", { name: "Click here to add an activity..." }),
     ).toBeInTheDocument();
-    // The panel's Name row renders the person's name as a click-to-edit button (same text
-    // node the header <h1> also shows), so at least one instance must be present.
+    // The shared block repeats the linked display name from the header and exposes the same
+    // editable name-part fields as the deal workspace.
     expect(screen.getAllByText("Jane Roe").length).toBeGreaterThan(0);
+    expect(screen.getByText("First name")).toBeInTheDocument();
   });
 
   it("creates an activity anchored to this person (personId set, dealId/leadId null) through the real composer, not a mocked stub", async () => {
@@ -235,7 +256,7 @@ describe("PersonDetailClient composer + inline summary", () => {
     expect(payload.orgId).toBe("o1");
   });
 
-  it("saves an inline Name edit through updatePersonAction (partial by id)", async () => {
+  it("saves an inline First name edit through the shared deal Person field", async () => {
     const { updatePersonAction } = await import("@/features/contacts/actions");
     render(
       <PersonDetailClient
@@ -246,12 +267,12 @@ describe("PersonDetailClient composer + inline summary", () => {
         baseCurrency="USD"
       />,
     );
-    fireEvent.click(screen.getByRole("button", { name: "Edit Name" }));
-    const input = screen.getByLabelText("Name");
-    fireEvent.change(input, { target: { value: "Jane Smith" } });
-    fireEvent.keyDown(input, { key: "Enter" });
+    fireEvent.click(screen.getByRole("button", { name: "Edit First name" }));
+    const input = screen.getByLabelText("editor-firstName");
+    fireEvent.change(input, { target: { value: "Janet" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
 
     await vi.waitFor(() => expect(updatePersonAction).toHaveBeenCalled());
-    expect(updatePersonAction).toHaveBeenCalledWith({ id: "pe1", name: "Jane Smith" }, "tok");
+    expect(updatePersonAction).toHaveBeenCalledWith({ id: "pe1", firstName: "Janet" }, "tok");
   });
 });

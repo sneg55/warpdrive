@@ -1,5 +1,6 @@
 "use client";
 import type React from "react";
+import { Button } from "@/components/ui/Button";
 
 interface InlineEditFooterProps {
   onCancel: () => void;
@@ -23,23 +24,24 @@ export function InlineEditFooter({
   const disabled = saveDisabled || pending;
   return (
     <div className="mt-2 flex justify-end gap-1">
-      <button
-        type="button"
+      <Button
+        variant="outline"
+        size="sm"
         onClick={onCancel}
         disabled={pending}
-        className="h-6 rounded border border-field-border bg-card px-2 text-xs font-semibold"
+        className="h-6 rounded px-2 text-xs"
       >
         Cancel
-      </button>
-      <button
-        type="button"
+      </Button>
+      <Button
+        size="sm"
         onClick={onSave}
         disabled={disabled}
         aria-disabled={disabled}
-        className="h-6 rounded bg-save px-2 text-xs font-semibold text-white disabled:bg-save-muted"
+        className="h-6 rounded bg-save px-2 text-xs text-white disabled:bg-save-muted disabled:opacity-100"
       >
         Save
-      </button>
+      </Button>
     </div>
   );
 }

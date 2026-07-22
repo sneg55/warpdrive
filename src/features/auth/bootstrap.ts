@@ -3,6 +3,7 @@ import { env } from "@/config/env";
 import { AppError, ERROR_IDS } from "@/constants/errorIds";
 import type { Db } from "@/db/client";
 import { settings, users, visibilityGroupMembers } from "@/db/schema";
+import { isUploadedAvatarUrl } from "@/features/identity/avatar/avatarStorage";
 import { err, ok, type Result } from "@/types/result";
 import { ensureSeedData, readSeedHandles } from "./seed";
 
@@ -40,9 +41,15 @@ export async function upsertUserOnLogin(
       // email (the email may have changed in Google), never re-elect admin (F25).
       const bySub = await tx.select().from(users).where(eq(users.googleSub, identity.sub)).limit(1);
       if (bySub[0] !== undefined) {
+        // Never clobber a user-uploaded avatar with the login identity's photo (often null for dev
+        // login or a photoless Workspace account), which was wiping avatars on every re-login. A
+        // provider-sourced or absent avatar still refreshes.
+        const avatarUrl = isUploadedAvatarUrl(bySub[0].avatarUrl)
+          ? bySub[0].avatarUrl
+          : identity.avatarUrl;
         await tx
           .update(users)
-          .set({ name: identity.name, avatarUrl: identity.avatarUrl, email })
+          .set({ name: identity.name, avatarUrl, email })
           .where(eq(users.id, bySub[0].id));
         return { kind: "ok", userId: bySub[0].id, isAdmin: bySub[0].isAdmin };
       }

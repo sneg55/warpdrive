@@ -2,6 +2,7 @@
 import type React from "react";
 import { useEffect } from "react";
 import { STRINGS } from "@/constants/strings";
+import { forwardBoundaryError } from "@/features/observability/errorForwarding";
 
 export interface GlobalErrorProps {
   error: Error & { digest?: string };
@@ -20,6 +21,7 @@ export interface GlobalErrorProps {
 export default function GlobalError({ error, reset }: GlobalErrorProps): React.ReactNode {
   useEffect(() => {
     console.error(error);
+    forwardBoundaryError(error, { route: window.location.pathname, digest: error.digest });
   }, [error]);
 
   return (

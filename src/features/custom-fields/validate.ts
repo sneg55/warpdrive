@@ -80,12 +80,25 @@ export function valueSchemaFor(def: CustomFieldDef): z.ZodTypeAny {
 
 export function buildCustomFieldsSchema(
   defs: CustomFieldDef[],
+  options: { requireImportant?: boolean } = {},
 ): z.ZodType<Record<string, unknown>> {
   const active = defs.filter((d) => d.archivedAt === null);
   const shape: Record<string, z.ZodTypeAny> = {};
   for (const def of active) {
     const base = valueSchemaFor(def);
-    shape[def.key] = def.isRequired ? base : base.optional();
+    const required = def.isRequired || (options.requireImportant === true && def.isImportant);
+    const requiredBase = base.refine((value) => {
+      if (typeof value === "string") return value.trim().length > 0;
+      if (Array.isArray(value)) return value.length > 0;
+      if (value !== null && typeof value === "object") {
+        return Object.values(value).some((entry) => {
+          if (typeof entry === "string") return entry.trim().length > 0;
+          return entry !== null && entry !== undefined;
+        });
+      }
+      return value !== null && value !== undefined;
+    }, "required custom field is empty");
+    shape[def.key] = required ? requiredBase : base.optional();
   }
   // z.object strips unknown keys by default in Zod v4; .strip() is explicit for clarity.
   return z.object(shape).strip();

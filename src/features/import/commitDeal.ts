@@ -119,6 +119,7 @@ export async function applyCreateDeal(
     stageId: stageResult.value,
     orgId: links.orgId,
     personId: links.personId,
+    customFields: parsed.data.customFields,
   };
   const finalParsed = dealCreateInput.safeParse(candidate);
   if (finalParsed.success === false) return err(issuesOf(finalParsed.error));

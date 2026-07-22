@@ -2,6 +2,7 @@
 import { Filter } from "lucide-react";
 import type React from "react";
 import { useState } from "react";
+import { cn } from "@/lib/utils";
 import { HideEmptyContext } from "./sidebar/sectionFilter";
 
 // A titled, collapsible sidebar section (Pipedrive's deal detail groups Summary/Details/Source/
@@ -36,7 +37,10 @@ export function CollapsibleSection({
           <svg
             aria-hidden="true"
             viewBox="0 0 24 24"
-            className={`h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform ${open ? "" : "-rotate-90"}`}
+            className={cn(
+              "h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform duration-150 ease-out motion-reduce:transition-none",
+              open ? "" : "-rotate-90",
+            )}
             fill="none"
             stroke="currentColor"
             strokeWidth="2.5"
@@ -64,11 +68,22 @@ export function CollapsibleSection({
         )}
         {headerActions?.({ hideEmpty, showEmptyFields: () => setHideEmpty(false) })}
       </div>
-      {open && (
-        <div className="border-t px-3 py-2">
-          <HideEmptyContext.Provider value={hideEmpty}>{children}</HideEmptyContext.Provider>
+      <div
+        aria-hidden={!open}
+        // Keep content mounted so the Tailwind grid transition can reverse smoothly. `inert`
+        // removes closed controls from focus/navigation while preserving their layout subtree.
+        inert={!open}
+        className={cn(
+          "grid transition-[grid-template-rows,opacity] duration-200 ease-out motion-reduce:transition-opacity",
+          open ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0",
+        )}
+      >
+        <div className="min-h-0 overflow-hidden">
+          <div className="border-t px-3 py-2">
+            <HideEmptyContext.Provider value={hideEmpty}>{children}</HideEmptyContext.Provider>
+          </div>
         </div>
-      )}
+      </div>
     </section>
   );
 }

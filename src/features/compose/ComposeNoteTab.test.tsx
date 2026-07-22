@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 afterEach(() => {
@@ -21,6 +21,11 @@ vi.mock("@/utils/csrfCookie", () => ({ readCsrfToken: () => "csrf" }));
 import { ComposeNoteTab } from "./ComposeNoteTab";
 
 describe("ComposeNoteTab", () => {
+  it("focuses the Note field when the tab body opens", async () => {
+    render(<ComposeNoteTab entityType="deal" entityId="d1" onNoteCreated={vi.fn()} />);
+    await waitFor(() => expect(screen.getByRole("textbox", { name: "Note" })).toHaveFocus());
+  });
+
   it("does not submit an empty note", () => {
     render(<ComposeNoteTab entityType="deal" entityId="d1" onNoteCreated={vi.fn()} />);
     fireEvent.click(screen.getByRole("button", { name: /save/i }));

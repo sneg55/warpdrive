@@ -12,7 +12,12 @@ beforeAll(() => {
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
+  customFieldDefs.splice(0);
 });
+
+const { customFieldDefs } = vi.hoisted(() => ({
+  customFieldDefs: [] as Array<Record<string, unknown>>,
+}));
 
 vi.mock("@/lib/trpc-client", () => ({
   trpc: {
@@ -25,6 +30,13 @@ vi.mock("@/lib/trpc-client", () => ({
       listVisibilityGroups: { useQuery: () => ({ data: undefined }) },
     },
     labels: { listByTarget: { useQuery: () => ({ data: [] }) } },
+    customFields: {
+      listDefs: {
+        useQuery: ({ target }: { target: string }) => ({
+          data: customFieldDefs.filter((def) => def.targetEntity === target),
+        }),
+      },
+    },
   },
 }));
 
@@ -73,6 +85,35 @@ describe("AddLeadModal", () => {
       ),
     );
     await waitFor(() => expect(onCreated).toHaveBeenCalled());
+  });
+
+  it("uses person add-form fields when a lead creates a person inline", async () => {
+    customFieldDefs.push({
+      id: "11111111-1111-1111-1111-111111111111",
+      targetEntity: "person",
+      type: "text",
+      name: "Role",
+      key: "role",
+      options: [],
+      isRequired: false,
+      isImportant: false,
+      showInAddForm: true,
+      order: 0,
+      archivedAt: null,
+    });
+    render(<AddLeadModal onClose={vi.fn()} onCreated={vi.fn()} />);
+    fireEvent.change(screen.getByLabelText("Contact person"), {
+      target: { value: "New Contact" },
+    });
+    fireEvent.change(screen.getByLabelText("Role"), { target: { value: "Buyer" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+
+    await waitFor(() =>
+      expect(createPersonAction).toHaveBeenCalledWith(
+        expect.objectContaining({ customFields: { role: "Buyer" } }),
+        "csrf",
+      ),
+    );
   });
 
   it("picks the expected close date via the DatePicker and submits it as YYYY-MM-DD", async () => {

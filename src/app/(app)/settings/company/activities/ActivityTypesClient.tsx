@@ -3,10 +3,10 @@ import { useRouter } from "next/navigation";
 import type React from "react";
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 import { Select, type SelectOption } from "@/components/ui/Select";
 import { Switch } from "@/components/ui/Switch";
 import { ERROR_IDS } from "@/constants/errorIds";
-import { FIELD_INPUT } from "@/constants/formStyles";
 import { STRINGS } from "@/constants/strings";
 import { ACTIVITY_TYPE_ICON_KEYS, ActivityTypeIcon } from "@/features/activities/ActivityTypeIcon";
 import {
@@ -19,6 +19,7 @@ import {
 import { moveInArray } from "@/features/settings/reorder";
 import { useSyncedState } from "@/lib/useSyncedState";
 import { readCsrfToken } from "@/utils/csrfCookie";
+import { ReorderControls } from "../ReorderControls";
 
 export interface ActivityTypeRow {
   id: string;
@@ -108,17 +109,17 @@ export function ActivityTypesClient({
   }
 
   return (
-    <div className="max-w-2xl space-y-4">
-      <ul className="divide-y rounded-md border">
+    <div className="space-y-4">
+      <ul className="divide-y overflow-hidden rounded-lg border bg-card shadow-sm">
         {rows.map((row, i) => (
           <li key={row.id} className="flex items-center gap-3 px-3 py-2">
             <ActivityTypeIcon typeKey={row.icon ?? row.key} />
             {editingId === row.id ? (
-              <input
+              <Input
                 aria-label={S.activityTypeName}
                 value={editName}
                 onChange={(e) => setEditName(e.target.value)}
-                className={`${FIELD_INPUT} flex-1`}
+                className="h-8 flex-1"
               />
             ) : (
               <span
@@ -132,23 +133,13 @@ export function ActivityTypesClient({
                 {S.systemBadge}
               </span>
             )}
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                className={BTN}
-                disabled={i === 0}
-                onClick={() => void move(i, "up")}
-              >
-                {S.moveUp}
-              </button>
-              <button
-                type="button"
-                className={BTN}
-                disabled={i === rows.length - 1}
-                onClick={() => void move(i, "down")}
-              >
-                {S.moveDown}
-              </button>
+            <div className="flex items-center gap-3">
+              <ReorderControls
+                canMoveUp={i > 0}
+                canMoveDown={i < rows.length - 1}
+                onMoveUp={() => void move(i, "up")}
+                onMoveDown={() => void move(i, "down")}
+              />
               {editingId === row.id ? (
                 <button type="button" className={BTN} onClick={() => void rename(row.id)}>
                   {S.save}
@@ -184,16 +175,17 @@ export function ActivityTypesClient({
       </ul>
       {rowError && <p className="text-sm text-red-600">{rowError.msg}</p>}
 
-      <div className="flex flex-wrap items-end gap-2">
-        <label className="block">
+      <div className="flex flex-wrap items-end gap-3 rounded-lg border bg-card p-4 shadow-sm">
+        <label htmlFor="new-activity-type" className="min-w-56 flex-1">
           <span className="mb-1 block text-sm font-medium">{S.activityTypeName}</span>
-          <input
+          <Input
+            id="new-activity-type"
             aria-label={S.activityTypeName}
             required
             maxLength={120}
             value={addName}
             onChange={(e) => setAddName(e.target.value)}
-            className={FIELD_INPUT}
+            className="w-full"
           />
         </label>
         <div className="block">

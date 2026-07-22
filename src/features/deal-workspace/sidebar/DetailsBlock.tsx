@@ -2,6 +2,7 @@
 import { useRouter } from "next/navigation";
 import type React from "react";
 import { useState } from "react";
+import { STRINGS } from "@/constants/strings";
 import { CustomFieldFormControl, isCustomFieldValueEmpty } from "@/features/custom-fields/render";
 import { updateDealAction } from "@/features/deals/updateAction";
 import { InlineEditFooter } from "@/features/inline-edit/InlineEditFooter";
@@ -33,6 +34,14 @@ export function DetailsBlock({
   bulkEditing = false,
   onExitBulk,
 }: DetailsBlockProps): React.ReactNode {
+  // No custom fields defined for this entity: show a hint, never a blank box (read) or an editor
+  // with only Cancel/Save and nothing to edit (bulk). The section's pencil is also hidden upstream
+  // when there is nothing to edit, so bulkEditing should not even be reachable here.
+  if (customFieldDefs.length === 0) {
+    return (
+      <p className="text-muted-foreground text-xs">{STRINGS.dealSidebar.emptyState.details}</p>
+    );
+  }
   if (bulkEditing) {
     return (
       <DetailsBulkEditor

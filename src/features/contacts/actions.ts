@@ -7,6 +7,11 @@ import { SIG } from "@/features/identity/actions/sig";
 import { can } from "@/features/permissions/can";
 import { createContext } from "@/server/trpc/context";
 import { loadContactActor, toContactActor } from "./actorAdapters";
+import {
+  type ContactCustomFieldPatchInput,
+  contactCustomFieldPatchInput,
+  patchContactCustomField,
+} from "./contactCustomFieldPatch";
 import { deleteOrg } from "./deleteOrg";
 import { deletePerson } from "./deletePerson";
 import { type MergeArgs, mergeOrgs, mergePersons } from "./merge";
@@ -24,6 +29,26 @@ import {
 } from "./schemas";
 
 type ActionResult = { ok: true; value: { id: string } } | { ok: false; error: { id: string } };
+
+export async function patchContactCustomFieldAction(
+  input: ContactCustomFieldPatchInput,
+  csrfToken: string | null = null,
+): Promise<ActionResult> {
+  const csrfOk = await guardCsrf(csrfToken);
+  if (!csrfOk.ok) return { ok: false, error: { id: "E_AUTH_CSRF" } };
+
+  const { actor } = await createContext();
+  if (actor === null) return { ok: false, error: { id: ERROR_IDS.AUTH_SESSION_DEAD } };
+
+  const parsed = contactCustomFieldPatchInput.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false, error: { id: ERROR_IDS.CONTACT_UPDATE_INPUT_INVALID } };
+  }
+  const result = await patchContactCustomField(db, toContactActor(actor), parsed.data, SIG());
+  return result.ok
+    ? { ok: true, value: result.value }
+    : { ok: false, error: { id: result.error.id } };
+}
 
 export async function createPersonAction(
   input: PersonCreateInput,

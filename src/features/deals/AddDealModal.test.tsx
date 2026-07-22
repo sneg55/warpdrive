@@ -13,7 +13,12 @@ beforeAll(() => {
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
+  customFieldDefs.splice(0);
 });
+
+const { customFieldDefs } = vi.hoisted(() => ({
+  customFieldDefs: [] as Array<Record<string, unknown>>,
+}));
 
 // tRPC hooks the modal reads. listUsers / listVisibilityGroups return empty so the manager-only
 // fields stay hidden (the 403 path).
@@ -27,6 +32,13 @@ vi.mock("@/lib/trpc-client", () => ({
     identity: {
       listUsers: { useQuery: () => ({ data: undefined }) },
       listVisibilityGroups: { useQuery: () => ({ data: undefined }) },
+    },
+    customFields: {
+      listDefs: {
+        useQuery: ({ target }: { target: string }) => ({
+          data: customFieldDefs.filter((def) => def.targetEntity === target),
+        }),
+      },
     },
   },
 }));
@@ -130,6 +142,36 @@ describe("AddDealModal", () => {
       ),
     );
     await waitFor(() => expect(onCreated).toHaveBeenCalled());
+  });
+
+  it("renders deal fields in the add form and requires Important before create", async () => {
+    customFieldDefs.push({
+      id: "11111111-1111-1111-1111-111111111111",
+      targetEntity: "deal",
+      type: "text",
+      name: "Account tier",
+      key: "account_tier",
+      options: [],
+      isRequired: false,
+      isImportant: true,
+      showInAddForm: false,
+      order: 0,
+      archivedAt: null,
+    });
+    renderModal();
+    fireEvent.change(screen.getByLabelText("Deal title"), { target: { value: "Big deal" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Account tier is required");
+    expect(createDealAction).not.toHaveBeenCalled();
+
+    fireEvent.change(screen.getByLabelText("Account tier"), { target: { value: "Enterprise" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() =>
+      expect(createDealAction).toHaveBeenCalledWith(
+        expect.objectContaining({ customFields: { account_tier: "Enterprise" } }),
+        expect.anything(),
+      ),
+    );
   });
 
   it("navigates to the new deal after create when the open-details leadDeal flag is on", async () => {

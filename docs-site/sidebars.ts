@@ -28,6 +28,7 @@ const sidebars: SidebarsConfig = {
         "features/saved-filters",
         "features/collaboration",
         "features/files",
+        "features/mcp",
       ],
     },
     {

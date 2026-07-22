@@ -2,6 +2,11 @@
 import { useRouter } from "next/navigation";
 import type React from "react";
 import { useMemo, useState } from "react";
+import {
+  CustomFieldCreateFields,
+  customFieldCreatePayload,
+  firstMissingImportantField,
+} from "@/features/custom-fields/CustomFieldCreateFields";
 import { EntityCreateModalShell } from "@/features/entity-create/EntityCreateModalShell";
 import {
   optionsOrNull,
@@ -47,6 +52,10 @@ export interface AddDealModalProps {
   suppressDetailNav?: boolean;
 }
 
+function shouldOpenDealDetails(openAfterCreate: boolean, suppressDetailNav: boolean): boolean {
+  return openAfterCreate && !suppressDetailNav;
+}
+
 export function AddDealModal(props: AddDealModalProps): React.ReactNode {
   const { pipelineId, pipelines, baseCurrency = "USD", stageId, prefillTitle } = props;
   const { onClose, onCreated, suppressDetailNav = false } = props;
@@ -66,6 +75,9 @@ export function AddDealModal(props: AddDealModalProps): React.ReactNode {
   // Manager-only lists: on a 403 the data stays undefined and the field is hidden.
   const usersQ = trpc.identity.listUsers.useQuery(undefined, { retry: false });
   const groupsQ = trpc.identity.listVisibilityGroups.useQuery(undefined, { retry: false });
+  const dealFieldsQ = trpc.customFields.listDefs.useQuery({ target: "deal" });
+  const personFieldsQ = trpc.customFields.listDefs.useQuery({ target: "person" });
+  const orgFieldsQ = trpc.customFields.listDefs.useQuery({ target: "organization" });
 
   const set = (patch: Partial<AddDealState>): void => setState((s) => ({ ...s, ...patch }));
 
@@ -113,17 +125,53 @@ export function AddDealModal(props: AddDealModalProps): React.ReactNode {
         setError(parsed.error);
         return;
       }
-      const orgId = await resolveNewOrgId(state, csrf);
+      const dealFields = dealFieldsQ.data ?? [];
+      const personFields = personFieldsQ.data ?? [];
+      const orgFields = orgFieldsQ.data ?? [];
+      const missingDealField = firstMissingImportantField(dealFields, state.dealCustomFields);
+      if (missingDealField !== null) {
+        setError(`${missingDealField.name} is required`);
+        return;
+      }
+      if (state.orgMode === "new") {
+        const missingOrgField = firstMissingImportantField(orgFields, state.orgCustomFields);
+        if (missingOrgField !== null) {
+          setError(`${missingOrgField.name} is required`);
+          return;
+        }
+      }
+      if (state.personMode === "new") {
+        const missingPersonField = firstMissingImportantField(
+          personFields,
+          state.personCustomFields,
+        );
+        if (missingPersonField !== null) {
+          setError(`${missingPersonField.name} is required`);
+          return;
+        }
+      }
+      const submitState = {
+        ...state,
+        dealCustomFields: customFieldCreatePayload(dealFields, state.dealCustomFields),
+        personCustomFields: customFieldCreatePayload(personFields, state.personCustomFields),
+        orgCustomFields: customFieldCreatePayload(orgFields, state.orgCustomFields),
+      };
+      const orgId = await resolveNewOrgId(submitState, csrf);
       if (orgId !== null && typeof orgId === "object") {
         setError(orgId.error);
         return;
       }
-      const personId = await resolveNewPersonId(state, orgId, csrf);
+      const personId = await resolveNewPersonId(submitState, orgId, csrf);
       if (personId !== null && typeof personId === "object") {
         setError(personId.error);
         return;
       }
-      const resolved = { ...parsed.input, personId, orgId };
+      const resolved = {
+        ...parsed.input,
+        personId,
+        orgId,
+        customFields: submitState.dealCustomFields,
+      };
       const input =
         state.visibilityGroupId === ""
           ? resolved
@@ -139,7 +187,7 @@ export function AddDealModal(props: AddDealModalProps): React.ReactNode {
       // when the lead/deal flag is on. Otherwise the caller's onCreated handles the refresh.
       // suppressDetailNav opts a caller out entirely (e.g. the inbox compose sidebar, where the
       // deal link is unsent local state that a full-page nav would abandon).
-      if (openDetailsAfterCreate.leadDeal && !suppressDetailNav) {
+      if (shouldOpenDealDetails(openDetailsAfterCreate.leadDeal, suppressDetailNav)) {
         router.push(`/deals/${result.deal.id}`);
       }
     } finally {
@@ -155,8 +203,19 @@ export function AddDealModal(props: AddDealModalProps): React.ReactNode {
       emails={state.emails}
       onPhones={(phones) => set({ phones })}
       onEmails={(emails) => set({ emails })}
+      personCustomFields={
+        <CustomFieldCreateFields
+          title="Person fields"
+          defs={personFieldsQ.data ?? []}
+          values={state.personCustomFields}
+          onChange={(key, value) =>
+            set({ personCustomFields: { ...state.personCustomFields, [key]: value } })
+          }
+        />
+      }
       error={error}
       pending={pending}
+      submitDisabled={dealFieldsQ.isLoading || personFieldsQ.isLoading || orgFieldsQ.isLoading}
       onSubmit={() => void submit()}
       onClose={onClose}
       leftColumn={
@@ -174,6 +233,26 @@ export function AddDealModal(props: AddDealModalProps): React.ReactNode {
           owners={optionsOrNull(usersQ.data)}
           groups={optionsOrNull(groupsQ.data)}
           baseCurrency={baseCurrency}
+          organizationCustomFields={
+            <CustomFieldCreateFields
+              title="Organization fields"
+              defs={orgFieldsQ.data ?? []}
+              values={state.orgCustomFields}
+              onChange={(key, value) =>
+                set({ orgCustomFields: { ...state.orgCustomFields, [key]: value } })
+              }
+            />
+          }
+          dealCustomFields={
+            <CustomFieldCreateFields
+              title="Deal fields"
+              defs={dealFieldsQ.data ?? []}
+              values={state.dealCustomFields}
+              onChange={(key, value) =>
+                set({ dealCustomFields: { ...state.dealCustomFields, [key]: value } })
+              }
+            />
+          }
         />
       }
     />

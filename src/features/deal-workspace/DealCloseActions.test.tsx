@@ -86,7 +86,7 @@ afterEach(() => {
 
 const props = {
   dealId: "d1",
-  status: "open",
+  status: "open" as const,
   lostReasonOptions: [{ id: "r1", name: "Budget" }],
   scheduleFollowUpAfterWon: false,
 };
@@ -99,6 +99,7 @@ it("primary Won marks the deal won", () => {
 
 it("has no Won options dropdown: Won is a single plain button", () => {
   render(<DealCloseActions {...props} />);
+  expect(screen.getByLabelText("Deal status: Open")).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Won" })).toBeInTheDocument();
   // The redundant split-button chevron / "Mark as won" menu item is gone.
   expect(screen.queryByRole("button", { name: "Won options" })).toBeNull();
@@ -107,7 +108,7 @@ it("has no Won options dropdown: Won is a single plain button", () => {
 
 it("shows the status pill when the deal is already closed", () => {
   render(<DealCloseActions {...props} status="won" />);
-  expect(screen.getByText("won")).toBeTruthy();
+  expect(screen.getByLabelText("Deal status: Won")).toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "Won options" })).toBeNull();
 });
 
@@ -220,7 +221,7 @@ it("with the pref disabled, Won just refreshes and shows no follow-up prompt", a
 
 it("shows a Reopen control on a won deal (recovery from a mis-clicked close)", () => {
   render(<DealCloseActions {...props} status="won" />);
-  expect(screen.getByText("won")).toBeInTheDocument();
+  expect(screen.getByLabelText("Deal status: Won")).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Reopen" })).toBeInTheDocument();
 });
 

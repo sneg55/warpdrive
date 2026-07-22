@@ -90,7 +90,7 @@ export function FlagEditor({ setId, name, flags, onSaved }: Props): React.ReactE
   }
 
   return (
-    <div className="mt-4 rounded border p-4">
+    <div className="overflow-hidden rounded-lg border bg-card p-5 shadow-sm">
       <h3 className="mb-3 text-sm font-semibold">{name}</h3>
       <div className="grid gap-6 md:grid-cols-2">
         <fieldset>
@@ -115,7 +115,7 @@ export function FlagEditor({ setId, name, flags, onSaved }: Props): React.ReactE
             {OWNERSHIP_FLAGS.map((cap) => (
               <div key={cap} className="flex flex-col gap-1 border-b pb-1.5 last:border-b-0">
                 <span className="text-xs text-gray-600">{cap}</span>
-                <div className="flex gap-4">
+                <div className="flex flex-wrap gap-x-4 gap-y-2">
                   <FlagCheckbox
                     flagKey={`${cap}_own`}
                     checked={current[`${cap}_own`] === true}

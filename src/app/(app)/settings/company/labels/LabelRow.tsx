@@ -1,14 +1,14 @@
 "use client";
 import type React from "react";
 import { useState } from "react";
-import { Select } from "@/components/ui/Select";
 import { FIELD_INPUT } from "@/constants/formStyles";
-import { LABEL_COLOR_CLASSES, LABEL_COLORS, type LabelColor } from "@/constants/labelColors";
+import { LABEL_COLOR_CLASSES, type LabelColor } from "@/constants/labelColors";
 import { STRINGS } from "@/constants/strings";
+import { ReorderControls } from "../ReorderControls";
+import { LabelColorSelect } from "./LabelColorSelect";
 
 const S = STRINGS.settings;
 const BTN = "text-xs font-medium text-muted-foreground hover:text-foreground disabled:opacity-40";
-const LABEL_COLOR_OPTIONS = LABEL_COLORS.map((color) => ({ value: color, label: color }));
 
 export interface LabelRowData {
   id: string;
@@ -56,21 +56,16 @@ export function LabelRow({
       ) : (
         <span className="flex-1 text-sm">{row.name}</span>
       )}
-      <div className="w-28 shrink-0">
-        <Select
-          ariaLabel={S.color}
-          value={row.color}
-          onChange={(value) => onColor(value as LabelColor)}
-          options={LABEL_COLOR_OPTIONS}
-        />
+      <div className="w-32 shrink-0">
+        <LabelColorSelect ariaLabel={S.color} value={row.color} onChange={onColor} />
       </div>
-      <div className="flex items-center gap-2">
-        <button type="button" className={BTN} disabled={isFirst} onClick={() => onMove("up")}>
-          {S.moveUp}
-        </button>
-        <button type="button" className={BTN} disabled={isLast} onClick={() => onMove("down")}>
-          {S.moveDown}
-        </button>
+      <div className="flex items-center gap-3">
+        <ReorderControls
+          canMoveUp={!isFirst}
+          canMoveDown={!isLast}
+          onMoveUp={() => onMove("up")}
+          onMoveDown={() => onMove("down")}
+        />
         {editing ? (
           <button
             type="button"

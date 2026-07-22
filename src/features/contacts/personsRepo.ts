@@ -58,7 +58,9 @@ export async function createPerson(
 ): Promise<Result<Person, AppError>> {
   signal.throwIfAborted();
 
-  const cfResult = await validateContactCustomFields(db, "person", input.customFields, signal);
+  const cfResult = await validateContactCustomFields(db, "person", input.customFields, signal, {
+    requireImportant: true,
+  });
   if (cfResult.ok === false) return cfResult;
 
   const visResult = await deriveContactVisibility(db, actor, "person", signal);

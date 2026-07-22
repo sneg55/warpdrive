@@ -1,5 +1,6 @@
 import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
+import { customFieldDefs } from "@/db/schema/customFieldDefs";
 import { deals } from "@/db/schema/deals";
 import { leads } from "@/db/schema/leads";
 import { persons } from "@/db/schema/persons";
@@ -51,6 +52,48 @@ async function insertLead(
 const sig = () => new AbortController().signal;
 
 describe("convertLead", () => {
+  it("requires Important deal fields and persists the validated conversion payload", async () => {
+    await withTestDb(async (db) => {
+      const owner = await seedUser(db);
+      const pipe = await seedPipelineWithStages(db, ["Qualify"]);
+      await seedSettings(db, { defaultPipelineId: pipe.pipeline.id });
+      await db.insert(customFieldDefs).values({
+        targetEntity: "deal",
+        type: "text",
+        name: "Industry",
+        key: "industry",
+        isImportant: true,
+      });
+      const lead = await insertLead(db, owner.id);
+
+      const missing = await convertLead(
+        db,
+        session(owner.id),
+        { leadId: lead.id, expectedUpdatedAt: lead.updatedAt.toISOString() },
+        sig(),
+      );
+      expect(missing.ok).toBe(false);
+      if (missing.ok) return;
+      expect(missing.error.id).toBe("E_CF_003");
+      expect(await db.select().from(deals)).toHaveLength(0);
+
+      const converted = await convertLead(
+        db,
+        session(owner.id),
+        {
+          leadId: lead.id,
+          expectedUpdatedAt: lead.updatedAt.toISOString(),
+          customFields: { industry: "SaaS" },
+        },
+        sig(),
+      );
+      expect(converted.ok).toBe(true);
+      if (!converted.ok) return;
+      const [deal] = await db.select().from(deals).where(eq(deals.id, converted.value.dealId));
+      expect(deal?.customFields).toEqual({ industry: "SaaS" });
+    });
+  });
+
   it("creates a deal in the pipeline's first stage and archives the lead", async () => {
     await withTestDb(async (db) => {
       const owner = await seedUser(db);

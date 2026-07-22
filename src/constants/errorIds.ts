@@ -120,6 +120,13 @@ export const ERROR_IDS = {
   GMAIL_TRASH_INPUT_INVALID: "E_GMAIL_023", // trash-thread action input failed Zod validation
   GMAIL_MAIL_LABEL_INPUT_INVALID: "E_GMAIL_024", // create-mail-label action input failed Zod validation (U6)
   GMAIL_MAIL_LABEL_UNKNOWN: "E_GMAIL_025", // thread-labels write referenced a key absent from the mail_labels catalog (integrity: would persist an invisible, unremovable label)
+  // OAUTH
+  OAUTH_INVALID_CLIENT: "E_OAUTH_001",
+  OAUTH_INVALID_GRANT: "E_OAUTH_002",
+  OAUTH_INVALID_PKCE: "E_OAUTH_003",
+  OAUTH_CODE_EXPIRED: "E_OAUTH_004",
+  OAUTH_TOKEN_REVOKED: "E_OAUTH_005",
+  OAUTH_CONSENT_REQUIRED: "E_OAUTH_006",
   // SYNC
   SYNC_CURSOR_EXPIRED: "E_SYNC_001", // History cursor expired (404): gap-recovery resync triggered
   // JOBS

@@ -13,6 +13,7 @@ import { settings } from "@/db/schema/system";
 import { recordChange } from "@/features/collaboration/changeLog";
 import { midpoint } from "@/features/deals/boardPosition";
 import { toVisibleDeal } from "@/features/deals/dealAuth";
+import { validateDealCustomFieldsForCreate } from "@/features/deals/dealCustomFieldsValidation";
 import { canSee } from "@/features/permissions/canSee";
 import type { PermSetUser } from "@/features/permissions/effective";
 import { resolveVisibilityGroup } from "@/features/permissions/entityCreate";
@@ -69,6 +70,15 @@ export async function duplicateDeal(
     );
   }
   signal.throwIfAborted();
+
+  // Duplication creates a new deal. Validate active Important fields before inserting, while
+  // retaining the source object below so historical values for archived definitions are preserved.
+  const customFields = await validateDealCustomFieldsForCreate(
+    db,
+    source.customFields as Record<string, unknown>,
+    signal,
+  );
+  if (!customFields.ok) return customFields;
 
   // Visibility derived server-side from the deal default (never inherited from the source, which
   // may be more permissive than the actor's default allows them to grant).

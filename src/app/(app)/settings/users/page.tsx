@@ -4,6 +4,7 @@ import { STRINGS } from "@/constants/strings";
 import { listUsers } from "@/features/identity/users.service";
 import { createContext } from "@/server/trpc/context";
 import { SettingsHeading } from "../SettingsHeading";
+import { SettingsPage } from "../SettingsSurface";
 import { UsersClient } from "./UsersClient";
 
 export const metadata = { title: STRINGS.settings.users };
@@ -24,12 +25,12 @@ export default async function UsersPage(): Promise<ReactNode> {
     invitedAt: u.invitedAt === null ? null : u.invitedAt.toISOString(),
   }));
   return (
-    <section>
+    <SettingsPage>
       <SettingsHeading
         title={STRINGS.settings.users}
         description={STRINGS.settings.usersDescription}
       />
       <UsersClient rows={serializable} />
-    </section>
+    </SettingsPage>
   );
 }

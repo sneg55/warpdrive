@@ -38,10 +38,8 @@ export type DealWorkspace = {
   pipelineVisibilityGroupId: string | null;
   ownerName: string | null; // kept for the sidebar; mirrors owner.name
   owner: UserRef | null;
-  // custom_fields is stripped: the workspace sidebar renders only fixed person/org fields, so
-  // shipping those jsonb blobs in the deal-open RSC payload was dead weight.
-  person: Omit<Person, "customFields"> | null;
-  org: Omit<Organization, "customFields"> | null;
+  person: Person | null;
+  org: Organization | null;
   stageProgress: StageProgress;
   followers: UserRef[];
   isFollowedBySelf: boolean;
@@ -49,15 +47,9 @@ export type DealWorkspace = {
   lostReasonName: string | null;
   lostReasonOptions: Array<{ id: string; name: string }>;
   customFieldDefs: CustomFieldDef[];
+  personCustomFieldDefs: CustomFieldDef[];
+  organizationCustomFieldDefs: CustomFieldDef[];
 };
-
-// Drop the custom_fields jsonb from a person/org row before it enters the workspace RSC payload;
-// the sidebar renders only fixed fields, so those blobs were serialized for nothing.
-function withoutCustomFields<T extends { customFields: unknown }>(row: T): Omit<T, "customFields"> {
-  const rest = { ...row };
-  delete (rest as { customFields?: unknown }).customFields;
-  return rest;
-}
 
 export async function getWorkspace(
   db: Db,
@@ -106,51 +98,63 @@ export async function getWorkspace(
 
   // Everything below the gate depends only on the already-loaded `deal`, so the reads are
   // issued together. Serialized, opening a deal cost one round trip per read.
-  const [stageRows, [person], [org], followers, [lr], [owner], lostReasonOptions, customFieldDefs] =
-    await Promise.all([
-      db.select().from(stages).where(eq(stages.pipelineId, deal.pipelineId)),
+  const [
+    stageRows,
+    [person],
+    [org],
+    followers,
+    [lr],
+    [owner],
+    lostReasonOptions,
+    customFieldDefs,
+    personCustomFieldDefs,
+    organizationCustomFieldDefs,
+  ] = await Promise.all([
+    db.select().from(stages).where(eq(stages.pipelineId, deal.pipelineId)),
 
-      // Filter deletedAt so a soft-deleted contact is treated as absent, consistent with getPerson/
-      // getOrg/listPeople. Otherwise DealSidebar renders a live link to a contact whose detail page
-      // 404s (a dangling link).
-      deal.personId !== null
-        ? db
-            .select()
-            .from(persons)
-            .where(and(eq(persons.id, deal.personId), isNull(persons.deletedAt)))
-        : [],
+    // Filter deletedAt so a soft-deleted contact is treated as absent, consistent with getPerson/
+    // getOrg/listPeople. Otherwise DealSidebar renders a live link to a contact whose detail page
+    // 404s (a dangling link).
+    deal.personId !== null
+      ? db
+          .select()
+          .from(persons)
+          .where(and(eq(persons.id, deal.personId), isNull(persons.deletedAt)))
+      : [],
 
-      deal.orgId !== null
-        ? db
-            .select()
-            .from(organizations)
-            .where(and(eq(organizations.id, deal.orgId), isNull(organizations.deletedAt)))
-        : [],
+    deal.orgId !== null
+      ? db
+          .select()
+          .from(organizations)
+          .where(and(eq(organizations.id, deal.orgId), isNull(organizations.deletedAt)))
+      : [],
 
-      // Followers resolved to display refs (name + avatar) for the header control.
-      db
-        .select({ id: users.id, name: users.name, avatarUrl: users.avatarUrl })
-        .from(dealFollowers)
-        .innerJoin(users, eq(users.id, dealFollowers.userId))
-        .where(eq(dealFollowers.dealId, dealId)),
+    // Followers resolved to display refs (name + avatar) for the header control.
+    db
+      .select({ id: users.id, name: users.name, avatarUrl: users.avatarUrl })
+      .from(dealFollowers)
+      .innerJoin(users, eq(users.id, dealFollowers.userId))
+      .where(eq(dealFollowers.dealId, dealId)),
 
-      deal.lostReasonId !== null
-        ? db.select().from(lostReasons).where(eq(lostReasons.id, deal.lostReasonId))
-        : [],
+    deal.lostReasonId !== null
+      ? db.select().from(lostReasons).where(eq(lostReasons.id, deal.lostReasonId))
+      : [],
 
-      db
-        .select({ id: users.id, name: users.name, avatarUrl: users.avatarUrl })
-        .from(users)
-        .where(eq(users.id, deal.ownerId)),
+    db
+      .select({ id: users.id, name: users.name, avatarUrl: users.avatarUrl })
+      .from(users)
+      .where(eq(users.id, deal.ownerId)),
 
-      // Active lost reasons for the Lost picker (Pipedrive prompts for a reason on close).
-      db
-        .select({ id: lostReasons.id, name: lostReasons.name })
-        .from(lostReasons)
-        .where(isNull(lostReasons.archivedAt)),
+    // Active lost reasons for the Lost picker (Pipedrive prompts for a reason on close).
+    db
+      .select({ id: lostReasons.id, name: lostReasons.name })
+      .from(lostReasons)
+      .where(isNull(lostReasons.archivedAt)),
 
-      listDefs(db, "deal", {}, signal),
-    ]);
+    listDefs(db, "deal", {}, signal),
+    listDefs(db, "person", {}, signal),
+    listDefs(db, "organization", {}, signal),
+  ]);
   const followerIds = followers.map((f) => f.id);
   const isFollowedBySelf = followers.some((f) => f.id === actor.id);
   signal.throwIfAborted();
@@ -161,8 +165,8 @@ export async function getWorkspace(
     pipelineVisibilityGroupId: pipe.vg,
     ownerName: owner?.name ?? null,
     owner: owner ?? null,
-    person: person !== undefined ? withoutCustomFields(person) : null,
-    org: org !== undefined ? withoutCustomFields(org) : null,
+    person: person ?? null,
+    org: org ?? null,
     stageProgress: buildStageProgress(deal, stageRows),
     followers,
     isFollowedBySelf,
@@ -170,5 +174,7 @@ export async function getWorkspace(
     lostReasonName: lr?.name ?? null,
     lostReasonOptions,
     customFieldDefs,
+    personCustomFieldDefs,
+    organizationCustomFieldDefs,
   });
 }

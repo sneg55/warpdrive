@@ -18,6 +18,11 @@ export const DEAL_SIDEBAR_STRINGS = {
     customizeSummary: "Customize Summary",
     manageSections: "Manage sidebar sections",
   },
+  emptyState: {
+    // Shown in the Details section when the deal entity has no custom fields defined, instead of a
+    // blank box (read) or an editor with only Cancel/Save and no fields (bulk edit).
+    details: "No custom fields yet. Add them with Customize fields.",
+  },
   orgDialog: {
     title: "Switch organization",
     organization: "Organization",

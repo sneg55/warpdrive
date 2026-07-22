@@ -13,6 +13,12 @@ import {
   updateTeamAction,
 } from "@/features/identity/actions/teams";
 import { readCsrfToken } from "@/utils/csrfCookie";
+import {
+  SettingsCard,
+  SettingsCardBody,
+  SettingsCardFooter,
+  SettingsCardHeader,
+} from "../../SettingsSurface";
 
 const T = IDENTITY_SETTINGS_STRINGS.teamEditor;
 const MANAGER_NONE_VALUE = "team:manager:none";
@@ -103,52 +109,55 @@ export function TeamEditClient({
   }
 
   return (
-    <div className="mt-2 flex max-w-2xl flex-col gap-4">
-      <Input
-        aria-label="Team name"
-        type="text"
-        value={name}
-        maxLength={80}
-        disabled={isPending}
-        onChange={(e) => setName(e.target.value)}
-        className="px-3 text-lg font-semibold"
-      />
+    <SettingsCard>
+      <SettingsCardHeader title="Team details" description={T.membersHelp} />
+      <SettingsCardBody className="space-y-5">
+        <div className="flex flex-col gap-1.5">
+          <span className="text-sm font-medium">Team name</span>
+          <Input
+            aria-label="Team name"
+            type="text"
+            value={name}
+            maxLength={80}
+            disabled={isPending}
+            onChange={(e) => setName(e.target.value)}
+            className="px-3"
+          />
+        </div>
 
-      <div className="flex flex-col gap-1">
-        <span className="text-sm font-medium">{T.manager}</span>
-        <Select
-          ariaLabel={T.manager}
-          value={managerId}
-          onChange={(value) => {
-            if (!isPending) setManagerId(value === MANAGER_NONE_VALUE ? "" : value);
-          }}
-          placeholder={T.managerNone}
-          options={managerOptions}
-        />
-      </div>
+        <div className="flex flex-col gap-1">
+          <span className="text-sm font-medium">{T.manager}</span>
+          <Select
+            ariaLabel={T.manager}
+            value={managerId}
+            onChange={(value) => {
+              if (!isPending) setManagerId(value === MANAGER_NONE_VALUE ? "" : value);
+            }}
+            placeholder={T.managerNone}
+            options={managerOptions}
+          />
+        </div>
 
-      <div className="flex flex-col gap-1">
-        <span className="text-sm font-medium">{T.members}</span>
-        <p className="text-xs text-gray-500">{T.membersHelp}</p>
-        <MultiCombobox
-          ariaLabel={T.members}
-          values={memberIds}
-          onChange={(v) => !isPending && setMemberIds(v)}
-          options={memberOptions}
-          placeholder="Add members"
-        />
-      </div>
+        <div className="flex flex-col gap-1">
+          <span className="text-sm font-medium">{T.members}</span>
+          <p className="text-xs text-gray-500">{T.membersHelp}</p>
+          <MultiCombobox
+            ariaLabel={T.members}
+            values={memberIds}
+            onChange={(v) => !isPending && setMemberIds(v)}
+            options={memberOptions}
+            placeholder="Add members"
+          />
+        </div>
 
-      {error !== null && (
-        <p role="alert" className="text-sm text-red-600">
-          {error}
-        </p>
-      )}
+        {error !== null && (
+          <p role="alert" className="text-sm text-red-600">
+            {error}
+          </p>
+        )}
+      </SettingsCardBody>
 
-      <div className="flex items-center justify-between gap-2">
-        <Button type="button" disabled={isPending} onClick={save}>
-          {isPending ? "Saving..." : "Save changes"}
-        </Button>
+      <SettingsCardFooter className="justify-between">
         <Button
           type="button"
           variant="outline"
@@ -158,7 +167,10 @@ export function TeamEditClient({
         >
           Delete team
         </Button>
-      </div>
-    </div>
+        <Button type="button" disabled={isPending} onClick={save}>
+          {isPending ? "Saving..." : "Save changes"}
+        </Button>
+      </SettingsCardFooter>
+    </SettingsCard>
   );
 }

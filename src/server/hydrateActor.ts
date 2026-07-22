@@ -10,6 +10,7 @@ import type { PermSetUser } from "@/features/permissions/effective";
 // call site that expects a PermSetUser is unaffected.
 export interface HydratedActor extends PermSetUser {
   name: string;
+  email: string;
   avatarUrl: string | null;
 }
 
@@ -64,6 +65,7 @@ export async function hydrateActor(
     type: u.isAdmin ? "admin" : "regular",
     isActive: u.isActive,
     name: u.name,
+    email: u.email,
     avatarUrl: u.avatarUrl,
     flags,
     groupIds: new Set(groupRows.map((r) => r.groupId)),

@@ -3,6 +3,8 @@ import { useRouter } from "next/navigation";
 import type React from "react";
 import type { Organization } from "@/db/schema";
 import { updateOrgAction } from "@/features/contacts/actions";
+import { ContactCustomFieldRows } from "@/features/custom-fields/ContactCustomFieldRows";
+import type { CustomFieldDef } from "@/types/customFields";
 import { readCsrfToken } from "@/utils/csrfCookie";
 import { externalHref, LinkValue } from "./contactLinks";
 import { LabelChips, type ResolvedLabelChip } from "./LabelChips";
@@ -44,9 +46,10 @@ export function OrgBlock({
   onExitBulk,
   hidden = NONE,
   labels,
+  customFieldDefs = [],
+  currency = "USD",
 }: {
-  // custom_fields is stripped upstream (getWorkspace) because this block never renders it.
-  org: Omit<Organization, "customFields">;
+  org: Organization;
   bulkEditing?: boolean;
   onExitBulk?: () => void;
   // Built-in field keys hidden in Settings > Data fields (see BUILTIN_FIELDS.organization). A hidden
@@ -55,6 +58,8 @@ export function OrgBlock({
   // Resolved label chips shown as a Labels row under Name. undefined on the deal sidebar; PD shows
   // per-organization labels on the lead drawer.
   labels?: ResolvedLabelChip[];
+  customFieldDefs?: CustomFieldDef[];
+  currency?: string;
 }): React.ReactNode {
   const router = useRouter();
   const address = formatAddress(org.address);
@@ -186,6 +191,15 @@ export function OrgBlock({
       {!hidden.has("address") && (
         <OrgAddressField orgId={org.id} address={org.address} formatted={address} />
       )}
+      <ContactCustomFieldRows
+        contact={{
+          kind: "organization",
+          id: org.id,
+          customFields: org.customFields as Record<string, unknown>,
+        }}
+        defs={customFieldDefs}
+        currency={currency}
+      />
     </>
   );
 }

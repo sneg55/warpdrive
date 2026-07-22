@@ -1,6 +1,4 @@
 "use client";
-import { useSortable } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
 import { useRouter } from "next/navigation";
 import type React from "react";
 import { useState } from "react";
@@ -14,22 +12,33 @@ import {
   setDefFlagsAction,
 } from "@/features/custom-fields/actions";
 import { readCsrfToken } from "@/utils/csrfCookie";
+import { ReorderControls } from "../company/ReorderControls";
 import { OptionEditor } from "./OptionEditor";
 import type { FieldRow } from "./types";
 
 const S = STRINGS.settings;
 const OPTION_TYPES = new Set(["single_option", "multi_option"]);
+const ROW_ACTION =
+  "relative min-h-10 px-1 text-xs font-medium text-muted-foreground transition-colors duration-150 ease-out after:absolute after:inset-x-0 after:inset-y-0 after:content-[''] hover:text-foreground focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 motion-reduce:transition-none";
 
-export function FieldRowItem({ row }: { row: FieldRow }): React.ReactNode {
+export function FieldRowItem({
+  row,
+  isFirst,
+  isLast,
+  onMove,
+}: {
+  row: FieldRow;
+  isFirst: boolean;
+  isLast: boolean;
+  onMove: (direction: "up" | "down") => void;
+}): React.ReactNode {
   const router = useRouter();
   const reportError = useActionError();
-  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: row.id });
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(row.name);
   const [showOptions, setShowOptions] = useState(false);
   const isOptionType = OPTION_TYPES.has(row.type);
 
-  const style = { transform: CSS.Transform.toString(transform), transition };
   const activeOptions = row.options.filter((o) => o.archived !== true);
 
   async function saveName(): Promise<void> {
@@ -60,17 +69,8 @@ export function FieldRowItem({ row }: { row: FieldRow }): React.ReactNode {
   }
 
   return (
-    <li ref={setNodeRef} style={style} className="px-3 py-2">
+    <li className="px-3 py-2 transition-colors duration-150 ease-out hover:bg-accent/30 motion-reduce:transition-none">
       <div className="flex items-center gap-3">
-        <button
-          type="button"
-          aria-label={S.dragHandle}
-          className="cursor-grab text-muted-foreground"
-          {...attributes}
-          {...listeners}
-        >
-          ::
-        </button>
         {editing ? (
           <Input
             aria-label={S.rename}
@@ -79,14 +79,64 @@ export function FieldRowItem({ row }: { row: FieldRow }): React.ReactNode {
             className="flex-1"
           />
         ) : (
-          <span className="flex-1 text-sm font-medium">{row.name}</span>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <span className="truncate text-sm font-medium">{row.name}</span>
+              <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-[11px] capitalize text-muted-foreground">
+                {row.type.replaceAll("_", " ")}
+              </span>
+            </div>
+            {activeOptions.length > 0 && (
+              <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                {activeOptions.map((o) => o.label).join(", ")}
+              </p>
+            )}
+          </div>
         )}
-        <span className="text-xs text-muted-foreground">{row.type}</span>
-        {activeOptions.length > 0 && (
-          <span className="max-w-[30%] truncate text-xs text-muted-foreground">
-            {activeOptions.map((o) => o.label).join(", ")}
-          </span>
+        <ReorderControls
+          canMoveUp={!isFirst}
+          canMoveDown={!isLast}
+          onMoveUp={() => onMove("up")}
+          onMoveDown={() => onMove("down")}
+        />
+        {editing ? (
+          <>
+            <button type="button" onClick={() => void saveName()} className={ROW_ACTION}>
+              {S.save}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setDraft(row.name);
+                setEditing(false);
+              }}
+              className={ROW_ACTION}
+            >
+              {S.cancel}
+            </button>
+          </>
+        ) : (
+          <button
+            type="button"
+            onClick={() => {
+              setDraft(row.name);
+              setEditing(true);
+            }}
+            className={ROW_ACTION}
+          >
+            {S.rename}
+          </button>
         )}
+        {isOptionType && (
+          <button type="button" onClick={() => setShowOptions((v) => !v)} className={ROW_ACTION}>
+            {S.editOptions}
+          </button>
+        )}
+        <button type="button" onClick={() => void archive()} className={ROW_ACTION}>
+          {S.archive}
+        </button>
+      </div>
+      <div className="mt-2 flex flex-wrap items-center gap-x-5 gap-y-2 border-t pt-2">
         <span className="flex items-center gap-1.5">
           <Switch
             checked={row.isImportant}
@@ -107,54 +157,6 @@ export function FieldRowItem({ row }: { row: FieldRow }): React.ReactNode {
           />
           <span className="text-xs text-muted-foreground">{S.showInAddForm}</span>
         </span>
-        {editing ? (
-          <>
-            <button
-              type="button"
-              onClick={() => void saveName()}
-              className="text-xs font-medium hover:text-foreground"
-            >
-              {S.save}
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setDraft(row.name);
-                setEditing(false);
-              }}
-              className="text-xs font-medium text-muted-foreground hover:text-foreground"
-            >
-              {S.cancel}
-            </button>
-          </>
-        ) : (
-          <button
-            type="button"
-            onClick={() => {
-              setDraft(row.name);
-              setEditing(true);
-            }}
-            className="text-xs font-medium text-muted-foreground hover:text-foreground"
-          >
-            {S.rename}
-          </button>
-        )}
-        {isOptionType && (
-          <button
-            type="button"
-            onClick={() => setShowOptions((v) => !v)}
-            className="text-xs font-medium text-muted-foreground hover:text-foreground"
-          >
-            {S.editOptions}
-          </button>
-        )}
-        <button
-          type="button"
-          onClick={() => void archive()}
-          className="text-xs font-medium text-muted-foreground hover:text-foreground"
-        >
-          {S.archive}
-        </button>
       </div>
       {isOptionType && showOptions && <OptionEditor defId={row.id} options={row.options} />}
     </li>

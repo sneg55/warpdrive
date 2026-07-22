@@ -34,6 +34,8 @@ interface HistoryTypeTabsProps {
   onActivityChanged?: () => void;
   // Forwarded to the nested HistoryFeed; not yet wired to a note-level control (Task 6).
   onNoteChanged?: () => void;
+  // Open an activity in the inline edit composer.
+  onEditActivity?: (activityId: string) => void;
 }
 
 // The per-type filter row that used to be the entire "History" tab bar (Wave
@@ -47,6 +49,7 @@ export function HistoryTypeTabs({
   dealId,
   onActivityChanged,
   onNoteChanged,
+  onEditActivity,
 }: HistoryTypeTabsProps): React.ReactNode {
   return (
     <Tabs value={tab} onValueChange={(v) => onTab(v as HistoryTab)}>
@@ -73,6 +76,7 @@ export function HistoryTypeTabs({
             emptyLabel={EMPTY_LABELS[tab] ?? "No history yet."}
             onActivityChanged={onActivityChanged}
             onNoteChanged={onNoteChanged}
+            onEditActivity={onEditActivity}
           />
         )}
       </div>

@@ -1,7 +1,7 @@
 "use client";
 import type React from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AddDealPersonColumn, type ContactPoint } from "@/features/deals/AddDealPersonColumn";
+import { EntityCreateDialogShell } from "@/features/entity-create/EntityCreateDialogShell";
 
 export interface EntityCreateModalShellProps {
   title: string;
@@ -12,15 +12,16 @@ export interface EntityCreateModalShellProps {
   emails: ContactPoint[];
   onPhones: (phones: ContactPoint[]) => void;
   onEmails: (emails: ContactPoint[]) => void;
+  personCustomFields?: React.ReactNode;
   error: string | null;
   pending: boolean;
+  submitDisabled?: boolean;
   onSubmit: () => void;
   onClose: () => void;
 }
 
-// The shared Pipedrive-style create dialog chrome (overlay, two-column body, error banner, footer)
-// plus the inline person column. Add deal and Add lead differ only by title, left column, and what
-// their submit does, so those are props; everything else lives here once.
+// Deal/lead specialization of the shared create-dialog frame. Their entity-specific fields stay
+// on the left and the reusable inline-person fields stay on the right.
 export function EntityCreateModalShell(props: EntityCreateModalShellProps): React.ReactNode {
   const {
     title,
@@ -30,70 +31,36 @@ export function EntityCreateModalShell(props: EntityCreateModalShellProps): Reac
     emails,
     onPhones,
     onEmails,
+    personCustomFields,
     error,
     pending,
+    submitDisabled,
     onSubmit,
     onClose,
   } = props;
 
   return (
-    <Dialog
-      open
-      onOpenChange={(o) => {
-        if (!o) onClose();
-      }}
+    <EntityCreateDialogShell
+      title={title}
+      bodyClassName="grid gap-6 md:grid-cols-[1.4fr_1fr]"
+      error={error}
+      pending={pending}
+      submitDisabled={submitDisabled}
+      onSubmit={onSubmit}
+      onClose={onClose}
     >
-      <DialogContent
-        aria-describedby={undefined}
-        className="flex max-h-[85vh] max-w-3xl flex-col gap-0 overflow-hidden bg-card p-0"
-      >
-        <DialogHeader className="border-b px-5 py-3">
-          <DialogTitle className="text-base font-semibold">{title}</DialogTitle>
-        </DialogHeader>
-
-        {/* min-w-0 on each grid child: fr tracks default to minmax(auto, fr) and would refuse to
-            shrink below their content, overflowing the dialog horizontally (the PERSON column
-            clipped past the right edge). min-w-0 lets the tracks resolve to the container width. */}
-        <div className="grid flex-1 gap-6 overflow-y-auto px-5 py-4 md:grid-cols-[1.4fr_1fr]">
-          <div className="min-w-0">{leftColumn}</div>
-          <div className="min-w-0">
-            <AddDealPersonColumn
-              disabled={personMode !== "new"}
-              phones={phones}
-              emails={emails}
-              onPhones={onPhones}
-              onEmails={onEmails}
-            />
-          </div>
-        </div>
-
-        {error !== null && (
-          <p
-            role="alert"
-            className="mx-5 mb-2 rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700"
-          >
-            {error}
-          </p>
-        )}
-
-        <div className="flex items-center justify-end gap-2 border-t px-5 py-3">
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-md border px-3 py-1.5 text-sm transition hover:bg-accent active:scale-[0.96]"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={onSubmit}
-            disabled={pending}
-            className="rounded-md bg-action px-4 py-1.5 text-sm font-medium text-action-foreground transition hover:opacity-90 active:scale-[0.96] disabled:opacity-50"
-          >
-            {pending ? "Saving..." : "Save"}
-          </button>
-        </div>
-      </DialogContent>
-    </Dialog>
+      {/* min-w-0 lets both fr tracks shrink to the dialog instead of overflowing it. */}
+      <div className="min-w-0">{leftColumn}</div>
+      <div className="min-w-0">
+        <AddDealPersonColumn
+          disabled={personMode !== "new"}
+          phones={phones}
+          emails={emails}
+          onPhones={onPhones}
+          onEmails={onEmails}
+        />
+        {personMode === "new" ? personCustomFields : null}
+      </div>
+    </EntityCreateDialogShell>
   );
 }

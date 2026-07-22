@@ -56,7 +56,7 @@ export function MultiCombobox({
               type="button"
               aria-label={`Remove ${o.label}`}
               onClick={() => toggle(o.value)}
-              className="rounded text-muted-foreground hover:text-foreground"
+              className="relative rounded text-muted-foreground transition-[color,scale] duration-150 ease-out after:absolute after:-inset-1.5 after:content-[''] hover:text-foreground active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-colors"
             >
               <X className="h-3 w-3" />
             </button>

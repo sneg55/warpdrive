@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { STRINGS } from "@/constants/strings";
 import { cn } from "@/lib/utils";
 import { SettingsHeading } from "../SettingsHeading";
+import { SettingsPage } from "../SettingsSurface";
 
 const TABS = [
   { href: "/settings/company", label: STRINGS.settings.companyGeneral },
@@ -18,12 +19,12 @@ const TABS = [
 export default function CompanyLayout({ children }: { children: ReactNode }): ReactNode {
   const pathname = usePathname();
   return (
-    <section>
+    <SettingsPage>
       <SettingsHeading
         title={STRINGS.settings.companySettings}
         description={STRINGS.settings.companySettingsDescription}
       />
-      <nav aria-label="Company settings" className="mb-4 flex flex-wrap gap-1 border-b">
+      <nav aria-label="Company settings" className="flex flex-wrap gap-1 border-b">
         {TABS.map((tab) => {
           const active = pathname === tab.href;
           return (
@@ -43,7 +44,7 @@ export default function CompanyLayout({ children }: { children: ReactNode }): Re
           );
         })}
       </nav>
-      {children}
-    </section>
+      <div>{children}</div>
+    </SettingsPage>
   );
 }

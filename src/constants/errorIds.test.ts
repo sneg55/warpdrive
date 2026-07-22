@@ -1,16 +1,17 @@
 import { describe, expect, test } from "vitest";
 import { AppError, ERROR_IDS, type ErrorId } from "./errorIds";
 
-// RED: items 6 — distinct error IDs for signature-ownership and template-visibility
+// RED: items 6, distinct error IDs for signature-ownership and template-visibility
 // These must differ from PERM_DENIED (E_PERM_001) so each denial has its own stable ID.
 
 describe("error IDs", () => {
   test("every id matches E_<DOMAIN>_<NNN> with a known domain", () => {
     // Phase 1-2: AUTH, PERM, DEAL, PIPELINE, CONTACT, DB, WS. Phase 3 adds CF, NOTE,
     // IMPORT, ACTIVITY, USER. Phase 4 adds GMAIL, SYNC, FILE. Phase 5 adds NOTIF, SEARCH, STATS.
-    // JOBS covers the background-queue boundary (a producer running with no pg-boss booted).
+    // JOBS covers the background-queue boundary. OAUTH covers the MCP authorization server.
     const domains = [
       "AUTH",
+      "OAUTH",
       "GMAIL",
       "SYNC",
       "FILE",

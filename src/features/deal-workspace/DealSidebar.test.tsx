@@ -1,7 +1,6 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeAll, expect, it, vi } from "vitest";
 import { DealSidebar } from "./DealSidebar";
 import { hide, makeWorkspace, showAll } from "./dealSidebarFixtures";
@@ -131,56 +130,6 @@ it("omits Person and Organization when both are hidden", () => {
   expect(screen.queryByText("Organization")).not.toBeInTheDocument();
 });
 
-it("edits labels via the catalog dropdown and calls updateDealAction with the CAS precondition", async () => {
-  const user = userEvent.setup();
-  updateDealAction.mockClear();
-  refresh.mockClear();
-  render(
-    <DealSidebar
-      workspace={makeWorkspace({ labels: [] })}
-      now={new Date()}
-      isHidden={showAll}
-      baseCurrency="USD"
-    />,
-  );
-  // The catalog picker lives behind the Summary's "Add labels" dropdown (PD parity); open it,
-  // then check a catalog label item to add it.
-  await user.click(screen.getByRole("button", { name: /add labels/i }));
-  await user.click(await screen.findByRole("menuitemcheckbox", { name: /Hot/ }));
-  await vi.waitFor(() => expect(updateDealAction).toHaveBeenCalledTimes(1));
-  const [input, csrf] = updateDealAction.mock.calls[0] ?? [];
-  expect(csrf).toBe("csrf");
-  expect(input).toMatchObject({
-    dealId: "d1",
-    // makeWorkspace().deal.updatedAt (2026-01-02T00:00:00Z) serializes to this ISO string.
-    expectedUpdatedAt: "2026-01-02T00:00:00.000Z",
-  });
-  expect((input as { labels: string[] }).labels).toHaveLength(1);
-  await vi.waitFor(() => expect(refresh).toHaveBeenCalled());
-});
-
-it("surfaces a stale hint and refreshes when the CAS precondition fails", async () => {
-  updateDealAction.mockClear();
-  refresh.mockClear();
-  // E_DEAL_002 is ERROR_IDS.DEAL_PRECONDITION (the compare-and-swap failure the row must handle).
-  const user = userEvent.setup();
-  updateDealAction.mockResolvedValueOnce({ ok: false, error: { id: "E_DEAL_002" } });
-  render(
-    <DealSidebar
-      workspace={makeWorkspace({ labels: [] })}
-      now={new Date()}
-      isHidden={showAll}
-      baseCurrency="USD"
-    />,
-  );
-  await user.click(screen.getByRole("button", { name: /add labels/i }));
-  await user.click(await screen.findByRole("menuitemcheckbox", { name: /Hot/ }));
-  await vi.waitFor(() =>
-    expect(screen.getByText("Labels changed elsewhere; reloaded.")).toBeInTheDocument(),
-  );
-  await vi.waitFor(() => expect(refresh).toHaveBeenCalled());
-});
-
 it("renders org firmographics and saves an edit via updateOrgAction", async () => {
   updateOrgAction.mockClear();
   render(
@@ -269,4 +218,30 @@ it("renders the Participants section (person links + View All) only when partici
   } finally {
     participantRows.length = 0;
   }
+});
+
+it("does not render a standalone Details section when the deal has no custom fields", () => {
+  render(
+    <DealSidebar
+      workspace={makeWorkspace()}
+      now={new Date()}
+      isHidden={showAll}
+      baseCurrency="USD"
+    />,
+  );
+  expect(screen.queryByRole("region", { name: "Details" })).not.toBeInTheDocument();
+  expect(screen.queryByText(/No custom fields yet/)).not.toBeInTheDocument();
+});
+
+it("renders deal custom fields inside Organization instead of a Details section", () => {
+  const def = { id: "f1", type: "text", name: "Industry", key: "industry" };
+  const workspace = { ...makeWorkspace(), customFieldDefs: [def] } as ReturnType<
+    typeof makeWorkspace
+  >;
+  render(
+    <DealSidebar workspace={workspace} now={new Date()} isHidden={showAll} baseCurrency="USD" />,
+  );
+  expect(screen.queryByRole("region", { name: "Details" })).not.toBeInTheDocument();
+  const organization = within(screen.getByRole("region", { name: "Organization" }));
+  expect(organization.getAllByText("Industry")).toHaveLength(2);
 });

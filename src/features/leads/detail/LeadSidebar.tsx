@@ -1,16 +1,18 @@
 "use client";
 import { useRouter } from "next/navigation";
 import type React from "react";
+import { useState } from "react";
 import { isSourceChannelKey, SOURCE_CHANNELS } from "@/constants/sourceChannels";
 import { STRINGS } from "@/constants/strings";
 import type { Organization, Person } from "@/db/schema";
 import { CollapsibleSection } from "@/features/deal-workspace/CollapsibleSection";
 import { FieldRow } from "@/features/deal-workspace/sidebar/FieldRow";
-import { OrgBlock } from "@/features/deal-workspace/sidebar/OrgBlock";
-import { PersonBlock } from "@/features/deal-workspace/sidebar/PersonBlock";
+import { OrganizationSection } from "@/features/deal-workspace/sidebar/OrganizationSection";
+import { PersonSection } from "@/features/deal-workspace/sidebar/PersonSection";
 import { sectionHeaderActions } from "@/features/deal-workspace/sidebar/sectionActions";
-import { useLabelChipResolver } from "@/features/labels/useLabelChipResolver";
+import type { CustomFieldDef } from "@/types/customFields";
 import type { LeadDetail } from "../leadRepo";
+import { LeadLabelRow } from "./LeadLabelRow";
 import { LeadSummaryEditPanel } from "./LeadSummaryEditPanel";
 
 const NONE: ReadonlySet<string> = new Set();
@@ -30,6 +32,9 @@ export function LeadSidebar({
   org,
   hiddenPersonFields = NONE,
   hiddenOrgFields = NONE,
+  personCustomFieldDefs = [],
+  organizationCustomFieldDefs = [],
+  baseCurrency = "USD",
 }: {
   lead: LeadDetail;
   owners: { id: string; name: string; avatarUrl?: string | null }[];
@@ -37,12 +42,13 @@ export function LeadSidebar({
   org: Organization | null;
   hiddenPersonFields?: ReadonlySet<string>;
   hiddenOrgFields?: ReadonlySet<string>;
+  personCustomFieldDefs?: CustomFieldDef[];
+  organizationCustomFieldDefs?: CustomFieldDef[];
+  baseCurrency?: string;
 }): React.ReactNode {
   const router = useRouter();
-  const resolveLabels = useLabelChipResolver("lead");
-  const resolvePersonLabels = useLabelChipResolver("person");
-  const resolveOrgLabels = useLabelChipResolver("organization");
-  const labels = resolveLabels(lead.labels);
+  const [personBulkEditing, setPersonBulkEditing] = useState(false);
+  const [organizationBulkEditing, setOrganizationBulkEditing] = useState(false);
   const channelName =
     lead.sourceChannel !== null && isSourceChannelKey(lead.sourceChannel)
       ? SOURCE_CHANNELS[lead.sourceChannel].name
@@ -75,21 +81,12 @@ export function LeadSidebar({
           }}
           owners={owners}
         />
-        <FieldRow label="Labels" empty={labels.length === 0}>
-          {labels.length > 0 ? (
-            <span className="flex flex-wrap justify-end gap-1">
-              {labels.map((label) => (
-                <span
-                  key={label.name}
-                  className={`rounded-full border px-2 py-0.5 text-xs font-medium ${label.classes}`}
-                >
-                  {label.name}
-                </span>
-              ))}
-            </span>
-          ) : (
-            "-"
-          )}
+        <FieldRow label="Labels">
+          <LeadLabelRow
+            leadId={lead.id}
+            expectedUpdatedAt={new Date(lead.updatedAt).toISOString()}
+            labels={lead.labels}
+          />
         </FieldRow>
       </CollapsibleSection>
 
@@ -107,26 +104,31 @@ export function LeadSidebar({
       </CollapsibleSection>
 
       {person !== null && (
-        <CollapsibleSection
-          title="Person"
-          headerActions={sectionHeaderActions("Person", fieldsItem("person"))}
-        >
-          <PersonBlock
-            person={person}
-            hidden={hiddenPersonFields}
-            hideNameParts
-            labels={resolvePersonLabels(person.labels)}
-          />
-        </CollapsibleSection>
+        <PersonSection
+          person={person}
+          menuItems={fieldsItem("person")}
+          bulkEditing={personBulkEditing}
+          onStartBulk={() => setPersonBulkEditing(true)}
+          onExitBulk={() => setPersonBulkEditing(false)}
+          hidden={hiddenPersonFields}
+          customFieldDefs={personCustomFieldDefs}
+          currency={baseCurrency}
+          showLabels
+        />
       )}
 
       {org !== null && (
-        <CollapsibleSection
-          title="Organization"
-          headerActions={sectionHeaderActions("Organization", fieldsItem("organization"))}
-        >
-          <OrgBlock org={org} hidden={hiddenOrgFields} labels={resolveOrgLabels(org.labels)} />
-        </CollapsibleSection>
+        <OrganizationSection
+          org={org}
+          menuItems={fieldsItem("organization")}
+          bulkEditing={organizationBulkEditing}
+          onStartBulk={() => setOrganizationBulkEditing(true)}
+          onExitBulk={() => setOrganizationBulkEditing(false)}
+          hidden={hiddenOrgFields}
+          customFieldDefs={organizationCustomFieldDefs}
+          currency={baseCurrency}
+          showLabels
+        />
       )}
 
       <CollapsibleSection

@@ -4,6 +4,7 @@ import { db } from "@/db/client";
 import { listSignatures, listTemplatesForSettings } from "@/features/email/emailAuthoringReads";
 import { createContext } from "@/server/trpc/context";
 import { SettingsHeading } from "../SettingsHeading";
+import { SettingsPage } from "../SettingsSurface";
 import { SignaturesSettingsClient } from "./SignaturesSettingsClient";
 import { EMAIL_SETTINGS_STRINGS } from "./strings";
 import { TemplatesSettingsClient } from "./TemplatesSettingsClient";
@@ -22,13 +23,13 @@ export default async function EmailSettingsPage(): Promise<ReactNode> {
   ]);
   const canShare = ctx.actor.flags.has("filter.share");
   return (
-    <div className="max-w-3xl space-y-8">
+    <SettingsPage className="max-w-3xl">
       <SettingsHeading
         title={STRINGS.settings.emailTemplates}
         description={EMAIL_SETTINGS_STRINGS.description}
       />
       <TemplatesSettingsClient templates={templates} canShare={canShare} />
       <SignaturesSettingsClient signatures={signatures} />
-    </div>
+    </SettingsPage>
   );
 }

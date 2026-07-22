@@ -73,6 +73,7 @@ vi.mock("@/lib/trpc-client", () => ({
     identity: {
       assignableUsers: { useQuery: () => ({ data: [] }) },
     },
+    customFields: { listDefs: { useQuery: () => ({ data: [], isLoading: false }) } },
     contacts: {
       listPeople: { useQuery: () => ({ data: { rows: [], total: 0 } }) },
       listOrgs: { useQuery: () => ({ data: { rows: [], total: 0 } }) },

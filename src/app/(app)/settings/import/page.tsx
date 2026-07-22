@@ -4,6 +4,7 @@ import { STRINGS } from "@/constants/strings";
 import { can } from "@/features/permissions/can";
 import { createContext } from "@/server/trpc/context";
 import { SettingsHeading } from "../SettingsHeading";
+import { SettingsPage } from "../SettingsSurface";
 import { ImportHistory } from "./ImportHistory";
 
 export const metadata = { title: STRINGS.settings.importer.title };
@@ -19,7 +20,7 @@ export default async function ImportPage(): Promise<ReactNode> {
     return <p className="text-sm text-red-600">{STRINGS.settings.importer.requiresImport}</p>;
   }
   return (
-    <section>
+    <SettingsPage className="max-w-3xl">
       <SettingsHeading
         title={STRINGS.settings.importer.title}
         description={STRINGS.settings.importer.subtitle}
@@ -33,6 +34,6 @@ export default async function ImportPage(): Promise<ReactNode> {
         }
       />
       <ImportHistory />
-    </section>
+    </SettingsPage>
   );
 }

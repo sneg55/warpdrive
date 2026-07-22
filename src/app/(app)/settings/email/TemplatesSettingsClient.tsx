@@ -154,8 +154,8 @@ export function TemplatesSettingsClient({
   }
 
   return (
-    <section className="space-y-3">
-      <div className="flex items-center justify-between gap-2">
+    <section className="overflow-hidden rounded-lg border bg-card shadow-sm">
+      <div className="flex items-center justify-between gap-2 border-b px-5 py-4">
         <h2 className="text-sm font-semibold">{S.templates}</h2>
         <button
           type="button"
@@ -166,102 +166,104 @@ export function TemplatesSettingsClient({
         </button>
       </div>
 
-      <div className="flex items-center gap-2">
-        <input
-          aria-label={S.searchTemplates}
-          placeholder={S.searchTemplates}
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          className={FIELD_INPUT}
-        />
-        {selected.size > 0 && (
-          <button
-            type="button"
-            className="whitespace-nowrap rounded-md border border-destructive px-3 py-1.5 text-sm text-destructive transition-transform active:scale-[0.96]"
-            onClick={() => void bulkDelete()}
+      <div className="space-y-3 p-5">
+        <div className="flex items-center gap-2">
+          <input
+            aria-label={S.searchTemplates}
+            placeholder={S.searchTemplates}
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            className={FIELD_INPUT}
+          />
+          {selected.size > 0 && (
+            <button
+              type="button"
+              className="whitespace-nowrap rounded-md border border-destructive px-3 py-1.5 text-sm text-destructive transition-transform active:scale-[0.96]"
+              onClick={() => void bulkDelete()}
+            >
+              {S.deleteSelected}
+            </button>
+          )}
+        </div>
+
+        <ul className="divide-y rounded-md border">
+          {(ownViewIds.length > 0 || sharedRows.length > 0) && (
+            <li className="flex items-center gap-3 px-3 py-2 text-xs font-medium text-muted-foreground">
+              {/* Drag-handle column spacer so the header aligns with the rows below (own rows lead
+                with a drag handle, shared rows with a matching spacer). */}
+              <span className="h-4 w-4" />
+              {ownViewIds.length > 0 ? (
+                <Checkbox checked={allChecked} onCheckedChange={toggleAll} label={S.selectAll} />
+              ) : (
+                <span className="h-4 w-4" />
+              )}
+              <span className="flex-1">{S.nameHeader}</span>
+              <span className="w-28">{S.createdOnHeader}</span>
+              <span className="w-24">{S.ownerHeader}</span>
+            </li>
+          )}
+
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={(e) => void onDragEnd(e)}
           >
-            {S.deleteSelected}
-          </button>
+            <SortableContext items={ownViewIds} strategy={verticalListSortingStrategy}>
+              {ownRows.map((t) => (
+                <TemplateRow
+                  key={t.id}
+                  template={t}
+                  selected={selected.has(t.id)}
+                  onToggle={(v) => toggleOne(t.id, v)}
+                  onEdit={() =>
+                    setDraft({
+                      id: t.id,
+                      name: t.name,
+                      subject: t.subject ?? "",
+                      bodyHtml: t.bodyHtml,
+                      isShared: t.isShared,
+                    })
+                  }
+                  onDelete={() => void remove(t.id)}
+                />
+              ))}
+            </SortableContext>
+          </DndContext>
+
+          {sharedRows.map((t) => (
+            <li key={t.id} className="flex items-center gap-3 px-3 py-2 text-sm">
+              <span className="h-4 w-4" />
+              <span className="h-4 w-4" />
+              <span className="flex flex-1 items-center gap-2">
+                {t.name}
+                {t.isShared && (
+                  <span className="rounded bg-accent px-1.5 py-0.5 text-xs text-muted-foreground">
+                    {S.sharedBadge}
+                  </span>
+                )}
+              </span>
+              <span className="w-28 text-xs text-muted-foreground">
+                {formatCreatedOn(t.createdAt)}
+              </span>
+              <span className="w-24 text-xs text-muted-foreground">{t.ownerName}</span>
+            </li>
+          ))}
+
+          {filtered.length === 0 && (
+            <li className="px-3 py-2 text-sm text-muted-foreground">{S.empty}</li>
+          )}
+        </ul>
+
+        {draft !== null && (
+          <TemplateDraftEditor
+            draft={draft}
+            canShare={canShare}
+            onChange={setDraft}
+            onSave={() => void save()}
+            onCancel={() => setDraft(null)}
+          />
         )}
       </div>
-
-      <ul className="divide-y rounded-md border">
-        {(ownViewIds.length > 0 || sharedRows.length > 0) && (
-          <li className="flex items-center gap-3 px-3 py-2 text-xs font-medium text-muted-foreground">
-            {/* Drag-handle column spacer so the header aligns with the rows below (own rows lead
-                with a drag handle, shared rows with a matching spacer). */}
-            <span className="h-4 w-4" />
-            {ownViewIds.length > 0 ? (
-              <Checkbox checked={allChecked} onCheckedChange={toggleAll} label={S.selectAll} />
-            ) : (
-              <span className="h-4 w-4" />
-            )}
-            <span className="flex-1">{S.nameHeader}</span>
-            <span className="w-28">{S.createdOnHeader}</span>
-            <span className="w-24">{S.ownerHeader}</span>
-          </li>
-        )}
-
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragEnd={(e) => void onDragEnd(e)}
-        >
-          <SortableContext items={ownViewIds} strategy={verticalListSortingStrategy}>
-            {ownRows.map((t) => (
-              <TemplateRow
-                key={t.id}
-                template={t}
-                selected={selected.has(t.id)}
-                onToggle={(v) => toggleOne(t.id, v)}
-                onEdit={() =>
-                  setDraft({
-                    id: t.id,
-                    name: t.name,
-                    subject: t.subject ?? "",
-                    bodyHtml: t.bodyHtml,
-                    isShared: t.isShared,
-                  })
-                }
-                onDelete={() => void remove(t.id)}
-              />
-            ))}
-          </SortableContext>
-        </DndContext>
-
-        {sharedRows.map((t) => (
-          <li key={t.id} className="flex items-center gap-3 px-3 py-2 text-sm">
-            <span className="h-4 w-4" />
-            <span className="h-4 w-4" />
-            <span className="flex flex-1 items-center gap-2">
-              {t.name}
-              {t.isShared && (
-                <span className="rounded bg-accent px-1.5 py-0.5 text-xs text-muted-foreground">
-                  {S.sharedBadge}
-                </span>
-              )}
-            </span>
-            <span className="w-28 text-xs text-muted-foreground">
-              {formatCreatedOn(t.createdAt)}
-            </span>
-            <span className="w-24 text-xs text-muted-foreground">{t.ownerName}</span>
-          </li>
-        ))}
-
-        {filtered.length === 0 && (
-          <li className="px-3 py-2 text-sm text-muted-foreground">{S.empty}</li>
-        )}
-      </ul>
-
-      {draft !== null && (
-        <TemplateDraftEditor
-          draft={draft}
-          canShare={canShare}
-          onChange={setDraft}
-          onSave={() => void save()}
-          onCancel={() => setDraft(null)}
-        />
-      )}
     </section>
   );
 }

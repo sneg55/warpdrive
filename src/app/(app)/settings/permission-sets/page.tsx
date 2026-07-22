@@ -4,6 +4,14 @@ import { STRINGS } from "@/constants/strings";
 import { listPermissionSets } from "@/features/identity/permission-sets.service";
 import { createContext } from "@/server/trpc/context";
 import { SettingsHeading } from "../SettingsHeading";
+import {
+  SETTINGS_TABLE_CELL,
+  SETTINGS_TABLE_HEAD,
+  SETTINGS_TABLE_HEADER_CELL,
+  SETTINGS_TABLE_ROW,
+  SettingsCard,
+  SettingsPage,
+} from "../SettingsSurface";
 import { PermissionSetsClient } from "./PermissionSetsClient";
 
 const C = STRINGS.settings.columns;
@@ -20,33 +28,35 @@ export default async function PermissionSetsPage(): Promise<ReactNode> {
   // Serializable projection for the client editor (flags is a plain JSONB object).
   const sets = rows.map((ps) => ({ id: ps.id, name: ps.name, flags: ps.flags }));
   return (
-    <section>
+    <SettingsPage>
       <SettingsHeading
         title={STRINGS.settings.permissionSets}
         description={STRINGS.settings.permissionSetsDescription}
       />
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b text-left">
-            <th className="py-2 pr-4">{C.name}</th>
-            <th className="py-2 pr-4">{C.flagsEnabled}</th>
-            <th className="py-2">{C.default}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((ps) => {
-            const flagCount = Object.values(ps.flags).filter(Boolean).length;
-            return (
-              <tr key={ps.id} className="border-b">
-                <td className="py-2 pr-4">{ps.name}</td>
-                <td className="py-2 pr-4">{flagCount}</td>
-                <td className="py-2">{ps.isDefault ? V.yes : V.no}</td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+      <SettingsCard className="shadow-none">
+        <table className="w-full text-sm">
+          <thead className={SETTINGS_TABLE_HEAD}>
+            <tr className="border-b">
+              <th className={SETTINGS_TABLE_HEADER_CELL}>{C.name}</th>
+              <th className={SETTINGS_TABLE_HEADER_CELL}>{C.flagsEnabled}</th>
+              <th className={SETTINGS_TABLE_HEADER_CELL}>{C.default}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((ps) => {
+              const flagCount = Object.values(ps.flags).filter(Boolean).length;
+              return (
+                <tr key={ps.id} className={SETTINGS_TABLE_ROW}>
+                  <td className={SETTINGS_TABLE_CELL}>{ps.name}</td>
+                  <td className={`${SETTINGS_TABLE_CELL} tabular-nums`}>{flagCount}</td>
+                  <td className={SETTINGS_TABLE_CELL}>{ps.isDefault ? V.yes : V.no}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </SettingsCard>
       <PermissionSetsClient sets={sets} />
-    </section>
+    </SettingsPage>
   );
 }

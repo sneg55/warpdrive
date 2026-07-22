@@ -3,6 +3,7 @@ import type React from "react";
 import { useEffect } from "react";
 import { Button } from "@/components/ui/Button";
 import { STRINGS } from "@/constants/strings";
+import { forwardBoundaryError } from "@/features/observability/errorForwarding";
 
 export interface AppSegmentErrorProps {
   error: Error & { digest?: string };
@@ -24,6 +25,7 @@ export default function AppSegmentError({ error, reset }: AppSegmentErrorProps):
   useEffect(() => {
     // The server already logged this; log the client view too so a browser-only failure is visible.
     console.error(error);
+    forwardBoundaryError(error, { route: window.location.pathname, digest: error.digest });
   }, [error]);
 
   return (

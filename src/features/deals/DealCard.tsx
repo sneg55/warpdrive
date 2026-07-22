@@ -1,21 +1,20 @@
 import type React from "react";
+import { Tip } from "@/components/ui/tooltip";
 import { avatarColorClass, initials } from "@/lib/avatar";
 import { formatCurrency } from "@/lib/formatCurrency";
 import { cn } from "@/lib/utils";
 import type { ActivityState } from "./cardIndicators";
-import { activityState, rottingState } from "./cardIndicators";
+import { activityState, activityTooltip, rottingState } from "./cardIndicators";
 import type { BoardCard } from "./dealRepo";
+
+// Placeholder clock passed to activityTooltip only when there is no activity date (pre-mount, or a
+// card with nothing scheduled), where the returned copy ignores `now`. Keeps the call total.
+const NO_CLOCK = new Date(0);
 
 // String constants: no magic strings, no em dashes.
 const STRINGS = {
   roledescription: "draggable deal card",
   contactSeparator: ", ",
-  activityLabel: {
-    upcoming: "next activity scheduled",
-    today: "activity due today",
-    overdue: "activity overdue",
-    none: "no activity planned",
-  } satisfies Record<ActivityState, string>,
   // Next-action affordance: a small colored circle. Color carries urgency:
   // green = an activity is due today (act now), amber = scheduled for a later day, red = overdue,
   // yellow = nothing scheduled (a warning nudge to book the next step). Green is reserved for
@@ -83,6 +82,13 @@ export function DealCard(props: DealCardProps): React.ReactNode {
   // Gate the time-derived state on a client clock. Before mount (now=null) render the neutral
   // baseline (no rot, no scheduled activity) so the server and first client render are identical.
   const activity = now === null ? "none" : activityState(card.nextActivityAt, now);
+  // Hover/aria copy for the next-action badge: names the soonest action and its timing. Pre-mount
+  // (now=null) there is no clock, so pass a null date to get the neutral "No activity scheduled".
+  const activityTip = activityTooltip(
+    card.nextActivityTitle ?? null,
+    now === null ? null : card.nextActivityAt,
+    now ?? NO_CLOCK,
+  );
   const rot =
     now === null
       ? { rotting: false, ageDays: 0, level: 0 }
@@ -163,18 +169,21 @@ export function DealCard(props: DealCardProps): React.ReactNode {
 
         <span className="flex items-center gap-1">
           {/* Next-action indicator: a colored circle with a chevron (Pipedrive). Color encodes
-              urgency; aria-label carries the state so it is not conveyed by color alone. */}
-          <span
-            role="img"
-            aria-label={STRINGS.activityLabel[activity]}
-            data-activity={activity}
-            className={cn(
-              "flex h-5 w-5 items-center justify-center rounded-full text-xs font-bold leading-none",
-              STRINGS.activityCircle[activity],
-            )}
-          >
-            <span aria-hidden="true">{STRINGS.activityGlyph[activity]}</span>
-          </span>
+              urgency; the hover tooltip and aria-label both name the action + timing, so the state
+              is never conveyed by color alone. */}
+          <Tip label={activityTip} side="top">
+            <span
+              role="img"
+              aria-label={activityTip}
+              data-activity={activity}
+              className={cn(
+                "flex h-5 w-5 items-center justify-center rounded-full text-xs font-bold leading-none",
+                STRINGS.activityCircle[activity],
+              )}
+            >
+              <span aria-hidden="true">{STRINGS.activityGlyph[activity]}</span>
+            </span>
+          </Tip>
 
           {/* Rotting badge: role="status" so aria-label is valid; text days = non-color cue */}
           {rot.rotting && (

@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { LeftNav } from "./LeftNav";
 
@@ -7,15 +8,12 @@ import { LeftNav } from "./LeftNav";
 // component renders outside an app-router provider.
 vi.mock("next/navigation", () => ({ usePathname: () => "/pipeline" }));
 
-// This jsdom setup does not provide a working localStorage; install an in-memory one so the
-// nav's persisted collapse preference can be exercised.
-const store = new Map<string, string>();
-vi.stubGlobal("localStorage", {
-  getItem: (k: string) => store.get(k) ?? null,
-  setItem: (k: string, v: string) => void store.set(k, v),
-  removeItem: (k: string) => void store.delete(k),
-  clear: () => store.clear(),
-});
+// The collapse preference now persists in a cookie (so the server can read it and render the
+// correct width, avoiding the reload flash). jsdom provides a working document.cookie; clear it
+// between tests. Reset to a clean jar by expiring the key.
+function clearNavCookie(): void {
+  document.cookie = "wd_nav_expanded=; path=/; max-age=0";
+}
 
 // jsdom has no matchMedia; shim it so the responsive default (expanded on wide screens, collapsed
 // on small) can be exercised. `setViewport(true)` = wide (min-width query matches).
@@ -35,11 +33,20 @@ vi.stubGlobal("matchMedia", (query: string) => ({
 
 afterEach(() => {
   cleanup();
-  store.clear();
+  clearNavCookie();
   mediaMatches = true;
 });
 
 describe("LeftNav", () => {
+  test("server render honors initialExpanded so the width is correct at first paint (no reload flash)", () => {
+    // The flash was caused by the server always rendering collapsed (localStorage is not readable
+    // during SSR) and the client correcting to expanded post-mount, animating the width. With the
+    // persisted state passed in as initialExpanded, the server render already reflects it, so there
+    // is nothing to correct and nothing to animate.
+    expect(renderToStaticMarkup(<LeftNav initialExpanded />)).toMatch(/w-56\b/);
+    expect(renderToStaticMarkup(<LeftNav initialExpanded={false} />)).toMatch(/w-16\b/);
+  });
+
   test("renders all primary destinations as links with a navigation landmark", () => {
     render(<LeftNav />);
     expect(screen.getByRole("navigation", { name: "Primary" })).toBeTruthy();

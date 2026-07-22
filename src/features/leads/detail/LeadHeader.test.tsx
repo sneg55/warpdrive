@@ -21,10 +21,14 @@ const push = vi.fn();
 const refresh = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push, refresh }) }));
 vi.mock("@/utils/csrfCookie", () => ({ readCsrfToken: () => "csrf" }));
+vi.mock("@/lib/trpc-client", () => ({
+  trpc: { customFields: { listDefs: { useQuery: () => ({ data: [], isLoading: false }) } } },
+}));
 vi.mock("../leadServerActions", () => ({
   convertLeadAction: vi.fn(),
   archiveLeadAction: vi.fn(),
   bulkUpdateLeadsAction: vi.fn(),
+  updateLeadAction: vi.fn(),
 }));
 
 // The shared app-wide error reporter (mounted in the (app) shell). Mocked so a mutation's
@@ -58,7 +62,11 @@ describe("LeadHeader PD lead-drawer parity", () => {
     // Owner lives in the Summary sidebar row, so the header must not duplicate it.
     expect(screen.queryByText("Nick")).not.toBeInTheDocument();
     // The primary title still renders.
-    expect(screen.getByRole("heading", { name: "Acme lead" })).toBeInTheDocument();
+    const heading = screen.getByRole("heading", { name: "Acme lead" });
+    expect(heading).toHaveClass("text-[25px]");
+    const titleRow = heading.closest("header")?.firstElementChild;
+    expect(titleRow).toHaveClass("justify-between", "gap-4");
+    expect(titleRow?.firstElementChild).not.toHaveClass("flex-1");
   });
 
   it("styles Convert to deal as a positive/success action (PD's green convert button)", () => {
@@ -67,9 +75,68 @@ describe("LeadHeader PD lead-drawer parity", () => {
     expect(btn.className).toContain("bg-success");
     expect(btn.className).not.toContain("bg-primary");
   });
+
+  it("edits the lead title with the same inline-edit footer as a deal title", async () => {
+    const user = userEvent.setup();
+    const { updateLeadAction } = await import("../leadServerActions");
+    vi.mocked(updateLeadAction).mockResolvedValue({
+      ok: true,
+      value: { id: "l1", updatedAt: "2026-06-01T00:00:01.000Z" },
+    });
+    render(<LeadHeader lead={LEAD} />);
+
+    await user.click(screen.getByRole("button", { name: "Edit lead title" }));
+    const input = screen.getByRole("textbox", { name: "Edit lead title" });
+    await user.clear(input);
+    await user.type(input, "Acme enterprise lead");
+    await user.click(screen.getByRole("button", { name: "Save" }));
+
+    await waitFor(() =>
+      expect(updateLeadAction).toHaveBeenCalledWith(
+        {
+          leadId: "l1",
+          expectedUpdatedAt: "2026-06-01T00:00:00.000Z",
+          title: "Acme enterprise lead",
+        },
+        "csrf",
+      ),
+    );
+    await waitFor(() => expect(refresh).toHaveBeenCalled());
+  });
+
+  it("cancels a lead title edit through the shared footer", async () => {
+    const user = userEvent.setup();
+    const { updateLeadAction } = await import("../leadServerActions");
+    render(<LeadHeader lead={LEAD} />);
+
+    await user.click(screen.getByRole("button", { name: "Edit lead title" }));
+    const input = screen.getByRole("textbox", { name: "Edit lead title" });
+    await user.clear(input);
+    await user.type(input, "Do not save");
+    await user.click(screen.getByRole("button", { name: "Cancel" }));
+
+    expect(updateLeadAction).not.toHaveBeenCalled();
+    expect(screen.getByRole("heading", { name: "Acme lead" })).toBeInTheDocument();
+  });
 });
 
 describe("LeadHeader error surfacing", () => {
+  it("surfaces a failed title update through the shared error reporter", async () => {
+    const user = userEvent.setup();
+    const { updateLeadAction } = await import("../leadServerActions");
+    vi.mocked(updateLeadAction).mockResolvedValue({ ok: false, error: { id: "E_LEAD_007" } });
+    render(<LeadHeader lead={LEAD} />);
+
+    await user.click(screen.getByRole("button", { name: "Edit lead title" }));
+    const input = screen.getByRole("textbox", { name: "Edit lead title" });
+    await user.clear(input);
+    await user.type(input, "Conflicting update");
+    await user.click(screen.getByRole("button", { name: "Save" }));
+
+    await waitFor(() => expect(reportError).toHaveBeenCalledWith("E_LEAD_007"));
+    expect(refresh).not.toHaveBeenCalled();
+  });
+
   it("surfaces a failed convert through the shared error reporter", async () => {
     const { convertLeadAction } = await import("../leadServerActions");
     vi.mocked(convertLeadAction).mockResolvedValue({ ok: false, error: { id: "E_PERM_001" } });

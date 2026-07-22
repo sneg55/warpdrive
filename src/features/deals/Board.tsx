@@ -14,6 +14,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { wsChannel } from "@/constants/wsChannels";
 import { useLabelColorResolver } from "@/features/labels/useLabelColorResolver";
+import { capture, currentRoute } from "@/features/observability/capture";
+import { EVENTS } from "@/features/observability/events";
 import { PresenceBar } from "@/features/presence/ui/PresenceBar";
 import type { FilterDefinition } from "@/features/saved-filters/schemas";
 import { trpc } from "@/lib/trpc-client";
@@ -140,8 +142,11 @@ export function Board(props: BoardProps): React.ReactNode {
   const liveRef = useRef<HTMLDivElement>(null);
 
   function onDragStart(e: DragStartEvent): void {
+    const dealId = String(e.active.id);
+    const stageFrom = liveCards.find((card) => card.id === dealId)?.stageId ?? "";
+    capture(EVENTS.boardDragStarted, { route: currentRoute(), stageFrom });
     setDragActive(true);
-    setActiveId(String(e.active.id));
+    setActiveId(dealId);
   }
 
   const activeCard = activeId !== null ? liveCards.find((c) => c.id === activeId) : undefined;
@@ -160,6 +165,9 @@ export function Board(props: BoardProps): React.ReactNode {
     setActiveId(null);
     const dealId = String(e.active.id);
     const toStageId = e.over !== null ? String(e.over.id) : null;
+    const stageFrom = liveCards.find((card) => card.id === dealId)?.stageId ?? "";
+    const stageTo = toStageId ?? "";
+    capture(EVENTS.boardDragEnded, { route: currentRoute(), stageFrom, stageTo });
     if (toStageId === null) return;
     // Dropping onto a bottom action zone is not a stage move. Won/Lost close the deal; Move opens a
     // stage picker; Delete is not a drag target (deletion is a confirmed menu action).
@@ -240,6 +248,7 @@ export function Board(props: BoardProps): React.ReactNode {
         sensors={sensors}
         onDragStart={onDragStart}
         onDragCancel={() => {
+          capture(EVENTS.boardDragCancelled, { route: currentRoute() });
           setDragActive(false);
           setActiveId(null);
         }}

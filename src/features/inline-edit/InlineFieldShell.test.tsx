@@ -64,4 +64,21 @@ describe("InlineFieldShell (PD view-state mechanism)", () => {
     expect(screen.queryByText("$1,500")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Edit Value" })).not.toBeInTheDocument();
   });
+
+  it("moves focus to the first enabled editor control when edit mode opens", () => {
+    const { rerender } = render(
+      <InlineFieldShell label="Value" editing={false} onStartEdit={vi.fn()} value="$1,500">
+        <input aria-label="Value" />
+      </InlineFieldShell>,
+    );
+
+    rerender(
+      <InlineFieldShell label="Value" editing={true} onStartEdit={vi.fn()} value="$1,500">
+        <input aria-label="Unavailable" disabled />
+        <input aria-label="Value" />
+      </InlineFieldShell>,
+    );
+
+    expect(screen.getByRole("textbox", { name: "Value" })).toHaveFocus();
+  });
 });

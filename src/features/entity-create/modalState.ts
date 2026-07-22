@@ -24,6 +24,8 @@ export interface EntityCreateState {
   visibilityGroupId: string; // "" = server default
   phones: ContactPoint[];
   emails: ContactPoint[];
+  personCustomFields: Record<string, unknown>;
+  orgCustomFields: Record<string, unknown>;
 }
 
 export function initialEntityCreateState(): EntityCreateState {
@@ -44,5 +46,7 @@ export function initialEntityCreateState(): EntityCreateState {
     visibilityGroupId: "",
     phones: [{ label: "Work", value: "" }],
     emails: [{ label: "Work", value: "" }],
+    personCustomFields: {},
+    orgCustomFields: {},
   };
 }

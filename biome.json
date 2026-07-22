@@ -10,8 +10,12 @@
   "files": {
     "includes": [
       "**",
+      "!**/.claude",
+      "!site",
+      "!docs-site",
       "!**/drizzle",
       "!**/.next",
+      "!**/dist",
       "!**/node_modules",
       "!**/globals.css",
       "!**/parity-tools",

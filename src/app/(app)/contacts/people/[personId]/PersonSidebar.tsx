@@ -1,16 +1,19 @@
 "use client";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type React from "react";
+import { useState } from "react";
 import { CONTACT_SIDEBAR_STRINGS } from "@/constants/contactSidebarStrings";
 import { STRINGS } from "@/constants/strings";
-import { PersonSummaryEditPanel } from "@/features/contacts/PersonSummaryEditPanel";
 import type { PersonDetail } from "@/features/contacts/personsRepo";
-import { CustomFieldDetail } from "@/features/custom-fields/render";
 import { CollapsibleSection } from "@/features/deal-workspace/CollapsibleSection";
+import { PersonSection } from "@/features/deal-workspace/sidebar/PersonSection";
+import { trpc } from "@/lib/trpc-client";
 import type { CustomFieldDef } from "@/types/customFields";
 import { ContactOverviewSection } from "../../ContactOverviewSection";
-import { CustomFieldsPanel } from "../../contactDetail.shared";
-import { contactSectionActions, customizeFieldsItem } from "../../contactSectionMenu";
+import { ListPanel } from "../../contactDetail.shared";
+import { customizeFieldsItem } from "../../contactSectionMenu";
+import { LinkedDealRow } from "../../LinkedDealRow";
 
 const sections = CONTACT_SIDEBAR_STRINGS.sections;
 
@@ -23,60 +26,54 @@ export function PersonSidebar({
   defs,
   hiddenBuiltins = new Set(),
   baseCurrency,
-  orgOptions,
 }: {
   person: PersonDetail;
   orgName: string | null;
   defs: CustomFieldDef[];
   hiddenBuiltins?: ReadonlySet<string>;
   baseCurrency: string;
-  orgOptions: { id: string; name: string }[];
 }): React.ReactNode {
   const router = useRouter();
+  const [personBulkEditing, setPersonBulkEditing] = useState(false);
+  const deals = trpc.contacts.dealsForPerson.useQuery({ personId: person.id }).data ?? [];
 
   return (
     <aside className="space-y-2 min-w-0 lg:order-first">
-      <CollapsibleSection
-        title={sections.contact}
-        headerActions={contactSectionActions(sections.contact, [
+      <PersonSection
+        person={person}
+        menuItems={[
           customizeFieldsItem(
             (href) => router.push(href),
             "person",
             STRINGS.dealSidebar.menu.customizeFields,
           ),
-        ])}
-      >
-        <PersonSummaryEditPanel
-          person={{
-            id: person.id,
-            name: person.name,
-            // Normalize the stored contact-point shape (primary?: boolean) to the strict
-            // primary: boolean the inline-edit save path (and updatePersonAction) expect.
-            emails: person.emails.map((e) => ({ ...e, primary: e.primary === true })),
-            phones: person.phones.map((p) => ({ ...p, primary: p.primary === true })),
-            orgId: person.orgId,
-          }}
-          orgOptions={orgOptions}
-          hidden={hiddenBuiltins}
-        />
-        {orgName !== null && person.orgId !== null && (
-          <div className="mt-2 text-sm">
-            <a href={`/contacts/orgs/${person.orgId}`} className="text-primary hover:underline">
-              View {orgName}
-            </a>
-          </div>
-        )}
-      </CollapsibleSection>
-
-      <CustomFieldsPanel
-        defs={defs}
-        values={person.customFields as Record<string, unknown>}
-        renderValue={(def, value) => (
-          <CustomFieldDetail def={def} value={value} currency={baseCurrency} />
-        )}
+        ]}
+        bulkEditing={personBulkEditing}
+        onStartBulk={() => setPersonBulkEditing(true)}
+        onExitBulk={() => setPersonBulkEditing(false)}
+        hidden={hiddenBuiltins}
+        customFieldDefs={defs}
+        currency={baseCurrency}
       />
 
+      {orgName !== null && person.orgId !== null && (
+        <Link
+          href={`/contacts/orgs/${person.orgId}`}
+          className="block rounded px-1 py-1 text-sm text-primary transition-colors duration-150 hover:bg-accent hover:underline motion-reduce:transition-none"
+        >
+          View {orgName}
+        </Link>
+      )}
+
       <ContactOverviewSection entityType="person" entityId={person.id} />
+
+      <CollapsibleSection title={sections.deals}>
+        <ListPanel
+          items={deals}
+          empty="No deals yet."
+          render={(deal) => <LinkedDealRow key={deal.id} deal={deal} />}
+        />
+      </CollapsibleSection>
     </aside>
   );
 }

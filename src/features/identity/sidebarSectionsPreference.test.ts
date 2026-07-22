@@ -16,7 +16,7 @@ function customSections(): DealSidebarSectionPreference[] {
   return [
     org,
     ...DEFAULT_DEAL_SIDEBAR_SECTIONS.filter((section) => section.id !== "organization").map(
-      (section) => (section.id === "details" ? { ...section, visible: false } : section),
+      (section) => (section.id === "source" ? { ...section, visible: false } : section),
     ),
   ];
 }

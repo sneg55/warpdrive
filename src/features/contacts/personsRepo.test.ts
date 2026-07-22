@@ -1,7 +1,7 @@
 import { expect, it } from "vitest";
 import { withTestDb } from "@/db/testing";
 import { seedUser } from "@/db/testing/factories";
-import { createDef } from "@/features/custom-fields/defsRepo";
+import { createDef, setDefFlags } from "@/features/custom-fields/defsRepo";
 import { type ContactActor, createPerson, getPerson } from "./personsRepo";
 
 it("creates a person, derives owner+primary_email, and rejects bad custom fields", async () => {
@@ -59,6 +59,56 @@ it("creates a person, derives owner+primary_email, and rejects bad custom fields
       expect(good.value.ownerId).toBe(me.id);
       expect(good.value.primaryEmail).toBe("jane@acme.com");
     }
+  });
+});
+
+it("treats an Important person field as required during create", async () => {
+  await withTestDb(async (db) => {
+    const signal = new AbortController().signal;
+    const me = await seedUser(db);
+    const actor: ContactActor = {
+      id: me.id,
+      type: "regular",
+      isActive: true,
+      groupIds: new Set(),
+      flags: new Set(),
+      primaryVisibilityGroupId: null,
+    };
+    const field = await createDef(
+      db,
+      { targetEntity: "person", type: "text", name: "Role" },
+      signal,
+    );
+    if (field.ok === false) throw field.error;
+    const flags = await setDefFlags(
+      db,
+      { id: field.value.id, isImportant: true, showInAddForm: false },
+      signal,
+    );
+    if (flags.ok === false) throw flags.error;
+
+    const missing = await createPerson(
+      db,
+      actor,
+      { name: "Jane Roe", emails: [], phones: [], orgId: null, customFields: {} },
+      signal,
+    );
+    expect(missing.ok).toBe(false);
+    if (missing.ok === false) expect(missing.error.id).toBe("E_CF_003");
+
+    const created = await createPerson(
+      db,
+      actor,
+      {
+        name: "Jane Roe",
+        emails: [],
+        phones: [],
+        orgId: null,
+        customFields: { role: "Buyer" },
+      },
+      signal,
+    );
+    expect(created.ok).toBe(true);
   });
 });
 

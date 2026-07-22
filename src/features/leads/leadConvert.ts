@@ -10,6 +10,7 @@ import { stages } from "@/db/schema/stages";
 import { settings } from "@/db/schema/system";
 import { recordChange } from "@/features/collaboration/changeLog";
 import { midpoint } from "@/features/deals/boardPosition";
+import { validateDealCustomFieldsForCreate } from "@/features/deals/dealCustomFieldsValidation";
 import { resolveVisibilityGroup } from "@/features/permissions/entityCreate";
 import { assertReferenceVisible } from "@/features/permissions/referenceCheck";
 import { publishBoardEvent } from "@/server/realtime/events";
@@ -150,6 +151,11 @@ export async function convertLead(
   const refs = await assertConvertReferences(db, session, lead, signal);
   if (!refs.ok) return refs;
 
+  // Conversion is a deal-creation boundary, so it must enforce the same active definitions and
+  // Important-field requirements as Add deal. The validated payload is the only payload persisted.
+  const customFields = await validateDealCustomFieldsForCreate(db, input.customFields, signal);
+  if (!customFields.ok) return customFields;
+
   // Visibility derived server-side (same policy as createLead).
   const level = (cfg?.defaultVisibilityLevels.deal ?? "owner") as "owner" | "group" | "all";
   let visibilityGroupId: string | null = null;
@@ -185,6 +191,7 @@ export async function convertLead(
           boardPosition: position,
           personId: lead.personId,
           orgId: lead.orgId,
+          customFields: customFields.value,
           // Owner preserved from the lead; visibility derived above.
           ownerId: lead.ownerId,
           visibilityLevel: level,

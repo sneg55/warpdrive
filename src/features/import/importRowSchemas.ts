@@ -72,6 +72,7 @@ export const dealImportRowSchema = z.object({
   expectedCloseDate: z.string().date().nullable().default(null),
   pipeline: z.string().trim().min(1).nullable().default(null),
   stage: z.string().trim().min(1).nullable().default(null),
+  customFields: z.record(z.string(), z.unknown()).default({}),
 });
 export type DealImportRow = z.infer<typeof dealImportRowSchema>;
 

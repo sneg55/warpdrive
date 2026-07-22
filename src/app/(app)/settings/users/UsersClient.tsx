@@ -2,6 +2,13 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import {
+  SETTINGS_TABLE_CELL,
+  SETTINGS_TABLE_HEAD,
+  SETTINGS_TABLE_HEADER_CELL,
+  SETTINGS_TABLE_ROW,
+  SettingsCard,
+} from "../SettingsSurface";
 import { InviteUserForm } from "./InviteUserForm";
 import { UserRowControls } from "./UserRowControls";
 import { UserStatusTabs } from "./UserStatusTabs";
@@ -36,47 +43,49 @@ export function UsersClient({ rows }: Props): React.ReactElement {
   const visible = filterUsersByStatus(rows, status);
 
   return (
-    <>
+    <div className="space-y-6">
       <InviteUserForm onInvited={() => router.refresh()} />
-      <div className="mb-3">
+      <div className="space-y-3">
         <UserStatusTabs value={status} onChange={setStatus} />
+        <SettingsCard className="overflow-x-auto shadow-none">
+          <table className="w-full min-w-[640px] text-sm">
+            <thead className={SETTINGS_TABLE_HEAD}>
+              <tr className="border-b">
+                <th className={SETTINGS_TABLE_HEADER_CELL}>{C.name}</th>
+                <th className={SETTINGS_TABLE_HEADER_CELL}>{C.email}</th>
+                <th className={SETTINGS_TABLE_HEADER_CELL}>{C.role}</th>
+                <th className={SETTINGS_TABLE_HEADER_CELL}>{C.active}</th>
+                <th className={SETTINGS_TABLE_HEADER_CELL}>{C.actions}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {visible.map((u) => (
+                <tr key={u.id} className={SETTINGS_TABLE_ROW}>
+                  <td className={SETTINGS_TABLE_CELL}>
+                    {u.name}
+                    {u.invitedAt !== null && (
+                      <span className="ml-2 rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
+                        {V.invited}
+                      </span>
+                    )}
+                  </td>
+                  <td className={`${SETTINGS_TABLE_CELL} text-muted-foreground`}>{u.email}</td>
+                  <td className={SETTINGS_TABLE_CELL}>{u.isAdmin ? V.admin : V.regular}</td>
+                  <td className={SETTINGS_TABLE_CELL}>{u.isActive ? V.yes : V.no}</td>
+                  <td className={SETTINGS_TABLE_CELL}>
+                    <UserRowControls
+                      userId={u.id}
+                      isAdmin={u.isAdmin}
+                      isActive={u.isActive}
+                      onChanged={() => router.refresh()}
+                    />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </SettingsCard>
       </div>
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b text-left">
-            <th className="py-2 pr-4">{C.name}</th>
-            <th className="py-2 pr-4">{C.email}</th>
-            <th className="py-2 pr-4">{C.role}</th>
-            <th className="py-2 pr-4">{C.active}</th>
-            <th className="py-2">{C.actions}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {visible.map((u) => (
-            <tr key={u.id} className="border-b">
-              <td className="py-2 pr-4">
-                {u.name}
-                {u.invitedAt !== null && (
-                  <span className="ml-2 rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
-                    {V.invited}
-                  </span>
-                )}
-              </td>
-              <td className="py-2 pr-4">{u.email}</td>
-              <td className="py-2 pr-4">{u.isAdmin ? V.admin : V.regular}</td>
-              <td className="py-2 pr-4">{u.isActive ? V.yes : V.no}</td>
-              <td className="py-2">
-                <UserRowControls
-                  userId={u.id}
-                  isAdmin={u.isAdmin}
-                  isActive={u.isActive}
-                  onChanged={() => router.refresh()}
-                />
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </>
+    </div>
   );
 }

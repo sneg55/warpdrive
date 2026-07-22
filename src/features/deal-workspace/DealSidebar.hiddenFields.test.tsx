@@ -64,6 +64,7 @@ function makeWorkspace(): DealWorkspace {
       primaryEmail: "p@x.com",
       phones: [{ value: "+1 555 000 0000", primary: true }],
       emails: [{ value: "p@x.com", primary: true }],
+      labels: [],
     },
     org: {
       id: "o1",
@@ -74,6 +75,7 @@ function makeWorkspace(): DealWorkspace {
       annualRevenue: "1000000",
       linkedinUrl: null,
       address: null,
+      labels: [],
     },
     customFieldDefs: [],
   } as unknown as DealWorkspace;

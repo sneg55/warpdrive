@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "tw-animate-css";
 
 /*
  * Tailwind v4 theme mapping. The shadcn tokens below are declared as HSL channels on

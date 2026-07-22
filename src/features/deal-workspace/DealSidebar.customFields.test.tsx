@@ -6,7 +6,7 @@ import type { CustomFieldDef } from "@/types/customFields";
 import { DealSidebar } from "./DealSidebar";
 import type { DealWorkspace } from "./summaryRepo";
 
-// Details section renders one FieldRow per custom field def. Mocked module boundaries mirror
+// Organization section renders one FieldRow per deal custom field def. Mocked module boundaries mirror
 // DealSidebar.test.tsx (LabelRow/OrgBlock/PersonBlock all reach these on render).
 const updateDealAction = vi.hoisted(() =>
   vi.fn(() =>
@@ -84,6 +84,7 @@ it("inline-edits a text custom field through the deal update action (customField
   );
 
   fireEvent.click(screen.getByRole("button", { name: "Edit Notes" }));
+  expect(screen.getByLabelText("Notes")).toHaveFocus();
   fireEvent.change(screen.getByLabelText("Notes"), { target: { value: "world" } });
   fireEvent.click(screen.getByRole("button", { name: "Save" }));
 
@@ -99,7 +100,32 @@ it("inline-edits a text custom field through the deal update action (customField
   );
 });
 
-it("does not render a Probability row in the Details section", () => {
+it("renders an empty custom field with the same dash and hover-pencil mechanism as built-in rows", () => {
+  render(
+    <DealSidebar
+      workspace={makeWorkspace(
+        [def({ id: "d1", key: "linkedin", name: "linkedin", type: "text" })],
+        { linkedin: "" },
+      )}
+      now={new Date("2026-01-05T00:00:00Z")}
+      isHidden={showAll}
+      baseCurrency="USD"
+    />,
+  );
+
+  const organization = within(screen.getByRole("region", { name: "Organization" }));
+  const row = organization.getByText("linkedin").closest('[data-testid="field-row"]');
+  expect(row).not.toBeNull();
+  expect(within(row as HTMLElement).getByText("-")).toBeInTheDocument();
+  expect(
+    within(row as HTMLElement).getByRole("button", { name: "Edit linkedin" }),
+  ).toBeInTheDocument();
+  expect(
+    within(row as HTMLElement).queryByRole("button", { name: "+ Add" }),
+  ).not.toBeInTheDocument();
+});
+
+it("does not render a Probability row in the Organization section", () => {
   render(
     <DealSidebar
       workspace={makeWorkspace([def({ id: "d1", key: "notes", name: "Notes" })], { notes: "x" })}
@@ -108,11 +134,12 @@ it("does not render a Probability row in the Details section", () => {
       baseCurrency="USD"
     />,
   );
-  const detailsSection = within(screen.getByRole("region", { name: "Details" }));
-  expect(detailsSection.queryByText("Probability")).not.toBeInTheDocument();
+  const organization = within(screen.getByRole("region", { name: "Organization" }));
+  expect(organization.queryByText("Probability")).not.toBeInTheDocument();
+  expect(screen.queryByRole("region", { name: "Details" })).not.toBeInTheDocument();
 });
 
-it("the Details section's hide-empty-fields funnel hides a blank custom field row", () => {
+it("the Organization section's hide-empty-fields funnel hides a blank deal custom field row", () => {
   const customFieldDefs = [
     def({ id: "d1", key: "notes", name: "Notes" }),
     def({ id: "d2", key: "budget", name: "Budget", type: "monetary" }),
@@ -125,11 +152,11 @@ it("the Details section's hide-empty-fields funnel hides a blank custom field ro
       baseCurrency="USD"
     />,
   );
-  const detailsSection = within(screen.getByRole("region", { name: "Details" }));
-  expect(detailsSection.getByText("Notes")).toBeInTheDocument();
-  expect(detailsSection.getByText("Budget")).toBeInTheDocument();
-  fireEvent.click(detailsSection.getByRole("button", { name: "Hide empty fields" }));
-  expect(detailsSection.queryByText("Notes")).not.toBeInTheDocument();
+  const organization = within(screen.getByRole("region", { name: "Organization" }));
+  expect(organization.getByText("Notes")).toBeInTheDocument();
+  expect(organization.getByText("Budget")).toBeInTheDocument();
+  fireEvent.click(organization.getByRole("button", { name: "Hide empty fields" }));
+  expect(organization.queryByText("Notes")).not.toBeInTheDocument();
   // Budget has a real value, so it stays.
-  expect(detailsSection.getByText("Budget")).toBeInTheDocument();
+  expect(organization.getByText("Budget")).toBeInTheDocument();
 });

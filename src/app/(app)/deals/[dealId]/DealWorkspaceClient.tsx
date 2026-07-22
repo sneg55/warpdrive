@@ -90,6 +90,16 @@ export function DealWorkspaceClient({
     router.refresh();
   };
 
+  // Inline edit: clicking a Focus/History activity sets its id; the composer prefills from getForEdit
+  // and opens in edit mode. Cleared on save (invalidate + refresh so the CAS token stays fresh) and
+  // on cancel. The query is gated on a selected id, so it does not run until an activity is picked.
+  const [editingActivityId, setEditingActivityId] = useState<string | null>(null);
+  const editForm = trpc.activities.getForEdit.useQuery(
+    { id: editingActivityId ?? "" },
+    { enabled: editingActivityId !== null },
+  );
+  const editingActivity = editingActivityId !== null ? (editForm.data ?? null) : null;
+
   return (
     <DealActionErrorProvider>
       <div className="flex h-full flex-col p-4">
@@ -148,6 +158,12 @@ export function DealWorkspaceClient({
                     entityId: deal.id,
                   })
                 }
+                editing={editingActivity}
+                onEditSaved={() => {
+                  onActivityChanged();
+                  setEditingActivityId(null);
+                }}
+                onEditCancel={() => setEditingActivityId(null)}
               />
             )}
 
@@ -166,6 +182,7 @@ export function DealWorkspaceClient({
                     entityId: deal.id,
                   })
                 }
+                onEditActivity={setEditingActivityId}
               />
             )}
           </div>

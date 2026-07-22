@@ -19,6 +19,7 @@ import type { DbOrTx } from "@/server/realtime/channelVersions";
 import { publishBoardEvent } from "@/server/realtime/events";
 import { err, ok, type Result } from "@/types/result";
 import { midpoint } from "./boardPosition";
+import { validateDealCustomFieldsForCreate } from "./dealCustomFieldsValidation";
 import { dealCreateInput } from "./schemas";
 
 // Deals and leads share the same creation trust boundary (owner override, group defaulting).
@@ -48,6 +49,13 @@ export async function createDeal(
       }),
     );
   }
+
+  const customFieldsResult = await validateDealCustomFieldsForCreate(
+    db,
+    input.customFields ?? {},
+    signal,
+  );
+  if (customFieldsResult.ok === false) return customFieldsResult;
 
   // Pipeline-visibility gate (permissions spec §5 / §2 rule 2): a deal is created INTO a
   // pipeline, so a user must not insert into a restricted pipeline they cannot see by
@@ -191,6 +199,7 @@ export async function createDeal(
         ownerId,
         visibilityLevel: level,
         visibilityGroupId,
+        customFields: customFieldsResult.value,
       })
       .returning();
 

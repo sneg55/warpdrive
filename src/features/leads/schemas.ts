@@ -129,8 +129,9 @@ export const convertLeadInput = z.object({
   leadId: z.string().uuid(),
   pipelineId: z.string().uuid().optional(),
   expectedUpdatedAt: z.string().datetime(),
+  customFields: z.record(z.string(), z.unknown()).default({}),
 });
-export type ConvertLeadInput = z.infer<typeof convertLeadInput>;
+export type ConvertLeadInput = z.input<typeof convertLeadInput>;
 
 // Bulk edit over many lead ids. Exactly one change field is applied per call; invisible
 // ids are silently skipped (batch semantics). ownerId/labels/archived/deleted are optional.
@@ -160,17 +161,21 @@ export type BulkUpdateLeadsInput = z.infer<typeof bulkUpdateLeadsInput>;
 export const bulkConvertLeadsInput = z.object({
   ids: z.array(z.string().uuid()).min(1).max(200),
   pipelineId: z.string().uuid().optional(),
+  customFields: z.record(z.string(), z.unknown()).default({}),
 });
-export type BulkConvertLeadsInput = z.infer<typeof bulkConvertLeadsInput>;
+export type BulkConvertLeadsInput = z.input<typeof bulkConvertLeadsInput>;
 
-// Inline-edit summary panel update: Value / Owner / Expected close, mirroring dealUpdateInput.
-// expectedUpdatedAt is the CAS token sourced from lead.updatedAt (ISO string); ownerId is honored
-// only for actors holding deal.changeOwner (see updateLead). Omitted fields are left untouched.
+// Inline-edit detail update: Title / Value / Owner / Expected close / Labels, mirroring
+// dealUpdateInput. expectedUpdatedAt is the CAS token sourced from lead.updatedAt (ISO string);
+// ownerId is honored only for actors holding deal.changeOwner (see updateLead). labels replaces
+// the whole set (the LeadLabelRow picker commits the full list). Omitted fields are left untouched.
 export const leadUpdateInput = z.object({
   leadId: z.string().uuid(),
   expectedUpdatedAt: z.string().datetime(),
+  title: z.string().trim().min(1).max(255).optional(),
   value: z.number().nonnegative().multipleOf(0.01).nullable().optional(),
   ownerId: z.string().uuid().optional(),
   expectedCloseDate: z.string().date().nullable().optional(),
+  labels: labelNameArray.optional(),
 });
 export type LeadUpdateInput = z.infer<typeof leadUpdateInput>;

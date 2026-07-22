@@ -8,12 +8,17 @@ afterEach(cleanup);
 
 describe("EngagementAxis", () => {
   it("labels the rightmost (current) month 'Today' like Pipedrive", () => {
-    render(<EngagementAxis months={["2026-05", "2026-06", "2026-07"]} />);
+    render(
+      <table>
+        <EngagementAxis months={["2026-05", "2026-06", "2026-07"]} />
+      </table>,
+    );
     // Past months keep their name; the last column reads Today, not the month name.
     expect(screen.getByText("May 2026")).toBeInTheDocument();
     expect(screen.getByText("Jun 2026")).toBeInTheDocument();
     expect(screen.getByText("Today")).toBeInTheDocument();
     expect(screen.queryByText("Jul 2026")).not.toBeInTheDocument();
+    expect(screen.getByText("Contact")).toHaveClass("sticky", "left-0");
   });
 });
 

@@ -38,3 +38,14 @@ export function avatarObjectKey(userId: string): string {
 export function avatarPublicUrl(userId: string, version: string): string {
   return `/api/users/${userId}/avatar?v=${version}`;
 }
+
+// Prefix that every uploaded-avatar serve URL starts with (see avatarPublicUrl). Used to tell a
+// user-uploaded avatar apart from an external identity-provider photo URL or null.
+const UPLOADED_AVATAR_PREFIX = "/api/users/";
+
+// True when avatar_url points at our own upload-serve route (a user-uploaded avatar) rather than an
+// external provider photo or null. Login must not overwrite an uploaded avatar with the identity's
+// (often null) photo, which was silently wiping avatars on every re-login.
+export function isUploadedAvatarUrl(url: string | null): boolean {
+  return url !== null && url.startsWith(UPLOADED_AVATAR_PREFIX);
+}

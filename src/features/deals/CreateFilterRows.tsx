@@ -157,7 +157,7 @@ export function ConditionRows({
               type="button"
               aria-label="Remove condition"
               onClick={() => remove(idx)}
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-base text-muted-foreground transition hover:bg-accent hover:text-foreground active:scale-[0.96]"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-base text-muted-foreground transition-[color,background-color,scale] duration-150 ease-out hover:bg-accent hover:text-foreground active:scale-[0.96] motion-reduce:transition-colors"
             >
               &times;
             </button>

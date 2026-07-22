@@ -5,6 +5,7 @@ import { listTeams } from "@/features/identity/teams.service";
 import { listAssignableUsers, listUsers } from "@/features/identity/users.service";
 import { createContext } from "@/server/trpc/context";
 import { SettingsHeading } from "../SettingsHeading";
+import { SettingsPage } from "../SettingsSurface";
 import { TeamsClient } from "./TeamsClient";
 import { TeamsTable } from "./TeamsTable";
 
@@ -28,13 +29,15 @@ export default async function TeamsPage(): Promise<ReactNode> {
   const users = userRows.map((u) => ({ id: u.id, name: u.name }));
   const teamRows = teams.map((t) => ({ id: t.id, name: t.name, managerId: t.managerId }));
   return (
-    <section>
+    <SettingsPage>
       <SettingsHeading
         title={STRINGS.settings.teams}
         description={STRINGS.settings.teamsDescription}
       />
       <TeamsTable teams={teamRows} users={users} />
-      <TeamsClient users={assignableUsers} />
-    </section>
+      <div className="mt-6">
+        <TeamsClient users={assignableUsers} />
+      </div>
+    </SettingsPage>
   );
 }

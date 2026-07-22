@@ -126,7 +126,7 @@ export function DealList(props: DealListProps) {
               type="button"
               aria-label="Edit title"
               onClick={() => setEditingId(row.id)}
-              className="text-xs text-muted-foreground opacity-0 transition-opacity hover:text-foreground group-hover:opacity-100"
+              className="text-xs text-muted-foreground opacity-0 transition-[color,opacity] duration-150 hover:text-foreground focus-visible:opacity-100 group-hover:opacity-100 motion-reduce:transition-none"
             >
               Edit
             </button>

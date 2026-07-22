@@ -11,6 +11,7 @@ import {
   buildHistoryTimeline,
   partitionFocusHistory,
 } from "@/features/deal-workspace/historyTimeline";
+import { PinnedNotesSection } from "@/features/deal-workspace/PinnedNotesSection";
 import { SectionHeading } from "@/features/deal-workspace/SectionHeading";
 import { trpc } from "@/lib/trpc-client";
 
@@ -32,6 +33,8 @@ interface WorkspaceTabsProps {
   onActivityChanged?: () => void;
   // Invalidate the notes query after an in-feed note mutation (pin/edit/delete, Task 6).
   onNoteChanged?: () => void;
+  // Open an activity in the inline edit composer (threaded to the Focus + History feeds).
+  onEditActivity?: (activityId: string) => void;
 }
 
 // Buckets the History side's items by the per-type filter row (Wave 3, Task
@@ -58,6 +61,7 @@ export function WorkspaceTabs({
   createdActorName,
   onActivityChanged,
   onNoteChanged,
+  onEditActivity,
 }: WorkspaceTabsProps) {
   // `?? EMPTY` rather than `?? []`: a fresh array literal each render changes the identity of every
   // downstream useMemo dependency, so the timeline was rebuilt on every render while data was absent.
@@ -102,12 +106,7 @@ export function WorkspaceTabs({
 
   return (
     <div className="space-y-6">
-      {pinned.length > 0 && (
-        <section aria-label="pinned">
-          <SectionHeading>Pinned</SectionHeading>
-          <HistoryFeed items={pinned} emptyLabel="" onNoteChanged={onNoteChanged} />
-        </section>
-      )}
+      <PinnedNotesSection items={pinned} onNoteChanged={onNoteChanged} />
 
       <section aria-label="focus">
         <SectionHeading>Focus</SectionHeading>
@@ -116,6 +115,7 @@ export function WorkspaceTabs({
           emptyLabel="Nothing needs your attention"
           onActivityChanged={onActivityChanged}
           onNoteChanged={onNoteChanged}
+          onEditActivity={onEditActivity}
         />
       </section>
 
@@ -129,6 +129,7 @@ export function WorkspaceTabs({
           dealId={deal.id}
           onActivityChanged={onActivityChanged}
           onNoteChanged={onNoteChanged}
+          onEditActivity={onEditActivity}
         />
       </section>
     </div>

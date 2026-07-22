@@ -38,6 +38,28 @@ async function insertLead(
 const sig = () => new AbortController().signal;
 
 describe("updateLead: field updates", () => {
+  it("updates a trimmed title and reads it back", async () => {
+    await withTestDb(async (db) => {
+      const owner = await seedUser(db);
+      const lead = await insertLead(db, owner.id);
+
+      const r = await updateLead(
+        db,
+        session(owner.id),
+        {
+          leadId: lead.id,
+          expectedUpdatedAt: lead.updatedAt.toISOString(),
+          title: "  Enterprise renewal  ",
+        },
+        sig(),
+      );
+      expect(r.ok).toBe(true);
+
+      const [after] = await db.select().from(leads).where(eq(leads.id, lead.id));
+      expect(after?.title).toBe("Enterprise renewal");
+    });
+  });
+
   it("updates value and reads back the new value", async () => {
     await withTestDb(async (db) => {
       const owner = await seedUser(db);
@@ -55,6 +77,64 @@ describe("updateLead: field updates", () => {
 
       const [after] = await db.select().from(leads).where(eq(leads.id, lead.id));
       expect(after?.value).toBe("250.00");
+    });
+  });
+
+  it("updates labels and reads them back", async () => {
+    await withTestDb(async (db) => {
+      const owner = await seedUser(db);
+      const lead = await insertLead(db, owner.id, { labels: ["Cold"] });
+
+      const r = await updateLead(
+        db,
+        session(owner.id),
+        {
+          leadId: lead.id,
+          expectedUpdatedAt: lead.updatedAt.toISOString(),
+          labels: ["Hot", "Warm"],
+        },
+        sig(),
+      );
+      expect(r.ok).toBe(true);
+
+      const [after] = await db.select().from(leads).where(eq(leads.id, lead.id));
+      expect(after?.labels).toEqual(["Hot", "Warm"]);
+    });
+  });
+
+  it("clears labels when passed an empty array", async () => {
+    await withTestDb(async (db) => {
+      const owner = await seedUser(db);
+      const lead = await insertLead(db, owner.id, { labels: ["Hot"] });
+
+      const r = await updateLead(
+        db,
+        session(owner.id),
+        { leadId: lead.id, expectedUpdatedAt: lead.updatedAt.toISOString(), labels: [] },
+        sig(),
+      );
+      expect(r.ok).toBe(true);
+
+      const [after] = await db.select().from(leads).where(eq(leads.id, lead.id));
+      expect(after?.labels).toEqual([]);
+    });
+  });
+
+  it("leaves labels untouched when the field is omitted", async () => {
+    await withTestDb(async (db) => {
+      const owner = await seedUser(db);
+      const lead = await insertLead(db, owner.id, { labels: ["Hot"] });
+
+      const r = await updateLead(
+        db,
+        session(owner.id),
+        { leadId: lead.id, expectedUpdatedAt: lead.updatedAt.toISOString(), value: 42 },
+        sig(),
+      );
+      expect(r.ok).toBe(true);
+
+      const [after] = await db.select().from(leads).where(eq(leads.id, lead.id));
+      expect(after?.labels).toEqual(["Hot"]);
     });
   });
 

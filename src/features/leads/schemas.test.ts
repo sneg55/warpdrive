@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { leadConditionInput, leadCreateInput } from "./schemas";
+import { leadConditionInput, leadCreateInput, leadUpdateInput } from "./schemas";
 
 describe("leadConditionInput numeric-field guard", () => {
   it("rejects a non-numeric value for the numeric `value` field", () => {
@@ -91,5 +91,22 @@ describe("leadCreateInput sourceChannel", () => {
   it("defaults to null", () => {
     const r = leadCreateInput.parse({ title: "A" });
     expect(r.sourceChannel).toBeNull();
+  });
+});
+
+describe("leadUpdateInput title", () => {
+  const base = {
+    leadId: "10000000-0000-4000-8000-000000000001",
+    expectedUpdatedAt: "2026-07-21T00:00:00.000Z",
+  };
+
+  it("trims a valid inline title update", () => {
+    expect(leadUpdateInput.parse({ ...base, title: "  Enterprise renewal  " }).title).toBe(
+      "Enterprise renewal",
+    );
+  });
+
+  it("rejects a blank inline title update", () => {
+    expect(leadUpdateInput.safeParse({ ...base, title: "   " }).success).toBe(false);
   });
 });

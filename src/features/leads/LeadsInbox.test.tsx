@@ -34,6 +34,7 @@ vi.mock("@/lib/trpc-client", () => ({
     lead: { list: { useQuery: (...a: unknown[]) => listQuery(...a) } },
     // Ungated: every user gets the full active-user list so owner filtering runs server-side.
     identity: { assignableUsers: { useQuery: () => ({ data: [] }) } },
+    customFields: { listDefs: { useQuery: () => ({ data: [], isLoading: false }) } },
     labels: {
       listByTarget: {
         useQuery: () => ({
@@ -157,7 +158,10 @@ describe("LeadsInbox", () => {
     fireEvent.click(screen.getByRole("checkbox", { name: "Select Acme lead" }));
     fireEvent.click(screen.getByRole("button", { name: "Convert to deal" }));
     await waitFor(() => {
-      expect(bulkConvertLeadsAction).toHaveBeenCalledWith({ ids: ["l1"] }, "csrf");
+      expect(bulkConvertLeadsAction).toHaveBeenCalledWith(
+        { ids: ["l1"], customFields: {} },
+        "csrf",
+      );
     });
   });
 

@@ -43,10 +43,14 @@ export function ActivityCard({
   activity,
   at,
   onChanged,
+  onEdit,
 }: {
   activity: CalendarActivity;
   at: Date;
   onChanged?: () => void;
+  // Opens this activity in the inline composer for editing (deal workspace). The subject line and
+  // the "Edit" menu item both call it; omitted where editing is not offered.
+  onEdit?: () => void;
 }): React.ReactNode {
   const [done, setDone] = useState(activity.done);
   const [busy, setBusy] = useState(false);
@@ -105,10 +109,17 @@ export function ActivityCard({
           className="mt-0.5 rounded-full data-[state=checked]:border-success data-[state=checked]:bg-success data-[state=checked]:text-success-foreground"
         />
         <div className="min-w-0 flex-1">
-          <p className="flex items-center gap-1.5 text-pretty text-sm font-medium text-foreground">
+          {/* Subject is a button so clicking it opens the inline edit composer (deal workspace);
+              keyboard-accessible, and avoids nesting the card's links inside a clickable region. */}
+          <button
+            type="button"
+            onClick={() => onEdit?.()}
+            disabled={onEdit === undefined}
+            className="flex w-full items-center gap-1.5 text-pretty text-left text-sm font-medium text-foreground enabled:hover:text-primary disabled:cursor-default"
+          >
             <ActivityTypeIcon typeKey={activity.typeKey} />
             <span className="min-w-0 truncate">{activity.subject}</span>
-          </p>
+          </button>
           <p className="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-xs text-muted-foreground">
             {activity.overdue ? (
               <span className="font-semibold uppercase text-destructive">Overdue</span>
@@ -176,6 +187,9 @@ export function ActivityCard({
             </svg>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" aria-label="More actions" className="min-w-40">
+            {onEdit !== undefined && (
+              <DropdownMenuItem onSelect={() => onEdit()}>Edit</DropdownMenuItem>
+            )}
             <DropdownMenuItem onSelect={() => void toggle()}>
               {done ? "Reopen" : "Mark as done"}
             </DropdownMenuItem>

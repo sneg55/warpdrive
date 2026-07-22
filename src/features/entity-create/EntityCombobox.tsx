@@ -126,7 +126,10 @@ export function EntityCombobox(props: EntityComboboxProps): React.ReactNode {
         value={query}
         placeholder={placeholder}
         onChange={(e) => handleChange(e.target.value)}
-        onFocus={() => setOpen(true)}
+        // Open on a real user gesture (click or typing), NOT on bare focus. The create dialogs
+        // autofocus their first field on mount, and opening on that programmatic focus dumped the
+        // whole option list open before the user touched anything. Typing opens via handleChange.
+        onClick={() => setOpen(true)}
         onBlur={() => {
           setOpen(false);
           reconcile();

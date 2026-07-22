@@ -34,7 +34,7 @@ export function BuiltinFieldRow({
   }
 
   return (
-    <li className="flex items-center gap-2 px-3 py-2 text-sm">
+    <li className="flex min-h-10 items-center gap-2 px-3 py-2 text-sm transition-colors duration-150 ease-out hover:bg-accent/30 motion-reduce:transition-none">
       <span className="font-medium">{row.label}</span>
       <span className="rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
         {S.builtinBadge}

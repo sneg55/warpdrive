@@ -2,7 +2,14 @@ import { and, eq, isNull } from "drizzle-orm";
 import type { z } from "zod";
 import { AppError, ERROR_IDS } from "@/constants/errorIds";
 import type { Db } from "@/db/client";
-import { type Activity, activities, activityTypes } from "@/db/schema";
+import {
+  type Activity,
+  activities,
+  activityGuests,
+  activityParticipants,
+  activityTypes,
+  deals,
+} from "@/db/schema";
 import { sanitizeAuthorHtml } from "@/features/email/sanitizeHtml";
 import { can } from "@/features/permissions/can";
 import { canSee } from "@/features/permissions/canSee";
@@ -54,28 +61,57 @@ async function assertTypeActive(
 // Only include columns the patch actually provided (activityUpdateInput.refine already requires
 // at least one), so an omitted field never clobbers existing data with an implicit null write.
 // Re-sanitizes note through the same helper createActivity uses (sanitizeAuthorHtml).
+// Columns copied verbatim when their key is present (Zod already validated the values).
+const PASS_THROUGH_KEYS = [
+  "subject",
+  "typeId",
+  "priority",
+  "durationMinutes",
+  "location",
+  "assigneeId",
+  "videoCallUrl",
+  "dealId",
+  "personId",
+  "orgId",
+] as const;
+
 function buildPatch(input: ParsedUpdate): Partial<typeof activities.$inferInsert> {
   const patch: Partial<typeof activities.$inferInsert> = {};
-  if (input.subject !== undefined) patch.subject = input.subject;
-  if (input.typeId !== undefined) patch.typeId = input.typeId;
-  if (input.priority !== undefined) patch.priority = input.priority;
-  if (input.dueAt !== undefined) {
-    patch.dueAt = input.dueAt === null ? null : new Date(input.dueAt);
+  const sink = patch as Record<string, unknown>;
+  for (const key of PASS_THROUGH_KEYS) {
+    if (input[key] !== undefined) sink[key] = input[key];
   }
-  if (input.endAt !== undefined) {
-    patch.endAt = input.endAt === null ? null : new Date(input.endAt);
-  }
-  if (input.durationMinutes !== undefined) patch.durationMinutes = input.durationMinutes;
-  if (input.location !== undefined) patch.location = input.location;
+  // Transformed columns: dates are coerced and the note is re-sanitized (same helper as create).
+  if (input.dueAt !== undefined) patch.dueAt = input.dueAt === null ? null : new Date(input.dueAt);
+  if (input.endAt !== undefined) patch.endAt = input.endAt === null ? null : new Date(input.endAt);
   if (input.note !== undefined) {
     patch.note = input.note === null ? null : sanitizeAuthorHtml(input.note);
   }
-  if (input.assigneeId !== undefined) patch.assigneeId = input.assigneeId;
   return patch;
 }
 
-// Validate the referenced entities a patch may touch (currently only assigneeId) are visible
-// to the actor, mirroring createActivity's reference gate.
+type RefKind = "deal" | "person" | "organization" | "user";
+
+// Every entity a patch may newly reference, so assertPatchRefsVisible gates them in one loop
+// (mirrors createActivity's collectReferences). Guest/participant sets and the deal/person/org
+// re-links are included; a null link clears the field and needs no visibility check.
+function patchReferences(input: ParsedUpdate): Array<{ kind: RefKind; id: string }> {
+  const refs: Array<{ kind: RefKind; id: string }> = [];
+  const singles: Array<[RefKind, string | null | undefined]> = [
+    ["deal", input.dealId],
+    ["person", input.personId],
+    ["organization", input.orgId],
+    ["user", input.assigneeId],
+  ];
+  for (const [kind, id] of singles) {
+    if (id !== null && id !== undefined) refs.push({ kind, id });
+  }
+  for (const gid of input.guestPersonIds ?? []) refs.push({ kind: "person", id: gid });
+  for (const uid of input.participantUserIds ?? []) refs.push({ kind: "user", id: uid });
+  return refs;
+}
+
+// Validate every entity a patch references is visible to the actor, mirroring createActivity's gate.
 async function assertPatchRefsVisible(
   tx: DbOrTx,
   actor: PermSetUser,
@@ -86,14 +122,9 @@ async function assertPatchRefsVisible(
     const typeCheck = await assertTypeActive(tx, input.typeId, signal);
     if (!typeCheck.ok) return typeCheck;
   }
-  if (input.assigneeId !== undefined) {
-    const refActor = toVisibilitySession(actor);
-    const refCheck = await assertReferenceVisible(
-      tx,
-      refActor,
-      { kind: "user", id: input.assigneeId },
-      signal,
-    );
+  const refActor = toVisibilitySession(actor);
+  for (const ref of patchReferences(input)) {
+    const refCheck = await assertReferenceVisible(tx, refActor, ref, signal);
     if (!refCheck.ok) return refCheck;
   }
   return ok(undefined);
@@ -166,20 +197,84 @@ export async function updateActivity(
     const orderOk = assertUpdateEndOrder(current, input);
     if (!orderOk.ok) return orderOk;
 
-    const [row] = await tx
-      .update(activities)
-      .set(buildPatch(input))
-      .where(eq(activities.id, input.id))
-      .returning();
+    const archivedOk = await assertRelinkDealNotArchived(tx, current, input, signal);
+    if (!archivedOk.ok) return archivedOk;
 
-    if (row === undefined) {
-      return err(new AppError(ERROR_IDS.DB_INSERT_FAILED, "activity update returned no rows", {}));
+    // A guest/participant-only edit has no scalar columns to write; skip the row UPDATE (Drizzle
+    // rejects an empty .set()) and keep the current row for the recompute below.
+    const patch = buildPatch(input);
+    let row = current;
+    if (Object.keys(patch).length > 0) {
+      const [updated] = await tx
+        .update(activities)
+        .set(patch)
+        .where(eq(activities.id, input.id))
+        .returning();
+      if (updated === undefined) {
+        return err(
+          new AppError(ERROR_IDS.DB_INSERT_FAILED, "activity update returned no rows", {}),
+        );
+      }
+      row = updated;
     }
 
-    if (row.dealId !== null) {
-      await recomputeNextActivity(tx, row.dealId, signal);
-    }
+    await reconcileGuestsAndParticipants(tx, row.id, input);
+
+    // Recompute next_activity for the new deal AND the previous one when the link moved.
+    const affectedDeals = new Set<string>();
+    if (row.dealId !== null) affectedDeals.add(row.dealId);
+    if (current.dealId !== null && current.dealId !== row.dealId) affectedDeals.add(current.dealId);
+    for (const dealId of affectedDeals) await recomputeNextActivity(tx, dealId, signal);
 
     return ok(row);
   });
+}
+
+// Re-linking to a NEW deal cannot target an archived deal (mirrors createActivity's guard).
+async function assertRelinkDealNotArchived(
+  tx: DbOrTx,
+  current: Activity,
+  input: ParsedUpdate,
+  signal: AbortSignal,
+): Promise<Result<undefined, AppError>> {
+  if (input.dealId == null || input.dealId === current.dealId) return ok(undefined);
+  const [dealRow] = await tx
+    .select({ archivedAt: deals.archivedAt })
+    .from(deals)
+    .where(eq(deals.id, input.dealId));
+  signal.throwIfAborted();
+  if (dealRow?.archivedAt != null) {
+    return err(
+      new AppError(
+        ERROR_IDS.DEAL_ARCHIVED_NO_ACTIVITY,
+        "Cannot add an activity to an archived deal",
+        { dealId: input.dealId },
+      ),
+    );
+  }
+  return ok(undefined);
+}
+
+// Guest/participant sets replace wholesale when provided; an omitted key leaves the set untouched.
+async function reconcileGuestsAndParticipants(
+  tx: DbOrTx,
+  activityId: string,
+  input: ParsedUpdate,
+): Promise<void> {
+  if (input.guestPersonIds !== undefined) {
+    await tx.delete(activityGuests).where(eq(activityGuests.activityId, activityId));
+    if (input.guestPersonIds.length > 0) {
+      await tx
+        .insert(activityGuests)
+        .values(input.guestPersonIds.map((personId) => ({ activityId, personId })));
+    }
+  }
+  if (input.participantUserIds !== undefined) {
+    await tx.delete(activityParticipants).where(eq(activityParticipants.activityId, activityId));
+    if (input.participantUserIds.length > 0) {
+      await tx
+        .insert(activityParticipants)
+        .values(input.participantUserIds.map((userId) => ({ activityId, userId })));
+    }
+  }
 }

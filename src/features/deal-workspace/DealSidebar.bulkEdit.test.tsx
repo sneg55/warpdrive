@@ -76,6 +76,7 @@ function makeWorkspace(): DealWorkspace {
       primaryEmail: "ava@x.com",
       phones: [],
       emails: [],
+      labels: [],
     },
     org: {
       id: "o1",
@@ -86,6 +87,7 @@ function makeWorkspace(): DealWorkspace {
       annualRevenue: null,
       linkedinUrl: null,
       address: null,
+      labels: [],
     },
     customFieldDefs: [textDef],
   } as unknown as DealWorkspace;
@@ -145,7 +147,7 @@ it("the Organization section pencil bulk-edits firmographics in one action call"
   );
 });
 
-it("the Details section pencil bulk-edits custom fields in one action call", async () => {
+it("inline-edits deal custom fields from inside the Organization section", async () => {
   render(
     <DealSidebar
       workspace={makeWorkspace()}
@@ -155,11 +157,11 @@ it("the Details section pencil bulk-edits custom fields in one action call", asy
     />,
   );
 
-  const detailsSection = within(screen.getByRole("region", { name: "Details" }));
-  fireEvent.click(detailsSection.getByRole("button", { name: "Edit Details section" }));
-
-  fireEvent.change(detailsSection.getByLabelText("Industry"), { target: { value: "Finance" } });
-  fireEvent.click(detailsSection.getByRole("button", { name: "Save" }));
+  const organization = within(screen.getByRole("region", { name: "Organization" }));
+  expect(screen.queryByRole("region", { name: "Details" })).not.toBeInTheDocument();
+  fireEvent.click(organization.getAllByRole("button", { name: "Edit Industry" }).at(-1)!);
+  fireEvent.change(organization.getByLabelText("Industry"), { target: { value: "Finance" } });
+  fireEvent.click(organization.getByRole("button", { name: "Save" }));
 
   await vi.waitFor(() => expect(updateDealAction).toHaveBeenCalledTimes(1));
   expect(updateDealAction).toHaveBeenCalledWith(

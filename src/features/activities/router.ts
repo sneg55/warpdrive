@@ -1,3 +1,4 @@
+import { TRPCError } from "@trpc/server";
 import { asc, isNull } from "drizzle-orm";
 import { z } from "zod";
 import { activityTypes } from "@/db/schema";
@@ -6,6 +7,7 @@ import { listActivityRows } from "./activityRows";
 import { getBusyWindows } from "./availability";
 import { calendarRange } from "./calendar";
 import { listActivitiesForEntity } from "./forEntity";
+import { getActivityForEdit } from "./getForEdit";
 import { activityListFilter, activitySortInput } from "./schemas";
 
 // listRows' input: the list filter (every field defaulted, so an empty call still resolves to
@@ -59,6 +61,16 @@ export const activitiesRouter = router({
         AbortSignal.timeout(10_000),
       ),
     ),
+
+  // Full activity (incl. guest/participant sets) for prefilling the inline edit composer.
+  // Visibility-gated in getActivityForEdit; NOT_FOUND on missing/invisible so nothing leaks.
+  getForEdit: protectedProcedure
+    .input(z.object({ id: z.string().uuid() }))
+    .query(async ({ ctx, input }) => {
+      const r = await getActivityForEdit(ctx.db, ctx.actor, input.id, AbortSignal.timeout(10_000));
+      if (!r.ok) throw new TRPCError({ code: "NOT_FOUND", message: r.error.id });
+      return r.value;
+    }),
 
   // Read-only Free/Busy signal for the composer: is the assignee already booked in [from, to]?
   // Defaults the assignee to the current actor. Returns a coarse boolean, never activity details.

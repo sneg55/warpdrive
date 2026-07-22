@@ -54,6 +54,15 @@ export const activityUpdateInput = z
     location: z.string().trim().max(255).nullable().optional(),
     note: z.string().max(50_000).nullable().optional(),
     assigneeId: z.string().uuid().optional(),
+    // Full-fidelity edit (deal-workspace inline composer): the video-call link, the guest/participant
+    // sets (each replaces the whole set when provided), and re-linking the deal/person/org. Omitted
+    // fields are never touched (buildPatch + the reconcilers only act on provided keys).
+    videoCallUrl: z.string().url().max(2048).nullable().optional(),
+    guestPersonIds: z.array(z.string().uuid()).optional(),
+    participantUserIds: z.array(z.string().uuid()).optional(),
+    dealId: z.string().uuid().nullable().optional(),
+    personId: z.string().uuid().nullable().optional(),
+    orgId: z.string().uuid().nullable().optional(),
   })
   .refine((v) => Object.keys(v).length > 1, { message: "no fields to update" });
 

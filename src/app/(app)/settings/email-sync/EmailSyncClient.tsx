@@ -1,9 +1,17 @@
 "use client";
+import { Mail } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type React from "react";
 import { useState } from "react";
+import { Button } from "@/components/ui/Button";
 import { connectGmailStart, disconnectMailboxAction } from "@/features/email/actions";
 import { readCsrfToken } from "@/utils/csrfCookie";
+import {
+  SettingsCard,
+  SettingsCardBody,
+  SettingsCardFooter,
+  SettingsCardHeader,
+} from "../SettingsSurface";
 import { EMAIL_SYNC_STRINGS } from "./strings";
 
 const S = EMAIL_SYNC_STRINGS;
@@ -64,8 +72,13 @@ export function EmailSyncClient({ mailbox }: { mailbox: MailboxView | null }): R
   }
 
   return (
-    <div className="space-y-4">
-      <div className="rounded-md border border-gray-200 p-4">
+    <SettingsCard>
+      <SettingsCardHeader
+        icon={<Mail className="size-4" aria-hidden="true" />}
+        title="Gmail connection"
+        description="Connect one mailbox to sync messages and activity."
+      />
+      <SettingsCardBody>
         <div className="mb-1 flex items-center gap-2">
           <span
             data-status={mailbox?.status ?? "none"}
@@ -86,30 +99,25 @@ export function EmailSyncClient({ mailbox }: { mailbox: MailboxView | null }): R
         ) : (
           <p className="text-sm text-muted-foreground">{S.notConnected}</p>
         )}
-      </div>
+      </SettingsCardBody>
 
-      <div className="flex items-center gap-3">
+      <SettingsCardFooter>
+        {error !== null ? <span className="mr-auto text-sm text-red-600">{error}</span> : null}
         {connected ? (
-          <button
+          <Button
             type="button"
+            variant="outline"
             disabled={pending}
             onClick={() => void disconnect()}
-            className="rounded-md border border-gray-200 px-3 py-1.5 text-sm font-medium transition-transform hover:bg-accent/60 active:not-disabled:scale-[0.96] disabled:opacity-50"
           >
             {pending ? S.disconnecting : S.disconnect}
-          </button>
+          </Button>
         ) : (
-          <button
-            type="button"
-            disabled={pending}
-            onClick={() => void startConnect()}
-            className="rounded-md bg-action px-3 py-1.5 text-sm font-medium text-action-foreground transition-transform hover:opacity-90 active:not-disabled:scale-[0.96] disabled:opacity-50"
-          >
+          <Button type="button" disabled={pending} onClick={() => void startConnect()}>
             {pending ? S.connecting : mailbox === null ? S.connect : S.reconnect}
-          </button>
+          </Button>
         )}
-        {error !== null ? <span className="text-sm text-red-600">{error}</span> : null}
-      </div>
-    </div>
+      </SettingsCardFooter>
+    </SettingsCard>
   );
 }

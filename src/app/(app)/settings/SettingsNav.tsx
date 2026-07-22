@@ -6,6 +6,7 @@ import {
   type LucideIcon,
   Mail,
   MailCheck,
+  Plug,
   ShieldCheck,
   Table2,
   Upload,
@@ -13,11 +14,10 @@ import {
   Users,
   UsersRound,
 } from "lucide-react";
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type React from "react";
+import { SecondaryNavLink } from "@/components/navigation/SecondaryNavLink";
 import { STRINGS } from "@/constants/strings";
-import { cn } from "@/lib/utils";
 
 interface NavItem {
   href: string;
@@ -37,6 +37,7 @@ const MY_ACCOUNT: NavSection = {
     { href: "/settings/notifications", label: STRINGS.settings.notifications, icon: Bell },
     { href: "/settings/email-sync", label: STRINGS.settings.emailSync, icon: MailCheck },
     { href: "/settings/email", label: STRINGS.settings.emailTemplates, icon: Mail },
+    { href: "/settings/connections", label: STRINGS.settings.connectedApps, icon: Plug },
   ],
 };
 
@@ -96,24 +97,12 @@ export function SettingsNav({
               const Icon = item.icon;
               return (
                 <li key={item.href}>
-                  <Link
+                  <SecondaryNavLink
                     href={item.href}
-                    aria-current={active ? "page" : undefined}
-                    className={cn(
-                      "flex items-center gap-2.5 rounded-md px-2 py-1.5 text-sm transition-colors",
-                      // PD highlights the active row in blue (icon + label + tinted bg); idle rows are
-                      // near-black text with a muted icon, like Pipedrive's settings menu.
-                      active
-                        ? "bg-blue-50 font-semibold text-blue-700 dark:bg-blue-950/40 dark:text-blue-300"
-                        : "font-normal text-foreground hover:bg-accent/60",
-                    )}
-                  >
-                    <Icon
-                      aria-hidden="true"
-                      className={cn("h-4 w-4 shrink-0", active ? "" : "text-muted-foreground")}
-                    />
-                    {item.label}
-                  </Link>
+                    label={item.label}
+                    icon={Icon}
+                    active={active}
+                  />
                 </li>
               );
             })}

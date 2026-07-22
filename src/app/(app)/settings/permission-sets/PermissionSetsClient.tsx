@@ -19,7 +19,7 @@ export function PermissionSetsClient({ sets }: Props): React.ReactElement {
   const router = useRouter();
   const refresh = (): void => router.refresh();
   return (
-    <div>
+    <div className="space-y-6">
       <CreatePermissionSetForm onCreated={refresh} />
       {sets.map((s) => (
         <FlagEditor key={s.id} setId={s.id} name={s.name} flags={s.flags} onSaved={refresh} />

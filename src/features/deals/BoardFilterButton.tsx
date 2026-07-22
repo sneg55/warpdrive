@@ -2,6 +2,7 @@
 import { Filter } from "lucide-react";
 import type React from "react";
 import { useState } from "react";
+import { Button } from "@/components/ui/Button";
 import type { FilterDefinition } from "@/features/saved-filters/schemas";
 import type { BoardOwner } from "./boardFilter";
 import { CreateFilterModal } from "./CreateFilterModal";
@@ -36,11 +37,12 @@ export function BoardFilterButton({
 
   return (
     <>
-      <button
-        type="button"
+      <Button
+        variant="outline"
+        size="sm"
         aria-label="Filter"
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-1.5 rounded-md border bg-card px-3 py-1.5 text-sm transition hover:bg-accent"
+        className="bg-card font-normal"
       >
         <Filter aria-hidden="true" className="h-4 w-4" />
         Filter
@@ -49,7 +51,7 @@ export function BoardFilterButton({
             {activeCount}
           </span>
         ) : null}
-      </button>
+      </Button>
       {open && (
         <CreateFilterModal
           owners={owners}

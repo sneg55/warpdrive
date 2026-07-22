@@ -37,6 +37,9 @@ export const dealCreateInput = z.object({
   // (F27). Any caller-supplied status is stripped at this boundary.
   // Optional: validated server-side against the creator's group membership before use.
   visibilityGroupId: z.string().uuid().optional(),
+  // Values are validated against the active deal field definitions inside createDeal. Keeping the
+  // boundary as unknown-per-key lets settings-defined fields evolve without redeploying this schema.
+  customFields: z.record(z.string(), z.unknown()).optional(),
 });
 
 export const dealUpdateInput = z.object({

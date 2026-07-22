@@ -2,6 +2,8 @@
 import { useRouter } from "next/navigation";
 import type React from "react";
 import { useState } from "react";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import {
   CUSTOM_FIELD_TARGETS,
@@ -9,11 +11,11 @@ import {
   type CustomFieldTarget,
   type CustomFieldType,
 } from "@/constants/customFieldTypes";
-import { FIELD_INPUT } from "@/constants/formStyles";
 import { STRINGS } from "@/constants/strings";
 import { createDefAction } from "@/features/custom-fields/actions";
 import { readCsrfToken } from "@/utils/csrfCookie";
 import { SettingsHeading } from "../SettingsHeading";
+import { SettingsPage } from "../SettingsSurface";
 import { BuiltinFieldRow } from "./BuiltinFieldRow";
 import { FieldList } from "./FieldList";
 import { DATA_FIELDS_STRINGS } from "./strings";
@@ -32,7 +34,7 @@ const TARGET_OPTIONS = CUSTOM_FIELD_TARGETS.map((fieldTarget) => ({
 }));
 const FIELD_TYPE_OPTIONS = CUSTOM_FIELD_TYPES.map((fieldType) => ({
   value: fieldType,
-  label: fieldType,
+  label: fieldType.replaceAll("_", " "),
 }));
 const OPTION_TYPES = new Set<CustomFieldType>(["single_option", "multi_option"]);
 
@@ -88,7 +90,7 @@ export function DataFieldsClient({
   }
 
   return (
-    <section className="max-w-2xl space-y-4">
+    <SettingsPage>
       <SettingsHeading title={S.dataFields} description={DATA_FIELDS_STRINGS.description} />
 
       <div className="block">
@@ -98,65 +100,76 @@ export function DataFieldsClient({
           value={target}
           onChange={(value) => setTarget(value as CustomFieldTarget)}
           options={TARGET_OPTIONS}
+          triggerContent={TARGET_LABEL[target]}
         />
       </div>
 
       {builtinRows.length > 0 && (
-        <div className="space-y-1">
-          <span className="block text-sm font-medium">{S.builtinFields}</span>
-          <ul className="divide-y rounded-md border">
+        <section className="space-y-2">
+          <h2 className="text-sm font-semibold">{S.builtinFields}</h2>
+          <ul className="divide-y overflow-hidden rounded-lg border bg-card shadow-sm">
             {builtinRows.map((row) => (
               <BuiltinFieldRow key={row.key} entity={target} row={row} />
             ))}
           </ul>
           <p className="text-xs text-muted-foreground">{S.builtinHideNote}</p>
-        </div>
+        </section>
       )}
 
-      <FieldList key={target} rows={rows} />
-
-      <div className="space-y-2 rounded-md border p-3">
-        <div className="flex flex-wrap items-end gap-2">
-          <label className="block flex-1">
-            <span className="mb-1 block text-sm font-medium">{S.fieldName}</span>
-            <input
-              aria-label={S.fieldName}
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className={FIELD_INPUT}
-            />
-          </label>
-          <div className="block">
-            <span className="mb-1 block text-sm font-medium">{S.fieldType}</span>
-            <Select
-              ariaLabel={S.fieldType}
-              value={type}
-              onChange={(value) => setType(value as CustomFieldType)}
-              options={FIELD_TYPE_OPTIONS}
-            />
-          </div>
-        </div>
-        {OPTION_TYPES.has(type) && (
-          <label className="block">
-            <span className="mb-1 block text-sm font-medium">{S.fieldOptions}</span>
-            <input
-              aria-label={S.fieldOptions}
-              value={optionsRaw}
-              onChange={(e) => setOptionsRaw(e.target.value)}
-              placeholder={S.fieldOptionsHelp}
-              className={FIELD_INPUT}
-            />
-          </label>
-        )}
-        <button
-          type="button"
-          onClick={() => void add()}
-          className="rounded-md bg-action px-3 py-1.5 text-sm font-medium text-action-foreground transition-transform hover:opacity-90 active:scale-[0.96]"
-        >
-          {S.addField}
-        </button>
-        {error !== null && <p className="text-sm text-red-600">{error}</p>}
-      </div>
-    </section>
+      <section className="space-y-2">
+        <h2 className="text-sm font-semibold">{S.customFields}</h2>
+        <FieldList
+          key={target}
+          rows={rows}
+          footer={
+            <li className="space-y-2 bg-muted/10 px-3 py-3">
+              <div className="flex flex-wrap items-end gap-2">
+                <label htmlFor="new-field-name" className="min-w-48 flex-1">
+                  <span className="mb-1 block text-sm font-medium">{S.fieldName}</span>
+                  <Input
+                    id="new-field-name"
+                    aria-label={S.fieldName}
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                  />
+                </label>
+                <div className="w-36 shrink-0">
+                  <span className="mb-1 block text-sm font-medium">{S.fieldType}</span>
+                  <Select
+                    ariaLabel={S.fieldType}
+                    value={type}
+                    onChange={(value) => setType(value as CustomFieldType)}
+                    options={FIELD_TYPE_OPTIONS}
+                    triggerContent={type.replaceAll("_", " ")}
+                  />
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  className="px-3"
+                  disabled={name.trim() === ""}
+                  onClick={() => void add()}
+                >
+                  {S.addField}
+                </Button>
+              </div>
+              {OPTION_TYPES.has(type) && (
+                <label htmlFor="new-field-options" className="block">
+                  <span className="mb-1 block text-sm font-medium">{S.fieldOptions}</span>
+                  <Input
+                    id="new-field-options"
+                    aria-label={S.fieldOptions}
+                    value={optionsRaw}
+                    onChange={(e) => setOptionsRaw(e.target.value)}
+                    placeholder={S.fieldOptionsHelp}
+                  />
+                </label>
+              )}
+              {error !== null && <p className="text-sm text-red-600">{error}</p>}
+            </li>
+          }
+        />
+      </section>
+    </SettingsPage>
   );
 }

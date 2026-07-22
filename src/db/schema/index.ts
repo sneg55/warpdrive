@@ -27,6 +27,7 @@ export * from "./mentions";
 export * from "./notes";
 export * from "./notificationPreferences";
 export * from "./notifications";
+export * from "./oauth";
 export * from "./organizationRelations";
 export * from "./organizations";
 export * from "./persons";

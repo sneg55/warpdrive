@@ -16,6 +16,7 @@
 //   which remounts the component entirely on reset.
 import { EditorContent, useEditor } from "@tiptap/react";
 import { useEffect, useRef } from "react";
+import { MASK_CLASS } from "@/features/observability/replayMasking";
 import { cn } from "@/lib/utils";
 import { sanitizeAuthorHtml } from "../sanitizeHtml";
 import { FormatToolbar } from "./FormatToolbar";
@@ -102,6 +103,8 @@ export function RichTextBody({
     <div
       className={cn(
         "flex flex-col",
+        MASK_CLASS,
+        "ph-no-capture",
         grow && "min-h-0 flex-1",
         frameClassName ?? "border-b border-border",
       )}

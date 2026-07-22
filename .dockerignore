@@ -10,6 +10,7 @@
 node_modules
 **/node_modules
 .next
+**/.next
 dist
 build
 coverage
@@ -20,6 +21,9 @@ pnpm-debug.log*
 # Local harness / self-improvement scratch (gitignored, must never ship).
 .harness
 .superpowers
+# Claude Code local state and git worktrees (worktrees carry their own .next caches, which
+# otherwise bloat the build context and can exhaust disk on a local docker build).
+.claude
 
 # Editor / OS cruft
 .vscode

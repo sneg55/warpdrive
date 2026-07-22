@@ -55,6 +55,10 @@ export interface BoardCard {
   personName?: string | null;
   orgName?: string | null;
   nextActivityAt: Date | null;
+  // Subject of the soonest open, dated activity (the row that drives nextActivityAt), so the card's
+  // next-action badge tooltip can name the action. Null when nothing is scheduled. Optional/absent
+  // on hand-built fixtures and on reads that do not join it (only the board read populates it).
+  nextActivityTitle?: string | null;
   lastActivityAt: Date | null;
   // Date-only column (YYYY-MM-DD): kept as the raw string so the list can format it in local time
   // without a UTC off-by-one. Optional so hand-built fixtures need not set it.
@@ -94,6 +98,7 @@ export async function getBoardColumns(
       pe.name           AS "personName",
       o.name            AS "orgName",
       d.next_activity_at   AS "nextActivityAt",
+      na.subject           AS "nextActivityTitle",
       d.last_activity_at   AS "lastActivityAt",
       d.expected_close_date AS "expectedCloseDate",
       d.stage_entered_at   AS "stageEnteredAt",
@@ -104,6 +109,18 @@ export async function getBoardColumns(
     LEFT JOIN users u ON u.id = d.owner_id
     LEFT JOIN persons pe ON pe.id = d.person_id
     LEFT JOIN organizations o ON o.id = d.org_id
+    -- Soonest OPEN, DATED activity's subject: the same predicate recomputeNextActivity uses, so the
+    -- title always pairs with next_activity_at. LATERAL keeps it one row per deal (no fan-out).
+    LEFT JOIN LATERAL (
+      SELECT a.subject
+      FROM activities a
+      WHERE a.deal_id = d.id
+        AND a.done = false
+        AND a.deleted_at IS NULL
+        AND a.due_at IS NOT NULL
+      ORDER BY a.due_at ASC
+      LIMIT 1
+    ) na ON true
     WHERE d.pipeline_id = ${pipelineId}
       AND d.status = 'open'
       AND d.deleted_at IS NULL

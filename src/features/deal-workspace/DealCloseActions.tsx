@@ -3,24 +3,19 @@ import { useRouter } from "next/navigation";
 import type React from "react";
 import { useState } from "react";
 import { Tip } from "@/components/ui/tooltip";
+import type { DealStatus } from "@/constants/dealStatus";
 import { AddActivityModal } from "@/features/activities/AddActivityModal";
 import { useDealActionError } from "@/features/deal-workspace/DealActionErrorProvider";
+import { DealStatusBadge } from "@/features/deal-workspace/DealStatusBadge";
 import { MarkLostDialog } from "@/features/deal-workspace/MarkLostDialog";
 import { playWinChime } from "@/features/deals/winChime";
 import { useInterfacePrefs } from "@/features/identity/InterfacePrefsProvider";
-import { cn } from "@/lib/utils";
 import { readCsrfToken } from "@/utils/csrfCookie";
 import { markWonAction, reopenDealAction } from "./actions";
 
-const STATUS_CLASS: Record<string, string> = {
-  won: "bg-success text-success-foreground",
-  lost: "bg-destructive text-destructive-foreground",
-  open: "bg-accent text-accent-foreground",
-};
-
 export interface DealCloseActionsProps {
   dealId: string;
-  status: string;
+  status: DealStatus;
   lostReasonOptions: Array<{ id: string; name: string }>;
   // Read-back for a closed lost deal: the preset reason name (from lostReasonId) and the free-text
   // comment (lostReason). Both may be set (Pipedrive parity); null when unset. Written on close but
@@ -73,14 +68,7 @@ export function DealCloseActions({
         : "";
     return (
       <div className="flex items-center gap-2">
-        <span
-          className={cn(
-            "rounded px-2 py-1 text-xs font-medium uppercase",
-            STATUS_CLASS[status] ?? "bg-muted text-muted-foreground",
-          )}
-        >
-          {status}
-        </span>
+        <DealStatusBadge status={status} />
         {reasonLabel !== "" && (
           <Tip label={reasonLabel}>
             <span className="max-w-48 truncate text-xs text-muted-foreground">{reasonLabel}</span>
@@ -124,6 +112,7 @@ export function DealCloseActions({
 
   return (
     <div className="flex items-center gap-2">
+      <DealStatusBadge status="open" />
       {/* Won marks the deal won on a single click (Pipedrive parity). No options dropdown: there was
           only a redundant "Mark as won" item, so the plain button is the whole control. */}
       <button

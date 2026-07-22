@@ -37,6 +37,8 @@ interface AddDealLeftColumnProps {
   owners: Option[] | null; // null hides the owner select (actor cannot reassign)
   groups: Option[] | null; // null hides the visible-to select
   baseCurrency: string;
+  organizationCustomFields?: React.ReactNode;
+  dealCustomFields?: React.ReactNode;
 }
 
 // Left column of the Add deal dialog (Pipedrive field order): contact/org, title, value, pipeline,
@@ -53,6 +55,8 @@ export function AddDealLeftColumn(props: AddDealLeftColumnProps): React.ReactNod
     owners,
     groups,
     baseCurrency,
+    organizationCustomFields,
+    dealCustomFields,
   } = props;
   const titleId = useId();
   const sourceChannelIdId = useId();
@@ -79,6 +83,8 @@ export function AddDealLeftColumn(props: AddDealLeftColumnProps): React.ReactNod
         onCreateNew={(name) => set({ orgMode: "new", orgId: "", newOrgName: name })}
         onClear={() => set({ orgMode: "existing", orgId: "", newOrgName: "" })}
       />
+
+      {state.orgMode === "new" ? organizationCustomFields : null}
 
       <label className="block" htmlFor={titleId}>
         <span className="mb-1 block font-medium">Title</span>
@@ -214,6 +220,8 @@ export function AddDealLeftColumn(props: AddDealLeftColumnProps): React.ReactNod
           />
         </div>
       )}
+
+      {dealCustomFields}
     </div>
   );
 }

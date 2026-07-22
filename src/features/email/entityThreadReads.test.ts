@@ -27,7 +27,7 @@ function callerFor(db: TestDb, actor: PermSetUser) {
     db,
     session: { userId: actor.id, sessionId: "test-session" },
     // Context actor carries display fields (used only by the app shell); placeholders here.
-    actor: { ...actor, name: "Test User", avatarUrl: null },
+    actor: { ...actor, name: "Test User", email: "test@example.com", avatarUrl: null },
   });
 }
 

@@ -33,8 +33,8 @@ const fieldDef: CustomFieldDef = {
   id: "cf-industry",
   targetEntity: "deal",
   type: "text",
-  name: "Industry",
-  key: "industry",
+  name: "Deal segment",
+  key: "deal_segment",
   options: [],
   isRequired: false,
   isImportant: false,
@@ -53,7 +53,7 @@ function makeWorkspace(): DealWorkspace {
       sourceChannel: "outbound",
       sourceChannelId: null,
       expectedCloseDate: null,
-      customFields: { industry: "Manufacturing" },
+      customFields: { deal_segment: "Manufacturing" },
       createdAt: new Date("2026-01-01T00:00:00Z"),
       lastActivityAt: null,
       updatedAt: new Date("2026-01-02T00:00:00Z"),
@@ -67,6 +67,7 @@ function makeWorkspace(): DealWorkspace {
       primaryEmail: "p@example.com",
       phones: [],
       emails: [],
+      labels: [],
     },
     org: {
       id: "o1",
@@ -77,6 +78,7 @@ function makeWorkspace(): DealWorkspace {
       annualRevenue: null,
       linkedinUrl: null,
       address: null,
+      labels: [],
     },
     customFieldDefs: [fieldDef],
   } as unknown as DealWorkspace;
@@ -126,7 +128,7 @@ it("renders Summary as PD's action list (no field-label column), other sections 
   expect(summary.getByText("$1,000")).toBeInTheDocument();
   expect(summary.queryAllByTestId("field-row")).toHaveLength(0);
   // Every other section keeps the right-aligned label default.
-  expectLabelAlign("Details", "Industry", "right");
+  expectLabelAlign("Organization", "Deal segment", "right");
   expectLabelAlign("Person", "Name", "right");
 });
 
@@ -140,7 +142,7 @@ it("renders representative sidebar values through the shared left-aligned FieldR
     />,
   );
 
-  expectSharedLeftValue("Details", "Industry");
+  expectSharedLeftValue("Organization", "Deal segment");
   expectSharedLeftValue("Organization", "Name");
   expectSharedLeftValue("Person", "Name");
   expectSharedLeftValue("Source", "Channel");

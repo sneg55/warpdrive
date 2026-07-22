@@ -35,14 +35,14 @@ export function AddLeadButton({
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="rounded-l-md bg-action px-3 py-1.5 text-sm font-medium text-action-foreground transition hover:opacity-90 active:scale-[0.96]"
+          className="rounded-l-md bg-action px-3 py-1.5 text-sm font-medium text-action-foreground transition-[opacity,scale] duration-150 ease-out hover:opacity-90 active:scale-[0.96] motion-reduce:transition-opacity"
         >
           + Lead
         </button>
         <DropdownMenu>
           <DropdownMenuTrigger
             aria-label="Add lead options"
-            className="rounded-r-md border-l border-action-foreground/20 bg-action px-1.5 py-1.5 text-action-foreground transition hover:opacity-90 active:scale-[0.96]"
+            className="rounded-r-md border-l border-action-foreground/20 bg-action px-1.5 py-1.5 text-action-foreground transition-[opacity,scale] duration-150 ease-out hover:opacity-90 active:scale-[0.96] motion-reduce:transition-opacity"
           >
             <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor">
               <path d="M7 10l5 5 5-5z" />

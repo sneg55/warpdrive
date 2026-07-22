@@ -58,7 +58,8 @@ describe("CreateTeamForm", () => {
   it("calls setTeamMembersAction with the selected member ids after creation", async () => {
     render(<CreateTeamForm users={USERS} onCreated={vi.fn()} />);
     fireEvent.change(screen.getByLabelText("Team name"), { target: { value: "Sales" } });
-    fireEvent.click(screen.getByRole("checkbox", { name: "Bob" }));
+    fireEvent.click(screen.getByLabelText("Members"));
+    fireEvent.click(screen.getByRole("option", { name: /Bob/ }));
     fireEvent.click(screen.getByRole("button", { name: "Create" }));
     await waitFor(() =>
       expect(setTeamMembersAction).toHaveBeenCalledWith("csrf", {
@@ -83,27 +84,21 @@ describe("CreateTeamForm", () => {
     // omitted below) must never surface as a selectable manager or member. This locks the picker
     // contract: CreateTeamForm renders exactly the users it receives and pulls no wider list.
     render(<CreateTeamForm users={[ALICE]} onCreated={vi.fn()} />);
-    expect(screen.getByRole("checkbox", { name: ALICE.name })).toBeInTheDocument();
-    expect(screen.queryByRole("checkbox", { name: BOB.name })).not.toBeInTheDocument();
     fireEvent.click(screen.getByLabelText("Manager"));
     expect(screen.getByRole("option", { name: ALICE.name })).toBeInTheDocument();
     expect(screen.queryByRole("option", { name: BOB.name })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("option", { name: ALICE.name }));
+    fireEvent.click(screen.getByLabelText("Members"));
+    expect(screen.getByRole("option", { name: /Alice/ })).toBeInTheDocument();
+    expect(screen.queryByRole("option", { name: /Bob/ })).not.toBeInTheDocument();
   });
 
-  it("toggles a member by clicking their name, not only the checkbox", async () => {
-    // The member name must be a real label tied to the checkbox, so clicking the name (a much
-    // larger hit target than the 16px box) selects that member. Regression guard for the name
-    // shipping as an inert <span>.
+  it("keeps the create action disabled until a team name is entered", () => {
     render(<CreateTeamForm users={USERS} onCreated={vi.fn()} />);
+    const create = screen.getByRole("button", { name: "Create" });
+    expect(create).toBeDisabled();
     fireEvent.change(screen.getByLabelText("Team name"), { target: { value: "Sales" } });
-    fireEvent.click(screen.getByText(BOB.name, { selector: "label" }));
-    fireEvent.click(screen.getByRole("button", { name: "Create" }));
-    await waitFor(() =>
-      expect(setTeamMembersAction).toHaveBeenCalledWith("csrf", {
-        teamId: "team-new",
-        userIds: [BOB.id],
-      }),
-    );
+    expect(create).toBeEnabled();
   });
 
   it("shows an inline error when creation fails", async () => {

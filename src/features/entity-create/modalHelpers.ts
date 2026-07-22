@@ -21,9 +21,9 @@ export function optionsOrNull(rows: Option[] | undefined): Option[] | null {
 
 type PersonFields = Pick<
   EntityCreateState,
-  "personMode" | "personId" | "newPersonName" | "phones" | "emails"
+  "personMode" | "personId" | "newPersonName" | "phones" | "emails" | "personCustomFields"
 >;
-type OrgFields = Pick<EntityCreateState, "orgMode" | "orgId" | "newOrgName">;
+type OrgFields = Pick<EntityCreateState, "orgMode" | "orgId" | "newOrgName" | "orgCustomFields">;
 
 // Resolve the org id for the create: an existing selection, or an org created inline by name.
 // Returns null (no org), the id, or { error } to surface inline. Run before resolveNewPersonId so a
@@ -35,7 +35,7 @@ export async function resolveNewOrgId(
   if (state.orgMode === "existing") return state.orgId === "" ? null : state.orgId;
   if (state.newOrgName.trim() === "") return null;
   const r = await createOrgAction(
-    { name: state.newOrgName.trim(), address: null, customFields: {} },
+    { name: state.newOrgName.trim(), address: null, customFields: state.orgCustomFields },
     csrf,
   );
   if (!r.ok) return { error: `Could not create organization (${r.error.id})` };
@@ -58,7 +58,7 @@ export async function resolveNewPersonId(
       phones: cleanPoints(state.phones),
       emails: cleanPoints(state.emails),
       orgId,
-      customFields: {},
+      customFields: state.personCustomFields,
     },
     csrf,
   );

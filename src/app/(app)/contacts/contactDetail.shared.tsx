@@ -8,6 +8,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CollapsibleSection } from "@/features/deal-workspace/CollapsibleSection";
 import { HistoryFeed } from "@/features/deal-workspace/HistoryFeed";
 import { partitionFocusHistory } from "@/features/deal-workspace/historyTimeline";
+import { PinnedNotesSection } from "@/features/deal-workspace/PinnedNotesSection";
 import { SectionHeading } from "@/features/deal-workspace/SectionHeading";
 import { FieldRow } from "@/features/deal-workspace/sidebar/FieldRow";
 import { FileAttachments } from "@/features/files/FileAttachments";
@@ -80,7 +81,7 @@ export function ContactTimelinePanel({
 }): React.ReactNode {
   const utils = trpc.useUtils();
   const items = trpc.contacts.contactTimeline.useQuery({ entityType, entityId }).data?.items ?? [];
-  const { focus, history } = partitionFocusHistory(items);
+  const { pinned, focus, history } = partitionFocusHistory(items);
   const historyByType = bucketByType(history);
 
   // Pipedrive shows counts on Activities/Notes only (the changelog tab has none). Activities
@@ -97,6 +98,10 @@ export function ContactTimelinePanel({
     void utils.contacts.activityStats.invalidate({ entityType, entityId });
   }
 
+  function onNoteChanged(): void {
+    void utils.contacts.contactTimeline.invalidate({ entityType, entityId });
+  }
+
   const emailPanel =
     entityType === "person" ? <PersonEmailTab personId={entityId} /> : <OrgEmailPanel />;
 
@@ -104,6 +109,7 @@ export function ContactTimelinePanel({
   // deal page so the two read identically. CO-1: History gets the deal page's per-type filter row.
   return (
     <div className="space-y-6">
+      <PinnedNotesSection items={pinned} onNoteChanged={onNoteChanged} />
       <section aria-label="focus">
         <SectionHeading>Focus</SectionHeading>
         <HistoryFeed
@@ -121,7 +127,7 @@ export function ContactTimelinePanel({
           counts={counts}
           emailPanel={emailPanel}
           onActivityChanged={onActivityChanged}
-          onNoteChanged={onActivityChanged}
+          onNoteChanged={onNoteChanged}
         />
       </section>
     </div>

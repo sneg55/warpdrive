@@ -45,7 +45,7 @@ export function BoardSortControl(props: BoardSortControlProps): React.ReactNode 
             type="button"
             aria-label={toggleLabel}
             onClick={onToggleDirection}
-            className="flex items-center justify-center rounded-r-md border-l px-2 py-1.5 text-muted-foreground transition hover:text-foreground active:scale-[0.96]"
+            className="flex items-center justify-center rounded-r-md border-l px-2 py-1.5 text-muted-foreground transition-[color,scale] duration-150 ease-out hover:text-foreground active:scale-[0.96] motion-reduce:transition-colors"
           >
             <svg
               aria-hidden="true"

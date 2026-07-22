@@ -9,6 +9,8 @@ import {
   listVisibilityGroups,
 } from "@/features/identity/visibility-groups.service";
 import { createContext } from "@/server/trpc/context";
+import { SettingsHeading } from "../../SettingsHeading";
+import { SettingsPage } from "../../SettingsSurface";
 import { GroupMembersClient } from "./GroupMembersClient";
 
 export const metadata = { title: STRINGS.settings.visibilityGroups };
@@ -36,12 +38,18 @@ export default async function GroupDetailPage({
   const members = membersResult.ok ? membersResult.value : [];
 
   return (
-    <section>
-      <Link href="/settings/visibility-groups" className="text-sm text-blue-600 hover:underline">
+    <SettingsPage>
+      <Link
+        href="/settings/visibility-groups"
+        className="text-sm text-primary underline-offset-4 hover:underline"
+      >
         &larr; {STRINGS.settings.visibilityGroups}
       </Link>
-      <h1 className="mb-4 mt-2 text-xl font-semibold">{group.name}</h1>
+      <SettingsHeading
+        title={group.name}
+        description="Manage who belongs to this visibility group."
+      />
       <GroupMembersClient groupId={groupId} members={members} allUsers={allUsers} />
-    </section>
+    </SettingsPage>
   );
 }

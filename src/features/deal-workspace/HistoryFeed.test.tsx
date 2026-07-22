@@ -64,4 +64,16 @@ describe("HistoryFeed dispatch", () => {
     render(<HistoryFeed items={[]} emptyLabel="No history yet." />);
     expect(screen.getByText("No history yet.")).toBeInTheDocument();
   });
+
+  it("shows an activity's type icon once (in the card), not duplicated on the timeline rail", () => {
+    // A task activity's type glyph is a checkmark; rendering it on the rail AND in the card made the
+    // row look like it had a stray checkmark next to the (empty) done toggle. The type icon must
+    // appear only once, next to the subject.
+    const items: HistoryItem[] = [
+      { kind: "activity", id: "a1", at: AT, activity: { ...activity(), typeKey: "task" } },
+    ];
+    const { container } = render(<HistoryFeed items={items} emptyLabel="empty" />);
+    // ActivityTypeIcon renders an <svg class="h-4 w-4 shrink-0">; there must be exactly one.
+    expect(container.querySelectorAll("svg.h-4.w-4.shrink-0")).toHaveLength(1);
+  });
 });

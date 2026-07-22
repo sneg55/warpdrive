@@ -1,6 +1,6 @@
-// leadUpdate.ts: compare-and-swap field update (Value / Owner / Expected close) for the lead
-// sidebar's inline-edit panel. Mirrors updateDeal's single-UPDATE-WHERE CAS; owner reassignment is
-// gated a second time by deal.changeOwner (mirrors bulkUpdateLeads), same as every other
+// leadUpdate.ts: compare-and-swap field update (Title / Value / Owner / Expected close / Labels)
+// for the lead detail workspace. Mirrors updateDeal's single-UPDATE-WHERE CAS; owner reassignment
+// is gated a second time by deal.changeOwner (mirrors bulkUpdateLeads), same as every other
 // owner-touching write in this feature.
 import { and, eq, isNull, sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
@@ -18,11 +18,13 @@ type LeadPatch = Partial<typeof leads.$inferInsert>;
 
 function buildPatch(input: LeadUpdateInput, now: Date): LeadPatch {
   const patch: LeadPatch = { updatedAt: now };
+  if (input.title !== undefined) patch.title = input.title;
   if (input.value !== undefined) {
     patch.value = input.value === null ? null : input.value.toFixed(2);
   }
   if (input.ownerId !== undefined) patch.ownerId = input.ownerId;
   if (input.expectedCloseDate !== undefined) patch.expectedCloseDate = input.expectedCloseDate;
+  if (input.labels !== undefined) patch.labels = input.labels;
   return patch;
 }
 

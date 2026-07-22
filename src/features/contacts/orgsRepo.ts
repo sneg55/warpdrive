@@ -74,6 +74,7 @@ export async function createOrg(
     "organization",
     input.customFields,
     signal,
+    { requireImportant: true },
   );
   if (cfResult.ok === false) return cfResult;
 

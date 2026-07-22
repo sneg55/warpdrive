@@ -21,7 +21,8 @@ export interface BulkEditPanelProps {
   onClear: () => void;
 }
 
-const BTN = "rounded-md border px-2.5 py-1 text-sm transition hover:bg-accent active:scale-[0.96]";
+const BTN =
+  "rounded-md border px-2.5 py-1 text-sm transition-[background-color,scale] duration-150 ease-out hover:bg-accent active:scale-[0.96] motion-reduce:transition-colors";
 const PANEL = "max-h-56 min-w-40 overflow-auto";
 
 // Dropdown built on the shared PopMenu (shadcn DropdownMenu underneath). `label` is both the visible
@@ -128,7 +129,7 @@ export function BulkEditPanel({
       <button
         type="button"
         onClick={() => onApply({ deleted: true })}
-        className="rounded-md border border-destructive/40 px-2.5 py-1 text-sm text-destructive transition hover:bg-destructive/10 active:scale-[0.96]"
+        className="rounded-md border border-destructive/40 px-2.5 py-1 text-sm text-destructive transition-[background-color,scale] duration-150 ease-out hover:bg-destructive/10 active:scale-[0.96] motion-reduce:transition-colors"
       >
         Delete
       </button>

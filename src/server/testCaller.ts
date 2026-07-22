@@ -11,6 +11,6 @@ export function makeCaller(db: Db, actor: PermSetUser) {
     session: { userId: actor.id, sessionId: "test-session" },
     // The context actor now also carries display name + avatar (used only by the app shell, not by
     // procedures); tests supply placeholders so the permission-relevant fields stay the focus.
-    actor: { ...actor, name: "Test User", avatarUrl: null },
+    actor: { ...actor, name: "Test User", email: "test@example.com", avatarUrl: null },
   });
 }

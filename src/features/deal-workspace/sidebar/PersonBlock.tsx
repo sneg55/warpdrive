@@ -4,7 +4,9 @@ import type React from "react";
 import type { Person } from "@/db/schema";
 import { updatePersonAction } from "@/features/contacts/actions";
 import { primaryValue, setPrimaryPoint } from "@/features/contacts/PersonSummaryEditPanel";
+import { ContactCustomFieldRows } from "@/features/custom-fields/ContactCustomFieldRows";
 import type { ContactPoint } from "@/types/contactPoint";
+import type { CustomFieldDef } from "@/types/customFields";
 import { readCsrfToken } from "@/utils/csrfCookie";
 import { LinkValue, mailtoHref, telHref } from "./contactLinks";
 import { LabelChips, type ResolvedLabelChip } from "./LabelChips";
@@ -34,9 +36,10 @@ export function PersonBlock({
   hidden = NONE,
   hideNameParts = false,
   labels,
+  customFieldDefs = [],
+  currency = "USD",
 }: {
-  // custom_fields is stripped upstream (getWorkspace) because this block never renders it.
-  person: Omit<Person, "customFields">;
+  person: Person;
   bulkEditing?: boolean;
   onExitBulk?: () => void;
   // Built-in field keys hidden in Settings > Data fields (see BUILTIN_FIELDS.person). A hidden
@@ -48,6 +51,8 @@ export function PersonBlock({
   // Resolved label chips (name + Tailwind classes) shown as a Labels row under Name. undefined on
   // surfaces that do not surface person labels (the deal sidebar); PD shows them on the lead drawer.
   labels?: ResolvedLabelChip[];
+  customFieldDefs?: CustomFieldDef[];
+  currency?: string;
 }): React.ReactNode {
   const router = useRouter();
 
@@ -148,6 +153,15 @@ export function PersonBlock({
           onSave={(draft) => save({ emails: setPrimaryPoint(emails, draft) })}
         />
       )}
+      <ContactCustomFieldRows
+        contact={{
+          kind: "person",
+          id: person.id,
+          customFields: person.customFields as Record<string, unknown>,
+        }}
+        defs={customFieldDefs}
+        currency={currency}
+      />
     </>
   );
 }

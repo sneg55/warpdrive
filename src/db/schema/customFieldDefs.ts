@@ -27,9 +27,9 @@ export const customFieldDefs = pgTable(
     key: text("key").notNull(),
     options: jsonb("options").$type<CustomFieldOption[]>().notNull().default(sql`'[]'::jsonb`),
     isRequired: boolean("is_required").notNull().default(false),
-    // Placement flags for the Data fields UI (settings audit): isImportant surfaces the field
-    // in the entity detail's "important fields" summary; showInAddForm places it on the quick
-    // add form. Both default false so existing defs keep today's placement until an admin opts in.
+    // Add-form flags: isImportant makes the field visible and required during entity creation;
+    // showInAddForm makes it visible but optional. Both default false so existing defs keep today's
+    // placement until an admin opts in.
     isImportant: boolean("is_important").notNull().default(false),
     showInAddForm: boolean("show_in_add_form").notNull().default(false),
     order: integer("order").notNull().default(0),

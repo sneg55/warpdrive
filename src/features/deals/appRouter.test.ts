@@ -16,6 +16,7 @@ describe("appRouter deal namespace", () => {
           type: "admin" as const,
           isActive: true,
           name: "Test User",
+          email: "test@example.com",
           avatarUrl: null,
           flags: new Set(),
           groupIds: new Set(),

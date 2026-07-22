@@ -3,7 +3,7 @@ import dynamic from "next/dynamic";
 import type React from "react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { buttonVariants } from "./Button";
+import { Button, buttonVariants } from "./Button";
 import { formatMdy, parseYmd, toYmd } from "./dateFormat";
 import { Popover, PopoverContent, PopoverTrigger } from "./Popover";
 
@@ -99,16 +99,17 @@ export function DatePicker({
           endMonth={endMonth}
         />
         <div className="flex justify-end border-t pt-1.5">
-          <button
-            type="button"
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() => {
               onChange(null);
               setOpen(false);
             }}
-            className="rounded px-2 py-1 text-xs text-muted-foreground hover:text-foreground"
+            className="h-8 text-xs text-muted-foreground hover:text-foreground"
           >
             Clear
-          </button>
+          </Button>
         </div>
       </PopoverContent>
     </Popover>

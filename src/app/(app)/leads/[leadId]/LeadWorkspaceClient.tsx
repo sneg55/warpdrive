@@ -7,6 +7,7 @@ import { LeadSidebar } from "@/features/leads/detail/LeadSidebar";
 import { LeadTimeline } from "@/features/leads/detail/LeadTimeline";
 import type { LeadDetail } from "@/features/leads/leadRepo";
 import { trpc } from "@/lib/trpc-client";
+import type { CustomFieldDef } from "@/types/customFields";
 
 export interface LeadWorkspaceClientProps {
   lead: LeadDetail;
@@ -16,6 +17,9 @@ export interface LeadWorkspaceClientProps {
   org: Organization | null;
   hiddenPersonFields: ReadonlySet<string>;
   hiddenOrgFields: ReadonlySet<string>;
+  personCustomFieldDefs?: CustomFieldDef[];
+  organizationCustomFieldDefs?: CustomFieldDef[];
+  baseCurrency?: string;
 }
 
 // Lead detail workspace, mirroring DealWorkspaceClient: header actions, a person/value sidebar, and
@@ -26,6 +30,9 @@ export function LeadWorkspaceClient({
   org,
   hiddenPersonFields,
   hiddenOrgFields,
+  personCustomFieldDefs = [],
+  organizationCustomFieldDefs = [],
+  baseCurrency = "USD",
 }: LeadWorkspaceClientProps): React.ReactNode {
   const timelineQ = trpc.lead.leadTimeline.useQuery({ leadId: lead.id });
   const timeline = timelineQ.data ?? { items: [], emails: [] };
@@ -45,6 +52,9 @@ export function LeadWorkspaceClient({
           org={org}
           hiddenPersonFields={hiddenPersonFields}
           hiddenOrgFields={hiddenOrgFields}
+          personCustomFieldDefs={personCustomFieldDefs}
+          organizationCustomFieldDefs={organizationCustomFieldDefs}
+          baseCurrency={baseCurrency}
         />
         <div className="min-w-0">
           {/* Compose toolbar (Pipedrive): collapse-by-default Activity/Notes for the lead
@@ -62,7 +72,11 @@ export function LeadWorkspaceClient({
             onActivityCreated={() => void timelineQ.refetch()}
             onNoteCreated={() => void timelineQ.refetch()}
           />
-          <LeadTimeline items={timeline.items} emails={timeline.emails} />
+          <LeadTimeline
+            items={timeline.items}
+            emails={timeline.emails}
+            onNoteChanged={() => void timelineQ.refetch()}
+          />
         </div>
       </div>
     </div>

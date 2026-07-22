@@ -24,24 +24,29 @@ export function monthLabel(key: string): string {
   return `${name} ${y}`;
 }
 
-// The month header row of the engagement grid: a leading "Contact" cell, then one column per
-// month. The parent grid owns the column template so this stays aligned with each lane row.
+// The month header row: a pinned "Contact" column, then one fixed-layout column per month.
 export function EngagementAxis({ months }: { months: string[] }): React.ReactNode {
   return (
-    <div className="contents">
-      <div className="border-b bg-muted/40 px-3 py-2 text-xs font-semibold text-muted-foreground">
-        Contact
-      </div>
-      {months.map((key, i) => (
-        <div
-          key={key}
-          className="border-b border-l bg-muted/40 px-3 py-2 text-center text-xs font-semibold text-muted-foreground"
+    <thead>
+      <tr>
+        <th
+          scope="col"
+          className="sticky left-0 z-20 border-b border-r bg-muted px-3 py-2 text-left text-xs font-semibold text-muted-foreground"
         >
-          {/* The period always ends at the current month, so the rightmost tick is "now": PD
-              labels it "Today" rather than repeating the month name. */}
-          {i === months.length - 1 ? "Today" : monthLabel(key)}
-        </div>
-      ))}
-    </div>
+          Contact
+        </th>
+        {months.map((key, i) => (
+          <th
+            key={key}
+            scope="col"
+            className={`border-b bg-muted/40 px-3 py-2 text-center text-xs font-semibold text-muted-foreground ${i > 0 ? "border-l" : ""}`}
+          >
+            {/* The period always ends at the current month, so the rightmost tick is "now": PD
+                labels it "Today" rather than repeating the month name. */}
+            {i === months.length - 1 ? "Today" : monthLabel(key)}
+          </th>
+        ))}
+      </tr>
+    </thead>
   );
 }

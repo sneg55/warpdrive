@@ -1,9 +1,12 @@
 "use client";
 import type React from "react";
 import { useState } from "react";
+import { Button } from "@/components/ui/Button";
+import { Textarea } from "@/components/ui/Textarea";
 import { createNoteAction } from "@/features/collaboration/actions";
 import type { EntityType } from "@/types/entityRef";
 import { readCsrfToken } from "@/utils/csrfCookie";
+import { useComposeInitialFocus } from "./useComposeInitialFocus";
 
 interface Props {
   // Every ComposeScope maps to a valid notes entity type (see noteEntityType in
@@ -25,6 +28,7 @@ export function ComposeNoteTab({
 }: Props): React.ReactNode {
   const [body, setBody] = useState("");
   const [pending, setPending] = useState(false);
+  const noteRef = useComposeInitialFocus<HTMLTextAreaElement>();
 
   async function save(): Promise<void> {
     const trimmed = body.trim();
@@ -43,33 +47,29 @@ export function ComposeNoteTab({
 
   return (
     <div className="p-1.5">
-      <textarea
+      <Textarea
+        ref={noteRef}
+        data-compose-primary="notes"
         aria-label="Note"
         value={body}
         onChange={(e) => setBody(e.target.value)}
         rows={3}
         placeholder="Take a note..."
-        className="w-full resize-y rounded-md border bg-warning/10 px-3 py-2 text-sm outline-none focus:border-ring/50"
+        className="resize-y bg-warning/10 focus-visible:border-ring/50"
       />
       <div className="mt-2 flex justify-end gap-2">
-        <button
-          type="button"
+        <Button
+          variant="outline"
           onClick={() => {
             setBody("");
             onCancel?.();
           }}
-          className="rounded-md border px-3 py-1.5 text-sm transition-transform hover:bg-accent active:scale-[0.96]"
         >
           Cancel
-        </button>
-        <button
-          type="button"
-          disabled={pending}
-          onClick={() => void save()}
-          className="rounded-md bg-action px-3 py-1.5 text-sm font-medium text-action-foreground transition-transform hover:opacity-90 active:scale-[0.96] disabled:opacity-50"
-        >
+        </Button>
+        <Button disabled={pending} onClick={() => void save()}>
           Save
-        </button>
+        </Button>
       </div>
     </div>
   );

@@ -5,8 +5,10 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useActionError } from "@/components/shell/ActionErrorProvider";
 import { DEFAULT_BASE_CURRENCY } from "@/constants/currency";
 import { STRINGS } from "@/constants/strings";
+import { addFormCustomFieldDefs } from "@/features/custom-fields/CustomFieldCreateFields";
 import { trpc } from "@/lib/trpc-client";
 import { readCsrfToken } from "@/utils/csrfCookie";
+import { ConvertLeadDialog } from "./ConvertLeadDialog";
 import { BulkEditPanel } from "./inbox/BulkEditPanel";
 import { convertErrorMessage } from "./inbox/convertErrorMessage";
 import { buildLeadExportHref } from "./inbox/exportHref";
@@ -60,6 +62,7 @@ export function LeadsInbox({
   const [ownerIds, setOwnerIds] = useState<string[]>([]);
   const [condition, setCondition] = useState<LeadConditionInput | null>(null);
   const [convertError, setConvertError] = useState<string | null>(null);
+  const [convertTarget, setConvertTarget] = useState<LeadRow | "bulk" | null>(null);
 
   const sort = useLeadSort(initialView?.sort ?? null);
   const selection = useLeadSelection();
@@ -67,6 +70,8 @@ export function LeadsInbox({
 
   // Ungated: every user gets the full active-user list so owner filtering runs server-side by id.
   const usersQ = trpc.identity.assignableUsers.useQuery(undefined, { retry: false });
+  const dealFieldsQ = trpc.customFields.listDefs.useQuery({ target: "deal" });
+  const dealFields = dealFieldsQ.data ?? [];
   const users = useMemo(
     () => (usersQ.data ?? []).map((u) => ({ id: u.id, name: u.name })),
     [usersQ.data],
@@ -99,23 +104,28 @@ export function LeadsInbox({
 
   const bulkConverting = useRef(false);
   const [bulkConvertPending, setBulkConvertPending] = useState(false);
-  async function bulkConvert(ids: string[]): Promise<void> {
-    if (ids.length === 0) return;
+  async function bulkConvert(
+    ids: string[],
+    customFields: Record<string, unknown> = {},
+  ): Promise<boolean> {
+    if (ids.length === 0) return false;
     // In-flight guard: a rapid double-click must not fire two overlapping batches (mirrors
     // convertRow's converting ref for the single-lead button).
-    if (bulkConverting.current) return;
+    if (bulkConverting.current) return false;
     bulkConverting.current = true;
     setBulkConvertPending(true);
     setConvertError(null);
     try {
-      const r = await bulkConvertLeadsAction({ ids }, readCsrfToken());
+      const r = await bulkConvertLeadsAction({ ids, customFields }, readCsrfToken());
       if (r.ok) {
         selection.clear();
         await refetch();
+        return true;
       } else {
         // Systemic failure (e.g. PERM_DENIED, no resolvable pipeline): surface it like convertRow
         // does and do NOT clear the selection or refetch as if the batch had succeeded.
         setConvertError(convertErrorMessage(r.error.id));
+        return false;
       }
     } finally {
       bulkConverting.current = false;
@@ -130,25 +140,29 @@ export function LeadsInbox({
   }
 
   const converting = useRef(false);
-  async function convertRow(row: LeadRow): Promise<void> {
+  async function convertRow(
+    row: LeadRow,
+    customFields: Record<string, unknown> = {},
+  ): Promise<boolean> {
     // In-flight guard: a rapid double-click must not fire two convert calls (the second would
     // race to a confusing "already converted"/stale-CAS banner even though the first succeeded).
-    if (converting.current) return;
+    if (converting.current) return false;
     converting.current = true;
     setConvertError(null);
     try {
       const r = await convertLeadAction(
-        { leadId: row.id, expectedUpdatedAt: row.updatedAt.toISOString() },
+        { leadId: row.id, expectedUpdatedAt: row.updatedAt.toISOString(), customFields },
         readCsrfToken(),
       );
       if (r.ok) {
         router.push(`/deals/${r.value.dealId}`);
-        return;
+        return true;
       }
       // Stale CAS / already-converted / permission denied: show copy and refetch so the row
       // reflects the current server state (e.g. it now renders as "Converted").
       setConvertError(convertErrorMessage(r.error.id));
       await refetch();
+      return false;
     } finally {
       converting.current = false;
     }
@@ -183,7 +197,10 @@ export function LeadsInbox({
         converted={row.convertedDealId !== null}
         assignableUsers={users}
         onOpen={() => router.push(`/leads/${row.id}`)}
-        onConvert={() => void convertRow(row)}
+        onConvert={() => {
+          if (addFormCustomFieldDefs(dealFields).length > 0) setConvertTarget(row);
+          else void convertRow(row);
+        }}
         onArchiveToggle={() => void archiveToggle(row.id, row.archivedAt === null)}
         onDelete={() => void bulkChange([row.id], { deleted: true })}
         onChangeOwner={(ownerId) => void bulkChange([row.id], { ownerId })}
@@ -236,7 +253,10 @@ export function LeadsInbox({
             archived={archived}
             assignableUsers={users}
             onApply={(change) => void bulkChange([...selection.selected], change)}
-            onConvert={() => void bulkConvert([...selection.selected])}
+            onConvert={() => {
+              if (addFormCustomFieldDefs(dealFields).length > 0) setConvertTarget("bulk");
+              else void bulkConvert([...selection.selected]);
+            }}
             converting={bulkConvertPending}
             onClear={selection.clear}
           />
@@ -266,11 +286,23 @@ export function LeadsInbox({
           <button
             type="button"
             onClick={list.loadMore}
-            className="rounded-md border px-4 py-1.5 text-sm font-medium transition hover:bg-accent active:scale-[0.96]"
+            className="rounded-md border px-4 py-1.5 text-sm font-medium transition-[background-color,scale] duration-150 ease-out hover:bg-accent active:scale-[0.96] motion-reduce:transition-colors"
           >
             Load more
           </button>
         </div>
+      )}
+
+      {convertTarget !== null && (
+        <ConvertLeadDialog
+          defs={dealFields}
+          onClose={() => setConvertTarget(null)}
+          onConvert={(customFields) =>
+            convertTarget === "bulk"
+              ? bulkConvert([...selection.selected], customFields)
+              : convertRow(convertTarget, customFields)
+          }
+        />
       )}
     </div>
   );

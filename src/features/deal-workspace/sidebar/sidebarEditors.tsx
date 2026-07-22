@@ -1,5 +1,6 @@
 "use client";
 import type React from "react";
+import { Input } from "@/components/ui/Input";
 
 // Refresh the route to pull server-true values after an inline save, swallowing any failure. The
 // mutation is already committed by the time we refresh, so a refresh error (transient RSC re-fetch
@@ -26,11 +27,11 @@ export function textEditor(ariaLabel: string) {
     draft: string;
     setDraft: (v: string) => void;
   }): React.ReactNode => (
-    <input
+    <Input
       aria-label={ariaLabel}
       value={draft}
       onChange={(e) => setDraft(e.target.value)}
-      className="w-full rounded-md border px-2 py-1 text-sm"
+      className="h-8 px-2 py-1"
     />
   );
 }

@@ -4,7 +4,7 @@ import type React from "react";
 import { useState } from "react";
 import { useActionError } from "@/components/shell/ActionErrorProvider";
 import { Button } from "@/components/ui/Button";
-import { FIELD_INPUT } from "@/constants/formStyles";
+import { Input } from "@/components/ui/Input";
 import { STRINGS } from "@/constants/strings";
 import {
   archiveLostReasonAction,
@@ -15,6 +15,7 @@ import {
 import { moveInArray } from "@/features/settings/reorder";
 import { useSyncedState } from "@/lib/useSyncedState";
 import { readCsrfToken } from "@/utils/csrfCookie";
+import { ReorderControls } from "../ReorderControls";
 
 export interface LostReasonRow {
   id: string;
@@ -87,37 +88,27 @@ export function LostReasonsClient({ rows: initial }: { rows: LostReasonRow[] }):
   }
 
   return (
-    <div className="max-w-xl space-y-4">
-      <ul className="divide-y rounded-md border">
+    <div className="space-y-4">
+      <ul className="divide-y overflow-hidden rounded-lg border bg-card shadow-sm">
         {rows.map((row, i) => (
           <li key={row.id} className="flex items-center gap-3 px-3 py-2">
             {editingId === row.id ? (
-              <input
+              <Input
                 aria-label={S.lostReasonName}
                 value={editName}
                 onChange={(e) => setEditName(e.target.value)}
-                className={`${FIELD_INPUT} flex-1`}
+                className="h-8 flex-1"
               />
             ) : (
               <span className="flex-1 text-sm">{row.name}</span>
             )}
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                className={BTN}
-                disabled={i === 0}
-                onClick={() => void move(i, "up")}
-              >
-                {S.moveUp}
-              </button>
-              <button
-                type="button"
-                className={BTN}
-                disabled={i === rows.length - 1}
-                onClick={() => void move(i, "down")}
-              >
-                {S.moveDown}
-              </button>
+            <div className="flex items-center gap-3">
+              <ReorderControls
+                canMoveUp={i > 0}
+                canMoveDown={i < rows.length - 1}
+                onMoveUp={() => void move(i, "up")}
+                onMoveDown={() => void move(i, "down")}
+              />
               {editingId === row.id ? (
                 <button type="button" className={BTN} onClick={() => void rename(row.id)}>
                   {S.save}
@@ -145,16 +136,17 @@ export function LostReasonsClient({ rows: initial }: { rows: LostReasonRow[] }):
         )}
       </ul>
 
-      <div className="flex items-end gap-2">
-        <label className="block flex-1">
+      <div className="flex items-end gap-3 rounded-lg border bg-card p-4 shadow-sm">
+        <label htmlFor="new-lost-reason" className="block flex-1">
           <span className="mb-1 block text-sm font-medium">{S.lostReasonName}</span>
-          <input
+          <Input
+            id="new-lost-reason"
             aria-label={S.lostReasonName}
             required
             maxLength={200}
             value={addName}
             onChange={(e) => setAddName(e.target.value)}
-            className={FIELD_INPUT}
+            className="w-full"
           />
         </label>
         <Button

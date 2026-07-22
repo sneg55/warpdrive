@@ -5,7 +5,9 @@ import type { ReactNode } from "react";
 import "react-day-picker/style.css";
 import "./globals.css";
 import { Providers } from "@/components/providers";
+import { env } from "@/config/env";
 import { STRINGS } from "@/constants/strings";
+import { TelemetryProvider } from "@/features/observability/TelemetryProvider";
 
 // Pipedrive parity C1: Inter is the app typeface. The woff2 is VENDORED in ./fonts and loaded via
 // next/font/local, so there is NO build-time or runtime request to Google Fonts (next/font/google
@@ -31,7 +33,18 @@ export default function RootLayout({ children }: { children: ReactNode }): React
   return (
     <html lang="en" className={`${inter.variable} antialiased`}>
       <body>
-        <Providers>{children}</Providers>
+        <TelemetryProvider
+          config={{
+            key: env.POSTHOG_KEY,
+            host: env.POSTHOG_HOST,
+            release: env.APP_VERSION,
+            commit: env.APP_COMMIT,
+            disabled: env.DISABLE_TELEMETRY,
+            consoleForwarding: env.TELEMETRY_CONSOLE_FORWARDING,
+          }}
+        >
+          <Providers>{children}</Providers>
+        </TelemetryProvider>
       </body>
     </html>
   );

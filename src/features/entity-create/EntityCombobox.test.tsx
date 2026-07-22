@@ -37,6 +37,21 @@ describe("EntityCombobox", () => {
     expect(input.tagName).toBe("INPUT");
   });
 
+  it("stays closed when the input is only focused (e.g. modal autofocus on mount)", () => {
+    renderCombobox();
+    fireEvent.focus(screen.getByLabelText("Organization"));
+    // Programmatic focus must not spill the whole option list open before the user interacts.
+    expect(screen.queryByText("Acme Inc")).toBeNull();
+    expect(screen.queryByText("Beta LLC")).toBeNull();
+  });
+
+  it("opens the option list when the user clicks the input", () => {
+    renderCombobox();
+    fireEvent.click(screen.getByLabelText("Organization"));
+    expect(screen.getByText("Acme Inc")).toBeInTheDocument();
+    expect(screen.getByText("Beta LLC")).toBeInTheDocument();
+  });
+
   it("filters existing options by the typed query", () => {
     renderCombobox();
     fireEvent.focus(screen.getByLabelText("Organization"));

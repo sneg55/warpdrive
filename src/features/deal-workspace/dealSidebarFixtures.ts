@@ -52,6 +52,7 @@ export function makeWorkspace(
       primaryEmail: "p@x.com",
       phones: [],
       emails: [],
+      labels: [],
       ...personOver,
     },
     org: {
@@ -63,6 +64,7 @@ export function makeWorkspace(
       annualRevenue: null,
       linkedinUrl: null,
       address: null,
+      labels: [],
       ...orgOver,
     },
     customFieldDefs: [],

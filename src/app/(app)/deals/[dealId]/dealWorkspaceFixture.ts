@@ -41,6 +41,8 @@ export const workspace = {
     // it maps over person.phones/emails unconditionally, so an absent array crashes the render.
     phones: [],
     emails: [],
+    // The deal/lead PersonSection labels row (ContactLabelsControl) maps over person.labels.
+    labels: [],
     visibilityLevel: "owner" as const,
     visibilityGroupId: null,
     visibleToUserIds: [],
@@ -62,6 +64,8 @@ export const workspace = {
     employeeCount: null,
     annualRevenue: null,
     linkedinUrl: null,
+    // The deal/lead OrganizationSection labels row (ContactLabelsControl) maps over org.labels.
+    labels: [],
     visibilityLevel: "owner" as const,
     visibilityGroupId: null,
     visibleToUserIds: [],

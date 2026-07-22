@@ -4,12 +4,10 @@ import type React from "react";
 import { useState } from "react";
 import { useActionError } from "@/components/shell/ActionErrorProvider";
 import { Button } from "@/components/ui/Button";
-import { Select } from "@/components/ui/Select";
+import { Input } from "@/components/ui/Input";
 import { ERROR_IDS } from "@/constants/errorIds";
-import { FIELD_INPUT } from "@/constants/formStyles";
 import {
   LABEL_COLORS,
-  LABEL_DOT_CLASSES,
   LABEL_TARGETS,
   type LabelColor,
   type LabelTarget,
@@ -25,6 +23,7 @@ import {
 import { moveInArray } from "@/features/settings/reorder";
 import { useSyncedState } from "@/lib/useSyncedState";
 import { readCsrfToken } from "@/utils/csrfCookie";
+import { LabelColorSelect } from "./LabelColorSelect";
 import { LabelRow, type LabelRowData } from "./LabelRow";
 
 interface Row extends LabelRowData {
@@ -32,16 +31,6 @@ interface Row extends LabelRowData {
 }
 
 const S = STRINGS.settings;
-const LABEL_COLOR_OPTIONS = LABEL_COLORS.map((color) => ({
-  value: color,
-  label: color,
-  icon: (
-    <span
-      aria-hidden="true"
-      className={`inline-block h-3 w-3 rounded-full ${LABEL_DOT_CLASSES[color]}`}
-    />
-  ),
-}));
 const TARGET_LABEL: Record<LabelTarget, string> = {
   deal: S.targetDeal,
   person: S.targetPerson,
@@ -95,7 +84,7 @@ export function LabelsClient({ rows: initial }: { rows: Row[] }): React.ReactNod
   }
 
   return (
-    <div className="max-w-2xl space-y-6">
+    <div className="space-y-6">
       {error !== null && <p className="text-sm text-red-600">{error}</p>}
       {LABEL_TARGETS.map((target) => {
         const group = rows.filter((r) => r.target === target);
@@ -103,7 +92,7 @@ export function LabelsClient({ rows: initial }: { rows: Row[] }): React.ReactNod
         return (
           <section key={target} className="space-y-2">
             <h2 className="text-sm font-semibold">{TARGET_LABEL[target]}</h2>
-            <ul className="divide-y rounded-md border">
+            <ul className="divide-y overflow-hidden rounded-lg border bg-card shadow-sm">
               {group.map((row, i) => (
                 <LabelRow
                   key={row.id}
@@ -128,26 +117,24 @@ export function LabelsClient({ rows: initial }: { rows: Row[] }): React.ReactNod
                 <li className="px-3 py-2 text-sm text-muted-foreground">{S.emptyList}</li>
               )}
               <li className="flex items-end gap-2 px-3 py-2">
-                <label className="block flex-1">
+                <label htmlFor={`new-${target}-label`} className="block flex-1">
                   <span className="mb-1 block text-sm font-medium">{S.labelName}</span>
-                  <input
+                  <Input
+                    id={`new-${target}-label`}
                     aria-label={`${TARGET_LABEL[target]} ${S.labelName}`}
                     required
                     maxLength={120}
                     value={addName[target] ?? ""}
                     onChange={(e) => setAddName((s) => ({ ...s, [target]: e.target.value }))}
-                    className={FIELD_INPUT}
+                    className="w-full"
                   />
                 </label>
                 <div className="block w-32">
                   <span className="mb-1 block text-sm font-medium">{S.color}</span>
-                  <Select
+                  <LabelColorSelect
                     ariaLabel={`${TARGET_LABEL[target]} ${S.color}`}
                     value={addColor[target] ?? LABEL_COLORS[0]}
-                    onChange={(value) =>
-                      setAddColor((s) => ({ ...s, [target]: value as LabelColor }))
-                    }
-                    options={LABEL_COLOR_OPTIONS}
+                    onChange={(color) => setAddColor((s) => ({ ...s, [target]: color }))}
                   />
                 </div>
                 <Button

@@ -48,8 +48,8 @@ export function SignaturesSettingsClient({ signatures }: { signatures: Sig[] }):
   }
 
   return (
-    <section className="space-y-3">
-      <div className="flex items-center justify-between">
+    <section className="overflow-hidden rounded-lg border bg-card shadow-sm">
+      <div className="flex items-center justify-between border-b px-5 py-4">
         <h2 className="text-sm font-semibold">{S.signatures}</h2>
         <button
           type="button"
@@ -60,95 +60,102 @@ export function SignaturesSettingsClient({ signatures }: { signatures: Sig[] }):
         </button>
       </div>
 
-      <ul className="divide-y rounded-md border">
-        {signatures.map((s) => (
-          <li key={s.id} className="flex items-center justify-between px-3 py-2 text-sm">
-            <span className="flex items-center gap-2">
-              {s.name}
-              {s.isDefault && (
-                <span className="rounded bg-accent px-1.5 py-0.5 text-xs text-muted-foreground">
-                  {S.defaultBadge}
-                </span>
-              )}
-            </span>
-            <span className="flex items-center gap-2">
-              {!s.isDefault && (
+      <div className="space-y-3 p-5">
+        <ul className="divide-y overflow-hidden rounded-md border">
+          {signatures.map((s) => (
+            <li key={s.id} className="flex items-center justify-between px-3 py-2 text-sm">
+              <span className="flex items-center gap-2">
+                {s.name}
+                {s.isDefault && (
+                  <span className="rounded bg-accent px-1.5 py-0.5 text-xs text-muted-foreground">
+                    {S.defaultBadge}
+                  </span>
+                )}
+              </span>
+              <span className="flex items-center gap-2">
+                {!s.isDefault && (
+                  <button
+                    type="button"
+                    className="text-muted-foreground hover:text-foreground"
+                    onClick={() => void makeDefault(s.id)}
+                    aria-label={`${S.setDefault} ${s.name}`}
+                  >
+                    {S.setDefault}
+                  </button>
+                )}
                 <button
                   type="button"
                   className="text-muted-foreground hover:text-foreground"
-                  onClick={() => void makeDefault(s.id)}
-                  aria-label={`${S.setDefault} ${s.name}`}
+                  onClick={() =>
+                    setDraft({
+                      id: s.id,
+                      name: s.name,
+                      bodyHtml: s.bodyHtml,
+                      isDefault: s.isDefault,
+                    })
+                  }
+                  aria-label={`${S.edit} ${s.name}`}
                 >
-                  {S.setDefault}
+                  {S.edit}
                 </button>
-              )}
-              <button
-                type="button"
-                className="text-muted-foreground hover:text-foreground"
-                onClick={() =>
-                  setDraft({ id: s.id, name: s.name, bodyHtml: s.bodyHtml, isDefault: s.isDefault })
-                }
-                aria-label={`${S.edit} ${s.name}`}
-              >
-                {S.edit}
-              </button>
-              <button
-                type="button"
-                className="text-destructive hover:opacity-80"
-                onClick={() => void remove(s.id)}
-                aria-label={`${S.delete} ${s.name}`}
-              >
-                {S.delete}
-              </button>
-            </span>
-          </li>
-        ))}
-        {signatures.length === 0 && (
-          <li className="px-3 py-2 text-sm text-muted-foreground">{S.empty}</li>
-        )}
-      </ul>
+                <button
+                  type="button"
+                  className="text-destructive hover:opacity-80"
+                  onClick={() => void remove(s.id)}
+                  aria-label={`${S.delete} ${s.name}`}
+                >
+                  {S.delete}
+                </button>
+              </span>
+            </li>
+          ))}
+          {signatures.length === 0 && (
+            <li className="px-3 py-2 text-sm text-muted-foreground">{S.empty}</li>
+          )}
+        </ul>
 
-      {draft !== null && (
-        <div className="space-y-2 rounded-md border p-3">
-          <input
-            aria-label={S.nameLabel}
-            placeholder={S.nameLabel}
-            value={draft.name}
-            maxLength={40}
-            onChange={(e) => setDraft({ ...draft, name: e.target.value })}
-            className={FIELD_INPUT}
-          />
-          <p className="text-xs text-muted-foreground">{S.maxNameHint}</p>
-          <RichTextBody
-            html={draft.bodyHtml}
-            onChange={(bodyHtml) => setDraft({ ...draft, bodyHtml })}
-          />
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Checkbox
-              checked={draft.isDefault}
-              onCheckedChange={(v) => setDraft({ ...draft, isDefault: v })}
-              label={S.setDefault}
+        {draft !== null && (
+          <div className="space-y-2 rounded-md border p-3">
+            <input
+              aria-label={S.nameLabel}
+              placeholder={S.nameLabel}
+              value={draft.name}
+              maxLength={40}
+              onChange={(e) => setDraft({ ...draft, name: e.target.value })}
+              className={FIELD_INPUT}
             />
-            {S.setDefault}
+            <p className="text-xs text-muted-foreground">{S.maxNameHint}</p>
+            <RichTextBody
+              html={draft.bodyHtml}
+              onChange={(bodyHtml) => setDraft({ ...draft, bodyHtml })}
+            />
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Checkbox
+                checked={draft.isDefault}
+                onCheckedChange={(v) => setDraft({ ...draft, isDefault: v })}
+                label={S.setDefault}
+              />
+              {S.setDefault}
+            </div>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                className="rounded-md bg-action px-3 py-1.5 text-sm text-action-foreground transition-transform active:scale-[0.96]"
+                onClick={() => void save()}
+              >
+                {S.save}
+              </button>
+              <button
+                type="button"
+                className="rounded-md border px-3 py-1.5 text-sm text-muted-foreground transition-transform active:scale-[0.96]"
+                onClick={() => setDraft(null)}
+              >
+                {S.cancel}
+              </button>
+            </div>
           </div>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              className="rounded-md bg-action px-3 py-1.5 text-sm text-action-foreground transition-transform active:scale-[0.96]"
-              onClick={() => void save()}
-            >
-              {S.save}
-            </button>
-            <button
-              type="button"
-              className="rounded-md border px-3 py-1.5 text-sm text-muted-foreground transition-transform active:scale-[0.96]"
-              onClick={() => setDraft(null)}
-            >
-              {S.cancel}
-            </button>
-          </div>
-        </div>
-      )}
+        )}
+      </div>
     </section>
   );
 }

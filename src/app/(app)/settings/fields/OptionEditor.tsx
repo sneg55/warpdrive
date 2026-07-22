@@ -3,6 +3,7 @@ import { useRouter } from "next/navigation";
 import type React from "react";
 import { useState } from "react";
 import { useActionError } from "@/components/shell/ActionErrorProvider";
+import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { STRINGS } from "@/constants/strings";
 import {
@@ -87,13 +88,9 @@ export function OptionEditor({
           placeholder={S.newOption}
           className="flex-1"
         />
-        <button
-          type="button"
-          onClick={() => void add()}
-          className="rounded-md bg-action px-2 py-1 text-xs font-medium text-action-foreground transition-transform hover:opacity-90 active:scale-[0.96]"
-        >
+        <Button type="button" size="sm" onClick={() => void add()} className="px-2 text-xs">
           {S.addOption}
-        </button>
+        </Button>
       </div>
     </div>
   );

@@ -69,11 +69,11 @@ export function VersionBanner() {
           </Button>
         </div>
       </div>
-      {expanded && data.releaseNotes !== null && (
-        <div className="mx-auto mt-2 max-w-6xl whitespace-pre-wrap border-t pt-2 text-muted-foreground">
+      {expanded && data.releaseNotes !== null ? (
+        <div className="mx-auto mt-2 max-w-6xl animate-in whitespace-pre-wrap border-t pt-2 text-muted-foreground fade-in slide-in-from-top-1 motion-reduce:animate-none">
           {data.releaseNotes}
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

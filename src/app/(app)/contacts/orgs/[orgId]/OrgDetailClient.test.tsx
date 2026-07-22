@@ -51,8 +51,10 @@ vi.mock("@/lib/trpc-client", () => ({
       },
     },
     contacts: {
-      listPeopleForOrg: { useQuery: () => ({ data: [] }) },
-      dealsForOrg: { useQuery: () => ({ data: [] }) },
+      listPeopleForOrg: { useQuery: () => ({ data: [{ id: "p1", name: "Jane Roe" }] }) },
+      dealsForOrg: {
+        useQuery: () => ({ data: [{ id: "d1", title: "Acme renewal", status: "open" }] }),
+      },
       orgOptions: { useQuery: () => ({ data: [] }) },
       contactTimeline: { useQuery: () => ({ data: { items: [] } }) },
       relatedOrgs: { useQuery: () => ({ data: [] }) },
@@ -95,6 +97,11 @@ const org = {
   id: "o1",
   name: "Acme Inc",
   address: null,
+  domain: null,
+  industry: null,
+  employeeCount: null,
+  annualRevenue: null,
+  linkedinUrl: null,
   customFields: {},
   labels: [],
   ownerName: "Ann Owner",
@@ -103,35 +110,66 @@ const org = {
 import { OrgDetailClient } from "./OrgDetailClient";
 
 describe("OrgDetailClient", () => {
-  it("opens the edit dialog, prefilled with the org name, when Edit is clicked", () => {
+  it("omits the redundant header Edit action while keeping the Organization section editable", () => {
     render(<OrgDetailClient org={org as never} defs={[]} canMerge={true} baseCurrency="USD" />);
-    expect(screen.queryByRole("dialog", { name: /edit organization/i })).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: /^edit$/i }));
-    expect(screen.getByRole("dialog", { name: /edit organization/i })).toBeInTheDocument();
-    expect(screen.getByLabelText(/name/i, { selector: "input" })).toHaveValue("Acme Inc");
+    expect(
+      within(screen.getByRole("banner")).queryByRole("button", { name: /^edit$/i }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Edit Organization section/i })).toBeInTheDocument();
   });
 
-  // CO-2: the org sidebar blocks (Summary / Details / Related organizations / Stats) are migrated
-  // to collapsible sections with the section kebab (Customize fields) + hide-empty funnel. The old
-  // "Edit section" pencil was removed (duplicated the funnel reveal; label implied a dead edit mode).
-  it("renders the sidebar blocks as collapsible sections with kebab menus (no dead edit pencil)", () => {
+  it("renders one shared Organization section instead of separate Summary and Details cards", () => {
     render(<OrgDetailClient org={org as never} defs={[]} canMerge={true} baseCurrency="USD" />);
-    expect(screen.getByRole("region", { name: "Summary" })).toBeInTheDocument();
-    expect(screen.getByRole("region", { name: "Details" })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "Organization" })).toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "Summary" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "Details" })).not.toBeInTheDocument();
     expect(screen.getByRole("region", { name: "Related organizations" })).toBeInTheDocument();
     const stats = within(screen.getByRole("region", { name: "Stats" }));
     expect(stats.getByText("Open deals")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Summary options/i })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /Edit Summary section/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Organization options/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Edit Organization section/i })).toBeInTheDocument();
+  });
+
+  it("renders People and Deals in the sidebar and opens the main panel on Activity", () => {
+    render(<OrgDetailClient org={org as never} defs={[]} canMerge={true} baseCurrency="USD" />);
+
+    const header = screen.getByRole("banner");
+    expect(header.parentElement?.firstElementChild).toBe(header);
+    const people = within(screen.getByRole("region", { name: "People" }));
+    expect(people.getByRole("link", { name: "Jane Roe" })).toHaveAttribute(
+      "href",
+      "/contacts/people/p1",
+    );
+    const deals = within(screen.getByRole("region", { name: "Deals" }));
+    expect(deals.getByRole("link", { name: "Acme renewal, status open" })).toHaveAttribute(
+      "href",
+      "/deals/d1",
+    );
+    expect(deals.getByLabelText("Deal status: Open")).toBeInTheDocument();
+    expect(screen.queryByRole("tab", { name: "People" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("tab", { name: "Deals" })).not.toBeInTheDocument();
+    const mainTabList = screen.getAllByRole("tablist").find((tabList) => {
+      const tabs = within(tabList);
+      return (
+        tabs.queryByRole("tab", { name: "Activity" }) !== null &&
+        tabs.queryByRole("tab", { name: "Email" }) !== null
+      );
+    });
+    if (mainTabList === undefined) throw new Error("main organization tab list not found");
+    const mainTabs = within(mainTabList);
+    expect(mainTabs.getByRole("tab", { name: "Activity" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
   });
 
   // Wave 4, Task 5: the header shows who owns the org via the shared OwnerBadge.
-  it("inline-saves the Summary panel's Name through updateOrgAction", async () => {
+  it("inline-saves the Organization section's Name through updateOrgAction", async () => {
     const { updateOrgAction } = await import("@/features/contacts/actions");
     render(<OrgDetailClient org={org as never} defs={[]} canMerge={true} baseCurrency="USD" />);
     fireEvent.click(screen.getByRole("button", { name: "Edit Name" }));
-    fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Acme Corp" } });
-    fireEvent.keyDown(screen.getByLabelText("Name"), { key: "Enter" });
+    fireEvent.change(screen.getByLabelText("editor-name"), { target: { value: "Acme Corp" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
 
     await vi.waitFor(() => expect(updateOrgAction).toHaveBeenCalled());
     expect(updateOrgAction).toHaveBeenCalledWith(

@@ -273,7 +273,7 @@ export function ThreadList({
               type="button"
               onClick={feed.loadMore}
               disabled={feed.loadingMore}
-              className="w-full rounded-md border px-3 py-1.5 text-sm font-medium text-muted-foreground transition hover:bg-accent disabled:opacity-60"
+              className="w-full rounded-md border px-3 py-1.5 text-sm font-medium text-muted-foreground transition-[background-color,opacity,scale] duration-150 ease-out hover:bg-accent active:not-disabled:scale-[0.96] disabled:opacity-60 motion-reduce:transition-[background-color,opacity]"
             >
               {feed.loadingMore ? STRINGS.inbox.loadingMore : STRINGS.inbox.loadMore}
             </button>

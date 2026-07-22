@@ -112,7 +112,7 @@ export function CreateFilterModal({
             <button
               type="button"
               onClick={() => onPreview(buildDefinition())}
-              className="inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm transition hover:bg-accent active:scale-[0.96]"
+              className="inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm transition-[background-color,scale] duration-150 ease-out hover:bg-accent active:scale-[0.96] motion-reduce:transition-colors"
             >
               <svg
                 aria-hidden="true"
@@ -136,7 +136,7 @@ export function CreateFilterModal({
             <button
               type="button"
               onClick={onClose}
-              className="rounded-md border px-3 py-1.5 text-sm transition hover:bg-accent active:scale-[0.96]"
+              className="rounded-md border px-3 py-1.5 text-sm transition-[background-color,scale] duration-150 ease-out hover:bg-accent active:scale-[0.96] motion-reduce:transition-colors"
             >
               Cancel
             </button>
@@ -147,7 +147,7 @@ export function CreateFilterModal({
                   onApply(buildDefinition());
                   onClose();
                 }}
-                className="rounded-md border px-3 py-1.5 text-sm font-medium transition hover:bg-accent active:scale-[0.96]"
+                className="rounded-md border px-3 py-1.5 text-sm font-medium transition-[background-color,scale] duration-150 ease-out hover:bg-accent active:scale-[0.96] motion-reduce:transition-colors"
               >
                 Apply
               </button>
@@ -155,7 +155,7 @@ export function CreateFilterModal({
             <button
               type="button"
               onClick={() => void save()}
-              className="rounded-md bg-action px-3 py-1.5 text-sm font-medium text-action-foreground transition hover:opacity-90 active:scale-[0.96]"
+              className="rounded-md bg-action px-3 py-1.5 text-sm font-medium text-action-foreground transition-[opacity,scale] duration-150 ease-out hover:opacity-90 active:scale-[0.96] motion-reduce:transition-opacity"
             >
               Save
             </button>

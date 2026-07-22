@@ -42,6 +42,16 @@ function namedRows(...names: string[]): (HTMLElement | undefined)[] {
 }
 
 describe("LabelsClient", () => {
+  it("uses the same color picker geometry for label rows and add-label forms", () => {
+    render(<LabelsClient rows={[row("l1", "Hot")]} />);
+
+    const rowPicker = screen.getByRole("combobox", { name: STRINGS.settings.color });
+    const addPicker = screen.getByRole("combobox", { name: "Deals Color" });
+    expect(rowPicker.className).toBe(addPicker.className);
+    expect(rowPicker.parentElement).toHaveClass("w-32");
+    expect(addPicker.parentElement).toHaveClass("w-32");
+  });
+
   it("renders each group's add-label row inside that group's bordered box", () => {
     render(<LabelsClient rows={[row("l1", "Hot")]} />);
     const addButton = screen.getAllByRole("button", { name: /add label/i })[0];

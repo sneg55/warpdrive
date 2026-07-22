@@ -60,7 +60,7 @@ export function BoardSummary(props: BoardSummaryProps): React.ReactNode {
         aria-label="Show deals total value"
         aria-pressed={showTotal}
         onClick={toggle}
-        className="relative flex h-5 w-5 items-center justify-center rounded-full border text-xs text-muted-foreground transition hover:bg-accent active:scale-[0.96] before:absolute before:-inset-2.5 before:content-['']"
+        className="relative flex h-5 w-5 items-center justify-center rounded-full border text-xs text-muted-foreground transition-[color,background-color,scale] duration-150 ease-out hover:bg-accent active:scale-[0.96] before:absolute before:-inset-2.5 before:content-[''] motion-reduce:transition-colors"
       >
         <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3 w-3" fill="currentColor">
           <path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm1 15h-2v-6h2zm0-8h-2V7h2z" />

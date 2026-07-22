@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 
 export const buttonVariants = cva(
   // C1 (Pipedrive parity): button/link weight bumped 500 -> 600 (font-medium -> font-semibold).
-  "inline-flex items-center justify-center gap-1.5 rounded-md text-sm font-semibold transition-[color,background-color,opacity,scale] duration-150 ease-out disabled:pointer-events-none disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
+  "inline-flex items-center justify-center gap-1.5 rounded-md text-sm font-semibold transition-[color,background-color,opacity,scale] duration-150 ease-out disabled:pointer-events-none disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 motion-reduce:transition-[color,background-color,opacity]",
   {
     variants: {
       variant: {
@@ -16,7 +16,7 @@ export const buttonVariants = cva(
       size: {
         sm: "h-8 px-2.5",
         md: "h-9 px-4",
-        icon: "h-8 w-8",
+        icon: "h-10 w-10",
       },
     },
     defaultVariants: { variant: "default", size: "md" },
@@ -33,7 +33,8 @@ export interface ButtonProps
 
 // Subtle press feedback; 0.96 is the smallest value that still reads as tactile rather than
 // exaggerated. not-disabled so a disabled button doesn't appear to react to clicks.
-const TAP_SCALE = "active:not-disabled:scale-[0.96]";
+const TAP_SCALE =
+  "motion-safe:active:not-disabled:scale-[0.96] motion-reduce:active:not-disabled:opacity-80";
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant, size, type, static: isStatic, ...props }, ref) => (

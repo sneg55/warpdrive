@@ -31,12 +31,23 @@ interface AddLeadLeftColumnProps {
   owners: Option[] | null;
   groups: Option[] | null;
   baseCurrency: string;
+  organizationCustomFields?: React.ReactNode;
 }
 
 // Left column of the Add lead dialog (Pipedrive): contact/org, title, value, label, owner, close
 // date, source, visibility. No pipeline/stage (leads live outside pipelines). Presentational.
 export function AddLeadLeftColumn(props: AddLeadLeftColumnProps): React.ReactNode {
-  const { state, set, onTitleChange, people, orgs, owners, groups, baseCurrency } = props;
+  const {
+    state,
+    set,
+    onTitleChange,
+    people,
+    orgs,
+    owners,
+    groups,
+    baseCurrency,
+    organizationCustomFields,
+  } = props;
   const titleId = useId();
   const sourceChannelIdId = useId();
   return (
@@ -62,6 +73,8 @@ export function AddLeadLeftColumn(props: AddLeadLeftColumnProps): React.ReactNod
         onCreateNew={(name) => set({ orgMode: "new", orgId: "", newOrgName: name })}
         onClear={() => set({ orgMode: "existing", orgId: "", newOrgName: "" })}
       />
+
+      {state.orgMode === "new" ? organizationCustomFields : null}
 
       <label className="block" htmlFor={titleId}>
         <span className="mb-1 block font-medium">{L.titleLabel}</span>

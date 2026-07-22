@@ -40,4 +40,12 @@ describe("SettingsNav", () => {
     expect(idle.getAttribute("aria-current")).toBeNull();
     expect(idle.className).toContain("text-foreground");
   });
+
+  it("links Connected apps from every account settings menu", () => {
+    render(<SettingsNav isAdmin={false} canImport={false} />);
+    expect(screen.getByRole("link", { name: /Connected apps/ })).toHaveAttribute(
+      "href",
+      "/settings/connections",
+    );
+  });
 });

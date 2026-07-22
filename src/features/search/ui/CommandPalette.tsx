@@ -180,7 +180,7 @@ export function CommandPalette() {
     >
       <DialogContent
         aria-describedby={undefined}
-        className="top-[12%] max-w-lg translate-y-0 gap-0 overflow-hidden p-0"
+        className="top-[12%] max-w-lg translate-y-0 gap-0 overflow-hidden p-0 data-[state=open]:animate-none data-[state=closed]:animate-none"
       >
         <DialogTitle className="sr-only">{STRINGS.search.placeholder}</DialogTitle>
         <div className="border-b px-3 py-2 pr-9">

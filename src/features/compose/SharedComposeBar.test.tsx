@@ -114,7 +114,7 @@ describe("SharedComposeBar (Pipedrive default-state model)", () => {
   it("clicking the Notes tab while collapsed expands the note editor directly (PD behavior)", async () => {
     renderBar();
     await userEvent.click(screen.getByRole("tab", { name: "Notes" }));
-    expect(screen.getByRole("textbox", { name: "Note" })).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole("textbox", { name: "Note" })).toHaveFocus());
   });
 
   it("note Cancel collapses to the Notes prompt with the tab strip still visible", async () => {

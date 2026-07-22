@@ -1,6 +1,6 @@
 // Test-only env defaults so src/config/env.ts can import during unit tests.
 // Integration tests override DATABASE_URL with the Testcontainers URL.
-// @ts-expect-error — NODE_ENV is typed readonly in NodeJS.ProcessEnv but is writable at runtime.
+// @ts-expect-error: NODE_ENV is typed readonly in NodeJS.ProcessEnv but is writable at runtime.
 process.env.NODE_ENV ??= "test";
 process.env.DATABASE_URL ??= "postgres://placeholder:placeholder@localhost:5432/placeholder";
 process.env.GOOGLE_OAUTH_CLIENT_ID ??= "test-client-id";
@@ -18,6 +18,8 @@ process.env.MINIO_ACCESS_KEY ??= "test-access";
 process.env.MINIO_SECRET_KEY ??= "test-secret";
 process.env.MINIO_BUCKET ??= "warpdrive";
 process.env.TOKEN_ENCRYPTION_KEY ??= Buffer.alloc(32, 1).toString("base64");
+process.env.OAUTH_SIGNING_KEY ??= Buffer.alloc(32, 2).toString("base64");
+process.env.MCP_ENABLED ??= "true";
 process.env.BASE_CURRENCY ??= "USD";
 process.env.SEED_ADMIN_EMAIL ??= "admin@example.com";
 process.env.ALLOW_FIRST_LOGIN_ADMIN ??= "false";

@@ -1,18 +1,20 @@
 "use client";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type React from "react";
+import { useState } from "react";
 import { CONTACT_SIDEBAR_STRINGS } from "@/constants/contactSidebarStrings";
+import type { DealStatus } from "@/constants/dealStatus";
 import { STRINGS } from "@/constants/strings";
-import { OrgSummaryEditPanel } from "@/features/contacts/OrgSummaryEditPanel";
 import type { OrgDetail } from "@/features/contacts/orgsRepo";
-import { CustomFieldDetail } from "@/features/custom-fields/render";
 import { CollapsibleSection } from "@/features/deal-workspace/CollapsibleSection";
 import { FieldRow } from "@/features/deal-workspace/sidebar/FieldRow";
+import { OrganizationSection } from "@/features/deal-workspace/sidebar/OrganizationSection";
 import type { CustomFieldDef } from "@/types/customFields";
 import { ContactOverviewSection } from "../../ContactOverviewSection";
-import { CustomFieldsPanel } from "../../contactDetail.shared";
-import { contactSectionActions, customizeFieldsItem } from "../../contactSectionMenu";
-import { OrgFirmographicsPanel } from "./OrgFirmographicsPanel";
+import { ListPanel } from "../../contactDetail.shared";
+import { customizeFieldsItem } from "../../contactSectionMenu";
+import { LinkedDealRow } from "../../LinkedDealRow";
 import { RelatedOrgsPanel } from "./RelatedOrgsPanel";
 
 const sections = CONTACT_SIDEBAR_STRINGS.sections;
@@ -31,6 +33,8 @@ export function OrgSidebar({
   relatedOrgs,
   orgOptions,
   openDealsCount,
+  people,
+  deals,
   onRelatedChanged,
 }: {
   org: OrgDetail;
@@ -40,9 +44,12 @@ export function OrgSidebar({
   relatedOrgs: RelatedOrg;
   orgOptions: { id: string; name: string }[];
   openDealsCount: number;
+  people: { id: string; name: string }[];
+  deals: { id: string; title: string; status: DealStatus }[];
   onRelatedChanged: () => void;
 }): React.ReactNode {
   const router = useRouter();
+  const [organizationBulkEditing, setOrganizationBulkEditing] = useState(false);
   const push = (href: string): void => router.push(href);
   const orgFieldsItem = customizeFieldsItem(
     push,
@@ -52,19 +59,16 @@ export function OrgSidebar({
 
   return (
     <aside className="space-y-2 min-w-0 lg:order-first">
-      <CollapsibleSection
-        title={sections.summary}
-        headerActions={contactSectionActions(sections.summary, [orgFieldsItem])}
-      >
-        <OrgSummaryEditPanel org={org} hidden={hiddenBuiltins} />
-      </CollapsibleSection>
-
-      <CollapsibleSection
-        title={sections.details}
-        headerActions={contactSectionActions(sections.details, [orgFieldsItem])}
-      >
-        <OrgFirmographicsPanel org={org} hidden={hiddenBuiltins} onSaved={() => router.refresh()} />
-      </CollapsibleSection>
+      <OrganizationSection
+        org={org}
+        menuItems={[orgFieldsItem]}
+        bulkEditing={organizationBulkEditing}
+        onStartBulk={() => setOrganizationBulkEditing(true)}
+        onExitBulk={() => setOrganizationBulkEditing(false)}
+        hidden={hiddenBuiltins}
+        customFieldDefs={defs}
+        currency={baseCurrency}
+      />
 
       <CollapsibleSection title={sections.relatedOrgs}>
         <RelatedOrgsPanel
@@ -75,14 +79,6 @@ export function OrgSidebar({
         />
       </CollapsibleSection>
 
-      <CustomFieldsPanel
-        defs={defs}
-        values={org.customFields as Record<string, unknown>}
-        renderValue={(def, value) => (
-          <CustomFieldDetail def={def} value={value} currency={baseCurrency} />
-        )}
-      />
-
       <CollapsibleSection title={sections.stats}>
         <FieldRow label="Open deals">
           <span className="tabular-nums">{openDealsCount}</span>
@@ -91,6 +87,31 @@ export function OrgSidebar({
 
       {/* CO-2 / spec B2: PD shows an activity Overview on org detail too, not just person. */}
       <ContactOverviewSection entityType="organization" entityId={org.id} />
+
+      <CollapsibleSection title={sections.people}>
+        <ListPanel
+          items={people}
+          empty="No people yet."
+          render={(person) => (
+            <li key={person.id}>
+              <Link
+                href={`/contacts/people/${person.id}`}
+                className="block rounded px-1 py-1 text-sm text-primary transition-colors duration-150 hover:bg-accent hover:underline motion-reduce:transition-none"
+              >
+                {person.name}
+              </Link>
+            </li>
+          )}
+        />
+      </CollapsibleSection>
+
+      <CollapsibleSection title={sections.deals}>
+        <ListPanel
+          items={deals}
+          empty="No deals yet."
+          render={(deal) => <LinkedDealRow key={deal.id} deal={deal} />}
+        />
+      </CollapsibleSection>
     </aside>
   );
 }

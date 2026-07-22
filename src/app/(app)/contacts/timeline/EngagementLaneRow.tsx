@@ -22,34 +22,49 @@ export function EngagementLaneRow({
   entity: ContactEntity;
 }): React.ReactNode {
   return (
-    <div className="contents">
-      <div className="flex items-center gap-2 border-b px-3 py-2 text-sm">
-        <Link href={contactHref(entity, lane.contactId)} className="font-medium hover:underline">
-          {lane.contactName}
-        </Link>
-        <span className="text-xs text-muted-foreground">{lane.total}</span>
-      </div>
-      {months.map((key) => {
+    <tr>
+      <th
+        scope="row"
+        className="sticky left-0 z-10 border-b border-r bg-card px-3 py-2 text-left text-sm font-normal"
+      >
+        <div className="flex min-w-0 items-center gap-2">
+          <Link
+            href={contactHref(entity, lane.contactId)}
+            className="min-w-0 truncate font-medium hover:underline"
+          >
+            {lane.contactName}
+          </Link>
+          <span className="shrink-0 text-xs text-muted-foreground">{lane.total}</span>
+        </div>
+      </th>
+      {months.map((key, monthIndex) => {
         const markers = lane.byMonth[key] ?? [];
         return (
-          <div key={key} className="flex flex-wrap items-center gap-1 border-b border-l px-3 py-2">
-            {markers.map((m) => (
-              <Tip key={m.id} label={m.subject}>
-                <span
-                  role="img"
-                  aria-label={m.subject}
-                  className={cn(
-                    "inline-flex h-6 w-6 items-center justify-center rounded-full",
-                    m.done ? "bg-muted text-muted-foreground" : "bg-accent text-accent-foreground",
-                  )}
-                >
-                  <ActivityTypeIcon typeKey={m.typeKey} />
-                </span>
-              </Tip>
-            ))}
-          </div>
+          <td
+            key={key}
+            className={cn("border-b px-3 py-2 align-middle", monthIndex > 0 && "border-l")}
+          >
+            <div className="flex min-w-0 flex-wrap items-center gap-1">
+              {markers.map((m) => (
+                <Tip key={m.id} label={m.subject}>
+                  <span
+                    role="img"
+                    aria-label={m.subject}
+                    className={cn(
+                      "inline-flex h-6 w-6 items-center justify-center rounded-full",
+                      m.done
+                        ? "bg-muted text-muted-foreground"
+                        : "bg-accent text-accent-foreground",
+                    )}
+                  >
+                    <ActivityTypeIcon typeKey={m.typeKey} />
+                  </span>
+                </Tip>
+              ))}
+            </div>
+          </td>
         );
       })}
-    </div>
+    </tr>
   );
 }

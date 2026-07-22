@@ -7,6 +7,7 @@ import { Combobox, type ComboboxOption } from "@/components/ui/Combobox";
 import { identityErrorMessage } from "@/constants/settingsIdentity";
 import { addGroupMemberAction, removeGroupMemberAction } from "@/features/identity/actions/groups";
 import { readCsrfToken } from "@/utils/csrfCookie";
+import { SettingsCard, SettingsCardBody, SettingsCardHeader } from "../../SettingsSurface";
 
 interface Member {
   userId: string;
@@ -66,11 +67,12 @@ export function GroupMembersClient({ groupId, members, allUsers }: Props): React
   }
 
   return (
-    <div className="mt-6 flex flex-col gap-4">
-      <ul className="flex flex-col gap-2">
+    <SettingsCard>
+      <SettingsCardHeader title="Members" description="Add or remove users from this group." />
+      <ul className="divide-y">
         {members.length === 0 && <li className="text-sm text-gray-500">No members yet.</li>}
         {members.map((m) => (
-          <li key={m.userId} className="flex items-center justify-between gap-2 border-b pb-2">
+          <li key={m.userId} className="flex items-center justify-between gap-2 px-5 py-3">
             <span className="text-sm">{m.name}</span>
             <Button
               type="button"
@@ -87,32 +89,34 @@ export function GroupMembersClient({ groupId, members, allUsers }: Props): React
         ))}
       </ul>
 
-      <div className="flex items-end gap-2">
-        <div className="flex-1">
-          <span className="mb-1 block text-sm font-medium">Add member</span>
-          <Combobox
-            ariaLabel="Add member"
-            value={selectedUserId}
-            onChange={setSelectedUserId}
-            placeholder="Select a user"
-            options={nonMembers.map<ComboboxOption>((u) => ({
-              value: u.id,
-              label: u.name,
-              avatarName: u.name,
-              avatarUrl: u.avatarUrl,
-            }))}
-          />
+      <SettingsCardBody className="border-t">
+        <div className="flex items-end gap-2">
+          <div className="flex-1">
+            <span className="mb-1 block text-sm font-medium">Add member</span>
+            <Combobox
+              ariaLabel="Add member"
+              value={selectedUserId}
+              onChange={setSelectedUserId}
+              placeholder="Select a user"
+              options={nonMembers.map<ComboboxOption>((u) => ({
+                value: u.id,
+                label: u.name,
+                avatarName: u.name,
+                avatarUrl: u.avatarUrl,
+              }))}
+            />
+          </div>
+          <Button type="button" disabled={isPending || selectedUserId === ""} onClick={handleAdd}>
+            Add
+          </Button>
         </div>
-        <Button type="button" disabled={isPending || selectedUserId === ""} onClick={handleAdd}>
-          Add
-        </Button>
-      </div>
 
-      {error !== null && (
-        <p role="alert" className="text-sm text-red-600">
-          {error}
-        </p>
-      )}
-    </div>
+        {error !== null && (
+          <p role="alert" className="text-sm text-red-600">
+            {error}
+          </p>
+        )}
+      </SettingsCardBody>
+    </SettingsCard>
   );
 }

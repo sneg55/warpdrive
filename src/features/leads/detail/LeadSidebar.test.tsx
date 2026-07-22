@@ -133,14 +133,17 @@ it("renders the linked person's contact fields (email) via the shared Person blo
   expect(personSection.getByText("jane@acme.com")).toBeInTheDocument();
 });
 
-it("omits the Person First name / Last name rows in the lead drawer (PD's compact person section)", () => {
-  // PD's lead-drawer PERSON block shows the display Name only, not the first/last split that the
-  // deal sidebar + contact detail pages surface. LeadSidebar passes hideNameParts to PersonBlock.
+it("uses the complete deal Person section and its section-wide edit action", () => {
   render(<LeadSidebar lead={baseLead} owners={[]} person={basePerson} org={null} />);
   const personSection = within(screen.getByRole("region", { name: "Person" }));
-  expect(personSection.queryByText("First name")).not.toBeInTheDocument();
-  expect(personSection.queryByText("Last name")).not.toBeInTheDocument();
+  expect(personSection.getByText("First name")).toBeInTheDocument();
+  expect(personSection.getByText("Last name")).toBeInTheDocument();
   expect(personSection.getByText("Name")).toBeInTheDocument();
+  fireEvent.click(personSection.getByRole("button", { name: "Edit Person section" }));
+  expect(personSection.getByLabelText("First name")).toHaveValue("Jane");
+  expect(personSection.getByLabelText("Last name")).toHaveValue("Roe");
+  expect(personSection.getByRole("button", { name: "Cancel" })).toBeInTheDocument();
+  expect(personSection.getByRole("button", { name: "Save" })).toBeInTheDocument();
 });
 
 it("no Person section when the lead has no linked (or a soft-deleted) person", () => {

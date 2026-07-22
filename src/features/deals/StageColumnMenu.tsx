@@ -45,7 +45,7 @@ export function StageColumnMenu(props: StageColumnMenuProps): React.ReactNode {
       <DropdownMenu>
         <DropdownMenuTrigger
           aria-label={triggerLabel}
-          className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+          className="relative flex h-6 w-6 items-center justify-center rounded text-muted-foreground transition-[color,background-color,scale] duration-150 ease-out after:absolute after:-inset-2 after:content-[''] hover:bg-accent hover:text-foreground active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-colors"
         >
           <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor">
             <circle cx="5" cy="12" r="1.6" />

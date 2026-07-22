@@ -1,5 +1,6 @@
 "use client";
 import { useMemo, useState } from "react";
+import { BLOCK_CLASS } from "@/features/observability/replayMasking";
 
 // Sanitized HTML is isolated in an iframe whose sandbox grants allow-same-origin ONLY.
 //
@@ -50,6 +51,7 @@ export function MessageBodyFrame(props: {
       )}
       <iframe
         title="email body"
+        className={BLOCK_CLASS}
         sandbox={IFRAME_SANDBOX}
         srcDoc={srcDoc}
         onLoad={onLoad}

@@ -65,6 +65,8 @@ vi.mock("@/lib/trpc-client", () => ({
       listTypes: { useQuery: () => ({ data: [] }) },
       // The composer's Free/Busy hook (useComposerAvailability) queries this procedure.
       availability: { useQuery: () => ({ data: { busy: false } }) },
+      // Inline edit: getForEdit is enabled only once an activity id is picked, so it stays idle here.
+      getForEdit: { useQuery: () => ({ data: null }) },
     },
     labels: { listByTarget: { useQuery: () => ({ data: [] }) } },
     identity: {

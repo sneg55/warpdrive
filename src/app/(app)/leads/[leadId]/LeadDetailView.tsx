@@ -1,8 +1,10 @@
 import { notFound, redirect } from "next/navigation";
 import type React from "react";
 import { db } from "@/db/client";
+import { listDefs } from "@/features/custom-fields/defsRepo";
 import { listHiddenBuiltins } from "@/features/custom-fields/hiddenBuiltinsRepo";
 import { getLeadById, getLeadRelations } from "@/features/leads/leadRepo";
+import { readBaseCurrency } from "@/features/settings/readBaseCurrency";
 import { createContext } from "@/server/trpc/context";
 import type { DealVisibilitySession } from "@/types/session";
 import { LeadWorkspaceClient } from "./LeadWorkspaceClient";
@@ -45,10 +47,14 @@ export async function LeadDetailView({ leadId }: { leadId: string }): Promise<Re
   // Person/Organization blocks render the contact's full field set (PD parity), dropping the same
   // built-in rows the contact detail pages do. The lead visibility gate above is the authority.
   const signal = AbortSignal.timeout(10_000);
-  const [relations, hidden] = await Promise.all([
-    getLeadRelations(db, loaded.lead, signal),
-    listHiddenBuiltins(db, signal),
-  ]);
+  const [relations, hidden, personCustomFieldDefs, organizationCustomFieldDefs, baseCurrency] =
+    await Promise.all([
+      getLeadRelations(db, loaded.lead, signal),
+      listHiddenBuiltins(db, signal),
+      listDefs(db, "person", {}, signal),
+      listDefs(db, "organization", {}, signal),
+      readBaseCurrency(db, signal),
+    ]);
 
   return (
     <main aria-label="Lead" className="h-full">
@@ -58,6 +64,9 @@ export async function LeadDetailView({ leadId }: { leadId: string }): Promise<Re
         org={relations.org}
         hiddenPersonFields={hidden.person}
         hiddenOrgFields={hidden.organization}
+        personCustomFieldDefs={personCustomFieldDefs}
+        organizationCustomFieldDefs={organizationCustomFieldDefs}
+        baseCurrency={baseCurrency}
       />
     </main>
   );

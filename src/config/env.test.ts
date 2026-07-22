@@ -66,6 +66,16 @@ describe("env boundary", () => {
     }
   });
 
+  test("defaults telemetry vars to disabled-safe values when unset", () => {
+    const parsed = parseEnv({ ...process.env });
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    expect(parsed.value.POSTHOG_KEY).toBe("");
+    expect(parsed.value.POSTHOG_HOST).toBe("");
+    expect(parsed.value.DISABLE_TELEMETRY).toBe(false);
+    expect(parsed.value.APP_COMMIT).toBe("");
+  });
+
   test("parses an APP_VERSION stamp and DISABLE_UPDATE_CHECK=true", () => {
     const result = parseEnv({
       ...process.env,

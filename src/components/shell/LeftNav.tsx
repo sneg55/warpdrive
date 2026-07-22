@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import type React from "react";
 import { useEffect, useState } from "react";
 import { Tip } from "@/components/ui/tooltip";
+import { NAV_PREF_COOKIE } from "@/constants/cookies";
 import { STRINGS } from "@/constants/strings";
 import { cn } from "@/lib/utils";
 import {
@@ -43,41 +44,49 @@ const ITEMS = [
   },
 ] as const;
 
-// Preference key for the collapsed/expanded rail. Read after mount (not during SSR) so the
-// server and first client render agree on the collapsed default and no hydration mismatch occurs.
-const NAV_PREF_KEY = "wd.nav.expanded:v1";
-// Legacy unversioned key, read once as a fallback so an existing choice survives the version bump.
-const NAV_PREF_KEY_LEGACY = "wd.nav.expanded";
+// The collapsed/expanded rail preference lives in a COOKIE, not localStorage, so the server layout
+// can read it (NAV_PREF_COOKIE, from the shared non-client constants module) and render the correct
+// width at first paint. localStorage is invisible to the server, which forced the old "render
+// collapsed, correct on mount" jump that animated the rail open on every reload.
 // Below this viewport width the rail auto-collapses unless the user has explicitly chosen a state.
 // The nav is open by default on normal/large screens; small screens get the compact icon rail.
 const EXPAND_AT_MIN_WIDTH = 1024;
 
-// Storage access is wrapped so a blocked/absent localStorage (private mode, odd test envs) never
-// throws; the preference simply does not persist in that case. Returns the explicit user choice
-// ("1"/"0") or null when the user has not toggled the rail (so we follow the responsive default).
+// Cookie access is wrapped so an odd/absent environment never throws; the preference just does not
+// persist. Returns the explicit user choice ("1"/"0") or null when the user has not toggled the rail
+// (so we follow the responsive default). Client-only: called from the mount effect, never in render.
 function readPref(): boolean | null {
   try {
-    const v =
-      globalThis.localStorage.getItem(NAV_PREF_KEY) ??
-      globalThis.localStorage.getItem(NAV_PREF_KEY_LEGACY);
-    return v === "1" ? true : v === "0" ? false : null;
+    for (const part of document.cookie.split(";")) {
+      const [key, value] = part.trim().split("=");
+      if (key === NAV_PREF_COOKIE) return value === "1" ? true : value === "0" ? false : null;
+    }
+    return null;
   } catch {
     return null;
   }
 }
 function writePref(expanded: boolean): void {
   try {
-    globalThis.localStorage.setItem(NAV_PREF_KEY, expanded ? "1" : "0");
+    // path=/ so the server reads it on the next navigation; a year's max-age so it survives; lax is
+    // fine for a non-sensitive UI preference.
+    document.cookie = `${NAV_PREF_COOKIE}=${expanded ? "1" : "0"}; path=/; max-age=31536000; samesite=lax`;
   } catch {
     // ignore: preference is best-effort
   }
 }
 
-export function LeftNav(): React.ReactNode {
+interface LeftNavProps {
+  // The persisted rail state, read from the cookie by the server layout so the first paint already
+  // has the right width. Absent (undefined) collapses by default, matching a first-ever visit.
+  initialExpanded?: boolean;
+}
+
+export function LeftNav({ initialExpanded = false }: LeftNavProps = {}): React.ReactNode {
   const pathname = usePathname();
-  // SSR/first paint: collapsed, so the server and initial client markup agree (no hydration
-  // mismatch). The effect below immediately applies the real state on the client.
-  const [expanded, setExpanded] = useState(false);
+  // First paint uses the server-provided persisted state (from the cookie) so there is no post-mount
+  // width jump to animate. The effect below still reconciles the explicit choice + responsive default.
+  const [expanded, setExpanded] = useState(initialExpanded);
 
   useEffect(() => {
     // An explicit user choice always wins and stays fixed regardless of viewport.

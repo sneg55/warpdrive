@@ -91,4 +91,23 @@ describe("buildCustomFieldsSchema", () => {
     ]);
     expect(schema.safeParse({}).success).toBe(true);
   });
+
+  it("treats Important as required on create and rejects blank values", () => {
+    const schema = buildCustomFieldsSchema(
+      [def({ key: "seniority", type: "text", isImportant: true })],
+      { requireImportant: true },
+    );
+    expect(schema.safeParse({}).success).toBe(false);
+    expect(schema.safeParse({ seniority: "   " }).success).toBe(false);
+    expect(schema.safeParse({ seniority: "Director" }).success).toBe(true);
+  });
+
+  it("keeps Show in add form fields optional", () => {
+    const schema = buildCustomFieldsSchema(
+      [def({ key: "linkedin", type: "text", showInAddForm: true })],
+      { requireImportant: true },
+    );
+    expect(schema.safeParse({}).success).toBe(true);
+    expect(schema.safeParse({ linkedin: "https://example.com" }).success).toBe(true);
+  });
 });

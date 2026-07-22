@@ -82,7 +82,7 @@ export function BulkMergeDialog({
             <button
               type="button"
               onClick={onClose}
-              className="rounded-md border px-3 py-1.5 text-sm transition hover:bg-accent active:scale-[0.96]"
+              className="rounded-md border px-3 py-1.5 text-sm transition-[background-color,scale] duration-150 ease-out hover:bg-accent active:scale-[0.96] motion-reduce:transition-colors"
             >
               Cancel
             </button>
@@ -90,7 +90,7 @@ export function BulkMergeDialog({
               type="button"
               disabled={pending}
               onClick={() => void confirm()}
-              className="rounded-md bg-action px-3 py-1.5 text-sm font-medium text-action-foreground transition hover:opacity-90 disabled:opacity-50 active:not-disabled:scale-[0.96]"
+              className="rounded-md bg-action px-3 py-1.5 text-sm font-medium text-action-foreground transition-[opacity,scale] duration-150 ease-out hover:opacity-90 disabled:opacity-50 active:not-disabled:scale-[0.96] motion-reduce:transition-opacity"
             >
               Merge
             </button>

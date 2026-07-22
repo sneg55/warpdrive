@@ -1,7 +1,5 @@
 // Custom-field widget dispatch: CustomFieldDetail (read-only) and
-// CustomFieldFormControl (editable). Built from native HTML elements only.
-// Entity-picker widgets (user/person/org) are string id inputs for now;
-// the real picker components are a later page concern.
+// CustomFieldFormControl (editable). Controls use the shared shadcn-style UI primitives.
 import { assertNever } from "@/types/result";
 import { formatCustomFieldDisplay } from "./render";
 import {
@@ -11,12 +9,12 @@ import {
   MultiOptionControl,
   NumericControl,
   RangeControl,
+  ReferenceControl,
   SingleOptionControl,
   TextControl,
   TimeControl,
 } from "./render.widget-controls";
 import type { ControlProps, DetailProps } from "./render.widget-types";
-import { strVal } from "./render.widget-types";
 
 export function CustomFieldDetail({ def, value, currency }: DetailProps) {
   // tabular-nums keeps numeric/monetary values from jittering column width as they update;
@@ -60,17 +58,7 @@ export function CustomFieldFormControl({ def, value, onChange }: ControlProps) {
     case "user":
     case "person":
     case "org":
-      // Real entity-picker (combobox with search) is a later page concern.
-      return (
-        <input
-          id={id}
-          type="text"
-          value={strVal(value)}
-          onChange={(e) => onChange(e.target.value)}
-          aria-label={def.name}
-          placeholder={`${def.type} id`}
-        />
-      );
+      return <ReferenceControl def={def} value={value} onChange={onChange} />;
     case "address":
       return <AddressControl def={def} value={value} onChange={onChange} />;
     default:

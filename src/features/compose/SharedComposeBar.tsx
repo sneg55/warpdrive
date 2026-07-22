@@ -1,8 +1,9 @@
 "use client";
 import Link from "next/link";
 import type React from "react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import type { EditableActivity } from "@/features/activities/getForEdit";
 import { ActivityComposerInline } from "@/features/deal-workspace/composer/ActivityComposerInline";
 import {
   ActivityIcon,
@@ -79,6 +80,11 @@ interface Props {
   emailAddress?: string;
   onActivityCreated: () => void;
   onNoteCreated: () => void;
+  // Inline edit: when set, the Activity composer opens expanded in EDIT mode prefilled from this
+  // activity (deal workspace). onEditSaved fires after a successful save; onEditCancel on cancel.
+  editing?: EditableActivity | null;
+  onEditSaved?: () => void;
+  onEditCancel?: () => void;
 }
 
 // Tabbed composer matching Pipedrive's model exactly (minus out-of-scope Call/Documents/
@@ -98,7 +104,11 @@ export function SharedComposeBar({
   emailAddress,
   onActivityCreated,
   onNoteCreated,
+  editing,
+  onEditSaved,
+  onEditCancel,
 }: Props): React.ReactNode {
+  const composeRef = useRef<HTMLElement>(null);
   const [expanded, setExpanded] = useState(false);
   const tabs = tabsForScope(scope);
   // Default to the first enabled tab for this scope (Activity for deal/person/org, Notes for leads).
@@ -109,6 +119,11 @@ export function SharedComposeBar({
   function openTab(id: ComposeTab): void {
     setTab(id);
     setExpanded(true);
+    requestAnimationFrame(() => {
+      composeRef.current
+        ?.querySelector<HTMLElement>(`[data-compose-primary="${id}"]`)
+        ?.focus({ preventScroll: true });
+    });
   }
 
   // Leaving the Email composer (sent or closed) lands on the collapsed Activity prompt,
@@ -122,7 +137,7 @@ export function SharedComposeBar({
   const showPrompt = !expanded && prompt !== undefined;
 
   return (
-    <section aria-label="compose" className="mb-4 rounded border bg-card">
+    <section ref={composeRef} aria-label="compose" className="mb-4 rounded border bg-card">
       <Tabs value={tab} onValueChange={(v) => openTab(v as ComposeTab)}>
         <TabsList className="overflow-x-auto border-b">
           {tabs.map(({ id, label, Icon }) => (
@@ -143,10 +158,24 @@ export function SharedComposeBar({
         </TabsList>
       </Tabs>
 
-      {showPrompt ? (
+      {editing != null ? (
+        // Edit mode overrides the tab content: the Activity composer opens expanded, prefilled from
+        // the picked activity. Save/Cancel both close it (onEditSaved refreshes, onEditCancel clears).
+        <div className="p-1.5">
+          <ActivityComposerInline
+            {...activityAnchor(scope)}
+            personName={scope.personName}
+            dealTitle={scope.dealTitle}
+            orgName={scope.orgName}
+            editing={editing}
+            onCreated={() => onEditSaved?.()}
+            onCancel={() => onEditCancel?.()}
+          />
+        </div>
+      ) : showPrompt ? (
         <ComposeCollapsedTrigger
           label={prompt}
-          onExpand={() => setExpanded(true)}
+          onExpand={() => openTab(tab)}
           onPreload={preloadRichTextBody}
         />
       ) : (

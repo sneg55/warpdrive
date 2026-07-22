@@ -8,6 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { withActionTelemetry } from "@/features/observability/resultSeam";
 import { actionErrorContent } from "./actionError";
 
 // Report a failed action so the shared app-wide modal can explain it. errorId is the AppError id
@@ -30,7 +31,7 @@ export function useActionError(): ReportActionError {
 export function ActionErrorProvider({ children }: { children: React.ReactNode }): React.ReactNode {
   // null = nothing showing. A reported error stores its id (or "" when the action gave none).
   const [errorId, setErrorId] = useState<string | null>(null);
-  const report: ReportActionError = (id) => setErrorId(id ?? "");
+  const report: ReportActionError = withActionTelemetry((id) => setErrorId(id ?? ""), "app");
   const content = actionErrorContent(errorId ?? undefined);
 
   return (

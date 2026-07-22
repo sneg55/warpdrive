@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeAll, expect, it, vi } from "vitest";
 
 beforeAll(() => {
@@ -55,6 +55,11 @@ function pickParticipant(label: RegExp): void {
   fireEvent.click(screen.getByLabelText("Participants"));
   fireEvent.click(screen.getByRole("option", { name: label }));
 }
+
+it("focuses the Subject field as soon as the Activity composer opens", async () => {
+  render(<ActivityComposerInline dealId="d1" personId={null} orgId="o1" onCreated={vi.fn()} />);
+  await waitFor(() => expect(screen.getByLabelText("Subject")).toHaveFocus());
+});
 
 it("submits subject + assembled dueAt + done, without the 09:00 hardcode", async () => {
   render(<ActivityComposerInline dealId="d1" personId={null} orgId="o1" onCreated={vi.fn()} />);

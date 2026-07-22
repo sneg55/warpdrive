@@ -12,9 +12,10 @@ export async function validateContactCustomFields(
   entity: "person" | "organization",
   values: Record<string, unknown>,
   signal: AbortSignal,
+  options: { requireImportant?: boolean } = {},
 ): Promise<Result<Record<string, unknown>, AppError>> {
   const defs = await listDefs(db, entity, {}, signal);
-  const parsed = buildCustomFieldsSchema(defs).safeParse(values);
+  const parsed = buildCustomFieldsSchema(defs, options).safeParse(values);
   if (parsed.success === false) {
     return err(
       new AppError(ERROR_IDS.CF_VALUE_INVALID, "custom fields invalid", {

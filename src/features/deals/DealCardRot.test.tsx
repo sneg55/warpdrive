@@ -84,6 +84,6 @@ describe("DealCard rot tint", () => {
     // Deep-rotting card (age would be level 3) shows no red tint until the clock arrives.
     expect(card.className).not.toMatch(/bg-red-\d/);
     // Activity indicator falls back to the "none" state, not a time-derived color.
-    expect(screen.getByLabelText("no activity planned")).not.toBeNull();
+    expect(screen.getByLabelText("No activity scheduled")).not.toBeNull();
   });
 });

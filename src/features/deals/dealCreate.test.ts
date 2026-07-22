@@ -5,6 +5,7 @@ import { channelVersions } from "@/db/schema/realtime";
 import { settings } from "@/db/schema/system";
 import { withTestDb } from "@/db/testing";
 import { seedPipelineWithStages, seedUser } from "@/db/testing/factories";
+import { createDef, setDefFlags } from "@/features/custom-fields/defsRepo";
 import { createDeal } from "./dealActions";
 
 function regular(userId: string) {
@@ -255,6 +256,51 @@ describe("createDeal", () => {
       expect(cv).toBeDefined();
       if (cv === undefined) return;
       expect(Number(cv.version)).toBeGreaterThanOrEqual(1);
+    });
+  });
+
+  it("requires Important deal fields on create and persists submitted values", async () => {
+    await withTestDb(async (db) => {
+      await db.insert(settings).values({
+        id: true,
+        baseCurrency: "USD",
+        defaultVisibilityLevels: { deal: "all", person: "all", organization: "all" },
+      });
+      const signal = new AbortController().signal;
+      const field = await createDef(
+        db,
+        { targetEntity: "deal", type: "text", name: "Account Tier" },
+        signal,
+      );
+      if (field.ok === false) throw field.error;
+      const flags = await setDefFlags(
+        db,
+        { id: field.value.id, isImportant: true, showInAddForm: false },
+        signal,
+      );
+      if (flags.ok === false) throw flags.error;
+
+      const user = await seedUser(db);
+      const pipeline = await seedPipelineWithStages(db, ["Qualified"]);
+      const base = {
+        title: "Required field test",
+        pipelineId: pipeline.pipeline.id,
+        stageId: firstStageId(pipeline),
+      };
+      const missing = await createDeal(db, regular(user.id), base, signal);
+      expect(missing.ok).toBe(false);
+      if (missing.ok === false) expect(missing.error.id).toBe("E_CF_003");
+
+      const created = await createDeal(
+        db,
+        regular(user.id),
+        { ...base, customFields: { account_tier: "Enterprise" } },
+        signal,
+      );
+      expect(created.ok).toBe(true);
+      if (created.ok === true) {
+        expect(created.value.customFields).toEqual({ account_tier: "Enterprise" });
+      }
     });
   });
 });

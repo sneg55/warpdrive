@@ -9,5 +9,7 @@ export const CONTACT_SIDEBAR_STRINGS = {
     relatedOrgs: "Related organizations",
     stats: "Stats",
     overview: "Overview",
+    people: "People",
+    deals: "Deals",
   },
 } as const;

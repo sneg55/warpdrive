@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { CalendarActivity } from "@/features/activities/calendar";
@@ -14,6 +14,15 @@ vi.mock("@/lib/trpc-client", () => ({
     }),
   },
 }));
+const { togglePinAction } = vi.hoisted(() => ({
+  togglePinAction: vi.fn(() => Promise.resolve({ ok: true as const, value: { id: "n1" } })),
+}));
+vi.mock("@/features/collaboration/actions", () => ({
+  togglePinAction,
+  updateNoteAction: vi.fn(),
+  deleteNoteAction: vi.fn(),
+}));
+vi.mock("@/utils/csrfCookie", () => ({ readCsrfToken: () => "csrf" }));
 
 import type { LeadTimelineEmail } from "../leadTimeline";
 import { LeadTimeline } from "./LeadTimeline";
@@ -101,5 +110,37 @@ describe("LeadTimeline", () => {
 
     expect(screen.getByRole("tab", { name: "Notes" })).toBeInTheDocument();
     expect(screen.getByText("Called them")).toBeInTheDocument();
+  });
+
+  it("floats pinned notes above the Focus/History timeline and removes them from History", () => {
+    const items = makeItems(makeActivity({ done: true }));
+    items.push({
+      kind: "note",
+      id: "n2",
+      at: new Date("2026-07-02T00:00:00Z"),
+      body: "Keep this visible",
+      pinned: true,
+      actorName: "Nick",
+    });
+    render(<LeadTimeline items={items} emails={emails} />);
+
+    const pinned = within(screen.getByRole("region", { name: "pinned" }));
+    expect(pinned.getByText("Keep this visible")).toBeInTheDocument();
+    expect(screen.getAllByText("Keep this visible")).toHaveLength(1);
+    expect(screen.getByText("Called them")).toBeInTheDocument();
+  });
+
+  it("requests a lead timeline refresh after pinning a note", async () => {
+    const onNoteChanged = vi.fn();
+    render(
+      <LeadTimeline
+        items={makeItems(makeActivity({ done: true }))}
+        emails={emails}
+        onNoteChanged={onNoteChanged}
+      />,
+    );
+
+    await userEvent.click(screen.getByRole("button", { name: "Pin note" }));
+    await waitFor(() => expect(onNoteChanged).toHaveBeenCalledTimes(1));
   });
 });

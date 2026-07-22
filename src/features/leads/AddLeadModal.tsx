@@ -3,6 +3,11 @@ import { useRouter } from "next/navigation";
 import type React from "react";
 import { useState } from "react";
 import { DEFAULT_BASE_CURRENCY } from "@/constants/currency";
+import {
+  CustomFieldCreateFields,
+  customFieldCreatePayload,
+  firstMissingImportantField,
+} from "@/features/custom-fields/CustomFieldCreateFields";
 import { deriveEntityTitle } from "@/features/deals/dealTitleAutofill";
 import { EntityCreateModalShell } from "@/features/entity-create/EntityCreateModalShell";
 import {
@@ -39,6 +44,8 @@ export function AddLeadModal({
   const orgsQ = trpc.contacts.orgOptions.useQuery();
   const usersQ = trpc.identity.listUsers.useQuery(undefined, { retry: false });
   const groupsQ = trpc.identity.listVisibilityGroups.useQuery(undefined, { retry: false });
+  const personFieldsQ = trpc.customFields.listDefs.useQuery({ target: "person" });
+  const orgFieldsQ = trpc.customFields.listDefs.useQuery({ target: "organization" });
 
   const set = (patch: Partial<AddLeadState>): void => setState((s) => ({ ...s, ...patch }));
 
@@ -75,12 +82,36 @@ export function AddLeadModal({
         setError(parsed.error);
         return;
       }
-      const orgId = await resolveNewOrgId(state, csrf);
+      const personFields = personFieldsQ.data ?? [];
+      const orgFields = orgFieldsQ.data ?? [];
+      if (state.orgMode === "new") {
+        const missingOrgField = firstMissingImportantField(orgFields, state.orgCustomFields);
+        if (missingOrgField !== null) {
+          setError(`${missingOrgField.name} is required`);
+          return;
+        }
+      }
+      if (state.personMode === "new") {
+        const missingPersonField = firstMissingImportantField(
+          personFields,
+          state.personCustomFields,
+        );
+        if (missingPersonField !== null) {
+          setError(`${missingPersonField.name} is required`);
+          return;
+        }
+      }
+      const submitState = {
+        ...state,
+        personCustomFields: customFieldCreatePayload(personFields, state.personCustomFields),
+        orgCustomFields: customFieldCreatePayload(orgFields, state.orgCustomFields),
+      };
+      const orgId = await resolveNewOrgId(submitState, csrf);
       if (orgId !== null && typeof orgId === "object") {
         setError(orgId.error);
         return;
       }
-      const personId = await resolveNewPersonId(state, orgId, csrf);
+      const personId = await resolveNewPersonId(submitState, orgId, csrf);
       if (personId !== null && typeof personId === "object") {
         setError(personId.error);
         return;
@@ -108,8 +139,19 @@ export function AddLeadModal({
       emails={state.emails}
       onPhones={(phones) => set({ phones })}
       onEmails={(emails) => set({ emails })}
+      personCustomFields={
+        <CustomFieldCreateFields
+          title="Person fields"
+          defs={personFieldsQ.data ?? []}
+          values={state.personCustomFields}
+          onChange={(key, value) =>
+            set({ personCustomFields: { ...state.personCustomFields, [key]: value } })
+          }
+        />
+      }
       error={error}
       pending={pending}
+      submitDisabled={personFieldsQ.isLoading || orgFieldsQ.isLoading}
       onSubmit={() => void submit()}
       onClose={onClose}
       leftColumn={
@@ -125,6 +167,16 @@ export function AddLeadModal({
           owners={optionsOrNull(usersQ.data)}
           groups={optionsOrNull(groupsQ.data)}
           baseCurrency={baseCurrency}
+          organizationCustomFields={
+            <CustomFieldCreateFields
+              title="Organization fields"
+              defs={orgFieldsQ.data ?? []}
+              values={state.orgCustomFields}
+              onChange={(key, value) =>
+                set({ orgCustomFields: { ...state.orgCustomFields, [key]: value } })
+              }
+            />
+          }
         />
       }
     />

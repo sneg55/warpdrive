@@ -15,13 +15,12 @@ import { readCsrfToken } from "@/utils/csrfCookie";
 import { CollapsibleSection } from "./CollapsibleSection";
 import { DealSummaryActionList } from "./DealSummaryActionList";
 import { dealOverview } from "./dealOverview";
-import { DetailsBlock } from "./sidebar/DetailsBlock";
+import { DealOrganizationSection } from "./sidebar/DealOrganizationSection";
 import { FieldRow } from "./sidebar/FieldRow";
 import { ManageSectionsDialog } from "./sidebar/ManageSectionsDialogLazy";
-import { OrgBlock } from "./sidebar/OrgBlock";
 import { OrgSwitchDialog } from "./sidebar/OrgSwitchDialog";
 import { ParticipantsSection } from "./sidebar/ParticipantsSection";
-import { PersonBlock } from "./sidebar/PersonBlock";
+import { PersonSection } from "./sidebar/PersonSection";
 import { SectionHeaderMenu, type SectionHeaderMenuItem } from "./sidebar/SectionHeaderMenu";
 import { SourceBlock } from "./sidebar/SourceBlock";
 import type { DealWorkspace } from "./summaryRepo";
@@ -59,7 +58,14 @@ export function DealSidebar({
   hiddenOrgFields?: ReadonlySet<string>;
   hiddenPersonFields?: ReadonlySet<string>;
 }): React.ReactNode {
-  const { deal, person, org, customFieldDefs } = workspace;
+  const {
+    deal,
+    person,
+    org,
+    customFieldDefs,
+    personCustomFieldDefs = [],
+    organizationCustomFieldDefs = [],
+  } = workspace;
   const router = useRouter();
   const reportError = useDealActionError();
   const [orgDialogOpen, setOrgDialogOpen] = useState(false);
@@ -92,7 +98,7 @@ export function DealSidebar({
   function sectionActions(
     label: string,
     menuItems: SectionHeaderMenuItem[],
-    opts: { fillGaps?: boolean; bulkSectionId?: DealSidebarSectionId } = {},
+    opts: { fillGaps?: boolean; bulkSectionId?: DealSidebarSectionId; noEdit?: boolean } = {},
   ): (ctx: { hideEmpty: boolean; showEmptyFields: () => void }) => React.ReactNode {
     // Sections with editable fields (bulkSectionId set) turn the pencil into a section bulk-edit;
     // sections without (e.g. Overview) keep the pencil as the reveal-empties toggle.
@@ -100,9 +106,11 @@ export function DealSidebar({
       <SectionHeaderMenu
         sectionLabel={label}
         onEdit={
-          opts.bulkSectionId !== undefined
-            ? () => setBulkSection(opts.bulkSectionId ?? null)
-            : showEmptyFields
+          opts.noEdit === true
+            ? undefined
+            : opts.bulkSectionId !== undefined
+              ? () => setBulkSection(opts.bulkSectionId ?? null)
+              : showEmptyFields
         }
         menuItems={menuItems}
         fillGapsPressed={!hideEmpty}
@@ -159,26 +167,6 @@ export function DealSidebar({
       </CollapsibleSection>
     ) : null,
 
-    details: !isHidden("details") ? (
-      <CollapsibleSection
-        key="details"
-        title={sections.details}
-        headerActions={sectionActions(sections.details, [dealFieldsItem], {
-          bulkSectionId: "details",
-        })}
-      >
-        <DetailsBlock
-          dealId={deal.id}
-          expectedUpdatedAt={expectedUpdatedAt}
-          customFieldDefs={customFieldDefs}
-          customFields={deal.customFields as Record<string, unknown>}
-          currency={baseCurrency}
-          bulkEditing={bulkSection === "details"}
-          onExitBulk={exitBulk}
-        />
-      </CollapsibleSection>
-    ) : null,
-
     source: (
       <CollapsibleSection
         key="source"
@@ -200,22 +188,20 @@ export function DealSidebar({
 
     person:
       !isHidden("person") && person !== null ? (
-        <CollapsibleSection
+        <PersonSection
           key="person"
-          title={sections.person}
-          headerActions={sectionActions(
-            sections.person,
-            [{ label: menu.customizeFields, onSelect: () => router.push(fieldsPath("person")) }],
-            { bulkSectionId: "person" },
-          )}
-        >
-          <PersonBlock
-            person={person}
-            bulkEditing={bulkSection === "person"}
-            onExitBulk={exitBulk}
-            hidden={hiddenPersonFields}
-          />
-        </CollapsibleSection>
+          person={person}
+          menuItems={[
+            { label: menu.customizeFields, onSelect: () => router.push(fieldsPath("person")) },
+          ]}
+          bulkEditing={bulkSection === "person"}
+          onStartBulk={() => setBulkSection("person")}
+          onExitBulk={exitBulk}
+          hidden={hiddenPersonFields}
+          customFieldDefs={personCustomFieldDefs}
+          currency={baseCurrency}
+          showLabels
+        />
       ) : null,
 
     participants: (
@@ -229,24 +215,25 @@ export function DealSidebar({
       />
     ),
 
-    organization:
-      !isHidden("organization") && org !== null ? (
-        <CollapsibleSection
-          key="organization"
-          title={sections.organization}
-          headerActions={sectionActions(sections.organization, orgMenuItems, {
-            fillGaps: true,
-            bulkSectionId: "organization",
-          })}
-        >
-          <OrgBlock
-            org={org}
-            bulkEditing={bulkSection === "organization"}
-            onExitBulk={exitBulk}
-            hidden={hiddenOrgFields}
-          />
-        </CollapsibleSection>
-      ) : null,
+    organization: (
+      <DealOrganizationSection
+        key="organization"
+        hidden={isHidden("organization")}
+        org={org}
+        orgMenuItems={orgMenuItems}
+        bulkEditing={bulkSection === "organization"}
+        onStartBulk={() => setBulkSection("organization")}
+        onExitBulk={exitBulk}
+        hiddenOrgFields={hiddenOrgFields}
+        organizationCustomFieldDefs={organizationCustomFieldDefs}
+        currency={baseCurrency}
+        dealId={deal.id}
+        dealCustomFields={deal.customFields as Record<string, unknown>}
+        dealCustomFieldDefs={customFieldDefs}
+        expectedUpdatedAt={expectedUpdatedAt}
+        title={sections.organization}
+      />
+    ),
 
     overview: (
       <CollapsibleSection

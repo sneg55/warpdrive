@@ -60,6 +60,7 @@ function makeActor(u: { id: string; isAdmin: boolean; isActive: boolean }): Hydr
     type: u.isAdmin ? ("admin" as const) : ("regular" as const),
     isActive: u.isActive,
     name: "Test User",
+    email: "test@example.com",
     avatarUrl: null,
     flags: new Set<PermissionFlagKey>(),
     groupIds: new Set<string>(),

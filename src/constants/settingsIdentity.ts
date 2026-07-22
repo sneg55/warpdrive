@@ -12,6 +12,7 @@ export const IDENTITY_SETTINGS_STRINGS = {
   },
   teamEditor: {
     createTitle: "Create a team",
+    createDescription: "Group users under one manager and keep ownership organized.",
     nameLabel: "Team name",
     namePlaceholder: "New team name",
     create: "Create",
@@ -20,6 +21,7 @@ export const IDENTITY_SETTINGS_STRINGS = {
     managerNone: "No manager",
     members: "Members",
     membersHelp: "Select the users who belong to this team.",
+    membersPlaceholder: "Search and add members",
   },
 } as const;
 

@@ -1,5 +1,4 @@
 import type React from "react";
-import { ActivityTypeIcon } from "@/features/activities/ActivityTypeIcon";
 import { ActivityCard } from "./history/ActivityCard";
 import { AttributionLine } from "./history/AttributionLine";
 import { CreatedCard } from "./history/CreatedCard";
@@ -24,16 +23,11 @@ function EventRow({
   );
 }
 
-// Rail marker per kind: activities show their type glyph (Pipedrive), notes an amber
-// dot, everything else a neutral dot.
+// Rail marker per kind: notes an amber dot, everything else a neutral dot. Activities do NOT get
+// their type glyph on the rail: ActivityCard already shows the type icon next to the subject, and
+// duplicating it on the rail made a task activity (whose glyph is a checkmark) look like it had a
+// stray checkmark beside its still-empty done toggle.
 function RailMarker({ item }: { item: HistoryItem }): React.ReactNode {
-  if (item.kind === "activity") {
-    return (
-      <span aria-hidden="true" className="absolute -left-[2.15rem] top-1 text-muted-foreground">
-        <ActivityTypeIcon typeKey={item.activity.typeKey} />
-      </span>
-    );
-  }
   return (
     <span
       aria-hidden="true"
@@ -53,12 +47,15 @@ export function HistoryFeed({
   emptyLabel,
   onActivityChanged,
   onNoteChanged,
+  onEditActivity,
 }: {
   items: HistoryItem[];
   emptyLabel: string;
   onActivityChanged?: () => void;
   // Invalidate the notes query after an in-feed note mutation (pin/edit/delete).
   onNoteChanged?: () => void;
+  // Open an activity in the inline edit composer (deal workspace only).
+  onEditActivity?: (activityId: string) => void;
 }): React.ReactNode {
   if (items.length === 0) {
     return <p className="text-sm text-muted-foreground">{emptyLabel}</p>;
@@ -70,7 +67,14 @@ export function HistoryFeed({
           <RailMarker item={item} />
           {item.kind === "created" && <CreatedCard at={item.at} actorName={item.actorName} />}
           {item.kind === "activity" && (
-            <ActivityCard activity={item.activity} at={item.at} onChanged={onActivityChanged} />
+            <ActivityCard
+              activity={item.activity}
+              at={item.at}
+              onChanged={onActivityChanged}
+              onEdit={
+                onEditActivity !== undefined ? () => onEditActivity(item.activity.id) : undefined
+              }
+            />
           )}
           {item.kind === "note" && (
             <NoteCard

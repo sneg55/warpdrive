@@ -19,6 +19,7 @@ const base = {
   MINIO_BUCKET: "warpdrive",
   MAX_FILE_BYTES: "26214400",
   TOKEN_ENCRYPTION_KEY: Buffer.alloc(32, 7).toString("base64"),
+  OAUTH_SIGNING_KEY: Buffer.alloc(32, 8).toString("base64"),
 };
 
 describe("env schema (email/storage keys)", () => {

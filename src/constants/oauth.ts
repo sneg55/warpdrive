@@ -1,0 +1,6 @@
+export const ACCESS_TOKEN_TTL_SECONDS = 3_600;
+export const AUTH_CODE_TTL_MS = 60_000;
+export const REFRESH_TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1_000;
+export const OAUTH_JWT_ALGORITHM = "HS256";
+export const OAUTH_REQUEST_TIMEOUT_MS = 5_000;
+export const OAUTH_CONSENT_CSRF_MAX_AGE_SECONDS = 7 * 24 * 60 * 60;

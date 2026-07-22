@@ -1,17 +1,25 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { CalendarActivity } from "@/features/activities/calendar";
 import type { HistoryItem } from "@/features/deal-workspace/historyTimeline";
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.clearAllMocks();
+});
 
 vi.mock("@/features/activities/actions", () => ({
   completeActivityAction: () => Promise.resolve({ ok: true as const, value: { id: "a1" } }),
 }));
 vi.mock("@/utils/csrfCookie", () => ({ readCsrfToken: () => "csrf" }));
+vi.mock("@/features/collaboration/actions", () => ({
+  togglePinAction: vi.fn(() => Promise.resolve({ ok: true as const, value: { id: "n1" } })),
+  updateNoteAction: vi.fn(),
+  deleteNoteAction: vi.fn(),
+}));
 
 function activity(overrides: Partial<CalendarActivity> = {}): CalendarActivity {
   return {
@@ -132,6 +140,40 @@ describe("ContactTimelinePanel", () => {
     // Both sections render at once: History shows the note, Focus shows its empty label.
     expect(screen.getByText("Called Jane")).toBeInTheDocument();
     expect(screen.getByText("Nothing needs your attention")).toBeInTheDocument();
+  });
+
+  it.each([
+    ["person" as const, "pe1"],
+    ["organization" as const, "o1"],
+  ])("floats pinned notes above Focus on the %s timeline", (entityType, entityId) => {
+    queryItems = [
+      ...mixedItems,
+      {
+        kind: "note",
+        id: "n2",
+        at: new Date("2026-07-03T10:00:00Z"),
+        body: "Keep this visible",
+        pinned: true,
+        actorName: "Nick",
+      },
+    ];
+    render(<ContactTimelinePanel entityType={entityType} entityId={entityId} />);
+
+    const pinned = within(screen.getByRole("region", { name: "pinned" }));
+    expect(pinned.getByText("Keep this visible")).toBeInTheDocument();
+    expect(
+      within(screen.getByRole("region", { name: "history" })).queryByText("Keep this visible"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("invalidates the contact timeline after pinning a note", async () => {
+    render(<ContactTimelinePanel entityType="person" entityId="pe1" />);
+    await userEvent.click(screen.getByRole("button", { name: "Pin note" }));
+
+    await waitFor(() =>
+      expect(invalidate).toHaveBeenCalledWith({ entityType: "person", entityId: "pe1" }),
+    );
+    expect(invalidateActivityStats).not.toHaveBeenCalled();
   });
 });
 

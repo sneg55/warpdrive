@@ -5,6 +5,8 @@ import { useActionError } from "@/components/shell/ActionErrorProvider";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { ROW_ACTION_BUTTON } from "@/constants/formStyles";
 import { STRINGS } from "@/constants/strings";
+import { MASK_CLASS } from "@/features/observability/replayMasking";
+import { cn } from "@/lib/utils";
 import { readCsrfToken } from "@/utils/csrfCookie";
 import type { InboxThread } from "./emailReads";
 import { archiveThreadAction, unarchiveThreadAction } from "./folderActions";
@@ -143,7 +145,7 @@ export function ThreadRow({
           )}
           <span className={`text-foreground ${weight}`}>{subject}</span>
           {thread.snippet !== null && thread.snippet !== "" && (
-            <span className="text-muted-foreground"> {thread.snippet}</span>
+            <span className={cn("text-muted-foreground", MASK_CLASS)}> {thread.snippet}</span>
           )}
         </span>
         {thread.personId === null && thread.dealId === null && (

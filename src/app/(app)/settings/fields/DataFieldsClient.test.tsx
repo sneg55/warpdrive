@@ -94,6 +94,8 @@ function chooseSelect(label: string, option: string): void {
 describe("DataFieldsClient", () => {
   it("lists fields for the selected entity", () => {
     render(<DataFieldsClient byTarget={BY_TARGET} />);
+    expect(screen.getByLabelText("Entity")).toHaveTextContent("Deal");
+    expect(screen.getByLabelText("Type")).toHaveTextContent("text");
     // "monetary" also appears as a type-select option, so scope to the row.
     expect(screen.getByText("Budget").closest("li")).toHaveTextContent("monetary");
   });
@@ -164,10 +166,19 @@ describe("DataFieldsClient", () => {
     );
   });
 
-  it("renders a drag handle per row so fields can be reordered", () => {
+  it("uses arrow controls to reorder fields", async () => {
     render(<DataFieldsClient byTarget={BY_TARGET} />);
     chooseSelect("Entity", "Organization");
-    expect(screen.getAllByRole("button", { name: "Drag to reorder" })).toHaveLength(2);
+    const moveUp = screen.getAllByRole("button", { name: "Move up" });
+    const moveDown = screen.getAllByRole("button", { name: "Move down" });
+    expect(moveUp).toHaveLength(2);
+    expect(moveDown).toHaveLength(2);
+    expect(moveUp[0]).toBeDisabled();
+    expect(moveDown[1]).toBeDisabled();
+    fireEvent.click(moveUp[1] as HTMLElement);
+    await waitFor(() =>
+      expect(actions.reorderDefsAction).toHaveBeenCalledWith({ orderedIds: ["g2", "g1"] }, "csrf"),
+    );
   });
 
   it("adds an option via addOptionAction from the option editor", async () => {

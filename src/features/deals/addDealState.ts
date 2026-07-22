@@ -9,8 +9,9 @@ import {
 export interface AddDealState extends EntityCreateState {
   pipelineId: string;
   stageId: string;
+  dealCustomFields: Record<string, unknown>;
 }
 
 export function initialAddDealState(pipelineId: string, stageId: string): AddDealState {
-  return { ...initialEntityCreateState(), pipelineId, stageId };
+  return { ...initialEntityCreateState(), pipelineId, stageId, dealCustomFields: {} };
 }

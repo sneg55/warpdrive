@@ -2,7 +2,7 @@
 import { and, eq } from "drizzle-orm";
 import { afterAll, beforeAll, expect, it } from "vitest";
 import type { PermissionFlagKey } from "@/constants/permissionFlags";
-import { changeLogs, deals, settings, visibilityGroups } from "@/db/schema";
+import { changeLogs, customFieldDefs, deals, settings, visibilityGroups } from "@/db/schema";
 import { seedPipelineWithStages, seedUser } from "@/db/testing/factories";
 import type { PermSetUser } from "@/features/permissions/effective";
 import { makeTestDb } from "@/test/db";
@@ -193,4 +193,35 @@ it("404s (E_DEAL_001) when the source is not visible to the actor", async () => 
   expect(r.ok).toBe(false);
   if (r.ok === true) return;
   expect(r.error.id).toBe("E_DEAL_001");
+});
+
+it("rejects a duplicate when its source is missing an active Important deal field", async () => {
+  const owner = await seedUser(h.db);
+  const actor = await seedUser(h.db);
+  const p = await seedPipelineWithStages(h.db, ["A"]);
+  const source = await seedSource(p.pipeline.id, p.stages[0]!.id, owner.id);
+  const [def] = await h.db
+    .insert(customFieldDefs)
+    .values({
+      targetEntity: "deal",
+      type: "text",
+      name: "Required for duplicate",
+      key: `required_duplicate_${source.id.replaceAll("-", "")}`,
+      isImportant: true,
+    })
+    .returning({ id: customFieldDefs.id });
+
+  try {
+    const r = await duplicateDeal(
+      h.db,
+      regularActor(actor.id, ["deal.create"]),
+      { dealId: source.id },
+      new AbortController().signal,
+    );
+    expect(r.ok).toBe(false);
+    if (r.ok) return;
+    expect(r.error.id).toBe("E_CF_003");
+  } finally {
+    if (def !== undefined) await h.db.delete(customFieldDefs).where(eq(customFieldDefs.id, def.id));
+  }
 });

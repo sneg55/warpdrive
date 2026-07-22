@@ -16,6 +16,7 @@ import { env } from "@/config/env";
 import { db } from "@/db/client";
 import { upsertUserOnLogin } from "@/features/auth/bootstrap";
 import { CSRF_COOKIE, mintCsrfToken } from "@/features/auth/csrf";
+import { LOGIN_RETURN_COOKIE, safeLoginReturnPath } from "@/features/auth/loginReturn";
 import { createSession, SESSION_COOKIE, sessionCookieOptions } from "@/features/auth/session";
 import { verifyGoogleIdToken } from "@/features/auth/verifyGoogleIdToken";
 
@@ -52,6 +53,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   const stateCookie = jar.get(STATE_COOKIE)?.value ?? null;
   const nonceCookie = jar.get(NONCE_COOKIE)?.value ?? null;
   const pkceVerifier = jar.get(PKCE_COOKIE)?.value ?? null;
+  const returnPath = safeLoginReturnPath(jar.get(LOGIN_RETURN_COOKIE)?.value);
 
   if (
     code === null ||
@@ -71,6 +73,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   jar.delete(STATE_COOKIE);
   jar.delete(NONCE_COOKIE);
   jar.delete(PKCE_COOKIE);
+  jar.delete(LOGIN_RETURN_COOKIE);
 
   // 2. Exchange code for tokens at Google's token endpoint.
   let idToken: string;
@@ -121,7 +124,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 
     const { sid, expiresAt } = sessionResult.value;
     const csrfToken = mintCsrfToken();
-    const res = NextResponse.redirect(new URL("/", env.BASE_URL));
+    const res = NextResponse.redirect(new URL(returnPath, env.BASE_URL));
     res.cookies.set(SESSION_COOKIE, sid, { ...sessionCookieOptions(), expires: expiresAt });
     // Double-submit CSRF token: httpOnly false so client JS can read it for form submissions.
     res.cookies.set(CSRF_COOKIE, csrfToken, {

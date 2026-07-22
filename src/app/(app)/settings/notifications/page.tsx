@@ -8,6 +8,7 @@ import { PreferencesForm } from "@/features/notifications/ui/PreferencesForm";
 import { trpc } from "@/lib/trpc-client";
 import { readCsrfToken } from "@/utils/csrfCookie";
 import { SettingsHeading } from "../SettingsHeading";
+import { SettingsCard, SettingsCardHeader, SettingsPage } from "../SettingsSurface";
 
 const { pageTitle, loading, saveError } = STRINGS.notifications.preferences;
 
@@ -34,13 +35,21 @@ export default function NotificationSettingsPage() {
   }
 
   return (
-    <section className="max-w-2xl">
+    <SettingsPage>
       <SettingsHeading title={pageTitle} description={STRINGS.settings.notificationsDescription} />
       {error !== null && <p className="mb-4 text-sm text-destructive">{error}</p>}
-      <PreferencesForm
-        prefs={prefs.data}
-        onChange={(type, next) => void handleChange(type, next)}
-      />
-    </section>
+      <SettingsCard>
+        <SettingsCardHeader
+          title="Notification channels"
+          description="Choose how each kind of update reaches you."
+        />
+        <div className="px-5">
+          <PreferencesForm
+            prefs={prefs.data}
+            onChange={(type, next) => void handleChange(type, next)}
+          />
+        </div>
+      </SettingsCard>
+    </SettingsPage>
   );
 }

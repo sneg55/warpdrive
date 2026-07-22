@@ -5,6 +5,14 @@ import { undoImportAction } from "@/features/import/actions";
 import type { BatchSummary } from "@/features/import/results";
 import { trpc } from "@/lib/trpc-client";
 import { readCsrfToken } from "@/utils/csrfCookie";
+import {
+  SETTINGS_TABLE_CELL,
+  SETTINGS_TABLE_HEAD,
+  SETTINGS_TABLE_HEADER_CELL,
+  SETTINGS_TABLE_ROW,
+  SettingsCard,
+  SettingsCardBody,
+} from "../SettingsSurface";
 
 const IMP = STRINGS.settings.importer;
 
@@ -54,32 +62,40 @@ export function ImportHistory(): React.ReactNode {
   return (
     <div className="space-y-4">
       {batches.length === 0 ? (
-        <p className="text-sm text-muted-foreground">{IMP.historyEmpty}</p>
+        <SettingsCard>
+          <SettingsCardBody>
+            <p className="text-sm text-muted-foreground">{IMP.historyEmpty}</p>
+          </SettingsCardBody>
+        </SettingsCard>
       ) : (
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="text-left text-muted-foreground">
-              <th className="py-1 font-medium">{IMP.colFile}</th>
-              <th className="font-medium">{IMP.colTarget}</th>
-              <th className="font-medium">{IMP.colStatus}</th>
-              <th className="font-medium">{IMP.colResult}</th>
-              <th className="font-medium">{IMP.colActions}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {batches.map((b) => (
-              <tr key={b.id} className="border-t">
-                <td className="py-1">{b.filename}</td>
-                <td>{b.targetEntity}</td>
-                <td>{b.status}</td>
-                <td className="tabular-nums">{IMP.resultCounts(b.importedRows, b.errorRows)}</td>
-                <td className="text-right">
-                  <RowActions batch={b} onUndo={(id) => void onUndo(id)} />
-                </td>
+        <SettingsCard className="overflow-x-auto shadow-none">
+          <table className="w-full min-w-[720px] text-sm">
+            <thead className={SETTINGS_TABLE_HEAD}>
+              <tr className="border-b">
+                <th className={SETTINGS_TABLE_HEADER_CELL}>{IMP.colFile}</th>
+                <th className={SETTINGS_TABLE_HEADER_CELL}>{IMP.colTarget}</th>
+                <th className={SETTINGS_TABLE_HEADER_CELL}>{IMP.colStatus}</th>
+                <th className={SETTINGS_TABLE_HEADER_CELL}>{IMP.colResult}</th>
+                <th className={SETTINGS_TABLE_HEADER_CELL}>{IMP.colActions}</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {batches.map((b) => (
+                <tr key={b.id} className={SETTINGS_TABLE_ROW}>
+                  <td className={SETTINGS_TABLE_CELL}>{b.filename}</td>
+                  <td className={SETTINGS_TABLE_CELL}>{b.targetEntity}</td>
+                  <td className={SETTINGS_TABLE_CELL}>{b.status}</td>
+                  <td className={`${SETTINGS_TABLE_CELL} tabular-nums`}>
+                    {IMP.resultCounts(b.importedRows, b.errorRows)}
+                  </td>
+                  <td className={`${SETTINGS_TABLE_CELL} text-right`}>
+                    <RowActions batch={b} onUndo={(id) => void onUndo(id)} />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </SettingsCard>
       )}
     </div>
   );

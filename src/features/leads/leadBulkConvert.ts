@@ -60,6 +60,7 @@ export async function bulkConvertLeads(
         leadId: id,
         pipelineId: input.pipelineId,
         expectedUpdatedAt: lead.updatedAt.toISOString(),
+        customFields: input.customFields,
       },
       signal,
     );
