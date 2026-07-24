@@ -8,6 +8,7 @@ import { Providers } from "@/components/providers";
 import { env } from "@/config/env";
 import { STRINGS } from "@/constants/strings";
 import { TelemetryProvider } from "@/features/observability/TelemetryProvider";
+import { WebVitalsReporter } from "@/features/observability/WebVitalsReporter";
 
 // Pipedrive parity C1: Inter is the app typeface. The woff2 is VENDORED in ./fonts and loaded via
 // next/font/local, so there is NO build-time or runtime request to Google Fonts (next/font/google
@@ -43,6 +44,7 @@ export default function RootLayout({ children }: { children: ReactNode }): React
             consoleForwarding: env.TELEMETRY_CONSOLE_FORWARDING,
           }}
         >
+          <WebVitalsReporter />
           <Providers>{children}</Providers>
         </TelemetryProvider>
       </body>

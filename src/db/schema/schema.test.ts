@@ -1,6 +1,7 @@
 import { eq, sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
 import { seedPipelineWithStages } from "@/db/testing/factories";
+import { sessionFixture } from "@/features/auth/session.test-helpers";
 import { makeTestDb, type TestDb } from "@/test/db";
 import {
   activities,
@@ -42,7 +43,7 @@ describe("identity schema", () => {
     expect(u!.isActive).toBe(true);
     const [s] = await h.db
       .insert(sessions)
-      .values({ userId: u!.id, expiresAt: new Date(Date.now() + 3_600_000) })
+      .values(sessionFixture({ userId: u!.id, expiresAt: new Date(Date.now() + 3_600_000) }))
       .returning();
     expect(s!.revokedAt).toBeNull();
   });

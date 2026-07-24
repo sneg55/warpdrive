@@ -1,4 +1,5 @@
 import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
+import { withServerTiming } from "@/app/api/trpc/withServerTiming";
 import { captureServerError } from "@/features/observability/server";
 import { createContext } from "@/server/trpc/context";
 import { appRouter } from "@/server/trpc/root";
@@ -28,4 +29,6 @@ function handler(req: Request): Promise<Response> {
   });
 }
 
-export { handler as GET, handler as POST };
+const wrapped = withServerTiming(handler);
+
+export { wrapped as GET, wrapped as POST };

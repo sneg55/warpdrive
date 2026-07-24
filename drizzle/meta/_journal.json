@@ -414,6 +414,13 @@
       "when": 1784672706162,
       "tag": "0058_superb_talkback",
       "breakpoints": true
+    },
+    {
+      "idx": 59,
+      "version": "7",
+      "when": 1784911920456,
+      "tag": "0059_session_token_hash",
+      "breakpoints": true
     }
   ]
 }

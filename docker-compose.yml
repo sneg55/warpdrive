@@ -40,12 +40,19 @@ services:
     image: postgres:16-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_USER: warpdrive
-      POSTGRES_PASSWORD: warpdrive
-      POSTGRES_DB: warpdrive
+      POSTGRES_USER: ${POSTGRES_USER:-warpdrive}
+      # Overridable, with the historical value as the fallback so existing boxes keep booting.
+      # Postgres only applies this at initdb, so setting it against an EXISTING pgdata volume
+      # does NOT rotate the password; it just makes DATABASE_URL wrong. Choose it on a fresh
+      # deploy, and keep it identical to the password inside DATABASE_URL.
+      # Not reachable from outside the box today (this service publishes no host port and Caddy
+      # is the only public listener), so the weak default is a defense-in-depth gap rather than a
+      # live hole. It becomes a live hole the moment anyone adds a `ports:` mapping here.
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-warpdrive}
+      POSTGRES_DB: ${POSTGRES_DB:-warpdrive}
     volumes: [pgdata:/var/lib/postgresql/data]
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U warpdrive"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-warpdrive}"]
       interval: 5s
       timeout: 5s
       retries: 10

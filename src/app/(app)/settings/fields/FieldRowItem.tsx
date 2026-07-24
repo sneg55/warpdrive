@@ -3,6 +3,8 @@ import { useRouter } from "next/navigation";
 import type React from "react";
 import { useState } from "react";
 import { useActionError } from "@/components/shell/ActionErrorProvider";
+import { Button } from "@/components/ui/Button";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/Collapsible";
 import { Input } from "@/components/ui/Input";
 import { Switch } from "@/components/ui/Switch";
 import { STRINGS } from "@/constants/strings";
@@ -69,96 +71,111 @@ export function FieldRowItem({
   }
 
   return (
-    <li className="px-3 py-2 transition-colors duration-150 ease-out hover:bg-accent/30 motion-reduce:transition-none">
-      <div className="flex items-center gap-3">
-        {editing ? (
-          <Input
-            aria-label={S.rename}
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            className="flex-1"
-          />
-        ) : (
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2">
-              <span className="truncate text-sm font-medium">{row.name}</span>
-              <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-[11px] capitalize text-muted-foreground">
-                {row.type.replaceAll("_", " ")}
-              </span>
+    <Collapsible open={showOptions} onOpenChange={setShowOptions} asChild>
+      <li className="px-3 py-2 transition-colors duration-150 ease-out hover:bg-accent/30 motion-reduce:transition-none">
+        <div className="flex items-center gap-3">
+          {editing ? (
+            <Input
+              aria-label={S.rename}
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              className="flex-1"
+            />
+          ) : (
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                <span className="truncate text-sm font-medium">{row.name}</span>
+                <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-[11px] capitalize text-muted-foreground">
+                  {row.type.replaceAll("_", " ")}
+                </span>
+              </div>
+              {activeOptions.length > 0 && (
+                <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                  {activeOptions.map((o) => o.label).join(", ")}
+                </p>
+              )}
             </div>
-            {activeOptions.length > 0 && (
-              <p className="mt-0.5 truncate text-xs text-muted-foreground">
-                {activeOptions.map((o) => o.label).join(", ")}
-              </p>
-            )}
-          </div>
-        )}
-        <ReorderControls
-          canMoveUp={!isFirst}
-          canMoveDown={!isLast}
-          onMoveUp={() => onMove("up")}
-          onMoveDown={() => onMove("down")}
-        />
-        {editing ? (
-          <>
-            <button type="button" onClick={() => void saveName()} className={ROW_ACTION}>
-              {S.save}
-            </button>
-            <button
-              type="button"
+          )}
+          <ReorderControls
+            canMoveUp={!isFirst}
+            canMoveDown={!isLast}
+            onMoveUp={() => onMove("up")}
+            onMoveDown={() => onMove("down")}
+          />
+          {editing ? (
+            <>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => void saveName()}
+                className={ROW_ACTION}
+              >
+                {S.save}
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setDraft(row.name);
+                  setEditing(false);
+                }}
+                className={ROW_ACTION}
+              >
+                {S.cancel}
+              </Button>
+            </>
+          ) : (
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => {
                 setDraft(row.name);
-                setEditing(false);
+                setEditing(true);
               }}
               className={ROW_ACTION}
             >
-              {S.cancel}
-            </button>
-          </>
-        ) : (
-          <button
-            type="button"
-            onClick={() => {
-              setDraft(row.name);
-              setEditing(true);
-            }}
-            className={ROW_ACTION}
-          >
-            {S.rename}
-          </button>
-        )}
-        {isOptionType && (
-          <button type="button" onClick={() => setShowOptions((v) => !v)} className={ROW_ACTION}>
-            {S.editOptions}
-          </button>
-        )}
-        <button type="button" onClick={() => void archive()} className={ROW_ACTION}>
-          {S.archive}
-        </button>
-      </div>
-      <div className="mt-2 flex flex-wrap items-center gap-x-5 gap-y-2 border-t pt-2">
-        <span className="flex items-center gap-1.5">
-          <Switch
-            checked={row.isImportant}
-            onCheckedChange={(v) =>
-              void setFlags({ isImportant: v, showInAddForm: row.showInAddForm })
-            }
-            label={S.important}
-          />
-          <span className="text-xs text-muted-foreground">{S.important}</span>
-        </span>
-        <span className="flex items-center gap-1.5">
-          <Switch
-            checked={row.showInAddForm}
-            onCheckedChange={(v) =>
-              void setFlags({ isImportant: row.isImportant, showInAddForm: v })
-            }
-            label={S.showInAddForm}
-          />
-          <span className="text-xs text-muted-foreground">{S.showInAddForm}</span>
-        </span>
-      </div>
-      {isOptionType && showOptions && <OptionEditor defId={row.id} options={row.options} />}
-    </li>
+              {S.rename}
+            </Button>
+          )}
+          {isOptionType && (
+            <CollapsibleTrigger asChild>
+              <Button variant="ghost" size="sm" className={ROW_ACTION}>
+                {S.editOptions}
+              </Button>
+            </CollapsibleTrigger>
+          )}
+          <Button variant="ghost" size="sm" onClick={() => void archive()} className={ROW_ACTION}>
+            {S.archive}
+          </Button>
+        </div>
+        <div className="mt-2 flex flex-wrap items-center gap-x-5 gap-y-2 border-t pt-2">
+          <span className="flex items-center gap-1.5">
+            <Switch
+              checked={row.isImportant}
+              onCheckedChange={(v) =>
+                void setFlags({ isImportant: v, showInAddForm: row.showInAddForm })
+              }
+              label={S.important}
+            />
+            <span className="text-xs text-muted-foreground">{S.important}</span>
+          </span>
+          <span className="flex items-center gap-1.5">
+            <Switch
+              checked={row.showInAddForm}
+              onCheckedChange={(v) =>
+                void setFlags({ isImportant: row.isImportant, showInAddForm: v })
+              }
+              label={S.showInAddForm}
+            />
+            <span className="text-xs text-muted-foreground">{S.showInAddForm}</span>
+          </span>
+        </div>
+        {isOptionType ? (
+          <CollapsibleContent>
+            <OptionEditor defId={row.id} options={row.options} />
+          </CollapsibleContent>
+        ) : null}
+      </li>
+    </Collapsible>
   );
 }

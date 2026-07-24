@@ -9,6 +9,7 @@ import { Client } from "pg";
 import { afterAll, afterEach, beforeAll, beforeEach } from "vitest";
 import { WebSocket } from "ws";
 import { sessions, users } from "@/db/schema";
+import { sessionFixture } from "@/features/auth/session.test-helpers";
 import { makeTestDb, type TestDb } from "@/test/db";
 import { createRelay, type Relay } from "./relay";
 import { startWsServer } from "./server";
@@ -56,7 +57,7 @@ beforeEach(async () => {
   otherUserId = o!.id;
   const [s] = await h.db
     .insert(sessions)
-    .values({ userId, expiresAt: new Date(Date.now() + 3_600_000) })
+    .values(sessionFixture({ userId, expiresAt: new Date(Date.now() + 3_600_000) }))
     .returning();
   sessionId = s!.id;
 });

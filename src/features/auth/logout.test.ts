@@ -13,7 +13,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, test } from "vitest"
 import { users } from "@/db/schema";
 import { makeTestDb, type TestDb } from "@/test/db";
 import { logoutCore } from "./logout";
-import { createSession, loadLiveSession } from "./session";
+import { createSession, loadLiveSessionByToken as loadLiveSession } from "./session";
 
 let h: TestDb;
 let userId: string;

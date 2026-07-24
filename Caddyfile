@@ -1,8 +1,29 @@
 # Auto-HTTPS reverse proxy for the single-box deploy. APP_DOMAIN / ACME_EMAIL come from the
 # environment (compose passes them from .env). Caddy provisions and renews the Let's Encrypt
 # certificate for APP_DOMAIN automatically.
+#
+# Security headers split across two layers: the app's own headers (CSP frame-ancestors,
+# X-Frame-Options, nosniff, Referrer-Policy) come from next.config.ts so they apply in dev and
+# in any non-Caddy deploy too. HSTS lives HERE because only the TLS terminator knows the
+# response actually went out over HTTPS; emitting it from Next would also stamp it on plain-http
+# local dev. Pinned by Caddyfile.test.ts.
 {$APP_DOMAIN} {
 	tls {$ACME_EMAIL}
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		# Caddy's default. Restated so a scanner report reads the same as this file.
+		-Server
+	}
+
+	# Bound what an unauthenticated request can make the app buffer. Sits ABOVE the 64mb
+	# serverActions limit on purpose: Next's own check stays the binding one for legitimate
+	# traffic (the CSV importer), and this only stops the absurd case (a multi-GB POST) from
+	# reaching the app at all. File uploads do NOT pass through here; they go direct to the
+	# storage vhost below via presigned POST, which MinIO bounds with its own policy.
+	request_body {
+		max_size 80MB
+	}
 
 	# WebSocket server on the same domain under /_ws, so there is one DNS record and one cert.
 	# The WS server binds a port and does not route on path, so proxy straight through (the
@@ -20,5 +41,22 @@
 # s3.<domain> DNS record. MinIO returns CORS headers via MINIO_API_CORS_ALLOW_ORIGIN in compose.
 s3.{$APP_DOMAIN} {
 	tls {$ACME_EMAIL}
+
+	# This host serves user-uploaded bytes from a sibling origin of the app. Session cookies are
+	# host-only, so a stored HTML object cannot read them, but it could still render as a
+	# convincing phishing page on a subdomain of the real product, and a mislabeled object could
+	# be sniffed into text/html. nosniff stops the sniffing; the CSP sandbox (no allow-scripts,
+	# no allow-same-origin) makes anything that does render inert; frame-ancestors keeps it out
+	# of an iframe on someone else's page.
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		Content-Security-Policy "sandbox; default-src 'none'; frame-ancestors 'none'"
+		-Server
+	}
+
+	# Deliberately no request_body cap: presigned uploads land here, and MAX_FILE_BYTES is
+	# deploy-configurable. MinIO enforces the real ceiling through the presigned POST policy's
+	# content-length-range, which the app pins per upload (see storage.presignPost).
 	reverse_proxy minio:9000
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { Button } from "@/components/ui/Button";
 import { identityErrorMessage } from "@/constants/settingsIdentity";
 import { setUserActiveAction, setUserAdminAction } from "@/features/identity/actions/users";
 import { readCsrfToken } from "@/utils/csrfCookie";
@@ -50,24 +51,26 @@ export function UserRowControls({
   return (
     <span className="flex flex-col gap-1">
       <span className="flex gap-2">
-        <button
-          type="button"
+        <Button
+          variant="outline"
+          size="sm"
           onClick={toggleAdmin}
           disabled={isPending}
           aria-label={isAdmin ? "Revoke admin" : "Make admin"}
-          className="rounded border px-2 py-0.5 text-xs transition-transform active:not-disabled:scale-[0.96] disabled:opacity-50"
+          className="relative h-8 px-2 text-xs after:absolute after:left-0 after:top-1/2 after:h-10 after:w-full after:-translate-y-1/2 after:content-['']"
         >
           {isAdmin ? "Revoke admin" : "Make admin"}
-        </button>
-        <button
-          type="button"
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
           onClick={toggleActive}
           disabled={isPending}
           aria-label={isActive ? "Deactivate" : "Activate"}
-          className="rounded border px-2 py-0.5 text-xs transition-transform active:not-disabled:scale-[0.96] disabled:opacity-50"
+          className="relative h-8 px-2 text-xs after:absolute after:left-0 after:top-1/2 after:h-10 after:w-full after:-translate-y-1/2 after:content-['']"
         >
           {isActive ? "Deactivate" : "Activate"}
-        </button>
+        </Button>
       </span>
       {error !== null && (
         <span role="alert" className="text-xs text-red-600">

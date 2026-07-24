@@ -34,6 +34,9 @@ export function TelemetryProvider({
       // initial document load, and this provider lives in a persistent layout that never remounts.
       capture_pageview: "history_change",
       capture_pageleave: true,
+      // Autocapture Core Web Vitals (LCP/CLS/INP/FCP/TTFB) as $web_vitals events so prod perf is
+      // queryable without extra client code; the WebVitalsReporter adds a flat `web_vital` event too.
+      capture_performance: { web_vitals: true },
       session_recording: sessionRecordingOptions,
       // before_send must never throw into the SDK; keep telemetry fail-open even if scrubbing does.
       before_send: (event) => {

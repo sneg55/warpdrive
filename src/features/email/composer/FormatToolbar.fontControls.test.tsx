@@ -7,6 +7,7 @@
 
 import "@testing-library/jest-dom/vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import type { Editor } from "@tiptap/react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
@@ -98,11 +99,11 @@ describe("FormatToolbar – font/size/color controls present (Spec 6.5)", () => 
     expect(getSelectByLabel("size")).toBeInTheDocument();
   });
 
-  it("renders a text-color input of type color", async () => {
+  it("renders the shared text-color picker instead of a native color input", async () => {
     const { FormatToolbar } = await import("./FormatToolbar");
     render(<FormatToolbar editor={makeFullStubEditor(vi.fn())} />);
-    const colorInput = screen.getByLabelText(/text color/i);
-    expect(colorInput).toHaveAttribute("type", "color");
+    expect(screen.getByRole("button", { name: "Text color" })).toBeInTheDocument();
+    expect(document.querySelector('input[type="color"]')).not.toBeInTheDocument();
   });
 });
 
@@ -160,11 +161,12 @@ describe("FormatToolbar – font/size/color command wiring (Spec 6.5)", () => {
     expect(runSpy).toHaveBeenCalledTimes(1);
   });
 
-  it("changing text-color input calls setColor on the editor chain", async () => {
+  it("choosing a text color calls setColor on the editor chain", async () => {
     const { FormatToolbar } = await import("./FormatToolbar");
     const runSpy = vi.fn();
     render(<FormatToolbar editor={makeCommandEditor("setColor", runSpy)} />);
-    fireEvent.change(screen.getByLabelText(/text color/i), { target: { value: "#ff0000" } });
+    await userEvent.click(screen.getByRole("button", { name: "Text color" }));
+    await userEvent.click(screen.getByRole("button", { name: "Red" }));
     expect(runSpy).toHaveBeenCalledTimes(1);
   });
 });

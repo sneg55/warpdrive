@@ -19,3 +19,16 @@ test("builds protected resource discovery metadata", () => {
     authorization_servers: ["https://app.example.com"],
   });
 });
+
+// A deploy that has turned registration off must also stop advertising the endpoint, otherwise
+// discovery keeps pointing every client at a door that now returns 404 and the failure looks
+// like a bug rather than a policy.
+test("omits registration_endpoint when dynamic registration is disabled", () => {
+  const metadata = buildAuthServerMetadata("https://app.example.com", { registration: "disabled" });
+  expect(metadata.registration_endpoint).toBeUndefined();
+});
+
+test("advertises registration_endpoint when registration is open", () => {
+  const metadata = buildAuthServerMetadata("https://app.example.com", { registration: "open" });
+  expect(metadata.registration_endpoint).toBe("https://app.example.com/oauth/register");
+});

@@ -1,10 +1,10 @@
 "use client";
-import Link from "next/link";
 import type React from "react";
 import type { ColumnSort } from "@/components/data-table/useColumnSort";
 import { Avatar } from "@/components/ui/Avatar";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { useInterfacePrefs } from "@/features/identity/InterfacePrefsProvider";
+import { RecordLink } from "@/features/navigation/RecordLink";
 import { formatUsPhone } from "@/utils/phone";
 import type { PeopleColumn } from "./peopleColumns";
 import type { PersonSortField } from "./schemas";
@@ -103,16 +103,28 @@ function renderPersonCell(
       return (
         <span className="flex items-center gap-2.5 font-medium">
           <Avatar name={row.name} className="h-6 w-6" />
-          <Link href={`/contacts/people/${row.id}`} className="text-primary hover:underline">
+          <RecordLink
+            href={`/contacts/people/${row.id}`}
+            preview={
+              row.orgName !== null
+                ? { id: row.id, title: row.name, subtitle: row.orgName }
+                : { id: row.id, title: row.name }
+            }
+            className="text-primary hover:underline"
+          >
             {row.name}
-          </Link>
+          </RecordLink>
         </span>
       );
     case "org":
       return row.orgId !== null && (row.orgName ?? null) !== null ? (
-        <Link href={`/contacts/orgs/${row.orgId}`} className="text-primary hover:underline">
+        <RecordLink
+          href={`/contacts/orgs/${row.orgId}`}
+          preview={{ id: row.orgId, title: row.orgName ?? "" }}
+          className="text-primary hover:underline"
+        >
           {row.orgName}
-        </Link>
+        </RecordLink>
       ) : (
         (row.orgName ?? "")
       );

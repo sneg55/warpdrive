@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import type React from "react";
 import { useRef, useState } from "react";
 import { Avatar } from "@/components/ui/Avatar";
+import { Button } from "@/components/ui/Button";
 import { STRINGS } from "@/constants/strings";
 import { readCsrfToken } from "@/utils/csrfCookie";
 import {
@@ -91,23 +92,25 @@ export function AvatarUpload({ name, avatarUrl }: AvatarUploadProps): React.Reac
         <Avatar name={name} src={avatarUrl} className="h-14 w-14 text-lg" />
         <div className="flex flex-col gap-1">
           <div className="flex items-center gap-2">
-            <button
-              type="button"
+            <Button
+              variant="outline"
+              size="sm"
               disabled={busy}
               onClick={() => inputRef.current?.click()}
-              className="rounded-md border px-3 py-1.5 text-sm font-medium transition-transform hover:bg-muted active:not-disabled:scale-[0.96] disabled:opacity-50"
+              className="min-h-10 px-3"
             >
               {avatarUrl !== null ? STRINGS.settings.changePhoto : STRINGS.settings.uploadPhoto}
-            </button>
+            </Button>
             {avatarUrl !== null && (
-              <button
-                type="button"
+              <Button
+                variant="ghost"
+                size="sm"
                 disabled={busy}
                 onClick={() => void remove()}
-                className="rounded-md px-3 py-1.5 text-sm text-muted-foreground transition-transform hover:text-foreground active:not-disabled:scale-[0.96] disabled:opacity-50"
+                className="min-h-10 px-3 text-muted-foreground hover:text-foreground"
               >
                 {STRINGS.settings.removePhoto}
-              </button>
+              </Button>
             )}
           </div>
           <span className="text-xs text-muted-foreground">{STRINGS.settings.photoHint}</span>

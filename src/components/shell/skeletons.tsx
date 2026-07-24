@@ -100,10 +100,16 @@ export function DetailPageSkeleton(): React.ReactNode {
 // Content of the record slide-over (DetailDrawer), used as the inner <Suspense> fallback on the
 // intercepted person/org/lead routes. The drawer shell renders instantly and stays mounted; only
 // this content region streams, so the drawer never re-animates.
-export function DetailDrawerSkeleton(): React.ReactNode {
+// `header` replaces the gray title bar when the caller already knows the record's name (the client
+// preview wrapper passes the real title so the drawer paints it instantly instead of a placeholder).
+export function DetailDrawerSkeleton({
+  header,
+}: {
+  header?: React.ReactNode;
+} = {}): React.ReactNode {
   return (
     <div className="flex flex-col gap-4" role="status" aria-busy="true" aria-label="Loading">
-      <Skeleton className="h-7 w-64" />
+      {header ?? <Skeleton className="h-7 w-64" />}
       <div className="flex flex-col gap-4 lg:flex-row">
         <div className="flex w-full flex-col gap-3 lg:w-72">
           <Skeleton className="h-40 w-full" />

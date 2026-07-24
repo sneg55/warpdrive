@@ -3,8 +3,9 @@ import { useRouter } from "next/navigation";
 import type React from "react";
 import { useState } from "react";
 import { useActionError } from "@/components/shell/ActionErrorProvider";
+import { Button } from "@/components/ui/Button";
 import { Checkbox } from "@/components/ui/Checkbox";
-import { FIELD_INPUT } from "@/constants/formStyles";
+import { Input } from "@/components/ui/Input";
 import {
   createSignatureAction,
   deleteSignatureAction,
@@ -17,6 +18,8 @@ import { EMAIL_SETTINGS_STRINGS as S } from "./strings";
 
 type Sig = { id: string; name: string; isDefault: boolean; bodyHtml: string };
 type Draft = { id?: string; name: string; bodyHtml: string; isDefault: boolean };
+const ROW_BUTTON =
+  "relative h-auto px-0 py-0 text-sm font-normal text-muted-foreground hover:bg-transparent hover:text-foreground after:absolute after:left-0 after:top-1/2 after:h-10 after:w-full after:-translate-y-1/2 after:content-['']";
 
 export function SignaturesSettingsClient({ signatures }: { signatures: Sig[] }): React.ReactNode {
   const router = useRouter();
@@ -51,13 +54,9 @@ export function SignaturesSettingsClient({ signatures }: { signatures: Sig[] }):
     <section className="overflow-hidden rounded-lg border bg-card shadow-sm">
       <div className="flex items-center justify-between border-b px-5 py-4">
         <h2 className="text-sm font-semibold">{S.signatures}</h2>
-        <button
-          type="button"
-          className="rounded-md bg-action px-3 py-1.5 text-sm font-medium text-action-foreground transition-transform hover:opacity-90 active:scale-[0.96]"
-          onClick={() => setDraft({ name: "", bodyHtml: "", isDefault: false })}
-        >
+        <Button size="sm" onClick={() => setDraft({ name: "", bodyHtml: "", isDefault: false })}>
           {S.newSignature}
-        </button>
+        </Button>
       </div>
 
       <div className="space-y-3 p-5">
@@ -74,18 +73,20 @@ export function SignaturesSettingsClient({ signatures }: { signatures: Sig[] }):
               </span>
               <span className="flex items-center gap-2">
                 {!s.isDefault && (
-                  <button
-                    type="button"
-                    className="text-muted-foreground hover:text-foreground"
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={ROW_BUTTON}
                     onClick={() => void makeDefault(s.id)}
                     aria-label={`${S.setDefault} ${s.name}`}
                   >
                     {S.setDefault}
-                  </button>
+                  </Button>
                 )}
-                <button
-                  type="button"
-                  className="text-muted-foreground hover:text-foreground"
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className={ROW_BUTTON}
                   onClick={() =>
                     setDraft({
                       id: s.id,
@@ -97,15 +98,16 @@ export function SignaturesSettingsClient({ signatures }: { signatures: Sig[] }):
                   aria-label={`${S.edit} ${s.name}`}
                 >
                   {S.edit}
-                </button>
-                <button
-                  type="button"
-                  className="text-destructive hover:opacity-80"
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className={`${ROW_BUTTON} text-destructive hover:text-destructive/80`}
                   onClick={() => void remove(s.id)}
                   aria-label={`${S.delete} ${s.name}`}
                 >
                   {S.delete}
-                </button>
+                </Button>
               </span>
             </li>
           ))}
@@ -116,13 +118,14 @@ export function SignaturesSettingsClient({ signatures }: { signatures: Sig[] }):
 
         {draft !== null && (
           <div className="space-y-2 rounded-md border p-3">
-            <input
+            <Input
               aria-label={S.nameLabel}
-              placeholder={S.nameLabel}
+              name="signatureName"
+              autoComplete="off"
+              placeholder={`${S.nameLabel}…`}
               value={draft.name}
               maxLength={40}
               onChange={(e) => setDraft({ ...draft, name: e.target.value })}
-              className={FIELD_INPUT}
             />
             <p className="text-xs text-muted-foreground">{S.maxNameHint}</p>
             <RichTextBody
@@ -138,20 +141,12 @@ export function SignaturesSettingsClient({ signatures }: { signatures: Sig[] }):
               {S.setDefault}
             </div>
             <div className="flex gap-2">
-              <button
-                type="button"
-                className="rounded-md bg-action px-3 py-1.5 text-sm text-action-foreground transition-transform active:scale-[0.96]"
-                onClick={() => void save()}
-              >
+              <Button size="sm" onClick={() => void save()}>
                 {S.save}
-              </button>
-              <button
-                type="button"
-                className="rounded-md border px-3 py-1.5 text-sm text-muted-foreground transition-transform active:scale-[0.96]"
-                onClick={() => setDraft(null)}
-              >
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => setDraft(null)}>
                 {S.cancel}
-              </button>
+              </Button>
             </div>
           </div>
         )}

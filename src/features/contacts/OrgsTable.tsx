@@ -1,9 +1,9 @@
 "use client";
-import Link from "next/link";
 import type React from "react";
 import type { ColumnSort } from "@/components/data-table/useColumnSort";
 import { Avatar } from "@/components/ui/Avatar";
 import { Checkbox } from "@/components/ui/Checkbox";
+import { RecordLink } from "@/features/navigation/RecordLink";
 import type { OrgColumn } from "./orgColumns";
 import type { OrgSortField } from "./schemas";
 
@@ -82,13 +82,14 @@ function renderOrgCell(key: string, row: OrgsListRow): React.ReactNode {
   switch (key) {
     case "name":
       return (
-        <Link
+        <RecordLink
           href={`/contacts/orgs/${row.id}`}
+          preview={{ id: row.id, title: row.name }}
           className="flex items-center gap-2.5 font-medium text-primary hover:underline"
         >
           <Avatar name={row.name} className="h-6 w-6 rounded-md" />
           {row.name}
-        </Link>
+        </RecordLink>
       );
     case "address":
       return formatAddress(row.address);

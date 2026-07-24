@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { STRINGS } from "@/constants/strings";
 
@@ -64,13 +64,15 @@ describe("InterfacePreferences", () => {
     expect(setScheduleFollowUpAfterWonAction).toHaveBeenCalledWith({ enabled: true }, "csrf");
   });
 
-  it("toggling the parent open-details switch sets all three entities", () => {
+  it("toggling the parent open-details switch sets all three entities", async () => {
     renderInterface();
     const parent = screen.getByRole("switch", { name: t.openDetailsAfterCreate });
     fireEvent.click(parent);
-    expect(setOpenDetailsAfterCreateAction).toHaveBeenCalledWith(
-      { leadDeal: true, person: true, org: true },
-      "csrf",
+    await waitFor(() =>
+      expect(setOpenDetailsAfterCreateAction).toHaveBeenCalledWith(
+        { leadDeal: true, person: true, org: true },
+        "csrf",
+      ),
     );
   });
 
@@ -85,12 +87,48 @@ describe("InterfacePreferences", () => {
     );
   });
 
-  it("toggling one child persists the whole object", () => {
+  it("toggling one child persists the whole object", async () => {
     renderInterface();
     fireEvent.click(screen.getByRole("switch", { name: t.openDetailsPerson }));
-    expect(setOpenDetailsAfterCreateAction).toHaveBeenCalledWith(
-      { leadDeal: false, person: true, org: false },
+    await waitFor(() =>
+      expect(setOpenDetailsAfterCreateAction).toHaveBeenCalledWith(
+        { leadDeal: false, person: true, org: false },
+        "csrf",
+      ),
+    );
+  });
+
+  it("preserves every open-details change when children are toggled in one render", async () => {
+    renderInterface();
+    const leadDeal = screen.getByRole("switch", { name: t.openDetailsLeadDeal });
+    const person = screen.getByRole("switch", { name: t.openDetailsPerson });
+    const org = screen.getByRole("switch", { name: t.openDetailsOrg });
+
+    act(() => {
+      leadDeal.click();
+      person.click();
+      org.click();
+    });
+
+    await waitFor(() => expect(setOpenDetailsAfterCreateAction).toHaveBeenCalledTimes(3));
+    expect(setOpenDetailsAfterCreateAction).toHaveBeenNthCalledWith(
+      1,
+      { leadDeal: true, person: false, org: false },
       "csrf",
+    );
+    expect(setOpenDetailsAfterCreateAction).toHaveBeenNthCalledWith(
+      2,
+      { leadDeal: true, person: true, org: false },
+      "csrf",
+    );
+    expect(setOpenDetailsAfterCreateAction).toHaveBeenNthCalledWith(
+      3,
+      { leadDeal: true, person: true, org: true },
+      "csrf",
+    );
+    expect(screen.getByRole("switch", { name: t.openDetailsAfterCreate })).toHaveAttribute(
+      "aria-checked",
+      "true",
     );
   });
 });

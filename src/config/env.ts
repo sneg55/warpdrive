@@ -47,6 +47,13 @@ const base = z.object({
     .refine((v) => Buffer.from(v, "base64").length === 32, "must be base64 of exactly 32 bytes"),
   MCP_ENABLED: boolFromString.default(true),
   OAUTH_SIGNING_KEY: z.string().default(""),
+  // RFC 7591 dynamic client registration. Open by default because it is what lets an MCP client
+  // self-onboard with no admin step, and closing it by default would break every existing deploy
+  // on upgrade. It is a knob because an open endpoint lets any stranger mint a client whose name
+  // the consent screen then shows to a user, which is the setup for consent phishing: a deploy
+  // that has already connected the clients it needs can set "disabled" and shut the door. An
+  // enum rather than a boolean so a typo fails at boot instead of silently reading as "open".
+  OAUTH_REGISTRATION: z.enum(["open", "disabled"]).default("open"),
   BASE_CURRENCY: z.string().length(3).default("USD"),
   SEED_ADMIN_EMAIL: z.string().email().or(z.literal("")).default(""),
   ALLOW_FIRST_LOGIN_ADMIN: boolFromString.default(false),

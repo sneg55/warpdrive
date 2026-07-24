@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from "vitest";
 import { auditEvents, sessions, users } from "@/db/schema";
+import { sessionFixture } from "@/features/auth/session.test-helpers";
 import type { PermSetUser } from "@/features/permissions/effective";
 import { makeTestDb, type TestDb } from "@/test/db";
 import { createPermissionSet, updatePermissionSetFlags } from "./permission-sets.service";
@@ -72,7 +73,7 @@ describe("identity services", () => {
       .returning();
     await h.db
       .insert(sessions)
-      .values({ userId: target!.id, expiresAt: new Date(Date.now() + 3_600_000) });
+      .values(sessionFixture({ userId: target!.id, expiresAt: new Date(Date.now() + 3_600_000) }));
     const r = await setUserActive(h.db, admin, { userId: target!.id, isActive: false }, SIG());
     expect(r.ok).toBe(true);
     const live = await h.db.execute(

@@ -68,13 +68,14 @@ export function OptionEditor({
             {o.archived === true ? (
               <span className="text-xs text-muted-foreground">{S.optionArchived}</span>
             ) : (
-              <button
-                type="button"
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => void remove(o.id)}
-                className="text-xs font-medium text-muted-foreground hover:text-foreground"
+                className="relative h-auto px-0 py-0 text-xs font-medium text-muted-foreground hover:bg-transparent hover:text-foreground after:absolute after:left-0 after:top-1/2 after:h-10 after:w-full after:-translate-y-1/2 after:content-['']"
               >
                 {S.removeOption}
-              </button>
+              </Button>
             )}
           </li>
         ))}

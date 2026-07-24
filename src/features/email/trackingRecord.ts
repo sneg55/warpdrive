@@ -43,6 +43,18 @@ async function loadToken(
   };
 }
 
+// Read-only token lookup, no event write. Exported for the redirect-only click path
+// (resolveClickTarget), which needs the stored target_url to send a real recipient to the real
+// destination but must not pay for, or record, the full event when /t/click is over its limit.
+export async function loadTokenRow(
+  db: DbOrTx,
+  token: string,
+  signal: AbortSignal,
+): Promise<TokenRow | null> {
+  const loaded = await loadToken(db, token, signal);
+  return loaded?.row ?? null;
+}
+
 // Write a tracking event (+ publish) unless the token is disabled or not yet backfilled
 // with a message_id (the event table requires a non-null message FK). Best-effort: the
 // caller serves the pixel / redirect regardless. Returns the loaded row (for target_url)

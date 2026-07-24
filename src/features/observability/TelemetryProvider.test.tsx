@@ -33,6 +33,18 @@ it("inits posthog when enabled", () => {
   );
 });
 
+it("enables posthog web-vitals autocapture", () => {
+  render(
+    <TelemetryProvider config={enabled}>
+      <div>child</div>
+    </TelemetryProvider>,
+  );
+  expect(posthog.init).toHaveBeenCalledWith(
+    "k",
+    expect.objectContaining({ capture_performance: { web_vitals: true } }),
+  );
+});
+
 it("does not init when disabled", () => {
   render(
     <TelemetryProvider config={{ ...enabled, disabled: true }}>

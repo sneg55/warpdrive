@@ -17,6 +17,7 @@ import {
   visibilityGroupMembers,
   visibilityGroups,
 } from "@/db/schema";
+import { sessionFixture } from "@/features/auth/session.test-helpers";
 import { makeTestDb, type TestDb } from "@/test/db";
 import { createRelay, type Relay } from "./relay";
 import { startWsServer } from "./server";
@@ -58,7 +59,7 @@ beforeEach(async () => {
   userId = u!.id;
   const [s] = await h.db
     .insert(sessions)
-    .values({ userId, expiresAt: new Date(Date.now() + 3_600_000) })
+    .values(sessionFixture({ userId, expiresAt: new Date(Date.now() + 3_600_000) }))
     .returning();
   sessionId = s!.id;
 });

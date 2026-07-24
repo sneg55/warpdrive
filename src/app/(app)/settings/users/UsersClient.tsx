@@ -1,7 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   SETTINGS_TABLE_CELL,
   SETTINGS_TABLE_HEAD,
@@ -12,7 +11,7 @@ import {
 import { InviteUserForm } from "./InviteUserForm";
 import { UserRowControls } from "./UserRowControls";
 import { UserStatusTabs } from "./UserStatusTabs";
-import { filterUsersByStatus, type UserStatusFilter } from "./userStatus";
+import { filterUsersByStatus, parseUserStatusFilter, type UserStatusFilter } from "./userStatus";
 
 interface UserRow {
   id: string;
@@ -39,8 +38,18 @@ const V = { admin: "Admin", regular: "Regular", yes: "Yes", no: "No", invited: "
 
 export function UsersClient({ rows }: Props): React.ReactElement {
   const router = useRouter();
-  const [status, setStatus] = useState<UserStatusFilter>("all");
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const status = parseUserStatusFilter(searchParams.get("status"));
   const visible = filterUsersByStatus(rows, status);
+
+  function setStatus(next: UserStatusFilter): void {
+    const params = new URLSearchParams(searchParams.toString());
+    if (next === "all") params.delete("status");
+    else params.set("status", next);
+    const query = params.toString();
+    router.replace(query === "" ? pathname : `${pathname}?${query}`, { scroll: false });
+  }
 
   return (
     <div className="space-y-6">

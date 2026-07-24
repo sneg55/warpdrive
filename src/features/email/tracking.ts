@@ -2,7 +2,7 @@ import { randomBytes } from "node:crypto";
 import { sql } from "drizzle-orm";
 import { env } from "@/config/env";
 import type { Db } from "@/db/client";
-import { recordEvent } from "./trackingRecord";
+import { loadTokenRow, recordEvent } from "./trackingRecord";
 
 export interface LinkToken {
   original: string;
@@ -114,6 +114,22 @@ export async function recordClick(
   signal: AbortSignal,
 ): Promise<string | null> {
   const row = await recordEvent(db, token, userAgent, "click", signal);
+  return row?.target_url ?? null;
+}
+
+// Redirect-only path: resolve the STORED target without writing an event.
+//
+// Used when /t/click is over its rate limit. Refusing the request outright is not an option
+// there, because a real recipient clicking a real link must still reach the real destination;
+// what can be dropped under load is the expensive half (transaction, event insert, NOTIFY,
+// notification write). Same open-redirect guarantee as recordClick: the destination comes from
+// the stored row, which was validated http(s) at mint time, never from the request.
+export async function resolveClickTarget(
+  db: Db,
+  token: string,
+  signal: AbortSignal,
+): Promise<string | null> {
+  const row = await loadTokenRow(db, token, signal);
   return row?.target_url ?? null;
 }
 

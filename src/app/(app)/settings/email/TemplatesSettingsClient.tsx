@@ -17,8 +17,9 @@ import { useRouter } from "next/navigation";
 import type React from "react";
 import { useMemo, useState } from "react";
 import { useActionError } from "@/components/shell/ActionErrorProvider";
+import { Button } from "@/components/ui/Button";
 import { Checkbox } from "@/components/ui/Checkbox";
-import { FIELD_INPUT } from "@/constants/formStyles";
+import { Input } from "@/components/ui/Input";
 import { reorderByDrag } from "@/features/custom-fields/reorderDrag";
 import {
   createTemplateAction,
@@ -157,32 +158,34 @@ export function TemplatesSettingsClient({
     <section className="overflow-hidden rounded-lg border bg-card shadow-sm">
       <div className="flex items-center justify-between gap-2 border-b px-5 py-4">
         <h2 className="text-sm font-semibold">{S.templates}</h2>
-        <button
-          type="button"
-          className="rounded-md bg-action px-3 py-1.5 text-sm font-medium text-action-foreground transition-transform hover:opacity-90 active:scale-[0.96]"
+        <Button
+          size="sm"
           onClick={() => setDraft({ name: "", subject: "", bodyHtml: "", isShared: false })}
         >
           {S.newTemplate}
-        </button>
+        </Button>
       </div>
 
       <div className="space-y-3 p-5">
         <div className="flex items-center gap-2">
-          <input
+          <Input
+            type="search"
             aria-label={S.searchTemplates}
-            placeholder={S.searchTemplates}
+            name="templateSearch"
+            autoComplete="off"
+            placeholder={`${S.searchTemplates}…`}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className={FIELD_INPUT}
           />
           {selected.size > 0 && (
-            <button
-              type="button"
-              className="whitespace-nowrap rounded-md border border-destructive px-3 py-1.5 text-sm text-destructive transition-transform active:scale-[0.96]"
+            <Button
+              variant="outline"
+              size="sm"
+              className="whitespace-nowrap border-destructive text-destructive hover:bg-destructive/10"
               onClick={() => void bulkDelete()}
             >
               {S.deleteSelected}
-            </button>
+            </Button>
           )}
         </div>
 
@@ -191,7 +194,7 @@ export function TemplatesSettingsClient({
             <li className="flex items-center gap-3 px-3 py-2 text-xs font-medium text-muted-foreground">
               {/* Drag-handle column spacer so the header aligns with the rows below (own rows lead
                 with a drag handle, shared rows with a matching spacer). */}
-              <span className="h-4 w-4" />
+              <span className="size-7" />
               {ownViewIds.length > 0 ? (
                 <Checkbox checked={allChecked} onCheckedChange={toggleAll} label={S.selectAll} />
               ) : (
@@ -232,7 +235,7 @@ export function TemplatesSettingsClient({
 
           {sharedRows.map((t) => (
             <li key={t.id} className="flex items-center gap-3 px-3 py-2 text-sm">
-              <span className="h-4 w-4" />
+              <span className="size-7" />
               <span className="h-4 w-4" />
               <span className="flex flex-1 items-center gap-2">
                 {t.name}

@@ -4,6 +4,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { env } from "@/config/env";
 import { buildAuthUrl, generatePkce } from "@/features/auth/google";
 import { LOGIN_RETURN_COOKIE, safeLoginReturnPath } from "@/features/auth/loginReturn";
+import { checkRateLimit, tooManyRequestsResponse } from "@/server/rateLimitGuard";
 
 const STATE_COOKIE = "wd_oauth_state";
 const NONCE_COOKIE = "wd_oauth_nonce";
@@ -18,7 +19,12 @@ const COOKIE_OPTS = {
 };
 
 // GET /auth/start: build the Google OAuth redirect, set state/nonce/PKCE cookies.
-export async function GET(req: NextRequest): Promise<NextResponse> {
+export async function GET(req: NextRequest): Promise<Response> {
+  // Starting a login is a human act with a redirect in the middle; nobody legitimately does it
+  // twenty times a minute. Each call mints two 32-byte secrets, a PKCE pair and four cookies.
+  const limit = checkRateLimit("authStart", req.headers);
+  if (!limit.allowed) return tooManyRequestsResponse(limit);
+
   const state = randomBytes(32).toString("base64url");
   const nonce = randomBytes(32).toString("base64url");
   const { verifier, challenge } = generatePkce();

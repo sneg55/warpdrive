@@ -4,7 +4,7 @@ import { env } from "@/config/env";
 import { OAUTH_CONSENT_CSRF_MAX_AGE_SECONDS, OAUTH_REQUEST_TIMEOUT_MS } from "@/constants/oauth";
 import { db } from "@/db/client";
 import { CSRF_COOKIE, mintCsrfToken, validateCsrf } from "@/features/auth/csrf";
-import { loadLiveSession, SESSION_COOKIE } from "@/features/auth/session";
+import { loadLiveSessionByToken, SESSION_COOKIE } from "@/features/auth/session";
 import {
   type AuthorizationRequest,
   authorizationPostQueryInput,
@@ -47,7 +47,7 @@ function clientRedirect(redirectUri: string, values: Record<string, string>): Re
 async function sessionUserId(req: NextRequest, signal: AbortSignal): Promise<string | null> {
   const sid = req.cookies.get(SESSION_COOKIE)?.value;
   if (sid === undefined) return null;
-  const session = await loadLiveSession(db, sid, signal);
+  const session = await loadLiveSessionByToken(db, sid, signal);
   return session.ok ? session.value.userId : null;
 }
 

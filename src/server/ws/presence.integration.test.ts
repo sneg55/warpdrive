@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import { beforeEach, describe, expect, test } from "vitest";
 import type { WebSocket } from "ws";
 import { deals, pipelines, sessions, stages, users } from "@/db/schema";
+import { sessionFixture } from "@/features/auth/session.test-helpers";
 import { connect, h, nextMessage, opened } from "./testHarness.test";
 import { mintTicket } from "./ticket";
 
@@ -38,7 +39,7 @@ beforeEach(async () => {
   adminIdA = a!.id;
   const [sa] = await h.db
     .insert(sessions)
-    .values({ userId: adminIdA, expiresAt: new Date(Date.now() + 3_600_000) })
+    .values(sessionFixture({ userId: adminIdA, expiresAt: new Date(Date.now() + 3_600_000) }))
     .returning();
   adminSessionA = sa!.id;
 
@@ -49,7 +50,7 @@ beforeEach(async () => {
   adminIdB = b!.id;
   const [sb] = await h.db
     .insert(sessions)
-    .values({ userId: adminIdB, expiresAt: new Date(Date.now() + 3_600_000) })
+    .values(sessionFixture({ userId: adminIdB, expiresAt: new Date(Date.now() + 3_600_000) }))
     .returning();
   adminSessionB = sb!.id;
 });

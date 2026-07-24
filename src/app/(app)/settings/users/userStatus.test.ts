@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { filterUsersByStatus, type UserStatus, userStatus } from "./userStatus";
+import {
+  filterUsersByStatus,
+  parseUserStatusFilter,
+  type UserStatus,
+  userStatus,
+} from "./userStatus";
 
 type Row = { id: string; isActive: boolean; invitedAt: string | null };
 
@@ -37,5 +42,20 @@ describe("filterUsersByStatus", () => {
     ["deactivated", ["c", "d"]],
   ])("narrows to %s", (status, ids) => {
     expect(filterUsersByStatus(rows, status).map((r) => r.id)).toEqual(ids);
+  });
+});
+
+describe("parseUserStatusFilter", () => {
+  it.each([
+    "all",
+    "active",
+    "invited",
+    "deactivated",
+  ] as const)("accepts the %s URL value", (value) =>
+    expect(parseUserStatusFilter(value)).toBe(value));
+
+  it("falls back to all for missing or unknown URL values", () => {
+    expect(parseUserStatusFilter(null)).toBe("all");
+    expect(parseUserStatusFilter("blocked")).toBe("all");
   });
 });

@@ -33,7 +33,7 @@ vi.mock("@/lib/trpc-client", () => ({
   },
 }));
 
-import { LightbulbDropdown } from "./LightbulbDropdown";
+import { NotificationsBell } from "./NotificationsBell";
 
 afterEach(() => {
   cleanup();
@@ -41,17 +41,20 @@ afterEach(() => {
   markAllReadAction.mockClear();
 });
 
-describe("LightbulbDropdown", () => {
-  it("uses a bell glyph, not a lightbulb", () => {
-    const { container } = render(<LightbulbDropdown userId="u1" />);
-    expect(container.textContent).toContain("\u{1F514}");
+describe("NotificationsBell", () => {
+  it("renders a crisp lucide bell icon, not an emoji glyph", () => {
+    const { container } = render(<NotificationsBell userId="u1" />);
+    // No emoji glyphs: the system-font bell (blurry) or the old lightbulb.
+    expect(container.textContent).not.toContain("\u{1F514}");
     expect(container.textContent).not.toContain("\u{1F4A1}");
+    // A vector bell icon is rendered instead.
+    expect(container.querySelector("svg.lucide-bell")).not.toBeNull();
   });
 
   it("reports the error id when Mark all read is denied (no silent no-op)", async () => {
     markAllReadAction.mockResolvedValueOnce({ ok: false, error: { id: "E_PERM_001" } } as never);
     const user = userEvent.setup();
-    render(<LightbulbDropdown userId="u1" />);
+    render(<NotificationsBell userId="u1" />);
     await user.click(screen.getByRole("button", { name: /notifications/i }));
     await user.click(await screen.findByRole("button", { name: /mark all/i }));
     await waitFor(() => expect(reportError).toHaveBeenCalledWith("E_PERM_001"));

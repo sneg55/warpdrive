@@ -1,7 +1,7 @@
 "use client";
 import { useRouter } from "next/navigation";
 import type React from "react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useActionError } from "@/components/shell/ActionErrorProvider";
 import { Switch } from "@/components/ui/Switch";
 import { STRINGS } from "@/constants/strings";
@@ -70,6 +70,10 @@ export function InterfacePreferences({
   const [openDetails, setOpenDetails] = useState<OpenDetailsAfterCreate>(
     prefs.openDetailsAfterCreate,
   );
+  const openDetailsRef = useRef(prefs.openDetailsAfterCreate);
+  const persistedOpenDetailsRef = useRef(prefs.openDetailsAfterCreate);
+  const openDetailsRevisionRef = useRef(0);
+  const openDetailsWriteQueueRef = useRef<Promise<void>>(Promise.resolve());
 
   async function toggleFlag(key: UiFlagKey, next: boolean): Promise<void> {
     setFlags((f) => ({ ...f, [key]: next }));
@@ -96,16 +100,40 @@ export function InterfacePreferences({
     router.refresh();
   }
 
-  async function writeOpenDetails(next: OpenDetailsAfterCreate): Promise<void> {
-    const prev = openDetails;
-    setOpenDetails(next);
-    const r = await setOpenDetailsAfterCreateAction(next, readCsrfToken());
-    if (!r.ok) {
-      setOpenDetails(prev);
-      reportError(r.error.id);
+  function failOpenDetailsWrite(revision: number, errorId?: string): void {
+    // A later queued write contains the full cumulative object and can still persist this intent.
+    if (revision !== openDetailsRevisionRef.current) return;
+    const persisted = persistedOpenDetailsRef.current;
+    openDetailsRef.current = persisted;
+    setOpenDetails(persisted);
+    reportError(errorId);
+  }
+
+  async function persistOpenDetails(next: OpenDetailsAfterCreate, revision: number): Promise<void> {
+    try {
+      const r = await setOpenDetailsAfterCreateAction(next, readCsrfToken());
+      if (!r.ok) {
+        failOpenDetailsWrite(revision, r.error.id);
+        return;
+      }
+    } catch {
+      failOpenDetailsWrite(revision);
       return;
     }
-    router.refresh();
+    persistedOpenDetailsRef.current = next;
+    if (revision === openDetailsRevisionRef.current) router.refresh();
+  }
+
+  function writeOpenDetails(
+    update: (current: OpenDetailsAfterCreate) => OpenDetailsAfterCreate,
+  ): void {
+    const next = update(openDetailsRef.current);
+    const revision = ++openDetailsRevisionRef.current;
+    openDetailsRef.current = next;
+    setOpenDetails(next);
+    openDetailsWriteQueueRef.current = openDetailsWriteQueueRef.current.then(() =>
+      persistOpenDetails(next, revision),
+    );
   }
 
   const allOpen = openDetails.leadDeal && openDetails.person && openDetails.org;
@@ -125,26 +153,26 @@ export function InterfacePreferences({
         <Row
           label={S.openDetailsAfterCreate}
           checked={allOpen}
-          onToggle={(v) => void writeOpenDetails({ leadDeal: v, person: v, org: v })}
+          onToggle={(v) => writeOpenDetails(() => ({ leadDeal: v, person: v, org: v }))}
         />
         <div className="space-y-2">
           <Row
             indent
             label={S.openDetailsLeadDeal}
             checked={openDetails.leadDeal}
-            onToggle={(v) => void writeOpenDetails({ ...openDetails, leadDeal: v })}
+            onToggle={(v) => writeOpenDetails((current) => ({ ...current, leadDeal: v }))}
           />
           <Row
             indent
             label={S.openDetailsPerson}
             checked={openDetails.person}
-            onToggle={(v) => void writeOpenDetails({ ...openDetails, person: v })}
+            onToggle={(v) => writeOpenDetails((current) => ({ ...current, person: v }))}
           />
           <Row
             indent
             label={S.openDetailsOrg}
             checked={openDetails.org}
-            onToggle={(v) => void writeOpenDetails({ ...openDetails, org: v })}
+            onToggle={(v) => writeOpenDetails((current) => ({ ...current, org: v }))}
           />
         </div>
         {FLAG_ROWS.map((row) => (

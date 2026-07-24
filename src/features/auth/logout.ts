@@ -12,7 +12,7 @@
 
 import type { Db } from "@/db/client";
 import { ok, type Result } from "@/types/result";
-import { loadLiveSession, revokeAllSessions } from "./session";
+import { loadLiveSessionByToken, revokeAllSessions } from "./session";
 
 export interface LogoutDeps {
   db: Db;
@@ -40,7 +40,7 @@ export async function logoutCore(deps: LogoutDeps): Promise<Result<LogoutOk, nev
 
   signal.throwIfAborted();
 
-  const session = await loadLiveSession(db, sid, signal);
+  const session = await loadLiveSessionByToken(db, sid, signal);
   if (session.ok === false) {
     // No live session: idempotent, nothing to revoke.
     return ok({ userId: null });

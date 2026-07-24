@@ -1,7 +1,7 @@
 import type React from "react";
 import { Suspense } from "react";
-import { DetailDrawerSkeleton } from "@/components/shell/skeletons";
 import { DetailDrawer } from "@/features/navigation/DetailDrawer";
+import { DetailDrawerPreviewSkeleton } from "@/features/navigation/DetailDrawerPreviewSkeleton";
 import { OrgDetailView } from "../../../[orgId]/OrgDetailView";
 
 // Intercepted org detail: a row click from the Organizations list opens this as a slide-over over
@@ -15,7 +15,7 @@ export default async function InterceptedOrgPage({
   const { orgId } = await params;
   return (
     <DetailDrawer title="Organization details">
-      <Suspense fallback={<DetailDrawerSkeleton />}>
+      <Suspense fallback={<DetailDrawerPreviewSkeleton recordId={orgId} />}>
         <OrgDetailView orgId={orgId} />
       </Suspense>
     </DetailDrawer>

@@ -53,3 +53,51 @@ describe("next.config server-action body limit", () => {
     expect(limitBytes).toBeGreaterThanOrEqual(MAX_IMPORT_CSV_BYTES * JSON_EXPANSION_HEADROOM);
   });
 });
+
+// Security response headers. The load-bearing one is frame-ancestors: /oauth/authorize/consent
+// renders a one-click "Allow access" form whose CSRF token is already in the action URL, so a
+// framed same-origin submit passes every check in validateCsrf (token matches, Origin is ours,
+// Sec-Fetch-Site is same-origin). Without frame-ancestors an attacker page can overlay that
+// consent screen and clickjack a victim into granting their OAuth client full MCP access.
+// CSRF defenses do not stop clickjacking; only the frame directives do.
+async function headerMap(source: string): Promise<Map<string, string>> {
+  const entries = (await nextConfig.headers?.()) ?? [];
+  const match = entries.find((e) => e.source === source);
+  return new Map((match?.headers ?? []).map((h) => [h.key.toLowerCase(), h.value]));
+}
+
+describe("next.config security headers", () => {
+  it("denies framing of every route via CSP frame-ancestors", async () => {
+    const csp = (await headerMap("/:path*")).get("content-security-policy");
+    expect(csp).toContain("frame-ancestors 'none'");
+  });
+
+  it("denies framing via X-Frame-Options for pre-CSP-2 browsers", async () => {
+    expect((await headerMap("/:path*")).get("x-frame-options")).toBe("DENY");
+  });
+
+  it("pins base-uri and form-action so injected markup cannot retarget the consent form", async () => {
+    const csp = (await headerMap("/:path*")).get("content-security-policy");
+    expect(csp).toContain("base-uri 'self'");
+    expect(csp).toContain("form-action 'self'");
+  });
+
+  it("blocks plugin content via object-src", async () => {
+    const csp = (await headerMap("/:path*")).get("content-security-policy");
+    expect(csp).toContain("object-src 'none'");
+  });
+
+  it("stops MIME sniffing", async () => {
+    expect((await headerMap("/:path*")).get("x-content-type-options")).toBe("nosniff");
+  });
+
+  it("keeps referrers off cross-origin requests", async () => {
+    expect((await headerMap("/:path*")).get("referrer-policy")).toBe(
+      "strict-origin-when-cross-origin",
+    );
+  });
+
+  it("does not advertise the framework version", () => {
+    expect(nextConfig.poweredByHeader).toBe(false);
+  });
+});

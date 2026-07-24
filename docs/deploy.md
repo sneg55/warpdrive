@@ -88,6 +88,45 @@ production (the env boundary enforces this).
   `https://s3.<APP_DOMAIN>` (the browser needs it for presigned uploads); its admin console stays
   internal, so temporarily forward a port to reach that.
 
+## What protects the public surface
+
+Everything below is on by default. It is written down because most of it is invisible until it
+is missing, and because two items are load-bearing assumptions rather than settings.
+
+- **Response headers.** `next.config.ts` sets `Content-Security-Policy: frame-ancestors 'none'`
+  (plus `base-uri`, `form-action`, `object-src`), `X-Frame-Options`, `X-Content-Type-Options`,
+  `Referrer-Policy` and `Permissions-Policy` on every route; Caddy adds HSTS, since only the TLS
+  terminator knows the response really went out over HTTPS. Refusing to be framed is what stops
+  the OAuth consent screen from being clickjacked into granting an attacker's client full CRM
+  access. `script-src` is deliberately not set: it needs nonce injection from middleware, which
+  this app does not have.
+- **Rate limits.** The unauthenticated endpoints (`/oauth/register`, `/oauth/token`,
+  `/auth/start`, `/api/health`, and the email tracking pixel and click redirect) are capped per
+  client address; see `src/constants/rateLimits.ts`. The tracking endpoints never fail a request
+  when over the limit, they only skip the recording, so a real recipient's click still reaches
+  the real destination.
+- **This depends on Caddy being the only way in.** The limiter identifies a caller from the last
+  `X-Forwarded-For` entry, which is trustworthy only because Caddy appends the true peer address
+  to whatever the client sent. Publish a host port for `app` and that header becomes entirely
+  caller-written, at which point every request can claim a fresh identity and the limits enforce
+  nothing. Keep Caddy as the sole public listener.
+- **WebSocket bounds.** A socket that connects without authenticating is closed after 10s, frames
+  are capped at 64 KB, and total connections at 1000 (`src/constants/wsLimits.ts`).
+- **Postgres credentials.** `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` are overridable
+  and fall back to `warpdrive`. Postgres applies the password at initdb only, so pick it on a
+  fresh deploy and keep it identical to the password in `DATABASE_URL`; setting it against an
+  existing `pgdata` volume does not rotate anything and only breaks the connection string.
+- **MCP client registration.** Open by default so MCP clients can self-onboard. See
+  [mcp-server.md](mcp-server.md) for why you may want `OAUTH_REGISTRATION=disabled` once your
+  clients are connected.
+
+### One-time effect when upgrading past the session-hashing change
+
+Session cookies are now stored as a sha256 digest rather than in the clear, which means existing
+session rows cannot be carried forward (the pre-image is by construction unrecoverable). The
+migration deletes them. Everyone signed in is signed out once and logs back in through Google
+SSO. Nothing else is affected.
+
 ## Local development against this stack
 
 The base compose file is production-only (no host ports, TLS via Caddy). For a local run, merge the

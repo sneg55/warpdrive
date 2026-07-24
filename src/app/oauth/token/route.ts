@@ -5,6 +5,7 @@ import { ACCESS_TOKEN_TTL_SECONDS, OAUTH_REQUEST_TIMEOUT_MS } from "@/constants/
 import { db } from "@/db/client";
 import { consumeAuthCode } from "@/features/oauth/authorize";
 import { issueAccessToken, issueRefreshToken, rotateRefreshToken } from "@/features/oauth/tokens";
+import { checkRateLimit, tooManyRequestsResponse } from "@/server/rateLimitGuard";
 
 const authorizationCodeInput = z.object({
   grant_type: z.literal("authorization_code"),
@@ -48,6 +49,11 @@ async function readBody(req: Request, signal: AbortSignal): Promise<unknown> {
 
 export async function POST(req: Request): Promise<Response> {
   if (!env.MCP_ENABLED) return new NextResponse("Not found", { status: 404 });
+  // Unauthenticated, and each call does a hash lookup plus writes. Checked before the body is
+  // read so a flood costs nothing. Codes and refresh tokens are 256-bit, so this is about the
+  // database load, not about making them harder to guess.
+  const limit = checkRateLimit("oauthToken", req.headers);
+  if (!limit.allowed) return tooManyRequestsResponse(limit);
   const signal = AbortSignal.any([req.signal, AbortSignal.timeout(OAUTH_REQUEST_TIMEOUT_MS)]);
   let raw: unknown;
   try {

@@ -37,7 +37,11 @@ export function WizardStepper({ step }: { step: WizardStep }): React.ReactNode {
                   stepState === "upcoming" && "border border-border bg-card text-muted-foreground",
                 )}
               >
-                {stepState === "complete" ? <Check className="h-3.5 w-3.5" /> : i + 1}
+                {stepState === "complete" ? (
+                  <Check aria-hidden="true" className="h-3.5 w-3.5" />
+                ) : (
+                  i + 1
+                )}
               </span>
               <span
                 className={cn(

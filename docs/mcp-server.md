@@ -23,6 +23,37 @@ Docker secret deployments may set `OAUTH_SIGNING_KEY_FILE` to a file containing 
 
 When `MCP_ENABLED=false`, the MCP and OAuth endpoints return HTTP 404.
 
+### Locking down client registration
+
+`OAUTH_REGISTRATION` controls RFC 7591 dynamic client registration, and defaults to `open`.
+
+Open registration is what makes "paste the server URL into your MCP client" work: the client
+POSTs to `/oauth/register` with no credential and gets a `client_id` back. The cost is that
+anyone on the internet can do the same, and the `client_name` they supply is the text your users
+read on the consent screen. That is the setup for consent phishing: register a client called
+something reassuring, send a signed-in user the authorize link, and a single "Allow access" hands
+over an access token with that user's full CRM permissions.
+
+Three things reduce that risk out of the box. The consent screen presents the name as
+self-reported rather than in the product's own voice and shows the host the grant will be sent
+to; registration is rate limited per address; and the app refuses to be framed, so the consent
+screen cannot be clickjacked.
+
+Once you have connected the clients you need, close the door:
+
+```dotenv
+OAUTH_REGISTRATION=disabled
+```
+
+Existing clients and their grants keep working. `/oauth/register` returns 404 and
+`registration_endpoint` disappears from `/.well-known/oauth-authorization-server`, so discovery
+reflects the policy instead of pointing clients at a dead endpoint. Set it back to `open`
+temporarily when you need to onboard another client.
+
+Registered redirect URIs must be `https`, `http` on a loopback address (RFC 8252 for native
+apps), or a private-use scheme such as `vscode://`. Plain `http` to a remote host is refused,
+as are `javascript:`, `data:`, `file:` and similar.
+
 ## Connect a client
 
 The remote MCP endpoint is:

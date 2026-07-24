@@ -1,5 +1,6 @@
 "use client";
 import { useActionError } from "@/components/shell/ActionErrorProvider";
+import { Button } from "@/components/ui/Button";
 import { STRINGS } from "@/constants/strings";
 import { undoImportAction } from "@/features/import/actions";
 import type { BatchSummary } from "@/features/import/results";
@@ -36,13 +37,14 @@ function RowActions({
       )}
       {batch.undoneAt !== null && <span className="text-muted-foreground">{IMP.undone}</span>}
       {batch.undoneAt === null && undoable && (
-        <button
-          type="button"
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={() => onUndo(batch.id)}
-          className="text-primary hover:underline"
+          className="relative h-auto px-0 py-0 font-normal text-primary hover:bg-transparent hover:underline after:absolute after:left-0 after:top-1/2 after:h-10 after:w-full after:-translate-y-1/2 after:content-['']"
         >
           {IMP.undo}
-        </button>
+        </Button>
       )}
     </span>
   );

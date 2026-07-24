@@ -1,4 +1,5 @@
 "use client";
+import { Progress } from "@/components/ui/Progress";
 
 export function ProgressBar({
   processed,
@@ -10,12 +11,11 @@ export function ProgressBar({
   const pct = total > 0 ? Math.min(Math.round((processed / total) * 100), 100) : 0;
   return (
     <div className="space-y-1">
-      <div className="h-2 w-full overflow-hidden rounded bg-muted">
-        <div
-          className="h-full bg-primary transition-[width] duration-300 ease-out"
-          style={{ width: `${pct}%` }}
-        />
-      </div>
+      <Progress
+        value={pct}
+        label="Import progress"
+        aria-valuetext={`${processed} of ${total} (${pct}%)`}
+      />
       <p className="text-xs tabular-nums text-muted-foreground">
         {processed} / {total} ({pct}%)
       </p>

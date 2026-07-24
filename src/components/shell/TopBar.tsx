@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type React from "react";
 import { STRINGS } from "@/constants/strings";
-import { LightbulbDropdown } from "@/features/notifications/ui/LightbulbDropdown";
+import { NotificationsBell } from "@/features/notifications/ui/NotificationsBell";
 import { GlobalAddMenu } from "@/features/quick-add/GlobalAddMenu";
 import { SearchTrigger } from "./SearchTrigger";
 import { UserMenu } from "./UserMenu";
@@ -32,7 +32,7 @@ export function TopBar({
         <GlobalAddMenu />
       </div>
       <div className="flex w-44 shrink-0 items-center justify-end gap-3">
-        <LightbulbDropdown userId={userId} />
+        <NotificationsBell userId={userId} />
         <UserMenu userId={userId} userName={userName} avatarUrl={avatarUrl} />
       </div>
     </header>

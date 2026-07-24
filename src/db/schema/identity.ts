@@ -87,7 +87,15 @@ export const users = pgTable(
 export const sessions = pgTable(
   "sessions",
   {
+    // Internal identity only. This is NOT the cookie value: it is what a WS ticket carries and
+    // what other code refers to a session by, so leaking it must not be equivalent to leaking a
+    // credential.
     id: uuid("id").defaultRandom().primaryKey(),
+    // sha256 of the value held in the wd_sid cookie. That cookie is a bearer credential (whoever
+    // presents it is the user), so it is stored the way the OAuth auth codes and refresh tokens
+    // in this same schema already are: hashed, never in the clear. A database read leak or an
+    // unencrypted backup then yields no usable session.
+    tokenHash: text("token_hash").notNull().unique(),
     userId: uuid("user_id")
       .notNull()
       .references(() => users.id),

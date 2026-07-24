@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { cache } from "react";
 import { type Db, db } from "@/db/client";
-import { loadLiveSession, SESSION_COOKIE } from "@/features/auth/session";
+import { loadLiveSessionByToken, SESSION_COOKIE } from "@/features/auth/session";
 import { type HydratedActor, hydrateActor } from "@/server/hydrateActor";
 
 export interface AppContext {
@@ -25,7 +25,7 @@ export const createContext = cache(async (): Promise<AppContext> => {
 
   // One timeout signal for the whole context build so it is cancellable end to end.
   const signal = AbortSignal.timeout(5000);
-  const live = await loadLiveSession(db, sid, signal);
+  const live = await loadLiveSessionByToken(db, sid, signal);
   if (!live.ok) return { db, session: null, actor: null };
 
   const actor = await hydrateActor(db, live.value.userId, signal);

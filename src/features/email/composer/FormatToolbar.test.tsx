@@ -12,6 +12,7 @@
 
 import "@testing-library/jest-dom/vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import type { Editor } from "@tiptap/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -77,6 +78,16 @@ describe("FormatToolbar – icon rendering", () => {
 });
 
 describe("FormatToolbar – editor command wiring", () => {
+  it("opens an accessible URL dialog without calling the browser prompt", async () => {
+    const promptSpy = vi.spyOn(window, "prompt");
+    await renderToolbar();
+    await userEvent.click(screen.getByRole("button", { name: /^link$/i }));
+    expect(promptSpy).not.toHaveBeenCalled();
+    expect(screen.getByRole("dialog", { name: "Insert link" })).toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: "Link URL" })).toBeInTheDocument();
+    promptSpy.mockRestore();
+  });
+
   it("Bold button calls toggleBold", async () => {
     const { runSpy } = await renderToolbar();
     fireEvent.click(screen.getByRole("button", { name: /bold/i }));
@@ -149,22 +160,23 @@ describe("FormatToolbar – editor command wiring", () => {
     expect(runSpy).toHaveBeenCalledTimes(1);
   });
 
-  it("Link button prompts and calls setLink for a safe URL", async () => {
-    const promptSpy = vi.spyOn(window, "prompt").mockReturnValue("https://example.com");
+  it("Link dialog calls setLink for a safe URL", async () => {
     const { runSpy } = await renderToolbar();
-    fireEvent.click(screen.getByRole("button", { name: /^link$/i }));
-    expect(promptSpy).toHaveBeenCalled();
+    await userEvent.click(screen.getByRole("button", { name: /^link$/i }));
+    await userEvent.type(screen.getByRole("textbox", { name: "Link URL" }), "https://example.com");
+    await userEvent.click(screen.getByRole("button", { name: "Insert link" }));
     expect(runSpy).toHaveBeenCalledTimes(1);
-    promptSpy.mockRestore();
   });
 
-  it("Image button prompts and calls setImage for a safe URL", async () => {
-    const promptSpy = vi.spyOn(window, "prompt").mockReturnValue("https://example.com/img.png");
+  it("Image dialog calls setImage for a safe URL", async () => {
     const { runSpy } = await renderToolbar();
-    fireEvent.click(screen.getByRole("button", { name: /^image$/i }));
-    expect(promptSpy).toHaveBeenCalled();
+    await userEvent.click(screen.getByRole("button", { name: /^image$/i }));
+    await userEvent.type(
+      screen.getByRole("textbox", { name: "Image URL" }),
+      "https://example.com/img.png",
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Insert image" }));
     expect(runSpy).toHaveBeenCalledTimes(1);
-    promptSpy.mockRestore();
   });
 });
 
@@ -173,61 +185,50 @@ describe("FormatToolbar – editor command wiring", () => {
 // ---------------------------------------------------------------------------
 
 describe("FormatToolbar – URL security (Fix 2)", () => {
-  it("Link button rejects javascript: URL – does not call setLink", async () => {
-    const promptSpy = vi.spyOn(window, "prompt").mockReturnValue("javascript:alert(1)");
+  it.each([
+    "javascript:alert(1)",
+    "data:text/html,<h1>x</h1>",
+    "vbscript:MsgBox(1)",
+  ])("Link dialog rejects %s", async (url) => {
     const { runSpy } = await renderToolbar();
-    fireEvent.click(screen.getByRole("button", { name: /^link$/i }));
+    await userEvent.click(screen.getByRole("button", { name: /^link$/i }));
+    await userEvent.type(screen.getByRole("textbox", { name: "Link URL" }), url);
+    await userEvent.click(screen.getByRole("button", { name: "Insert link" }));
     expect(runSpy).not.toHaveBeenCalled();
-    promptSpy.mockRestore();
+    expect(screen.getByRole("alert")).toHaveTextContent("HTTP, HTTPS, or mailto");
   });
 
-  it("Link button rejects data: URL – does not call setLink", async () => {
-    const promptSpy = vi.spyOn(window, "prompt").mockReturnValue("data:text/html,<h1>x</h1>");
+  it("Link dialog allows mailto: URL", async () => {
     const { runSpy } = await renderToolbar();
-    fireEvent.click(screen.getByRole("button", { name: /^link$/i }));
-    expect(runSpy).not.toHaveBeenCalled();
-    promptSpy.mockRestore();
-  });
-
-  it("Link button rejects vbscript: URL – does not call setLink", async () => {
-    const promptSpy = vi.spyOn(window, "prompt").mockReturnValue("vbscript:MsgBox(1)");
-    const { runSpy } = await renderToolbar();
-    fireEvent.click(screen.getByRole("button", { name: /^link$/i }));
-    expect(runSpy).not.toHaveBeenCalled();
-    promptSpy.mockRestore();
-  });
-
-  it("Link button allows mailto: URL", async () => {
-    const promptSpy = vi.spyOn(window, "prompt").mockReturnValue("mailto:alice@example.com");
-    const { runSpy } = await renderToolbar();
-    fireEvent.click(screen.getByRole("button", { name: /^link$/i }));
+    await userEvent.click(screen.getByRole("button", { name: /^link$/i }));
+    await userEvent.type(
+      screen.getByRole("textbox", { name: "Link URL" }),
+      "mailto:alice@example.com",
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Insert link" }));
     expect(runSpy).toHaveBeenCalledTimes(1);
-    promptSpy.mockRestore();
   });
 
-  it("Image button rejects javascript: src – does not call setImage", async () => {
-    const promptSpy = vi.spyOn(window, "prompt").mockReturnValue("javascript:alert(1)");
+  it.each([
+    "javascript:alert(1)",
+    "data:text/html,<script>evil()</script>",
+  ])("Image dialog rejects %s", async (url) => {
     const { runSpy } = await renderToolbar();
-    fireEvent.click(screen.getByRole("button", { name: /^image$/i }));
+    await userEvent.click(screen.getByRole("button", { name: /^image$/i }));
+    await userEvent.type(screen.getByRole("textbox", { name: "Image URL" }), url);
+    await userEvent.click(screen.getByRole("button", { name: "Insert image" }));
     expect(runSpy).not.toHaveBeenCalled();
-    promptSpy.mockRestore();
+    expect(screen.getByRole("alert")).toHaveTextContent("HTTP, HTTPS, or data image");
   });
 
-  it("Image button rejects data:text/html src – does not call setImage", async () => {
-    const promptSpy = vi
-      .spyOn(window, "prompt")
-      .mockReturnValue("data:text/html,<script>evil()</script>");
+  it("Image dialog allows data:image/ URL", async () => {
     const { runSpy } = await renderToolbar();
-    fireEvent.click(screen.getByRole("button", { name: /^image$/i }));
-    expect(runSpy).not.toHaveBeenCalled();
-    promptSpy.mockRestore();
-  });
-
-  it("Image button allows data:image/ URL", async () => {
-    const promptSpy = vi.spyOn(window, "prompt").mockReturnValue("data:image/png;base64,abc");
-    const { runSpy } = await renderToolbar();
-    fireEvent.click(screen.getByRole("button", { name: /^image$/i }));
+    await userEvent.click(screen.getByRole("button", { name: /^image$/i }));
+    await userEvent.type(
+      screen.getByRole("textbox", { name: "Image URL" }),
+      "data:image/png;base64,abc",
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Insert image" }));
     expect(runSpy).toHaveBeenCalledTimes(1);
-    promptSpy.mockRestore();
   });
 });

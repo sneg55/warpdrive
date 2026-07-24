@@ -1,11 +1,16 @@
 "use client";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { GripVertical } from "lucide-react";
 import type React from "react";
+import { Button } from "@/components/ui/Button";
 import { Checkbox } from "@/components/ui/Checkbox";
 import type { SettingsTemplate } from "@/features/email/emailAuthoringReads";
 import { formatCreatedOn } from "./formatDate";
 import { EMAIL_SETTINGS_STRINGS as S } from "./strings";
+
+const ROW_BUTTON =
+  "relative h-auto px-0 py-0 text-sm font-normal text-muted-foreground hover:bg-transparent hover:text-foreground after:absolute after:left-0 after:top-1/2 after:h-10 after:w-full after:-translate-y-1/2 after:content-['']";
 
 // A single OWN template row: drag handle (T4c), bulk-select checkbox (T4b), then the Name/Created/
 // Owner columns (T4a) and Edit/Delete. Owner is always "You" here; shared rows (rendered inline by
@@ -28,15 +33,16 @@ export function TemplateRow({
 
   return (
     <li ref={setNodeRef} style={style} className="flex items-center gap-3 px-3 py-2 text-sm">
-      <button
-        type="button"
+      <Button
+        variant="ghost"
+        size="icon"
         aria-label={`${S.reorder} ${t.name}`}
-        className="cursor-grab text-muted-foreground"
+        className="relative size-7 cursor-grab p-0 text-muted-foreground after:absolute after:left-1/2 after:top-1/2 after:size-10 after:-translate-x-1/2 after:-translate-y-1/2 after:content-['']"
         {...attributes}
         {...listeners}
       >
-        ::
-      </button>
+        <GripVertical aria-hidden="true" className="size-4" />
+      </Button>
       <Checkbox checked={selected} onCheckedChange={onToggle} label={`${S.select} ${t.name}`} />
       <span className="flex flex-1 items-center gap-2">
         {t.name}
@@ -49,22 +55,24 @@ export function TemplateRow({
       <span className="w-28 text-xs text-muted-foreground">{formatCreatedOn(t.createdAt)}</span>
       <span className="w-24 text-xs text-muted-foreground">{S.you}</span>
       <span className="flex items-center gap-2">
-        <button
-          type="button"
-          className="text-muted-foreground hover:text-foreground"
+        <Button
+          variant="ghost"
+          size="sm"
+          className={ROW_BUTTON}
           onClick={onEdit}
           aria-label={`${S.edit} ${t.name}`}
         >
           {S.edit}
-        </button>
-        <button
-          type="button"
-          className="text-destructive hover:opacity-80"
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          className={`${ROW_BUTTON} text-destructive hover:text-destructive/80`}
           onClick={onDelete}
           aria-label={`${S.delete} ${t.name}`}
         >
           {S.delete}
-        </button>
+        </Button>
       </span>
     </li>
   );

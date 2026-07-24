@@ -7,6 +7,7 @@ import {
   mintTokensForSend,
   recordClick,
   recordOpen,
+  resolveClickTarget,
   rewriteBody,
 } from "./tracking";
 
@@ -212,6 +213,41 @@ describe("recordOpen / recordClick", () => {
       const target = await recordClick(db, "does-not-exist", "UA", newSignal());
       expect(target).toBeNull();
       expect(await eventCount(db, "click")).toBe(0);
+    });
+  });
+});
+
+// /t/click is unauthenticated and every hit costs a join, a transaction, an insert, a NOTIFY and
+// a notification write. Rate limiting it by refusing the request is not an option: a real
+// recipient clicking a real link must still land on the real destination. So the over-limit path
+// keeps the cheap lookup that makes the redirect correct and drops the expensive recording.
+describe("resolveClickTarget", () => {
+  it("returns the stored target without recording an event", async () => {
+    await withTestDb(async (db) => {
+      const { attemptId, messageId } = await seedAttempt(db);
+      const out = await mintTokensForSend(db, {
+        sendAttemptId: attemptId,
+        recipient: "you@y.com",
+        links: ["https://dest.com/x"],
+        trackOpens: false,
+        trackLinks: true,
+        signal: newSignal(),
+      });
+      await backfillTokens(db, { sendAttemptId: attemptId, messageId, signal: newSignal() });
+      const link = out.linkTokens[0];
+      expect(link).toBeDefined();
+
+      const target =
+        link !== undefined ? await resolveClickTarget(db, link.token, newSignal()) : null;
+
+      expect(target).toBe("https://dest.com/x");
+      expect(await eventCount(db, "click")).toBe(0);
+    });
+  });
+
+  it("returns null for an unknown token so the route falls back in-app", async () => {
+    await withTestDb(async (db) => {
+      expect(await resolveClickTarget(db, "does-not-exist", newSignal())).toBeNull();
     });
   });
 });

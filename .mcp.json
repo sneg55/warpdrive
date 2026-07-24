@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "posthog": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-remote@latest",
+        "https://mcp.posthog.apps.gurunetwork.ai/mcp",
+        "--header",
+        "Authorization:Bearer ${POSTHOG_PERSONAL_API_KEY}"
+      ]
+    }
+  }
+}

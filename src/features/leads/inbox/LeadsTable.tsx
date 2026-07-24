@@ -1,12 +1,23 @@
 "use client";
 import type React from "react";
 import { Checkbox } from "@/components/ui/Checkbox";
+import { type RecordPreview, useRecordPreview } from "@/features/navigation/recordPreviewStore";
 import type { LeadRow } from "../leadRepo";
 import type { LeadSortField } from "../schemas";
 import type { LeadColumn } from "./columns";
 import { LeadCell } from "./LeadCell";
 import { SourceOriginInfo } from "./SourceOriginInfo";
 import type { LeadSort } from "./useLeadSort";
+
+// The fields the drawer skeleton paints instantly while the server detail streams: the lead title,
+// with the linked person or org as the subtitle. Omit the subtitle (not set to undefined) when the
+// lead has neither, so the optional stays absent under exactOptionalPropertyTypes.
+function leadPreview(row: LeadRow): RecordPreview {
+  const subtitle = row.personName ?? row.orgName;
+  return subtitle !== null
+    ? { id: row.id, title: row.title, subtitle }
+    : { id: row.id, title: row.title };
+}
 
 export interface LeadsTableProps {
   rows: LeadRow[];
@@ -49,6 +60,7 @@ export function LeadsTable({
   onOpen,
   renderRowActions,
 }: LeadsTableProps): React.ReactNode {
+  const setPreview = useRecordPreview((s) => s.setPreview);
   const colSpan = columns.length + 2;
   return (
     <table className="w-full text-sm">
@@ -92,7 +104,17 @@ export function LeadsTable({
           rows.map((row) => (
             <tr
               key={row.id}
-              onClick={() => onOpen(row.id)}
+              // Seed the preview on hover as well as click: opening a lead from its row-actions menu
+              // (kebab "Open") navigates from LeadsInbox and never runs this onClick, but a mouse
+              // user hovers the row first, so the preview is already captured by the time the menu
+              // fires. Both handlers seed the same row, so the drawer paints the real name instantly
+              // regardless of which open path is used. onClick still seeds for touch taps that skip
+              // hover.
+              onMouseEnter={() => setPreview(leadPreview(row))}
+              onClick={() => {
+                setPreview(leadPreview(row));
+                onOpen(row.id);
+              }}
               className="cursor-pointer border-t hover:bg-accent/40"
             >
               <td className="px-3 py-2">

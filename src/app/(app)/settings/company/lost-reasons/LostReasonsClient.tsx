@@ -23,7 +23,8 @@ export interface LostReasonRow {
 }
 
 const S = STRINGS.settings;
-const BTN = "text-xs font-medium text-muted-foreground hover:text-foreground disabled:opacity-40";
+const ROW_BUTTON =
+  "relative h-auto px-0 py-0 text-xs font-medium text-muted-foreground hover:bg-transparent hover:text-foreground after:absolute after:left-0 after:top-1/2 after:h-10 after:w-full after:-translate-y-1/2 after:content-['']";
 
 // Lost reasons tab (spec 6.3): archive is a soft-delete; historical deals keep their reason.
 export function LostReasonsClient({ rows: initial }: { rows: LostReasonRow[] }): React.ReactNode {
@@ -110,24 +111,35 @@ export function LostReasonsClient({ rows: initial }: { rows: LostReasonRow[] }):
                 onMoveDown={() => void move(i, "down")}
               />
               {editingId === row.id ? (
-                <button type="button" className={BTN} onClick={() => void rename(row.id)}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className={ROW_BUTTON}
+                  onClick={() => void rename(row.id)}
+                >
                   {S.save}
-                </button>
+                </Button>
               ) : (
-                <button
-                  type="button"
-                  className={BTN}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className={ROW_BUTTON}
                   onClick={() => {
                     setEditingId(row.id);
                     setEditName(row.name);
                   }}
                 >
                   {S.rename}
-                </button>
+                </Button>
               )}
-              <button type="button" className={BTN} onClick={() => void archive(row.id)}>
+              <Button
+                variant="ghost"
+                size="sm"
+                className={ROW_BUTTON}
+                onClick={() => void archive(row.id)}
+              >
                 {S.archive}
-              </button>
+              </Button>
             </div>
           </li>
         ))}

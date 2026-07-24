@@ -1,5 +1,6 @@
 "use client";
 import type React from "react";
+import { Button } from "@/components/ui/Button";
 import type { UserStatusFilter } from "./userStatus";
 
 const TABS: { key: UserStatusFilter; label: string }[] = [
@@ -18,22 +19,22 @@ export function UserStatusTabs({
   onChange: (status: UserStatusFilter) => void;
 }): React.ReactNode {
   return (
-    <nav aria-label="user status filter" className="flex gap-1">
-      {TABS.map((t) => (
-        <button
-          key={t.key}
-          type="button"
-          aria-pressed={value === t.key}
-          onClick={() => onChange(t.key)}
-          className={
-            value === t.key
-              ? "rounded bg-accent px-3 py-1 text-sm font-medium text-accent-foreground transition-transform active:scale-[0.96]"
-              : "rounded px-3 py-1 text-sm text-muted-foreground transition-transform hover:bg-accent/60 active:scale-[0.96]"
-          }
+    <fieldset
+      aria-label="User status filter"
+      className="flex min-w-0 items-center gap-1 border-0 p-0"
+    >
+      {TABS.map((tab) => (
+        <Button
+          key={tab.key}
+          variant="ghost"
+          size="sm"
+          aria-pressed={value === tab.key}
+          onClick={() => onChange(tab.key)}
+          className="min-h-10 rounded px-3 font-normal text-muted-foreground hover:bg-accent/60 aria-pressed:bg-accent aria-pressed:font-medium aria-pressed:text-accent-foreground"
         >
-          {t.label}
-        </button>
+          {tab.label}
+        </Button>
       ))}
-    </nav>
+    </fieldset>
   );
 }

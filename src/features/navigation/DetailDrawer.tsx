@@ -3,6 +3,7 @@ import { useRouter } from "next/navigation";
 import type React from "react";
 import { useState } from "react";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import { useRecordPreview } from "./recordPreviewStore";
 
 // Wraps intercepted detail content (person/org/lead) in a right-anchored Sheet so it renders as a
 // Pipedrive-style slide-over over the list route, while the list stays mounted behind the scrim.
@@ -28,11 +29,16 @@ export function DetailDrawer({
   contentClassName?: string;
 }): React.ReactNode {
   const router = useRouter();
+  const clearPreview = useRecordPreview((s) => s.clearPreview);
   const [open, setOpen] = useState(true);
 
   function onOpenChange(next: boolean): void {
     if (!next) {
       setOpen(false);
+      // Drop the preview as the drawer closes so a later open that does not set one (deep link,
+      // back/forward) shows the plain skeleton rather than a stale name. The id guard in the
+      // skeleton already prevents a wrong-record flash; this keeps the store tidy.
+      clearPreview();
       router.back();
     }
   }

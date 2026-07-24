@@ -2,7 +2,7 @@ import { and, eq, sql } from "drizzle-orm";
 import { parseChannel } from "@/constants/wsChannels";
 import type { Db } from "@/db/client";
 import { importBatches } from "@/db/schema";
-import { loadLiveSession } from "@/features/auth/session";
+import { loadLiveSessionById } from "@/features/auth/session";
 import { dealVisibilityPredicate } from "@/features/permissions/sql";
 import { err, ok, type Result } from "@/types/result";
 import { verifyTicket } from "./ticket";
@@ -36,7 +36,7 @@ export async function consumeTicketAndBind(
   signal.throwIfAborted();
   if (consumed.rows.length === 0) return err("rejected");
 
-  const live = await loadLiveSession(db, verified.value.sessionId, signal);
+  const live = await loadLiveSessionById(db, verified.value.sessionId, signal);
   if (live.ok !== true || live.value.userId !== verified.value.userId) return err("rejected");
 
   return ok({ userId: verified.value.userId, sessionId: verified.value.sessionId });

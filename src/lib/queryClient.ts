@@ -1,5 +1,5 @@
 import { QueryClient } from "@tanstack/react-query";
-import { QUERY_STALE_TIME_MS } from "@/constants/query";
+import { QUERY_GC_TIME_MS, QUERY_STALE_TIME_MS } from "@/constants/query";
 
 /**
  * The app's TanStack Query client.
@@ -14,6 +14,7 @@ export function makeQueryClient(): QueryClient {
     defaultOptions: {
       queries: {
         staleTime: QUERY_STALE_TIME_MS,
+        gcTime: QUERY_GC_TIME_MS,
         refetchOnWindowFocus: false,
       },
     },

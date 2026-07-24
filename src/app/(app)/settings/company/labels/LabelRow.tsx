@@ -1,14 +1,16 @@
 "use client";
 import type React from "react";
 import { useState } from "react";
-import { FIELD_INPUT } from "@/constants/formStyles";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 import { LABEL_COLOR_CLASSES, type LabelColor } from "@/constants/labelColors";
 import { STRINGS } from "@/constants/strings";
 import { ReorderControls } from "../ReorderControls";
 import { LabelColorSelect } from "./LabelColorSelect";
 
 const S = STRINGS.settings;
-const BTN = "text-xs font-medium text-muted-foreground hover:text-foreground disabled:opacity-40";
+const ROW_BUTTON =
+  "relative h-auto px-0 py-0 text-xs font-medium text-muted-foreground hover:bg-transparent hover:text-foreground after:absolute after:left-0 after:top-1/2 after:h-10 after:w-full after:-translate-y-1/2 after:content-['']";
 
 export interface LabelRowData {
   id: string;
@@ -45,13 +47,15 @@ export function LabelRow({
         {row.name}
       </span>
       {editing ? (
-        <input
+        <Input
           aria-label={S.labelName}
+          name="labelName"
+          autoComplete="off"
           required
           maxLength={120}
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className={`${FIELD_INPUT} flex-1`}
+          className="flex-1"
         />
       ) : (
         <span className="flex-1 text-sm">{row.name}</span>
@@ -67,24 +71,25 @@ export function LabelRow({
           onMoveDown={() => onMove("down")}
         />
         {editing ? (
-          <button
-            type="button"
-            className={BTN}
+          <Button
+            variant="ghost"
+            size="sm"
+            className={ROW_BUTTON}
             onClick={() => {
               if (name.trim() !== "") onRename(name.trim());
               setEditing(false);
             }}
           >
             {S.save}
-          </button>
+          </Button>
         ) : (
-          <button type="button" className={BTN} onClick={() => setEditing(true)}>
+          <Button variant="ghost" size="sm" className={ROW_BUTTON} onClick={() => setEditing(true)}>
             {S.rename}
-          </button>
+          </Button>
         )}
-        <button type="button" className={BTN} onClick={onDelete}>
+        <Button variant="ghost" size="sm" className={ROW_BUTTON} onClick={onDelete}>
           {S.delete}
-        </button>
+        </Button>
       </div>
     </li>
   );

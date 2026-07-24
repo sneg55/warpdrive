@@ -1,5 +1,6 @@
 "use client";
 
+import { Bell } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useActionError } from "@/components/shell/ActionErrorProvider";
@@ -48,7 +49,7 @@ const DEEP_LINK: Record<NotificationType, (item: NotificationFeedItem) => string
   },
 };
 
-export function LightbulbDropdown({ userId }: { userId: string }): React.ReactNode {
+export function NotificationsBell({ userId }: { userId: string }): React.ReactNode {
   useNotificationStream(userId);
   const router = useRouter();
   const utils = trpc.useUtils();
@@ -94,9 +95,7 @@ export function LightbulbDropdown({ userId }: { userId: string }): React.ReactNo
         aria-label={STRINGS.notifications.title}
         className="relative flex h-10 w-10 items-center justify-center rounded-md transition-transform hover:bg-gray-100 active:scale-[0.96]"
       >
-        <span aria-hidden className="text-lg">
-          {"\u{1F514}"}
-        </span>
+        <Bell aria-hidden className="h-5 w-5 text-muted-foreground" strokeWidth={1.75} />
         {unreadCount > 0 ? (
           <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-blue-500 px-1 text-xs font-medium tabular-nums text-white">
             {unreadCount}

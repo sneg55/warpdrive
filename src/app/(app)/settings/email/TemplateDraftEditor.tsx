@@ -1,8 +1,9 @@
 "use client";
 import type React from "react";
 import { useState } from "react";
+import { Button } from "@/components/ui/Button";
 import { Checkbox } from "@/components/ui/Checkbox";
-import { FIELD_INPUT } from "@/constants/formStyles";
+import { Input } from "@/components/ui/Input";
 import { InsertFieldMenu } from "@/features/email/composer/InsertFieldMenu";
 import { RichTextBody } from "@/features/email/composer/RichTextBodyLazy";
 import { MERGE_TOKEN_FIELDS, mergeTokenPlaceholder } from "@/features/email/mergeTokens";
@@ -45,19 +46,21 @@ export function TemplateDraftEditor({
 
   return (
     <div className="space-y-2 rounded-md border p-3">
-      <input
+      <Input
         aria-label={S.nameLabel}
-        placeholder={S.nameLabel}
+        name="templateName"
+        autoComplete="off"
+        placeholder={`${S.nameLabel}…`}
         value={draft.name}
         onChange={(e) => onChange({ ...draft, name: e.target.value })}
-        className={FIELD_INPUT}
       />
-      <input
+      <Input
         aria-label={S.subjectLabel}
-        placeholder={S.subjectLabel}
+        name="templateSubject"
+        autoComplete="off"
+        placeholder={`${S.subjectLabel}…`}
         value={draft.subject}
         onChange={(e) => onChange({ ...draft, subject: e.target.value })}
-        className={FIELD_INPUT}
       />
       <div className="flex justify-end">
         <InsertFieldMenu
@@ -81,20 +84,12 @@ export function TemplateDraftEditor({
         </div>
       )}
       <div className="flex gap-2">
-        <button
-          type="button"
-          className="rounded-md bg-action px-3 py-1.5 text-sm text-action-foreground transition-transform active:scale-[0.96]"
-          onClick={onSave}
-        >
+        <Button size="sm" onClick={onSave}>
           {S.save}
-        </button>
-        <button
-          type="button"
-          className="rounded-md border px-3 py-1.5 text-sm text-muted-foreground transition-transform active:scale-[0.96]"
-          onClick={onCancel}
-        >
+        </Button>
+        <Button variant="outline" size="sm" onClick={onCancel}>
           {S.cancel}
-        </button>
+        </Button>
       </div>
     </div>
   );
