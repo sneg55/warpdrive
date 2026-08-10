@@ -75,6 +75,17 @@ export const ENTITY_LABELS: Record<MappableEntity, string> = {
   note: "Note",
 };
 
+// A picker label that carries its destination record: "Organization[Name]", "Person[Name]". The
+// group heading above an open menu says which entity a field belongs to, but a COLLAPSED picker
+// shows the label alone, and a person import can map one column to Person > Name and another to
+// Organization > Name. Unqualified, both read "Name": one string for two different writes. The
+// note entity's only field is already called "Note", so qualifying it would stutter.
+export function qualifiedFieldLabel(entity: MappableEntity, fieldLabel: string): string {
+  const entityLabel = ENTITY_LABELS[entity];
+  if (fieldLabel === entityLabel) return entityLabel;
+  return `${entityLabel}[${fieldLabel}]`;
+}
+
 // The entity a target's row primarily creates. Targets and entities share names, but the
 // distinction matters: "note" is an entity that is never a target.
 export function primaryEntityOf(target: ImportTarget): MappableEntity {

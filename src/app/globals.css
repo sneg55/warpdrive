@@ -2,6 +2,15 @@
 @import "tw-animate-css";
 
 /*
+ * Bind `dark:` to the `.dark` class, which is where the dark palette below is declared.
+ * Tailwind v4's stock variant is `@media (prefers-color-scheme: dark)` instead, so without
+ * this the two halves of dark mode disagree: an OS set to dark paints every `dark:` utility
+ * on top of the LIGHT tokens (nothing in the app adds `.dark`). That is what made the
+ * secondary nav's active row render its dark treatment on a white page.
+ */
+@custom-variant dark (&:is(.dark *));
+
+/*
  * Tailwind v4 theme mapping. The shadcn tokens below are declared as HSL channels on
  * :root/.dark; without this block Tailwind v4 never generates the semantic color
  * utilities (bg-card, text-muted-foreground, border-border, etc.) from them, so they

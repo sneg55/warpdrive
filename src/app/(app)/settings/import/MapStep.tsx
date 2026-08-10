@@ -11,6 +11,7 @@ import {
   ENTITY_LABELS,
   type MappableEntity,
   primaryEntityOf,
+  qualifiedFieldLabel,
   TARGET_ENTITY_GROUPS,
 } from "@/features/import/importFields";
 import { sampleValues } from "@/features/import/sampleValues";
@@ -75,7 +76,7 @@ export function buildColumnOptions(
       if (!required && isImportFieldHidden(field.field, hiddenForEntity)) continue;
       options.push({
         value: `s:${entity}:${field.field}`,
-        label: `${field.label}${required ? REQUIRED_MARKER : ""}`,
+        label: `${qualifiedFieldLabel(entity, field.label)}${required ? REQUIRED_MARKER : ""}`,
         group: ENTITY_LABELS[entity],
       });
     }

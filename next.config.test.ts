@@ -1,6 +1,15 @@
+import { createRequire } from "node:module";
 import { describe, expect, it } from "vitest";
-import nextConfig from "./next.config";
+import nextConfig, { CONSENT_PATH } from "./next.config";
 import { MAX_IMPORT_CSV_BYTES } from "./src/features/import/importFields";
+
+// The exact matcher Next runs a headers() `source` through, so these tests resolve a path the way
+// the server does instead of re-implementing the syntax. Next vendors it without typings, and the
+// standalone package on npm is v8, which dropped the inline-regex syntax this config depends on,
+// so it is reached through Next's copy.
+const { pathToRegexp } = createRequire(import.meta.url)("next/dist/compiled/path-to-regexp") as {
+  pathToRegexp: (source: string) => RegExp;
+};
 
 // The importer parses the CSV in the browser and POSTs the entire parsed rows array through
 // the createBatchAction server action. That JSON encoding runs materially larger than the raw
@@ -60,44 +69,94 @@ describe("next.config server-action body limit", () => {
 // Sec-Fetch-Site is same-origin). Without frame-ancestors an attacker page can overlay that
 // consent screen and clickjack a victim into granting their OAuth client full MCP access.
 // CSRF defenses do not stop clickjacking; only the frame directives do.
-async function headerMap(source: string): Promise<Map<string, string>> {
+// Next applies EVERY headers() entry whose source matches, not just the first, and a browser
+// intersects two Content-Security-Policy headers (the most restrictive value of each directive
+// wins). So a route cannot loosen a directive by adding a second header; it has to be excluded
+// from the strict entry. Resolving all matches here is what makes that trap visible to the tests.
+async function headersForPath(path: string): Promise<Map<string, string[]>> {
   const entries = (await nextConfig.headers?.()) ?? [];
-  const match = entries.find((e) => e.source === source);
-  return new Map((match?.headers ?? []).map((h) => [h.key.toLowerCase(), h.value]));
+  const resolved = new Map<string, string[]>();
+  for (const entry of entries) {
+    if (!pathToRegexp(entry.source).test(path)) continue;
+    for (const header of entry.headers) {
+      const key = header.key.toLowerCase();
+      resolved.set(key, [...(resolved.get(key) ?? []), header.value]);
+    }
+  }
+  return resolved;
 }
+
+async function cspForPath(path: string): Promise<string> {
+  const values = (await headersForPath(path)).get("content-security-policy") ?? [];
+  // More than one is the bug this helper exists to catch: it means the path matched both entries.
+  expect(values).toHaveLength(1);
+  return values.join("");
+}
+
+const ORDINARY_PATH = "/deals";
 
 describe("next.config security headers", () => {
   it("denies framing of every route via CSP frame-ancestors", async () => {
-    const csp = (await headerMap("/:path*")).get("content-security-policy");
-    expect(csp).toContain("frame-ancestors 'none'");
+    expect(await cspForPath(ORDINARY_PATH)).toContain("frame-ancestors 'none'");
+    expect(await cspForPath(CONSENT_PATH)).toContain("frame-ancestors 'none'");
   });
 
   it("denies framing via X-Frame-Options for pre-CSP-2 browsers", async () => {
-    expect((await headerMap("/:path*")).get("x-frame-options")).toBe("DENY");
+    expect((await headersForPath(ORDINARY_PATH)).get("x-frame-options")).toEqual(["DENY"]);
+    expect((await headersForPath(CONSENT_PATH)).get("x-frame-options")).toEqual(["DENY"]);
   });
 
-  it("pins base-uri and form-action so injected markup cannot retarget the consent form", async () => {
-    const csp = (await headerMap("/:path*")).get("content-security-policy");
+  it("pins base-uri and form-action so injected markup cannot retarget forms", async () => {
+    const csp = await cspForPath(ORDINARY_PATH);
     expect(csp).toContain("base-uri 'self'");
     expect(csp).toContain("form-action 'self'");
   });
 
   it("blocks plugin content via object-src", async () => {
-    const csp = (await headerMap("/:path*")).get("content-security-policy");
-    expect(csp).toContain("object-src 'none'");
+    expect(await cspForPath(ORDINARY_PATH)).toContain("object-src 'none'");
+    expect(await cspForPath(CONSENT_PATH)).toContain("object-src 'none'");
   });
 
   it("stops MIME sniffing", async () => {
-    expect((await headerMap("/:path*")).get("x-content-type-options")).toBe("nosniff");
+    expect((await headersForPath(ORDINARY_PATH)).get("x-content-type-options")).toEqual([
+      "nosniff",
+    ]);
   });
 
   it("keeps referrers off cross-origin requests", async () => {
-    expect((await headerMap("/:path*")).get("referrer-policy")).toBe(
+    expect((await headersForPath(ORDINARY_PATH)).get("referrer-policy")).toEqual([
       "strict-origin-when-cross-origin",
-    );
+    ]);
   });
 
   it("does not advertise the framework version", () => {
     expect(nextConfig.poweredByHeader).toBe(false);
+  });
+});
+
+// form-action is enforced against a form submission's ENTIRE redirect chain, not just its initial
+// target. The consent form posts same-origin to /oauth/authorize, which answers with a 302 to the
+// OAuth client's registered redirect_uri (e.g. http://localhost:3118/callback). Under
+// form-action 'self' the browser refuses that hop with no error the user can see: the auth code is
+// minted and stored, the page simply does not move, and "Allow access" looks dead. Verified in
+// Chrome against a copy of these exact headers.
+describe("next.config consent-screen form-action exemption", () => {
+  it("does not constrain form-action on the consent screen", async () => {
+    expect(await cspForPath(CONSENT_PATH)).not.toContain("form-action");
+  });
+
+  it("keeps the exemption to the consent path alone", async () => {
+    for (const path of [
+      ORDINARY_PATH,
+      "/",
+      "/oauth/authorize",
+      "/oauth/authorize/consent/nested",
+    ]) {
+      expect(await cspForPath(path)).toContain("form-action 'self'");
+    }
+  });
+
+  it("exempts the consent path in its trailing-slash form too", async () => {
+    expect(await cspForPath(`${CONSENT_PATH}/`)).not.toContain("form-action");
   });
 });

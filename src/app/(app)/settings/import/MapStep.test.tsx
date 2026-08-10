@@ -57,8 +57,18 @@ function chooseSelect(label: string, option: string): void {
 it("keeps Continue disabled until a column maps to Name", () => {
   render(<Harness onContinue={vi.fn()} />);
   expect(screen.getByRole("button", { name: "Continue" })).toBeDisabled();
-  chooseSelect("Maps to: Full Name", "Name *");
+  chooseSelect("Maps to: Full Name", "Person[Name] *");
   expect(screen.getByRole("button", { name: "Continue" })).toBeEnabled();
+});
+
+// Person > Name and Organization > Name both read "Name", so two collapsed pickers on the same
+// screen looked identical while writing different records. The entity has to be on the label.
+it("names the owning entity on the collapsed picker of a mapped column", () => {
+  render(<Harness onContinue={vi.fn()} />);
+  chooseSelect("Maps to: Full Name", "Person[Name] *");
+  chooseSelect("Maps to: Profile", "Organization[Name]");
+  expect(screen.getByLabelText("Maps to: Full Name")).toHaveTextContent("Person[Name] *");
+  expect(screen.getByLabelText("Maps to: Profile")).toHaveTextContent("Organization[Name]");
 });
 
 it("offers custom fields from the defs and calls onContinue", () => {
@@ -67,7 +77,7 @@ it("offers custom fields from the defs and calls onContinue", () => {
   fireEvent.click(screen.getByLabelText("Maps to: Profile"));
   expect(screen.getByRole("option", { name: "LinkedIn" })).toBeInTheDocument();
   fireEvent.click(screen.getByRole("option", { name: "LinkedIn" }));
-  chooseSelect("Maps to: Full Name", "Name *");
+  chooseSelect("Maps to: Full Name", "Person[Name] *");
   fireEvent.click(screen.getByRole("button", { name: "Continue" }));
   expect(onContinue).toHaveBeenCalledOnce();
 });
@@ -134,10 +144,12 @@ it("maps a column to an Organization field on a lead import", () => {
 
   // The picker groups fields by entity; both groups are present on a lead import.
   fireEvent.click(screen.getByLabelText("Maps to: url"));
-  expect(screen.getByRole("option", { name: "Website / domain" })).toBeInTheDocument();
-  fireEvent.click(screen.getByRole("option", { name: "Website / domain" }));
+  expect(
+    screen.getByRole("option", { name: "Organization[Website / domain]" }),
+  ).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("option", { name: "Organization[Website / domain]" }));
 
-  chooseSelect("Maps to: reporter_type", "Title *");
+  chooseSelect("Maps to: reporter_type", "Lead[Title] *");
   fireEvent.click(screen.getByRole("button", { name: "Continue" }));
 
   expect(onMapping).toHaveBeenCalledWith({
@@ -158,7 +170,7 @@ it("hides the dedup radio on a lead import, where leads always create", () => {
 it("records the row-note checkbox in the mapping options", () => {
   const onMapping = vi.fn();
   render(<LeadHarness onMapping={onMapping} />);
-  chooseSelect("Maps to: reporter_type", "Title *");
+  chooseSelect("Maps to: reporter_type", "Lead[Title] *");
   fireEvent.click(screen.getByRole("checkbox", { name: "Add unmapped columns as a note" }));
   fireEvent.click(screen.getByRole("button", { name: "Continue" }));
   expect(onMapping.mock.calls[0]?.[0]).toMatchObject({

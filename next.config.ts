@@ -14,34 +14,58 @@ import type { NextConfig } from "next";
 // Sec-Fetch-Site reads same-origin). Framing plus an overlay therefore turns one stray click
 // into an OAuth grant handing an attacker's client full MCP access to the CRM. CSRF tokens
 // cannot see that attack; only refusing to be framed can.
-const CSP = [
-  "frame-ancestors 'none'",
-  // Neither is ever legitimately needed here, and both are classic injection escalations:
-  // a <base> tag rewrites every relative URL on the page, and form-action retargets the
-  // consent POST at an attacker's collector.
-  "base-uri 'self'",
-  "form-action 'self'",
-  "object-src 'none'",
-].join("; ");
+export const CONSENT_PATH = "/oauth/authorize/consent";
 
-const SECURITY_HEADERS = [
-  { key: "Content-Security-Policy", value: CSP },
-  // Redundant with frame-ancestors on current browsers, kept for the pre-CSP-2 tail.
-  { key: "X-Frame-Options", value: "DENY" },
-  { key: "X-Content-Type-Options", value: "nosniff" },
-  // Full URLs leak record ids (/deals/<uuid>) and the consent query string, which carries the
-  // CSRF token, into any cross-origin navigation.
-  { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-  // No app surface uses these; denying them shrinks what injected content could ask for.
-  { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), payment=()" },
+// Every route except the consent screen. Next applies every matching headers() entry and a browser
+// intersects two Content-Security-Policy headers, so the consent screen cannot relax a directive by
+// adding a second header: it has to be carved out of the strict entry. Pinned by next.config.test.
+// The `/?` matters: without it the trailing-slash spelling slips past the carve-out and matches
+// both entries, which is the two-header case described above.
+const ALL_ROUTES_EXCEPT_CONSENT = "/((?!oauth/authorize/consent/?$).*)";
+
+const BASE_CSP = [
+  "frame-ancestors 'none'",
+  // Never legitimately needed here, and a classic injection escalation: a <base> tag rewrites
+  // every relative URL on the page.
+  "base-uri 'self'",
+  "object-src 'none'",
 ];
+
+// Keeps injected markup from retargeting a form at an attacker's collector. Deliberately absent on
+// the consent screen: form-action is enforced against a form submission's ENTIRE redirect chain,
+// and POST /oauth/authorize answers with a 302 to the OAuth client's registered redirect_uri, which
+// is by definition not 'self'. With 'self' in force the browser drops that hop silently, so the
+// server mints an auth code the client never receives and "Allow access" looks like a dead button.
+// Little is given up: the directive's value is against injected markup, but script-src is absent
+// (see above), so anything able to inject a form on that page can inject a script instead. The
+// protections that actually carry the consent screen are unaffected: frame-ancestors still blocks
+// the clickjacking path, and redirect_uri is still checked against the client's registered set in
+// the route handler before any redirect is issued.
+const FORM_ACTION = "form-action 'self'";
+
+function securityHeaders(directives: string[]): { key: string; value: string }[] {
+  return [
+    { key: "Content-Security-Policy", value: directives.join("; ") },
+    // Redundant with frame-ancestors on current browsers, kept for the pre-CSP-2 tail.
+    { key: "X-Frame-Options", value: "DENY" },
+    { key: "X-Content-Type-Options", value: "nosniff" },
+    // Full URLs leak record ids (/deals/<uuid>) and the consent query string, which carries the
+    // CSRF token, into any cross-origin navigation.
+    { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+    // No app surface uses these; denying them shrinks what injected content could ask for.
+    { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), payment=()" },
+  ];
+}
 
 const nextConfig: NextConfig = {
   serverExternalPackages: ["pg", "pg-boss"],
   // HSTS is set by Caddy, not here: it terminates TLS and so is the layer that knows the
   // response actually went out over HTTPS. See Caddyfile.
   headers() {
-    return Promise.resolve([{ source: "/:path*", headers: SECURITY_HEADERS }]);
+    return Promise.resolve([
+      { source: CONSENT_PATH, headers: securityHeaders(BASE_CSP) },
+      { source: ALL_ROUTES_EXCEPT_CONSENT, headers: securityHeaders([...BASE_CSP, FORM_ACTION]) },
+    ]);
   },
   // "x-powered-by: Next.js" hands a scanner the framework for free.
   poweredByHeader: false,
