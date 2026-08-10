@@ -12,6 +12,8 @@ export const buttonVariants = cva(
         default: "bg-action text-action-foreground hover:opacity-90",
         outline: "border bg-card hover:bg-accent",
         ghost: "hover:bg-accent hover:text-foreground",
+        // Irreversible actions (delete, discard). Used by ConfirmDialog's affirmative button.
+        destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
       },
       size: {
         sm: "h-8 px-2.5",

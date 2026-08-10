@@ -2,6 +2,7 @@
 import { useRouter } from "next/navigation";
 import type React from "react";
 import { useState } from "react";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,7 +19,7 @@ import { ConvertToLeadDialog } from "./ConvertToLeadDialog";
 import { MergeDealDialog } from "./MergeDealDialog";
 
 // Which confirm flow (its own Dialog) is currently open, if any.
-type Flow = "convert" | "merge" | null;
+type Flow = "convert" | "merge" | "delete" | null;
 
 interface DealActionsMenuProps {
   dealId: string;
@@ -66,7 +67,6 @@ export function DealActionsMenu({
   }
 
   async function remove(): Promise<void> {
-    if (!window.confirm("Delete this deal? This cannot be undone.")) return;
     setPending(true);
     const r = await deleteDealAction({ dealId, expectedUpdatedAt }, readCsrfToken());
     setPending(false);
@@ -90,7 +90,7 @@ export function DealActionsMenu({
         <DropdownMenuItem onSelect={() => setFlow("merge")}>Merge</DropdownMenuItem>
         <DropdownMenuItem onSelect={() => void archive()}>Archive</DropdownMenuItem>
         {canDelete && (
-          <DropdownMenuItem onSelect={() => void remove()} className="text-destructive">
+          <DropdownMenuItem onSelect={() => setFlow("delete")} className="text-destructive">
             Delete deal
           </DropdownMenuItem>
         )}
@@ -119,6 +119,18 @@ export function DealActionsMenu({
           }}
         />
       )}
+      <ConfirmDialog
+        open={flow === "delete"}
+        onOpenChange={(o) => {
+          if (!o) setFlow(null);
+        }}
+        title="Delete this deal?"
+        description="This cannot be undone. The deal and its activity are removed for everyone."
+        confirmLabel="Delete"
+        destructive
+        pending={pending}
+        onConfirm={() => void remove()}
+      />
     </DropdownMenu>
   );
 }

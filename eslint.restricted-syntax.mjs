@@ -45,4 +45,12 @@ export const DESIGN_SYSTEM_RESTRICTED_SYNTAX = [
     message:
       "Native `title` tooltips are banned. Use the Tip/Tooltip primitive (src/components/ui/tooltip.tsx). (<iframe title> is exempt.)",
   },
+  {
+    // Native browser modals. Only the window-qualified form is matched: several components define
+    // a local `confirm()` handler, and bare-identifier matching would flag those.
+    selector:
+      "CallExpression[callee.object.name='window'][callee.property.name=/^(confirm|alert|prompt)$/]",
+    message:
+      "Native browser dialogs (window.confirm/alert/prompt) are banned: they render unstyled OS chrome, cannot be themed, and the browser lets users suppress them. Use ConfirmDialog (src/components/ConfirmDialog.tsx) or the shadcn AlertDialog/Dialog primitive.",
+  },
 ];

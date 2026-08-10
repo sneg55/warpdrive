@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeAll, expect, it, vi } from "vitest";
 
@@ -43,10 +43,7 @@ it("hides Merge and Delete when the actor lacks the capability", async () => {
   expect(screen.queryByRole("menuitem", { name: /delete/i })).not.toBeInTheDocument();
 });
 
-it("invokes onMerge and deletes (after confirm) when permitted", async () => {
-  const onMerge = vi.fn();
-  vi.spyOn(window, "confirm").mockReturnValue(true);
-  const user = userEvent.setup();
+function renderMenu(onMerge = vi.fn()): void {
   render(
     <ContactActionsMenu
       entityType="person"
@@ -56,12 +53,49 @@ it("invokes onMerge and deletes (after confirm) when permitted", async () => {
       onMerge={onMerge}
     />,
   );
+}
+
+// Opens the menu and picks "Delete", returning the confirmation surface it raises.
+async function openDeleteConfirm(user: ReturnType<typeof userEvent.setup>): Promise<HTMLElement> {
+  await user.click(screen.getByRole("button", { name: "Contact actions" }));
+  await user.click(screen.getByRole("menuitem", { name: "Delete" }));
+  return await screen.findByRole("alertdialog");
+}
+
+it("invokes onMerge when permitted", async () => {
+  const onMerge = vi.fn();
+  const user = userEvent.setup();
+  renderMenu(onMerge);
   await user.click(screen.getByRole("button", { name: "Contact actions" }));
   await user.click(screen.getByRole("menuitem", { name: "Merge duplicates" }));
   expect(onMerge).toHaveBeenCalled();
+});
 
-  await user.click(screen.getByRole("button", { name: "Contact actions" }));
-  await user.click(screen.getByRole("menuitem", { name: "Delete" }));
-  await vi.waitFor(() => expect(deletePersonAction).toHaveBeenCalledWith({ id: "pe1" }, "tok"));
-  await vi.waitFor(() => expect(push).toHaveBeenCalledWith("/contacts/people"));
+// The destructive confirm is the shadcn AlertDialog, never the browser's window.confirm chrome.
+it("Delete raises an in-app confirm dialog, not a native browser confirm", async () => {
+  const nativeConfirm = vi.spyOn(window, "confirm");
+  const user = userEvent.setup();
+  renderMenu();
+  const dialog = await openDeleteConfirm(user);
+  expect(within(dialog).getByText("Delete this record?")).toBeInTheDocument();
+  expect(nativeConfirm).not.toHaveBeenCalled();
+  expect(deletePersonAction).not.toHaveBeenCalled();
+});
+
+it("confirming the dialog deletes and routes back to the list", async () => {
+  const user = userEvent.setup();
+  renderMenu();
+  const dialog = await openDeleteConfirm(user);
+  await user.click(within(dialog).getByRole("button", { name: "Delete" }));
+  await waitFor(() => expect(deletePersonAction).toHaveBeenCalledWith({ id: "pe1" }, "tok"));
+  await waitFor(() => expect(push).toHaveBeenCalledWith("/contacts/people"));
+});
+
+it("cancelling the dialog closes it without deleting", async () => {
+  const user = userEvent.setup();
+  renderMenu();
+  const dialog = await openDeleteConfirm(user);
+  await user.click(within(dialog).getByRole("button", { name: "Cancel" }));
+  await waitFor(() => expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument());
+  expect(deletePersonAction).not.toHaveBeenCalled();
 });

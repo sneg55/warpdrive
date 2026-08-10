@@ -2,6 +2,7 @@
 import { useRouter } from "next/navigation";
 import type React from "react";
 import { useState } from "react";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,7 +25,7 @@ interface ContactActionsMenuProps {
 
 // Header overflow (ellipsis) menu for a person/org detail (Pipedrive parity, CO-3): Copy link,
 // Merge duplicates (permission-gated), Delete (permission-gated). Each item is backed by a real
-// action; delete confirms before firing, then routes back to the list.
+// action; delete confirms via the shadcn ConfirmDialog, then routes back to the list.
 export function ContactActionsMenu({
   entityType,
   entityId,
@@ -34,6 +35,7 @@ export function ContactActionsMenu({
 }: ContactActionsMenuProps): React.ReactNode {
   const router = useRouter();
   const [pending, setPending] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
   const basePath = entityType === "person" ? "/contacts/people" : "/contacts/orgs";
 
   async function copyLink(): Promise<void> {
@@ -41,7 +43,6 @@ export function ContactActionsMenu({
   }
 
   async function remove(): Promise<void> {
-    if (!window.confirm("Delete this record? This cannot be undone.")) return;
     setPending(true);
     const r =
       entityType === "person"
@@ -64,11 +65,24 @@ export function ContactActionsMenu({
         <DropdownMenuItem onSelect={() => void copyLink()}>Copy link</DropdownMenuItem>
         {canMerge && <DropdownMenuItem onSelect={onMerge}>Merge duplicates</DropdownMenuItem>}
         {canDelete && (
-          <DropdownMenuItem onSelect={() => void remove()} className="text-destructive">
+          <DropdownMenuItem onSelect={() => setConfirmingDelete(true)} className="text-destructive">
             Delete
           </DropdownMenuItem>
         )}
       </DropdownMenuContent>
+
+      {/* Sibling of the menu content, not a child of it: the menu unmounts its items on select,
+          which would take the dialog with it. */}
+      <ConfirmDialog
+        open={confirmingDelete}
+        onOpenChange={setConfirmingDelete}
+        title="Delete this record?"
+        description="This cannot be undone."
+        confirmLabel="Delete"
+        destructive
+        pending={pending}
+        onConfirm={() => void remove()}
+      />
     </DropdownMenu>
   );
 }

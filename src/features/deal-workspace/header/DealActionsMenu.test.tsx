@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeAll, expect, it, vi } from "vitest";
 
@@ -124,25 +124,44 @@ it("Merge opens the merge picker dialog", async () => {
   expect(screen.getByTestId("merge-dialog")).toBeTruthy();
 });
 
-it("Delete confirms then calls deleteDealAction", async () => {
-  vi.spyOn(window, "confirm").mockReturnValue(true);
-  const user = userEvent.setup();
-  render(<DealActionsMenu {...props} />);
+// Opens the menu and picks "Delete deal", returning the confirmation surface it raises.
+async function openDeleteConfirm(user: ReturnType<typeof userEvent.setup>): Promise<HTMLElement> {
   await user.click(screen.getByRole("button", { name: "Deal actions" }));
   await user.click(screen.getByRole("menuitem", { name: "Delete deal" }));
-  expect(window.confirm).toHaveBeenCalled();
-  expect(deleteDealAction).toHaveBeenCalledWith(
-    { dealId: "d1", expectedUpdatedAt: props.expectedUpdatedAt },
-    "csrf",
-  );
+  return await screen.findByRole("alertdialog");
+}
+
+// The destructive confirm is the shadcn AlertDialog, never the browser's window.confirm chrome.
+it("Delete deal raises an in-app confirm dialog, not a native browser confirm", async () => {
+  const nativeConfirm = vi.spyOn(window, "confirm");
+  const user = userEvent.setup();
+  render(<DealActionsMenu {...props} />);
+  const dialog = await openDeleteConfirm(user);
+  expect(within(dialog).getByText("Delete this deal?")).toBeTruthy();
+  expect(nativeConfirm).not.toHaveBeenCalled();
+  expect(deleteDealAction).not.toHaveBeenCalled();
 });
 
-it("Delete does nothing when the confirm is dismissed", async () => {
-  vi.spyOn(window, "confirm").mockReturnValue(false);
+it("confirming the dialog calls deleteDealAction and returns to the pipeline", async () => {
   const user = userEvent.setup();
   render(<DealActionsMenu {...props} />);
-  await user.click(screen.getByRole("button", { name: "Deal actions" }));
-  await user.click(screen.getByRole("menuitem", { name: "Delete deal" }));
+  const dialog = await openDeleteConfirm(user);
+  await user.click(within(dialog).getByRole("button", { name: "Delete" }));
+  await waitFor(() =>
+    expect(deleteDealAction).toHaveBeenCalledWith(
+      { dealId: "d1", expectedUpdatedAt: props.expectedUpdatedAt },
+      "csrf",
+    ),
+  );
+  await waitFor(() => expect(push).toHaveBeenCalledWith("/pipeline"));
+});
+
+it("cancelling the dialog closes it without deleting", async () => {
+  const user = userEvent.setup();
+  render(<DealActionsMenu {...props} />);
+  const dialog = await openDeleteConfirm(user);
+  await user.click(within(dialog).getByRole("button", { name: "Cancel" }));
+  await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull());
   expect(deleteDealAction).not.toHaveBeenCalled();
 });
 
@@ -172,15 +191,14 @@ it("surfaces the error when Archive is denied (no silent swallow)", async () => 
 });
 
 it("surfaces the error when Delete is denied (no silent swallow)", async () => {
-  vi.spyOn(window, "confirm").mockReturnValue(true);
   deleteDealAction.mockResolvedValueOnce({
     ok: false as const,
     error: { id: "E_PERM_001" },
   } as never);
   const user = userEvent.setup();
   render(<DealActionsMenu {...props} />);
-  await user.click(screen.getByRole("button", { name: "Deal actions" }));
-  await user.click(screen.getByRole("menuitem", { name: "Delete deal" }));
+  const dialog = await openDeleteConfirm(user);
+  await user.click(within(dialog).getByRole("button", { name: "Delete" }));
   await waitFor(() => expect(reportError).toHaveBeenCalledWith("E_PERM_001"));
   expect(push).not.toHaveBeenCalled();
 });
