@@ -1,4 +1,5 @@
 import { env } from "@/config/env";
+import { entityHref } from "@/features/notifications/entityHref";
 import type { NotificationRow } from "@/types/notification";
 
 function escapeHtml(s: string): string {
@@ -26,10 +27,10 @@ export function renderNotificationEmail(
   recipientName: string,
 ): { subject: string; text: string; html: string } {
   const base = env.BASE_URL;
-  const link =
-    row.entityType !== null && row.entityId !== null
-      ? `${base}/${row.entityType}s/${row.entityId}`
-      : base;
+  // Never derive the path from the entity type: pluralizing it produced /activitys/<id>,
+  // /persons/<id> and /organizations/<id>, none of which are routes in this app.
+  const path = entityHref(row.entityType, row.entityId);
+  const link = path !== null ? `${base}${path}` : base;
 
   let subject: string;
   let line: string;

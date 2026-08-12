@@ -4,7 +4,7 @@ import type { LabelColor, LabelTarget } from "@/constants/labelColors";
 import type { Db } from "@/db/client";
 import { type Label, labels } from "@/db/schema/system";
 import { err, ok, type Result } from "@/types/result";
-import { ALL_LABEL_JOINS } from "./labelJoins";
+import { labelArraySource, labelJoin } from "./labelJoins";
 
 // Label catalog CRUD (settings spec 6.4). Labels are per target (deal|person|organization) and
 // are applied to records through the deal_labels/person_labels/org_labels join tables, so delete
@@ -22,6 +22,22 @@ export async function listLabels(
       ? await base.orderBy(asc(labels.target), asc(labels.order))
       : await base.where(eq(labels.target, opts.target)).orderBy(asc(labels.order));
   return rows;
+}
+
+// Distinct label names currently applied to records of this target, read from the entity's
+// `labels` text[] (the column the list cells and board cards render). Used to union real usage
+// into the filter menus so a chip on screen is always something you can filter by.
+export async function listAppliedLabelNames(
+  db: Db,
+  target: LabelTarget,
+  signal: AbortSignal,
+): Promise<string[]> {
+  signal.throwIfAborted();
+  const src = labelArraySource(target);
+  const rows = await db
+    .selectDistinct({ name: sql<string>`applied` })
+    .from(sql`${src.table}, unnest(${src.labelsCol}) as applied`);
+  return rows.map((r) => r.name).sort((a, b) => a.localeCompare(b));
 }
 
 export async function createLabel(
@@ -46,15 +62,36 @@ export async function renameLabel(
   signal: AbortSignal,
 ): Promise<Result<Label, AppError>> {
   signal.throwIfAborted();
-  const [row] = await db
-    .update(labels)
-    .set({ name: input.name })
-    .where(eq(labels.id, input.id))
-    .returning();
-  if (row === undefined) {
-    return err(new AppError(ERROR_IDS.LABEL_NOT_FOUND, "label not found", input));
-  }
-  return ok(row);
+  return await db.transaction(async (tx) => {
+    const [before] = await tx
+      .select({ target: labels.target, name: labels.name })
+      .from(labels)
+      .where(eq(labels.id, input.id));
+    if (before === undefined) {
+      return err(new AppError(ERROR_IDS.LABEL_NOT_FOUND, "label not found", input));
+    }
+    const [row] = await tx
+      .update(labels)
+      .set({ name: input.name })
+      .where(eq(labels.id, input.id))
+      .returning();
+    if (row === undefined) {
+      return err(new AppError(ERROR_IDS.LABEL_NOT_FOUND, "label not found", input));
+    }
+    // Records carry the name, not the id, and the chip resolver matches by name. Rewriting the
+    // catalog row alone would unresolve every record still holding the old string: gray chip, and
+    // the label filter stops matching it. Rewrite the applied arrays in the same transaction.
+    const src = labelArraySource(before.target);
+    await tx
+      .update(src.table)
+      .set({
+        labels: sql`(select coalesce(array_agg(case when lower(applied) = lower(${before.name}) then ${input.name} else applied end order by ord), '{}') from unnest(${src.labelsCol}) with ordinality as t(applied, ord))`,
+      })
+      .where(
+        sql`exists (select 1 from unnest(${src.labelsCol}) as applied where lower(applied) = lower(${before.name}))`,
+      );
+    return ok(row);
+  });
 }
 
 export async function setLabelColor(
@@ -90,16 +127,31 @@ export async function reorderLabels(
   return ok(true);
 }
 
-async function countLabelUsage(db: Db, labelId: string): Promise<number> {
-  let total = 0;
-  for (const j of ALL_LABEL_JOINS) {
-    const [row] = await db
-      .select({ n: sql<number>`count(*)::int` })
-      .from(j.table)
-      .where(eq(j.labelCol, labelId));
-    total += row?.n ?? 0;
-  }
-  return total;
+// How many records still carry this label. Counts the entity's `labels` text[] (the column every
+// read path renders from) rather than the join row alone: a join row is only half the picture, and
+// counting it alone let Settings delete a label that records were still displaying, leaving orphan
+// strings that render gray and are missing from every picker. Matching is case-insensitive to
+// agree with resolveLabelChips, and scoped to the label's own target so the same string on a deal
+// does not protect a person label.
+async function countLabelUsage(
+  db: Db,
+  label: { id: string; target: LabelTarget; name: string },
+): Promise<number> {
+  const src = labelArraySource(label.target);
+  const [arrayRow] = await db
+    .select({ n: sql<number>`count(*)::int` })
+    .from(src.table)
+    .where(
+      sql`exists (select 1 from unnest(${src.labelsCol}) as applied where lower(applied) = lower(${label.name}))`,
+    );
+  const j = labelJoin(label.target);
+  const [joinRow] = await db
+    .select({ n: sql<number>`count(distinct ${j.entityCol})::int` })
+    .from(j.table)
+    .where(eq(j.labelCol, label.id));
+  // The join row and the array entry describe the same application, so take the larger of the two
+  // rather than summing (which would double-count every correctly-wired record).
+  return Math.max(arrayRow?.n ?? 0, joinRow?.n ?? 0);
 }
 
 export async function deleteLabel(
@@ -108,11 +160,14 @@ export async function deleteLabel(
   signal: AbortSignal,
 ): Promise<Result<true, AppError>> {
   signal.throwIfAborted();
-  const [existing] = await db.select({ id: labels.id }).from(labels).where(eq(labels.id, input.id));
+  const [existing] = await db
+    .select({ id: labels.id, target: labels.target, name: labels.name })
+    .from(labels)
+    .where(eq(labels.id, input.id));
   if (existing === undefined) {
     return err(new AppError(ERROR_IDS.LABEL_NOT_FOUND, "label not found", input));
   }
-  const usage = await countLabelUsage(db, input.id);
+  const usage = await countLabelUsage(db, existing);
   if (usage > 0) {
     return err(
       new AppError(ERROR_IDS.LABEL_IN_USE, "label is applied to records", {

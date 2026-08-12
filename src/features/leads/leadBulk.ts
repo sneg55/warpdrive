@@ -4,6 +4,7 @@ import { AppError, ERROR_IDS } from "@/constants/errorIds";
 import type * as schema from "@/db/schema";
 import { users } from "@/db/schema";
 import { leads } from "@/db/schema/leads";
+import { syncEntityLabelNames } from "@/features/labels/labelsRepo.entities";
 import { err, ok, type Result } from "@/types/result";
 import type { LeadSession } from "./leadActions";
 import { type BulkUpdateLeadsInput, bulkUpdateLeadsInput } from "./schemas";
@@ -72,6 +73,15 @@ export async function bulkUpdateLeads(
   if (visibleIds.length > 0) {
     await db.update(leads).set(buildSet(input.change)).where(inArray(leads.id, visibleIds));
     signal.throwIfAborted();
+    // A bulk label change rewrites the array on every visible row, so the catalog links have to
+    // follow for each of them. Sequential on purpose: the first unknown name adopts a catalog row
+    // that the rest then reuse, so concurrent syncs would race on the same adoption.
+    const bulkLabels = input.change.labels;
+    if (bulkLabels !== undefined) {
+      for (const id of visibleIds) {
+        await syncEntityLabelNames(db, "lead", id, bulkLabels, signal);
+      }
+    }
   }
 
   return ok({ updated: visibleIds.length, skipped: uniqueIds.length - visibleIds.length });

@@ -6,8 +6,8 @@ import type { Db } from "@/db/client";
 import { emailAccounts, notifications, users } from "@/db/schema";
 import type { SystemMessage } from "@/features/email/sendSystem";
 import { sendGmail } from "@/features/email/sendSystem";
-import { hydrateOwner } from "@/features/email/syncCursor";
 import { canActorAccessParent } from "@/features/files/fileAuthz";
+import { hydrateActor } from "@/server/hydrateActor";
 import type { EmailAccountRow } from "@/types/email";
 import type { NotificationRow } from "@/types/notification";
 import { ok, type Result } from "@/types/result";
@@ -54,10 +54,12 @@ export async function runEmailNotificationJob(
     createdAt: row.createdAt.toISOString(),
   };
 
-  // (b) Hydrate the recipient as an AuthUser for visibility checks.
-  const recipientResult = await hydrateOwner(db, notifRow.userId, signal);
-  if (recipientResult.ok !== true) return recipientResult;
-  const recipientUser = recipientResult.value;
+  // (b) Hydrate the recipient as an AuthUser for visibility checks. Same hydrator as the request
+  // path and the producer: the mailbox-owner one omits managedUserIds, which would make the
+  // recheck below stricter than what the recipient can actually see and silently drop the email
+  // for a team manager holding team.viewMembers.
+  const recipientUser = await hydrateActor(db, notifRow.userId, signal);
+  if (recipientUser === null) return ok({ sent: false }); // recipient gone or deactivated
 
   // (c) RE-CHECK visibility at send time: the security core.
   // A notification queued while the entity was visible may have become invisible.

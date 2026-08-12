@@ -11,6 +11,7 @@ import { settings } from "@/db/schema/system";
 import { recordChange } from "@/features/collaboration/changeLog";
 import { midpoint } from "@/features/deals/boardPosition";
 import { validateDealCustomFieldsForCreate } from "@/features/deals/dealCustomFieldsValidation";
+import { syncEntityLabelNames } from "@/features/labels/labelsRepo.entities";
 import { resolveVisibilityGroup } from "@/features/permissions/entityCreate";
 import { assertReferenceVisible } from "@/features/permissions/referenceCheck";
 import { publishBoardEvent } from "@/server/realtime/events";
@@ -201,6 +202,11 @@ export async function convertLead(
       if (deal === undefined) {
         throw new AppError(ERROR_IDS.DB_INSERT_FAILED, "convertLead: deal insert returned no rows");
       }
+
+      // The lead's label NAMES carry onto the deal, and the deal catalog is a separate target that
+      // may not hold them yet: syncEntityLabelNames adopts what is missing, so a converted deal is
+      // never left with chips that resolve to nothing.
+      await syncEntityLabelNames(tx, "deal", deal.id, lead.labels, signal);
 
       // CAS-lock the lead on its updatedAt (and still-unconverted) before stamping the result.
       const [updated] = await tx

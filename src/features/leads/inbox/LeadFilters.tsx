@@ -1,6 +1,7 @@
 "use client";
 import type React from "react";
 import { Checkbox } from "@/components/ui/Checkbox";
+import { mergeLabelOptions } from "@/features/labels/mergeLabelOptions";
 import { trpc } from "@/lib/trpc-client";
 import type { LeadNextActivityBucket } from "../schemas";
 import { POP_ITEM, PopMenu } from "./PopMenu";
@@ -71,9 +72,14 @@ export function LeadFilters({
   onNextActivity,
   owner,
 }: LeadFiltersProps): React.ReactNode {
-  const allLabels = (trpc.labels.listByTarget.useQuery({ target: "lead" }).data ?? []).map(
+  const catalogNames = (trpc.labels.listByTarget.useQuery({ target: "lead" }).data ?? []).map(
     (l) => l.name,
   );
+  // Union in what leads actually carry. The catalog is the control point for applying a label, but
+  // a name written straight to the database is still rendered on the row, and a filter that omits
+  // a label the user can see on screen reads as broken. Catalog order first, then the strays.
+  const appliedNames = trpc.labels.appliedNames.useQuery({ target: "lead" }).data ?? [];
+  const allLabels = mergeLabelOptions(catalogNames, appliedNames);
   const labelText = labelKeys.length === 0 ? "All labels" : `${labelKeys.length} labels`;
   const naText =
     nextActivity === null

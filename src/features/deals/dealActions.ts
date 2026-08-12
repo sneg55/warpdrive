@@ -9,6 +9,7 @@ import { deals } from "@/db/schema/deals";
 import { pipelines } from "@/db/schema/pipelines";
 import { stages } from "@/db/schema/stages";
 import { settings } from "@/db/schema/system";
+import { syncEntityLabelNames } from "@/features/labels/labelsRepo.entities";
 import {
   type EntityCreateSession,
   resolveOwnerId,
@@ -206,6 +207,8 @@ export async function createDeal(
     if (row === undefined) {
       throw new AppError(ERROR_IDS.DB_INSERT_FAILED, "createDeal: insert returned no rows");
     }
+
+    await syncEntityLabelNames(tx, "deal", row.id, row.labels, signal);
 
     await publishBoardEvent(
       tx,

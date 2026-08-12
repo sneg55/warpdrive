@@ -1,6 +1,10 @@
 import type { PgColumn, PgTable } from "drizzle-orm/pg-core";
 import type { LabelTarget } from "@/constants/labelColors";
+import { deals } from "@/db/schema/deals";
 import { dealLabels, leadLabels, orgLabels, personLabels } from "@/db/schema/labels";
+import { leads } from "@/db/schema/leads";
+import { organizations } from "@/db/schema/organizations";
+import { persons } from "@/db/schema/persons";
 
 // Dispatch a label target to its join table + the (entity id, label id) columns, so the entity
 // read/write helpers and the usage counter can operate uniformly over deal/person/org/lead.
@@ -33,3 +37,25 @@ export const ALL_LABEL_JOINS: LabelJoin[] = [
   labelJoin("organization"),
   labelJoin("lead"),
 ];
+
+// The entity table + its denormalized `labels` text[] column, per target. This array is what the
+// list cells, board cards and filters actually read, so any question about "is this label in use"
+// has to be answered here, not from the join tables alone.
+export interface LabelArraySource {
+  table: PgTable;
+  labelsCol: PgColumn;
+  idCol: PgColumn;
+}
+
+export function labelArraySource(target: LabelTarget): LabelArraySource {
+  switch (target) {
+    case "deal":
+      return { table: deals, labelsCol: deals.labels, idCol: deals.id };
+    case "person":
+      return { table: persons, labelsCol: persons.labels, idCol: persons.id };
+    case "organization":
+      return { table: organizations, labelsCol: organizations.labels, idCol: organizations.id };
+    case "lead":
+      return { table: leads, labelsCol: leads.labels, idCol: leads.id };
+  }
+}

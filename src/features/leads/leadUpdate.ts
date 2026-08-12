@@ -8,6 +8,7 @@ import { AppError, ERROR_IDS } from "@/constants/errorIds";
 import type * as schema from "@/db/schema";
 import { users } from "@/db/schema/identity";
 import { leads } from "@/db/schema/leads";
+import { syncEntityLabelNames } from "@/features/labels/labelsRepo.entities";
 import { err, ok, type Result } from "@/types/result";
 import type { LeadSession } from "./leadActions";
 import { type LeadUpdateInput, leadUpdateInput } from "./schemas";
@@ -118,6 +119,12 @@ export async function updateLead(
         leadId: input.leadId,
       }),
     );
+  }
+
+  // Keep the catalog links in step with the array we just wrote (only when labels were part of
+  // this patch: an unrelated field edit must not touch the links).
+  if (patch.labels !== undefined) {
+    await syncEntityLabelNames(db, "lead", row.id, patch.labels, signal);
   }
 
   return ok({ id: row.id, updatedAt: row.updatedAt.toISOString() });

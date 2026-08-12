@@ -8,12 +8,56 @@ const posthog = vi.hoisted(() => ({
 }));
 vi.mock("posthog-js", () => ({ default: posthog }));
 
-import { capture, captureException, identifyUser, markReady, resetIdentity } from "./capture";
+import {
+  capture,
+  captureException,
+  identifyUser,
+  markReady,
+  resetIdentity,
+  whenReady,
+} from "./capture";
 
 afterEach(() => {
   markReady(false);
   resetIdentity(); // clear any buffered identity so it cannot leak into the next test
   vi.clearAllMocks();
+});
+
+describe("whenReady", () => {
+  it("runs the callback immediately when telemetry is already ready", () => {
+    markReady(true);
+    const cb = vi.fn();
+    whenReady(cb);
+    expect(cb).toHaveBeenCalledTimes(1);
+  });
+
+  it("defers the callback until telemetry becomes ready", () => {
+    // A one-shot event fired from a component that mounts BEFORE TelemetryProvider's effect (React
+    // runs child effects first) would otherwise be dropped: capture() no-ops while not ready.
+    const cb = vi.fn();
+    whenReady(cb);
+    expect(cb).not.toHaveBeenCalled();
+
+    markReady(true);
+    expect(cb).toHaveBeenCalledTimes(1);
+  });
+
+  it("runs a deferred callback only once across repeated ready transitions", () => {
+    const cb = vi.fn();
+    whenReady(cb);
+    markReady(true);
+    markReady(false);
+    markReady(true);
+    expect(cb).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not run a callback whose subscription was cancelled", () => {
+    const cb = vi.fn();
+    const cancel = whenReady(cb);
+    cancel();
+    markReady(true);
+    expect(cb).not.toHaveBeenCalled();
+  });
 });
 
 describe("capture facade", () => {

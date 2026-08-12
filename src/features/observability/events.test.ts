@@ -3,6 +3,7 @@ import { EVENTS } from "./events";
 
 it("exposes the stable event names", () => {
   expect(EVENTS.actionFailed).toBe("app_action_failed");
+  expect(EVENTS.notFound).toBe("app_not_found");
   expect(EVENTS.consoleForward).toBe("client_console");
   expect(EVENTS.modalOpened).toBe("modal_opened");
   expect(EVENTS.modalClosed).toBe("modal_closed");

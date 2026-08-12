@@ -4,6 +4,7 @@ import { AppError, ERROR_IDS } from "@/constants/errorIds";
 import type * as schema from "@/db/schema";
 import { leads } from "@/db/schema/leads";
 import { settings } from "@/db/schema/system";
+import { syncEntityLabelNames } from "@/features/labels/labelsRepo.entities";
 import {
   type EntityCreateSession,
   resolveOwnerId,
@@ -107,6 +108,7 @@ export async function createLead(
   if (row === undefined) {
     throw new AppError(ERROR_IDS.DB_INSERT_FAILED, "createLead: insert returned no rows");
   }
+  await syncEntityLabelNames(db, "lead", row.id, row.labels, signal);
   return ok(row);
 }
 

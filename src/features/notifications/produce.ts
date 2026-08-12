@@ -2,8 +2,8 @@ import { AppError, ERROR_IDS } from "@/constants/errorIds";
 import { wsChannel } from "@/constants/wsChannels";
 import type { Db } from "@/db/client";
 import { notifications } from "@/db/schema";
-import { hydrateOwner } from "@/features/email/syncCursor";
 import { canActorAccessParent } from "@/features/files/fileAuthz";
+import { hydrateActor } from "@/server/hydrateActor";
 import { publishEvent } from "@/server/notify";
 import type { CreateNotificationInput } from "@/types/notification";
 import { err, ok, type Result } from "@/types/result";
@@ -17,13 +17,13 @@ export async function createNotification(
 ): Promise<Result<ProduceOk, AppError>> {
   signal.throwIfAborted();
 
-  // Hydrate the recipient to check isActive and build AuthUser for visibility.
-  const hydrateResult = await hydrateOwner(db, input.recipientId, signal);
-  if (hydrateResult.ok !== true) return hydrateResult;
-  const recipientUser = hydrateResult.value;
-
-  // Inactive recipients are suppressed: no insert, no publish.
-  if (recipientUser.isActive !== true) {
+  // Hydrate the recipient the same way the request path does (hydrateActor), NOT with the
+  // mailbox-owner hydrator: that one omits managedUserIds, so the gate below was stricter than
+  // the read-time filter in feed.ts and silently dropped notifications for a team manager who
+  // sees a record through team.viewMembers (canSee rule 4b).
+  // A null actor means the recipient is missing or inactive: suppress, no insert, no publish.
+  const recipientUser = await hydrateActor(db, input.recipientId, signal);
+  if (recipientUser === null) {
     return ok({ suppressed: true });
   }
 

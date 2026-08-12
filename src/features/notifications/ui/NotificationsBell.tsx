@@ -5,49 +5,14 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useActionError } from "@/components/shell/ActionErrorProvider";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/Popover";
-import type { NotificationType } from "@/constants/notificationTypes";
 import { STRINGS } from "@/constants/strings";
 import { markAllReadAction, markReadAction } from "@/features/notifications/actions";
 import { trpc } from "@/lib/trpc-client";
 import type { NotificationFeedItem } from "@/types/notification";
 import { readCsrfToken } from "@/utils/csrfCookie";
+import { notificationHref } from "./deepLink";
 import { NotificationItem } from "./NotificationItem";
 import { useNotificationStream } from "./useNotificationStream";
-
-// Deep-link map: notification type to route. Only verified routes used.
-// Contacts have /contacts/people/[id] and /contacts/orgs/[id].
-// Activities calendar lives at /activities/calendar.
-// "See all activity" points at /activities/calendar (no standalone /activity list page exists).
-// Unknown types fall back to "/".
-const DEEP_LINK: Record<NotificationType, (item: NotificationFeedItem) => string> = {
-  mention: (item) => {
-    if (item.entityType === "deal" && item.entityId !== null) return `/deals/${item.entityId}`;
-    if (item.entityType === "person" && item.entityId !== null)
-      return `/contacts/people/${item.entityId}`;
-    if (item.entityType === "org" && item.entityId !== null)
-      return `/contacts/orgs/${item.entityId}`;
-    return "/";
-  },
-  activity_assigned: (item) =>
-    item.entityId !== null ? `/deals/${item.entityId}` : "/activities/calendar",
-  activity_reminder: (item) =>
-    item.entityId !== null ? `/deals/${item.entityId}` : "/activities/calendar",
-  deal_followed_update: (item) => (item.entityId !== null ? `/deals/${item.entityId}` : "/"),
-  email_open: (item) => {
-    const threadId = typeof item.payload.threadId === "string" ? item.payload.threadId : null;
-    return threadId !== null ? `/inbox/${threadId}` : "/inbox";
-  },
-  email_click: (item) => {
-    const threadId = typeof item.payload.threadId === "string" ? item.payload.threadId : null;
-    return threadId !== null ? `/inbox/${threadId}` : "/inbox";
-  },
-  deal_won: (item) => (item.entityId !== null ? `/deals/${item.entityId}` : "/"),
-  deal_lost: (item) => (item.entityId !== null ? `/deals/${item.entityId}` : "/"),
-  comment_reply: (item) => {
-    if (item.entityType === "deal" && item.entityId !== null) return `/deals/${item.entityId}`;
-    return "/";
-  },
-};
 
 export function NotificationsBell({ userId }: { userId: string }): React.ReactNode {
   useNotificationStream(userId);
@@ -74,7 +39,7 @@ export function NotificationsBell({ userId }: { userId: string }): React.ReactNo
       }
     }
     setOpen(false);
-    router.push(DEEP_LINK[item.type](item));
+    router.push(notificationHref(item));
   }
 
   async function handleMarkAll(): Promise<void> {

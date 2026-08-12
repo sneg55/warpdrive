@@ -3,6 +3,7 @@ import { AppError, ERROR_IDS } from "@/constants/errorIds";
 import type { Db } from "@/db/client";
 import type { Person } from "@/db/schema";
 import { persons, users } from "@/db/schema";
+import { syncEntityLabelNames } from "@/features/labels/labelsRepo.entities";
 import { can } from "@/features/permissions/can";
 import { canSee } from "@/features/permissions/canSee";
 import type { PermSetUser } from "@/features/permissions/effective";
@@ -193,6 +194,9 @@ export async function updatePerson(
 
     if (row === undefined) {
       return err(new AppError(ERROR_IDS.DB_INSERT_FAILED, "update returned no rows", {}));
+    }
+    if (input.labels !== undefined) {
+      await syncEntityLabelNames(tx, "person", row.id, row.labels, signal);
     }
     return ok(row);
   });

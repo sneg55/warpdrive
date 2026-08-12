@@ -3,6 +3,7 @@ import { AppError, ERROR_IDS } from "@/constants/errorIds";
 import type { Db } from "@/db/client";
 import type { Organization } from "@/db/schema";
 import { organizations, users } from "@/db/schema";
+import { syncEntityLabelNames } from "@/features/labels/labelsRepo.entities";
 import { can } from "@/features/permissions/can";
 import { canSee } from "@/features/permissions/canSee";
 import type { VisiblePersonOrOrg } from "@/features/permissions/types";
@@ -55,6 +56,14 @@ export function addressIsValid(a: AddressInput): boolean {
   const hasLat = a.lat != null;
   const hasLng = a.lng != null;
   return hasLat === hasLng;
+}
+
+// An omitted address leaves the stored one alone and an explicit null clears it; only a supplied
+// address is validated. Extracted from updateOrg to keep that function under the complexity cap.
+function rejectInvalidAddress(address: AddressInput | null | undefined): AppError | null {
+  if (address === undefined || address === null) return null;
+  if (addressIsValid(address)) return null;
+  return new AppError(ERROR_IDS.CONTACT_ADDRESS_INVALID, "address invalid", {});
 }
 
 export async function createOrg(
@@ -126,13 +135,8 @@ export async function updateOrg(
       return err(new AppError(ERROR_IDS.PERM_DENIED, "contact.edit required", { id: input.id }));
     }
 
-    if (
-      input.address !== undefined &&
-      input.address !== null &&
-      addressIsValid(input.address) === false
-    ) {
-      return err(new AppError(ERROR_IDS.CONTACT_ADDRESS_INVALID, "address invalid", {}));
-    }
+    const addressError = rejectInvalidAddress(input.address);
+    if (addressError !== null) return err(addressError);
 
     let resolvedCustomFields: Record<string, unknown> = current.customFields as Record<
       string,
@@ -175,6 +179,9 @@ export async function updateOrg(
 
     if (row === undefined) {
       return err(new AppError(ERROR_IDS.DB_INSERT_FAILED, "update returned no rows", {}));
+    }
+    if (input.labels !== undefined) {
+      await syncEntityLabelNames(tx, "organization", row.id, row.labels, signal);
     }
     return ok(row);
   });

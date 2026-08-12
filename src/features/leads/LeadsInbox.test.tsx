@@ -41,6 +41,8 @@ vi.mock("@/lib/trpc-client", () => ({
           data: [{ id: "l1", target: "lead", name: "Hot", color: "red", order: 0 }],
         }),
       },
+      // Names leads actually carry, unioned into the label filter alongside the catalog.
+      appliedNames: { useQuery: () => ({ data: [] }) },
     },
     useUtils: () => ({ lead: { list: { invalidate: vi.fn(() => Promise.resolve()) } } }),
   },

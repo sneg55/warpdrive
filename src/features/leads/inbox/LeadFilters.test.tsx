@@ -4,6 +4,13 @@ import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+// A label that records carry but the catalog does not know about. The app can no longer create
+// that state (writers adopt unknown names into the catalog), but a direct database write still
+// can, and a label visible on the list has to be selectable in the filter that claims to filter it.
+// "hot" also exercises the dedupe: it is the same label as the catalog's "Hot" (every resolver
+// matches case-insensitively), so it must not show up as a second, differently-cased option.
+const appliedOnly = ["high priority", "hot"];
+
 vi.mock("@/lib/trpc-client", () => ({
   trpc: {
     labels: {
@@ -12,6 +19,7 @@ vi.mock("@/lib/trpc-client", () => ({
           data: [{ id: "l1", target: "lead", name: "Hot", color: "red", order: 0 }],
         }),
       },
+      appliedNames: { useQuery: () => ({ data: appliedOnly }) },
     },
   },
 }));
@@ -31,6 +39,31 @@ function renderOwner(owner: OwnerFilter) {
     />,
   );
 }
+
+describe("LeadFilters label menu", () => {
+  const owner: OwnerFilter = { users: [], selected: [], onChange: () => {} };
+
+  it("offers catalog labels", async () => {
+    const user = userEvent.setup();
+    renderOwner(owner);
+    await user.click(screen.getByRole("button", { name: "Label filter" }));
+    expect(screen.getByRole("checkbox", { name: "Hot" })).toBeInTheDocument();
+  });
+
+  it("offers a label that records carry but the catalog is missing", async () => {
+    const user = userEvent.setup();
+    renderOwner(owner);
+    await user.click(screen.getByRole("button", { name: "Label filter" }));
+    expect(screen.getByRole("checkbox", { name: "high priority" })).toBeInTheDocument();
+  });
+
+  it("does not offer the same label twice when it is both catalogued and applied", async () => {
+    const user = userEvent.setup();
+    renderOwner(owner);
+    await user.click(screen.getByRole("button", { name: "Label filter" }));
+    expect(screen.getAllByRole("checkbox", { name: "Hot" })).toHaveLength(1);
+  });
+});
 
 describe("LeadFilters owner menu (server-mode only)", () => {
   const users = [

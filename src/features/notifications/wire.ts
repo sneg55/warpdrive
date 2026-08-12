@@ -89,6 +89,7 @@ export async function notifyActivityReminder(
     entityType: string | null;
     entityId: string | null;
     subject: string;
+    dueAt: string | null;
     signal: AbortSignal;
   },
 ): Promise<void> {
@@ -100,7 +101,7 @@ export async function notifyActivityReminder(
       entityType: args.entityType,
       entityId: args.entityId,
       actorId: null,
-      payload: { activityId: args.activityId, subject: args.subject },
+      payload: { activityId: args.activityId, subject: args.subject, dueAt: args.dueAt },
     },
     args.signal,
   );

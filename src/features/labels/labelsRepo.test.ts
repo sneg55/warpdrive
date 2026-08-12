@@ -9,6 +9,7 @@ import { makeTestDb } from "@/test/db";
 import {
   createLabel,
   deleteLabel,
+  listAppliedLabelNames,
   listLabels,
   renameLabel,
   reorderLabels,
@@ -42,6 +43,28 @@ it("renames and recolors a label", async () => {
   expect(renamed.ok && renamed.value.name).toBe("Very Important");
   const recolored = await setLabelColor(h.db, { id: r.value.id, color: "magenta" }, sig());
   expect(recolored.ok && recolored.value.color).toBe("magenta");
+});
+
+// Entities store the label NAME, and the chip resolver matches the catalog by name, so a rename
+// that only touches the catalog row silently unresolves every record still carrying the old
+// string: the chip goes gray and the label filter stops matching it.
+it("rewrites the applied name on records when a label is renamed", async () => {
+  const u = await seedUser(h.db);
+  const r = await createLabel(h.db, { target: "person", name: "OldName", color: "blue" }, sig());
+  if (!r.ok) throw new Error("setup failed");
+  const [p] = await h.db
+    .insert(persons)
+    .values({ name: "Rex", ownerId: u.id, visibilityLevel: "all", labels: ["OldName", "Other"] })
+    .returning();
+  if (p === undefined) throw new Error("setup failed");
+
+  await renameLabel(h.db, { id: r.value.id, name: "NewName" }, sig());
+
+  const [after] = await h.db
+    .select({ labels: persons.labels })
+    .from(persons)
+    .where(eq(persons.id, p.id));
+  expect(after?.labels).toEqual(["NewName", "Other"]);
 });
 
 it("reorders labels by ordered ids", async () => {
@@ -86,6 +109,74 @@ it("blocks deleting a label applied to a record", async () => {
     expect(del.error.id).toBe(ERROR_IDS.LABEL_IN_USE);
     expect(del.error.context?.count).toBe(1);
   }
+});
+
+// Production applies labels by writing the NAME into the entity's text[] column, not by inserting
+// a join row (see personsRepo/leadUpdate). The guard must see that usage, otherwise Settings
+// deletes a label that records still display and leaves orphan strings behind.
+it("blocks deleting a label applied through the entity labels array", async () => {
+  const u = await seedUser(h.db);
+  const r = await createLabel(
+    h.db,
+    { target: "person", name: "ArrayApplied", color: "orange" },
+    sig(),
+  );
+  if (!r.ok) throw new Error("setup failed");
+  await h.db
+    .insert(persons)
+    .values({ name: "Ann", ownerId: u.id, visibilityLevel: "all", labels: ["ArrayApplied"] });
+
+  const del = await deleteLabel(h.db, { id: r.value.id }, sig());
+  expect(del.ok).toBe(false);
+  if (!del.ok) {
+    expect(del.error.id).toBe(ERROR_IDS.LABEL_IN_USE);
+    expect(del.error.context?.count).toBe(1);
+  }
+});
+
+// Usage is per target: the same string on a person must not protect an organization label.
+it("counts array usage only within the label's own target", async () => {
+  const u = await seedUser(h.db);
+  const r = await createLabel(
+    h.db,
+    { target: "organization", name: "Scoped", color: "teal" },
+    sig(),
+  );
+  if (!r.ok) throw new Error("setup failed");
+  await h.db
+    .insert(persons)
+    .values({ name: "Bo", ownerId: u.id, visibilityLevel: "all", labels: ["Scoped"] });
+
+  const del = await deleteLabel(h.db, { id: r.value.id }, sig());
+  expect(del.ok).toBe(true);
+});
+
+// resolveLabelChips matches the catalog case-insensitively ("hot" resolves to "Hot"), so the
+// guard has to use the same matching or it under-counts legacy lowercase applications.
+it("counts array usage case-insensitively", async () => {
+  const u = await seedUser(h.db);
+  const r = await createLabel(h.db, { target: "person", name: "Casing", color: "teal" }, sig());
+  if (!r.ok) throw new Error("setup failed");
+  await h.db
+    .insert(persons)
+    .values({ name: "Cy", ownerId: u.id, visibilityLevel: "all", labels: ["casing"] });
+
+  const del = await deleteLabel(h.db, { id: r.value.id }, sig());
+  expect(del.ok).toBe(false);
+});
+
+// Feeds the filter menus, so it has to report what records CARRY, catalogued or not.
+it("lists applied names for a target, deduped, catalogued or not", async () => {
+  const u = await seedUser(h.db);
+  await h.db.insert(persons).values([
+    { name: "One", ownerId: u.id, visibilityLevel: "all", labels: ["AppliedZ", "SharedZ"] },
+    { name: "Two", ownerId: u.id, visibilityLevel: "all", labels: ["SharedZ"] },
+  ]);
+
+  const names = await listAppliedLabelNames(h.db, "person", sig());
+
+  expect(names).toContain("AppliedZ");
+  expect(names.filter((n) => n === "SharedZ")).toHaveLength(1);
 });
 
 it("delete of a missing label returns LABEL_NOT_FOUND", async () => {

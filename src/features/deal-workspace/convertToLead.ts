@@ -12,6 +12,7 @@ import { deals } from "@/db/schema/deals";
 import { leads } from "@/db/schema/leads";
 import { recordChange } from "@/features/collaboration/changeLog";
 import { loadEditableDeal } from "@/features/deals/dealAuth";
+import { syncEntityLabelNames } from "@/features/labels/labelsRepo.entities";
 import type { PermSetUser } from "@/features/permissions/effective";
 import { publishBoardEvent } from "@/server/realtime/events";
 import { err, ok, type Result } from "@/types/result";
@@ -82,6 +83,10 @@ export async function convertDealToLead(
       if (lead === undefined) {
         throw new AppError(ERROR_IDS.DB_INSERT_FAILED, "convertDealToLead: lead insert no rows");
       }
+
+      // Deal label names carry onto the lead; the lead catalog is a separate target, so adopt what
+      // it does not already hold (mirrors convertLead in the other direction).
+      await syncEntityLabelNames(tx, "lead", lead.id, deal.labels, signal);
 
       // CAS-close the deal: archive it under the updatedAt precondition.
       const now = new Date();

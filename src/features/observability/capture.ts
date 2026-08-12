@@ -30,10 +30,32 @@ function doIdentify(u: Identity): void {
   }
 }
 
+// One-shot callbacks waiting for telemetry to become ready (see whenReady).
+const readyWaiters = new Set<() => void>();
+
 export function markReady(value: boolean): void {
   ready = value;
   // Replay an identity requested before init landed (see pendingIdentity above).
   if (value && pendingIdentity !== null) doIdentify(pendingIdentity);
+  if (value && readyWaiters.size > 0) {
+    // Drain before running: a waiter is one-shot and must not fire again on a later transition.
+    const waiters = [...readyWaiters];
+    readyWaiters.clear();
+    for (const w of waiters) w();
+  }
+}
+
+// Run fn once telemetry is ready, immediately if it already is. Returns a cancel function.
+// Needed for one-shot events emitted by components that mount BEFORE TelemetryProvider's effect
+// (React runs child effects before parent effects): a plain capture() there silently no-ops and
+// the event is lost, which is exactly what happens on a cold load of a dead link.
+export function whenReady(fn: () => void): () => void {
+  if (ready) {
+    fn();
+    return () => {};
+  }
+  readyWaiters.add(fn);
+  return () => readyWaiters.delete(fn);
 }
 
 export function currentRoute(): string {

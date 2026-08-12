@@ -3,9 +3,10 @@ import type { Job, PgBoss } from "pg-boss";
 import { PGBOSS_QUEUE_ACTIVITY_REMINDER, REMINDER_LEAD_MINUTES } from "@/constants/jobNames";
 import type { Db } from "@/db/client";
 import { db as prodDb } from "@/db/client";
-import { activities, notifications } from "@/db/schema";
-import { enqueueEmailNotification } from "@/features/notifications/emailDispatch";
+import { activities } from "@/db/schema";
+import { notifyActivityReminder } from "@/features/notifications/wire";
 import { requireBoss } from "@/jobs/requireBoss";
+import { activityParentRef } from "./notifyHelpers";
 
 interface ReminderJob {
   data: { activityId: string };
@@ -31,10 +32,15 @@ export async function scheduleReminder(
   );
 }
 
-// Re-read the activity at fire time and insert a notification for its assignee,
-// then enqueue an email notification if the assignee has email delivery enabled.
+// Re-read the activity at fire time and notify its assignee.
 // Skips if the activity was completed, deleted, or rescheduled away (done/missing),
 // so a stale job never produces a reminder for an activity that no longer needs one.
+//
+// Delivery goes through notifyActivityReminder rather than a direct insert. Inserting here stored
+// entityType "activity" plus the ACTIVITY id, which the feed turned into /deals/<activityId>
+// (always Not found), and it also bypassed the shared producer's visibility gate and its realtime
+// publish. The row now targets the activity's DOMINANT PARENT, a record the user can actually
+// open; the activity id stays in the payload.
 export async function handleReminderJob(
   db: Db,
   job: ReminderJob,
@@ -46,19 +52,16 @@ export async function handleReminderJob(
     .from(activities)
     .where(and(eq(activities.id, job.data.activityId), isNull(activities.deletedAt)));
   if (a === undefined || a.done === true) return;
-  const [inserted] = await db
-    .insert(notifications)
-    .values({
-      userId: a.assigneeId,
-      type: "activity_reminder",
-      entityType: "activity",
-      entityId: a.id,
-      actorId: null,
-      payload: { subject: a.subject, dueAt: a.dueAt?.toISOString() ?? null },
-    })
-    .returning({ id: notifications.id });
-  if (inserted === undefined) return;
-  await enqueueEmailNotification(db, inserted.id, a.assigneeId, "activity_reminder", signal);
+  const parent = activityParentRef(a);
+  await notifyActivityReminder(db, {
+    activityId: a.id,
+    assigneeId: a.assigneeId,
+    entityType: parent.entityType,
+    entityId: parent.entityId,
+    subject: a.subject,
+    dueAt: a.dueAt?.toISOString() ?? null,
+    signal,
+  });
 }
 
 // Register the pg-boss worker that processes activity-reminder jobs.
