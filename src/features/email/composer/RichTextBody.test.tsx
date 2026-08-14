@@ -48,6 +48,26 @@ describe("RichTextBody – basic render + onChange", () => {
 });
 
 // ---------------------------------------------------------------------------
+// Links must LOOK like links inside the editor. Tailwind's preflight resets anchors to
+// inherit colour and text-decoration, so an applied link rendered identically to plain text
+// and the toolbar's Link button appeared to do nothing at all.
+// ---------------------------------------------------------------------------
+
+describe("RichTextBody – link affordance", () => {
+  it("styles anchors inside the editor surface", async () => {
+    const { RichTextBody } = await import("./RichTextBody");
+    render(<RichTextBody html='<p><a href="https://example.com">x</a></p>' onChange={vi.fn()} />);
+    await waitFor(() => {
+      expect(document.querySelector("[contenteditable]")).toBeInTheDocument();
+    });
+    const surface = document.querySelector("[contenteditable]")?.parentElement;
+    const classes = surface?.className ?? "";
+    expect(classes).toContain("[&_.ProseMirror_a]:text-link");
+    expect(classes).toContain("[&_.ProseMirror_a]:underline");
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Fix 1 (CORRECTNESS): editor clears after reset (html prop set to "")
 // ---------------------------------------------------------------------------
 

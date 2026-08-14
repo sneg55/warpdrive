@@ -73,10 +73,12 @@ export const emailThreads = pgTable(
     // Local CRM archive flag (D2). Null = active (shows in Inbox); non-null = archived
     // (shows in Archive). No Gmail label write. Filtered by the partial index below.
     archivedAt: timestamp("archived_at", { withTimezone: true }),
-    // Deleted-to-Gmail-Trash flag (P4). Non-null once the thread has been moved to Gmail Trash
-    // (either from the reader Delete action or observed via a synced TRASH label). Excluded from
-    // every local folder read so a trashed thread leaves all views. Unlike archivedAt this DOES
-    // mirror a real Gmail move (threads/{id}/trash).
+    // Gone-from-the-Gmail-mailbox flag (P4). Non-null once Gmail no longer shows the conversation
+    // in the live mailbox: moved to Trash (the reader Delete action, or an observed TRASH label) or
+    // classified as Spam (observed SPAM label; spam arrives as an ordinary new message, so nothing
+    // else keeps it out of the Inbox). Excluded from every local folder read so such a thread leaves
+    // all views, and cleared when Gmail restores it (untrash / "not spam"). Unlike archivedAt this
+    // mirrors real Gmail state rather than a local CRM preference.
     trashedAt: timestamp("trashed_at", { withTimezone: true }),
     // Reader follow-up controls (B1), local only (no Gmail label write). Nullable status:
     // null means unset, distinct from the explicit "none" constant value.

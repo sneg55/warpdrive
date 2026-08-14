@@ -24,6 +24,7 @@ import {
   orgUpdateInput,
   type PersonCreateInput,
   type PersonUpdateInput,
+  personCreateInput,
   personDeleteInput,
   personUpdateInput,
 } from "./schemas";
@@ -64,7 +65,17 @@ export async function createPersonAction(
     return { ok: false, error: { id: ERROR_IDS.PERM_DENIED } };
   }
 
-  const result = await createPerson(db, await loadContactActor(db, actor, SIG()), input, SIG());
+  // Parse at the boundary like updatePersonAction already does: callers reach this straight from
+  // client components, so an invalid email or an overlong name would otherwise persist unchecked.
+  const parsed = personCreateInput.safeParse(input);
+  if (!parsed.success) return { ok: false, error: { id: ERROR_IDS.CONTACT_CREATE_INPUT_INVALID } };
+
+  const result = await createPerson(
+    db,
+    await loadContactActor(db, actor, SIG()),
+    parsed.data,
+    SIG(),
+  );
   if (!result.ok) return { ok: false, error: { id: result.error.id } };
   return { ok: true, value: { id: result.value.id } };
 }

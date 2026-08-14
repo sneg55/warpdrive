@@ -7,6 +7,7 @@ import { addFormCustomFieldDefs } from "@/features/custom-fields/CustomFieldCrea
 import { EditableHeading } from "@/features/inline-edit/EditableHeading";
 import type { InlineSaveResult } from "@/features/inline-edit/useInlineEditField";
 import { useLabelChipResolver } from "@/features/labels/useLabelChipResolver";
+import { useDetailDrawerClose } from "@/features/navigation/detailDrawerClose";
 import { trpc } from "@/lib/trpc-client";
 import { readCsrfToken } from "@/utils/csrfCookie";
 import { ConvertLeadDialog } from "../ConvertLeadDialog";
@@ -30,6 +31,8 @@ export function LeadHeader({ lead }: { lead: LeadDetail }): React.ReactNode {
   const dealFields = dealFieldsQ.data ?? [];
   const archived = lead.archivedAt !== null;
   const converted = lead.convertedDealId !== null;
+  const closeDrawer = useDetailDrawerClose();
+  const utils = trpc.useUtils();
   const resolveLabels = useLabelChipResolver("lead");
   const labels = resolveLabels(lead.labels);
 
@@ -76,8 +79,20 @@ export function LeadHeader({ lead }: { lead: LeadDetail }): React.ReactNode {
       readCsrfToken(),
     );
     setPending(false);
-    if (r.ok) router.push("/leads");
-    else reportError(r.error.id);
+    if (!r.ok) {
+      reportError(r.error.id);
+      return;
+    }
+    // From the intercepted slide-over, router.push("/leads") is a soft navigation, and Next renders
+    // a parallel slot's previously active state on a soft navigation. The drawer would stay open on
+    // the lead we just deleted, so the delete reads as a no-op and a second Delete re-renders the
+    // missing lead into LeadDetailView's notFound(). Dismiss the drawer instead; only the standalone
+    // page (deep link / hard load), which has no drawer, navigates.
+    if (closeDrawer !== null) closeDrawer();
+    else router.push("/leads");
+    // The Leads inbox list is a tRPC query, not part of the route payload, so neither the drawer
+    // close nor the push refreshes it: without this the list comes back still showing the lead.
+    await utils.lead.list.invalidate();
   }
 
   return (

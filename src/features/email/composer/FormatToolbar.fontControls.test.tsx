@@ -70,6 +70,7 @@ function makeFullStubEditor(runSpy: ReturnType<typeof vi.fn>): Editor {
     redo: () => ({ run: runSpy }),
     clearNodes: () => ({ unsetAllMarks: () => ({ run: runSpy }) }),
     setLink: () => ({ run: runSpy }),
+    insertContent: () => ({ unsetMark: () => ({ run: runSpy }) }),
     setImage: () => ({ run: runSpy }),
     setFontFamily: () => ({ run: runSpy }),
     setFontSize: () => ({ run: runSpy }),
@@ -77,6 +78,7 @@ function makeFullStubEditor(runSpy: ReturnType<typeof vi.fn>): Editor {
   });
   return {
     chain: () => ({ focus }),
+    state: { selection: { empty: false } },
     isDestroyed: false,
     getHTML: () => "",
   } as unknown as Editor;

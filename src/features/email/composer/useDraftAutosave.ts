@@ -5,7 +5,8 @@ import { readCsrfToken } from "@/utils/csrfCookie";
 import { deleteDraftAction, saveDraftAction } from "../folderActions";
 import type { EmailVisibility } from "../threadVisibility";
 
-const DEBOUNCE_MS = 1500;
+// Exported so a test can drive the clock past it rather than duplicating the number.
+export const DEBOUNCE_MS = 1500;
 
 export interface DraftAutosaveDeps {
   accountId: string;

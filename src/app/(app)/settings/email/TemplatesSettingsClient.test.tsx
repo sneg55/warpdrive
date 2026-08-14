@@ -170,6 +170,18 @@ describe("TemplatesSettingsClient", () => {
     await waitFor(() => expect(reportError).toHaveBeenCalledWith("E_PERM_001"));
   });
 
+  it("tells the user a name is required instead of failing silently", async () => {
+    const user = userEvent.setup();
+    render(<TemplatesSettingsClient templates={[]} canShare={true} />);
+    await user.click(screen.getByRole("button", { name: "New template" }));
+    await user.click(screen.getByRole("button", { name: "Save" }));
+    expect(createTemplateAction).not.toHaveBeenCalled();
+    expect(await screen.findByRole("alert")).toHaveTextContent(/name/i);
+    // The message clears once the user starts typing a name.
+    await user.type(screen.getByLabelText("Name"), "Outreach");
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
   it("hides the share toggle when canShare is false", async () => {
     const user = userEvent.setup();
     render(<TemplatesSettingsClient templates={[]} canShare={false} />);

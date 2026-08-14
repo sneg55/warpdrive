@@ -22,18 +22,24 @@ function addedMessageIds(page: HistoryList): string[] {
   return [...ids];
 }
 
-// Gmail thread ids whose TRASH state MAY have changed in this page: a message gained (delete) or
-// lost (restore) the TRASH label. This is only a re-evaluation trigger, not the decision: Gmail
-// trashes per MESSAGE, so a single-message trash in a multi-message conversation also fires here,
-// yet the conversation is still live. The whole-thread state is decided below via getThread (P4).
+// Label changes that can move a conversation out of (or back into) the mailbox's live view: TRASH
+// for delete/restore, SPAM for "report spam"/"not spam". Both arrive as label changes on an EXISTING
+// message, so neither shows up as messagesAdded.
+const HIDING_LABELS = ["TRASH", "SPAM"];
+
+// Gmail thread ids whose hidden state MAY have changed in this page: a message gained or lost TRASH
+// or SPAM. This is only a re-evaluation trigger, not the decision: Gmail applies both labels per
+// MESSAGE, so a single-message change in a multi-message conversation also fires here, yet the
+// conversation is still live. The whole-thread state is decided below via getThread (P4).
 function threadsWithTrashSignal(page: HistoryList): string[] {
   const ids = new Set<string>();
+  const changed = (labelIds: string[]): boolean => HIDING_LABELS.some((l) => labelIds.includes(l));
   for (const h of page.history) {
     for (const la of h.labelsAdded ?? []) {
-      if (la.labelIds.includes("TRASH")) ids.add(la.message.threadId);
+      if (changed(la.labelIds)) ids.add(la.message.threadId);
     }
     for (const lr of h.labelsRemoved ?? []) {
-      if (lr.labelIds.includes("TRASH")) ids.add(lr.message.threadId);
+      if (changed(lr.labelIds)) ids.add(lr.message.threadId);
     }
   }
   return [...ids];

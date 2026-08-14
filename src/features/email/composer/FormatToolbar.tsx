@@ -65,6 +65,23 @@ export function FormatToolbar({ editor }: FormatToolbarProps): React.ReactNode {
 
   function handleInsertUrl(url: string): void {
     if (insertKind === "link") {
+      // A link mark over an empty (collapsed) selection marks nothing, so clicking Link with
+      // just a cursor used to be a silent no-op. Insert the URL as its own linked text instead,
+      // matching Gmail. With text selected, that text stays as the link label.
+      if (editor.state.selection.empty) {
+        editor
+          .chain()
+          .focus()
+          .insertContent({
+            type: "text",
+            text: url,
+            marks: [{ type: "link", attrs: { href: url } }],
+          })
+          // Leave the link mark behind so text typed after the link is not swallowed into it.
+          .unsetMark("link")
+          .run();
+        return;
+      }
       editor.chain().focus().setLink({ href: url }).run();
       return;
     }

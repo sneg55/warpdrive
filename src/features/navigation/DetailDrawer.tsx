@@ -1,8 +1,9 @@
 "use client";
 import { useRouter } from "next/navigation";
 import type React from "react";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import { DetailDrawerCloseContext } from "./detailDrawerClose";
 import { useRecordPreview } from "./recordPreviewStore";
 
 // Wraps intercepted detail content (person/org/lead) in a right-anchored Sheet so it renders as a
@@ -32,15 +33,17 @@ export function DetailDrawer({
   const clearPreview = useRecordPreview((s) => s.clearPreview);
   const [open, setOpen] = useState(true);
 
+  const closeDrawer = useCallback(() => {
+    setOpen(false);
+    // Drop the preview as the drawer closes so a later open that does not set one (deep link,
+    // back/forward) shows the plain skeleton rather than a stale name. The id guard in the
+    // skeleton already prevents a wrong-record flash; this keeps the store tidy.
+    clearPreview();
+    router.back();
+  }, [clearPreview, router]);
+
   function onOpenChange(next: boolean): void {
-    if (!next) {
-      setOpen(false);
-      // Drop the preview as the drawer closes so a later open that does not set one (deep link,
-      // back/forward) shows the plain skeleton rather than a stale name. The id guard in the
-      // skeleton already prevents a wrong-record flash; this keeps the store tidy.
-      clearPreview();
-      router.back();
-    }
+    if (!next) closeDrawer();
   }
 
   return (
@@ -53,7 +56,11 @@ export function DetailDrawer({
         {/* Visually-hidden title: Radix Dialog requires a title for the a11y contract; the real
             heading is inside the detail content. */}
         <SheetTitle className="sr-only">{title}</SheetTitle>
-        <div className="p-6">{children}</div>
+        {/* Detail content that removes its own record (delete, convert) has to dismiss the drawer
+            through this close, not by navigating: see detailDrawerClose.ts. */}
+        <DetailDrawerCloseContext.Provider value={closeDrawer}>
+          <div className="p-6">{children}</div>
+        </DetailDrawerCloseContext.Provider>
       </SheetContent>
     </Sheet>
   );

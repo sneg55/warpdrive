@@ -42,6 +42,7 @@ function buildStubChain(runSpy: ReturnType<typeof vi.fn>, overrides: Record<stri
       redo: () => ({ run: runSpy }),
       clearNodes: () => ({ unsetAllMarks: () => ({ run: runSpy }) }),
       setLink: () => ({ run: runSpy }),
+      insertContent: () => ({ unsetMark: () => ({ run: runSpy }) }),
       setImage: () => ({ run: runSpy }),
       setFontFamily: () => ({ run: runSpy }),
       setFontSize: () => ({ run: runSpy }),
@@ -51,11 +52,15 @@ function buildStubChain(runSpy: ReturnType<typeof vi.fn>, overrides: Record<stri
   };
 }
 
-async function renderToolbar(): Promise<{ runSpy: ReturnType<typeof vi.fn> }> {
+async function renderToolbar(
+  // Link insertion branches on whether the selection is collapsed, so the stub must model it.
+  selectionEmpty = false,
+): Promise<{ runSpy: ReturnType<typeof vi.fn> }> {
   const { FormatToolbar } = await import("./FormatToolbar");
   const runSpy = makeRunSpy();
   const editor = {
     chain: () => buildStubChain(runSpy),
+    state: { selection: { empty: selectionEmpty } },
     isDestroyed: false,
     getHTML: () => "",
   } as unknown as Editor;
@@ -162,6 +167,14 @@ describe("FormatToolbar – editor command wiring", () => {
 
   it("Link dialog calls setLink for a safe URL", async () => {
     const { runSpy } = await renderToolbar();
+    await userEvent.click(screen.getByRole("button", { name: /^link$/i }));
+    await userEvent.type(screen.getByRole("textbox", { name: "Link URL" }), "https://example.com");
+    await userEvent.click(screen.getByRole("button", { name: "Insert link" }));
+    expect(runSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("Link dialog still reaches the editor when the selection is collapsed", async () => {
+    const { runSpy } = await renderToolbar(/* selectionEmpty= */ true);
     await userEvent.click(screen.getByRole("button", { name: /^link$/i }));
     await userEvent.type(screen.getByRole("textbox", { name: "Link URL" }), "https://example.com");
     await userEvent.click(screen.getByRole("button", { name: "Insert link" }));

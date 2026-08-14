@@ -9,6 +9,7 @@ import {
   normalizeDealSidebarSections,
 } from "@/constants/dealSidebarSections";
 import { STRINGS } from "@/constants/strings";
+import type { PersonMatchCandidate } from "@/features/contacts/personOptionsRepo";
 import { useDealActionError } from "@/features/deal-workspace/DealActionErrorProvider";
 import { updateDealAction } from "@/features/deals/updateAction";
 import { readCsrfToken } from "@/utils/csrfCookie";
@@ -16,11 +17,11 @@ import { CollapsibleSection } from "./CollapsibleSection";
 import { DealSummaryActionList } from "./DealSummaryActionList";
 import { dealOverview } from "./dealOverview";
 import { DealOrganizationSection } from "./sidebar/DealOrganizationSection";
+import { DealPersonSection } from "./sidebar/DealPersonSection";
 import { FieldRow } from "./sidebar/FieldRow";
 import { ManageSectionsDialog } from "./sidebar/ManageSectionsDialogLazy";
 import { OrgSwitchDialog } from "./sidebar/OrgSwitchDialog";
 import { ParticipantsSection } from "./sidebar/ParticipantsSection";
-import { PersonSection } from "./sidebar/PersonSection";
 import { SectionHeaderMenu, type SectionHeaderMenuItem } from "./sidebar/SectionHeaderMenu";
 import { SourceBlock } from "./sidebar/SourceBlock";
 import type { DealWorkspace } from "./summaryRepo";
@@ -41,6 +42,7 @@ export function DealSidebar({
   isHidden,
   baseCurrency,
   orgOptions = [],
+  personOptions = [],
   sidebarSections,
   onSidebarSectionsChange,
   hiddenOrgFields = NONE,
@@ -51,6 +53,9 @@ export function DealSidebar({
   isHidden: (id: DealBlockId) => boolean;
   baseCurrency: string;
   orgOptions?: Array<{ id: string; name: string }>;
+  // Match candidates for the Person panel's link-an-existing-contact suggestions. Only loaded for
+  // a deal with no linked person, so this is empty on a deal that already has one.
+  personOptions?: PersonMatchCandidate[];
   sidebarSections?: DealSidebarSectionPreference[];
   onSidebarSectionsChange?: (sections: DealSidebarSectionPreference[]) => void;
   // Built-in field keys hidden in Settings > Data fields, per entity, so the Organization/Person
@@ -186,23 +191,24 @@ export function DealSidebar({
       </CollapsibleSection>
     ),
 
-    person:
-      !isHidden("person") && person !== null ? (
-        <PersonSection
-          key="person"
-          person={person}
-          menuItems={[
-            { label: menu.customizeFields, onSelect: () => router.push(fieldsPath("person")) },
-          ]}
-          bulkEditing={bulkSection === "person"}
-          onStartBulk={() => setBulkSection("person")}
-          onExitBulk={exitBulk}
-          hidden={hiddenPersonFields}
-          customFieldDefs={personCustomFieldDefs}
-          currency={baseCurrency}
-          showLabels
-        />
-      ) : null,
+    person: !isHidden("person") ? (
+      <DealPersonSection
+        key="person"
+        person={person}
+        dealId={deal.id}
+        expectedUpdatedAt={expectedUpdatedAt}
+        personOptions={personOptions}
+        menuItems={[
+          { label: menu.customizeFields, onSelect: () => router.push(fieldsPath("person")) },
+        ]}
+        bulkEditing={bulkSection === "person"}
+        onStartBulk={() => setBulkSection("person")}
+        onExitBulk={exitBulk}
+        hidden={hiddenPersonFields}
+        customFieldDefs={personCustomFieldDefs}
+        currency={baseCurrency}
+      />
+    ) : null,
 
     participants: (
       <ParticipantsSection

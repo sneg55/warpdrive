@@ -6,6 +6,7 @@ import {
   normalizeDealSidebarSections,
 } from "@/constants/dealSidebarSections";
 import { SharedComposeBar } from "@/features/compose/SharedComposeBar";
+import type { PersonMatchCandidate } from "@/features/contacts/personOptionsRepo";
 import { DealActionErrorProvider } from "@/features/deal-workspace/DealActionErrorProvider";
 import { DealSidebar } from "@/features/deal-workspace/DealSidebar";
 import { DealHeader } from "@/features/deal-workspace/header/DealHeader";
@@ -34,6 +35,7 @@ interface DealWorkspaceClientProps {
   baseCurrency: string;
   // Visible organizations offered by the sidebar Organization switch dialog.
   orgOptions?: Array<{ id: string; name: string }>;
+  personOptions?: PersonMatchCandidate[];
   // Per-user sidebar section order and visibility.
   initialSidebarSections?: DealSidebarSectionPreference[];
   // Server pref (user_preferences.ui.scheduleFollowUpAfterWon), passed to the header's close
@@ -56,6 +58,7 @@ export function DealWorkspaceClient({
   initialHiddenBlocks,
   baseCurrency,
   orgOptions = [],
+  personOptions = [],
   initialSidebarSections,
   scheduleFollowUpAfterWon,
   hiddenOrgFields,
@@ -121,6 +124,7 @@ export function DealWorkspaceClient({
             isHidden={isHidden}
             baseCurrency={baseCurrency}
             orgOptions={orgOptions}
+            personOptions={personOptions}
             sidebarSections={sidebarSections}
             onSidebarSectionsChange={setSidebarSections}
             hiddenOrgFields={hiddenOrgFields}

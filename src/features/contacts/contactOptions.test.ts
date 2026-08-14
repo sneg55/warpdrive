@@ -3,7 +3,7 @@ import { organizations, persons } from "@/db/schema";
 import { withTestDb } from "@/db/testing";
 import { seedUser } from "@/db/testing/factories";
 import { listOrgOptions } from "./orgOptionsRepo";
-import { listPersonOptions } from "./personOptionsRepo";
+import { listPersonMatchCandidates, listPersonOptions } from "./personOptionsRepo";
 import type { ContactActor } from "./personsRepo";
 
 function regularActor(id: string): ContactActor {
@@ -55,6 +55,57 @@ describe("listPersonOptions", () => {
       expect(opts[0]).toEqual({ id: expect.any(String), name: "P0000" });
       // Hidden (owner-visibility, not mine) must not appear.
       expect(opts.some((o) => o.name === "Hidden")).toBe(false);
+    });
+  });
+
+  it("stays id+name only, so the shared picker endpoint keeps its narrow payload", async () => {
+    await withTestDb(async (db) => {
+      const signal = new AbortController().signal;
+      const me = await seedUser(db);
+      await db.insert(persons).values({
+        name: "Steve Tomkiel",
+        primaryEmail: "steve@sdmts.com",
+        emails: [],
+        phones: [{ label: "work", value: "+1 (619) 555-0134", primary: true }],
+        orgId: null,
+        ownerId: me.id,
+        visibilityLevel: "all",
+        visibilityGroupId: null,
+        customFields: {},
+      });
+
+      const [opt] = await listPersonOptions(db, regularActor(me.id), signal);
+
+      // contacts.personOptions serializes this to every Add deal/lead picker, so contact points
+      // must not ride along.
+      expect(Object.keys(opt ?? {}).sort()).toEqual(["id", "name"]);
+    });
+  });
+});
+
+describe("listPersonMatchCandidates", () => {
+  it("carries every contact point so the deal Person panel can match a typed email or phone", async () => {
+    await withTestDb(async (db) => {
+      const signal = new AbortController().signal;
+      const me = await seedUser(db);
+      await db.insert(persons).values({
+        name: "Steve Tomkiel",
+        primaryEmail: "steve@sdmts.com",
+        emails: [{ label: "work", value: "s.tomkiel@sdmts.com", primary: false }],
+        phones: [{ label: "work", value: "+1 (619) 555-0134", primary: true }],
+        orgId: null,
+        ownerId: me.id,
+        visibilityLevel: "all",
+        visibilityGroupId: null,
+        customFields: {},
+      });
+
+      const [opt] = await listPersonMatchCandidates(db, regularActor(me.id), signal);
+
+      // The primary address is a column, the rest live in the JSONB array; the panel needs both, and
+      // the primary must not be duplicated when it also appears in the array.
+      expect(opt?.emails).toEqual(["steve@sdmts.com", "s.tomkiel@sdmts.com"]);
+      expect(opt?.phones).toEqual(["+1 (619) 555-0134"]);
     });
   });
 });

@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 afterEach(cleanup);
@@ -34,6 +35,19 @@ describe("SignaturesSettingsClient", () => {
     expect(screen.getByText("Default")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /set as default.*Personal/i })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /set as default.*Work/i })).not.toBeInTheDocument();
+  });
+
+  it("tells the user a name is required instead of failing silently", async () => {
+    const user = userEvent.setup();
+    const { createSignatureAction } = await import("@/features/email/authoringActions");
+    render(<SignaturesSettingsClient signatures={[]} />);
+    await user.click(screen.getByRole("button", { name: /new signature/i }));
+    await user.click(screen.getByRole("button", { name: "Save" }));
+    expect(createSignatureAction).not.toHaveBeenCalled();
+    expect(await screen.findByRole("alert")).toHaveTextContent(/name/i);
+    // The message clears once the user starts typing a name.
+    await user.type(screen.getByLabelText(/name/i), "Work");
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 
   it("caps the signature name at 40 characters and shows the hint", () => {

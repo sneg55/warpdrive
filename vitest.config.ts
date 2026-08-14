@@ -1,49 +1,13 @@
-import { readdirSync, readFileSync } from "node:fs";
-import path from "node:path";
 import { fileURLToPath } from "node:url";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vitest/config";
+import { classifyTests } from "./vitest.classify";
 
 const ROOT = fileURLToPath(new URL(".", import.meta.url));
 
-// A test file is "integration" if it touches the real Postgres harness, directly or via a
-// *.test-helpers file that does. Everything else is a "unit" test that runs with NO container.
-// The marker is conservative (any harness/helper reference => integration), so a DB test can never
-// land in the container-less unit lane; new DB tests classify automatically since they import the
-// harness. This split lets `test:unit` run instantly with no Docker.
-const DB_MARKER = /@\/test\/db|@\/db\/testing|makeTestDb|withTestDb|test-helpers|testHarness/;
-
-// Walk the repo (skipping node_modules and dot-dirs) so root-level meta-tests like
-// eslint.config.test.ts are classified too, matching the old project-wide glob.
-function collectTests(dir: string, acc: string[] = []): string[] {
-  for (const entry of readdirSync(dir, { withFileTypes: true })) {
-    const full = path.join(dir, entry.name);
-    if (entry.isDirectory()) {
-      // Skip node_modules and dot-dirs (.git/.next/...); dot-FILES like .env.example.test.ts stay.
-      // Skip the `site` and `docs-site` sub-apps too: each is a self-contained package with its own
-      // config and module resolution, so sweeping them into this project resolves imports against
-      // the wrong root and breaks collection. They run via `pnpm -C <dir> test`.
-      if (
-        entry.name === "node_modules" ||
-        entry.name === "site" ||
-        entry.name === "docs-site" ||
-        entry.name.startsWith(".")
-      )
-        continue;
-      collectTests(full, acc);
-    } else if (/\.test\.tsx?$/.test(entry.name) && entry.name !== "testHarness.test.ts") {
-      acc.push(full);
-    }
-  }
-  return acc;
-}
-
-const unit: string[] = [];
-const integration: string[] = [];
-for (const file of collectTests(ROOT)) {
-  const rel = path.relative(ROOT, file).split(path.sep).join("/");
-  (DB_MARKER.test(readFileSync(file, "utf8")) ? integration : unit).push(rel);
-}
+// Lane split lives in vitest.classify.ts so vitest.classify.test.ts can assert its contract:
+// nothing in the unit lane may need a container runtime. See that file for the rules.
+const { unit, integration } = classifyTests(ROOT);
 
 export default defineConfig({
   plugins: [react()],

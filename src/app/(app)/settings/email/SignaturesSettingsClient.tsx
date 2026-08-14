@@ -25,17 +25,31 @@ export function SignaturesSettingsClient({ signatures }: { signatures: Sig[] }):
   const router = useRouter();
   const reportError = useActionError();
   const [draft, setDraft] = useState<Draft | null>(null);
+  // A blank-name save used to return silently, so Save looked dead. Track the validation
+  // failure and render it on the form instead.
+  const [nameError, setNameError] = useState<string | null>(null);
   const csrf = (): string | null => readCsrfToken();
 
+  // Every draft transition (open, edit, cancel) clears the stale validation message.
+  function changeDraft(next: Draft | null): void {
+    setDraft(next);
+    if (next === null || next.name.trim() !== "") setNameError(null);
+  }
+
   async function save(): Promise<void> {
-    if (draft === null || draft.name.trim() === "") return;
+    if (draft === null) return;
+    if (draft.name.trim() === "") {
+      setNameError(S.nameRequired);
+      return;
+    }
+    setNameError(null);
     const payload = { name: draft.name, bodyHtml: draft.bodyHtml, isDefault: draft.isDefault };
     const r =
       draft.id === undefined
         ? await createSignatureAction(csrf(), payload)
         : await updateSignatureAction(csrf(), { id: draft.id, patch: payload });
     if (r.ok) {
-      setDraft(null);
+      changeDraft(null);
       router.refresh();
     } else reportError(r.error.id);
   }
@@ -54,7 +68,7 @@ export function SignaturesSettingsClient({ signatures }: { signatures: Sig[] }):
     <section className="overflow-hidden rounded-lg border bg-card shadow-sm">
       <div className="flex items-center justify-between border-b px-5 py-4">
         <h2 className="text-sm font-semibold">{S.signatures}</h2>
-        <Button size="sm" onClick={() => setDraft({ name: "", bodyHtml: "", isDefault: false })}>
+        <Button size="sm" onClick={() => changeDraft({ name: "", bodyHtml: "", isDefault: false })}>
           {S.newSignature}
         </Button>
       </div>
@@ -88,7 +102,7 @@ export function SignaturesSettingsClient({ signatures }: { signatures: Sig[] }):
                   size="sm"
                   className={ROW_BUTTON}
                   onClick={() =>
-                    setDraft({
+                    changeDraft({
                       id: s.id,
                       name: s.name,
                       bodyHtml: s.bodyHtml,
@@ -125,8 +139,14 @@ export function SignaturesSettingsClient({ signatures }: { signatures: Sig[] }):
               placeholder={`${S.nameLabel}…`}
               value={draft.name}
               maxLength={40}
-              onChange={(e) => setDraft({ ...draft, name: e.target.value })}
+              aria-invalid={nameError !== null}
+              onChange={(e) => changeDraft({ ...draft, name: e.target.value })}
             />
+            {nameError !== null && (
+              <p role="alert" className="text-sm text-destructive">
+                {nameError}
+              </p>
+            )}
             <p className="text-xs text-muted-foreground">{S.maxNameHint}</p>
             <RichTextBody
               html={draft.bodyHtml}
@@ -144,7 +164,7 @@ export function SignaturesSettingsClient({ signatures }: { signatures: Sig[] }):
               <Button size="sm" onClick={() => void save()}>
                 {S.save}
               </Button>
-              <Button variant="outline" size="sm" onClick={() => setDraft(null)}>
+              <Button variant="outline" size="sm" onClick={() => changeDraft(null)}>
                 {S.cancel}
               </Button>
             </div>

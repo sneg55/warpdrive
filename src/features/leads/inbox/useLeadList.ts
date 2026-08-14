@@ -34,9 +34,10 @@ export function useLeadList(params: UseLeadListParams): UseLeadListResult {
   const utils = trpc.useUtils();
   const [offset, setOffset] = useState(0);
   const [rows, setRows] = useState<LeadRow[]>([]);
-  // Offsets already merged into `rows`. Guards against a re-render with a fresh query-data
-  // reference re-appending a page that is already present.
-  const merged = useRef<Set<number>>(new Set());
+  // Offset -> the dataUpdatedAt stamp of the delivery merged for it. Storing the stamp rather than
+  // just the offset tells a benign re-run of the merge effect (same delivery, unchanged stamp) apart
+  // from a genuine refetch of that page, which react-query marks with a new stamp.
+  const merged = useRef<Map<number, number>>(new Map());
 
   const listQ = trpc.lead.list.useQuery(
     {
@@ -70,6 +71,7 @@ export function useLeadList(params: UseLeadListParams): UseLeadListResult {
   const lastKey = useRef(resetKey);
 
   const isPlaceholder = listQ.isPlaceholderData;
+  const stamp = listQ.dataUpdatedAt;
   useEffect(() => {
     const data = listQ.data;
     if (data === undefined) return;
@@ -77,7 +79,7 @@ export function useLeadList(params: UseLeadListParams): UseLeadListResult {
     // let the re-keyed query re-run this effect with the first page; otherwise replace in place.
     if (lastKey.current !== resetKey) {
       lastKey.current = resetKey;
-      merged.current = new Set();
+      merged.current = new Map();
       if (offset !== 0) {
         // A paging state machine reacting to fetched data, not state derived from props. Rewinding
         // re-keys the query so the effect re-runs with the first page.
@@ -90,10 +92,31 @@ export function useLeadList(params: UseLeadListParams): UseLeadListResult {
     // Merging them here would both duplicate those rows and mark this offset as merged, so the real
     // page would then be skipped. Wait for the actual page (isPlaceholderData === false).
     if (isPlaceholder) return;
-    if (merged.current.has(offset)) return;
-    merged.current.add(offset);
-    setRows((prev) => (offset === 0 ? data.rows : [...prev, ...data.rows]));
-  }, [listQ.data, isPlaceholder, offset, resetKey]);
+    // The first page REPLACES rows, so re-running it is idempotent and must not be gated on the
+    // already-merged set: a delete elsewhere in the app (the lead drawer) invalidates lead.list from
+    // outside this hook, and the refetched first page has to land or the inbox keeps rendering a
+    // lead that no longer exists. The guard is only needed for the appending pages, where it stops a
+    // re-render with a fresh data reference from double-appending.
+    if (offset === 0) {
+      merged.current = new Map([[0, stamp]]);
+      setRows(data.rows);
+      return;
+    }
+    if (merged.current.has(offset)) {
+      // Same delivery as before: a harmless re-run of this effect, the page is already in `rows`.
+      if (merged.current.get(offset) === stamp) return;
+      // A NEW stamp for an offset already merged means this page was refetched, which past page one
+      // only happens when something outside the hook invalidated lead.list (a delete from the lead
+      // drawer). The earlier pages in `rows` were not refetched and may still hold the deleted lead,
+      // so rewind to page one and rebuild instead of trusting them.
+      merged.current = new Map();
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- rewind driven by fetched data
+      setOffset(0);
+      return;
+    }
+    merged.current.set(offset, stamp);
+    setRows((prev) => [...prev, ...data.rows]);
+  }, [listQ.data, isPlaceholder, stamp, offset, resetKey]);
 
   const total = listQ.data?.total ?? 0;
 
@@ -102,7 +125,7 @@ export function useLeadList(params: UseLeadListParams): UseLeadListResult {
   }, []);
 
   const refetch = useCallback(async () => {
-    merged.current = new Set();
+    merged.current = new Map();
     setRows([]);
     setOffset(0);
     await utils.lead.list.invalidate();

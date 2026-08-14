@@ -97,6 +97,7 @@ export class FakeGmailClient implements GmailClient {
   listMessages(a: {
     q?: string;
     pageToken?: string;
+    includeSpamTrash?: boolean;
     signal: AbortSignal;
   }): Promise<Result<MessageList, AppError>> {
     a.signal.throwIfAborted();

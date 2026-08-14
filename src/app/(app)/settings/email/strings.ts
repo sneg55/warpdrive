@@ -12,6 +12,7 @@ export const EMAIL_SETTINGS_STRINGS = {
   defaultBadge: "Default",
   sharedBadge: "Shared",
   nameLabel: "Name",
+  nameRequired: "Enter a name before saving.",
   maxNameHint: "Max 40 characters",
   subjectLabel: "Subject",
   bodyLabel: "Body",

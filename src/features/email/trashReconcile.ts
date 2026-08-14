@@ -1,10 +1,19 @@
 import { sql } from "drizzle-orm";
 import type { Db } from "@/db/client";
 
-// A conversation is trashed in WD iff EVERY Gmail message is in TRASH (a whole-thread trash), so
-// trashing one message of a multi-message thread never hides the still-live conversation (P4).
+// Gmail labels that take a message out of the mailbox's live view. SPAM is here for the same reason
+// TRASH is: Gmail reports a spam delivery as an ordinary messagesAdded event (the message carries
+// SPAM instead of INBOX), so without it the junk syncs straight into the CRM Inbox.
+const HIDDEN_LABELS = ["TRASH", "SPAM"] as const;
+
+// A conversation is hidden in WD iff EVERY Gmail message is out of the live view (all TRASH and/or
+// all SPAM), so trashing or spam-flagging one message of a multi-message thread never hides the
+// still-live conversation (P4).
 export function isThreadFullyTrashed(messages: { labelIds: string[] }[]): boolean {
-  return messages.length > 0 && messages.every((m) => m.labelIds.includes("TRASH"));
+  return (
+    messages.length > 0 &&
+    messages.every((m) => HIDDEN_LABELS.some((label) => m.labelIds.includes(label)))
+  );
 }
 
 // Stamp trashed_at on one thread (only a fresh row, so a WD-initiated stamp is preserved). Used both

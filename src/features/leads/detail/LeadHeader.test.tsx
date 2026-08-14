@@ -2,7 +2,9 @@
 import "@testing-library/jest-dom/vitest";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import type React from "react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import { DetailDrawerCloseContext } from "@/features/navigation/detailDrawerClose";
 import type { LeadDetail } from "../leadRepo";
 
 beforeAll(() => {
@@ -21,8 +23,14 @@ const push = vi.fn();
 const refresh = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push, refresh }) }));
 vi.mock("@/utils/csrfCookie", () => ({ readCsrfToken: () => "csrf" }));
+// The Leads inbox list is a tRPC query rather than part of the route payload, so a delete has to
+// invalidate it explicitly (LeadsInbox's own bulk delete calls refetch() for the same reason).
+const invalidateLeadList = vi.fn(async () => {});
 vi.mock("@/lib/trpc-client", () => ({
-  trpc: { customFields: { listDefs: { useQuery: () => ({ data: [], isLoading: false }) } } },
+  trpc: {
+    customFields: { listDefs: { useQuery: () => ({ data: [], isLoading: false }) } },
+    useUtils: () => ({ lead: { list: { invalidate: invalidateLeadList } } }),
+  },
 }));
 vi.mock("../leadServerActions", () => ({
   convertLeadAction: vi.fn(),
@@ -173,5 +181,62 @@ describe("LeadHeader error surfacing", () => {
     await waitFor(() => expect(bulkUpdateLeadsAction).toHaveBeenCalledTimes(1));
     await waitFor(() => expect(reportError).toHaveBeenCalledWith("E_PERM_001"));
     expect(push).not.toHaveBeenCalled();
+  });
+});
+
+describe("LeadHeader delete dismissal", () => {
+  async function deleteLead(ui: React.ReactNode): Promise<void> {
+    const user = userEvent.setup();
+    const { bulkUpdateLeadsAction } = await import("../leadServerActions");
+    vi.mocked(bulkUpdateLeadsAction).mockResolvedValue({
+      ok: true,
+      value: { updated: 1, skipped: 0 },
+    });
+    render(ui);
+    await user.click(screen.getByRole("button", { name: "More lead actions" }));
+    await user.click(screen.getByRole("menuitem", { name: "Delete lead" }));
+    await waitFor(() => expect(bulkUpdateLeadsAction).toHaveBeenCalledTimes(1));
+  }
+
+  it("dismisses the surrounding drawer after a delete rather than soft-navigating to /leads", async () => {
+    const closeDrawer = vi.fn();
+    await deleteLead(
+      <DetailDrawerCloseContext.Provider value={closeDrawer}>
+        <LeadHeader lead={LEAD} />
+      </DetailDrawerCloseContext.Provider>,
+    );
+
+    await waitFor(() => expect(closeDrawer).toHaveBeenCalledTimes(1));
+    // router.push("/leads") is a soft navigation, so Next would keep the already-active @modal slot
+    // and leave the drawer open on the deleted lead. A second Delete from that stale drawer then
+    // re-renders the missing record into notFound() and blows the page away.
+    expect(push).not.toHaveBeenCalled();
+  });
+
+  it("navigates to /leads after a delete when there is no drawer (deep link / hard load)", async () => {
+    await deleteLead(<LeadHeader lead={LEAD} />);
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/leads"));
+  });
+
+  it("invalidates the leads list so the inbox behind the drawer drops the deleted lead", async () => {
+    await deleteLead(
+      <DetailDrawerCloseContext.Provider value={vi.fn()}>
+        <LeadHeader lead={LEAD} />
+      </DetailDrawerCloseContext.Provider>,
+    );
+    await waitFor(() => expect(invalidateLeadList).toHaveBeenCalledTimes(1));
+  });
+
+  it("leaves the leads list alone when the delete fails", async () => {
+    const user = userEvent.setup();
+    const { bulkUpdateLeadsAction } = await import("../leadServerActions");
+    vi.mocked(bulkUpdateLeadsAction).mockResolvedValue({ ok: false, error: { id: "E_PERM_001" } });
+    render(<LeadHeader lead={LEAD} />);
+
+    await user.click(screen.getByRole("button", { name: "More lead actions" }));
+    await user.click(screen.getByRole("menuitem", { name: "Delete lead" }));
+
+    await waitFor(() => expect(reportError).toHaveBeenCalledWith("E_PERM_001"));
+    expect(invalidateLeadList).not.toHaveBeenCalled();
   });
 });

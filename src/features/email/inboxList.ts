@@ -161,7 +161,8 @@ async function scanCandidates(
       WHERE a.user_id = ${actorId}
         -- archived_at hides a thread from its owner's Inbox (the Archive folder shows it instead).
         AND t.archived_at IS NULL
-        -- trashed_at (P4) is a real Gmail-Trash move: exclude it unconditionally.
+        -- trashed_at (P4) means Gmail dropped the conversation from the live mailbox (Trash or
+        -- Spam), not a local preference: exclude it unconditionally.
         AND t.trashed_at IS NULL
         -- U5 quick-filter narrowing (true for the linking tabs), ADDITIVE to the owner scope above.
         AND ${quickFilterPredicate(filter)}

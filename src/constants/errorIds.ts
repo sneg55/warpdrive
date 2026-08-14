@@ -66,6 +66,7 @@ export const ERROR_IDS = {
   CONTACT_FOLLOW_INPUT_INVALID: "E_CONTACT_007", // follow/unfollowContactAction input failed Zod validation
   CONTACT_FILTER_INVALID: "E_CONTACT_009", // contacts list filter compiled with a field/op outside the allow-list
   CONTACT_UPDATE_INPUT_INVALID: "E_CONTACT_008", // updatePersonAction/updateOrgAction input failed Zod validation
+  CONTACT_CREATE_INPUT_INVALID: "E_CONTACT_010", // createPersonAction input failed Zod validation
   // NOTE
   NOTE_NOT_FOUND: "E_NOTE_001", // note not found or soft-deleted
   // IMPORT

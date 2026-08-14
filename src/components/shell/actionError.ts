@@ -28,6 +28,16 @@ const CONTENT: Record<string, ActionErrorContent> = {
     title: "Your session expired",
     body: "Please refresh the page and try again.",
   },
+  // Both convert outcomes are states the user can act on, so they never get the generic
+  // "refresh and try again" copy: refreshing fixes neither.
+  [ERROR_IDS.LEAD_CONVERT_NO_PIPELINE]: {
+    title: "No pipeline to convert into",
+    body: "Create a pipeline in Settings, then convert this lead again.",
+  },
+  [ERROR_IDS.LEAD_ALREADY_CONVERTED]: {
+    title: "This lead is already converted",
+    body: "It already has a deal. Refresh the page to see the current state.",
+  },
 };
 
 export function actionErrorContent(errorId?: string): ActionErrorContent {

@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { STRINGS } from "@/constants/strings";
 import { db } from "@/db/client";
 import { listOrgOptions } from "@/features/contacts/orgOptionsRepo";
+import { listPersonMatchCandidates } from "@/features/contacts/personOptionsRepo";
 import { listHiddenBuiltins } from "@/features/custom-fields/hiddenBuiltinsRepo";
 import { getWorkspace } from "@/features/deal-workspace/summaryRepo";
 import { toVisibleDeal } from "@/features/deals/dealAuth";
@@ -45,7 +46,7 @@ export default async function DealPage({
   }
   // None of these reads depend on each other, only on the already-loaded deal and actor, so they
   // are issued together rather than one round trip at a time.
-  const [mailbox, prefs, baseCurrency, assignableUsers, orgOptions, hiddenBuiltins] =
+  const [mailbox, prefs, baseCurrency, assignableUsers, orgOptions, personOptions, hiddenBuiltins] =
     await Promise.all([
       getActorMailbox(db, loaded.actor.id, AbortSignal.timeout(10_000)),
 
@@ -65,6 +66,18 @@ export default async function DealPage({
         { ...loaded.actor, primaryVisibilityGroupId: null },
         AbortSignal.timeout(5000),
       ),
+
+      // Feeds the sidebar Person panel's suggestions, so a deal with no contact person can link an
+      // existing one (matched on name, email, or phone) instead of duplicating them. Skipped
+      // entirely when the deal already has a person: that panel renders the linked contact and
+      // never opens the editor, so scanning every visible person would be pure cost.
+      loaded.value.person === null
+        ? listPersonMatchCandidates(
+            db,
+            { ...loaded.actor, primaryVisibilityGroupId: null },
+            AbortSignal.timeout(5000),
+          )
+        : Promise.resolve([]),
 
       // Built-in fields hidden in Settings > Data fields, so the sidebar Organization/Person
       // sections drop the same rows the standalone detail pages do (bucketed per entity).
@@ -96,6 +109,7 @@ export default async function DealPage({
       initialSidebarSections={initialSidebarSections}
       baseCurrency={baseCurrency}
       orgOptions={orgOptions}
+      personOptions={personOptions}
       scheduleFollowUpAfterWon={scheduleFollowUpAfterWon}
       hiddenOrgFields={hiddenBuiltins.organization}
       hiddenPersonFields={hiddenBuiltins.person}

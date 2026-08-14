@@ -220,6 +220,18 @@ describe("ActivityCard", () => {
     expect(band.className).toMatch(/border-t/);
   });
 
+  it("shows links in a note as links (preflight otherwise renders them as plain text)", () => {
+    render(
+      <ActivityCard
+        activity={makeActivity({ note: '<p><a href="https://example.com">agenda</a></p>' })}
+        at={AT}
+      />,
+    );
+    const band = screen.getByTestId("activity-note");
+    expect(band.className).toMatch(/\[&_a\]:text-link/);
+    expect(band.className).toMatch(/\[&_a\]:underline/);
+  });
+
   it("renders the per-type icon for the activity", () => {
     const { container } = render(
       <ActivityCard activity={makeActivity({ typeKey: "call" })} at={AT} />,

@@ -45,6 +45,9 @@ export function TemplatesSettingsClient({
   const router = useRouter();
   const reportError = useActionError();
   const [draft, setDraft] = useState<TemplateDraft | null>(null);
+  // A blank-name save used to return silently, so Save looked dead. Track the validation
+  // failure and render it on the form instead.
+  const [nameError, setNameError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const csrf = (): string | null => readCsrfToken();
@@ -105,8 +108,19 @@ export function TemplatesSettingsClient({
     });
   }
 
+  // Every draft transition (open, edit, cancel) clears the stale validation message.
+  function changeDraft(next: TemplateDraft | null): void {
+    setDraft(next);
+    if (next === null || next.name.trim() !== "") setNameError(null);
+  }
+
   async function save(): Promise<void> {
-    if (draft === null || draft.name.trim() === "") return;
+    if (draft === null) return;
+    if (draft.name.trim() === "") {
+      setNameError(S.nameRequired);
+      return;
+    }
+    setNameError(null);
     const payload = {
       name: draft.name,
       subject: draft.subject,
@@ -118,7 +132,7 @@ export function TemplatesSettingsClient({
         ? await createTemplateAction(csrf(), payload)
         : await updateTemplateAction(csrf(), { id: draft.id, patch: payload });
     if (r.ok) {
-      setDraft(null);
+      changeDraft(null);
       router.refresh();
     } else reportError(r.error.id);
   }
@@ -160,7 +174,7 @@ export function TemplatesSettingsClient({
         <h2 className="text-sm font-semibold">{S.templates}</h2>
         <Button
           size="sm"
-          onClick={() => setDraft({ name: "", subject: "", bodyHtml: "", isShared: false })}
+          onClick={() => changeDraft({ name: "", subject: "", bodyHtml: "", isShared: false })}
         >
           {S.newTemplate}
         </Button>
@@ -219,7 +233,7 @@ export function TemplatesSettingsClient({
                   selected={selected.has(t.id)}
                   onToggle={(v) => toggleOne(t.id, v)}
                   onEdit={() =>
-                    setDraft({
+                    changeDraft({
                       id: t.id,
                       name: t.name,
                       subject: t.subject ?? "",
@@ -261,9 +275,10 @@ export function TemplatesSettingsClient({
           <TemplateDraftEditor
             draft={draft}
             canShare={canShare}
-            onChange={setDraft}
+            nameError={nameError}
+            onChange={changeDraft}
             onSave={() => void save()}
-            onCancel={() => setDraft(null)}
+            onCancel={() => changeDraft(null)}
           />
         )}
       </div>

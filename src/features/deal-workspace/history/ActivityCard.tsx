@@ -199,7 +199,9 @@ export function ActivityCard({
       {activity.note != null && activity.note !== "" && (
         <div
           data-testid="activity-note"
-          className="border-t bg-warning/10 px-3 py-2 text-pretty text-xs text-foreground/80 [&_p]:m-0"
+          // Preflight resets anchors to inherit colour and decoration, so a note's links would
+          // otherwise be indistinguishable from the text around them.
+          className="border-t bg-warning/10 px-3 py-2 text-pretty text-xs text-foreground/80 [&_a]:text-link [&_a]:underline [&_p]:m-0"
           // Note HTML is sanitized on write (createActivity -> sanitizeAuthorHtml); safe to render.
           // biome-ignore lint/security/noDangerouslySetInnerHtml: sanitized server-side before storage
           dangerouslySetInnerHTML={{ __html: activity.note }}

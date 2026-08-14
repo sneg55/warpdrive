@@ -22,7 +22,8 @@
     "db:migrate": "drizzle-kit migrate",
     "db:seed:smoke": "tsx --env-file .env scripts/seed-smoke.ts",
     "db:seed:smoke:phase5": "tsx --env-file .env scripts/seed-smoke-phase5.ts",
-    "db:seed:demo": "tsx --env-file .env scripts/seed-demo.ts"
+    "db:seed:demo": "tsx --env-file .env scripts/seed-demo.ts",
+    "email:sweep-spam": "tsx --env-file .env src/entrypoints/sweepSpam.ts"
   },
   "keywords": [],
   "author": "Nikita Sawinyh",

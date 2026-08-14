@@ -114,6 +114,10 @@ export function RichTextBody({
         editor={editor}
         className={cn(
           "min-h-24 px-2 py-2 text-sm [&_.ProseMirror]:outline-none [&_.ProseMirror]:min-h-24",
+          // Tailwind's preflight resets anchors to inherit colour and decoration, which made an
+          // applied link indistinguishable from plain text: the Link button looked inert even
+          // though the mark was there. Paint links the way a mail client will.
+          "[&_.ProseMirror_a]:text-link [&_.ProseMirror_a]:underline [&_.ProseMirror_a]:cursor-pointer",
           // When growing, the content area fills the frame and scrolls internally so the format
           // toolbar stays docked at the bottom and the ProseMirror surface is a full-height target.
           grow && "min-h-0 flex-1 overflow-y-auto [&_.ProseMirror]:min-h-full",

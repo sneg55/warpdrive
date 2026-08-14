@@ -46,9 +46,12 @@ export interface GmailClient {
     signal: AbortSignal;
   }): Promise<Result<{ dataBase64: string }, AppError>>;
 
+  // includeSpamTrash: messages.list omits Spam and Trash unless this is set, so even an explicit
+  // `q: "in:spam"` comes back empty without it. Only the spam sweep needs it.
   listMessages(a: {
     q?: string;
     pageToken?: string;
+    includeSpamTrash?: boolean;
     signal: AbortSignal;
   }): Promise<Result<MessageList, AppError>>;
 
@@ -165,10 +168,11 @@ export function createGmailClient(accessToken: string): GmailClient {
       );
     },
 
-    listMessages({ q, pageToken, signal }) {
+    listMessages({ q, pageToken, includeSpamTrash, signal }) {
       const p = new URLSearchParams();
       if (q !== undefined) p.set("q", q);
       if (pageToken !== undefined) p.set("pageToken", pageToken);
+      if (includeSpamTrash === true) p.set("includeSpamTrash", "true");
       const qs = p.toString();
       return gmailFetch(
         `${API}/messages${qs.length > 0 ? `?${qs}` : ""}`,

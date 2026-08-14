@@ -28,12 +28,15 @@ const INSERT_ITEMS = MERGE_TOKEN_FIELDS.map((f) => ({
 export function TemplateDraftEditor({
   draft,
   canShare,
+  nameError,
   onChange,
   onSave,
   onCancel,
 }: {
   draft: TemplateDraft;
   canShare: boolean;
+  // Set when a save was attempted with a blank name, so the form explains why nothing happened.
+  nameError: string | null;
   onChange: (next: TemplateDraft) => void;
   onSave: () => void;
   onCancel: () => void;
@@ -52,8 +55,14 @@ export function TemplateDraftEditor({
         autoComplete="off"
         placeholder={`${S.nameLabel}…`}
         value={draft.name}
+        aria-invalid={nameError !== null}
         onChange={(e) => onChange({ ...draft, name: e.target.value })}
       />
+      {nameError !== null && (
+        <p role="alert" className="text-sm text-destructive">
+          {nameError}
+        </p>
+      )}
       <Input
         aria-label={S.subjectLabel}
         name="templateSubject"
