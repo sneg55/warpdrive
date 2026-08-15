@@ -26,6 +26,18 @@ const config: Config = {
   // single rename and a wall of 404s.
   onBrokenLinks: "throw",
 
+  // Ahrefs Web Analytics, same site key as the marketing site so docs and landing traffic report
+  // into one Ahrefs project (mirrors what the gtag setting below does for GA4).
+  scripts: [
+    {
+      src: "https://analytics.ahrefs.com/analytics.js",
+      // Public site identifier, not a credential. See site/src/constants/siteMetadata.ts for why
+      // the gitleaks annotation is needed on the OSS mirror publish.
+      "data-key": "aD9VD8YqPwtacLzWcunl9g", // gitleaks:allow
+      async: true,
+    },
+  ],
+
   i18n: { defaultLocale: "en", locales: ["en"] },
 
   presets: [

@@ -43,7 +43,13 @@ describe("UserRowControls", () => {
     render(<UserRowControls {...PROPS} />);
     fireEvent.click(screen.getByRole("button", { name: "Make admin" }));
     expect(await screen.findByText(IDENTITY_ERROR_MESSAGES.permission)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Deactivate" }));
+    // The error rendering does NOT mean the failed toggle's transition has ended, and both buttons
+    // are disabled while it is pending. Clicking straight after the error is a coin flip: on a
+    // loaded machine the click lands on a still-disabled button, does nothing, and the onChanged
+    // wait below times out. Wait for the button to actually be clickable first.
+    const deactivate = screen.getByRole("button", { name: "Deactivate" });
+    await waitFor(() => expect(deactivate).toBeEnabled());
+    fireEvent.click(deactivate);
     await waitFor(() => expect(PROPS.onChanged).toHaveBeenCalled());
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });

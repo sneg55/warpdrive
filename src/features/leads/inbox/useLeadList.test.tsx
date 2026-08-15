@@ -75,8 +75,11 @@ describe("useLeadList", () => {
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     const { result } = renderHook(() => useLeadList(params), { wrapper: wrapper(client) });
 
-    await waitFor(() => expect(result.current.total).toBe(250));
-    expect(result.current.rows).toHaveLength(200);
+    // Wait on rows, not total: total reads straight off the query data while rows are merged one
+    // render later by the effect, so waiting on total can observe the gap between the two and see
+    // an empty rows array.
+    await waitFor(() => expect(result.current.rows).toHaveLength(200));
+    expect(result.current.total).toBe(250);
     expect(result.current.canLoadMore).toBe(true);
 
     act(() => {

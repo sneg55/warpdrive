@@ -9,6 +9,14 @@ export const SITE_URL = "https://warpdrivecrm.com";
 // layout. Public by design (it ships in the client bundle), so it lives here, not in env.
 export const GA_MEASUREMENT_ID = "G-WN9BMJ5QD6";
 
+// Ahrefs Web Analytics site key, loaded via next/script in the root layout alongside gtag. Public
+// by design (it ships in the client bundle), so it lives here, not in env. The docs site carries
+// the same key via its own `scripts` config so both properties report into one Ahrefs project.
+// The `gitleaks:allow` is required: the OSS mirror publish scans with gitleaks, whose
+// generic-api-key heuristic reads any high-entropy string next to "key" as a secret. This one is a
+// public site identifier, not a credential, so it is annotated rather than moved out of the repo.
+export const AHREFS_ANALYTICS_KEY = "aD9VD8YqPwtacLzWcunl9g"; // gitleaks:allow
+
 const TITLE = `${STRINGS.app.name}, the open-source self-hosted Pipedrive alternative`;
 
 // The SERP/social/AI-card description. Deliberately separate from the (longer, richer) visible hero

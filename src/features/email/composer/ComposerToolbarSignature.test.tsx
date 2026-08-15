@@ -3,7 +3,7 @@
 // conditional render into a toolbar control that is always present, even with zero
 // signatures (PD offers a "None" choice before any default is chosen).
 import "@testing-library/jest-dom/vitest";
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -74,12 +74,25 @@ describe("Composer toolbar signature picker (Task 4)", () => {
     // The current-signature hint moved from a native title= to the Tooltip label.
     await user.hover(trigger);
     expect(await screen.findByRole("tooltip")).toHaveTextContent("Signature: None");
+
+    // unhover does NOT close this tooltip in jsdom: the stale "Signature: None" node survives until
+    // opening the menu tears it down. So nothing between here and the menu click may assume the
+    // tooltip is gone, and the final assertion below must tolerate an extra node.
     await user.unhover(trigger);
 
     await user.click(trigger);
-    await user.click(screen.getByRole("menuitem", { name: "Work" }));
+    // findByRole, not getByRole: the menu content mounts into a portal, so a synchronous query can
+    // run before it is there.
+    await user.click(await screen.findByRole("menuitem", { name: "Work" }));
 
+    // Closing the menu returns focus to the trigger, which reopens the tooltip on its own, so this
+    // hover may be a no-op. Assert on the text settling rather than on whichever node the first
+    // query happens to return.
     await user.hover(trigger);
-    expect(await screen.findByRole("tooltip")).toHaveTextContent("Signature: Work");
+    // getAllByRole + waitFor, not a single findByRole: assert that the hint has settled on the new
+    // label, rather than on whichever node the first query happens to return.
+    await waitFor(() =>
+      expect(screen.getAllByRole("tooltip").map((t) => t.textContent)).toContain("Signature: Work"),
+    );
   });
 });

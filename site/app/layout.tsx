@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import localFont from "next/font/local";
 import Script from "next/script";
-import { GA_MEASUREMENT_ID } from "@/constants/siteMetadata";
+import { AHREFS_ANALYTICS_KEY, GA_MEASUREMENT_ID } from "@/constants/siteMetadata";
 import "./globals.css";
 
 export { metadata } from "@/constants/siteMetadata";
@@ -34,6 +34,13 @@ function gtag(){dataLayer.push(arguments);}
 gtag('js', new Date());
 gtag('config', '${GA_MEASUREMENT_ID}');`}
       </Script>
+      {/* Ahrefs Web Analytics, for the SEO side of the funnel (keyword/backlink attribution that GA4
+          does not give us). Same afterInteractive treatment as gtag. */}
+      <Script
+        src="https://analytics.ahrefs.com/analytics.js"
+        data-key={AHREFS_ANALYTICS_KEY}
+        strategy="afterInteractive"
+      />
     </html>
   );
 }
