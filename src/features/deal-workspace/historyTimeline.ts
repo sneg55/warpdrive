@@ -20,6 +20,7 @@ import {
 import { isSourceChannelKey, SOURCE_CHANNELS } from "@/constants/sourceChannels";
 import type { CalendarActivity } from "@/features/activities/calendar";
 import type { ChangeLogEntry } from "@/features/collaboration/changeLog";
+import type { EmailTimelineMessage } from "@/features/email/entityMessageReads";
 
 // A unified deal-history feed (Pipedrive parity): activities render as cards,
 // notes as note cards, stage moves as an inline event row, a synthesized "Deal
@@ -31,7 +32,10 @@ export type HistoryItem =
   | { kind: "created"; id: string; at: Date; actorName: string | null }
   | { kind: "activity"; id: string; at: Date; activity: CalendarActivity }
   | { kind: "note"; id: string; at: Date; body: string; pinned: boolean; actorName: string | null }
-  | { kind: "event"; id: string; at: Date; label: string; actorName: string | null };
+  | { kind: "event"; id: string; at: Date; label: string; actorName: string | null }
+  // One linked email, per message rather than per thread: Pipedrive splits a thread across the
+  // timeline so each message sits at its own moment. The body is absent, it loads on expand.
+  | { kind: "email"; id: string; at: Date; message: EmailTimelineMessage };
 
 export interface NoteItem {
   id: string;
@@ -209,4 +213,24 @@ export function partitionFocusHistory(items: HistoryItem[]): {
     else history.push(item);
   }
   return { pinned, focus, history };
+}
+
+// Fold linked emails into an already-built record timeline. Kept separate from
+// buildHistoryTimeline because the two surfaces that need it merge in different places: the deal
+// page builds client-side, the person page reads an already-merged list from contactTimeline.
+export function mergeEmailItems(
+  items: HistoryItem[],
+  emails: EmailTimelineMessage[],
+): HistoryItem[] {
+  if (emails.length === 0) return items;
+  const emailItems: HistoryItem[] = emails.map((m) => ({
+    kind: "email",
+    // Keyed by message, not thread: two messages of one conversation are two timeline rows.
+    id: m.messageId,
+    // createdAt stands in when Gmail sent no Date header, which keeps such a message in a
+    // deterministic slot instead of at the epoch.
+    at: new Date(m.sentAt ?? m.createdAt),
+    message: m,
+  }));
+  return [...items, ...emailItems].sort((a, b) => b.at.getTime() - a.at.getTime());
 }

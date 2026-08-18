@@ -95,4 +95,23 @@ export const INBOX_STRINGS = {
   // header, which only nudges for the current session.
   trackingOpened: (n: number): string => `Opened ${n} ${n === 1 ? "time" : "times"}`,
   trackingClicked: (n: number): string => `Clicked ${n} ${n === 1 ? "time" : "times"}`,
+  // Timeline email cards on the deal and person records. Mailbox triage stays in the Inbox,
+  // which "Open in Inbox" reaches; a record surface offers compose modes plus unlink.
+  timelineMoreActions: "More email actions",
+  openInInbox: "Open in Inbox",
+  unlinkFromDeal: "Unlink from deal",
+  unlinkFromPerson: "Unlink from person",
+  unlinkConfirmTitle: "Unlink this conversation?",
+  unlinkConfirmBody:
+    "Every message in this conversation leaves this record's timeline. The conversation stays in your Inbox.",
+  unlinkConfirmAction: "Unlink",
+  expandEmail: "Expand email",
+  collapseEmail: "Collapse email",
+  emailBodyFailed: "Couldn't load this email.",
+  retry: "Retry",
+  loadingEmail: "Loading email...",
+  // Stand in for the Email filter's empty line while a record's linked-message read is in flight or
+  // after it failed, when there is no empty result to report yet.
+  loadingEmails: "Loading emails...",
+  emailListFailed: "Couldn't load emails. Please try again.",
 } as const;

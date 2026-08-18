@@ -54,9 +54,11 @@ vi.mock("@/lib/trpc-client", () => ({
         useQuery: () => ({ data: { person: [], organization: [], deal: [], activity: [] } }),
       },
     },
+    email: { listMessagesForContact: { useQuery: () => ({ data: [], isError: false }) } },
     useUtils: () => ({
       activities: { listForEntity: { invalidate: () => {} } },
       collaboration: { listNotes: { invalidate: () => {} } },
+      email: { listMessagesForContact: { invalidate: () => {} } },
       contacts: {
         contactTimeline: { invalidate: () => {} },
         activityStats: { invalidate: () => {} },

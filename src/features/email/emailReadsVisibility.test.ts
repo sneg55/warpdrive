@@ -65,7 +65,7 @@ describe("email reads visibility", () => {
       ).rows[0] as { id: string };
 
       // The Inbox folder is personal: the non-owner's Inbox does NOT surface the owner's shared
-      // thread. It reaches them on the linked contact record (forContact) instead.
+      // thread. It reaches them on the linked contact record (listMessagesForContact) instead.
       const otherView = (await listInbox(db, { actor: actorOf(other.id), filter: "all" }, SIG()))
         .threads;
       expect(otherView.length).toBe(0);

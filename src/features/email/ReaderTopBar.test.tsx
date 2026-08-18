@@ -20,6 +20,10 @@ type Neighbors = {
 let neighborsData: Neighbors = null;
 const invalidateAll = vi.fn();
 const inv = () => ({ invalidate: invalidateAll });
+// Separate spies: the record timelines read the message-level keys, so a delete has to invalidate
+// those and not the retired thread-summary ones.
+const invalidateDealMessages = vi.fn();
+const invalidateContactMessages = vi.fn();
 vi.mock("@/lib/trpc-client", () => ({
   trpc: {
     email: { thread: { neighbors: { useQuery: () => ({ data: neighborsData }) } } },
@@ -29,8 +33,8 @@ vi.mock("@/lib/trpc-client", () => ({
         folders: { sent: inv(), archive: inv() },
         search: inv(),
         thread: { get: inv() },
-        forDeal: inv(),
-        forContact: inv(),
+        listMessagesForDeal: { invalidate: invalidateDealMessages },
+        listMessagesForContact: { invalidate: invalidateContactMessages },
       },
     }),
   },
@@ -62,6 +66,8 @@ afterEach(() => {
   trashMock.mockClear();
   trashMock.mockResolvedValue({ ok: true, value: { threadId: "t1" } });
   invalidateAll.mockClear();
+  invalidateDealMessages.mockClear();
+  invalidateContactMessages.mockClear();
   searchParamsStr = "folder=inbox";
   neighborsData = null;
 });
@@ -123,6 +129,21 @@ it("deletes to Gmail Trash after confirming, then returns to the inbox", async (
   await waitFor(() => expect(replace).toHaveBeenCalledWith("/inbox"));
   expect(push).not.toHaveBeenCalled();
   expect(invalidateAll).toHaveBeenCalled();
+});
+
+it("refreshes the record timelines so a deleted thread leaves the deal and person pages", async () => {
+  render(<ReaderTopBar threadId="t1" canManage />);
+  screen.getByRole("button", { name: "Delete" }).click();
+  (await screen.findByRole("button", { name: /move to trash/i })).click();
+  await waitFor(() => expect(invalidateDealMessages).toHaveBeenCalled());
+  expect(invalidateContactMessages).toHaveBeenCalled();
+});
+
+it("refreshes the record timelines on archive too", async () => {
+  render(<ReaderTopBar threadId="t1" canManage />);
+  screen.getByRole("button", { name: "Archive" }).click();
+  await waitFor(() => expect(invalidateDealMessages).toHaveBeenCalled());
+  expect(invalidateContactMessages).toHaveBeenCalled();
 });
 
 it("surfaces a failed delete and stays put (no silent no-op)", async () => {

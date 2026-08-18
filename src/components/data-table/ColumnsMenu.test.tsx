@@ -3,6 +3,10 @@ import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ColumnsMenu } from "./ColumnsMenu";
+// The visible-column list is behind next/dynamic (dnd-kit). Importing it here pays the transform
+// cost during this file's import phase instead of inside a findBy* budget, where on a loaded CI
+// worker it lost the race and left the loading placeholder on screen. Unused by name on purpose.
+import "./ColumnsMenuSortableList";
 import type { ColumnDef } from "./columnModel";
 
 afterEach(cleanup);

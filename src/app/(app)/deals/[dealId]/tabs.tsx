@@ -1,5 +1,5 @@
 "use client";
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import type { Deal } from "@/db/schema";
 import type { CalendarActivity } from "@/features/activities/calendar";
 import { HistoryFeed } from "@/features/deal-workspace/HistoryFeed";
@@ -9,10 +9,12 @@ import { resolveStageChangeNames } from "@/features/deal-workspace/history/stage
 import type { HistoryItem } from "@/features/deal-workspace/historyTimeline";
 import {
   buildHistoryTimeline,
+  mergeEmailItems,
   partitionFocusHistory,
 } from "@/features/deal-workspace/historyTimeline";
 import { PinnedNotesSection } from "@/features/deal-workspace/PinnedNotesSection";
 import { SectionHeading } from "@/features/deal-workspace/SectionHeading";
+import { emailTabStatusLabel } from "@/features/email/emailTabStatus";
 import { trpc } from "@/lib/trpc-client";
 
 // Stable empty array: a new [] on every render would churn useMemo dependencies below.
@@ -37,17 +39,16 @@ interface WorkspaceTabsProps {
   onEditActivity?: (activityId: string) => void;
 }
 
-// Buckets the History side's items by the per-type filter row (Wave 3, Task
-// 17). "created" never appears under a type filter other than "all"; email
-// and files aren't timeline items so they get an empty list (unused, those
-// tabs render their own feature component instead of HistoryFeed).
+// Buckets the History side's items by the per-type filter row. "created" never appears under a
+// type filter other than "all". Files aren't timeline items, so that tab renders its own feature
+// component instead of HistoryFeed.
 export function bucketByType(history: HistoryItem[]): Record<Tab, HistoryItem[]> {
   return {
     all: history,
     activities: history.filter((i) => i.kind === "activity"),
     notes: history.filter((i) => i.kind === "note"),
     changelog: history.filter((i) => i.kind === "event"),
-    email: [],
+    email: history.filter((i) => i.kind === "email"),
     files: [],
   };
 }
@@ -86,14 +87,28 @@ export function WorkspaceTabs({
     [createdAt, createdActorName],
   );
 
+  // Linked email reads as timeline items rather than an embedded mailbox reader.
+  const emailQuery = trpc.email.listMessagesForDeal.useQuery({ dealId: deal.id });
+  const emails = emailQuery.data ?? EMPTY;
+  const utils = trpc.useUtils();
+
   // Focus vs History split (Wave 3, Task 17): Focus is the open/actionable
   // activities; History is everything else, filtered by the existing per-type tabs.
   const allItems = useMemo(
-    () => buildHistoryTimeline(activities, resolvedChangelog, notes, createdAnchor),
-    [activities, resolvedChangelog, notes, createdAnchor],
+    () =>
+      mergeEmailItems(
+        buildHistoryTimeline(activities, resolvedChangelog, notes, createdAnchor),
+        emails,
+      ),
+    [activities, resolvedChangelog, notes, createdAnchor, emails],
   );
   const { pinned, focus, history } = useMemo(() => partitionFocusHistory(allItems), [allItems]);
   const historyByType = useMemo(() => bucketByType(history), [history]);
+
+  const emailScope = useMemo(() => ({ kind: "deal" as const, dealId: deal.id }), [deal.id]);
+  const onEmailChanged = useCallback(() => {
+    void utils.email.listMessagesForDeal.invalidate({ dealId: deal.id });
+  }, [utils, deal.id]);
 
   // Pipedrive shows counts on Activities/Notes only; the changelog tab has none.
   // Both badges count off the History bucket (what the tab's list actually shows), not the
@@ -108,6 +123,14 @@ export function WorkspaceTabs({
     <div className="space-y-6">
       <PinnedNotesSection items={pinned} onNoteChanged={onNoteChanged} />
 
+      {/* A failed email read must not read as "this deal has no email", so say so explicitly
+          while the rest of the timeline still renders. */}
+      {emailQuery.isError === true && (
+        <p role="alert" className="text-sm text-destructive">
+          Couldn't load emails for this deal. Please try again.
+        </p>
+      )}
+
       <section aria-label="focus">
         <SectionHeading>Focus</SectionHeading>
         <HistoryFeed
@@ -116,6 +139,8 @@ export function WorkspaceTabs({
           onActivityChanged={onActivityChanged}
           onNoteChanged={onNoteChanged}
           onEditActivity={onEditActivity}
+          emailScope={emailScope}
+          onEmailChanged={onEmailChanged}
         />
       </section>
 
@@ -130,6 +155,9 @@ export function WorkspaceTabs({
           onActivityChanged={onActivityChanged}
           onNoteChanged={onNoteChanged}
           onEditActivity={onEditActivity}
+          emailScope={emailScope}
+          emailEmptyLabel={emailTabStatusLabel(emailQuery)}
+          onEmailChanged={onEmailChanged}
         />
       </section>
     </div>

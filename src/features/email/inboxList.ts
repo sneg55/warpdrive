@@ -108,7 +108,7 @@ export function quickFilterPredicate(filter: InboxFilter): SQL {
 // Candidate set = threads in the actor's OWN mailbox only. The Inbox folder is personal (like Sent
 // and Archive, which are already owner-scoped): a colleague's shared thread is NOT injected into
 // another user's Inbox. Shared threads still reach co-workers on the linked deal/contact record via
-// listThreadsForDeal / listThreadsForContact (router forDeal/forContact). canSeeEmail still runs per
+// listMessagesForDeal / listMessagesForContact. canSeeEmail still runs per
 // row below, but for an owned mailbox it is always satisfied by the owner branch.
 async function scanCandidates(
   db: Db,

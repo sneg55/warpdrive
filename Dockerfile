@@ -28,6 +28,10 @@ COPY . .
 # during `next build`, not only at runtime (F29). Compose passes this as a build arg.
 ARG NEXT_PUBLIC_WS_URL
 ENV NEXT_PUBLIC_WS_URL=${NEXT_PUBLIC_WS_URL}
+# Git SHA of this build. Needed here as well as in the runtime stage: a prerendered page reads
+# env.APP_COMMIT once, at build time, so a runtime-only value would leave those pages unstamped.
+# Free cache-wise, since the `COPY . .` above already changes on every commit.
+ARG APP_COMMIT=
 # Fail loudly if it is empty: the value is compile-time-inlined, so an empty build bakes a broken
 # WS URL into the client bundle (board/inbox/import realtime then throw `new WebSocket("")`), and
 # fixing it needs a full rebuild. Better to stop the build than ship a silently-broken bundle.
@@ -38,6 +42,7 @@ RUN test -n "$NEXT_PUBLIC_WS_URL" || (echo "ERROR: NEXT_PUBLIC_WS_URL build arg 
 # output; these server values are never baked in and are fully overridden by the runtime env_file.
 # (TOKEN_ENCRYPTION_KEY here is 32 zero bytes, base64.)
 RUN NODE_ENV=production \
+    APP_COMMIT=${APP_COMMIT} \
     DATABASE_URL=postgres://build:build@localhost:5432/build \
     GOOGLE_OAUTH_CLIENT_ID=build \
     GOOGLE_OAUTH_CLIENT_SECRET=build \
@@ -74,6 +79,11 @@ COPY --from=build /app/public ./public
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/drizzle ./drizzle
 COPY package.json next.config.ts ./
+# Declared after the COPYs on purpose: this value changes every commit, and an earlier layer would
+# invalidate the node_modules/.next copies on every build. Serves the dynamically rendered pages,
+# which read it at request time.
+ARG APP_COMMIT=
+ENV APP_COMMIT=${APP_COMMIT}
 # node:alpine ships an unprivileged `node` user; run as it, not root.
 USER node
 EXPOSE 3000 8080

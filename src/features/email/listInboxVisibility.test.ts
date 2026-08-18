@@ -81,7 +81,8 @@ it("shows the owner their own mailbox at any visibility", async () => {
 
 // The Inbox folder is PERSONAL (like Sent/Archive, which are already owner-only): it shows only
 // the actor's OWN mailbox. A colleague's shared thread stays visible on the linked deal/contact
-// record (the forDeal/forContact read path), never injected into another user's Inbox folder.
+// record (the listMessagesForDeal / listMessagesForContact read path), never injected into
+// another user's Inbox folder.
 async function seedVisiblePersonLinkedThread(
   ownerAccountId: string,
   ownerId: string,

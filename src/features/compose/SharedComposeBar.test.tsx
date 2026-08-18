@@ -48,6 +48,16 @@ vi.mock("@/features/email/Composer", () => ({
   ),
 }));
 vi.mock("@/features/files/FileAttachments", () => ({ FileAttachments: () => <div /> }));
+vi.mock("@/lib/trpc-client", () => ({
+  trpc: {
+    useUtils: () => ({
+      email: {
+        listMessagesForDeal: { invalidate: vi.fn() },
+        listMessagesForContact: { invalidate: vi.fn() },
+      },
+    }),
+  },
+}));
 vi.mock("@/features/collaboration/actions", () => ({ createNoteAction }));
 vi.mock("@/utils/csrfCookie", () => ({ readCsrfToken: () => "csrf" }));
 

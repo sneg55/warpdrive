@@ -82,6 +82,7 @@ vi.mock("@/lib/trpc-client", () => ({
     },
     labels: { listByTarget: { useQuery: () => ({ data: [] }) } },
     identity: { assignableUsers: { useQuery: () => ({ data: [] }) } },
+    email: { listMessagesForContact: { useQuery: () => ({ data: [], isError: false }) } },
     useUtils: () => ({
       collaboration: { listNotes: { invalidate: invalidateNotes } },
       contacts: {
@@ -89,6 +90,7 @@ vi.mock("@/lib/trpc-client", () => ({
         relatedOrgs: { invalidate: invalidateRelatedOrgs },
         activityStats: { invalidate: invalidateActivityStats },
       },
+      email: { listMessagesForContact: { invalidate: vi.fn() } },
     }),
   },
 }));

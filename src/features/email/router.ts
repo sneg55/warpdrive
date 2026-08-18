@@ -4,8 +4,9 @@ import { protectedProcedure, router } from "@/server/trpc/trpc";
 import { unwrap } from "@/server/unwrap";
 import { listDrafts } from "./draftRepo";
 import * as emailReads from "./emailReads";
-import { listThreadsForContact, listThreadsForDeal } from "./entityThreadReads";
+import { listMessagesForContact, listMessagesForDeal } from "./entityMessageReads";
 import { listArchivedThreads, listOutbox, listSentThreads } from "./folderReads";
+import { getMessage } from "./messageReads";
 import { inboxUnreadCount } from "./readState";
 import { searchInbox } from "./searchInbox";
 import { getThreadNeighbors } from "./threadNeighbors";
@@ -143,18 +144,33 @@ export const emailRouter = router({
   drafts: router({
     list: protectedProcedure.query(({ ctx }) => listDrafts(ctx.db, ctx.actor, SIG())),
   }),
-  // Thread summaries linked to a deal / contact, with the same visibility rules as the Inbox.
-  // Feed the deal-workspace and contact-detail Email tabs.
-  forDeal: protectedProcedure
+  // Message-level reads for the record timelines (deal + person), with the same visibility rules
+  // as the Inbox.
+  listMessagesForDeal: protectedProcedure
     .input(z.object({ dealId: z.string().uuid() }))
     .query(({ ctx, input }) =>
-      listThreadsForDeal(ctx.db, { actor: ctx.actor, dealId: input.dealId }, SIG()),
+      listMessagesForDeal(ctx.db, { actor: ctx.actor, dealId: input.dealId }, SIG()),
     ),
-  forContact: protectedProcedure
+  listMessagesForContact: protectedProcedure
     .input(z.object({ personId: z.string().uuid() }))
     .query(({ ctx, input }) =>
-      listThreadsForContact(ctx.db, { actor: ctx.actor, personId: input.personId }, SIG()),
+      listMessagesForContact(ctx.db, { actor: ctx.actor, personId: input.personId }, SIG()),
     ),
+  message: router({
+    // Expand-on-demand body for one timeline card. allowRemote re-runs the sanitizer, so
+    // "show remote content" refetches this message alone rather than a whole thread.
+    get: protectedProcedure
+      .input(z.object({ messageId: z.string().uuid(), allowRemote: z.boolean().default(false) }))
+      .query(({ ctx, input }) =>
+        unwrap(
+          getMessage(
+            ctx.db,
+            { actor: ctx.actor, messageId: input.messageId, allowRemote: input.allowRemote },
+            SIG(),
+          ),
+        ),
+      ),
+  }),
   // In-mail search across subject/body/participants, gated by the same canSeeEmail
   // visibility rule as the Inbox. Feeds InboxSearchBar via InboxListClient.
   search: protectedProcedure

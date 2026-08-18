@@ -8,18 +8,18 @@ import { trpc } from "@/lib/trpc-client";
 import type { CustomFieldDef } from "@/types/customFields";
 import { PersonDetailHeader } from "../../ContactDetailHeader";
 import { ContactTimelinePanel, FilesPanel, TabStrip } from "../../contactDetail.shared";
-import { PersonEmailTab } from "../../PersonEmailTab";
 import { PersonSidebar } from "./PersonSidebar";
 
-type Tab = "activity" | "email" | "files";
+// No page-level Email tab: linked mail is now a card in the Activity timeline, reachable under
+// its Email filter, the way the deal workspace shows it.
+type Tab = "activity" | "files";
 
 const TAB_LABELS: Record<Tab, string> = {
   activity: "Activity",
-  email: "Email",
   files: "Files",
 };
 
-const TABS: readonly Tab[] = ["activity", "email", "files"];
+const TABS: readonly Tab[] = ["activity", "files"];
 
 type FollowerRef = { id: string; name: string; avatarUrl: string | null };
 
@@ -128,7 +128,6 @@ export function PersonDetailClient({
             {tab === "activity" && (
               <ContactTimelinePanel entityType="person" entityId={person.id} />
             )}
-            {tab === "email" && <PersonEmailTab personId={person.id} />}
             {tab === "files" && <FilesPanel entityType="person" entityId={person.id} />}
           </div>
         </div>

@@ -7,16 +7,20 @@ import { bucketByType } from "@/app/(app)/deals/[dealId]/tabs";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CollapsibleSection } from "@/features/deal-workspace/CollapsibleSection";
 import { HistoryFeed } from "@/features/deal-workspace/HistoryFeed";
-import { partitionFocusHistory } from "@/features/deal-workspace/historyTimeline";
+import { mergeEmailItems, partitionFocusHistory } from "@/features/deal-workspace/historyTimeline";
 import { PinnedNotesSection } from "@/features/deal-workspace/PinnedNotesSection";
 import { SectionHeading } from "@/features/deal-workspace/SectionHeading";
 import { FieldRow } from "@/features/deal-workspace/sidebar/FieldRow";
+import { emailTabStatusLabel } from "@/features/email/emailTabStatus";
 import { FileAttachments } from "@/features/files/FileAttachments";
 import { trpc } from "@/lib/trpc-client";
 import { ContactHistoryTabs } from "./ContactHistoryTabs";
-import { OrgEmailPanel, PersonEmailTab } from "./PersonEmailTab";
 
 const EMPTY_CLASS = "text-sm text-gray-500";
+// Threads link to person_id (and deal_id), never to an organization, so an org's Email filter
+// states the reason instead of implying the record merely has no mail yet.
+const ORG_EMAIL_EMPTY = "Email is tracked on people, not organizations.";
+const EMAIL_LOAD_ERROR = "Couldn't load emails for this contact. Please try again.";
 
 export function TabStrip<T extends string>({
   tabs,
@@ -80,7 +84,15 @@ export function ContactTimelinePanel({
   entityId: string;
 }): React.ReactNode {
   const utils = trpc.useUtils();
-  const items = trpc.contacts.contactTimeline.useQuery({ entityType, entityId }).data?.items ?? [];
+  // Called unconditionally and merely disabled for an organization: a hook may not sit behind a
+  // branch, and this panel serves both entity types.
+  const emailQuery = trpc.email.listMessagesForContact.useQuery(
+    { personId: entityId },
+    { enabled: entityType === "person" },
+  );
+  const rawItems =
+    trpc.contacts.contactTimeline.useQuery({ entityType, entityId }).data?.items ?? [];
+  const items = mergeEmailItems(rawItems, emailQuery.data ?? []);
   const { pinned, focus, history } = partitionFocusHistory(items);
   const historyByType = bucketByType(history);
 
@@ -102,13 +114,22 @@ export function ContactTimelinePanel({
     void utils.contacts.contactTimeline.invalidate({ entityType, entityId });
   }
 
-  const emailPanel =
-    entityType === "person" ? <PersonEmailTab personId={entityId} /> : <OrgEmailPanel />;
+  function onEmailChanged(): void {
+    void utils.email.listMessagesForContact.invalidate({ personId: entityId });
+  }
+
+  const emailScope =
+    entityType === "person" ? ({ kind: "person", personId: entityId } as const) : undefined;
 
   // S1: Focus and History are stacked, always-visible sections (not a toggle), mirroring the
   // deal page so the two read identically. CO-1: History gets the deal page's per-type filter row.
   return (
     <div className="space-y-6">
+      {emailQuery.isError && (
+        <p role="alert" className="text-sm text-red-600">
+          {EMAIL_LOAD_ERROR}
+        </p>
+      )}
       <PinnedNotesSection items={pinned} onNoteChanged={onNoteChanged} />
       <section aria-label="focus">
         <SectionHeading>Focus</SectionHeading>
@@ -125,9 +146,14 @@ export function ContactTimelinePanel({
           entityId={entityId}
           items={historyByType}
           counts={counts}
-          emailPanel={emailPanel}
+          emailScope={emailScope}
+          emailEmptyLabel={
+            emailTabStatusLabel(emailQuery) ??
+            (entityType === "organization" ? ORG_EMAIL_EMPTY : undefined)
+          }
           onActivityChanged={onActivityChanged}
           onNoteChanged={onNoteChanged}
+          onEmailChanged={onEmailChanged}
         />
       </section>
     </div>

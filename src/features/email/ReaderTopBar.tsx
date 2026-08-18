@@ -20,6 +20,7 @@ import { trpc } from "@/lib/trpc-client";
 import { readCsrfToken } from "@/utils/csrfCookie";
 import { trashThreadAction } from "./actions";
 import { archiveThreadAction } from "./folderActions";
+import { invalidateRecordTimelines } from "./invalidateRecordTimelines";
 import type { NeighborFolder } from "./threadNeighbors";
 
 // The list appends ?folder= when opening a thread; default to inbox and ignore anything else so a
@@ -56,10 +57,9 @@ export function ReaderTopBar({
     void utils.email.folders.sent.invalidate();
     void utils.email.folders.archive.invalidate();
     void utils.email.search.invalidate();
-    // The deal/contact Email tabs read linked threads separately; refresh them too so a Back to the
-    // entity tab does not render the just-trashed row from cache.
-    void utils.email.forDeal.invalidate();
-    void utils.email.forContact.invalidate();
+    // The deal and person timelines read the linked messages separately; refresh them too so a Back
+    // to the record does not render the just-trashed email from cache.
+    invalidateRecordTimelines(utils);
   }
 
   async function archive(): Promise<void> {

@@ -4,7 +4,7 @@ import { withTestDb } from "@/db/testing";
 import { seedPipelineWithStages, seedUser } from "@/db/testing/factories";
 import type { AuthUser } from "@/features/permissions/types";
 import { getThread } from "./emailReads";
-import { listThreadsForDeal } from "./entityThreadReads";
+import { listMessagesForDeal } from "./entityMessageReads";
 import { listArchivedThreads, listSentThreads } from "./folderReads";
 import { listInbox } from "./inboxList";
 import { inboxUnreadCount } from "./readState";
@@ -140,7 +140,7 @@ describe("trashed thread exclusion", () => {
     });
   });
 
-  it("is absent from a linked deal's Email tab", async () => {
+  it("is absent from a linked deal's timeline", async () => {
     await withTestDb(async (db) => {
       const owner = await seedUser(db, { email: "o@gunsnation.com" });
       const acctId = await seedAccount(db, owner.id);
@@ -154,12 +154,12 @@ describe("trashed thread exclusion", () => {
       const trashed = await seedThread(db, acctId, "trash", { trashed: true });
       await db.execute(sql`UPDATE email_threads SET deal_id = ${deal.id} WHERE id = ${trashed}`);
 
-      const threads = await listThreadsForDeal(
+      const messages = await listMessagesForDeal(
         db,
         { actor: actorOf(owner.id), dealId: deal.id },
         SIG(),
       );
-      expect(threads).toHaveLength(0);
+      expect(messages).toHaveLength(0);
     });
   });
 });

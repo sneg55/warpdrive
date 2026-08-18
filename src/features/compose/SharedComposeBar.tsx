@@ -13,7 +13,9 @@ import {
 } from "@/features/deal-workspace/composeTabIcons";
 import { Composer } from "@/features/email/Composer";
 import { preloadRichTextBody } from "@/features/email/composer/RichTextBodyLazy";
+import { invalidateRecordTimelines } from "@/features/email/invalidateRecordTimelines";
 import { FileAttachments } from "@/features/files/FileAttachments";
+import { trpc } from "@/lib/trpc-client";
 import { ComposeCollapsedTrigger } from "./ComposeCollapsedTrigger";
 import { ComposeNoteTab } from "./ComposeNoteTab";
 import {
@@ -109,6 +111,7 @@ export function SharedComposeBar({
   onEditCancel,
 }: Props): React.ReactNode {
   const composeRef = useRef<HTMLElement>(null);
+  const utils = trpc.useUtils();
   const [expanded, setExpanded] = useState(false);
   const tabs = tabsForScope(scope);
   // Default to the first enabled tab for this scope (Activity for deal/person/org, Notes for leads).
@@ -131,6 +134,15 @@ export function SharedComposeBar({
   function backToActivityPrompt(): void {
     setTab("activity");
     setExpanded(false);
+  }
+
+  // A sent email becomes a card on the record timeline, which reads its own message query and stays
+  // mounted here, so it never refetches on staleness alone. The email tab is deal-scoped, and a
+  // deal-scoped send links the new thread to BOTH the deal and a person (the composer's personId
+  // when it has one, otherwise the recipient the server resolves), so refresh both timelines.
+  function onEmailSent(): void {
+    invalidateRecordTimelines(utils);
+    backToActivityPrompt();
   }
 
   const prompt = PROMPTS[tab];
@@ -208,7 +220,7 @@ export function SharedComposeBar({
                   accountId={emailAccountId}
                   fromAddress={emailAddress}
                   context={dealComposerContext(scope)}
-                  onSent={backToActivityPrompt}
+                  onSent={onEmailSent}
                   onClose={backToActivityPrompt}
                 />
               </div>

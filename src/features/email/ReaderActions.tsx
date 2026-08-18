@@ -13,6 +13,8 @@ interface ReaderActionsProps {
   accountId: string;
   threadId: string;
   onSent?: () => void;
+  // Mode to open in. Omitted by the thread reader, which starts on the footer instead.
+  initialMode?: ReplyMode;
 }
 
 // Reply / Reply all / Forward for the thread reader. Toggles which mode is active; the
@@ -25,8 +27,9 @@ export function ReaderActions({
   accountId,
   threadId,
   onSent,
+  initialMode,
 }: ReaderActionsProps): React.ReactNode {
-  const [mode, setMode] = useState<ReplyMode | null>(null);
+  const [mode, setMode] = useState<ReplyMode | null>(initialMode ?? null);
 
   if (mode !== null) {
     return (

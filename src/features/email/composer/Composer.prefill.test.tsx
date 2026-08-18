@@ -7,6 +7,10 @@ import { act, cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { saveDraftAction } from "../folderActions";
 import { DEBOUNCE_MS } from "./useDraftAutosave";
+// TipTap sits behind next/dynamic in RichTextBodyLazy and is the heaviest client dependency here.
+// Imported for its transform cost, so waiting on the editor's content is not also waiting on the
+// module to load. Unused by name on purpose.
+import "./RichTextBody";
 
 afterEach(cleanup);
 

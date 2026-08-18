@@ -68,11 +68,13 @@ vi.mock("@/lib/trpc-client", () => ({
     contacts: {
       contactTimeline: { useQuery: () => ({ data: { items: queryItems } }) },
     },
+    email: { listMessagesForContact: { useQuery: () => ({ data: [], isError: false }) } },
     useUtils: () => ({
       contacts: {
         contactTimeline: { invalidate },
         activityStats: { invalidate: invalidateActivityStats },
       },
+      email: { listMessagesForContact: { invalidate: vi.fn() } },
     }),
   },
 }));

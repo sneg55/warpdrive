@@ -30,6 +30,13 @@ process.env.ALLOW_FIRST_LOGIN_ADMIN ??= "false";
 // cast to an index type because TS declares these methods non-nullable, but jsdom omits them at
 // runtime, so the `??=` fallbacks are genuinely reachable.
 if (typeof Element !== "undefined") {
+  // The CI runner packs 23 workers into one pod, where a next/dynamic import or a Radix tooltip's
+  // own open delay can outlast Testing Library's 1000ms default and fail a query that would have
+  // resolved. The budget is a ceiling, not a sleep: a passing test pays nothing for the headroom.
+  // Imported here rather than at module scope so the node-environment lanes never load react-dom.
+  const { configure } = await import("@testing-library/react");
+  configure({ asyncUtilTimeout: 5_000 });
+
   const proto = Element.prototype as unknown as Record<string, (() => unknown) | undefined>;
   proto.hasPointerCapture ??= () => false;
   proto.setPointerCapture ??= () => undefined;
@@ -54,3 +61,6 @@ if (typeof globalThis.ResizeObserver === "undefined") {
   }
   globalThis.ResizeObserver = ResizeObserverStub;
 }
+
+// The conditional `await import` above makes this file need module syntax; nothing is exported.
+export {};

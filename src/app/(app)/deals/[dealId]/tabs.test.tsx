@@ -20,7 +20,9 @@ vi.mock("@/lib/trpc-client", () => ({
     // ActivityCard (rendered in the Focus/History feeds) reads useUtils for its optimistic mark-done.
     useUtils: () => ({
       activities: { listForEntity: { setData: () => {}, invalidate: () => {} } },
+      email: { listMessagesForDeal: { invalidate: () => {} } },
     }),
+    email: { listMessagesForDeal: { useQuery: () => ({ data: [] }) } },
     collaboration: {
       listNotes: {
         useQuery: () => ({ data: noteState.notes }),

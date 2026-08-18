@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { isValidEmail } from "@/lib/isValidEmail";
 import { trpc } from "@/lib/trpc-client";
 
@@ -23,6 +23,10 @@ export function RecipientField({ label, values, onChange }: RecipientFieldProps)
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Mirrors `query` so the blur handler reads what is in the box right now rather than the value
+  // captured when the handler was created: picking a suggestion clears the query and blurs in the
+  // same tick, and a stale closure would re-commit the half-typed search text.
+  const queryRef = useRef("");
 
   const { data } = trpc.contacts.listPeople.useQuery({
     offset: 0,
@@ -43,15 +47,30 @@ export function RecipientField({ label, values, onChange }: RecipientFieldProps)
 
   function addEmail(email: string): void {
     const trimmed = email.trim();
-    if (trimmed.length === 0 || values.includes(trimmed)) return;
+    if (trimmed.length === 0 || values.includes(trimmed)) {
+      writeQuery("");
+      return;
+    }
     if (!isValidEmail(trimmed)) {
       setError("Enter a valid email address.");
       return;
     }
     setError(null);
     onChange([...values, trimmed]);
-    setQuery("");
+    writeQuery("");
     setOpen(false);
+  }
+
+  function writeQuery(value: string): void {
+    queryRef.current = value;
+    setQuery(value);
+  }
+
+  // Commits whatever is typed but not yet a chip. Leaving the field (blur, Tab) or typing a
+  // separator has to commit, because an address that only looks committed leaves the list empty
+  // and Send disabled with nothing on screen to explain why.
+  function commitPending(): void {
+    if (queryRef.current.trim().length > 0) addEmail(queryRef.current);
   }
 
   function removeEmail(email: string): void {
@@ -81,17 +100,24 @@ export function RecipientField({ label, values, onChange }: RecipientFieldProps)
         className="flex-1 min-w-20 text-sm focus:outline-none bg-transparent"
         value={query}
         onChange={(e) => {
-          setQuery(e.target.value);
+          writeQuery(e.target.value);
           setOpen(true);
           if (error !== null) setError(null);
         }}
         onKeyDown={(e) => {
-          if (e.key === "Enter" && query.trim().length > 0) {
+          if (query.trim().length === 0) return;
+          if (e.key === "Enter" || e.key === "," || e.key === ";") {
             e.preventDefault();
             addEmail(query);
+            return;
           }
+          // Tab commits but keeps its default action so focus still moves on.
+          if (e.key === "Tab") addEmail(query);
         }}
-        onBlur={() => setTimeout(() => setOpen(false), 150)}
+        onBlur={() => {
+          commitPending();
+          setTimeout(() => setOpen(false), 150);
+        }}
       />
       {open && suggestions.length > 0 && (
         <div className="absolute left-0 top-full z-10 mt-1 w-full rounded border border-border bg-background shadow-md">

@@ -8,7 +8,7 @@ import { trpc } from "@/lib/trpc-client";
 import type { CustomFieldDef } from "@/types/customFields";
 import { OrganizationDetailHeader } from "../../ContactDetailHeader";
 import { ContactTimelinePanel, FilesPanel, TabStrip } from "../../contactDetail.shared";
-import { OrgEmailPanel } from "../../PersonEmailTab";
+import { OrgEmailPanel } from "../../OrgEmailPanel";
 import { OrgSidebar } from "./OrgSidebar";
 
 type Tab = "activity" | "email" | "files";

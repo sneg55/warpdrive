@@ -1,4 +1,7 @@
+import { Mail } from "lucide-react";
 import type React from "react";
+import type { EmailCardScope } from "@/features/email/EmailTimelineCard";
+import { EmailTimelineCard } from "@/features/email/EmailTimelineCard";
 import { ActivityCard } from "./history/ActivityCard";
 import { AttributionLine } from "./history/AttributionLine";
 import { CreatedCard } from "./history/CreatedCard";
@@ -23,11 +26,22 @@ function EventRow({
   );
 }
 
-// Rail marker per kind: notes an amber dot, everything else a neutral dot. Activities do NOT get
-// their type glyph on the rail: ActivityCard already shows the type icon next to the subject, and
-// duplicating it on the rail made a task activity (whose glyph is a checkmark) look like it had a
-// stray checkmark beside its still-empty done toggle.
+// Rail marker per kind: notes an amber dot, emails an envelope, everything else a neutral dot.
+// Activities do NOT get their type glyph on the rail: ActivityCard already shows the type icon next
+// to the subject, and duplicating it on the rail made a task activity (whose glyph is a checkmark)
+// look like it had a stray checkmark beside its still-empty done toggle.
 function RailMarker({ item }: { item: HistoryItem }): React.ReactNode {
+  if (item.kind === "email") {
+    return (
+      <span
+        aria-hidden="true"
+        data-rail="email"
+        className="absolute -left-[2.15rem] top-1 flex h-5 w-5 items-center justify-center rounded-full border border-border bg-card text-muted-foreground"
+      >
+        <Mail className="h-3 w-3" />
+      </span>
+    );
+  }
   return (
     <span
       aria-hidden="true"
@@ -48,6 +62,8 @@ export function HistoryFeed({
   onActivityChanged,
   onNoteChanged,
   onEditActivity,
+  emailScope,
+  onEmailChanged,
 }: {
   items: HistoryItem[];
   emptyLabel: string;
@@ -56,6 +72,10 @@ export function HistoryFeed({
   onNoteChanged?: () => void;
   // Open an activity in the inline edit composer (deal workspace only).
   onEditActivity?: (activityId: string) => void;
+  // Which record's timeline this is, for the email cards' unlink and reply.
+  emailScope?: EmailCardScope;
+  // Refetch the record's linked messages after an unlink or a sent reply.
+  onEmailChanged?: () => void;
 }): React.ReactNode {
   if (items.length === 0) {
     return <p className="text-sm text-muted-foreground">{emptyLabel}</p>;
@@ -88,6 +108,15 @@ export function HistoryFeed({
           )}
           {item.kind === "event" && (
             <EventRow label={item.label} at={item.at} actorName={item.actorName} />
+          )}
+          {/* emailScope is absent on surfaces that carry no linked mail (a lead timeline), so an
+              email item simply does not render there rather than guessing a scope. */}
+          {item.kind === "email" && emailScope !== undefined && (
+            <EmailTimelineCard
+              message={item.message}
+              scope={emailScope}
+              onUnlinked={onEmailChanged ?? ((): void => {})}
+            />
           )}
         </li>
       ))}

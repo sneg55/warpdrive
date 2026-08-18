@@ -5,6 +5,7 @@ import { STRINGS } from "@/constants/strings";
 import { type RouterOutputs, trpc } from "@/lib/trpc-client";
 import { readCsrfToken } from "@/utils/csrfCookie";
 import { InboxReaderSidebar } from "./InboxReaderSidebar";
+import { invalidateRecordTimelines } from "./invalidateRecordTimelines";
 import { primaryCounterparty } from "./primaryCounterparty";
 import { ReaderActions } from "./ReaderActions";
 import { ReaderMessageCard } from "./ReaderMessageCard";
@@ -58,6 +59,14 @@ export function ThreadPane({
       }
     });
   }, [data, threadId, utils]);
+
+  // A reply sent here and a change to the thread's linked deal/person both alter what the deal and
+  // person timelines should show, and those queries live on other routes: refetching the thread
+  // alone leaves them serving stale cards for the rest of their stale window.
+  function handleThreadChanged(): void {
+    invalidateRecordTimelines(utils);
+    void refetch();
+  }
 
   async function handleMarkUnread(): Promise<void> {
     const res = await markThreadUnreadAction(readCsrfToken(), { threadId });
@@ -189,7 +198,7 @@ export function ThreadPane({
                   selfEmail={ownerEmail}
                   accountId={accountId}
                   threadId={threadId}
-                  onSent={() => void refetch()}
+                  onSent={handleThreadChanged}
                 />
               )}
             </div>
@@ -207,7 +216,7 @@ export function ThreadPane({
           primaryEmail={primaryEmail}
           primaryName={primaryName}
           canCompose={canCompose}
-          onLinked={() => void refetch()}
+          onLinked={handleThreadChanged}
         />
       </div>
     </div>
