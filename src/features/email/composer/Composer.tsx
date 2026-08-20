@@ -12,7 +12,6 @@ import { ComposerFooter } from "./ComposerFooter";
 import { ComposerHeader } from "./ComposerHeader";
 import type { ComposerContext } from "./composer.types";
 import { dealDefaultRecipients } from "./dealRecipients";
-import { FromPicker } from "./FromPicker";
 import { InsertToolbar } from "./InsertToolbar";
 import { RecipientsRow } from "./RecipientsRow";
 import { RichTextBody } from "./RichTextBodyLazy";
@@ -192,6 +191,7 @@ export function Composer({
       className="rounded-md border border-border bg-background p-3 flex flex-col gap-2 text-sm"
     >
       <ComposerHeader
+        fromAddress={fromAddress}
         onClose={
           onClose === undefined
             ? undefined
@@ -201,7 +201,6 @@ export function Composer({
               }
         }
       />
-      {fromAddress !== undefined && <FromPicker address={fromAddress} />}
       <ComposerErrorAlert error={error} onDismiss={() => setError(null)} />
       <RecipientsRow
         key={recipientsNonce}

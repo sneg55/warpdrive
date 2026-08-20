@@ -36,4 +36,13 @@ describe("ComposerHeader", () => {
     expect(screen.getByRole("link", { name: /settings/i })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /close/i })).not.toBeInTheDocument();
   });
+
+  it("puts the From address on the same row as the settings and close controls", () => {
+    render(<ComposerHeader fromAddress="me@x.com" onClose={vi.fn()} />);
+    const row = screen.getByText("From").parentElement;
+    expect(row).not.toBeNull();
+    expect(screen.getByText("me@x.com")).toBeInTheDocument();
+    expect(row).toContainElement(screen.getByRole("link", { name: /settings/i }));
+    expect(row).toContainElement(screen.getByRole("button", { name: /close/i }));
+  });
 });

@@ -29,10 +29,19 @@ const { createNoteAction } = vi.hoisted(() => ({
 }));
 
 vi.mock("@/features/deal-workspace/composer/ActivityComposerInline", () => ({
-  ActivityComposerInline: ({ onCancel }: { onCancel: () => void }) => (
+  ActivityComposerInline: ({
+    onCancel,
+    onCreated,
+  }: {
+    onCancel: () => void;
+    onCreated: () => void;
+  }) => (
     <div data-testid="activity-form">
       <button type="button" onClick={onCancel}>
         Cancel
+      </button>
+      <button type="button" onClick={onCreated}>
+        Save
       </button>
     </div>
   ),
@@ -115,6 +124,18 @@ describe("SharedComposeBar (Pipedrive default-state model)", () => {
     fireEvent.click(screen.getByRole("button", { name: "Click here to add an activity..." }));
     expect(screen.getByTestId("activity-form")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(screen.queryByTestId("activity-form")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Click here to add an activity..." }),
+    ).toBeInTheDocument();
+  });
+
+  it("collapses back to the Activity prompt after saving an activity", () => {
+    const onActivityCreated = vi.fn();
+    renderBar({ onActivityCreated });
+    fireEvent.click(screen.getByRole("button", { name: "Click here to add an activity..." }));
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    expect(onActivityCreated).toHaveBeenCalled();
     expect(screen.queryByTestId("activity-form")).not.toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Click here to add an activity..." }),

@@ -151,7 +151,10 @@ export function SharedComposeBar({
   return (
     <section ref={composeRef} aria-label="compose" className="mb-4 rounded border bg-card">
       <Tabs value={tab} onValueChange={(v) => openTab(v as ComposeTab)}>
-        <TabsList className="overflow-x-auto border-b">
+        {/* The strip's divider is an inset shadow, not a border: a border sits below the content
+            box, so the active tab's underline needed a -mb-px to cover it and that 1px of vertical
+            overflow made the horizontal-scroll container render a stray vertical scrollbar. */}
+        <TabsList className="overflow-x-auto shadow-[inset_0_-1px_0_0_var(--color-border)]">
           {tabs.map(({ id, label, Icon }) => (
             <TabsTrigger
               key={id}
@@ -161,7 +164,7 @@ export function SharedComposeBar({
               // Radix onValueChange does not fire on a same-value click, so drive openTab from onClick;
               // onValueChange still handles keyboard arrow switching.
               onClick={() => openTab(id)}
-              className="-mb-px flex h-10 items-center gap-2 whitespace-nowrap border-b-2 border-transparent px-3 text-start font-[450] text-muted-foreground hover:text-foreground data-[state=active]:border-[#2b74da] data-[state=active]:text-link"
+              className="flex h-10 items-center gap-2 whitespace-nowrap border-b-2 border-transparent px-3 text-start font-[450] text-muted-foreground hover:text-foreground data-[state=active]:border-[#2b74da] data-[state=active]:text-link"
             >
               <Icon />
               {label}
@@ -198,7 +201,12 @@ export function SharedComposeBar({
               personName={scope.personName}
               dealTitle={scope.dealTitle}
               orgName={scope.orgName}
-              onCreated={onActivityCreated}
+              // Saving finishes the activity, so the composer collapses back to the prompt the way
+              // Cancel does; leaving it open reads as an unsaved draft of what was just created.
+              onCreated={() => {
+                setExpanded(false);
+                onActivityCreated();
+              }}
               onCancel={() => setExpanded(false)}
             />
           )}
