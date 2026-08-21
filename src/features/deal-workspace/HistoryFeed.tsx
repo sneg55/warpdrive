@@ -1,5 +1,7 @@
 import { Mail } from "lucide-react";
 import type React from "react";
+import type { DraftSummary } from "@/features/email/draftRepo";
+import { EmailDraftCard } from "@/features/email/EmailDraftCard";
 import type { EmailCardScope } from "@/features/email/EmailTimelineCard";
 import { EmailTimelineCard } from "@/features/email/EmailTimelineCard";
 import { ActivityCard } from "./history/ActivityCard";
@@ -31,7 +33,7 @@ function EventRow({
 // to the subject, and duplicating it on the rail made a task activity (whose glyph is a checkmark)
 // look like it had a stray checkmark beside its still-empty done toggle.
 function RailMarker({ item }: { item: HistoryItem }): React.ReactNode {
-  if (item.kind === "email") {
+  if (item.kind === "email" || item.kind === "emailDraft") {
     return (
       <span
         aria-hidden="true"
@@ -64,6 +66,8 @@ export function HistoryFeed({
   onEditActivity,
   emailScope,
   onEmailChanged,
+  onResumeDraft,
+  onDraftChanged,
 }: {
   items: HistoryItem[];
   emptyLabel: string;
@@ -76,6 +80,11 @@ export function HistoryFeed({
   emailScope?: EmailCardScope;
   // Refetch the record's linked messages after an unlink or a sent reply.
   onEmailChanged?: () => void;
+  // Open a draft in the host's composer. Absent on surfaces with no composer, where a draft row
+  // simply does not render rather than offering a Continue that goes nowhere.
+  onResumeDraft?: (draft: DraftSummary) => void;
+  // Refetch the record's drafts after one is discarded.
+  onDraftChanged?: () => void;
 }): React.ReactNode {
   if (items.length === 0) {
     return <p className="text-sm text-muted-foreground">{emptyLabel}</p>;
@@ -111,6 +120,13 @@ export function HistoryFeed({
           )}
           {/* emailScope is absent on surfaces that carry no linked mail (a lead timeline), so an
               email item simply does not render there rather than guessing a scope. */}
+          {item.kind === "emailDraft" && (
+            <EmailDraftCard
+              draft={item.draft}
+              onResume={onResumeDraft}
+              onChanged={onDraftChanged ?? ((): void => {})}
+            />
+          )}
           {item.kind === "email" && emailScope !== undefined && (
             <EmailTimelineCard
               message={item.message}

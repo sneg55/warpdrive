@@ -37,6 +37,37 @@ describe("folder action schemas", () => {
     ).toBe(true);
   });
 
+  it("saveDraftInput carries the CRM link ids so autosave can persist them", () => {
+    const dealId = crypto.randomUUID();
+    const parsed = saveDraftInput.safeParse({
+      accountId: crypto.randomUUID(),
+      subject: "s",
+      bodyHtml: "",
+      toEmails: [],
+      ccEmails: [],
+      linkDealId: dealId,
+      linkPersonId: null,
+    });
+    expect(parsed.success).toBe(true);
+    if (parsed.success) {
+      expect(parsed.data.linkDealId).toBe(dealId);
+      expect(parsed.data.linkPersonId).toBeNull();
+    }
+  });
+
+  it("saveDraftInput rejects a non-uuid link id", () => {
+    expect(
+      saveDraftInput.safeParse({
+        accountId: crypto.randomUUID(),
+        subject: "s",
+        bodyHtml: "",
+        toEmails: [],
+        ccEmails: [],
+        linkDealId: "nope",
+      }).success,
+    ).toBe(false);
+  });
+
   it("cancelOutboxInput requires a uuid attemptId", () => {
     expect(cancelOutboxInput.safeParse({ attemptId: crypto.randomUUID() }).success).toBe(true);
     expect(cancelOutboxInput.safeParse({ attemptId: "x" }).success).toBe(false);

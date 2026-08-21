@@ -57,3 +57,21 @@ export function plainTextToSafeHtml(text: string): string {
   const normalized = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
   return linkify(escapeHtml(normalized)).replace(/\n/g, "<br>");
 }
+
+/**
+ * Convert an untrusted plain-text body into paragraph HTML: blank-line-separated blocks become
+ * <p>, single newlines inside a block become <br>. Used for bodies composed outside the rich-text
+ * editor (the MCP draft tool), so resuming one in the composer reads as ordinary paragraphs.
+ * Escaped first, exactly like plainTextToSafeHtml; no auto-linking, since an outbound body is
+ * written by the sender and link markup is theirs to add.
+ */
+export function plainTextToParagraphHtml(text: string): string {
+  if (text.trim() === "") return "";
+  const normalized = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+  return normalized
+    .split(/\n{2,}/)
+    .map((block) => block.trim())
+    .filter((block) => block !== "")
+    .map((block) => `<p>${escapeHtml(block).replace(/\n/g, "<br>")}</p>`)
+    .join("");
+}

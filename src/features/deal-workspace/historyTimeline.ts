@@ -20,6 +20,7 @@ import {
 import { isSourceChannelKey, SOURCE_CHANNELS } from "@/constants/sourceChannels";
 import type { CalendarActivity } from "@/features/activities/calendar";
 import type { ChangeLogEntry } from "@/features/collaboration/changeLog";
+import type { DraftSummary } from "@/features/email/draftRepo";
 import type { EmailTimelineMessage } from "@/features/email/entityMessageReads";
 
 // A unified deal-history feed (Pipedrive parity): activities render as cards,
@@ -35,7 +36,10 @@ export type HistoryItem =
   | { kind: "event"; id: string; at: Date; label: string; actorName: string | null }
   // One linked email, per message rather than per thread: Pipedrive splits a thread across the
   // timeline so each message sits at its own moment. The body is absent, it loads on expand.
-  | { kind: "email"; id: string; at: Date; message: EmailTimelineMessage };
+  | { kind: "email"; id: string; at: Date; message: EmailTimelineMessage }
+  // An unsent draft linked to this record. Author-only (the read is owner-scoped), and ordered by
+  // its last edit since it has no sent time.
+  | { kind: "emailDraft"; id: string; at: Date; draft: DraftSummary };
 
 export interface NoteItem {
   id: string;
@@ -233,4 +237,17 @@ export function mergeEmailItems(
     message: m,
   }));
   return [...items, ...emailItems].sort((a, b) => b.at.getTime() - a.at.getTime());
+}
+
+// Fold this actor's unsent drafts into a record timeline. Separate from mergeEmailItems because
+// drafts come from a different read (owner-scoped) and are ordered by last edit, not send time.
+export function mergeDraftItems(items: HistoryItem[], drafts: DraftSummary[]): HistoryItem[] {
+  if (drafts.length === 0) return items;
+  const draftItems: HistoryItem[] = drafts.map((d) => ({
+    kind: "emailDraft",
+    id: d.id,
+    at: new Date(d.updatedAt),
+    draft: d,
+  }));
+  return [...items, ...draftItems].sort((a, b) => b.at.getTime() - a.at.getTime());
 }

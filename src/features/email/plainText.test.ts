@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { plainTextToSafeHtml } from "./plainText";
+import { plainTextToParagraphHtml, plainTextToSafeHtml } from "./plainText";
 
 describe("plainTextToSafeHtml", () => {
   it("returns empty string for blank input", () => {
@@ -47,5 +47,27 @@ describe("plainTextToSafeHtml", () => {
   it("does not allow a javascript: scheme to be linkified (only http/https/mailto)", () => {
     const out = plainTextToSafeHtml("javascript:alert(1)");
     expect(out).not.toContain("<a ");
+  });
+});
+
+describe("plainTextToParagraphHtml", () => {
+  it("wraps blank-line-separated blocks in paragraphs", () => {
+    expect(plainTextToParagraphHtml("One\n\nTwo")).toBe("<p>One</p><p>Two</p>");
+  });
+
+  it("keeps single newlines inside a paragraph as line breaks", () => {
+    expect(plainTextToParagraphHtml("Hi there,\nWe found errors.")).toBe(
+      "<p>Hi there,<br>We found errors.</p>",
+    );
+  });
+
+  it("escapes markup so a body from an agent cannot inject html", () => {
+    expect(plainTextToParagraphHtml("<script>alert(1)</script>")).toBe(
+      "<p>&lt;script&gt;alert(1)&lt;/script&gt;</p>",
+    );
+  });
+
+  it("returns an empty string for a blank body", () => {
+    expect(plainTextToParagraphHtml("   ")).toBe("");
   });
 });

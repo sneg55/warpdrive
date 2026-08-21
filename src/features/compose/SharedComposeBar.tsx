@@ -13,7 +13,9 @@ import {
 } from "@/features/deal-workspace/composeTabIcons";
 import { Composer } from "@/features/email/Composer";
 import { preloadRichTextBody } from "@/features/email/composer/RichTextBodyLazy";
+import type { DraftSummary } from "@/features/email/draftRepo";
 import { invalidateRecordTimelines } from "@/features/email/invalidateRecordTimelines";
+import { toComposerDraft } from "@/features/email/toComposerDraft";
 import { FileAttachments } from "@/features/files/FileAttachments";
 import { trpc } from "@/lib/trpc-client";
 import { ComposeCollapsedTrigger } from "./ComposeCollapsedTrigger";
@@ -85,6 +87,12 @@ interface Props {
   // Inline edit: when set, the Activity composer opens expanded in EDIT mode prefilled from this
   // activity (deal workspace). onEditSaved fires after a successful save; onEditCancel on cancel.
   editing?: EditableActivity | null;
+  // A draft picked off the record timeline. Non-null opens the Email tab seeded with it, the same
+  // way `editing` opens the Activity tab prefilled.
+  resumeDraft?: DraftSummary | null;
+  // Fired when the resumed draft is finished with (sent or closed) so the host clears it and the
+  // bar falls back to its own tab state.
+  onResumeDraftDone?: () => void;
   onEditSaved?: () => void;
   onEditCancel?: () => void;
 }
@@ -107,6 +115,8 @@ export function SharedComposeBar({
   onActivityCreated,
   onNoteCreated,
   editing,
+  resumeDraft,
+  onResumeDraftDone,
   onEditSaved,
   onEditCancel,
 }: Props): React.ReactNode {
@@ -117,6 +127,10 @@ export function SharedComposeBar({
   // Default to the first enabled tab for this scope (Activity for deal/person/org, Notes for leads).
   // Activity is enabled for every scope, so tabs is never empty; the ?? keeps the type checker happy.
   const [tab, setTab] = useState<ComposeTab>(() => tabs[0]?.id ?? "activity");
+  // Resuming a draft takes over the bar: show the Email tab expanded regardless of where the user
+  // had it, since the click that picked the draft is a request to keep writing it.
+  const resuming = resumeDraft != null;
+  const activeTab = resuming ? "email" : tab;
 
   // PD expands the clicked tab's editor immediately, even from the collapsed prompt.
   function openTab(id: ComposeTab): void {
@@ -132,6 +146,7 @@ export function SharedComposeBar({
   // Leaving the Email composer (sent or closed) lands on the collapsed Activity prompt,
   // not an expanded activity editor.
   function backToActivityPrompt(): void {
+    onResumeDraftDone?.();
     setTab("activity");
     setExpanded(false);
   }
@@ -145,12 +160,12 @@ export function SharedComposeBar({
     backToActivityPrompt();
   }
 
-  const prompt = PROMPTS[tab];
-  const showPrompt = !expanded && prompt !== undefined;
+  const prompt = PROMPTS[activeTab];
+  const showPrompt = !resuming && !expanded && prompt !== undefined;
 
   return (
     <section ref={composeRef} aria-label="compose" className="mb-4 rounded border bg-card">
-      <Tabs value={tab} onValueChange={(v) => openTab(v as ComposeTab)}>
+      <Tabs value={activeTab} onValueChange={(v) => openTab(v as ComposeTab)}>
         {/* The strip's divider is an inset shadow, not a border: a border sits below the content
             box, so the active tab's underline needed a -mb-px to cover it and that 1px of vertical
             overflow made the horizontal-scroll container render a stray vertical scrollbar. */}
@@ -195,7 +210,7 @@ export function SharedComposeBar({
         />
       ) : (
         <div className="p-1.5">
-          {tab === "activity" && (
+          {activeTab === "activity" && (
             <ActivityComposerInline
               {...activityAnchor(scope)}
               personName={scope.personName}
@@ -211,7 +226,7 @@ export function SharedComposeBar({
             />
           )}
 
-          {tab === "notes" && (
+          {activeTab === "notes" && (
             <ComposeNoteTab
               entityType={noteEntityType(scope)}
               entityId={scope.entityId}
@@ -220,14 +235,18 @@ export function SharedComposeBar({
             />
           )}
 
-          {tab === "email" &&
+          {activeTab === "email" &&
             emailTabEnabled(scope) &&
             (emailAccountId !== null ? (
               <div className="p-1.5">
                 <Composer
+                  // Keyed by draft so picking a second draft re-seeds the composer instead of
+                  // leaving it on the first one's text.
+                  key={resumeDraft?.id ?? "fresh"}
                   accountId={emailAccountId}
                   fromAddress={emailAddress}
                   context={dealComposerContext(scope)}
+                  draft={resumeDraft == null ? undefined : toComposerDraft(resumeDraft)}
                   onSent={onEmailSent}
                   onClose={backToActivityPrompt}
                 />
@@ -242,7 +261,7 @@ export function SharedComposeBar({
               </p>
             ))}
 
-          {tab === "files" &&
+          {activeTab === "files" &&
             (() => {
               const filesEntityType = fileEntityType(scope);
               if (filesEntityType === null) return null;

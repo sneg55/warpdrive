@@ -42,13 +42,19 @@ vi.mock("@/lib/trpc-client", () => ({
   trpc: {
     useUtils: () => ({
       activities: { listForEntity: { invalidate: () => {}, setData: () => {} } },
-      email: { listMessagesForDeal: { invalidate: () => {} } },
+      email: {
+        listMessagesForDeal: { invalidate: () => {} },
+        drafts: { listForDeal: { invalidate: () => {} } },
+      },
     }),
     collaboration: {
       listNotes: { useQuery: () => ({ data: [] }) },
       listChangeLog: { useQuery: () => ({ data: [] }) },
     },
-    email: { listMessagesForDeal: { useQuery: () => ({ data: [] }) } },
+    email: {
+      listMessagesForDeal: { useQuery: () => ({ data: [] }) },
+      drafts: { listForDeal: { useQuery: () => ({ data: [] }) } },
+    },
     activities: {
       listForEntity: {
         useQuery: () => ({

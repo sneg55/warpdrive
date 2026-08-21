@@ -12,6 +12,7 @@ import { DealSidebar } from "@/features/deal-workspace/DealSidebar";
 import { DealHeader } from "@/features/deal-workspace/header/DealHeader";
 import { useBlockVisibility } from "@/features/deal-workspace/header/useBlockVisibility";
 import type { DealWorkspace } from "@/features/deal-workspace/summaryRepo";
+import type { DraftSummary } from "@/features/email/draftRepo";
 import { trpc } from "@/lib/trpc-client";
 import { WorkspaceTabs } from "./tabs";
 
@@ -103,6 +104,10 @@ export function DealWorkspaceClient({
   );
   const editingActivity = editingActivityId !== null ? (editForm.data ?? null) : null;
 
+  // A draft picked off the timeline, held here because the timeline and the compose bar are
+  // sibling subtrees. Cleared once the message is sent or the composer is closed.
+  const [resumeDraft, setResumeDraft] = useState<DraftSummary | null>(null);
+
   return (
     <DealActionErrorProvider>
       <div className="flex h-full flex-col p-4">
@@ -150,6 +155,8 @@ export function DealWorkspaceClient({
                 }}
                 emailAccountId={emailAccountId}
                 emailAddress={emailAddress}
+                resumeDraft={resumeDraft}
+                onResumeDraftDone={() => setResumeDraft(null)}
                 onActivityCreated={() =>
                   void utils.activities.listForEntity.invalidate({
                     entityType: "deal",
@@ -187,6 +194,7 @@ export function DealWorkspaceClient({
                   })
                 }
                 onEditActivity={setEditingActivityId}
+                onResumeDraft={setResumeDraft}
               />
             )}
           </div>

@@ -32,6 +32,9 @@ export interface ComposerSendDeps {
   // context's own dealId (which only exists for the deal-workspace composer) so a plain inbox
   // compose can still pin the new thread to a picked deal.
   linkDealId?: string;
+  // The person the compose is written against (a deal's primary contact, or the person a resumed
+  // draft was written for). Resolved by resolveComposerLinks before it reaches here.
+  linkPersonId?: string;
   activityTypes: { id: string; key: string }[];
   addAsActivity: boolean;
   setSending: (v: boolean) => void;
@@ -61,6 +64,7 @@ export function buildSendHandlers(deps: ComposerSendDeps) {
     attachments,
     context,
     linkDealId,
+    linkPersonId,
     activityTypes,
     addAsActivity,
     setSending,
@@ -108,7 +112,7 @@ export function buildSendHandlers(deps: ComposerSendDeps) {
       // `linkDealId` dep); with neither, the send falls back to recipient-based auto-linking
       // server-side.
       linkDealId: linkDealId ?? (context?.kind === "deal" ? context.dealId : undefined),
-      linkPersonId: context?.kind === "deal" ? context.personId : undefined,
+      linkPersonId: linkPersonId ?? (context?.kind === "deal" ? context.personId : undefined),
     };
   }
 
@@ -138,7 +142,7 @@ export function buildSendHandlers(deps: ComposerSendDeps) {
         dueAt: null,
         durationMinutes: null,
         dealId: context?.kind === "deal" ? context.dealId : (linkDealId ?? null),
-        personId: context?.kind === "deal" ? (context.personId ?? null) : null,
+        personId: (context?.kind === "deal" ? context.personId : linkPersonId) ?? null,
         orgId: context?.kind === "deal" ? (context.orgId ?? null) : null,
         guestPersonIds: [],
         participantUserIds: [],

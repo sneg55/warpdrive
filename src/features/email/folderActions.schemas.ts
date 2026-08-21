@@ -15,6 +15,10 @@ export const saveDraftInput = z.object({
   ccEmails: z.array(z.string().max(320)).max(1000).default([]),
   // Compose privacy in progress, so a private selection survives resume (codex P1).
   visibility: z.enum(EMAIL_VISIBILITY).default("shared"),
+  // CRM link context the composer holds, persisted so a resumed draft still sends against the
+  // record it was written for, and so the record's timeline can show it.
+  linkDealId: z.string().uuid().nullable().optional(),
+  linkPersonId: z.string().uuid().nullable().optional(),
 });
 
 export const deleteDraftInput = z.object({ draftId: z.string().uuid() });

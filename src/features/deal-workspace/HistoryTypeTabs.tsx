@@ -2,6 +2,7 @@ import type React from "react";
 import { PILL_TAB, Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { HistoryFeed } from "@/features/deal-workspace/HistoryFeed";
 import type { HistoryItem } from "@/features/deal-workspace/historyTimeline";
+import type { DraftSummary } from "@/features/email/draftRepo";
 import type { EmailCardScope } from "@/features/email/EmailTimelineCard";
 import { FileAttachments } from "@/features/files/FileAttachments";
 
@@ -44,6 +45,10 @@ interface HistoryTypeTabsProps {
   emailEmptyLabel?: string;
   // Refetch the record's linked messages after an unlink or a sent reply.
   onEmailChanged?: () => void;
+  // Open one of the record's unsent drafts in the host's composer.
+  onResumeDraft?: (draft: DraftSummary) => void;
+  // Refetch the record's drafts after one is discarded.
+  onDraftChanged?: () => void;
 }
 
 // The per-type filter row that used to be the entire "History" tab bar (Wave
@@ -61,6 +66,8 @@ export function HistoryTypeTabs({
   emailScope,
   emailEmptyLabel,
   onEmailChanged,
+  onResumeDraft,
+  onDraftChanged,
 }: HistoryTypeTabsProps): React.ReactNode {
   return (
     <Tabs value={tab} onValueChange={(v) => onTab(v as HistoryTab)}>
@@ -93,6 +100,8 @@ export function HistoryTypeTabs({
             onEditActivity={onEditActivity}
             emailScope={emailScope}
             onEmailChanged={onEmailChanged}
+            onResumeDraft={onResumeDraft}
+            onDraftChanged={onDraftChanged}
           />
         )}
       </div>

@@ -10,8 +10,16 @@ vi.mock("@/lib/trpc-client", () => ({
       listNotes: { useQuery: () => ({ data: [] }) },
       listChangeLog: { useQuery: () => ({ data: [] }) },
     },
-    email: { listMessagesForDeal: { useQuery: (...a: unknown[]) => listQuery(...a) } },
-    useUtils: () => ({ email: { listMessagesForDeal: { invalidate: vi.fn() } } }),
+    email: {
+      listMessagesForDeal: { useQuery: (...a: unknown[]) => listQuery(...a) },
+      drafts: { listForDeal: { useQuery: () => ({ data: [] }) } },
+    },
+    useUtils: () => ({
+      email: {
+        listMessagesForDeal: { invalidate: vi.fn() },
+        drafts: { listForDeal: { invalidate: vi.fn() } },
+      },
+    }),
   },
 }));
 vi.mock("@/features/email/EmailTimelineCard", () => ({

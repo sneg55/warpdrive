@@ -2,6 +2,7 @@ import { z } from "zod";
 import { INBOX_PAGE_SIZE } from "@/constants/inbox";
 import { protectedProcedure, router } from "@/server/trpc/trpc";
 import { unwrap } from "@/server/unwrap";
+import { listDraftsForDeal, listDraftsForPerson } from "./draftEntityReads";
 import { listDrafts } from "./draftRepo";
 import * as emailReads from "./emailReads";
 import { listMessagesForContact, listMessagesForDeal } from "./entityMessageReads";
@@ -143,6 +144,18 @@ export const emailRouter = router({
   }),
   drafts: router({
     list: protectedProcedure.query(({ ctx }) => listDrafts(ctx.db, ctx.actor, SIG())),
+    // Drafts a record's timeline shows. Owner-scoped in SQL: unlike the sent messages beside
+    // them, a draft is unsent text in one mailbox and is never shown to a colleague.
+    listForDeal: protectedProcedure
+      .input(z.object({ dealId: z.string().uuid() }))
+      .query(({ ctx, input }) =>
+        listDraftsForDeal(ctx.db, { actor: ctx.actor, dealId: input.dealId }, SIG()),
+      ),
+    listForPerson: protectedProcedure
+      .input(z.object({ personId: z.string().uuid() }))
+      .query(({ ctx, input }) =>
+        listDraftsForPerson(ctx.db, { actor: ctx.actor, personId: input.personId }, SIG()),
+      ),
   }),
   // Message-level reads for the record timelines (deal + person), with the same visibility rules
   // as the Inbox.

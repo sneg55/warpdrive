@@ -9,11 +9,13 @@ import { resolveStageChangeNames } from "@/features/deal-workspace/history/stage
 import type { HistoryItem } from "@/features/deal-workspace/historyTimeline";
 import {
   buildHistoryTimeline,
+  mergeDraftItems,
   mergeEmailItems,
   partitionFocusHistory,
 } from "@/features/deal-workspace/historyTimeline";
 import { PinnedNotesSection } from "@/features/deal-workspace/PinnedNotesSection";
 import { SectionHeading } from "@/features/deal-workspace/SectionHeading";
+import type { DraftSummary } from "@/features/email/draftRepo";
 import { emailTabStatusLabel } from "@/features/email/emailTabStatus";
 import { trpc } from "@/lib/trpc-client";
 
@@ -37,6 +39,8 @@ interface WorkspaceTabsProps {
   onNoteChanged?: () => void;
   // Open an activity in the inline edit composer (threaded to the Focus + History feeds).
   onEditActivity?: (activityId: string) => void;
+  // Open one of the deal's unsent drafts in the compose bar, which the workspace owns.
+  onResumeDraft?: (draft: DraftSummary) => void;
 }
 
 // Buckets the History side's items by the per-type filter row. "created" never appears under a
@@ -48,7 +52,8 @@ export function bucketByType(history: HistoryItem[]): Record<Tab, HistoryItem[]>
     activities: history.filter((i) => i.kind === "activity"),
     notes: history.filter((i) => i.kind === "note"),
     changelog: history.filter((i) => i.kind === "event"),
-    email: history.filter((i) => i.kind === "email"),
+    // Drafts sit under Email with the sent messages: same conversation, one still unsent.
+    email: history.filter((i) => i.kind === "email" || i.kind === "emailDraft"),
     files: [],
   };
 }
@@ -63,6 +68,7 @@ export function WorkspaceTabs({
   onActivityChanged,
   onNoteChanged,
   onEditActivity,
+  onResumeDraft,
 }: WorkspaceTabsProps) {
   // `?? EMPTY` rather than `?? []`: a fresh array literal each render changes the identity of every
   // downstream useMemo dependency, so the timeline was rebuilt on every render while data was absent.
@@ -90,17 +96,23 @@ export function WorkspaceTabs({
   // Linked email reads as timeline items rather than an embedded mailbox reader.
   const emailQuery = trpc.email.listMessagesForDeal.useQuery({ dealId: deal.id });
   const emails = emailQuery.data ?? EMPTY;
+  // The actor's own unsent drafts for this deal, shown beside the sent messages.
+  const draftQuery = trpc.email.drafts.listForDeal.useQuery({ dealId: deal.id });
+  const drafts = draftQuery.data ?? EMPTY;
   const utils = trpc.useUtils();
 
   // Focus vs History split (Wave 3, Task 17): Focus is the open/actionable
   // activities; History is everything else, filtered by the existing per-type tabs.
   const allItems = useMemo(
     () =>
-      mergeEmailItems(
-        buildHistoryTimeline(activities, resolvedChangelog, notes, createdAnchor),
-        emails,
+      mergeDraftItems(
+        mergeEmailItems(
+          buildHistoryTimeline(activities, resolvedChangelog, notes, createdAnchor),
+          emails,
+        ),
+        drafts,
       ),
-    [activities, resolvedChangelog, notes, createdAnchor, emails],
+    [activities, resolvedChangelog, notes, createdAnchor, emails, drafts],
   );
   const { pinned, focus, history } = useMemo(() => partitionFocusHistory(allItems), [allItems]);
   const historyByType = useMemo(() => bucketByType(history), [history]);
@@ -108,6 +120,9 @@ export function WorkspaceTabs({
   const emailScope = useMemo(() => ({ kind: "deal" as const, dealId: deal.id }), [deal.id]);
   const onEmailChanged = useCallback(() => {
     void utils.email.listMessagesForDeal.invalidate({ dealId: deal.id });
+  }, [utils, deal.id]);
+  const onDraftChanged = useCallback(() => {
+    void utils.email.drafts.listForDeal.invalidate({ dealId: deal.id });
   }, [utils, deal.id]);
 
   // Pipedrive shows counts on Activities/Notes only; the changelog tab has none.
@@ -141,6 +156,8 @@ export function WorkspaceTabs({
           onEditActivity={onEditActivity}
           emailScope={emailScope}
           onEmailChanged={onEmailChanged}
+          onResumeDraft={onResumeDraft}
+          onDraftChanged={onDraftChanged}
         />
       </section>
 
@@ -158,6 +175,8 @@ export function WorkspaceTabs({
           emailScope={emailScope}
           emailEmptyLabel={emailTabStatusLabel(emailQuery)}
           onEmailChanged={onEmailChanged}
+          onResumeDraft={onResumeDraft}
+          onDraftChanged={onDraftChanged}
         />
       </section>
     </div>

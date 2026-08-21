@@ -6,7 +6,7 @@ import { useState } from "react";
 import { STRINGS } from "@/constants/strings";
 import { Composer } from "@/features/email/Composer";
 import { ComposeLinkSidebar } from "@/features/email/composer/ComposeLinkSidebar";
-import type { DraftSummary } from "@/features/email/draftRepo";
+import { toComposerDraft } from "@/features/email/toComposerDraft";
 import { useInboxRealtime } from "@/features/email/useInboxRealtime";
 import { trpc } from "@/lib/trpc-client";
 
@@ -15,28 +15,6 @@ interface ComposePageClientProps {
   fromAddress: string;
   selfActorId: string;
   draftId?: string;
-}
-
-// Shape Composer's `draft` seed prop expects. Mirrors the mapping InboxListClient used to build
-// for its Sheet-hosted composer before the full-pane route replaced it.
-function toComposerDraft(d: DraftSummary): {
-  id: string;
-  subject: string;
-  bodyHtml: string;
-  to: string[];
-  cc: string[];
-  threadId?: string | null;
-  visibility: DraftSummary["visibility"];
-} {
-  return {
-    id: d.id,
-    subject: d.subject ?? "",
-    bodyHtml: d.bodyHtml ?? "",
-    to: d.toEmails,
-    cc: d.ccEmails,
-    threadId: d.threadId,
-    visibility: d.visibility,
-  };
 }
 
 // Full-pane compose route (Pipedrive parity): a Back bar over a two-column layout, the compose

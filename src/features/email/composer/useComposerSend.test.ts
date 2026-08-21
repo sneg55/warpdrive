@@ -179,3 +179,14 @@ describe("fireActivity dealId", () => {
     );
   });
 });
+
+it("sends against the person a resumed draft was written for, with no deal context present", async () => {
+  const { handleSend } = buildSendHandlers(
+    makeDeps({ linkDealId: "deal-9", linkPersonId: "person-9" }),
+  );
+  await handleSend();
+  expect(sendMock).toHaveBeenCalledWith(
+    "csrf",
+    expect.objectContaining({ linkDealId: "deal-9", linkPersonId: "person-9" }),
+  );
+});

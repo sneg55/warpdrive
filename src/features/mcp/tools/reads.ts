@@ -11,6 +11,7 @@ import { filterDefinition } from "@/features/saved-filters/schemas";
 import { searchInput } from "@/features/search/schemas";
 import { dashboardInput } from "@/features/stats/schemas";
 import { createCaller } from "@/server/trpc/root";
+import { registerEmailReadTools } from "./reads-email";
 import { type GetCtx, registerTool, ToolRegistry, toolError, toolResult } from "./types";
 
 const idInput = z.object({ id: z.string().uuid() });
@@ -133,5 +134,6 @@ export function registerReadTools(server: McpServer, getCtx: GetCtx): ToolRegist
     inputSchema: dashboardInput,
     run: async (input) => toolResult(await caller().stats.dashboard(input)),
   });
+  registerEmailReadTools(server, registry, getCtx);
   return registry;
 }

@@ -11,6 +11,7 @@ import { ComposerErrorAlert } from "./ComposerErrorAlert";
 import { ComposerFooter } from "./ComposerFooter";
 import { ComposerHeader } from "./ComposerHeader";
 import type { ComposerContext } from "./composer.types";
+import { resolveComposerLinks } from "./composerLinks";
 import { dealDefaultRecipients } from "./dealRecipients";
 import { InsertToolbar } from "./InsertToolbar";
 import { RecipientsRow } from "./RecipientsRow";
@@ -46,6 +47,10 @@ interface ComposerProps {
     cc: string[];
     threadId?: string | null;
     visibility?: EmailVisibility;
+    // CRM links saved with the draft, used when the composer has no context of its own (the
+    // Drafts folder). See resolveComposerLinks for the precedence.
+    linkDealId?: string | null;
+    linkPersonId?: string | null;
   };
   // prefill seeds initial state (reader Reply / Reply all / Forward). Only used when no
   // `draft` is present; draft (a saved autosave) always takes precedence.
@@ -67,6 +72,7 @@ export function Composer({
   onClose,
 }: ComposerProps): React.ReactNode {
   const resolvedThreadId = resolveComposerThreadId(threadId, draft?.threadId, context);
+  const links = resolveComposerLinks({ context, linkDealId, draft });
   const { prefillParticipantsAsRecipients } = useInterfacePrefs();
 
   const defaultToList: string[] =
@@ -144,6 +150,8 @@ export function Composer({
     toList,
     ccList,
     visibility,
+    linkDealId: links.linkDealId,
+    linkPersonId: links.linkPersonId,
     initialDraftId: draft?.id,
     draftIdRef,
     inFlightRef: draftInFlightRef,
@@ -168,7 +176,8 @@ export function Composer({
     signatureId: sendSignatureId,
     attachments: attachments.map((a) => ({ fileId: a.fileId })),
     context,
-    linkDealId,
+    linkDealId: links.linkDealId,
+    linkPersonId: links.linkPersonId,
     activityTypes,
     addAsActivity,
     setSending,

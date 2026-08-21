@@ -34,6 +34,10 @@ const EXPECTED_TOOLS = [
   "update_activity",
   "complete_activity",
   "add_note",
+  "list_emails",
+  "get_email",
+  "list_email_drafts",
+  "create_email_draft",
 ] as const;
 
 test("MCP server exposes the complete tool set without destructive tools", async () => {

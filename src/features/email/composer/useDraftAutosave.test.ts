@@ -92,3 +92,21 @@ describe("useDraftAutosave", () => {
     expect(deleteMock).toHaveBeenCalledWith("csrf", { draftId: "d1" });
   });
 });
+
+describe("useDraftAutosave CRM links", () => {
+  it("persists the composer's deal and person link so a resumed draft still knows its record", async () => {
+    const props = { ...base(), subject: "Hi", linkDealId: "deal-1", linkPersonId: "person-1" };
+    renderHook((p) => useDraftAutosave(p), { initialProps: props });
+    await vi.advanceTimersByTimeAsync(1600);
+    expect(saveCalls()[0]?.[1]).toMatchObject({
+      linkDealId: "deal-1",
+      linkPersonId: "person-1",
+    });
+  });
+
+  it("sends null links for a compose with no record context", async () => {
+    renderHook((p) => useDraftAutosave(p), { initialProps: { ...base(), subject: "Hi" } });
+    await vi.advanceTimersByTimeAsync(1600);
+    expect(saveCalls()[0]?.[1]).toMatchObject({ linkDealId: null, linkPersonId: null });
+  });
+});

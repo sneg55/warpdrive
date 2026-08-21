@@ -20,6 +20,11 @@ export const emailDrafts = pgTable(
     // Compose privacy in progress (C1). Defaults to "shared" (the composer's default) so a private
     // selection survives autosave + resume instead of silently reverting to shared (codex P1).
     visibility: emailVisibility("visibility").notNull().default("shared"),
+    // CRM link context held while the message is still a draft; the sent thread carries the same
+    // link on email_threads. Untyped uuids with no FK, mirroring email_threads.deal_id/person_id;
+    // saveDraft checks the record exists so a bad id is a typed error, not an FK throw.
+    linkDealId: uuid("link_deal_id"),
+    linkPersonId: uuid("link_person_id"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },

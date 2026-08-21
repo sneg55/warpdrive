@@ -151,4 +151,39 @@ describe("Composer – prefill from reader Reply/Reply all/Forward", () => {
       vi.useRealTimers();
     }
   });
+
+  // A draft resumed in the plain inbox composer must keep the deal it was written against: the
+  // link lives only on the draft row there, so dropping it would silently send an unlinked email.
+  it("keeps a resumed draft's CRM links on the next autosave", async () => {
+    vi.useFakeTimers();
+    try {
+      render(
+        <Composer
+          accountId="a1"
+          context={{ kind: "inbox" }}
+          draft={{
+            id: "draft-1",
+            subject: "Draft subject",
+            bodyHtml: "<p>draft body</p>",
+            to: ["draft@x.com"],
+            cc: [],
+            linkDealId: "deal-9",
+            linkPersonId: "person-9",
+          }}
+        />,
+      );
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(DEBOUNCE_MS * 2);
+      });
+
+      // lastCall, not calls[0]: the mock is shared across this file's tests and never cleared.
+      expect(vi.mocked(saveDraftAction).mock.lastCall?.[1]).toMatchObject({
+        linkDealId: "deal-9",
+        linkPersonId: "person-9",
+      });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });
