@@ -40,7 +40,9 @@ export function MultiCombobox({
       <div
         className={cn(
           buttonVariants({ variant: "outline", size: "sm" }),
-          "h-auto min-h-9 w-full flex-wrap justify-start gap-1 py-1 font-normal",
+          // whitespace-normal opts back out of the button base: this row grows to fit its chips,
+          // so a long label has to be able to break rather than push past the field edge.
+          "h-auto min-h-9 w-full flex-wrap justify-start gap-1 py-1 font-normal whitespace-normal",
         )}
       >
         {selected.map((o) => (

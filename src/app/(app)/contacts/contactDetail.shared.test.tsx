@@ -26,6 +26,7 @@ function activity(overrides: Partial<CalendarActivity> = {}): CalendarActivity {
     id: "a1",
     subject: "Open follow-up",
     dueAt: new Date("2026-07-02T10:00:00Z"),
+    allDay: false,
     durationMinutes: null,
     typeKey: "call",
     done: false,
@@ -69,6 +70,7 @@ vi.mock("@/lib/trpc-client", () => ({
       contactTimeline: { useQuery: () => ({ data: { items: queryItems } }) },
     },
     email: { listMessagesForContact: { useQuery: () => ({ data: [], isError: false }) } },
+    files: { listForEntity: { useQuery: () => ({ data: [{ id: "f1" }, { id: "f2" }] }) } },
     useUtils: () => ({
       contacts: {
         contactTimeline: { invalidate },
@@ -79,7 +81,12 @@ vi.mock("@/lib/trpc-client", () => ({
   },
 }));
 
-import { ContactTimelinePanel, CustomFieldsPanel } from "./contactDetail.shared";
+import {
+  ContactTimelinePanel,
+  CustomFieldsPanel,
+  ListPanel,
+  TabStrip,
+} from "./contactDetail.shared";
 
 describe("ContactTimelinePanel", () => {
   afterEach(() => {
@@ -108,12 +115,12 @@ describe("ContactTimelinePanel", () => {
     // Focus (open activities) is unaffected.
     render(<ContactTimelinePanel entityType="person" entityId="pe1" />);
 
-    expect(screen.getByRole("tab", { name: "All" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: /^All/ })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: /Activities/ })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: /Notes/ })).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: "Email" })).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: "Files" })).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: "Changelog" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: /^Email/ })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: /^Files/ })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: /^Changelog/ })).toBeInTheDocument();
 
     // Default "All": the done activity and the note both show under History.
     expect(screen.getByText("Done call")).toBeInTheDocument();
@@ -125,6 +132,19 @@ describe("ContactTimelinePanel", () => {
     expect(screen.queryByText("Done call")).not.toBeInTheDocument();
     // Focus is above the filter row and unaffected by it.
     expect(screen.getByText("Open follow-up")).toBeInTheDocument();
+  });
+
+  it("counts every History tab and leaves the empty ones unbadged", () => {
+    render(<ContactTimelinePanel entityType="person" entityId="pe1" />);
+    // History holds the done activity and the note; the open one lives in Focus.
+    expect(screen.getByRole("tab", { name: "All (2)" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Activities (1)" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Notes (1)" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Files (2)" })).toBeInTheDocument();
+    // Nothing under Email or Changelog, so neither carries a (0).
+    expect(screen.getByRole("tab", { name: "Email" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Changelog" })).toBeInTheDocument();
+    expect(screen.queryByRole("tab", { name: /\(0\)/ })).not.toBeInTheDocument();
   });
 
   it("shows the Focus empty label when nothing is open, alongside History", () => {
@@ -206,5 +226,25 @@ describe("CustomFieldsPanel", () => {
       <CustomFieldsPanel defs={[]} values={{}} renderValue={() => null} />,
     );
     expect(container).toBeEmptyDOMElement();
+  });
+});
+
+describe("contact detail theme tokens", () => {
+  it("colours the tab strip and the empty line from tokens, not a fixed gray", () => {
+    render(
+      <TabStrip
+        tabs={["overview"] as const}
+        labels={{ overview: "Overview" }}
+        active="overview"
+        onSelect={vi.fn()}
+      />,
+    );
+    const tab = screen.getByRole("tab", { name: "Overview" });
+    expect(tab).toHaveClass("text-muted-foreground", "hover:text-foreground");
+    expect(tab.className).not.toMatch(/-gray-/);
+
+    cleanup();
+    render(<ListPanel items={[]} empty="Nothing here" render={() => null} />);
+    expect(screen.getByText("Nothing here")).toHaveClass("text-muted-foreground");
   });
 });

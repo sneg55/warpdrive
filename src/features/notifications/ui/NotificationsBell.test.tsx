@@ -59,4 +59,15 @@ describe("NotificationsBell", () => {
     await user.click(await screen.findByRole("button", { name: /mark all/i }));
     await waitFor(() => expect(reportError).toHaveBeenCalledWith("E_PERM_001"));
   });
+
+  it("hovers the trigger and draws the panel's empty line from theme tokens", async () => {
+    const user = userEvent.setup();
+    render(<NotificationsBell userId="u1" />);
+    const trigger = screen.getByRole("button", { name: /notifications/i });
+    expect(trigger).toHaveClass("hover:bg-accent");
+    expect(trigger.className).not.toMatch(/-gray-/);
+    await user.click(trigger);
+    expect(await screen.findByText(/no notifications/i)).toHaveClass("text-muted-foreground");
+    expect(screen.getByRole("button", { name: /mark all/i })).toHaveClass("text-link");
+  });
 });

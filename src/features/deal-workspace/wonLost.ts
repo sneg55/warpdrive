@@ -4,6 +4,7 @@
 import { and, eq, isNull } from "drizzle-orm";
 import type { z } from "zod";
 import { BOARD_EVENT, dealChannel, dealMovedChannel } from "@/constants/boardChannels";
+import { CHANGE_FIELD_STATUS } from "@/constants/changeLogFields";
 import { AppError, ERROR_IDS } from "@/constants/errorIds";
 import type { Db } from "@/db/client";
 import { deals, lostReasons } from "@/db/schema";
@@ -14,6 +15,7 @@ import type { PermSetUser } from "@/features/permissions/effective";
 import { publishBoardEvent } from "@/server/realtime/events";
 import { err, ok, type Result } from "@/types/result";
 import type { markLostInput } from "./dealCloseSchemas";
+import { lostStatusValue } from "./lostStatusValue";
 
 export async function markWon(
   db: Db,
@@ -163,6 +165,7 @@ export async function markLost(
 
     // Validate the predefined reason only when one was chosen. A missing reason is allowed
     // (Pipedrive parity: a deal can be marked lost with a free-text reason, or none at all).
+    let reasonName: string | null = null;
     if (input.lostReasonId !== null) {
       const [reason] = await tx
         .select()
@@ -178,6 +181,7 @@ export async function markLost(
           ),
         );
       }
+      reasonName = reason.name;
     }
 
     const [row] = await tx
@@ -203,9 +207,11 @@ export async function markLost(
       {
         entityType: "deal",
         entityId: dealId,
-        field: "status",
+        field: CHANGE_FIELD_STATUS,
         oldValue: oldStatus,
-        newValue: "lost",
+        // The reason NAME, not its id: the history row is read straight out of the log and
+        // nothing downstream resolves ids.
+        newValue: lostStatusValue(reasonName, input.lostReason),
         actorId: actor.id,
       },
       signal,

@@ -33,4 +33,11 @@ describe("PresenceAvatars", () => {
     );
     expect(screen.getByText("+1")).toBeInTheDocument();
   });
+
+  it("paints avatars from theme tokens so they stay legible in Night", () => {
+    render(<PresenceAvatars users={[{ userId: "u9", name: "Zoe" }]} selfId="me" />);
+    const avatar = screen.getByLabelText("Zoe");
+    expect(avatar).toHaveClass("bg-muted", "text-foreground");
+    expect(avatar.className).not.toMatch(/-gray-/);
+  });
 });

@@ -8,6 +8,7 @@ const messagesQuery = vi.fn(() => ({ data: [] }));
 const draftsQuery = vi.fn();
 vi.mock("@/lib/trpc-client", () => ({
   trpc: {
+    files: { listForEntity: { useQuery: () => ({ data: [] }) } },
     collaboration: {
       listNotes: { useQuery: () => ({ data: [] }) },
       listChangeLog: { useQuery: () => ({ data: [] }) },

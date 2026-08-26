@@ -40,6 +40,7 @@ vi.mock("@/utils/csrfCookie", () => ({ readCsrfToken: () => "csrf" }));
 
 vi.mock("@/lib/trpc-client", () => ({
   trpc: {
+    enrichment: { status: { useQuery: () => ({ data: { ready: false, providers: [] } }) } },
     useUtils: () => ({
       activities: { listForEntity: { invalidate: () => {}, setData: () => {} } },
       email: {
@@ -47,6 +48,7 @@ vi.mock("@/lib/trpc-client", () => ({
         drafts: { listForDeal: { invalidate: () => {} } },
       },
     }),
+    files: { listForEntity: { useQuery: () => ({ data: [] }) } },
     collaboration: {
       listNotes: { useQuery: () => ({ data: [] }) },
       listChangeLog: { useQuery: () => ({ data: [] }) },
@@ -73,6 +75,7 @@ vi.mock("@/lib/trpc-client", () => ({
       listTypes: { useQuery: () => ({ data: [] }) },
       // The composer's Free/Busy hook (useComposerAvailability) queries this procedure.
       availability: { useQuery: () => ({ data: { busy: false } }) },
+      dayLoad: { useQuery: () => ({ data: undefined }) },
       // Inline edit: getForEdit is enabled only once an activity id is picked, so it stays idle here.
       getForEdit: { useQuery: () => ({ data: null }) },
     },

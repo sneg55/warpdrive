@@ -1,9 +1,10 @@
 "use client";
 import dynamic from "next/dynamic";
 import type React from "react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
 import { Button, buttonVariants } from "./Button";
+import { type DayAccessory, dayAccessoryButton } from "./DayAccessoryButton";
 import { formatMdy, parseYmd, toYmd } from "./dateFormat";
 import { Popover, PopoverContent, PopoverTrigger } from "./Popover";
 
@@ -46,6 +47,9 @@ interface DatePickerProps {
   // Opens the calendar popover on mount (PD's inline date editor shows the calendar
   // immediately when the field enters edit mode).
   defaultOpen?: boolean;
+  dayAccessory?: (localYmd: string) => DayAccessory | null;
+  onMonthChange?: (month: Date) => void;
+  onOpenChange?: (open: boolean) => void;
 }
 
 // Popover + react-day-picker calendar. Value/onChange use local YYYY-MM-DD so
@@ -60,13 +64,25 @@ export function DatePicker({
   placeholderClassName,
   formatLabel,
   defaultOpen = false,
+  dayAccessory,
+  onMonthChange,
+  onOpenChange,
 }: DatePickerProps): React.ReactNode {
-  const [open, setOpen] = useState(defaultOpen);
+  const [open, setOpenState] = useState(defaultOpen);
+  const setOpen = (next: boolean): void => {
+    setOpenState(next);
+    onOpenChange?.(next);
+  };
   const selected = value !== null ? (parseYmd(value) ?? undefined) : undefined;
   const label = value !== null ? (formatLabel ?? formatMdy)(value) : "";
   const currentYear = new Date().getFullYear();
   const startMonth = new Date(currentYear - DATE_PICKER_PAST_YEARS, 0);
   const endMonth = new Date(currentYear + DATE_PICKER_FUTURE_YEARS, 11);
+  const components = useMemo(
+    () =>
+      dayAccessory === undefined ? undefined : { DayButton: dayAccessoryButton(dayAccessory) },
+    [dayAccessory],
+  );
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger
@@ -97,6 +113,8 @@ export function DatePicker({
           captionLayout="dropdown"
           startMonth={startMonth}
           endMonth={endMonth}
+          onMonthChange={onMonthChange}
+          components={components}
         />
         <div className="flex justify-end border-t pt-1.5">
           <Button

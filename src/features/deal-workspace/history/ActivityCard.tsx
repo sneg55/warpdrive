@@ -3,19 +3,15 @@ import Link from "next/link";
 import type React from "react";
 import { useCallback, useMemo, useState } from "react";
 import { Checkbox } from "@/components/ui/Checkbox";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { completeActivityAction } from "@/features/activities/actions";
+import { completeActivityAction, deleteActivityAction } from "@/features/activities/actions";
 import type { CalendarActivity } from "@/features/activities/calendar";
 import { ActivityTypeIcon } from "@/features/activities/typeIcons";
+import { useInvalidateDayLoad } from "@/features/activities/useInvalidateDayLoad";
 import { formatUserName } from "@/features/identity/formatUserName";
 import { trpc } from "@/lib/trpc-client";
 import { readCsrfToken } from "@/utils/csrfCookie";
 import { useDealActionError } from "../DealActionErrorProvider";
+import { ActivityCardMenu } from "./ActivityCardMenu";
 
 type EntityKey = { entityType: "deal" | "person" | "organization"; entityId: string };
 
@@ -55,6 +51,7 @@ export function ActivityCard({
   const [done, setDone] = useState(activity.done);
   const [busy, setBusy] = useState(false);
   const utils = trpc.useUtils();
+  const invalidateDayLoad = useInvalidateDayLoad();
   const reportError = useDealActionError();
 
   // Every listForEntity timeline this activity appears in (deal / person / org pages). Flipping
@@ -97,6 +94,26 @@ export function ActivityCard({
     }
     setBusy(false);
   }, [busy, done, activity.id, entityKeys, utils, onChanged, reportError]);
+
+  // Delete is not optimistic: the row leaves every timeline cache only once the server has
+  // accepted it, so a denied delete leaves the card exactly where it was.
+  const remove = useCallback(async () => {
+    if (busy) return;
+    setBusy(true);
+    const res = await deleteActivityAction({ id: activity.id }, readCsrfToken());
+    if (res.ok) {
+      for (const key of entityKeys) {
+        utils.activities.listForEntity.setData(key, (old) =>
+          old === undefined ? old : old.filter((a) => a.id !== activity.id),
+        );
+      }
+      await invalidateDayLoad();
+      onChanged?.();
+    } else {
+      reportError(res.error.id);
+    }
+    setBusy(false);
+  }, [busy, activity.id, entityKeys, utils, invalidateDayLoad, onChanged, reportError]);
 
   return (
     <div className="overflow-hidden rounded-md border bg-card transition-colors hover:border-ring/40">
@@ -174,27 +191,13 @@ export function ActivityCard({
             <div className="text-xs text-muted-foreground">{activity.location}</div>
           )}
         </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger
-            aria-label="More actions"
-            // Pseudo-element extends the 24px control to a ~40px hit target without changing layout.
-            className="relative rounded p-1 text-muted-foreground after:absolute after:-inset-2 after:content-[''] hover:bg-accent hover:text-foreground"
-          >
-            <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor">
-              <circle cx="5" cy="12" r="1.6" />
-              <circle cx="12" cy="12" r="1.6" />
-              <circle cx="19" cy="12" r="1.6" />
-            </svg>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" aria-label="More actions" className="min-w-40">
-            {onEdit !== undefined && (
-              <DropdownMenuItem onSelect={() => onEdit()}>Edit</DropdownMenuItem>
-            )}
-            <DropdownMenuItem onSelect={() => void toggle()}>
-              {done ? "Reopen" : "Mark as done"}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <ActivityCardMenu
+          done={done}
+          busy={busy}
+          onEdit={onEdit}
+          onToggle={() => void toggle()}
+          onDelete={() => void remove()}
+        />
       </div>
       {activity.note != null && activity.note !== "" && (
         <div

@@ -30,6 +30,7 @@ describe("phase 5 schema", () => {
           "activity_assigned",
           "activity_reminder",
           "comment_reply",
+          "deal_email_received",
           "deal_followed_update",
           "deal_lost",
           "deal_won",

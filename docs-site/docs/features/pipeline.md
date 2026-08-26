@@ -47,9 +47,10 @@ deals. A closed deal does not appear in Archive unless you archive it separately
 
 ### Filtering and sorting
 
-The Filter control builds multi-condition filters over the pipeline. Filtered board
-totals reflect the filter, so the stage and board sums answer "how much is in this
-slice", not "how much exists".
+The Filter control builds multi-condition filters over the pipeline, including on
+labels, combined as match-all or match-any. Filtered board totals reflect the
+filter, so the stage and board sums answer "how much is in this slice", not "how
+much exists".
 
 ![Building a filter](/img/screenshots/pipeline/board-filter.png)
 
@@ -58,7 +59,11 @@ whole, which is the only ordering that makes sense when every column is its own 
 Deals with no value for the sorted field always sort last, in both ascending and
 descending order.
 
-Filters can be saved and shared. See [Saved filters](./saved-filters.md).
+The toolbar's sort, owner filter, saved view, and ad-hoc filter all survive a page
+reload.
+
+Filters can be saved and shared. See
+[Filters and saved views](./saved-filters.md).
 
 ### Collapsing stages
 
@@ -165,6 +170,6 @@ board never updates for anyone, `NEXT_PUBLIC_WS_URL` is the first thing to check
 ## Related
 
 - [Deal workspace](./deal-workspace.md), the per-deal page.
-- [Saved filters](./saved-filters.md), for reusing and sharing filters.
+- [Filters and saved views](./saved-filters.md), for reusing and sharing filters.
 - [Visibility groups](../administration/visibility-groups.md), which control who sees
   which deals.

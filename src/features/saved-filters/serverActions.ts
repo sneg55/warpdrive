@@ -10,7 +10,7 @@ import {
   toggleFavorite,
   updateSavedFilter,
 } from "./savedFilterActions";
-import type { SaveFilterInput, UpdateSavedFilterInput } from "./schemas";
+import type { SavedFilterPatch, SaveFilterArgs } from "./savedFilterInputs";
 
 export type FilterActionResult<T = undefined> =
   | { ok: true; value: T }
@@ -37,7 +37,7 @@ async function actorSession(
 }
 
 export async function createSavedFilterAction(
-  input: SaveFilterInput,
+  input: SaveFilterArgs,
   csrfToken: string | null = null,
 ): Promise<FilterActionResult<{ id: string }>> {
   const a = await actorSession(csrfToken);
@@ -49,7 +49,7 @@ export async function createSavedFilterAction(
 
 export async function updateSavedFilterAction(
   id: string,
-  input: UpdateSavedFilterInput,
+  input: SavedFilterPatch,
   csrfToken: string | null = null,
 ): Promise<FilterActionResult> {
   const a = await actorSession(csrfToken);

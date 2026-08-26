@@ -6,6 +6,7 @@ import { HistoryFeed } from "@/features/deal-workspace/HistoryFeed";
 import type { HistoryTab } from "@/features/deal-workspace/HistoryTypeTabs";
 import { HistoryTypeTabs } from "@/features/deal-workspace/HistoryTypeTabs";
 import { resolveStageChangeNames } from "@/features/deal-workspace/history/stageNames";
+import { countHistoryTabs } from "@/features/deal-workspace/historyTabCounts";
 import type { HistoryItem } from "@/features/deal-workspace/historyTimeline";
 import {
   buildHistoryTimeline,
@@ -125,14 +126,12 @@ export function WorkspaceTabs({
     void utils.email.drafts.listForDeal.invalidate({ dealId: deal.id });
   }, [utils, deal.id]);
 
-  // Pipedrive shows counts on Activities/Notes only; the changelog tab has none.
-  // Both badges count off the History bucket (what the tab's list actually shows), not the
-  // raw totals: open activities live in Focus and pinned notes live above Focus, so counting
+  // Every badge counts off the History bucket (what the tab's list actually shows), not the raw
+  // totals: open activities live in Focus and pinned notes live above Focus, so counting
   // activities.length / notes.length would overstate the tab lists below.
-  const counts: Partial<Record<Tab, number>> = {
-    activities: historyByType.activities.length,
-    notes: historyByType.notes.length,
-  };
+  const fileCount = trpc.files.listForEntity.useQuery({ entityType: "deal", entityId: deal.id })
+    .data?.length;
+  const counts: Partial<Record<Tab, number>> = countHistoryTabs(historyByType, fileCount);
 
   return (
     <div className="space-y-6">

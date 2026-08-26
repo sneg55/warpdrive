@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { withTestDb } from "@/db/testing";
 import { seedUser } from "@/db/testing/factories";
 import type { AuthUser } from "@/features/permissions/types";
-import { deleteDraft, listDrafts, saveDraft } from "./draftRepo";
+import { deleteDraft, listDrafts, patchDraft, saveDraft } from "./draftRepo";
 
 type TestDb = Parameters<Parameters<typeof withTestDb>[0]>[0];
 const SIG = (): AbortSignal => AbortSignal.timeout(8000);
@@ -194,6 +194,77 @@ describe("draft repository", () => {
       );
       expect(del.ok).toBe(false);
       if (!del.ok) expect(del.error.id).toBe("E_GMAIL_014");
+    });
+  });
+
+  it("patches only the columns it is given, so a concurrent write to the rest survives", async () => {
+    await withTestDb(async (db) => {
+      const owner = await seedUser(db, { email: "o@gunsnation.com" });
+      const other = await seedUser(db, { email: "x@gunsnation.com" });
+      const acctId = await seedAccount(db, owner.id);
+      const actor = actorOf(owner.id);
+
+      const created = await saveDraft(
+        db,
+        {
+          actor,
+          draft: {
+            accountId: acctId,
+            subject: "Original",
+            bodyHtml: "<p>original body</p>",
+            toEmails: ["a@y.com"],
+            ccEmails: ["c@y.com"],
+            visibility: "private",
+          },
+        },
+        SIG(),
+      );
+      if (!created.ok) throw new Error("save failed");
+
+      // Stands in for the composer autosaving between an agent reading the draft and writing it
+      // back: a read-modify-write would replay the stale body over this.
+      await db.execute(
+        sql`UPDATE email_drafts SET body_html = '<p>autosaved</p>' WHERE id = ${created.value.id}`,
+      );
+
+      const patched = await patchDraft(
+        db,
+        { actor, draftId: created.value.id, patch: { subject: "Revised" } },
+        SIG(),
+      );
+      expect(patched.ok).toBe(true);
+
+      const row = (
+        await db.execute(
+          sql`SELECT subject, body_html, to_emails, cc_emails, visibility FROM email_drafts`,
+        )
+      ).rows[0] as {
+        subject: string;
+        body_html: string;
+        to_emails: unknown;
+        cc_emails: unknown;
+        visibility: string;
+      };
+      expect(row.subject).toBe("Revised");
+      expect(row.body_html).toBe("<p>autosaved</p>");
+      expect(row.to_emails).toEqual(["a@y.com"]);
+      expect(row.cc_emails).toEqual(["c@y.com"]);
+      expect(row.visibility).toBe("private");
+
+      const theirs = await patchDraft(
+        db,
+        { actor: actorOf(other.id), draftId: created.value.id, patch: { subject: "Hijacked" } },
+        SIG(),
+      );
+      expect(theirs.ok).toBe(false);
+      if (!theirs.ok) expect(theirs.error.id).toBe("E_GMAIL_014");
+
+      const missing = await patchDraft(
+        db,
+        { actor, draftId: crypto.randomUUID(), patch: { subject: "Nowhere" } },
+        SIG(),
+      );
+      expect(missing.ok).toBe(false);
     });
   });
 });

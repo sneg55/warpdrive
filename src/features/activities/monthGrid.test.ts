@@ -68,6 +68,7 @@ it("groupMonthActivities buckets by due day and KEEPS overdue items", () => {
     id,
     subject: id,
     dueAt: new Date(dueIso),
+    allDay: false,
     durationMinutes: null,
     typeKey: "meeting",
     done: false,

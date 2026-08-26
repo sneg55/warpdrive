@@ -17,7 +17,13 @@ export interface StandardImportField {
   field: string;
   label: string;
   required: boolean;
+  // Other fields of the same entity that stand in for this one. Person > Name is required, but a
+  // contact export routinely splits it, so mapping either part satisfies it and mapRow joins them.
+  satisfiedBy?: readonly string[];
 }
+
+// The person columns whose values a display name can be built from, in the order they are joined.
+export const PERSON_NAME_PARTS = ["firstName", "lastName"] as const;
 
 // Nested-object leaves are offered as dotted paths ("address.city"). orgCreateInput.address is a
 // structured object that would reject a raw CSV cell, so mapRow reassembles the leaves instead of
@@ -26,7 +32,9 @@ export const ADDRESS_PREFIX = "address.";
 
 export const ENTITY_FIELDS: Record<MappableEntity, readonly StandardImportField[]> = {
   person: [
-    { field: "name", label: "Name", required: true },
+    { field: "name", label: "Name", required: true, satisfiedBy: PERSON_NAME_PARTS },
+    { field: "firstName", label: "First name", required: false },
+    { field: "lastName", label: "Last name", required: false },
     { field: "emails", label: "Email", required: false },
     { field: "phones", label: "Phone", required: false },
   ],

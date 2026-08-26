@@ -1,4 +1,4 @@
-import { sql } from "drizzle-orm";
+import { type SQL, sql } from "drizzle-orm";
 import {
   check,
   customType,
@@ -17,6 +17,15 @@ import { users, visibilityGroups, visibilityLevelEnum } from "./identity";
 const tsvector = customType<{ data: string }>({
   dataType: () => "tsvector",
 });
+
+// Reduces a stored domain to a bare host so "https://www.acme.com/" and "acme.com" are the same
+// token. Every function here is IMMUTABLE, which is what lets search_tsv be a generated column.
+// The TypeScript counterpart is normaliseDomain in src/features/enrichment/domain.ts.
+export function normalisedDomainSql(col: SQL): SQL {
+  return sql`split_part(regexp_replace(lower(${col}), '^(https?://)?(www\\.)?', ''), '/', 1)`;
+}
+
+const GENERATED_DOMAIN = normalisedDomainSql(sql`coalesce(domain, '')`);
 
 export const organizations = pgTable(
   "organizations",
@@ -42,10 +51,13 @@ export const organizations = pgTable(
     // Label keys (Pipedrive "Add labels" on the org header); resolved to name+color in the UI.
     labels: text("labels").array().notNull().default(sql`'{}'`),
     customFields: jsonb("custom_fields").notNull().default(sql`'{}'::jsonb`),
-    // Generated tsvector column for full-text search.
+    // Generated tsvector column for full-text search. The domain is normalised before indexing and
+    // weighted below the name, so a name hit still outranks an org that merely shares a domain.
     searchTsv: tsvector("search_tsv")
       .notNull()
-      .generatedAlwaysAs(sql`to_tsvector('simple', coalesce(name, ''))`),
+      .generatedAlwaysAs(
+        sql`setweight(to_tsvector('simple', coalesce(name, '')), 'A') || setweight(to_tsvector('simple', ${GENERATED_DOMAIN}), 'B')`,
+      ),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()

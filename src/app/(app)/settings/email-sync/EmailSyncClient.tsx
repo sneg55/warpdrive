@@ -82,7 +82,7 @@ export function EmailSyncClient({ mailbox }: { mailbox: MailboxView | null }): R
         <div className="mb-1 flex items-center gap-2">
           <span
             data-status={mailbox?.status ?? "none"}
-            className={`inline-block h-2 w-2 rounded-full ${connected ? "bg-green-500" : "bg-gray-300"}`}
+            className={`inline-block h-2 w-2 rounded-full ${connected ? "bg-green-500" : "bg-muted-foreground/40"}`}
           />
           <span className="text-sm font-medium">{statusLabel(mailbox)}</span>
         </div>

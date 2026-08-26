@@ -7,6 +7,7 @@ import { bucketByType } from "@/app/(app)/deals/[dealId]/tabs";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CollapsibleSection } from "@/features/deal-workspace/CollapsibleSection";
 import { HistoryFeed } from "@/features/deal-workspace/HistoryFeed";
+import { countHistoryTabs } from "@/features/deal-workspace/historyTabCounts";
 import { mergeEmailItems, partitionFocusHistory } from "@/features/deal-workspace/historyTimeline";
 import { PinnedNotesSection } from "@/features/deal-workspace/PinnedNotesSection";
 import { SectionHeading } from "@/features/deal-workspace/SectionHeading";
@@ -16,7 +17,7 @@ import { FileAttachments } from "@/features/files/FileAttachments";
 import { trpc } from "@/lib/trpc-client";
 import { ContactHistoryTabs } from "./ContactHistoryTabs";
 
-const EMPTY_CLASS = "text-sm text-gray-500";
+const EMPTY_CLASS = "text-sm text-muted-foreground";
 // Threads link to person_id (and deal_id), never to an organization, so an org's Email filter
 // states the reason instead of implying the record merely has no mail yet.
 const ORG_EMAIL_EMPTY = "Email is tracked on people, not organizations.";
@@ -35,12 +36,12 @@ export function TabStrip<T extends string>({
 }): React.ReactNode {
   return (
     <Tabs value={active} onValueChange={(v) => onSelect(v as T)}>
-      <TabsList className="gap-2 border-b border-gray-200 mb-3">
+      <TabsList className="gap-2 border-b mb-3">
         {tabs.map((t) => (
           <TabsTrigger
             key={t}
             value={t}
-            className="px-3 py-2 text-gray-600 hover:text-gray-900 data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:font-medium data-[state=active]:text-blue-700"
+            className="px-3 py-2 text-muted-foreground hover:text-foreground data-[state=active]:border-b-2 data-[state=active]:border-link data-[state=active]:font-medium data-[state=active]:text-link"
           >
             {labels[t]}
           </TabsTrigger>
@@ -96,13 +97,10 @@ export function ContactTimelinePanel({
   const { pinned, focus, history } = partitionFocusHistory(items);
   const historyByType = bucketByType(history);
 
-  // Pipedrive shows counts on Activities/Notes only (the changelog tab has none). Activities
-  // counts off the History bucket (completed only): open activities live in Focus, so the badge
-  // must match what the History Activities list actually shows.
-  const counts: Partial<Record<string, number>> = {
-    activities: historyByType.activities.length,
-    notes: historyByType.notes.length,
-  };
+  // Every badge counts off the History bucket (completed activities only): open activities live
+  // in Focus, so a badge must match what its tab's list actually shows.
+  const fileCount = trpc.files.listForEntity.useQuery({ entityType, entityId }).data?.length;
+  const counts = countHistoryTabs(historyByType, fileCount);
 
   function onActivityChanged(): void {
     void utils.contacts.contactTimeline.invalidate({ entityType, entityId });

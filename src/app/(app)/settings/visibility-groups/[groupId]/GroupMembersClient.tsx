@@ -70,7 +70,7 @@ export function GroupMembersClient({ groupId, members, allUsers }: Props): React
     <SettingsCard>
       <SettingsCardHeader title="Members" description="Add or remove users from this group." />
       <ul className="divide-y">
-        {members.length === 0 && <li className="text-sm text-gray-500">No members yet.</li>}
+        {members.length === 0 && <li className="text-sm text-muted-foreground">No members yet.</li>}
         {members.map((m) => (
           <li key={m.userId} className="flex items-center justify-between gap-2 px-5 py-3">
             <span className="text-sm">{m.name}</span>

@@ -16,6 +16,20 @@ describe("ActivityTypeIcon", () => {
     expect(svg).toHaveAttribute("aria-hidden", "true");
   });
 
+  it.each(KNOWN_KEYS)("renders the %s glyph at the shared h-4 w-4 row size", (key) => {
+    const { container } = render(<ActivityTypeIcon typeKey={key} />);
+    expect(container.querySelector("svg.h-4.w-4.shrink-0")).not.toBeNull();
+  });
+
+  it("renders a distinct glyph for every known type", () => {
+    const shapes = KNOWN_KEYS.map((key) => {
+      const html = render(<ActivityTypeIcon typeKey={key} />).container.innerHTML;
+      cleanup();
+      return html;
+    });
+    expect(new Set(shapes).size).toBe(KNOWN_KEYS.length);
+  });
+
   it("renders a distinct glyph per type (ping differs from call)", () => {
     const call = render(<ActivityTypeIcon typeKey="call" />).container.innerHTML;
     cleanup();

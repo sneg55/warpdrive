@@ -20,6 +20,9 @@ export interface UseLeadListParams {
 export interface UseLeadListResult {
   rows: LeadRow[];
   total: number;
+  // True while the first page is still in flight. Zero rows in that window is not an empty
+  // inbox, and the two must not render the same message.
+  isLoading: boolean;
   canLoadMore: boolean;
   loadMore: () => void;
   // Reset to the first page and re-fetch fresh. Used after a mutation (archive, convert,
@@ -110,7 +113,7 @@ export function useLeadList(params: UseLeadListParams): UseLeadListResult {
       // drawer). The earlier pages in `rows` were not refetched and may still hold the deleted lead,
       // so rewind to page one and rebuild instead of trusting them.
       merged.current = new Map();
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- rewind driven by fetched data
+
       setOffset(0);
       return;
     }
@@ -131,5 +134,12 @@ export function useLeadList(params: UseLeadListParams): UseLeadListResult {
     await utils.lead.list.invalidate();
   }, [utils]);
 
-  return { rows, total, canLoadMore: rows.length < total, loadMore, refetch };
+  return {
+    rows,
+    total,
+    isLoading: listQ.isLoading === true,
+    canLoadMore: rows.length < total,
+    loadMore,
+    refetch,
+  };
 }

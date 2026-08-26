@@ -24,6 +24,9 @@ interface ComboboxProps {
   // Optional actions rendered below the option list (e.g. "Save as template" / "Manage templates").
   // Receives a `close` callback so an action can dismiss the popover.
   footer?: (close: () => void) => React.ReactNode;
+  // Overrides on the trigger, mirroring Select's triggerClassName. The trigger defaults to w-full,
+  // which a caller in a flex row has to be able to override.
+  triggerClassName?: string;
 }
 
 // Searchable single-select with avatars (owner/assignee picker). Popover + cmdk.
@@ -34,6 +37,7 @@ export function Combobox({
   ariaLabel,
   placeholder = "Select",
   footer,
+  triggerClassName,
 }: ComboboxProps): React.ReactNode {
   const [open, setOpen] = useState(false);
   const selected = options.find((o) => o.value === value);
@@ -44,6 +48,7 @@ export function Combobox({
         className={cn(
           buttonVariants({ variant: "outline", size: "sm" }),
           "w-full justify-between font-normal",
+          triggerClassName,
         )}
       >
         <span className="flex items-center gap-1.5 truncate">

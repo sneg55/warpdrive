@@ -21,7 +21,7 @@ const props = { dealId: "d1", title: "Acme", expectedUpdatedAt: "2026-07-02T00:0
 
 it("saves a changed title via the shared inline-edit footer", () => {
   render(<EditableTitle {...props} />);
-  expect(screen.getByRole("heading", { name: "Acme" })).toHaveClass("text-[25px]");
+  expect(screen.getByRole("heading", { name: "Acme" })).toHaveClass("text-display");
   fireEvent.click(screen.getByRole("button", { name: "Edit deal title" }));
   const input = screen.getByRole("textbox", { name: "Edit deal title" });
   fireEvent.change(input, { target: { value: "Acme Corp" } });

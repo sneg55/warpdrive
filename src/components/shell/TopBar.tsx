@@ -3,6 +3,7 @@ import type React from "react";
 import { STRINGS } from "@/constants/strings";
 import { NotificationsBell } from "@/features/notifications/ui/NotificationsBell";
 import { GlobalAddMenu } from "@/features/quick-add/GlobalAddMenu";
+import type { Appearance } from "@/features/theme/appearance";
 import { SearchTrigger } from "./SearchTrigger";
 import { UserMenu } from "./UserMenu";
 
@@ -10,10 +11,12 @@ export function TopBar({
   userId,
   userName,
   avatarUrl,
+  appearance,
 }: {
   userId: string;
   userName?: string;
   avatarUrl?: string | null;
+  appearance?: Appearance;
 }): React.ReactNode {
   return (
     <header className="flex h-14 items-center gap-4 border-b bg-background px-4">
@@ -33,7 +36,12 @@ export function TopBar({
       </div>
       <div className="flex w-44 shrink-0 items-center justify-end gap-3">
         <NotificationsBell userId={userId} />
-        <UserMenu userId={userId} userName={userName} avatarUrl={avatarUrl} />
+        <UserMenu
+          userId={userId}
+          userName={userName}
+          avatarUrl={avatarUrl}
+          appearance={appearance}
+        />
       </div>
     </header>
   );

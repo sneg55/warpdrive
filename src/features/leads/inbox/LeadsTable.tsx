@@ -24,7 +24,9 @@ export interface LeadsTableProps {
   columns: LeadColumn[];
   now: Date | null;
   currency: string;
-  emptyLabel: string;
+  // What replaces the rows when there are none. The caller owns the wording: only it knows
+  // whether the list is empty or merely filtered down to nothing.
+  empty: React.ReactNode;
   sort: LeadSort;
   onSort: (field: LeadSortField) => void;
   // Selection.
@@ -50,7 +52,7 @@ export function LeadsTable({
   columns,
   now,
   currency,
-  emptyLabel,
+  empty,
   sort,
   onSort,
   isSelected,
@@ -96,8 +98,8 @@ export function LeadsTable({
       <tbody>
         {rows.length === 0 ? (
           <tr>
-            <td colSpan={colSpan} className="px-3 py-10 text-center text-muted-foreground">
-              {emptyLabel}
+            <td colSpan={colSpan} className="px-3">
+              {empty}
             </td>
           </tr>
         ) : (

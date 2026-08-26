@@ -15,6 +15,8 @@ import { getPreferencesForActor } from "@/features/identity/preferencesForActor"
 import { IdentifyUser } from "@/features/observability/IdentifyUser";
 import { VersionBanner } from "@/features/release/ui/VersionBanner";
 import { CommandPalette } from "@/features/search/ui/CommandPalette";
+import { GlobalShortcuts } from "@/features/shortcuts/GlobalShortcuts";
+import { appearanceSeedScript, parseAppearance } from "@/features/theme/appearance";
 import { createContext } from "@/server/trpc/context";
 
 export default async function AppLayout({ children }: { children: ReactNode }): Promise<ReactNode> {
@@ -40,17 +42,31 @@ export default async function AppLayout({ children }: { children: ReactNode }): 
           role: ctx.actor.type,
         }}
       />
+      {/* Reconciles this device's theme cookie with the account's stored choice, inline and ahead
+          of the shell, so a cold browser never paints a frame of the wrong theme. */}
+      <script
+        // biome-ignore lint/security/noDangerouslySetInnerHtml: three known literals; must be inline to beat first paint
+        dangerouslySetInnerHTML={{
+          __html: appearanceSeedScript(parseAppearance(prefs.ui.appearance)),
+        }}
+      />
       <InterfacePrefsProvider value={interfacePrefsFromUi(prefs.ui)}>
         <div data-density={prefs.density} className="flex h-screen flex-col">
           <CsrfRefresher hasCsrf={hasCsrf} />
           {ctx.actor.type === "admin" && <VersionBanner />}
           <ReconnectBanner />
-          <TopBar userId={ctx.actor.id} userName={ctx.actor.name} avatarUrl={ctx.actor.avatarUrl} />
+          <TopBar
+            userId={ctx.actor.id}
+            userName={ctx.actor.name}
+            avatarUrl={ctx.actor.avatarUrl}
+            appearance={parseAppearance(prefs.ui.appearance)}
+          />
           <div className="flex min-h-0 flex-1">
             <LeftNav initialExpanded={navExpanded} />
             <main className="min-w-0 flex-1 overflow-auto bg-muted/70 p-6">{children}</main>
           </div>
           <CommandPalette />
+          <GlobalShortcuts />
         </div>
       </InterfacePrefsProvider>
     </ActionErrorProvider>

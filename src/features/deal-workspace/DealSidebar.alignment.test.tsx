@@ -21,6 +21,7 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 vi.mock("@/lib/trpc-client", () => ({
   trpc: {
     useUtils: () => ({ deal: { participants: { invalidate: vi.fn() } } }),
+    enrichment: { status: { useQuery: () => ({ data: { ready: false, providers: [] } }) } },
     labels: { listByTarget: { useQuery: () => ({ data: [] }) } },
     deal: { participants: { useQuery: () => ({ data: [] }) } },
     contacts: { listPeopleForOrg: { useQuery: () => ({ data: [] }) } },

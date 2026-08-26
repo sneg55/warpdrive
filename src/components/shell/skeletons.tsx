@@ -142,6 +142,110 @@ export function InboxSkeleton(): React.ReactNode {
   );
 }
 
+// In-component loading placeholders. Unlike the route skeletons above, these render inside a
+// mounted page while a client query is still pending, so a zero-result message is never painted
+// before the query has answered.
+
+// Rows for the inbox conversation list. Rendered inside the list's <ul>.
+export function ThreadRowsSkeleton({ rows = 6 }: { rows?: number } = {}): React.ReactNode {
+  return (
+    <li>
+      <div
+        role="status"
+        aria-busy="true"
+        aria-label="Loading conversations"
+        className="flex flex-col gap-3 p-3"
+      >
+        {Array.from({ length: rows }, (_, i) => (
+          // biome-ignore lint/suspicious/noArrayIndexKey: static placeholder rows
+          <div key={i} className="flex flex-col gap-1.5">
+            <div className="flex items-center justify-between gap-2">
+              <Skeleton className="h-3.5 w-32" />
+              <Skeleton className="h-3 w-12" />
+            </div>
+            <Skeleton className="h-3.5 w-56" />
+          </div>
+        ))}
+      </div>
+    </li>
+  );
+}
+
+// The four sectioned result groups of the global search palette, at their real heights so the
+// overlay does not resize when results land.
+export function SearchResultsSkeleton(): React.ReactNode {
+  return (
+    <div role="status" aria-busy="true" aria-label="Searching" className="py-1">
+      {Array.from({ length: 4 }, (_, section) => (
+        // biome-ignore lint/suspicious/noArrayIndexKey: static placeholder sections
+        <div key={section} className="px-3 py-1">
+          <Skeleton className="my-1 h-3 w-20" />
+          <Skeleton className="my-2 h-4 w-full" />
+          <Skeleton className="my-2 h-4 w-3/4" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// Placeholder rows for a table body. Returns bare <tr>s, so the caller's <thead> keeps the
+// column layout while the rows load.
+export function TableRowsSkeleton({
+  columnCount,
+  rows = 6,
+  label,
+}: {
+  columnCount: number;
+  rows?: number;
+  label: string;
+}): React.ReactNode {
+  return (
+    <>
+      {Array.from({ length: rows }, (_, i) => (
+        // biome-ignore lint/suspicious/noArrayIndexKey: static placeholder rows
+        <tr key={i}>
+          <td colSpan={columnCount} className="px-3 py-2.5">
+            {i === 0 ? (
+              <div role="status" aria-busy="true" aria-label={label}>
+                <Skeleton className="h-5 w-full" />
+              </div>
+            ) : (
+              <Skeleton className="h-5 w-full" />
+            )}
+          </td>
+        </tr>
+      ))}
+    </>
+  );
+}
+
+// The engagement-timeline grid: a contact column plus month tracks, inside the same bordered card
+// the real table renders in.
+export function EngagementGridSkeleton({ lanes = 6 }: { lanes?: number } = {}): React.ReactNode {
+  return (
+    <div
+      role="status"
+      aria-busy="true"
+      aria-label="Loading engagement timeline"
+      className="rounded-lg border bg-card p-3 shadow-sm"
+    >
+      <div className="mb-3 flex gap-3">
+        <Skeleton className="h-4 w-[220px] shrink-0" />
+        <Skeleton className="h-4 flex-1" />
+      </div>
+      <div className="flex flex-col gap-3">
+        {Array.from({ length: lanes }, (_, i) => (
+          // biome-ignore lint/suspicious/noArrayIndexKey: static placeholder lanes
+          <div key={i} className="flex gap-3">
+            <Skeleton className="h-6 w-[220px] shrink-0" />
+            <Skeleton className="h-6 flex-1" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function DashboardSkeleton(): React.ReactNode {
   return (
     <main className="flex flex-col gap-4" aria-busy="true" aria-label="Loading">

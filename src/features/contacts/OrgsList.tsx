@@ -2,12 +2,14 @@
 import type React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BulkActionBar } from "@/components/data-table/BulkActionBar";
+import { BulkDeleteButton } from "@/components/data-table/BulkDeleteButton";
 import { ColumnsMenu } from "@/components/data-table/ColumnsMenu";
 import { type ColumnSort, useColumnSort } from "@/components/data-table/useColumnSort";
 import { useColumns } from "@/components/data-table/useColumns";
 import { usePersistColumns } from "@/components/data-table/usePersistColumns";
 import { useRowSelection } from "@/components/data-table/useRowSelection";
 import { STRINGS } from "@/constants/strings";
+import { SavedViewControl } from "@/features/saved-filters/SavedViewControl";
 import { trpc } from "@/lib/trpc-client";
 import { readCsrfToken } from "@/utils/csrfCookie";
 import { deleteOrgAction } from "./actions";
@@ -68,6 +70,8 @@ export function OrgsList({
   const clearSelection = selection.clear;
   const { effective, cycle } = useColumnSort<OrgSortField>(DEFAULT_SORT);
   const [filter, setFilter] = useState<ContactFilterDefinition | null>(null);
+  // The saved view the filter came from, so the picker can show which one is applied.
+  const [savedViewId, setSavedViewId] = useState<string | null>(null);
   // Whether the pair-merge dialog is open (only reachable with exactly two rows selected).
   const [merging, setMerging] = useState(false);
 
@@ -177,12 +181,29 @@ export function OrgsList({
         <p className="text-xs text-muted-foreground tabular-nums">
           {STRINGS.contacts.countLabel(rows.length, total)}
         </p>
-        <ContactFilterBuilder
-          config={ORG_FILTER_CONFIG}
-          fieldLabels={ORG_FILTER_LABELS}
-          activeCount={filter?.conditions.length ?? 0}
-          onApply={setFilter}
-        />
+        <div className="flex items-center gap-2">
+          <SavedViewControl
+            targetEntity="organization"
+            allLabel="All organizations"
+            currentDefinition={filter}
+            selectedViewId={savedViewId}
+            onSelectView={(view) => {
+              setSavedViewId(view?.id ?? null);
+              setFilter(view?.definition ?? null);
+            }}
+          />
+          <ContactFilterBuilder
+            config={ORG_FILTER_CONFIG}
+            fieldLabels={ORG_FILTER_LABELS}
+            activeCount={filter?.conditions.length ?? 0}
+            appliedDefinition={filter}
+            onApply={(def) => {
+              // An ad-hoc edit is no longer the saved view, so the picker stops claiming it is.
+              setSavedViewId(null);
+              setFilter(def);
+            }}
+          />
+        </div>
       </div>
       {selection.count > 0 && (
         <BulkActionBar count={selection.count} onClear={selection.clear}>
@@ -195,13 +216,12 @@ export function OrgsList({
               Merge duplicates
             </button>
           )}
-          <button
-            type="button"
-            onClick={() => void bulkDelete()}
-            className="rounded-md border px-3 py-1 text-sm hover:bg-accent active:scale-[0.96] transition-transform"
-          >
-            Delete
-          </button>
+          <BulkDeleteButton
+            count={selection.count}
+            noun="organization"
+            nounPlural="organizations"
+            onConfirm={() => void bulkDelete()}
+          />
         </BulkActionBar>
       )}
       {merging && mergePair !== null && (

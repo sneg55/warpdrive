@@ -1,19 +1,25 @@
 import { and, eq, isNull, lte, sql } from "drizzle-orm";
+import type { VisibilityLevel } from "@/constants/visibility";
 import type { Db } from "@/db/client";
 import { activities, activityTypes, users } from "@/db/schema";
 import { deals } from "@/db/schema/deals";
+import { leads } from "@/db/schema/leads";
 import { organizations } from "@/db/schema/organizations";
 import { persons } from "@/db/schema/persons";
 import { pipelines } from "@/db/schema/pipelines";
 import { canSee } from "@/features/permissions/canSee";
 import type { PermSetUser } from "@/features/permissions/effective";
 import { buildActivityVisibility } from "./activityVisibility";
+import { isActivityOverdue } from "./overdue";
+import { linkedParentVisible } from "./parentLinkVisibility";
 import { loadParentlessParticipants } from "./visibility";
 
 export interface CalendarActivity {
   id: string;
   subject: string;
   dueAt: Date;
+  // No time was set; the editor must not echo the stored midnight back.
+  allDay: boolean;
   // Explicit multi-day end (Pipedrive parity, B3). Null/undefined for a single-day activity. When
   // set, the calendar range + day grouping treat the activity as spanning [dueAt, endAt] so it shows
   // on every covered day, not just its start day.
@@ -25,6 +31,13 @@ export interface CalendarActivity {
   // (listActivitiesForEntity, leadTimeline) select it; calendarRange leaves it undefined.
   doneAt?: Date | null;
   dealId: string | null;
+  // Parent title from the deletedAt-filtered join: a null title against a non-null dealId means the
+  // deal is soft-deleted, so a chip must neither name it nor link to it. Optional because only
+  // calendarRange selects it; the history-card builders leave it undefined.
+  dealTitle?: string | null;
+  // The other primary parent (activities.lead_id, mutually exclusive with deal_id). Same rules.
+  leadId?: string | null;
+  leadTitle?: string | null;
   personId: string | null;
   orgId: string | null;
   overdue: boolean;
@@ -51,6 +64,7 @@ export interface CalendarActivity {
 }
 
 interface CalendarRow {
+  allDay: boolean;
   id: string;
   subject: string;
   endAt: Date | null;
@@ -65,23 +79,83 @@ interface CalendarRow {
   // detail page 404s. The raw personId/orgId above stay for buildActivityVisibility.
   personVisibleId: string | null;
   orgVisibleId: string | null;
+  dealTitle: string | null;
+  leadVisibleId: string | null;
+  leadTitle: string | null;
+  personName: string | null;
+  orgName: string | null;
+  leadOwnerId: string | null;
+  leadLevel: VisibilityLevel | null;
+  leadGroupId: string | null;
+  leadVisibleTo: string[] | null;
+  personOwnerId: string | null;
+  personLevel: VisibilityLevel | null;
+  personGroupId: string | null;
+  personVisibleTo: string[] | null;
+  orgOwnerId: string | null;
+  orgLevel: VisibilityLevel | null;
+  orgGroupId: string | null;
+  orgVisibleTo: string[] | null;
   ownerName: string | null;
   assigneeId: string | null;
 }
 
-function toCalendarActivity(row: CalendarRow, dueAt: Date, now: number): CalendarActivity {
+// Which linked parents the actor may be told about. Seeing the activity comes from its dominant
+// parent, which grants nothing about the secondary records hanging off it.
+interface LinkGates {
+  lead: boolean;
+  person: boolean;
+  org: boolean;
+}
+
+function linkGates(actor: PermSetUser, row: CalendarRow): LinkGates {
+  return {
+    lead: linkedParentVisible(actor, "lead", row.leadVisibleId, {
+      ownerId: row.leadOwnerId,
+      level: row.leadLevel,
+      groupId: row.leadGroupId,
+      visibleTo: row.leadVisibleTo,
+    }),
+    person: linkedParentVisible(actor, "person", row.personVisibleId, {
+      ownerId: row.personOwnerId,
+      level: row.personLevel,
+      groupId: row.personGroupId,
+      visibleTo: row.personVisibleTo,
+    }),
+    org: linkedParentVisible(actor, "organization", row.orgVisibleId, {
+      ownerId: row.orgOwnerId,
+      level: row.orgLevel,
+      groupId: row.orgGroupId,
+      visibleTo: row.orgVisibleTo,
+    }),
+  };
+}
+
+function toCalendarActivity(
+  row: CalendarRow,
+  dueAt: Date,
+  now: number,
+  gates: LinkGates,
+): CalendarActivity {
   return {
     id: row.id,
     subject: row.subject,
     dueAt,
+    allDay: row.allDay,
     endAt: row.endAt,
     durationMinutes: row.durationMinutes,
     typeKey: row.typeKey,
     done: row.done,
     dealId: row.dealId,
-    personId: row.personVisibleId,
-    orgId: row.orgVisibleId,
-    overdue: row.done === false && dueAt.getTime() < now,
+    // The deal is the dominant parent, so seeing the activity already means seeing the deal.
+    dealTitle: row.dealTitle,
+    leadId: gates.lead ? row.leadVisibleId : null,
+    leadTitle: gates.lead ? row.leadTitle : null,
+    personId: gates.person ? row.personVisibleId : null,
+    orgId: gates.org ? row.orgVisibleId : null,
+    personName: gates.person ? row.personName : null,
+    orgName: gates.org ? row.orgName : null,
+    overdue: isActivityOverdue(dueAt, row.allDay, row.done, now),
     ownerName: row.ownerName,
     assigneeId: row.assigneeId,
   };
@@ -106,6 +180,7 @@ export async function calendarRange(
       id: activities.id,
       subject: activities.subject,
       dueAt: activities.dueAt,
+      allDay: activities.allDay,
       endAt: activities.endAt,
       durationMinutes: activities.durationMinutes,
       typeKey: activityTypes.key,
@@ -115,6 +190,15 @@ export async function calendarRange(
       orgId: activities.orgId,
       personVisibleId: persons.id,
       orgVisibleId: organizations.id,
+      dealTitle: deals.title,
+      leadVisibleId: leads.id,
+      leadTitle: leads.title,
+      leadOwnerId: leads.ownerId,
+      leadLevel: leads.visibilityLevel,
+      leadGroupId: leads.visibilityGroupId,
+      leadVisibleTo: leads.visibleToUserIds,
+      personName: persons.name,
+      orgName: organizations.name,
       ownerName: users.name,
       assigneeId: activities.assigneeId,
       dealOwnerId: deals.ownerId,
@@ -137,6 +221,7 @@ export async function calendarRange(
     .leftJoin(users, eq(users.id, activities.ownerId))
     .leftJoin(deals, and(eq(deals.id, activities.dealId), isNull(deals.deletedAt)))
     .leftJoin(pipelines, eq(pipelines.id, deals.pipelineId))
+    .leftJoin(leads, and(eq(leads.id, activities.leadId), isNull(leads.deletedAt)))
     .leftJoin(persons, and(eq(persons.id, activities.personId), isNull(persons.deletedAt)))
     .leftJoin(
       organizations,
@@ -162,7 +247,7 @@ export async function calendarRange(
     if (row.dueAt === null) continue;
     const vis = buildActivityVisibility(row, participantsByActivity.get(row.id) ?? []);
     if (vis === null || !canSee(actor, vis)) continue;
-    out.push(toCalendarActivity(row, row.dueAt, now));
+    out.push(toCalendarActivity(row, row.dueAt, now, linkGates(actor, row)));
   }
   return out;
 }

@@ -3,7 +3,11 @@ import "@testing-library/jest-dom/vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
-vi.mock("next/navigation", () => ({ usePathname: () => "/activities" }));
+const push = vi.fn();
+vi.mock("next/navigation", () => ({
+  usePathname: () => "/activities",
+  useRouter: () => ({ push }),
+}));
 
 beforeAll(() => {
   // Radix Select + the Combobox/DatePicker popovers (ActivitiesFilters) need these in jsdom.
@@ -20,12 +24,14 @@ beforeAll(() => {
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
+  useRecordPreview.getState().clearPreview();
 });
 
 const refetch = vi.fn();
 const useQuery = vi.fn();
 vi.mock("@/lib/trpc-client", () => ({
   trpc: {
+    useUtils: () => ({ activities: { dayLoad: { invalidate: () => Promise.resolve() } } }),
     activities: {
       listRows: { useQuery: (input?: unknown) => useQuery(input) },
       listTypes: {
@@ -79,6 +85,7 @@ vi.mock("./actions", () => ({
 }));
 vi.mock("@/utils/csrfCookie", () => ({ readCsrfToken: () => "tok" }));
 
+import { useRecordPreview } from "@/features/navigation/recordPreviewStore";
 import { ActivitiesTable } from "./ActivitiesTable";
 
 function row(overrides: Record<string, unknown>) {
@@ -91,6 +98,8 @@ function row(overrides: Record<string, unknown>) {
     dueAtIso: null,
     dealId: null,
     dealTitle: null,
+    leadId: null,
+    leadTitle: null,
     personId: "pe1",
     personName: "Jane Roe",
     personEmail: "jane@acme.com",
@@ -216,11 +225,48 @@ describe("ActivitiesTable", () => {
     expect(complete).toHaveBeenCalledWith({ id: "a1", done: false });
   });
 
-  it("opens the edit modal on row click, mapping typeKey to the matching listTypes id", () => {
-    useQuery.mockReturnValue({ data: [row({ typeKey: "call" })], refetch });
+  it("opens the linked deal on row click, seeding its drawer preview", () => {
+    useQuery.mockReturnValue({
+      data: [row({ dealId: "d1", dealTitle: "Acme renewal" })],
+      refetch,
+    });
+    render(<ActivitiesTable />);
+    fireEvent.click(screen.getByText("Call Jane"));
+    expect(push).toHaveBeenCalledWith("/deals/d1");
+    expect(useRecordPreview.getState().preview).toEqual({
+      id: "d1",
+      title: "Acme renewal",
+      subtitle: "Call Jane",
+    });
+    expect(screen.queryByTestId("edit-modal")).toBeNull();
+  });
+
+  it("opens the linked person when the activity has no deal", () => {
+    useQuery.mockReturnValue({ data: [row({})], refetch });
+    render(<ActivitiesTable />);
+    fireEvent.click(screen.getByText("Call Jane"));
+    expect(push).toHaveBeenCalledWith("/contacts/people/pe1");
+  });
+
+  it("does not also open the row's record when the Contact cell's own link is clicked", () => {
+    useQuery.mockReturnValue({
+      data: [row({ dealId: "d1", dealTitle: "Acme renewal" })],
+      refetch,
+    });
+    render(<ActivitiesTable />);
+    fireEvent.click(screen.getByRole("link", { name: "Jane Roe" }));
+    expect(push).not.toHaveBeenCalled();
+  });
+
+  it("falls back to the edit modal only for an activity linked to no record", () => {
+    useQuery.mockReturnValue({
+      data: [row({ typeKey: "call", personId: null, personName: null, orgId: null })],
+      refetch,
+    });
     render(<ActivitiesTable />);
     expect(screen.queryByTestId("edit-modal")).toBeNull();
     fireEvent.click(screen.getByText("Call Jane"));
+    expect(push).not.toHaveBeenCalled();
     expect(screen.getByTestId("edit-modal-id")).toHaveTextContent("a1");
     expect(screen.getByTestId("edit-modal-type")).toHaveTextContent("t1");
     fireEvent.click(screen.getByRole("button", { name: "Close edit" }));
@@ -290,5 +336,49 @@ describe("ActivitiesTable", () => {
     expect(screen.queryByTestId("edit-modal")).toBeNull();
     fireEvent.click(screen.getByRole("link", { name: "+14155550100" }));
     expect(screen.queryByTestId("edit-modal")).toBeNull();
+  });
+});
+
+describe("ActivitiesTable j/k row cursor", () => {
+  const rows = [row({ id: "a1", subject: "Call Jane" }), row({ id: "a2", subject: "Email Bob" })];
+
+  it("j marks the first row as the cursor row", () => {
+    useQuery.mockReturnValue({ data: rows, refetch });
+    render(<ActivitiesTable />);
+    fireEvent.keyDown(window, { key: "j" });
+    expect(screen.getByText("Call Jane").closest("tr")).toHaveAttribute("data-cursor", "true");
+  });
+
+  it("a second j moves the cursor to the next row", () => {
+    useQuery.mockReturnValue({ data: rows, refetch });
+    render(<ActivitiesTable />);
+    fireEvent.keyDown(window, { key: "j" });
+    fireEvent.keyDown(window, { key: "j" });
+    expect(screen.getByText("Email Bob").closest("tr")).toHaveAttribute("data-cursor", "true");
+    expect(screen.getByText("Call Jane").closest("tr")).not.toHaveAttribute("data-cursor", "true");
+  });
+
+  it("k moves the cursor back up", () => {
+    useQuery.mockReturnValue({ data: rows, refetch });
+    render(<ActivitiesTable />);
+    fireEvent.keyDown(window, { key: "j" });
+    fireEvent.keyDown(window, { key: "j" });
+    fireEvent.keyDown(window, { key: "k" });
+    expect(screen.getByText("Call Jane").closest("tr")).toHaveAttribute("data-cursor", "true");
+  });
+
+  it("Enter opens the cursor row's record, like a click on it", () => {
+    useQuery.mockReturnValue({ data: rows, refetch });
+    render(<ActivitiesTable />);
+    fireEvent.keyDown(window, { key: "j" });
+    fireEvent.keyDown(window, { key: "j" });
+    fireEvent.keyDown(window, { key: "Enter" });
+    expect(push).toHaveBeenCalledWith("/contacts/people/pe1");
+  });
+
+  it("marks no row until j or k is pressed", () => {
+    useQuery.mockReturnValue({ data: rows, refetch });
+    const { container } = render(<ActivitiesTable />);
+    expect(container.querySelector("tr[data-cursor='true']")).toBeNull();
   });
 });

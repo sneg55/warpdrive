@@ -8,7 +8,11 @@ import { LeadSidebar } from "./LeadSidebar";
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 vi.mock("@/lib/trpc-client", () => ({
-  trpc: { labels: { listByTarget: { useQuery: () => ({ data: [] }) } } },
+  trpc: {
+    labels: { listByTarget: { useQuery: () => ({ data: [] }) } },
+    enrichment: { status: { useQuery: () => ({ data: { ready: false, providers: [] } }) } },
+    useUtils: () => ({ contacts: { contactTimeline: { invalidate: () => Promise.resolve() } } }),
+  },
 }));
 vi.mock("@/features/leads/leadServerActions", () => ({
   updateLeadAction: vi.fn(() => Promise.resolve({ ok: true, lead: { id: "l1" } })),

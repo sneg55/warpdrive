@@ -13,6 +13,20 @@ function toMinutes(time: string): number | null {
   return h * 60 + min;
 }
 
+// A blank time means the user set a day, not a time. The old behaviour silently substituted
+// midnight, so a time nobody chose was stored, shown back in the form, and rendered in the
+// list. Callers get both the timestamp and whether a time was actually given; midnight
+// deliberately picked is a real time and is NOT all-day.
+export interface ComposedDueAt {
+  iso: string | null;
+  allDay: boolean;
+}
+
+export function composeDueAt(startDate: string, startTime: string): ComposedDueAt {
+  const iso = composeDueAtIso(startDate, startTime);
+  return { iso, allDay: iso !== null && startTime === "" };
+}
+
 export function composeDueAtIso(startDate: string, startTime: string): string | null {
   if (startDate === "") return null;
   const parts = /^(\d{4})-(\d{2})-(\d{2})$/.exec(startDate);

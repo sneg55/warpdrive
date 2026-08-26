@@ -28,6 +28,7 @@ const GLOBAL_ACTIONS = [
   "stats.viewOthers",
   "pipeline.manage",
   "metadata.manage",
+  "goals.manage",
   "permissions.manage",
 ] as const;
 

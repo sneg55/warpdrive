@@ -58,7 +58,7 @@ export function NotificationsBell({ userId }: { userId: string }): React.ReactNo
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger
         aria-label={STRINGS.notifications.title}
-        className="relative flex h-10 w-10 items-center justify-center rounded-md transition-transform hover:bg-gray-100 active:scale-[0.96]"
+        className="relative flex h-10 w-10 items-center justify-center rounded-md transition-transform hover:bg-accent active:scale-[0.96]"
       >
         <Bell aria-hidden className="h-5 w-5 text-muted-foreground" strokeWidth={1.75} />
         {unreadCount > 0 ? (
@@ -75,7 +75,7 @@ export function NotificationsBell({ userId }: { userId: string }): React.ReactNo
             type="button"
             disabled={markingAll || unreadCount === 0}
             onClick={() => void handleMarkAll()}
-            className="text-xs text-blue-600 disabled:opacity-40 hover:underline"
+            className="text-xs text-link disabled:opacity-40 hover:underline"
           >
             {STRINGS.notifications.markAllRead}
           </button>
@@ -83,14 +83,14 @@ export function NotificationsBell({ userId }: { userId: string }): React.ReactNo
 
         <div className="max-h-96 overflow-y-auto">
           {feed.length === 0 ? (
-            <p className="px-3 py-4 text-center text-sm text-gray-500">
+            <p className="px-3 py-4 text-center text-sm text-muted-foreground">
               {STRINGS.notifications.empty}
             </p>
           ) : null}
 
           {today.length > 0 ? (
             <>
-              <p className="px-3 pt-2 text-xs font-medium uppercase tracking-wide text-gray-400">
+              <p className="px-3 pt-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 {STRINGS.notifications.today}
               </p>
               {today.map((n) => (
@@ -101,7 +101,7 @@ export function NotificationsBell({ userId }: { userId: string }): React.ReactNo
 
           {earlier.length > 0 ? (
             <>
-              <p className="px-3 pt-2 text-xs font-medium uppercase tracking-wide text-gray-400">
+              <p className="px-3 pt-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 {STRINGS.notifications.earlier}
               </p>
               {earlier.map((n) => (
@@ -118,7 +118,7 @@ export function NotificationsBell({ userId }: { userId: string }): React.ReactNo
               setOpen(false);
               router.push("/activities/calendar");
             }}
-            className="w-full px-3 py-2 text-center text-xs text-blue-600 hover:underline"
+            className="w-full px-3 py-2 text-center text-xs text-link hover:underline"
           >
             {STRINGS.notifications.seeAll}
           </button>

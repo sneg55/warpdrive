@@ -51,6 +51,12 @@ Contact fields are edited in place: click a value, change it, and it saves. Esca
 cancels. Custom fields appear alongside built-in ones. See
 [Data fields](../administration/data-fields.md).
 
+## Enrichment
+
+Both detail pages carry a **Fill the gaps** button that fills empty fields from
+connected data providers (Apollo, RocketReach, GetProspect), behind a review dialog.
+See [Enrichment](./enrichment.md).
+
 ## Email
 
 Threads linked to a person appear on their detail page. Linking is recorded on the

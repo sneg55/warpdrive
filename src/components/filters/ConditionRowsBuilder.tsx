@@ -1,42 +1,29 @@
 "use client";
+import { Filter } from "lucide-react";
 import type React from "react";
 import { useState } from "react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/Popover";
-import { Select, type SelectOption } from "@/components/ui/Select";
+import {
+  type ConditionFieldOption,
+  type ConditionRow,
+  ConditionRows,
+  type RawCondition,
+} from "./ConditionRows";
 
-// Value-input shape for a field: a plain text/number/date box, or a branded Select whose options
-// the caller supplies (owner pickers, enum/stage pickers). Keeping options caller-supplied lets the
-// builder stay presentational (no trpc) so contacts, deals, and leads can all share it.
-export type ConditionValueInput =
-  | { kind: "text" | "number" | "date" }
-  | { kind: "select"; options: SelectOption[] };
-
-// One selectable field: its key, its human label, the operator keys valid for it, and how its value
-// is entered. Op keys map to labels via the builder's opLabels prop.
-export interface ConditionFieldOption {
-  field: string;
-  label: string;
-  ops: readonly string[];
-  input: ConditionValueInput;
-}
-
-// A compiled-but-still-raw condition (string value). Callers coerce/validate into their own
-// definition shape (numbers, dates) when they receive it.
-export interface RawCondition {
-  field: string;
-  op: string;
-  value: string;
-}
-
-interface Row extends RawCondition {
-  id: string;
-}
+// The consumers (contacts, deals, leads builders) import these from here, so keep them resolving.
+export type {
+  ConditionFieldOption,
+  ConditionRow,
+  ConditionValueInput,
+  RawCondition,
+  RowValue,
+} from "./ConditionRows";
 
 interface ConditionRowsBuilderProps {
   fields: readonly ConditionFieldOption[];
   // opKey -> human label (shared across entities; superset is fine).
   opLabels: Record<string, string>;
-  // Show the all/any combinator selector (contacts). Deals AND everything, so pass false.
+  // Show the all/any combinator selector, once there is more than one row.
   supportsCombinator?: boolean;
   // Called with the raw rows + combinator on Apply (empty array means "no conditions").
   onApply: (rows: RawCondition[], combinator: "and" | "or") => void;
@@ -44,14 +31,16 @@ interface ConditionRowsBuilderProps {
   onClear: () => void;
   // Count of currently-applied conditions, for the trigger badge (0 hides it).
   activeCount: number;
+  // What the caller currently has applied, in the same shape Apply hands back. The popover re-seeds
+  // from these every time it opens, so it shows what is applied and never an abandoned edit.
+  appliedRows?: readonly RawCondition[];
+  appliedCombinator?: "and" | "or";
 }
 
-const REMOVE = "✕";
-
 // Pipedrive-style "Filter" + Add-condition popover, shared by contacts / deals / leads. A Popover
-// (not a menu: it holds form controls) with condition rows (field / operator / value) joined by a
-// combinator. Presentational only: the value input for each field is caller-described, and Apply
-// hands the raw rows back for the caller to compile into its own filter definition.
+// (not a menu: it holds form controls) around ConditionRows. Presentational only: the value input
+// for each field is caller-described, and Apply hands the raw rows back for the caller to compile
+// into its own filter definition.
 export function ConditionRowsBuilder({
   fields,
   opLabels,
@@ -59,25 +48,22 @@ export function ConditionRowsBuilder({
   onApply,
   onClear,
   activeCount,
+  appliedRows = [],
+  appliedCombinator = "and",
 }: ConditionRowsBuilderProps): React.ReactNode {
+  const seed = (): ConditionRow[] => appliedRows.map((r) => ({ ...r, id: crypto.randomUUID() }));
   const [open, setOpen] = useState(false);
-  const [combinator, setCombinator] = useState<"and" | "or">("and");
-  const [rows, setRows] = useState<Row[]>([]);
+  const [combinator, setCombinator] = useState<"and" | "or">(appliedCombinator);
+  const [rows, setRows] = useState<ConditionRow[]>(seed);
 
-  const first = fields[0];
-  function addRow(): void {
-    if (first === undefined) return;
-    setRows((r) => [
-      ...r,
-      { id: crypto.randomUUID(), field: first.field, op: first.ops[0] ?? "", value: "" },
-    ]);
+  function openChange(next: boolean): void {
+    if (next) {
+      setRows(seed());
+      setCombinator(appliedCombinator);
+    }
+    setOpen(next);
   }
-  function patch(i: number, next: Partial<RawCondition>): void {
-    setRows((r) => r.map((row, idx) => (idx === i ? { ...row, ...next } : row)));
-  }
-  function removeRow(i: number): void {
-    setRows((r) => r.filter((_, idx) => idx !== i));
-  }
+
   function apply(): void {
     onApply(
       rows.map((r) => ({ field: r.field, op: r.op, value: r.value })),
@@ -93,14 +79,12 @@ export function ConditionRowsBuilder({
   }
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={openChange}>
       <PopoverTrigger
         aria-label="Filter"
         className="inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm text-muted-foreground hover:bg-accent hover:text-foreground"
       >
-        <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor">
-          <path d="M3 5h18l-7 8v6l-4-2v-4z" />
-        </svg>
+        <Filter aria-hidden="true" className="h-4 w-4" />
         Filter
         {activeCount > 0 ? (
           <span className="ml-0.5 rounded-full bg-primary px-1.5 text-xs text-primary-foreground tabular-nums">
@@ -109,83 +93,15 @@ export function ConditionRowsBuilder({
         ) : null}
       </PopoverTrigger>
       <PopoverContent align="start" className="w-96 space-y-2 p-2 text-sm">
-        {supportsCombinator && rows.length > 1 ? (
-          <div className="flex items-center gap-2 px-1">
-            <span className="text-xs text-muted-foreground">Match</span>
-            <Select
-              ariaLabel="Match combinator"
-              value={combinator}
-              onChange={(v) => setCombinator(v === "or" ? "or" : "and")}
-              options={[
-                { value: "and", label: "all conditions" },
-                { value: "or", label: "any condition" },
-              ]}
-            />
-          </div>
-        ) : null}
-
-        {rows.map((row, i) => {
-          const def = fields.find((f) => f.field === row.field) ?? first;
-          return (
-            <div key={row.id} className="flex items-center gap-1.5">
-              <Select
-                ariaLabel={`Condition ${i + 1} field`}
-                value={row.field}
-                onChange={(v) => {
-                  const nextDef = fields.find((f) => f.field === v);
-                  patch(i, { field: v, op: nextDef?.ops[0] ?? "", value: "" });
-                }}
-                options={fields.map((f) => ({ value: f.field, label: f.label }))}
-              />
-              <Select
-                ariaLabel={`Condition ${i + 1} operator`}
-                value={row.op}
-                onChange={(v) => patch(i, { op: v })}
-                options={(def?.ops ?? []).map((o) => ({ value: o, label: opLabels[o] ?? o }))}
-              />
-              {def?.input.kind === "select" ? (
-                <Select
-                  ariaLabel={`Condition ${i + 1} value`}
-                  value={row.value}
-                  onChange={(v) => patch(i, { value: v })}
-                  placeholder="Select"
-                  options={def.input.options}
-                />
-              ) : (
-                <input
-                  aria-label={`Condition ${i + 1} value`}
-                  type={
-                    def?.input.kind === "number"
-                      ? "number"
-                      : def?.input.kind === "date"
-                        ? "date"
-                        : "text"
-                  }
-                  value={row.value}
-                  onChange={(e) => patch(i, { value: e.currentTarget.value })}
-                  className="min-w-0 flex-1 rounded-md border px-2 py-1 text-sm"
-                  placeholder="Value"
-                />
-              )}
-              <button
-                type="button"
-                aria-label={`Remove condition ${i + 1}`}
-                onClick={() => removeRow(i)}
-                className="shrink-0 rounded px-1.5 text-muted-foreground hover:text-foreground"
-              >
-                {REMOVE}
-              </button>
-            </div>
-          );
-        })}
-
-        <button
-          type="button"
-          onClick={addRow}
-          className="w-full rounded-md border border-dashed px-2 py-1.5 text-sm text-muted-foreground hover:border-ring hover:text-foreground"
-        >
-          + Add condition
-        </button>
+        <ConditionRows
+          fields={fields}
+          opLabels={opLabels}
+          rows={rows}
+          onRowsChange={setRows}
+          supportsCombinator={supportsCombinator}
+          combinator={combinator}
+          onCombinatorChange={setCombinator}
+        />
 
         <div className="flex justify-end gap-2 pt-1">
           <button

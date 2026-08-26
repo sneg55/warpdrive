@@ -4,18 +4,30 @@
 // re-exports these and re-validates on the server, so the client dropdown and the server
 // allow-list stay in lockstep.
 
-export const LEAD_FILTER_FIELDS = ["title", "value", "sourceOrigin", "ownerId"] as const;
+import { ARRAY_OPS, EXACT_OPS, FILTER_OP_KEYS, ORDERED_OPS, TEXT_OPS } from "@/constants/filterOps";
+
+export const LEAD_FILTER_FIELDS = ["title", "value", "sourceOrigin", "ownerId", "labels"] as const;
 export type LeadFilterField = (typeof LEAD_FILTER_FIELDS)[number];
-export const LEAD_FILTER_OPS = ["eq", "neq", "gt", "lt", "gte", "lte", "contains"] as const;
+export const LEAD_FILTER_OPS = FILTER_OP_KEYS;
 
 // Which operators each lead field's column type can run (mirrors the server leadFilter allow-list).
 // Client-safe so the inline builder can restrict its op dropdown to valid pairings.
-const LEAD_TEXT_OPS = ["contains", "eq", "neq"] as const;
-const LEAD_ORDERED_OPS = ["eq", "neq", "gt", "lt", "gte", "lte"] as const;
-const LEAD_EXACT_OPS = ["eq", "neq"] as const;
 export const OPS_BY_LEAD_FIELD: Record<LeadFilterField, readonly string[]> = {
-  title: LEAD_TEXT_OPS,
-  value: LEAD_ORDERED_OPS,
-  sourceOrigin: LEAD_TEXT_OPS,
-  ownerId: LEAD_EXACT_OPS,
+  title: TEXT_OPS,
+  value: ORDERED_OPS,
+  sourceOrigin: TEXT_OPS,
+  ownerId: EXACT_OPS,
+  labels: ARRAY_OPS,
 };
+
+// Fields whose column is a text[]; the compiler emits the overlap branch for these.
+export const LEAD_ARRAY_FIELDS: readonly string[] = ["labels"];
+
+// Column classes that need a value check beyond the op pairing. Fed to the shared condition
+// validator in src/schemas/filterCondition.ts by both leads/schemas.ts and the saved-view schema.
+export const LEAD_CONDITION_CONFIG = {
+  fields: LEAD_FILTER_FIELDS,
+  opsByField: OPS_BY_LEAD_FIELD,
+  numericFields: ["value"],
+  arrayFields: LEAD_ARRAY_FIELDS,
+} as const;

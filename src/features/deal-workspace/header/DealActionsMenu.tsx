@@ -1,4 +1,5 @@
 "use client";
+import { EllipsisVertical } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type React from "react";
 import { useState } from "react";
@@ -14,6 +15,7 @@ import { deleteDealAction } from "@/features/deal-workspace/actions";
 import { useDealActionError } from "@/features/deal-workspace/DealActionErrorProvider";
 import { duplicateDealAction } from "@/features/deal-workspace/duplicateDealAction";
 import { archiveDealAction } from "@/features/deals/archiveActions";
+import { useDetailDrawerClose } from "@/features/navigation/detailDrawerClose";
 import { readCsrfToken } from "@/utils/csrfCookie";
 import { ConvertToLeadDialog } from "./ConvertToLeadDialog";
 import { MergeDealDialog } from "./MergeDealDialog";
@@ -43,6 +45,7 @@ export function DealActionsMenu({
 }: DealActionsMenuProps): React.ReactNode {
   const router = useRouter();
   const reportError = useDealActionError();
+  const closeDrawer = useDetailDrawerClose();
   const [pending, setPending] = useState(false);
   const [flow, setFlow] = useState<Flow>(null);
 
@@ -70,18 +73,20 @@ export function DealActionsMenu({
     setPending(true);
     const r = await deleteDealAction({ dealId, expectedUpdatedAt }, readCsrfToken());
     setPending(false);
-    if (r.ok) router.push("/pipeline");
-    else reportError(r.error.id);
+    if (!r.ok) {
+      reportError(r.error.id);
+      return;
+    }
+    // Opened as a slide-over, the deal has a list behind it to return to, and pushing would be a
+    // soft navigation that leaves the slot rendering the deal just deleted.
+    if (closeDrawer !== null) closeDrawer();
+    else router.push("/pipeline");
   }
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger aria-label="Deal actions" disabled={pending} className={ICON_BUTTON}>
-        <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor">
-          <circle cx="12" cy="5" r="2" />
-          <circle cx="12" cy="12" r="2" />
-          <circle cx="12" cy="19" r="2" />
-        </svg>
+        <EllipsisVertical aria-hidden="true" className="h-4 w-4" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-44">
         <DropdownMenuItem onSelect={() => void copyLink()}>Copy link</DropdownMenuItem>

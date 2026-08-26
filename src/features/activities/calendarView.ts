@@ -54,9 +54,12 @@ export function selectWindow(
     return { days: monthGridDays(anchor), range: monthGridRange(anchor) };
   }
   const days = weekDays(anchor);
-  // E2: end-of-day Sunday so activities due later that day are not excluded by the inclusive BETWEEN.
-  const last = addDaysUtc(days[0] ?? anchor, 6);
-  return { days, range: { from: days[0] ?? anchor, to: endOfDayUtc(last) } };
+  const first = days[0] ?? anchor;
+  const last = addDaysUtc(first, 6);
+  // The week grid buckets by the VIEWER'S local day (weekAgenda.groupByLocalDay), so the fetched
+  // range has to cover the local week, not the UTC one. One day of slack either side spans every
+  // real offset (UTC-12 to UTC+14); groupByLocalDay drops whatever falls outside the seven columns.
+  return { days, range: { from: addDaysUtc(first, -1), to: endOfDayUtc(addDaysUtc(last, 1)) } };
 }
 
 export function stepAnchorIso(view: CalendarViewName, anchorIso: string, dir: 1 | -1): string {

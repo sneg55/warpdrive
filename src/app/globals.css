@@ -43,30 +43,36 @@
   --color-ring: hsl(var(--ring));
 
   /*
-   * Pipedrive parity: PD's link/active blue, used for active tab labels and entity links.
-   * Declared as a literal (not an HSL-channel var) so computed styles come out as exactly
-   * rgb(13, 104, 197), which the parity gate compares byte-for-byte against PD captures.
+   * Link / active-tab colour. Indigo is the product's identity (see the :root block), replacing
+   * the Pipedrive blue literal that used to live here; the parity gate needs a colour rebaseline.
+   * Indirected through a var so the .dark block can lighten it.
    */
-  --color-link: rgb(13 104 197);
+  --color-link: var(--link);
 
   /*
-   * Pipedrive parity: PD's primary-action green (Save buttons, Won) and its disabled
-   * blend, plus the neutral gray PD paints on hovered editable rows and the pencil's
-   * border. Literals for the same byte-for-byte reason as --color-link.
+   * The one action green. --action, --save and --success all resolve to the same value now:
+   * green means confirm / save / won and nothing else. Disabled fills use the neutral pair.
    */
-  --color-save: rgb(45 134 71);
-  --color-save-muted: rgb(130 184 134);
+  --color-action: var(--action);
+  --color-action-foreground: var(--action-foreground);
+  --color-save: var(--save);
+  --color-save-muted: var(--save-muted);
+  --color-disabled: hsl(var(--disabled));
+  --color-disabled-foreground: hsl(var(--disabled-foreground));
 
-  /*
-   * Brand accent for primary/action buttons (emerald-600). Deliberately separate from
-   * --primary (near-black slate), which still drives non-button emphasis: checkbox fill,
-   * calendar selection, toggles, count badges, progress bars, unread dots, wizard steps.
-   * Literal rgb (like --color-save) so the /90 hover modifier and computed styles stay exact.
-   */
-  --color-action: rgb(5 150 105);
-  --color-action-foreground: rgb(255 255 255);
-  --color-field-hover: rgb(236 236 237);
-  --color-field-border: rgba(33, 35, 44, 0.24);
+  /* Attention fill for the "nothing planned" badge: amber ground, dark amber ink. */
+  --color-attention: var(--attention);
+  --color-attention-foreground: var(--attention-foreground);
+
+  /* The calm end of the next-action ramp: an activity is booked, so nothing is owed today. Neutral
+     rather than a hue, because a hue on a board of cards reads as something to look at, and never
+     amber, which is the nudge to schedule one. */
+  --color-scheduled: var(--scheduled);
+  --color-scheduled-foreground: var(--scheduled-foreground);
+
+  /* PD-parity neutrals on hovered editable rows and the inline pencil's border. */
+  --color-field-hover: var(--field-hover);
+  --color-field-border: var(--field-border);
 
   --radius-sm: calc(var(--radius) - 2px);
   --radius-md: var(--radius);
@@ -80,6 +86,12 @@
    */
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
     "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+
+  /*
+   * The one display size, for whatever names the page or record you are looking at. Everything
+   * else in the app sits at text-sm or below, so this is the only step that outranks body copy.
+   */
+  --text-display: 1.5625rem;
 }
 
 @layer base {
@@ -101,45 +113,89 @@
     --muted-foreground: 215.4 16.3% 46.9%;
     --accent: 210 40% 96.1%;
     --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
+    /* #dc2626. The old 0 84.2% 60.2% (#ef4444) read 3.76:1 as error text on white. */
+    --destructive: 0 72.2% 50.6%;
     --destructive-foreground: 210 40% 98%;
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    /* Focus ring and selection share the brand indigo. */
+    --ring: 244.5 57.9% 50.6%;
 
     /* Extra roles required by UI spec 8.1 (not shipped by shadcn). */
-    --success: 142 71% 45%;
+    --success: 162.9 93.5% 24.3%;
     --success-foreground: 0 0% 100%;
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 10%;
+    /* Disabled fills: #475569 on #e2e8f0. Opacity-dimmed white on green measured 1.55:1. */
+    --disabled: 214.3 31.8% 91.4%;
+    --disabled-foreground: 215.3 19.3% 34.5%;
+
+    /* Non-channel colours (used raw, not through hsl()). */
+    --link: #4338ca;
+    --action: #047857;
+    --action-foreground: #ffffff;
+    /* The inline-edit footer hardcodes white ink on these two, so both stay dark in night too. */
+    --save: #047857;
+    --save-muted: #475569;
+    --attention: #fde68a;
+    --attention-foreground: #78350f;
+    /* Neutral on purpose: a booked activity needs no attention, so the badge should read as
+       present rather than as a signal. 4.76:1 for the glyph and the same for the fill against a
+       white card, 4.35:1 on the lightest rot tint. */
+    --scheduled: #64748b;
+    --scheduled-foreground: #ffffff;
+    --field-hover: rgb(236 236 237);
+    --field-border: rgba(33, 35, 44, 0.24);
   }
 
+  /*
+   * Night palette. Surfaces come from the approved mockup: page #0b0f14, card #121821,
+   * border #1f2833, text #e6edf3, muted text #8b98a5 (6.05:1 on card). The action button
+   * inverts here: dark ink on bright emerald measures 7.58:1, white on it only 2.54:1.
+   */
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+    --background: 213.3 29% 6.1%;
+    --foreground: 207.7 35.2% 92.7%;
+    --card: 216 29.4% 10%;
+    --card-foreground: 207.7 35.2% 92.7%;
+    --popover: 216 29.4% 10%;
+    --popover-foreground: 207.7 35.2% 92.7%;
+    --primary: 231.7 100% 77.3%;
+    --primary-foreground: 213.3 29% 6.1%;
+    --secondary: 213 24.4% 16.1%;
+    --secondary-foreground: 207.7 35.2% 92.7%;
+    --muted: 212.3 31.7% 8%;
+    --muted-foreground: 210 12.6% 59.6%;
+    --accent: 213 24.4% 16.1%;
+    --accent-foreground: 207.7 35.2% 92.7%;
+    --destructive: 0 90.6% 70.8%;
+    --destructive-foreground: 213.3 29% 6.1%;
+    --border: 213 24.4% 16.1%;
+    --input: 213 24.4% 16.1%;
+    --ring: 231.7 100% 77.3%;
 
     /* Extra roles required by UI spec 8.1 (not shipped by shadcn). */
-    --success: 142 71% 45%;
-    --success-foreground: 0 0% 100%;
+    --success: 160.1 84.1% 39.4%;
+    --success-foreground: 213.3 29% 6.1%;
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 10%;
+    --disabled: 213 24.4% 16.1%;
+    --disabled-foreground: 210 12.6% 59.6%;
+
+    --link: #a5b4fc;
+    --action: #10b981;
+    --action-foreground: #0b0f14;
+    --save: #047857;
+    --save-muted: #475569;
+    --attention: #78350f;
+    --attention-foreground: #fde68a;
+    /* Inverted like attention: a dark ground would vanish into the night board. This is the same
+       gray as night's muted text, so the quiet badge and the quiet text agree. 6.53:1 for the
+       glyph, 6.05:1 for the fill against the card. */
+    --scheduled: #8b98a5;
+    --scheduled-foreground: #0b0f14;
+    --field-hover: rgba(255, 255, 255, 0.06);
+    --field-border: rgba(230, 237, 243, 0.24);
   }
 
   /* Density: switched by data-density on the shell root (UI spec 8.6). */
@@ -179,6 +235,25 @@
 }
 .dark .img-outline {
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+
+/*
+ * Board stage funnel, night only. boardStageHeader.tint() paints the stage hue at 0.18, which
+ * reads over white and nearly disappears over the dark lane. Re-laying the element's own fill
+ * beneath its label at 0.8 opacity lands the band at 0.30 effective alpha: same hue, same
+ * clip-path geometry, no change to the shared tint() the deal-page chevrons also use.
+ */
+.dark section[aria-roledescription="stage column"] > header > div[style*="clip-path"] {
+  position: relative;
+  isolation: isolate;
+}
+.dark section[aria-roledescription="stage column"] > header > div[style*="clip-path"]::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-color: inherit;
+  opacity: 0.8;
 }
 
 /*

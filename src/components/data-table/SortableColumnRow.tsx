@@ -1,6 +1,7 @@
 "use client";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { GripVertical } from "lucide-react";
 import type React from "react";
 import { Checkbox } from "@/components/ui/Checkbox";
 import type { ColumnDef } from "./columnModel";
@@ -42,9 +43,7 @@ export function SortableColumnRow({
           {...attributes}
           {...listeners}
         >
-          <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor">
-            <path d="M8 6a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zm8 0a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zM8 10.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zm8 0a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zM8 15a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zm8 0a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3z" />
-          </svg>
+          <GripVertical aria-hidden="true" className="h-4 w-4" />
         </button>
       )}
       <div className="flex flex-1 items-center gap-2">

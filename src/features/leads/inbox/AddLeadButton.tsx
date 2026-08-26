@@ -1,4 +1,5 @@
 "use client";
+import { ChevronDown } from "lucide-react";
 import Link from "next/link";
 import type React from "react";
 import { useState } from "react";
@@ -44,9 +45,7 @@ export function AddLeadButton({
             aria-label="Add lead options"
             className="rounded-r-md border-l border-action-foreground/20 bg-action px-1.5 py-1.5 text-action-foreground transition-[opacity,scale] duration-150 ease-out hover:opacity-90 active:scale-[0.96] motion-reduce:transition-opacity"
           >
-            <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor">
-              <path d="M7 10l5 5 5-5z" />
-            </svg>
+            <ChevronDown aria-hidden="true" className="h-4 w-4" />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="min-w-40">
             <DropdownMenuItem onSelect={() => setOpen(true)}>New lead</DropdownMenuItem>

@@ -1,8 +1,16 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { IDENTITY_ERROR_MESSAGES } from "@/constants/settingsIdentity";
+
+// Radix DropdownMenu relies on pointer-capture + scrollIntoView, which jsdom lacks.
+beforeAll(() => {
+  Element.prototype.scrollIntoView = vi.fn();
+  Element.prototype.hasPointerCapture = vi.fn();
+  Element.prototype.releasePointerCapture = vi.fn();
+});
 
 afterEach(() => {
   cleanup();
@@ -29,10 +37,37 @@ const PROPS = {
   onChanged: vi.fn(),
 };
 
+type User = ReturnType<typeof userEvent.setup>;
+
+async function openMenu(user: User): Promise<void> {
+  await user.click(screen.getByRole("button", { name: "User actions" }));
+  await screen.findByRole("menu");
+}
+
+async function chooseAction(user: User, name: string): Promise<void> {
+  await openMenu(user);
+  const item = screen.getByRole("menuitem", { name });
+  await waitFor(() => expect(item).not.toHaveAttribute("data-disabled"));
+  await user.click(item);
+}
+
 describe("UserRowControls", () => {
+  // At 1440px the two inline buttons overflowed the settings card and rendered as "Deacti...".
+  // One overflow menu keeps the row inside the card at every width.
+  it("collapses both actions into a single row overflow menu", async () => {
+    const user = userEvent.setup();
+    const { container } = render(<UserRowControls {...PROPS} />);
+    expect(within(container).getAllByRole("button")).toHaveLength(1);
+
+    await openMenu(user);
+    expect(screen.getByRole("menuitem", { name: "Make admin" })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: "Deactivate" })).toBeInTheDocument();
+  });
+
   it("shows an inline error when the admin toggle fails", async () => {
+    const user = userEvent.setup();
     render(<UserRowControls {...PROPS} />);
-    fireEvent.click(screen.getByRole("button", { name: "Make admin" }));
+    await chooseAction(user, "Make admin");
     await waitFor(() => expect(setUserAdminAction).toHaveBeenCalled());
     expect(await screen.findByText(IDENTITY_ERROR_MESSAGES.permission)).toBeInTheDocument();
     expect(screen.getByRole("alert")).toBeInTheDocument();
@@ -40,16 +75,11 @@ describe("UserRowControls", () => {
 
   it("clears the error and calls onChanged when a retry succeeds", async () => {
     // First admin toggle fails, then the active toggle (succeeds) clears the error.
+    const user = userEvent.setup();
     render(<UserRowControls {...PROPS} />);
-    fireEvent.click(screen.getByRole("button", { name: "Make admin" }));
+    await chooseAction(user, "Make admin");
     expect(await screen.findByText(IDENTITY_ERROR_MESSAGES.permission)).toBeInTheDocument();
-    // The error rendering does NOT mean the failed toggle's transition has ended, and both buttons
-    // are disabled while it is pending. Clicking straight after the error is a coin flip: on a
-    // loaded machine the click lands on a still-disabled button, does nothing, and the onChanged
-    // wait below times out. Wait for the button to actually be clickable first.
-    const deactivate = screen.getByRole("button", { name: "Deactivate" });
-    await waitFor(() => expect(deactivate).toBeEnabled());
-    fireEvent.click(deactivate);
+    await chooseAction(user, "Deactivate");
     await waitFor(() => expect(PROPS.onChanged).toHaveBeenCalled());
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });

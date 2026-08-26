@@ -141,7 +141,9 @@ export function isMappingComplete(state: WizardState): boolean {
   const primary = primaryEntityOf(state.target);
   return STANDARD_IMPORT_FIELDS[state.target]
     .filter((f) => f.required)
-    .every((f) => mapped.has(`${primary}:${f.field}`));
+    .every((f) =>
+      [f.field, ...(f.satisfiedBy ?? [])].some((field) => mapped.has(`${primary}:${field}`)),
+    );
 }
 
 // Project the UI choices onto the backend's columnMappingSchema, dropping columns

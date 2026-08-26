@@ -15,8 +15,11 @@ existing permissions and visibility rules. Connecting an assistant never grants 
 access than you already have.
 
 :::important
-**The server has no delete tools.** There is no way to delete, remove, archive, or
-destroy a record through MCP. It reads, creates, and updates only.
+**The server has no delete tools for CRM records.** There is no way to delete,
+remove, archive, or destroy a deal, contact, lead, or activity through MCP. The one
+exception is the assistant's own unsent email drafts, which it can revise and
+delete, since unsent text in the actor's own mailbox is not a record anyone else
+can see.
 :::
 
 ## Enabling the server
@@ -83,6 +86,8 @@ with OAuth can use the same endpoint.
 - `list_activities`, `get_activity`
 - `list_pipelines`, `get_pipeline`
 - `pipeline_summary`
+- `list_emails`, `get_email`
+- `list_email_drafts`
 
 **Write**
 
@@ -92,6 +97,11 @@ with OAuth can use the same endpoint.
 - `create_organization`, `update_organization`
 - `create_activity`, `update_activity`, `complete_activity`
 - `add_note`
+- `create_email_draft`, `update_email_draft`, `delete_email_draft`
+
+The draft tools write into the actor's own connected mailbox and can link a draft to
+a deal or person, so an assistant can prepare outreach where it belongs. **There is
+no send tool**: drafts are written for review, and sending stays a human action.
 
 ## Permissions and safety
 
@@ -103,8 +113,8 @@ change made in the UI.
 
 :::tip
 Review the assistant's write requests before approving them in your client. The server
-has no delete tools, so the worst an approved write can do is create or change a record,
-never remove one.
+has no delete tools for CRM records and no send tool, so the worst an approved write
+can do is create or change a record, never remove one or email anyone.
 :::
 
 ## Revoking a connection

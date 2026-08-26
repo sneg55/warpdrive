@@ -1,0 +1,2 @@
+ALTER TABLE "organizations" drop column "search_tsv";--> statement-breakpoint
+ALTER TABLE "organizations" ADD COLUMN "search_tsv" "tsvector" GENERATED ALWAYS AS (setweight(to_tsvector('simple', coalesce(name, '')), 'A') || setweight(to_tsvector('simple', split_part(regexp_replace(lower(coalesce(domain, '')), '^(https?://)?(www\.)?', ''), '/', 1)), 'B')) STORED NOT NULL;

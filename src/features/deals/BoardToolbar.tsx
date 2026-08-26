@@ -1,4 +1,5 @@
 "use client";
+import { Archive, Kanban, List, Pencil } from "lucide-react";
 import Link from "next/link";
 import type React from "react";
 import { ICON_BUTTON } from "@/constants/formStyles";
@@ -53,20 +54,7 @@ export function BoardToolbar(props: BoardToolbarProps): React.ReactNode {
             aria-current={current("board")}
             className={cn(ICON_BTN, activeView === "board" ? ACTIVE : IDLE)}
           >
-            <svg
-              aria-hidden="true"
-              viewBox="0 0 24 24"
-              className="h-4 w-4"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <rect x="3" y="4" width="5" height="16" rx="1" />
-              <rect x="10" y="4" width="5" height="11" rx="1" />
-              <rect x="17" y="4" width="4" height="7" rx="1" />
-            </svg>
+            <Kanban aria-hidden="true" className="h-4 w-4" />
             Board
           </Link>
           <Link
@@ -75,18 +63,7 @@ export function BoardToolbar(props: BoardToolbarProps): React.ReactNode {
             aria-current={current("list")}
             className={cn(ICON_BTN, activeView === "list" ? ACTIVE : IDLE)}
           >
-            <svg
-              aria-hidden="true"
-              viewBox="0 0 24 24"
-              className="h-4 w-4"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />
-            </svg>
+            <List aria-hidden="true" className="h-4 w-4" />
             List
           </Link>
           <Link
@@ -95,19 +72,7 @@ export function BoardToolbar(props: BoardToolbarProps): React.ReactNode {
             aria-current={current("archived")}
             className={cn(ICON_BTN, activeView === "archived" ? ACTIVE : IDLE)}
           >
-            <svg
-              aria-hidden="true"
-              viewBox="0 0 24 24"
-              className="h-4 w-4"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <rect x="3" y="4" width="18" height="4" rx="1" />
-              <path d="M5 8v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8M10 12h4" />
-            </svg>
+            <Archive aria-hidden="true" className="h-4 w-4" />
             Archive
           </Link>
         </div>
@@ -123,19 +88,7 @@ export function BoardToolbar(props: BoardToolbarProps): React.ReactNode {
             aria-label="Edit pipeline"
             className={ICON_BUTTON}
           >
-            <svg
-              aria-hidden="true"
-              viewBox="0 0 24 24"
-              className="h-4 w-4"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M12 20h9" />
-              <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z" />
-            </svg>
+            <Pencil aria-hidden="true" className="h-4 w-4" />
           </Link>
 
           {filterSlot}

@@ -1,28 +1,12 @@
 "use client";
 import type React from "react";
 import { useMemo } from "react";
-import {
-  type ConditionFieldOption,
-  ConditionRowsBuilder,
-  type RawCondition,
-} from "@/components/filters/ConditionRowsBuilder";
-import type { SelectOption } from "@/components/ui/Select";
-import { OPS_BY_FIELD } from "@/features/saved-filters/filterFields";
+import { ConditionRowsBuilder, type RawCondition } from "@/components/filters/ConditionRowsBuilder";
+import { mergeLabelOptions } from "@/features/labels/mergeLabelOptions";
 import type { FilterDefinition } from "@/features/saved-filters/schemas";
 import { trpc } from "@/lib/trpc-client";
-import { dealRowsToDefinition } from "./dealFilterRows";
-
-// Op labels shared with the saved-filter row UI (kept local so this builder does not import from
-// the contacts feature). Superset of every op any deal field offers.
-const OP_LABELS: Record<string, string> = {
-  eq: "is",
-  neq: "is not",
-  contains: "contains",
-  gt: "greater than",
-  lt: "less than",
-  gte: "at least",
-  lte: "at most",
-};
+import { dealFilterFields, OP_LABELS } from "./dealFilterCatalog";
+import { dealRowsToDefinition, definitionToRows } from "./dealFilterRows";
 
 interface DealFilterBuilderProps {
   // Pipeline stages, offered as the value dropdown for a Stage condition.
@@ -30,60 +14,50 @@ interface DealFilterBuilderProps {
   // Called with the compiled deal filter definition (null clears it) on Apply/Clear.
   onApply: (def: FilterDefinition | null) => void;
   activeCount: number;
+  // The ad-hoc definition currently applied, so reopening the builder edits that filter rather than
+  // starting blank and an "any condition" filter is never silently shown as "all".
+  appliedDefinition?: FilterDefinition | null;
 }
 
 // Inline ad-hoc condition builder for the deals board + list, matching the People/Orgs experience.
-// Feeds the shared ConditionRowsBuilder the deal field catalog (schemas.ts allow-list) and compiles
-// the raw rows into a FilterDefinition the read path already accepts (no save required). Deals AND
-// every condition (the read path has no OR combinator), so the combinator selector is hidden.
+// Feeds the shared ConditionRowsBuilder the deal field catalog and compiles the raw rows into a
+// FilterDefinition the read path already accepts (no save required).
 export function DealFilterBuilder({
   stages,
   onApply,
   activeCount,
+  appliedDefinition = null,
 }: DealFilterBuilderProps): React.ReactNode {
   const ownersQ = trpc.identity.assignableUsers.useQuery(undefined, { staleTime: 30_000 });
-  const ownerOptions: SelectOption[] = (ownersQ.data ?? []).map((u) => ({
-    value: u.id,
-    label: u.name,
-  }));
-  const stageOptions: SelectOption[] = stages.map((s) => ({ value: s.id, label: s.name }));
+  const catalogNames = (trpc.labels.listByTarget.useQuery({ target: "deal" }).data ?? []).map(
+    (l) => l.name,
+  );
+  // Union in what deals actually carry: a label written straight to the database still shows on the
+  // card, and a filter that omits a label the user can see on screen reads as broken.
+  const appliedNames = trpc.labels.appliedNames.useQuery({ target: "deal" }).data ?? [];
 
-  const fields = useMemo<ConditionFieldOption[]>(
-    () => [
-      { field: "title", label: "Title", ops: OPS_BY_FIELD.title, input: { kind: "text" } },
-      { field: "value", label: "Value", ops: OPS_BY_FIELD.value, input: { kind: "number" } },
-      {
-        field: "ownerId",
-        label: "Owner",
-        ops: OPS_BY_FIELD.ownerId,
-        input: { kind: "select", options: ownerOptions },
-      },
-      {
-        field: "stageId",
-        label: "Stage",
-        ops: OPS_BY_FIELD.stageId,
-        input: { kind: "select", options: stageOptions },
-      },
-      {
-        field: "expectedCloseDate",
-        label: "Expected close",
-        ops: OPS_BY_FIELD.expectedCloseDate,
-        input: { kind: "date" },
-      },
-    ],
-    [ownerOptions, stageOptions],
+  const fields = dealFilterFields({
+    owners: ownersQ.data ?? [],
+    stages,
+    labelOptions: mergeLabelOptions(catalogNames, appliedNames),
+  });
+
+  const appliedRows = useMemo(
+    () => (appliedDefinition === null ? [] : definitionToRows(appliedDefinition)),
+    [appliedDefinition],
   );
 
-  function handleApply(rows: RawCondition[]): void {
-    onApply(dealRowsToDefinition(rows));
+  function handleApply(rows: RawCondition[], combinator: "and" | "or"): void {
+    onApply(dealRowsToDefinition(rows, combinator));
   }
 
   return (
     <ConditionRowsBuilder
       fields={fields}
       opLabels={OP_LABELS}
-      supportsCombinator={false}
       activeCount={activeCount}
+      appliedRows={appliedRows}
+      appliedCombinator={appliedDefinition?.combinator ?? "and"}
       onApply={handleApply}
       onClear={() => onApply(null)}
     />

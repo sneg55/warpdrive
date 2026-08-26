@@ -16,6 +16,14 @@ describe("actionErrorContent", () => {
     expect(content.body).toMatch(/pipeline/i);
   });
 
+  // A rejected saved filter is a fixable mistake in one condition, so the copy points at the
+  // condition values instead of sending the user to refresh a page that fails the same way.
+  it("tells the user which part of a rejected filter to fix", () => {
+    const content = actionErrorContent(ERROR_IDS.DEAL_FILTER_INVALID);
+    expect(content.title).not.toBe("Couldn't complete that action");
+    expect(content.body).toMatch(/condition/i);
+  });
+
   it("tells the user a lead was already converted", () => {
     const content = actionErrorContent(ERROR_IDS.LEAD_ALREADY_CONVERTED);
     expect(content.title).not.toBe("Couldn't complete that action");

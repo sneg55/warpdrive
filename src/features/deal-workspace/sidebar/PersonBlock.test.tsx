@@ -124,6 +124,15 @@ it("hides the Phone/Email rows whose built-in key is in the hidden set, keeps th
   expect(screen.getByText("Name")).toBeInTheDocument();
 });
 
+it("hides the name-part rows whose built-in key is in the hidden set", () => {
+  const person = { ...blankPerson, firstName: "Mia", lastName: "Bauer" } as unknown as Person;
+  render(<PersonBlock person={person} hidden={new Set(["firstName", "lastName"])} />);
+
+  expect(screen.queryByText("First name")).not.toBeInTheDocument();
+  expect(screen.queryByText("Last name")).not.toBeInTheDocument();
+  expect(screen.getByText("Name")).toBeInTheDocument();
+});
+
 it("surfaces a permission-specific message when the edit is denied (E_PERM_001)", async () => {
   updatePersonAction.mockResolvedValueOnce({ ok: false, error: { id: "E_PERM_001" } });
   render(<PersonBlock person={{ ...blankPerson, firstName: "Mia" }} />);

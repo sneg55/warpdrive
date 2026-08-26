@@ -1,6 +1,7 @@
 "use client";
 import type React from "react";
 import { useMemo, useState } from "react";
+import { EngagementGridSkeleton } from "@/components/shell/skeletons";
 import { STRINGS } from "@/constants/strings";
 import { trpc } from "@/lib/trpc-client";
 import { EngagementAxis } from "./EngagementAxis";
@@ -46,9 +47,9 @@ export function EngagementTimelineClient(): React.ReactNode {
         <p role="alert" className="text-sm text-red-600">
           {LOAD_ERROR}
         </p>
-      ) : dataQ.isLoading ? (
-        <p className="text-sm text-muted-foreground">Loading...</p>
-      ) : dataQ.data === undefined || dataQ.data.lanes.length === 0 ? (
+      ) : dataQ.isLoading || dataQ.data === undefined ? (
+        <EngagementGridSkeleton />
+      ) : dataQ.data.lanes.length === 0 ? (
         <p className="text-sm text-muted-foreground">{STRINGS.contacts.timelineEmpty}</p>
       ) : (
         <section

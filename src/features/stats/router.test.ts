@@ -47,8 +47,8 @@ describe("stats tRPC router", () => {
 
       // Seed a won deal owned by the actor with all-visibility so it is always visible.
       await db.execute(sql`
-        INSERT INTO deals (title, pipeline_id, stage_id, owner_id, visibility_level, status)
-        VALUES ('Won deal', ${pipeline.id}, ${stage.id}, ${userRow.id}::uuid, 'all', 'won')
+        INSERT INTO deals (title, pipeline_id, stage_id, owner_id, visibility_level, status, won_time)
+        VALUES ('Won deal', ${pipeline.id}, ${stage.id}, ${userRow.id}::uuid, 'all', 'won', '2026-06-01')
       `);
 
       const caller = createCaller({
@@ -153,12 +153,12 @@ describe("stats tRPC router", () => {
 
       // One won deal in EACH pipeline, both visible to the actor.
       await db.execute(sql`
-        INSERT INTO deals (title, pipeline_id, stage_id, owner_id, visibility_level, status, value)
-        VALUES ('Won 1', ${p1.pipeline.id}, ${s1.id}, ${userRow.id}::uuid, 'all', 'won', 100)
+        INSERT INTO deals (title, pipeline_id, stage_id, owner_id, visibility_level, status, value, won_time)
+        VALUES ('Won 1', ${p1.pipeline.id}, ${s1.id}, ${userRow.id}::uuid, 'all', 'won', 100, '2026-06-01')
       `);
       await db.execute(sql`
-        INSERT INTO deals (title, pipeline_id, stage_id, owner_id, visibility_level, status, value)
-        VALUES ('Won 2', ${p2.pipeline.id}, ${s2.id}, ${userRow.id}::uuid, 'all', 'won', 200)
+        INSERT INTO deals (title, pipeline_id, stage_id, owner_id, visibility_level, status, value, won_time)
+        VALUES ('Won 2', ${p2.pipeline.id}, ${s2.id}, ${userRow.id}::uuid, 'all', 'won', 200, '2026-06-01')
       `);
 
       const caller = createCaller({
@@ -176,9 +176,10 @@ describe("stats tRPC router", () => {
 
       expect(out.dealPerformance.won.count).toBe(2);
       expect(out.dealPerformance.won.value).toBe("300.00");
-      // Funnel and stage sums are inherently per-pipeline, so they are empty here.
-      expect(out.funnel).toEqual([]);
-      expect(out.stageSums).toEqual([]);
+      // Both pipelines have one stage at position 0, and they are named differently, so the
+      // merged row falls back to the position label rather than picking one pipeline's name.
+      expect(out.funnel).toHaveLength(1);
+      expect(out.funnel[0]?.name).toBe("Stage 1");
     });
   });
 
@@ -195,12 +196,12 @@ describe("stats tRPC router", () => {
 
       // One won deal in a LIVE pipeline and one in an ARCHIVED pipeline, both visible.
       await db.execute(sql`
-        INSERT INTO deals (title, pipeline_id, stage_id, owner_id, visibility_level, status, value)
-        VALUES ('Live won', ${live.pipeline.id}, ${liveStage.id}, ${userRow.id}::uuid, 'all', 'won', 100)
+        INSERT INTO deals (title, pipeline_id, stage_id, owner_id, visibility_level, status, value, won_time)
+        VALUES ('Live won', ${live.pipeline.id}, ${liveStage.id}, ${userRow.id}::uuid, 'all', 'won', 100, '2026-06-01')
       `);
       await db.execute(sql`
-        INSERT INTO deals (title, pipeline_id, stage_id, owner_id, visibility_level, status, value)
-        VALUES ('Archived won', ${archived.pipeline.id}, ${archivedStage.id}, ${userRow.id}::uuid, 'all', 'won', 999)
+        INSERT INTO deals (title, pipeline_id, stage_id, owner_id, visibility_level, status, value, won_time)
+        VALUES ('Archived won', ${archived.pipeline.id}, ${archivedStage.id}, ${userRow.id}::uuid, 'all', 'won', 999, '2026-06-01')
       `);
 
       const caller = createCaller({
@@ -246,6 +247,81 @@ describe("stats tRPC router", () => {
           to: "2026-12-31",
         }),
       ).rejects.toMatchObject({ cause: { id: ERROR_IDS.STATS_PIPELINE_NOT_VISIBLE } });
+    });
+  });
+
+  // SECURITY: "All pipelines" now aggregates the funnel across pipelines instead of returning
+  // an empty one. Stage names are pipeline metadata, so the aggregate has to run behind the
+  // same visibility gate the single-pipeline path uses.
+  it("(d) 'All pipelines' never surfaces stage names from a restricted pipeline", async () => {
+    await withTestDb(async (db) => {
+      const userRow = await seedUser(db, { isAdmin: false });
+      const actor = makeActor(userRow);
+
+      const groupRow = (
+        await db.execute(sql`
+          INSERT INTO visibility_groups (name) VALUES ('secret-group') RETURNING id
+        `)
+      ).rows[0] as { id: string } | undefined;
+      if (!groupRow) throw new Error("visibility_group insert failed");
+
+      // The restricted pipeline is DEEPER than the visible one on purpose. Merging by stage
+      // position hides a name whenever a visible pipeline also occupies that position, so a
+      // shallow restricted pipeline would make this test pass for the wrong reason. Position 2
+      // here can only come from the restricted pipeline, so its name leaks if the gate goes.
+      await seedPipelineWithStages(db, ["Open"]);
+      await seedPipelineWithStages(db, ["Intake", "Review", "Secret Diligence"], {
+        visibilityGroupId: groupRow.id,
+      });
+
+      const caller = createCaller({
+        db,
+        session: { userId: userRow.id, sessionId: "test-session-d" },
+        actor,
+      });
+
+      const out = await caller.stats.dashboard({
+        pipelineId: null,
+        ownerScope: "me",
+        from: "2026-01-01",
+        to: "2026-12-31",
+      });
+
+      const names = out.funnel.map((f) => f.name).join("|");
+      expect(names).not.toContain("Secret Diligence");
+      // And the restricted pipeline contributes no positions at all.
+      expect(out.funnel).toHaveLength(1);
+    });
+  });
+
+  it("(d-visible) 'All pipelines' returns a funnel instead of an empty panel", async () => {
+    await withTestDb(async (db) => {
+      const userRow = await seedUser(db, { isAdmin: true });
+      const actor = makeActor(userRow);
+
+      const p1 = await seedPipelineWithStages(db, ["Lead", "Demo"]);
+      const s1 = p1.stages[0];
+      if (s1 === undefined) throw new Error("setup: missing stage");
+      await db.execute(sql`
+        INSERT INTO deals (title, pipeline_id, stage_id, owner_id, visibility_level, status)
+        VALUES ('agg deal', ${p1.pipeline.id}, ${s1.id}, ${userRow.id}::uuid, 'all', 'open')
+      `);
+
+      const caller = createCaller({
+        db,
+        session: { userId: userRow.id, sessionId: "test-session-d2" },
+        actor,
+      });
+
+      const out = await caller.stats.dashboard({
+        pipelineId: null,
+        ownerScope: "me",
+        from: "2026-01-01",
+        to: "2026-12-31",
+      });
+
+      expect(out.funnel.length).toBeGreaterThan(0);
+      expect(out.funnel[0]?.reached).toBeGreaterThanOrEqual(1);
     });
   });
 });

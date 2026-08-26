@@ -1,0 +1,15 @@
+{
+  "id": 4123,
+  "name": "Analytical Engines",
+  "domain": "analyticalengines.com",
+  "industry": "Computer Software",
+  "employees": 240,
+  "revenue": 12000000,
+  "linkedin_url": "https://www.linkedin.com/company/analytical-engines",
+  "description": "Builds difference and analytical engines.",
+  "founded": 1837,
+  "city": "London",
+  "region": "England",
+  "country": "United Kingdom",
+  "phones": ["+44 20 7946 0958"]
+}

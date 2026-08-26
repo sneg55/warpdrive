@@ -1,0 +1,10 @@
+{
+  "id": 8214691,
+  "status": "complete",
+  "name": "Ada Lovelace",
+  "current_title": "VP of Engineering",
+  "emails": [
+    { "email": "ada@old.example.com", "smtp_valid": "invalid", "type": "professional" },
+    { "email": "ada@bounced.example.com", "smtp_valid": "invalid", "type": "personal" }
+  ]
+}

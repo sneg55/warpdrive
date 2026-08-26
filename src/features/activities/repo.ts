@@ -161,6 +161,8 @@ export async function createActivity(
         subject: input.subject,
         priority: input.priority,
         dueAt: input.dueAt === null ? null : new Date(input.dueAt),
+        // A null dueAt cannot be all-day: there is no day.
+        allDay: input.dueAt !== null && input.allDay,
         endAt: input.endAt === null ? null : new Date(input.endAt),
         durationMinutes: input.durationMinutes,
         ownerId: actor.id,

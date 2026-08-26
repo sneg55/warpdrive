@@ -78,4 +78,11 @@ describe("EmailSyncClient", () => {
     expect(screen.getByRole("button", { name: "Reconnect" })).toBeInTheDocument();
     expect(screen.getByText(/E_GMAIL_002/)).toBeInTheDocument();
   });
+
+  it("fills the disconnected status dot from a token so it shows on a dark card", () => {
+    const { container } = render(<EmailSyncClient mailbox={null} />);
+    const dot = container.querySelector('[data-status="none"]');
+    expect(dot).toHaveClass("bg-muted-foreground/40");
+    expect(dot?.className).not.toMatch(/-gray-/);
+  });
 });

@@ -1,4 +1,5 @@
 "use client";
+import { Ellipsis } from "lucide-react";
 import Link from "next/link";
 import type React from "react";
 import {
@@ -22,11 +23,7 @@ export function BoardActionsMenu(props: BoardActionsMenuProps): React.ReactNode 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger aria-label="Board actions" className={ICON_BUTTON}>
-        <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor">
-          <circle cx="5" cy="12" r="1.6" />
-          <circle cx="12" cy="12" r="1.6" />
-          <circle cx="19" cy="12" r="1.6" />
-        </svg>
+        <Ellipsis aria-hidden="true" className="h-4 w-4" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-48">
         <DropdownMenuItem asChild>

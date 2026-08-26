@@ -1,42 +1,23 @@
-// Activities performance query: completed vs scheduled counts for the dashboard.
-// Visibility-scoped through the linked deal (deal-dominates rule): activities
-// whose dealId links to an invisible deal are excluded via a correlated sub-select
-// that uses dealVisibilityPredicate with aliases d2/p2.
+// Activity counters for the dashboard. Each counter windows on the column that records its
+// own event: completed on done_at (repo.ts stamps it on the done transition), added on
+// created_at, scheduled on due_at. Activities with no due date can be in no window at all,
+// so they are reported as `undated` rather than silently dropped from every count.
+// Visibility follows the activity's DOMINANT parent (deal > person > org > parentless), not
+// the deal alone: an activity on a private person is as invisible as one on a private deal.
 import { sql } from "drizzle-orm";
 import type { Db } from "@/db/client";
 import type { PermSetUser } from "@/features/permissions/effective";
-import { dealVisibilityPredicate, type VisibilityCtx } from "@/features/permissions/sql";
-import type { ActivityPerformance, DashboardFilters } from "@/types/stats";
-
-// DealCols using the d2/p2 sub-select aliases (deal-dominates visibility check).
-const DEAL_COLS_D2 = {
-  ownerId: sql`d2.owner_id`,
-  visibilityLevel: sql`d2.visibility_level`,
-  visibilityGroupId: sql`d2.visibility_group_id`,
-  visibleToUserIds: sql`d2.visible_to_user_ids`,
-  pipelineVisibilityGroupId: sql`p2.visibility_group_id`,
-} as const;
-
-function toCtx(actor: PermSetUser): VisibilityCtx {
-  return {
-    userId: actor.id,
-    isAdmin: actor.type === "admin",
-    isActive: actor.isActive,
-    sessionLive: true,
-    groupIds: Array.from(actor.groupIds),
-    managedUserIds: Array.from(actor.managedUserIds ?? []),
-  };
-}
+import type { ActivityCounters, DashboardFilters } from "@/types/stats";
+import { activityVisibilityPredicate } from "./activityVisibilitySql";
 
 export async function activitiesPerformance(
   db: Db,
   actor: PermSetUser,
   filters: DashboardFilters,
   signal: AbortSignal,
-): Promise<ActivityPerformance> {
+): Promise<ActivityCounters> {
   signal.throwIfAborted();
 
-  const subVisPred = dealVisibilityPredicate(toCtx(actor), DEAL_COLS_D2);
   const ownerClause =
     filters.ownerScope === "me" ? sql`AND a.assignee_id = ${actor.id}::uuid` : sql``;
   const pipelineClause =
@@ -46,33 +27,40 @@ export async function activitiesPerformance(
         )`
       : sql``;
 
+  const from = sql`${filters.from}::date`;
+  const toExclusive = sql`${filters.to}::date + INTERVAL '1 day'`;
+
   const result = await db.execute(sql`
     SELECT
-      count(*) filter (where a.done = true)::int  AS completed,
-      count(*)::int                                AS scheduled
+      count(*) filter (
+        where a.done = true AND a.done_at >= ${from} AND a.done_at < ${toExclusive}
+      )::int AS completed,
+      count(*) filter (
+        where a.created_at >= ${from} AND a.created_at < ${toExclusive}
+      )::int AS added,
+      count(*) filter (
+        where a.done = false AND a.due_at >= ${from} AND a.due_at < ${toExclusive}
+      )::int AS scheduled,
+      count(*) filter (where a.done = false AND a.due_at IS NULL)::int AS undated
     FROM activities a
     WHERE a.deleted_at IS NULL
-      AND a.due_at >= ${filters.from}::date
-      AND a.due_at <  ${filters.to}::date + INTERVAL '1 day'
-      AND (
-        a.deal_id IS NULL
-        OR EXISTS (
-          SELECT 1
-          FROM deals d2
-          JOIN pipelines p2 ON p2.id = d2.pipeline_id
-          WHERE d2.id = a.deal_id
-            AND p2.is_archived = false
-            AND ${subVisPred}
-        )
-      )
+      AND ${activityVisibilityPredicate(actor, "a")}
       ${ownerClause}
       ${pipelineClause}
   `);
 
   signal.throwIfAborted();
 
-  const rows = (result as unknown as { rows: Array<{ completed: number; scheduled: number }> })
-    .rows;
+  const rows = (
+    result as unknown as {
+      rows: Array<{ completed: number; added: number; scheduled: number; undated: number }>;
+    }
+  ).rows;
   const row = rows[0];
-  return { completed: row?.completed ?? 0, scheduled: row?.scheduled ?? 0 };
+  return {
+    completed: row?.completed ?? 0,
+    added: row?.added ?? 0,
+    scheduled: row?.scheduled ?? 0,
+    undated: row?.undated ?? 0,
+  };
 }

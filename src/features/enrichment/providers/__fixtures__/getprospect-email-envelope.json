@@ -1,0 +1,13 @@
+{
+  "success": true,
+  "data": {
+    "email": "ada@acme.com",
+    "status": "accept_all",
+    "account": "ada",
+    "domain": "acme.com",
+    "domain_status": "valid",
+    "smtp_provider": "outlook",
+    "free_email": false
+  },
+  "errors": []
+}

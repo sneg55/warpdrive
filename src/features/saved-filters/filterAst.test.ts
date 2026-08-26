@@ -1,6 +1,8 @@
 // filterAst.test.ts: functional + security tests for filterToSql
 import { sql } from "drizzle-orm";
+import { PgDialect } from "drizzle-orm/pg-core";
 import { describe, expect, it } from "vitest";
+import { ERROR_IDS } from "@/constants/errorIds";
 import { settings } from "@/db/schema/system";
 import { withTestDb } from "@/db/testing";
 import { seedPipelineWithStages, seedUser } from "@/db/testing/factories";
@@ -211,11 +213,39 @@ describe("filterToSql: functional", () => {
     ).toThrow();
   });
 
-  it("SECURITY: rejects an unknown operator", () => {
+  it("SECURITY: rejects an unknown operator as an invalid filter, not a missing deal", () => {
     expect(() =>
       // @ts-expect-error intentional bad input for security test
       filterToSql({ conditions: [{ field: "status", op: "INJECT", value: "open" }] }),
-    ).toThrow();
+    ).toThrow(expect.objectContaining({ id: ERROR_IDS.DEAL_FILTER_INVALID }));
+  });
+
+  it("SECURITY: a labels value stays a bound parameter in the emitted SQL", () => {
+    const dialect = new PgDialect();
+    const eq = dialect.sqlToQuery(
+      filterToSql({ conditions: [{ field: "labels", op: "eq", value: "Hot" }] }),
+    );
+    expect(eq.sql).toBe(
+      `EXISTS (SELECT 1 FROM unnest(d.labels) AS t(v) WHERE lower(t.v) = lower($1))`,
+    );
+    expect(eq.params).toEqual(["Hot"]);
+
+    const neq = dialect.sqlToQuery(
+      filterToSql({ conditions: [{ field: "labels", op: "neq", value: "Hot" }] }),
+    );
+    expect(neq.sql).toBe(
+      `NOT EXISTS (SELECT 1 FROM unnest(d.labels) AS t(v) WHERE lower(t.v) = lower($1))`,
+    );
+    expect(neq.params).toEqual(["Hot"]);
+  });
+
+  it("SECURITY: rejects a non-containment op on the labels array field", () => {
+    expect(() =>
+      filterToSql({ conditions: [{ field: "labels", op: "gt", value: "hot" }] }),
+    ).toThrow(expect.objectContaining({ id: ERROR_IDS.DEAL_FILTER_INVALID }));
+    expect(() =>
+      filterToSql({ conditions: [{ field: "labels", op: "contains", value: "hot" }] }),
+    ).toThrow(expect.objectContaining({ id: ERROR_IDS.DEAL_FILTER_INVALID }));
   });
 });
 

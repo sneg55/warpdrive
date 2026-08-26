@@ -49,14 +49,19 @@ vi.mock("@/features/email/composer/RichTextBody", () => ({
 
 vi.mock("@/lib/trpc-client", () => ({
   trpc: {
+    enrichment: { status: { useQuery: () => ({ data: { ready: false, providers: [] } }) } },
     customFields: {
       hiddenBuiltins: {
         useQuery: () => ({ data: { person: [], organization: [], deal: [], activity: [] } }),
       },
     },
     email: { listMessagesForContact: { useQuery: () => ({ data: [], isError: false }) } },
+    files: { listForEntity: { useQuery: () => ({ data: [] }) } },
     useUtils: () => ({
-      activities: { listForEntity: { invalidate: () => {} } },
+      activities: {
+        listForEntity: { invalidate: () => {} },
+        dayLoad: { invalidate: () => Promise.resolve() },
+      },
       collaboration: { listNotes: { invalidate: () => {} } },
       email: { listMessagesForContact: { invalidate: () => {} } },
       contacts: {
@@ -103,6 +108,7 @@ vi.mock("@/lib/trpc-client", () => ({
       listForEntity: { useQuery: () => ({ data: [] }) },
       listTypes: { useQuery: () => ({ data: [{ id: "t1", key: "call", name: "Call" }] }) },
       availability: { useQuery: () => ({ data: { busy: false } }) },
+      dayLoad: { useQuery: () => ({ data: undefined }) },
     },
     labels: { listByTarget: { useQuery: () => ({ data: [] }) } },
     identity: {

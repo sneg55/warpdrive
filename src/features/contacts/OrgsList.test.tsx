@@ -1,15 +1,26 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("next/navigation", () => ({ usePathname: () => "/contacts/orgs" }));
 
 const listOrgsQuery = vi.fn();
+const savedViews = vi.fn<() => unknown[]>(() => []);
 vi.mock("@/lib/trpc-client", () => ({
   trpc: {
-    useUtils: () => ({ client: { contacts: { listOrgs: { query: listOrgsQuery } } } }),
+    useUtils: () => ({
+      client: { contacts: { listOrgs: { query: listOrgsQuery } } },
+      savedFilters: { listByTarget: { invalidate: vi.fn() } },
+    }),
     identity: { assignableUsers: { useQuery: () => ({ data: [] }) } },
+    // The filter builder's Label condition reads the label catalog.
+    labels: {
+      listByTarget: { useQuery: () => ({ data: [] }) },
+      appliedNames: { useQuery: () => ({ data: [] }) },
+    },
+    savedFilters: { listByTarget: { useQuery: () => ({ data: savedViews() }) } },
   },
 }));
 
@@ -30,6 +41,7 @@ afterEach(() => {
   listOrgsQuery.mockReset();
   deleteOrgAction.mockReset();
   mergeOrgsAction.mockReset();
+  savedViews.mockReturnValue([]);
 });
 
 // Builds a full OrgsListRow with sensible defaults for the fields a given test doesn't care
@@ -172,6 +184,7 @@ describe("OrgsList", () => {
 
     fireEvent.click(screen.getByRole("checkbox", { name: "Select Acme Inc" }));
     fireEvent.click(screen.getByRole("button", { name: "Delete" }));
+    fireEvent.click(screen.getByRole("button", { name: "Delete organizations" }));
 
     await vi.waitFor(() => expect(deleteOrgAction).toHaveBeenCalledWith({ id: "o1" }, "csrf"));
     await vi.waitFor(() => expect(screen.queryByText(/selected/)).not.toBeInTheDocument());
@@ -196,11 +209,45 @@ describe("OrgsList", () => {
 
     fireEvent.click(screen.getByRole("checkbox", { name: "Select all organizations" }));
     fireEvent.click(screen.getByRole("button", { name: "Delete" }));
+    fireEvent.click(screen.getByRole("button", { name: "Delete organizations" }));
 
     const alert = await screen.findByRole("alert");
     expect(alert).toHaveTextContent(/couldn't delete|could not delete|failed/i);
     await vi.waitFor(() => expect(screen.getByText("1 selected")).toBeInTheDocument());
     expect(screen.getByRole("checkbox", { name: "Select Globex" })).toBeChecked();
+  });
+
+  it("applies a saved org view to the list query", async () => {
+    savedViews.mockReturnValue([
+      {
+        id: "v1",
+        name: "SaaS orgs",
+        favorite: false,
+        isShared: false,
+        isOwn: true,
+        definition: {
+          combinator: "and",
+          conditions: [{ field: "industry", op: "eq", value: "SaaS" }],
+        },
+      },
+    ]);
+    listOrgsQuery.mockResolvedValue({ total: 0, rows: [] });
+    const user = userEvent.setup();
+    render(<OrgsList rows={[orgRow("o1", "Acme Inc")]} total={1} />);
+
+    await user.click(screen.getByRole("button", { name: "Saved views" }));
+    await user.click(screen.getByRole("menuitem", { name: "SaaS orgs" }));
+
+    await vi.waitFor(() =>
+      expect(listOrgsQuery).toHaveBeenCalledWith(
+        expect.objectContaining({
+          filter: {
+            combinator: "and",
+            conditions: [{ field: "industry", op: "eq", value: "SaaS" }],
+          },
+        }),
+      ),
+    );
   });
 
   it("merges the two selected orgs via mergeOrgsAction, gated on exactly two", async () => {

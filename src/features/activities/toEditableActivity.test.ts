@@ -10,6 +10,7 @@ function row(over: Partial<ActivityTableRow> = {}): ActivityTableRow {
     priority: null,
     done: false,
     dueAtIso: "2026-07-02T10:00:00.000Z",
+    allDay: false,
     durationMinutes: null,
     location: null,
     assigneeId: "u1",
@@ -17,6 +18,8 @@ function row(over: Partial<ActivityTableRow> = {}): ActivityTableRow {
     ownerName: "Owner",
     dealId: null,
     dealTitle: null,
+    leadId: null,
+    leadTitle: null,
     personId: null,
     personName: null,
     personEmail: null,
@@ -35,5 +38,9 @@ describe("toEditableActivity", () => {
 
   it("leaves location null when the row has none", () => {
     expect(toEditableActivity(row({ location: null }), new Map()).location).toBeNull();
+  });
+
+  it("carries the row's assignee so the date picker shows that user's day load", () => {
+    expect(toEditableActivity(row({ assigneeId: "u2" }), new Map()).assigneeId).toBe("u2");
   });
 });

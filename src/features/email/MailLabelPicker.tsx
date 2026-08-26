@@ -57,7 +57,7 @@ export function MailLabelPicker({ value, onChange }: MailLabelPickerProps): Reac
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger className="rounded-full border border-dashed border-gray-300 px-2 py-0.5 text-xs text-muted-foreground hover:border-gray-400 hover:text-foreground">
+      <PopoverTrigger className="rounded-full border border-dashed px-2 py-0.5 text-xs text-muted-foreground hover:border-muted-foreground hover:text-foreground">
         {STRINGS.inbox.addLabel}
       </PopoverTrigger>
       <PopoverContent align="start" className="w-56 p-0">

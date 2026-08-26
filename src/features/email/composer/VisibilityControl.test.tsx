@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 afterEach(cleanup);
 
+import { INLINE_CONTROL_SURFACE } from "@/components/ui/inlineControlSurface";
 import { VisibilityControl } from "./VisibilityControl";
 
 // C1: the composer visibility control is now interactive (a shadcn DropdownMenu offering
@@ -38,6 +39,15 @@ describe("VisibilityControl", () => {
     await user.click(screen.getByRole("button", { name: /visibility/i }));
     await user.click(screen.getByRole("menuitem", { name: /everyone|shared/i }));
     expect(onChange).toHaveBeenCalledWith("shared");
+  });
+
+  // The picker is the reference for every inline control that pairs a box with visible text, so it
+  // must draw its hover surface from the shared token rather than a copy that can drift.
+  it("draws its hover surface from the shared inline-control token", () => {
+    render(<VisibilityControl value="shared" onChange={vi.fn()} />);
+    expect(screen.getByRole("button", { name: /visibility/i })).toHaveClass(
+      ...INLINE_CONTROL_SURFACE.split(" "),
+    );
   });
 
   it("uses the shadcn menu, never a native select", () => {

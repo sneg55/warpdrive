@@ -14,6 +14,7 @@ function mkActivity(id: string, dueAt: Date): CalendarActivity {
     id,
     subject: `Activity ${id}`,
     dueAt,
+    allDay: false,
     durationMinutes: 60,
     typeKey: "call",
     done: false,

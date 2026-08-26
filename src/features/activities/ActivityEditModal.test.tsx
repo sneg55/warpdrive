@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 beforeAll(() => {
@@ -14,13 +14,21 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
+const { dayLoadQuery, invalidateDayLoad } = vi.hoisted(() => ({
+  dayLoadQuery: vi.fn<(input: { userId: string | null }) => { data: undefined }>(() => ({
+    data: undefined,
+  })),
+  invalidateDayLoad: vi.fn(() => Promise.resolve()),
+}));
 vi.mock("@/lib/trpc-client", () => ({
   trpc: {
     activities: {
       listTypes: {
         useQuery: () => ({ data: [{ id: "t1", key: "call", name: "Call" }] }),
       },
+      dayLoad: { useQuery: dayLoadQuery },
     },
+    useUtils: () => ({ activities: { dayLoad: { invalidate: invalidateDayLoad } } }),
   },
 }));
 
@@ -40,10 +48,27 @@ const activity = {
   typeId: "t1",
   priority: null,
   dueAtIso: "2026-07-15T14:30:00.000Z",
+  allDay: false,
   durationMinutes: 30,
   location: null,
   done: false,
 };
+
+function holdInvalidation(): { settle: () => Promise<void> } {
+  let resolveInvalidation = (): void => {};
+  const held = new Promise<void>((resolve) => {
+    resolveInvalidation = () => {
+      resolve();
+    };
+  });
+  invalidateDayLoad.mockImplementationOnce(() => held);
+  return {
+    settle: async () => {
+      resolveInvalidation();
+      await held;
+    },
+  };
+}
 
 describe("ActivityEditModal", () => {
   it("edits the subject and saves only the changed field", async () => {
@@ -107,5 +132,87 @@ describe("ActivityEditModal", () => {
     await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("E_ACTIVITY_006"));
     expect(onSaved).not.toHaveBeenCalled();
     expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it("shows the assignee's day load, not the signed-in user's", () => {
+    render(
+      <ActivityEditModal
+        activity={{ ...activity, assigneeId: "u2" }}
+        onClose={vi.fn()}
+        onSaved={vi.fn()}
+      />,
+    );
+    expect(dayLoadQuery.mock.calls.map((c) => c[0].userId)).toContain("u2");
+  });
+
+  it("invalidates the day load after a successful save", async () => {
+    render(<ActivityEditModal activity={activity} onClose={vi.fn()} onSaved={vi.fn()} />);
+    fireEvent.change(screen.getByLabelText("Subject"), { target: { value: "Renamed" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() => expect(invalidateDayLoad).toHaveBeenCalled());
+  });
+
+  it("invalidates the day load after a successful delete", async () => {
+    render(<ActivityEditModal activity={activity} onClose={vi.fn()} onSaved={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: "Delete" }));
+    await waitFor(() => expect(invalidateDayLoad).toHaveBeenCalled());
+  });
+
+  it("invalidates the day load after marking the activity done", async () => {
+    render(<ActivityEditModal activity={activity} onClose={vi.fn()} onSaved={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: "Mark as done" }));
+    await waitFor(() => expect(invalidateDayLoad).toHaveBeenCalled());
+  });
+
+  it("ignores a second Save click while the day load is still invalidating", async () => {
+    const invalidation = holdInvalidation();
+    render(<ActivityEditModal activity={activity} onClose={vi.fn()} onSaved={vi.fn()} />);
+    fireEvent.change(screen.getByLabelText("Subject"), { target: { value: "Renamed" } });
+    const save = screen.getByRole("button", { name: "Save" });
+    fireEvent.click(save);
+    await waitFor(() => expect(invalidateDayLoad).toHaveBeenCalled());
+    fireEvent.click(save);
+    await act(async () => {
+      await invalidation.settle();
+    });
+    expect(editActivityAction).toHaveBeenCalledTimes(1);
+  });
+
+  it("ignores a second Delete click while the day load is still invalidating", async () => {
+    const invalidation = holdInvalidation();
+    render(<ActivityEditModal activity={activity} onClose={vi.fn()} onSaved={vi.fn()} />);
+    const remove = screen.getByRole("button", { name: "Delete" });
+    fireEvent.click(remove);
+    await waitFor(() => expect(invalidateDayLoad).toHaveBeenCalled());
+    fireEvent.click(remove);
+    await act(async () => {
+      await invalidation.settle();
+    });
+    expect(deleteActivityAction).toHaveBeenCalledTimes(1);
+  });
+
+  it("ignores a second Mark as done click while the day load is still invalidating", async () => {
+    const invalidation = holdInvalidation();
+    render(<ActivityEditModal activity={activity} onClose={vi.fn()} onSaved={vi.fn()} />);
+    const done = screen.getByRole("button", { name: "Mark as done" });
+    fireEvent.click(done);
+    await waitFor(() => expect(invalidateDayLoad).toHaveBeenCalled());
+    fireEvent.click(done);
+    await act(async () => {
+      await invalidation.settle();
+    });
+    expect(completeActivityAction).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not invalidate the day load when the save fails", async () => {
+    editActivityAction.mockResolvedValueOnce({
+      ok: false,
+      error: { id: "E_ACTIVITY_006" },
+    } as never);
+    render(<ActivityEditModal activity={activity} onClose={vi.fn()} onSaved={vi.fn()} />);
+    fireEvent.change(screen.getByLabelText("Subject"), { target: { value: "Renamed" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() => expect(screen.getByRole("alert")).toBeInTheDocument());
+    expect(invalidateDayLoad).not.toHaveBeenCalled();
   });
 });

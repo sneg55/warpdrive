@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import { afterAll, beforeAll, expect, it } from "vitest";
 import { seedUser } from "@/db/testing/factories";
 import { makeTestDb } from "@/test/db";
@@ -73,6 +74,56 @@ it("round-trips the scheduleFollowUpAfterWon ui flag", async () => {
   await setPreferences(h.db, u.id, { ui: { scheduleFollowUpAfterWon: true } }, sig());
   const p = await getPreferences(h.db, u.id, sig());
   expect(p.ui.scheduleFollowUpAfterWon).toBe(true);
+});
+
+it("round-trips the board toolbar view (owner filter + sort) across a reload", async () => {
+  const u = await seedUser(h.db);
+  await setPreferences(
+    h.db,
+    u.id,
+    {
+      ui: {
+        boardView: {
+          ownerId: u.id,
+          sortKey: "value",
+          sortDir: "desc",
+          savedFilterId: null,
+          conditions: null,
+        },
+      },
+    },
+    sig(),
+  );
+  const p = await getPreferences(h.db, u.id, sig());
+  expect(p.ui.boardView).toMatchObject({ ownerId: u.id, sortKey: "value", sortDir: "desc" });
+});
+
+// A bag written by an older build can hold a value this build no longer accepts (here a deal
+// sidebar section id that was since retired). Reading it must drop that key alone, not fall back to
+// an empty bag and reset every other preference the user has set.
+it("keeps the stored board view when a sibling ui key holds a retired value", async () => {
+  const u = await seedUser(h.db);
+  await h.db.execute(sql`
+    insert into user_preferences (user_id, ui)
+    values (${u.id}, ${JSON.stringify({
+      dealSidebarSections: [
+        { id: "summary", visible: true },
+        { id: "details", visible: true },
+      ],
+      boardView: {
+        ownerId: u.id,
+        sortKey: "updateTime",
+        sortDir: "desc",
+        savedFilterId: null,
+        conditions: null,
+      },
+      winSound: true,
+    })}::jsonb)
+  `);
+  const p = await getPreferences(h.db, u.id, sig());
+  expect(p.ui.boardView).toMatchObject({ ownerId: u.id, sortKey: "updateTime" });
+  expect(p.ui.winSound).toBe(true);
+  expect(p.ui.dealSidebarSections).toBeUndefined();
 });
 
 it("independent Interface flag writes coexist and the nested object survives", async () => {

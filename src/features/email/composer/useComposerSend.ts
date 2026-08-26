@@ -139,6 +139,10 @@ export function buildSendHandlers(deps: ComposerSendDeps) {
         typeId,
         subject: capturedSubject,
         priority: null,
+        // The email has gone out, so the activity is already done. Logged open it would sit in
+        // the dashboard's undated bucket forever: no due date to schedule it by, and nobody
+        // goes back to tick off a mail they already sent.
+        done: true,
         dueAt: null,
         durationMinutes: null,
         dealId: context?.kind === "deal" ? context.dealId : (linkDealId ?? null),
@@ -161,16 +165,31 @@ export function buildSendHandlers(deps: ComposerSendDeps) {
     return subject.trim() !== "" ? subject : COMPOSER_STRINGS.defaultActivitySubject;
   }
 
+  // The send action arms its own deadline and can reject rather than return a Result (so can a
+  // dropped connection). A rejection means we lost the answer, not that the mail failed, so it
+  // gets its own message. Either way the caller gets a value and can always clear `sending`.
+  async function attemptSend(
+    scheduledAt?: Date,
+  ): Promise<{ ok: true } | { ok: false; msg: string }> {
+    try {
+      const result = await sendEmail(readCsrfToken(), buildInput(scheduledAt));
+      return result.ok ? { ok: true } : { ok: false, msg: STRINGS.inbox.errorSend };
+    } catch (e) {
+      console.warn("send action rejected without returning a Result", e);
+      return { ok: false, msg: COMPOSER_STRINGS.sendUnconfirmed };
+    }
+  }
+
   async function handleSendLater(scheduledAt: Date): Promise<void> {
     setSending(true);
     setError(null);
     // Capture subject BEFORE resetDraft clears it.
     const capturedSubject = capturedSubjectValue();
 
-    const result = await sendEmail(readCsrfToken(), buildInput(scheduledAt));
+    const result = await attemptSend(scheduledAt);
     if (!result.ok) {
       setSending(false);
-      setError(STRINGS.inbox.errorSend);
+      setError(result.msg);
       return;
     }
 
@@ -189,10 +208,10 @@ export function buildSendHandlers(deps: ComposerSendDeps) {
     // Capture subject BEFORE resetDraft clears it.
     const capturedSubject = capturedSubjectValue();
 
-    const result = await sendEmail(readCsrfToken(), buildInput());
+    const result = await attemptSend();
     if (!result.ok) {
       setSending(false);
-      setError(STRINGS.inbox.errorSend);
+      setError(result.msg);
       return;
     }
 

@@ -28,9 +28,9 @@ export default function GlobalError({ error, reset }: GlobalErrorProps): React.R
     <html lang="en">
       <body className="flex min-h-screen flex-col items-center justify-center gap-3 p-6 text-center font-sans">
         <h1 className="text-lg font-semibold">{STRINGS.errors.appCrashTitle}</h1>
-        <p className="max-w-md text-sm text-neutral-600">{STRINGS.errors.appCrashBody}</p>
+        <p className="max-w-md text-sm text-muted-foreground">{STRINGS.errors.appCrashBody}</p>
         {error.digest !== undefined && error.digest !== "" ? (
-          <p className="font-mono text-xs text-neutral-500">
+          <p className="font-mono text-xs text-muted-foreground">
             {STRINGS.errors.referenceLabel} {error.digest}
           </p>
         ) : null}

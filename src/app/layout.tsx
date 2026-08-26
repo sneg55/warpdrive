@@ -9,6 +9,8 @@ import { env } from "@/config/env";
 import { STRINGS } from "@/constants/strings";
 import { TelemetryProvider } from "@/features/observability/TelemetryProvider";
 import { WebVitalsReporter } from "@/features/observability/WebVitalsReporter";
+import { AppearanceSync } from "@/features/theme/AppearanceSync";
+import { appearanceScript } from "@/features/theme/appearance";
 
 // Pipedrive parity C1: Inter is the app typeface. The woff2 is VENDORED in ./fonts and loaded via
 // next/font/local, so there is NO build-time or runtime request to Google Fonts (next/font/google
@@ -32,8 +34,16 @@ export const metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }): ReactNode {
   return (
-    <html lang="en" className={`${inter.variable} antialiased`}>
+    // suppressHydrationWarning: the inline script below adds/removes `dark` on <html> before
+    // React hydrates, so the client class list legitimately differs from the server render.
+    <html lang="en" className={`${inter.variable} antialiased`} suppressHydrationWarning>
       <body>
+        {/* Runs before anything else in the body parses, so the theme is settled at first paint. */}
+        <script
+          // biome-ignore lint/security/noDangerouslySetInnerHtml: fixed, non-user string; must be inline to beat first paint
+          dangerouslySetInnerHTML={{ __html: appearanceScript() }}
+        />
+        <AppearanceSync />
         <TelemetryProvider
           config={{
             key: env.POSTHOG_KEY,

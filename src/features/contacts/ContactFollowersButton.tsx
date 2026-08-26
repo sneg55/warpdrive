@@ -1,4 +1,5 @@
 "use client";
+import { Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type React from "react";
 import { useState } from "react";
@@ -50,21 +51,7 @@ export function ContactFollowersButton({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger className={`${ICON_BUTTON} gap-1.5 text-sm tabular-nums`}>
-        <svg
-          aria-hidden="true"
-          viewBox="0 0 24 24"
-          className="h-4 w-4"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-          <circle cx="9" cy="7" r="4" />
-          <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-        </svg>
+        <Users aria-hidden="true" className="h-4 w-4" />
         {count} {count === 1 ? "follower" : "followers"}
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-52">

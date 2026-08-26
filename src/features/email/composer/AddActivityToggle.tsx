@@ -1,7 +1,7 @@
 // AddActivityToggle: footer checkbox that (when checked) causes a successful
 // email send to log a deal-linked activity. Only rendered in deal context.
 
-import { Checkbox } from "@/components/ui/Checkbox";
+import { ToggleField } from "@/components/ui/ToggleField";
 import { Tip } from "@/components/ui/tooltip";
 import { COMPOSER_STRINGS } from "./composer.constants";
 
@@ -12,13 +12,11 @@ interface AddActivityToggleProps {
 
 export function AddActivityToggle({ checked, onChange }: AddActivityToggleProps): React.ReactNode {
   return (
-    <div className="flex items-center gap-1 text-xs text-muted-foreground select-none">
-      <Checkbox
-        checked={checked}
-        onCheckedChange={onChange}
-        label={COMPOSER_STRINGS.addAsActivityLabel}
-      />
-      <span>{COMPOSER_STRINGS.addAsActivityLabel}</span>
+    <ToggleField
+      label={COMPOSER_STRINGS.addAsActivityLabel}
+      checked={checked}
+      onCheckedChange={onChange}
+    >
       <Tip label={COMPOSER_STRINGS.addAsActivityTooltip}>
         <span
           role="img"
@@ -28,6 +26,6 @@ export function AddActivityToggle({ checked, onChange }: AddActivityToggleProps)
           i
         </span>
       </Tip>
-    </div>
+    </ToggleField>
   );
 }

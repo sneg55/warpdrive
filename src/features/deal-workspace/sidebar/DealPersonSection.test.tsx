@@ -50,7 +50,9 @@ const OPTIONS: PersonMatchCandidate[] = [
   },
 ];
 
-function renderSection(over: { person?: Person | null; bulkEditing?: boolean } = {}) {
+function renderSection(
+  over: { person?: Person | null; bulkEditing?: boolean; hidden?: ReadonlySet<string> } = {},
+) {
   const onStartBulk = vi.fn();
   const onExitBulk = vi.fn();
   render(
@@ -63,6 +65,7 @@ function renderSection(over: { person?: Person | null; bulkEditing?: boolean } =
       bulkEditing={over.bulkEditing ?? false}
       onStartBulk={onStartBulk}
       onExitBulk={onExitBulk}
+      hidden={over.hidden}
     />,
   );
   return { onStartBulk, onExitBulk };
@@ -79,6 +82,13 @@ describe("DealPersonSection with no linked person", () => {
     for (const label of ["Name", "First name", "Last name", "Phone", "Email"]) {
       expect(screen.getByText(label)).toBeInTheDocument();
     }
+  });
+
+  it("drops a name-part row hidden in Settings > Data fields", () => {
+    renderSection({ hidden: new Set(["firstName", "lastName"]) });
+    expect(screen.queryByText("First name")).not.toBeInTheDocument();
+    expect(screen.queryByText("Last name")).not.toBeInTheDocument();
+    expect(screen.getByText("Name")).toBeInTheDocument();
   });
 
   it("opens the editor from the section pencil", async () => {

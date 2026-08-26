@@ -1,6 +1,7 @@
 "use client";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { SearchResultsSkeleton } from "@/components/shell/skeletons";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { STRINGS } from "@/constants/strings";
 import { trpc } from "@/lib/trpc-client";
@@ -21,6 +22,8 @@ const ROUTES: Record<"deal" | "person" | "organization" | "lead", (id: string) =
 // across renders (a fresh object each render would defeat the useActiveIndex
 // memoization and reset logic even when there is genuinely no data yet).
 const EMPTY_RESULTS: SearchResults = { deals: [], people: [], organizations: [], leads: [] };
+
+const SEARCH_ERROR = "Couldn't run that search. Try again.";
 
 // -- SearchResultsList --
 // Pure presentational component: no tRPC, no hooks, safe to test in jsdom.
@@ -151,10 +154,14 @@ export function CommandPalette() {
 
   useSearchHotkey(() => setOpen(true));
 
-  const { data } = trpc.search.query.useQuery(
-    { q: debounced },
-    { enabled: debounced.trim().length > 0 },
-  );
+  const typed = q.trim().length > 0;
+  const searched = debounced.trim().length > 0;
+  const { data, error } = trpc.search.query.useQuery({ q: debounced }, { enabled: searched });
+  // A query in flight has not yet said the customer is absent, and "No organizations" read that way
+  // is how a duplicate record gets created. Nothing zero-result renders until data arrives, and a
+  // debounce still pending counts as in flight.
+  const failed = error != null;
+  const pending = typed && !failed && (data === undefined || q.trim() !== debounced.trim());
 
   const results = data ?? EMPTY_RESULTS;
   const { flat, active, moveDown, moveUp } = useActiveIndex(results);
@@ -202,7 +209,9 @@ export function CommandPalette() {
                 moveUp();
               } else if (e.key === "Enter") {
                 e.preventDefault();
-                const sel = flat[active];
+                // `flat` still holds the last resolved query while a refinement is in flight, and
+                // those rows are behind the skeleton. Acting on one navigates somewhere unseen.
+                const sel = pending || failed ? undefined : flat[active];
                 if (sel !== undefined) handleSelect(sel.kind, sel.r);
               }
             }}
@@ -214,8 +223,14 @@ export function CommandPalette() {
           />
         </div>
         <div className="max-h-96 overflow-y-auto">
-          {debounced.trim().length === 0 ? (
+          {!typed && !searched ? (
             <p className="px-3 py-4 text-sm text-muted-foreground">{STRINGS.search.idle}</p>
+          ) : failed ? (
+            <p role="alert" className="px-3 py-4 text-sm text-destructive">
+              {SEARCH_ERROR}
+            </p>
+          ) : pending ? (
+            <SearchResultsSkeleton />
           ) : (
             <SearchResultsList results={results} activeId={activeId} onSelect={handleSelect} />
           )}

@@ -27,6 +27,23 @@ describe("MultiCombobox", () => {
     { value: "kai", label: "Kai Carter" },
   ];
 
+  // The chip row is the one buttonVariants consumer that wraps its content, so it has to opt back
+  // out of the base button's nowrap. A long guest name would otherwise run past the field edge.
+  it("lets a long chip label wrap instead of overflowing the field", () => {
+    render(
+      <MultiCombobox
+        values={["mia"]}
+        onChange={vi.fn()}
+        options={options}
+        ariaLabel="Participants"
+        placeholder="Add participants"
+      />,
+    );
+    const chipRow = screen.getByLabelText("Participants").parentElement;
+    expect(chipRow).toHaveClass("whitespace-normal");
+    expect(chipRow).not.toHaveClass("whitespace-nowrap");
+  });
+
   it("shows the placeholder when nothing is selected", () => {
     render(
       <MultiCombobox

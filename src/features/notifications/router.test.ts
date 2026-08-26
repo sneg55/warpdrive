@@ -137,9 +137,10 @@ describe("notifications tRPC router", () => {
       });
 
       const prefs = await caller.notifications.preferences();
-      // Spot-check: deal_won should default to inApp:true, email:false
-      expect(prefs.deal_won).toEqual({ inApp: true, email: false });
-      expect(prefs.mention).toEqual({ inApp: true, email: false });
+      // Spot-check both sides of DEFAULT_EMAIL_BY_TYPE, so a blanket default fails here.
+      expect(prefs.deal_won).toEqual({ inApp: true, email: true });
+      expect(prefs.mention).toEqual({ inApp: true, email: true });
+      expect(prefs.email_open).toEqual({ inApp: true, email: false });
     });
   });
 });

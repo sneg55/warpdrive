@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { leadConditionInput, leadCreateInput, leadUpdateInput } from "./schemas";
+import { leadConditionInput, leadCreateInput, leadListInput, leadUpdateInput } from "./schemas";
 
 describe("leadConditionInput numeric-field guard", () => {
   it("rejects a non-numeric value for the numeric `value` field", () => {
@@ -51,6 +51,59 @@ describe("leadConditionInput numeric-field guard", () => {
       conditions: [{ field: "sourceOrigin", op: "gt", value: "web" }],
     });
     expect(r.success).toBe(false);
+  });
+});
+
+// leadConditionInput, not the compiler's own leadFilterSchema, is what lead.list and /leads/export
+// validate against, so the valueless ops are only usable if this schema implements the same
+// contract the compiler does.
+describe("leadConditionInput valueless operators", () => {
+  it("accepts a valueless op with the value key omitted", () => {
+    for (const op of ["isEmpty", "isNotEmpty"] as const) {
+      const r = leadConditionInput.safeParse({
+        combinator: "and",
+        conditions: [{ field: "title", op }],
+      });
+      expect(r.success).toBe(true);
+    }
+  });
+
+  // `value` is the numeric field, so a valueless op there must skip the numeric check too rather
+  // than demanding a number nobody typed.
+  it("accepts a valueless op on the numeric value field", () => {
+    const r = leadConditionInput.safeParse({
+      combinator: "and",
+      conditions: [{ field: "value", op: "isEmpty" }],
+    });
+    expect(r.success).toBe(true);
+  });
+
+  it("still rejects a value-taking op with no value", () => {
+    for (const op of ["eq", "gt", "contains"] as const) {
+      const field = op === "contains" ? "title" : "value";
+      const r = leadConditionInput.safeParse({
+        combinator: "and",
+        conditions: [{ field, op }],
+      });
+      expect(r.success).toBe(false);
+    }
+  });
+
+  it("keeps rejecting a field/op pairing the column type cannot run", () => {
+    const r = leadConditionInput.safeParse({
+      combinator: "and",
+      conditions: [{ field: "ownerId", op: "isEmpty" }],
+    });
+    expect(r.success).toBe(false);
+  });
+
+  it("accepts a valueless condition through the lead.list boundary schema", () => {
+    const r = leadListInput.safeParse({
+      filters: {
+        condition: { combinator: "and", conditions: [{ field: "value", op: "isEmpty" }] },
+      },
+    });
+    expect(r.success).toBe(true);
   });
 });
 
@@ -108,5 +161,28 @@ describe("leadUpdateInput title", () => {
 
   it("rejects a blank inline title update", () => {
     expect(leadUpdateInput.safeParse({ ...base, title: "   " }).success).toBe(false);
+  });
+});
+
+// A lead condition posted without a combinator (an older client, a stored view) means AND.
+describe("leadConditionInput combinator", () => {
+  it("defaults an absent combinator to and", () => {
+    const r = leadConditionInput.safeParse({
+      conditions: [{ field: "title", op: "contains", value: "acme" }],
+    });
+    expect(r.success).toBe(true);
+    expect(r.success && r.data.combinator).toBe("and");
+  });
+
+  it("keeps an explicit or", () => {
+    const r = leadConditionInput.safeParse({
+      combinator: "or",
+      conditions: [{ field: "title", op: "contains", value: "acme" }],
+    });
+    expect(r.success && r.data.combinator).toBe("or");
+  });
+
+  it("rejects a combinator outside the vocabulary", () => {
+    expect(leadConditionInput.safeParse({ combinator: "xor", conditions: [] }).success).toBe(false);
   });
 });

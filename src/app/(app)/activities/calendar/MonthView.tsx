@@ -26,7 +26,8 @@ function DayCell({
   const day = new Date(`${iso}T00:00:00.000Z`);
   const adjacent = !isSameMonth(day, anchor);
   const isToday = iso === todayIso;
-  const cellTone = adjacent ? "bg-gray-50 text-gray-400" : "";
+  // De-emphasised, but still readable: gray-400 on gray-50 measured under the 4.5:1 floor.
+  const cellTone = adjacent ? "bg-muted/50 text-foreground/60" : "";
   const todayRing = isToday ? "ring-1 ring-primary" : "";
   const overflow = items.length - MAX_CHIPS;
   return (
@@ -37,7 +38,7 @@ function DayCell({
       data-testid={`cell-${iso}`}
       data-adjacent={adjacent}
       data-today={isToday}
-      className={`border border-gray-200 rounded-md p-1 min-h-24 ${cellTone} ${todayRing}`}
+      className={`border border-border rounded-md p-1 min-h-24 ${cellTone} ${todayRing}`}
     >
       <a
         href={calendarHref("week", iso)}
@@ -84,7 +85,7 @@ export function MonthView({
         {WEEKDAY_LABELS.map((w) => (
           // biome-ignore lint/a11y/useSemanticElements: weekday column header in the grid
           // biome-ignore lint/a11y/useFocusableInteractive: static read-only calendar grid
-          <div key={w} role="columnheader" className="text-xs font-medium text-gray-500 px-1">
+          <div key={w} role="columnheader" className="text-xs font-medium text-foreground px-1">
             {w}
           </div>
         ))}

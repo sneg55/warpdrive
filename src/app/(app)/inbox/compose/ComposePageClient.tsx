@@ -1,5 +1,6 @@
 "use client";
 
+import { ChevronLeft } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -65,10 +66,12 @@ export function ComposePageClient({
           aria-label={STRINGS.inbox.backToInbox}
           className="flex items-center gap-1 rounded-md px-2 py-1 text-sm text-muted-foreground transition-transform hover:bg-accent active:scale-[0.96]"
         >
-          <BackChevron />
+          <ChevronLeft aria-hidden="true" className="h-4 w-4" />
           {STRINGS.inbox.back}
         </Link>
-        <h1 className="text-lg font-semibold">{STRINGS.inbox.composeTitle}</h1>
+        <h1 className="text-display font-[450] leading-tight tracking-tight">
+          {STRINGS.inbox.composeTitle}
+        </h1>
       </div>
       <div className="flex min-h-0 flex-1 items-start gap-6 overflow-y-auto p-4">
         <div className="flex min-w-0 flex-1 flex-col">
@@ -96,22 +99,5 @@ export function ComposePageClient({
         </div>
       </div>
     </main>
-  );
-}
-
-function BackChevron(): React.ReactNode {
-  return (
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 24 24"
-      className="h-4 w-4"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.75"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M15 18l-6-6 6-6" />
-    </svg>
   );
 }

@@ -9,6 +9,7 @@ vi.mock("@/lib/trpc-client", () => ({
   trpc: {
     contacts: { contactTimeline: { useQuery: () => ({ data: { items: [] } }) } },
     email: { listMessagesForContact: { useQuery: (...a: unknown[]) => listQuery(...a) } },
+    files: { listForEntity: { useQuery: () => ({ data: [] }) } },
     useUtils: () => ({
       contacts: {
         contactTimeline: { invalidate: vi.fn() },

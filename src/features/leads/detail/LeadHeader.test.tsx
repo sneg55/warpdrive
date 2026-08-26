@@ -71,7 +71,7 @@ describe("LeadHeader PD lead-drawer parity", () => {
     expect(screen.queryByText("Nick")).not.toBeInTheDocument();
     // The primary title still renders.
     const heading = screen.getByRole("heading", { name: "Acme lead" });
-    expect(heading).toHaveClass("text-[25px]");
+    expect(heading).toHaveClass("text-display");
     const titleRow = heading.closest("header")?.firstElementChild;
     expect(titleRow).toHaveClass("justify-between", "gap-4");
     expect(titleRow?.firstElementChild).not.toHaveClass("flex-1");

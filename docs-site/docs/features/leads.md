@@ -32,6 +32,11 @@ creating a duplicate.
 Converting a lead creates a deal from it, carrying across its value, contacts, and
 labels, and takes the lead out of the active list.
 
+The lead's history comes along too: its notes are copied onto the deal with their
+authors and original dates, its open activities are recreated on the deal, and its
+email threads show on both records. The archived lead keeps its own copy, so the
+trail survives on both sides.
+
 Conversion is the point at which something enters the pipeline, which is what keeps
 pipeline totals meaningful.
 

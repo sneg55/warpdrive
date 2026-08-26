@@ -20,6 +20,7 @@ export const ERROR_IDS = {
   // DB
   DB_INVARIANT: "E_DB_001", // a DB invariant we believed impossible was violated
   DB_INSERT_FAILED: "E_DB_002", // insert returned no rows (should never happen)
+  DB_WRITE_FAILED: "E_DB_003", // the write threw: Postgres unreachable, aborted, or rejected
   // DEAL
   DEAL_NOT_FOUND: "E_DEAL_001", // deal not found or not visible (404-on-invisible)
   DEAL_PRECONDITION: "E_DEAL_002", // optimistic precondition failed (stale compare-and-swap on move)
@@ -145,6 +146,27 @@ export const ERROR_IDS = {
   // STATS
   STATS_PIPELINE_NOT_VISIBLE: "E_STATS_001", // requested pipeline not visible to user (restricted or archived)
   STATS_NO_PIPELINE: "E_STATS_002", // RETIRED (STATS-08): null pipelineId now aggregates "All pipelines" instead of erroring. Do not reuse E_STATS_002.
+  // GOAL
+  GOAL_INVALID: "E_GOAL_001", // goal payload failed the Zod boundary (bad subject/action/metric mix)
+  GOAL_NOT_FOUND: "E_GOAL_002", // goal id does not exist or is already deleted
+  // ENRICH
+  ENRICH_NO_PROVIDER: "E_ENRICH_001", // no enrichment provider is both enabled and credentialled
+  ENRICH_PROVIDER_AUTH: "E_ENRICH_002", // provider rejected the API key (401/403)
+  ENRICH_THROTTLED: "E_ENRICH_003", // every enabled provider is rate limited or out of credits
+  ENRICH_NO_IDENTIFIER: "E_ENRICH_004", // record carries nothing usable to look the subject up by
+  ENRICH_RUN_NOT_FOUND: "E_ENRICH_005", // apply targeted a run that is missing or outside the TTL
+  ENRICH_STALE: "E_ENRICH_006", // record changed since the run was produced (compare-and-swap)
+  ENRICH_INPUT_INVALID: "E_ENRICH_007", // action input failed the Zod boundary
+  ENRICH_MAPPING_INVALID: "E_ENRICH_008", // mapping target type incompatible with the canonical key
+  ENRICH_ALL_FAILED: "E_ENRICH_009", // every attempted provider failed; context names each reason
+  ENRICH_NO_KEY: "E_ENRICH_010", // tried to enable a provider that has no API key stored
+  ENRICH_UNSUPPORTED: "E_ENRICH_011", // no provider can search by the identifiers this record has
+  ENRICH_MAPPINGS_CHANGED: "E_ENRICH_012", // field mapping was repointed while the review was open
+  ENRICH_KEY_UNREADABLE: "E_ENRICH_013", // stored API key could not be decrypted; admin must re-enter it
+  ENRICH_NOT_ENTITLED: "E_ENRICH_014", // provider plans do not include the endpoint this lookup needs
+
+  // UI
+  UI_CHART_CONTEXT_MISSING: "E_UI_001", // a chart part rendered outside its ChartContainer
 } as const;
 
 export type ErrorId = (typeof ERROR_IDS)[keyof typeof ERROR_IDS];

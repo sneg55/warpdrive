@@ -15,6 +15,10 @@ vi.mock("@/lib/trpc-client", () => ({
   trpc: {
     useUtils: () => ({ client: { deal: { list: { query: listQueryMock } } } }),
     identity: { assignableUsers: { useQuery: () => ({ data: [] }) } },
+    labels: {
+      listByTarget: { useQuery: () => ({ data: [] }) },
+      appliedNames: { useQuery: () => ({ data: [] }) },
+    },
   },
 }));
 vi.mock("@/utils/csrfCookie", () => ({ readCsrfToken: () => "csrf" }));
@@ -23,7 +27,15 @@ vi.mock("./DealList", () => ({ DealList: () => <div data-testid="deal-list" /> }
 vi.mock("./BoardToolbar", () => ({
   BoardToolbar: (p: { filterSlot: React.ReactNode }) => <div>{p.filterSlot}</div>,
 }));
-vi.mock("./BoardFilterControl", () => ({ BoardFilterControl: () => null }));
+// The saved-filter menu owns "Clear filter"; expose it so the list's inline definition can be
+// cleared from there, the way the board's toolbar does.
+vi.mock("./BoardFilterControl", () => ({
+  BoardFilterControl: (p: { onApplyDefinition?: (d: null) => void }) => (
+    <button type="button" onClick={() => p.onApplyDefinition?.(null)}>
+      menu-clear-filter
+    </button>
+  ),
+}));
 vi.mock("./BoardSortControl", () => ({ BoardSortControl: () => null }));
 vi.mock("./NewDealButton", () => ({ NewDealButton: () => null }));
 
@@ -57,7 +69,7 @@ describe("DealListClient inline filter", () => {
     listQueryMock.mockResolvedValue({ rows: [], total: 0, totalValue: "0" });
     renderClient();
 
-    // Apply "Title is acme" via the inline builder (default field=title, op=eq).
+    // Apply "Title contains acme" via the inline builder (default field=title, first op=contains).
     fireEvent.click(screen.getByRole("button", { name: "Filter" }));
     fireEvent.click(screen.getByRole("button", { name: /add condition/i }));
     fireEvent.change(screen.getByLabelText("Condition 1 value"), { target: { value: "acme" } });
@@ -66,9 +78,53 @@ describe("DealListClient inline filter", () => {
     await waitFor(() =>
       expect(listQueryMock).toHaveBeenCalledWith(
         expect.objectContaining({
-          definition: { conditions: [{ field: "title", op: "eq", value: "acme" }] },
+          definition: {
+            combinator: "and",
+            conditions: [{ field: "title", op: "contains", value: "acme" }],
+          },
         }),
       ),
     );
+  });
+
+  // The inline builder has to reopen on what the list is actually filtered by. An edit the user
+  // walked away from is not applied, so showing it back misreports the list and the next Apply
+  // silently commits it.
+  it("reopens the inline builder on the applied conditions, dropping an abandoned edit", async () => {
+    listQueryMock.mockResolvedValue({ rows: [], total: 0, totalValue: "0" });
+    renderClient();
+
+    const filterTrigger = (): HTMLElement => screen.getByRole("button", { name: "Filter" });
+    fireEvent.click(filterTrigger());
+    fireEvent.click(screen.getByRole("button", { name: /add condition/i }));
+    fireEvent.change(screen.getByLabelText("Condition 1 value"), { target: { value: "acme" } });
+    fireEvent.click(screen.getByRole("button", { name: "Apply" }));
+
+    await waitFor(() => expect(screen.queryByLabelText("Condition 1 value")).toBeNull());
+
+    // Reopen, retype, then close without applying.
+    fireEvent.click(filterTrigger());
+    expect(screen.getByLabelText<HTMLInputElement>("Condition 1 value").value).toBe("acme");
+    fireEvent.change(screen.getByLabelText("Condition 1 value"), { target: { value: "corp" } });
+    fireEvent.click(filterTrigger());
+    await waitFor(() => expect(screen.queryByLabelText("Condition 1 value")).toBeNull());
+
+    fireEvent.click(filterTrigger());
+    expect(screen.getByLabelText<HTMLInputElement>("Condition 1 value").value).toBe("acme");
+  });
+
+  it("drops the applied conditions when the filter menu clears them", async () => {
+    listQueryMock.mockResolvedValue({ rows: [], total: 0, totalValue: "0" });
+    renderClient();
+
+    fireEvent.click(screen.getByRole("button", { name: "Filter" }));
+    fireEvent.click(screen.getByRole("button", { name: /add condition/i }));
+    fireEvent.change(screen.getByLabelText("Condition 1 value"), { target: { value: "acme" } });
+    fireEvent.click(screen.getByRole("button", { name: "Apply" }));
+    await waitFor(() => expect(screen.getByLabelText("Filter")).toHaveTextContent("1"));
+
+    fireEvent.click(screen.getByRole("button", { name: "menu-clear-filter" }));
+
+    expect(screen.getByLabelText("Filter")).not.toHaveTextContent("1");
   });
 });

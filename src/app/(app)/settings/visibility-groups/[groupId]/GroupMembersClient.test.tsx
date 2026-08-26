@@ -95,4 +95,9 @@ describe("GroupMembersClient", () => {
     fireEvent.click(screen.getByRole("button", { name: "Remove Ann" }));
     expect(await screen.findByRole("alert")).toHaveTextContent(IDENTITY_ERROR_MESSAGES.permission);
   });
+
+  it("renders the empty roster line from the muted token", () => {
+    render(<GroupMembersClient groupId="g1" members={[]} allUsers={[BOB]} />);
+    expect(screen.getByText("No members yet.")).toHaveClass("text-muted-foreground");
+  });
 });

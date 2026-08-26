@@ -63,27 +63,30 @@ describe("DealCard rot tint", () => {
     expect(card.className).not.toMatch(/bg-red-\d/);
   });
 
-  // Before the client clock is established (now=null, the SSR + first-hydration render), the card
-  // must render the neutral baseline so the server and client markup agree. Time-derived tint and
-  // activity color appear only after mount, once `now` is set. This is what makes the board render
-  // deterministic across SSR/hydration (no attribute mismatch, no dnd-kit re-measure recovery).
-  it("renders the neutral baseline when the clock is not yet available (now=null)", () => {
+  // The clock is seeded from the request, so a rotting card reads as rotting in the very first
+  // paint. The card must never describe a deal that has an activity as having nothing scheduled:
+  // an absent clock used to produce that claim, which is a wrong answer rather than a blank one.
+  it("shows rot and the real activity state in the first render", () => {
     render(
       <DealCard
-        card={{ ...baseCard, stageEnteredAt: new Date("2026-06-08T00:00:00Z") }}
+        card={{
+          ...baseCard,
+          stageEnteredAt: new Date("2026-06-08T00:00:00Z"),
+          nextActivityAt: new Date("2026-06-18T09:00:00Z"),
+          nextActivityTitle: "Discovery call",
+        }}
         ownerName="A.K."
         personName={null}
         orgName={null}
         labels={[]}
         rottingDays={6}
         density="comfortable"
-        now={null}
+        now={new Date("2026-06-21T00:00:00Z")}
       />,
     );
     const card = screen.getByRole("button", { name: /Acme renewal/ });
-    // Deep-rotting card (age would be level 3) shows no red tint until the clock arrives.
-    expect(card.className).not.toMatch(/bg-red-\d/);
-    // Activity indicator falls back to the "none" state, not a time-derived color.
-    expect(screen.getByLabelText("No activity scheduled")).not.toBeNull();
+    expect(card.className).toMatch(/bg-red-\d/);
+    expect(screen.queryByLabelText("No activity scheduled")).toBeNull();
+    expect(screen.getByLabelText("Discovery call · 3 days overdue")).not.toBeNull();
   });
 });

@@ -1,4 +1,5 @@
 "use client";
+import { TriangleAlert } from "lucide-react";
 import type React from "react";
 import { OwnerBadge } from "@/features/identity/OwnerBadge";
 import type { ResolvedLabel } from "@/features/labels/resolveLabels";
@@ -23,9 +24,7 @@ function NextActivity({
   if (at === null) {
     return (
       <span className="flex items-center gap-1 text-warning">
-        <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="currentColor">
-          <path d="M12 2 1 21h22L12 2zm0 6 6.5 11h-13L12 8zm-1 3v4h2v-4h-2zm0 5v2h2v-2h-2z" />
-        </svg>
+        <TriangleAlert aria-hidden="true" className="h-3.5 w-3.5" />
         No activity
       </span>
     );

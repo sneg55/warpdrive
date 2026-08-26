@@ -1,7 +1,7 @@
 "use client";
 import { useRouter } from "next/navigation";
 import type React from "react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useActionError } from "@/components/shell/ActionErrorProvider";
 import { DEFAULT_BASE_CURRENCY } from "@/constants/currency";
 import { STRINGS } from "@/constants/strings";
@@ -10,25 +10,22 @@ import { trpc } from "@/lib/trpc-client";
 import { readCsrfToken } from "@/utils/csrfCookie";
 import { ConvertLeadDialog } from "./ConvertLeadDialog";
 import { BulkEditPanel } from "./inbox/BulkEditPanel";
-import { convertErrorMessage } from "./inbox/convertErrorMessage";
 import { buildLeadExportHref } from "./inbox/exportHref";
-import { LeadFilterBuilder } from "./inbox/LeadFilterBuilder";
 import type { OwnerFilter } from "./inbox/LeadFilters";
 import { LeadRowActions } from "./inbox/LeadRowActions";
 import { LeadsActionBar } from "./inbox/LeadsActionBar";
+import { LeadsEmpty } from "./inbox/LeadsEmpty";
+import { LeadsFilterControls } from "./inbox/LeadsFilterControls";
+import { LeadsLoadMore } from "./inbox/LeadsLoadMore";
 import { LeadsTable } from "./inbox/LeadsTable";
 import { useLeadColumns } from "./inbox/useLeadColumns";
+import { useLeadConvert } from "./inbox/useLeadConvert";
 import { useLeadList } from "./inbox/useLeadList";
 import { useLeadSelection } from "./inbox/useLeadSelection";
 import { type LeadSort, useLeadSort } from "./inbox/useLeadSort";
 import { useLeadsViewPersist } from "./inbox/useLeadsViewPersist";
 import type { LeadRow } from "./leadRepo";
-import {
-  archiveLeadAction,
-  bulkConvertLeadsAction,
-  bulkUpdateLeadsAction,
-  convertLeadAction,
-} from "./leadServerActions";
+import { archiveLeadAction, bulkUpdateLeadsAction } from "./leadServerActions";
 import type { BulkUpdateLeadsInput, LeadConditionInput, LeadNextActivityBucket } from "./schemas";
 
 type Filter = "inbox" | "archived";
@@ -61,8 +58,6 @@ export function LeadsInbox({
   const [nextActivity, setNextActivity] = useState<LeadNextActivityBucket | null>(null);
   const [ownerIds, setOwnerIds] = useState<string[]>([]);
   const [condition, setCondition] = useState<LeadConditionInput | null>(null);
-  const [convertError, setConvertError] = useState<string | null>(null);
-  const [convertTarget, setConvertTarget] = useState<LeadRow | "bulk" | null>(null);
 
   const sort = useLeadSort(initialView?.sort ?? null);
   const selection = useLeadSelection();
@@ -102,70 +97,23 @@ export function LeadsInbox({
     } else reportError(r.error.id);
   }
 
-  const bulkConverting = useRef(false);
-  const [bulkConvertPending, setBulkConvertPending] = useState(false);
-  async function bulkConvert(
-    ids: string[],
-    customFields: Record<string, unknown> = {},
-  ): Promise<boolean> {
-    if (ids.length === 0) return false;
-    // In-flight guard: a rapid double-click must not fire two overlapping batches (mirrors
-    // convertRow's converting ref for the single-lead button).
-    if (bulkConverting.current) return false;
-    bulkConverting.current = true;
-    setBulkConvertPending(true);
-    setConvertError(null);
-    try {
-      const r = await bulkConvertLeadsAction({ ids, customFields }, readCsrfToken());
-      if (r.ok) {
-        selection.clear();
-        await refetch();
-        return true;
-      } else {
-        // Systemic failure (e.g. PERM_DENIED, no resolvable pipeline): surface it like convertRow
-        // does and do NOT clear the selection or refetch as if the batch had succeeded.
-        setConvertError(convertErrorMessage(r.error.id));
-        return false;
-      }
-    } finally {
-      bulkConverting.current = false;
-      setBulkConvertPending(false);
-    }
-  }
+  const {
+    convertError,
+    convertTarget,
+    setConvertTarget,
+    bulkConvertPending,
+    bulkConvert,
+    convertRow,
+  } = useLeadConvert({
+    refetch,
+    clearSelection: selection.clear,
+    goToDeal: (dealId) => router.push(`/deals/${dealId}`),
+  });
 
   async function archiveToggle(id: string, archived: boolean): Promise<void> {
     const r = await archiveLeadAction({ leadId: id, archived }, readCsrfToken());
     if (r.ok) await refetch();
     else reportError(r.error.id);
-  }
-
-  const converting = useRef(false);
-  async function convertRow(
-    row: LeadRow,
-    customFields: Record<string, unknown> = {},
-  ): Promise<boolean> {
-    // In-flight guard: a rapid double-click must not fire two convert calls (the second would
-    // race to a confusing "already converted"/stale-CAS banner even though the first succeeded).
-    if (converting.current) return false;
-    converting.current = true;
-    setConvertError(null);
-    try {
-      const r = await convertLeadAction(
-        { leadId: row.id, expectedUpdatedAt: row.updatedAt.toISOString(), customFields },
-        readCsrfToken(),
-      );
-      if (r.ok) {
-        router.push(`/deals/${r.value.dealId}`);
-        return true;
-      }
-      // Stale CAS / already-converted / permission denied: show copy and refetch so the row
-      // reflects the current server state (e.g. it now renders as "Converted").
-      setConvertError(convertErrorMessage(r.error.id));
-      await refetch();
-      return false;
-    } finally {
-      converting.current = false;
-    }
   }
 
   // Export the FULL server-filtered result set: navigate to the route with the current filter,
@@ -188,7 +136,29 @@ export function LeadsInbox({
   const owner: OwnerFilter = { users, selected: ownerIds, onChange: setOwnerIds };
 
   const archived = filter === "archived";
-  const emptyLabel = archived ? "No archived leads." : "No leads yet. Add your first lead.";
+  const hasFilter =
+    ownerIds.length > 0 || labelKeys.length > 0 || nextActivity !== null || condition !== null;
+
+  function clearFilters(): void {
+    setOwnerIds([]);
+    setLabelKeys([]);
+    setNextActivity(null);
+    setCondition(null);
+  }
+
+  // Zero rows while the first page is still in flight is not an empty inbox, so the message waits
+  // for the read to land rather than accusing the user of having no leads.
+  const empty =
+    list.isLoading || rows.length > 0 ? null : (
+      <LeadsEmpty
+        archived={archived}
+        hasFilter={hasFilter}
+        baseCurrency={baseCurrency}
+        onCreated={() => void refetch()}
+        onClearFilters={clearFilters}
+        onBackToInbox={() => setFilter("inbox")}
+      />
+    );
 
   function renderRowActions(row: LeadRow): React.ReactNode {
     return (
@@ -210,7 +180,9 @@ export function LeadsInbox({
 
   return (
     <div className="flex h-full flex-col p-4">
-      <h1 className="mb-3 text-lg font-semibold">{STRINGS.nav.leads}</h1>
+      <h1 className="mb-3 text-display font-[450] leading-tight tracking-tight">
+        {STRINGS.nav.leads}
+      </h1>
       <LeadsActionBar
         filter={filter}
         onFilter={setFilter}
@@ -229,11 +201,7 @@ export function LeadsInbox({
         onReorderColumn={columns.reorder}
         onExport={exportCsv}
         filterBuilder={
-          <LeadFilterBuilder
-            users={users}
-            activeCount={condition?.conditions.length ?? 0}
-            onApply={setCondition}
-          />
+          <LeadsFilterControls users={users} condition={condition} onCondition={setCondition} />
         }
       />
 
@@ -264,34 +232,31 @@ export function LeadsInbox({
       )}
 
       <div className="min-h-0 flex-1 overflow-auto rounded-lg border">
-        <LeadsTable
-          rows={rows}
-          columns={columns.visibleColumns}
-          now={now}
-          currency={currency}
-          emptyLabel={emptyLabel}
-          sort={sort.effective}
-          onSort={sort.cycle}
-          isSelected={selection.isSelected}
-          allSelected={selection.allSelected(visibleIds)}
-          onToggleRow={selection.toggle}
-          onToggleAll={() => selection.toggleAll(visibleIds)}
-          onOpen={(id) => router.push(`/leads/${id}`)}
-          renderRowActions={renderRowActions}
-        />
+        {/* Nothing exists and nothing is filtered: the header row, select-all and sort controls
+            are machinery over zero rows, so the table goes and the empty state stands alone.
+            A filtered-to-nothing list keeps its columns, since the columns are still the view. */}
+        {empty !== null && !hasFilter ? (
+          empty
+        ) : (
+          <LeadsTable
+            rows={rows}
+            columns={columns.visibleColumns}
+            now={now}
+            currency={currency}
+            sort={sort.effective}
+            onSort={sort.cycle}
+            isSelected={selection.isSelected}
+            allSelected={selection.allSelected(visibleIds)}
+            onToggleRow={selection.toggle}
+            onToggleAll={() => selection.toggleAll(visibleIds)}
+            onOpen={(id) => router.push(`/leads/${id}`)}
+            renderRowActions={renderRowActions}
+            empty={empty}
+          />
+        )}
       </div>
 
-      {list.canLoadMore && (
-        <div className="mt-3 flex justify-center">
-          <button
-            type="button"
-            onClick={list.loadMore}
-            className="rounded-md border px-4 py-1.5 text-sm font-medium transition-[background-color,scale] duration-150 ease-out hover:bg-accent active:scale-[0.96] motion-reduce:transition-colors"
-          >
-            Load more
-          </button>
-        </div>
-      )}
+      {list.canLoadMore && <LeadsLoadMore onClick={list.loadMore} />}
 
       {convertTarget !== null && (
         <ConvertLeadDialog

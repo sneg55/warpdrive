@@ -1,68 +1,123 @@
 "use client";
 import type React from "react";
-import { useId, useState } from "react";
-import { Checkbox } from "@/components/ui/Checkbox";
+import { useState } from "react";
+import { type ConditionRow, ConditionRows } from "@/components/filters/ConditionRows";
+import { type ActionErrorContent, actionErrorContent } from "@/components/shell/actionError";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { mergeLabelOptions } from "@/features/labels/mergeLabelOptions";
 import type { FilterDefinition } from "@/features/saved-filters/schemas";
-import { createSavedFilterAction } from "@/features/saved-filters/serverActions";
+import {
+  createSavedFilterAction,
+  updateSavedFilterAction,
+} from "@/features/saved-filters/serverActions";
+import { trpc } from "@/lib/trpc-client";
 import { readCsrfToken } from "@/utils/csrfCookie";
 import type { BoardOwner } from "./boardFilter";
-import { blankRow, ConditionRows, describeRows, type Row } from "./CreateFilterRows";
+import { CreateFilterModalFooter } from "./CreateFilterModalFooter";
+import { CreateFilterModalNameRow } from "./CreateFilterModalNameRow";
+import { filterSaveCopy, filterSaveMode } from "./createFilterModalCopy";
+import { blankConditionRow, dealFilterFields, OP_LABELS } from "./dealFilterCatalog";
+import { conditionRowIssue, dealRowsToDefinition, definitionToRows } from "./dealFilterRows";
+import { describeRows } from "./describeFilter";
+import type { SavedFilterView } from "./savedFilterView";
 
 interface CreateFilterModalProps {
   onClose: () => void;
   // Owners on the board, used to offer a value dropdown for the Owner condition field.
   owners?: BoardOwner[];
+  // Pipeline stages, used to offer a value dropdown for the Stage condition field.
+  stages?: ReadonlyArray<{ id: string; name: string }>;
   // Applies the in-progress conditions to the board behind the modal, without persisting a filter.
   onPreview?: (definition: FilterDefinition) => void;
   // Applies the conditions ad-hoc (kept applied after the modal closes) without persisting a saved
   // filter. This is the PD "Filter" apply: filter now, save-as-view optional.
   onApply?: (definition: FilterDefinition) => void;
-  // Reports the server-created filter so the parent can apply + select it by its real id.
-  onSave: (created: { id: string; name: string; definition: FilterDefinition }) => void;
+  // Reports the persisted filter so the parent can apply + select it by its real id.
+  onSave: (saved: {
+    id: string;
+    name: string;
+    isShared: boolean;
+    definition: FilterDefinition;
+  }) => void;
+  // The saved filter the dialog was opened on. Owning it makes Save an update in place; someone
+  // else's shared filter can only be forked, which the title and the Save button say.
+  savedFilter?: SavedFilterView;
+  // Seeds the builder from an ad-hoc definition, so reopening the board's inline filter shows the
+  // conditions and the combinator it applied instead of a blank "match all" form.
+  initialDefinition?: FilterDefinition;
 }
 
 export function CreateFilterModal({
   onClose,
   owners = [],
+  stages = [],
   onPreview,
   onApply,
   onSave,
+  savedFilter,
+  initialDefinition,
 }: CreateFilterModalProps): React.ReactNode {
-  const nameId = useId();
-  const [rows, setRows] = useState<Row[]>([blankRow()]);
-  const [name, setName] = useState("");
-  // Until the user types their own name, the field mirrors a name derived from the conditions.
-  const [nameEdited, setNameEdited] = useState(false);
-  const [isShared, setIsShared] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const mode = filterSaveMode(savedFilter);
+  const copy = filterSaveCopy(mode);
+  const seedDefinition = savedFilter?.definition ?? initialDefinition;
+  const catalogNames = (trpc.labels.listByTarget.useQuery({ target: "deal" }).data ?? []).map(
+    (l) => l.name,
+  );
+  // Union in what deals actually carry, so a label visible on a card is a label you can filter by.
+  const appliedNames = trpc.labels.appliedNames.useQuery({ target: "deal" }).data ?? [];
+  const fields = dealFilterFields({
+    owners: owners.map((o) => ({ id: o.ownerId, name: o.name })),
+    stages,
+    labelOptions: mergeLabelOptions(catalogNames, appliedNames),
+  });
 
-  // What the name field shows and what a save uses: the user's name once edited, else the
-  // auto-generated description of the current conditions.
-  const autoName = describeRows(rows, owners);
-  const effectiveName = nameEdited ? name : autoName;
+  const [rows, setRows] = useState<ConditionRow[]>(() =>
+    seedDefinition === undefined ? [blankConditionRow(fields)] : definitionToRows(seedDefinition),
+  );
+  const [combinator, setCombinator] = useState<"and" | "or">(seedDefinition?.combinator ?? "and");
+  // An update must not rename the filter, so it starts from the stored name. A fork keeps the
+  // condition-derived name so the copy is not indistinguishable from the original.
+  const [name, setName] = useState(mode === "update" ? (savedFilter?.name ?? "") : "");
+  // Until the user types their own name, the field mirrors a name derived from the conditions.
+  const [nameEdited, setNameEdited] = useState(mode === "update");
+  const [isShared, setIsShared] = useState(mode === "update" && savedFilter?.isShared === true);
+  const [saveError, setSaveError] = useState<ActionErrorContent | null>(null);
+
+  const effectiveName = nameEdited ? name : describeRows(rows, fields, combinator);
+  // Caught as the user types, so a value the server would reject never costs a round trip.
+  const issue = conditionRowIssue(rows, fields);
 
   // The filter as currently edited: rows with a real value, minus incomplete ones. Shared by
   // Save (persist) and Preview (apply live without saving).
   function buildDefinition(): FilterDefinition {
-    const conditions = rows
-      .filter((r) => r.value.trim() !== "")
-      .map((r) => ({ field: r.field, op: r.op, value: r.value }));
-    return { conditions };
+    return dealRowsToDefinition(rows, combinator) ?? { combinator, conditions: [] };
   }
 
   async function save(): Promise<void> {
     const definition = buildDefinition();
     const filterName = effectiveName.trim() === "" ? "Untitled filter" : effectiveName.trim();
+    if (mode === "update" && savedFilter !== undefined) {
+      const res = await updateSavedFilterAction(
+        savedFilter.id,
+        { name: filterName, definition, isShared },
+        readCsrfToken(),
+      );
+      if (!res.ok) {
+        setSaveError(actionErrorContent(res.error.id));
+        return;
+      }
+      onSave({ id: savedFilter.id, name: filterName, isShared, definition });
+      return;
+    }
     const res = await createSavedFilterAction(
       { name: filterName, targetEntity: "deal", definition, isShared },
       readCsrfToken(),
     );
     if (!res.ok) {
-      setError(res.error.id);
+      setSaveError(actionErrorContent(res.error.id));
       return;
     }
-    onSave({ id: res.value.id, name: filterName, definition });
+    onSave({ id: res.value.id, name: filterName, isShared, definition });
   }
 
   return (
@@ -77,90 +132,54 @@ export function CreateFilterModal({
         className="max-w-2xl gap-0 overflow-hidden bg-card p-0"
       >
         <DialogHeader className="border-b px-5 py-3">
-          <DialogTitle className="text-base font-semibold">Create new filter</DialogTitle>
+          <DialogTitle className="text-base font-semibold">{copy.title}</DialogTitle>
         </DialogHeader>
-        <div className="max-h-[70vh] overflow-y-auto px-5 py-4">
-          <ConditionRows rows={rows} setRows={setRows} owners={owners} />
-          {error !== null ? (
-            <p className="mt-2 text-sm text-red-600">Could not save ({error}).</p>
-          ) : null}
-          <div className="mt-6 grid grid-cols-2 gap-4">
-            <label className="block text-sm">
-              <span className="mb-1 block font-medium" id={nameId}>
-                Filter name
-              </span>
-              <input
-                aria-labelledby={nameId}
-                aria-label="Filter name"
-                value={effectiveName}
-                onChange={(e) => {
-                  setNameEdited(true);
-                  setName(e.target.value);
-                }}
-                placeholder="Named from your conditions"
-                className="w-full rounded-md border px-2.5 py-1.5 text-sm outline-none focus:ring-2 focus:ring-ring/50"
-              />
-            </label>
-            <div className="flex items-center gap-2 self-end pb-1.5 text-sm">
-              <Checkbox label="Shared" checked={isShared} onCheckedChange={setIsShared} />
-              <span>Shared with everyone</span>
+        <div className="max-h-[70vh] space-y-2 overflow-y-auto px-5 py-4">
+          {copy.note !== null ? <p className="text-sm text-muted-foreground">{copy.note}</p> : null}
+          <ConditionRows
+            fields={fields}
+            opLabels={OP_LABELS}
+            rows={rows}
+            onRowsChange={(next) => {
+              setRows(next);
+              // The rejected conditions are gone; keeping the old message would misread as current.
+              setSaveError(null);
+            }}
+            combinator={combinator}
+            onCombinatorChange={setCombinator}
+          />
+          {issue !== null ? <p className="text-sm text-red-600">{issue}</p> : null}
+          {saveError !== null ? (
+            <div className="text-sm text-red-600">
+              <p className="font-medium">{saveError.title}</p>
+              <p>{saveError.body}</p>
             </div>
-          </div>
+          ) : null}
+          <CreateFilterModalNameRow
+            name={effectiveName}
+            onNameChange={(next) => {
+              setNameEdited(true);
+              setName(next);
+            }}
+            isShared={isShared}
+            onSharedChange={setIsShared}
+          />
         </div>
-        <div className="flex items-center justify-between gap-2 border-t px-5 py-3">
-          {onPreview !== undefined ? (
-            <button
-              type="button"
-              onClick={() => onPreview(buildDefinition())}
-              className="inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm transition-[background-color,scale] duration-150 ease-out hover:bg-accent active:scale-[0.96] motion-reduce:transition-colors"
-            >
-              <svg
-                aria-hidden="true"
-                viewBox="0 0 24 24"
-                className="h-4 w-4"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" />
-                <circle cx="12" cy="12" r="3" />
-              </svg>
-              Preview
-            </button>
-          ) : (
-            <span />
-          )}
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-md border px-3 py-1.5 text-sm transition-[background-color,scale] duration-150 ease-out hover:bg-accent active:scale-[0.96] motion-reduce:transition-colors"
-            >
-              Cancel
-            </button>
-            {onApply !== undefined ? (
-              <button
-                type="button"
-                onClick={() => {
+        <CreateFilterModalFooter
+          disabled={issue !== null}
+          onPreview={onPreview === undefined ? undefined : () => onPreview(buildDefinition())}
+          onCancel={onClose}
+          onApply={
+            onApply === undefined
+              ? undefined
+              : () => {
                   onApply(buildDefinition());
                   onClose();
-                }}
-                className="rounded-md border px-3 py-1.5 text-sm font-medium transition-[background-color,scale] duration-150 ease-out hover:bg-accent active:scale-[0.96] motion-reduce:transition-colors"
-              >
-                Apply
-              </button>
-            ) : null}
-            <button
-              type="button"
-              onClick={() => void save()}
-              className="rounded-md bg-action px-3 py-1.5 text-sm font-medium text-action-foreground transition-[opacity,scale] duration-150 ease-out hover:opacity-90 active:scale-[0.96] motion-reduce:transition-opacity"
-            >
-              Save
-            </button>
-          </div>
-        </div>
+                }
+          }
+          onSave={() => void save()}
+          saveLabel={copy.saveLabel}
+        />
       </DialogContent>
     </Dialog>
   );

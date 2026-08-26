@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 beforeAll(() => {
@@ -14,8 +14,12 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
+const { invalidateDayLoad } = vi.hoisted(() => ({
+  invalidateDayLoad: vi.fn(() => Promise.resolve()),
+}));
 vi.mock("@/lib/trpc-client", () => ({
   trpc: {
+    useUtils: () => ({ activities: { dayLoad: { invalidate: invalidateDayLoad } } }),
     activities: {
       listTypes: {
         useQuery: () => ({
@@ -25,6 +29,7 @@ vi.mock("@/lib/trpc-client", () => ({
           ],
         }),
       },
+      dayLoad: { useQuery: () => ({ data: undefined }) },
     },
     contacts: {
       listPeople: { useQuery: () => ({ data: { rows: [], total: 0 } }) },
@@ -40,6 +45,22 @@ vi.mock("./actions", () => ({ createActivityAction }));
 vi.mock("@/utils/csrfCookie", () => ({ readCsrfToken: () => "csrf" }));
 
 import { AddActivityModal } from "./AddActivityModal";
+
+function holdInvalidation(): { settle: () => Promise<void> } {
+  let resolveInvalidation = (): void => {};
+  const held = new Promise<void>((resolve) => {
+    resolveInvalidation = () => {
+      resolve();
+    };
+  });
+  invalidateDayLoad.mockImplementationOnce(() => held);
+  return {
+    settle: async () => {
+      resolveInvalidation();
+      await held;
+    },
+  };
+}
 
 describe("AddActivityModal", () => {
   it("renders the composer type rail plus subject/priority/due fields", () => {
@@ -156,5 +177,38 @@ describe("AddActivityModal", () => {
     ];
     expect(new Date(payload.dueAt as string).getHours()).toBe(14);
     expect(new Date(payload.dueAt as string).getMinutes()).toBe(30);
+  });
+
+  it("invalidates the day load after a successful create", async () => {
+    render(<AddActivityModal onClose={vi.fn()} onCreated={vi.fn()} />);
+    fireEvent.change(screen.getByLabelText("Subject"), { target: { value: "Call Ann" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() => expect(invalidateDayLoad).toHaveBeenCalled());
+  });
+
+  it("ignores a second Save click while the day load is still invalidating", async () => {
+    const invalidation = holdInvalidation();
+    render(<AddActivityModal onClose={vi.fn()} onCreated={vi.fn()} />);
+    fireEvent.change(screen.getByLabelText("Subject"), { target: { value: "Call Ann" } });
+    const save = screen.getByRole("button", { name: "Save" });
+    fireEvent.click(save);
+    await waitFor(() => expect(invalidateDayLoad).toHaveBeenCalled());
+    fireEvent.click(save);
+    await act(async () => {
+      await invalidation.settle();
+    });
+    expect(createActivityAction).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not invalidate the day load when the create fails", async () => {
+    createActivityAction.mockResolvedValueOnce({
+      ok: false,
+      error: { id: "E_ACTIVITY_001" },
+    } as never);
+    render(<AddActivityModal onClose={vi.fn()} onCreated={vi.fn()} />);
+    fireEvent.change(screen.getByLabelText("Subject"), { target: { value: "Call Ann" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() => expect(screen.getByRole("alert")).toBeInTheDocument());
+    expect(invalidateDayLoad).not.toHaveBeenCalled();
   });
 });

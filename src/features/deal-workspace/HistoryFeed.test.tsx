@@ -35,6 +35,7 @@ function activity(): CalendarActivity {
     id: "a1",
     subject: "Discovery call",
     dueAt: AT,
+    allDay: false,
     durationMinutes: null,
     typeKey: "call",
     done: false,

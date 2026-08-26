@@ -1,4 +1,5 @@
 "use client";
+import { ChevronDown } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type React from "react";
 import { useState } from "react";
@@ -68,9 +69,7 @@ export function OwnerBlock({
             disabled={pending}
             className="relative rounded p-0.5 text-muted-foreground transition-[color,scale] duration-150 ease-out after:absolute after:-inset-2 after:content-[''] hover:text-foreground active:not-disabled:scale-[0.96] disabled:opacity-50"
           >
-            <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor">
-              <path d="M7 10l5 5 5-5z" />
-            </svg>
+            <ChevronDown aria-hidden="true" className="h-4 w-4" />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" aria-label="Assign owner" className="min-w-44">
             {assignableUsers.length === 0 ? (

@@ -54,9 +54,8 @@ export function PageHeading({
         </nav>
       ) : null}
       <div className="flex items-center justify-between gap-3">
-        {/* PD renders the page title at 25px / ~450 weight (lighter than semibold). Inter is a
-            vendored variable font, so the arbitrary 450 weight resolves crisply. */}
-        <h1 className="text-[25px] font-[450] leading-tight tracking-tight">{title}</h1>
+        {/* Inter is a vendored variable font, so the 450 weight (lighter than semibold) resolves. */}
+        <h1 className="text-display font-[450] leading-tight tracking-tight">{title}</h1>
         {actions}
       </div>
       {description !== undefined ? (

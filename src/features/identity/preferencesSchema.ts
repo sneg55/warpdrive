@@ -1,5 +1,13 @@
 import { z } from "zod";
+import { MAX_DAILY_ACTIVITY_TARGET, MIN_DAILY_ACTIVITY_TARGET } from "@/constants/activityLoad";
 import { DEAL_SIDEBAR_SECTION_IDS } from "@/constants/dealSidebarSections";
+import { BOARD_SORT_KEYS } from "@/features/deals/boardSort";
+import { filterDefinition } from "@/features/saved-filters/schemas";
+import { APPEARANCE_VALUES } from "@/features/theme/appearance";
+
+// Lives here, not beside APPEARANCE_VALUES: that module is imported by the root layout, so a zod
+// import there would ship the parser on every route.
+export const appearanceSchema = z.enum(APPEARANCE_VALUES);
 
 export const DENSITY_VALUES = ["comfortable", "compact"] as const;
 export type Density = (typeof DENSITY_VALUES)[number];
@@ -17,6 +25,17 @@ export const leadsViewSchema = z.object({
   columns: z.array(z.string()),
   sort: z.object({ field: z.string(), dir: z.enum(["asc", "desc"]) }),
 });
+// The deals board toolbar view: owner filter, sort field + direction, and the applied filter
+// (a saved view by id, or the ad-hoc condition builder's definition). The pipeline is not stored,
+// it lives in the URL.
+export const boardViewSchema = z.object({
+  ownerId: z.string().uuid().nullable().default(null),
+  sortKey: z.enum(BOARD_SORT_KEYS),
+  sortDir: z.enum(["asc", "desc"]),
+  savedFilterId: z.string().uuid().nullable().default(null),
+  conditions: filterDefinition.nullable().default(null),
+});
+export type BoardViewPrefs = z.infer<typeof boardViewSchema>;
 // Personal preference: after marking a deal Won, prompt to schedule a follow-up activity.
 export const scheduleFollowUpAfterWonSchema = z.boolean();
 
@@ -45,6 +64,14 @@ export const uiFlagInputSchema = z.object({
   value: z.boolean(),
 });
 
+// Personal daily activity target: how many activities a day should hold before it reads as full.
+// Drives the load dots under each day in the activity date pickers; never blocks a create.
+export const dailyActivityTargetSchema = z
+  .number()
+  .int()
+  .min(MIN_DAILY_ACTIVITY_TARGET)
+  .max(MAX_DAILY_ACTIVITY_TARGET);
+
 // Persisted visible-column order for a list table (deals list, people, orgs). Each list stores its
 // own top-level ui key (like leadsView) so the jsonb shallow-merge in setPreferences cannot
 // lost-update one list's columns when another is written.
@@ -63,20 +90,30 @@ export const columnViewInputSchema = z.object({
   columns: columnOrderSchema,
 });
 
+// Read-side shape of the stored jsonb bag (getPreferences is its only consumer; every write
+// validates against the individual schemas above). Each key carries .catch(undefined) so one stale
+// value, a retired enum member or a hand-edited row, drops only its own key. Without it a single
+// bad key failed the whole object and getPreferences fell back to {}, silently resetting every
+// unrelated preference on load.
 export const uiSchema = z.object({
-  dealHeaderBlocks: dealHeaderBlocksSchema.optional(),
-  dealSidebarSections: dealSidebarSectionsSchema.optional(),
-  leadsView: leadsViewSchema.optional(),
-  scheduleFollowUpAfterWon: scheduleFollowUpAfterWonSchema.optional(),
-  dealsListView: columnOrderSchema.optional(),
-  peopleView: columnOrderSchema.optional(),
-  orgsView: columnOrderSchema.optional(),
-  openDetailsAfterCreate: openDetailsAfterCreateSchema.optional(),
-  usPhoneFormat: z.boolean().optional(),
-  winSound: z.boolean().optional(),
-  emailLinksNewTab: z.boolean().optional(),
-  prefillParticipantsAsRecipients: z.boolean().optional(),
-  autoPrefixLeadDealTitles: z.boolean().optional(),
+  dealHeaderBlocks: dealHeaderBlocksSchema.optional().catch(undefined),
+  dealSidebarSections: dealSidebarSectionsSchema.optional().catch(undefined),
+  leadsView: leadsViewSchema.optional().catch(undefined),
+  boardView: boardViewSchema.optional().catch(undefined),
+  scheduleFollowUpAfterWon: scheduleFollowUpAfterWonSchema.optional().catch(undefined),
+  dealsListView: columnOrderSchema.optional().catch(undefined),
+  peopleView: columnOrderSchema.optional().catch(undefined),
+  orgsView: columnOrderSchema.optional().catch(undefined),
+  openDetailsAfterCreate: openDetailsAfterCreateSchema.optional().catch(undefined),
+  usPhoneFormat: z.boolean().optional().catch(undefined),
+  winSound: z.boolean().optional().catch(undefined),
+  emailLinksNewTab: z.boolean().optional().catch(undefined),
+  prefillParticipantsAsRecipients: z.boolean().optional().catch(undefined),
+  autoPrefixLeadDealTitles: z.boolean().optional().catch(undefined),
+  // Day / Night / System. The durable, cross-device record; the wd_appearance cookie is only a
+  // mirror so the no-flash script can settle the theme before first paint.
+  appearance: appearanceSchema.optional().catch(undefined),
+  dailyActivityTarget: dailyActivityTargetSchema.optional().catch(undefined),
 });
 export type UiPrefs = z.infer<typeof uiSchema>;
 

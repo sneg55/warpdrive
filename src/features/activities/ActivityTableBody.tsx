@@ -1,5 +1,6 @@
 import type React from "react";
 import type { RenderWindow } from "@/components/data-table/useRenderWindow";
+import { TableRowsSkeleton } from "@/components/shell/skeletons";
 import { ActivityDayGroups } from "./ActivityDayGroups";
 import type { ActivityTableRow } from "./activityRows";
 
@@ -48,13 +49,7 @@ export function ActivityTableBody({
     );
   }
   if (loadPending) {
-    return (
-      <tr>
-        <td colSpan={columnCount} className="px-3 py-10 text-center text-muted-foreground">
-          Loading activities&hellip;
-        </td>
-      </tr>
-    );
+    return <TableRowsSkeleton columnCount={columnCount} label="Loading activities" />;
   }
   // visible is a prefix of the full row set, so an empty slice means an empty set.
   if (rowWindow.visible.length === 0) {

@@ -1,5 +1,6 @@
 "use client";
 import { useQueryClient } from "@tanstack/react-query";
+import { Plus } from "lucide-react";
 import type React from "react";
 import { useState } from "react";
 import { AddDealModal } from "./AddDealModal";
@@ -32,10 +33,7 @@ export function StageAddButton(props: StageAddButtonProps): React.ReactNode {
         aria-label="Add deal to this stage"
         className="mt-1 flex w-full items-center justify-center gap-1 rounded-md border border-dashed py-1.5 text-sm text-muted-foreground transition-[color,border-color,transform] hover:border-ring hover:text-foreground active:scale-[0.96]"
       >
-        <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor">
-          <path d="M11 5h2v14h-2z" />
-          <path d="M5 11h14v2H5z" />
-        </svg>
+        <Plus aria-hidden="true" className="h-4 w-4" />
         Deal
       </button>
       {open && (

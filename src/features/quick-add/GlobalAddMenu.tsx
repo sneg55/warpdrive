@@ -1,7 +1,7 @@
 "use client";
 import { useRouter } from "next/navigation";
 import type React from "react";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,6 +11,7 @@ import {
 import { AddActivityModal } from "@/features/activities/AddActivityModal";
 import { AddDealModal } from "@/features/deals/AddDealModal";
 import { AddLeadModal } from "@/features/leads/AddLeadModal";
+import { isOverlayOpen, isTypingTarget } from "@/features/shortcuts/shortcutTarget";
 import { trpc } from "@/lib/trpc-client";
 import { GlobalContactModal } from "./GlobalContactModal";
 import { GlobalNoteModal } from "./GlobalNoteModal";
@@ -81,6 +82,20 @@ export function GlobalAddMenu(): React.ReactNode {
     },
     [isDisabled, router],
   );
+
+  // Pipedrive opens quick add with "." or "+". Without this the letter shortcuts below were
+  // unreachable from the keyboard, since nothing but a click could open the menu they live on.
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent): void => {
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      if (e.key !== "." && e.key !== "+") return;
+      if (isTypingTarget(e.target) || isOverlayOpen(document)) return;
+      e.preventDefault();
+      setOpen(true);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
 
   const onContentKeyDown = useCallback(
     (e: React.KeyboardEvent): void => {

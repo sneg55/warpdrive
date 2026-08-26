@@ -88,6 +88,28 @@ describe("eslint custom rules", () => {
     expect(fetchMessages).toHaveLength(0);
   });
 
+  test("flags a hand-rolled inline <svg> in app code", async () => {
+    const eslint = new ESLint();
+    const results = await eslint.lintText(
+      'export function Icon() { return <svg viewBox="0 0 24 24" />; }\n',
+      { filePath: "src/components/shell/NavIcons.tsx" },
+    );
+    const messages = results[0]!.messages.map((m) => m.message).join(" ");
+    expect(messages).toContain("Inline <svg> icons are banned");
+  });
+
+  test("does NOT flag an inline <svg> inside src/components/ui/**", async () => {
+    const eslint = new ESLint();
+    const results = await eslint.lintText(
+      'export function Icon() { return <svg viewBox="0 0 24 24" />; }\n',
+      { filePath: "src/components/ui/dropdown-menu.tsx" },
+    );
+    const svgMessages = results[0]!.messages.filter((m) =>
+      m.message.includes("Inline <svg> icons are banned"),
+    );
+    expect(svgMessages).toHaveLength(0);
+  });
+
   test("import-x/no-cycle rule is configured as error", async () => {
     const eslint = new ESLint();
     const config = await eslint.calculateConfigForFile("src/features/demo/a.ts");

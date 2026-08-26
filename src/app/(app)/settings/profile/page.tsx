@@ -1,5 +1,6 @@
 import { eq } from "drizzle-orm";
 import type { ReactNode } from "react";
+import { DEFAULT_DAILY_ACTIVITY_TARGET } from "@/constants/activityLoad";
 import { STRINGS } from "@/constants/strings";
 import { db } from "@/db/client";
 import { users } from "@/db/schema/identity";
@@ -8,6 +9,7 @@ import { getPreferencesForActor } from "@/features/identity/preferencesForActor"
 import { createContext } from "@/server/trpc/context";
 import { SettingsHeading } from "../SettingsHeading";
 import { SettingsPage } from "../SettingsSurface";
+import { DailyActivityTarget } from "./DailyActivityTarget";
 import { InterfacePreferences } from "./InterfacePreferences";
 import { ProfileClient } from "./ProfileClient";
 
@@ -41,10 +43,12 @@ export default async function ProfilePage(): Promise<ReactNode> {
         timezone={prefs.timezone}
         density={prefs.density}
       />
+      {/* Appearance lives in the account menu, where people reach for a theme switch. */}
       <InterfacePreferences
         prefs={interfacePrefsFromUi(prefs.ui)}
         scheduleFollowUpAfterWon={prefs.ui.scheduleFollowUpAfterWon ?? false}
       />
+      <DailyActivityTarget target={prefs.ui.dailyActivityTarget ?? DEFAULT_DAILY_ACTIVITY_TARGET} />
     </SettingsPage>
   );
 }

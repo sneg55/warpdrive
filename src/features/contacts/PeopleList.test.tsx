@@ -1,16 +1,27 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("next/navigation", () => ({ usePathname: () => "/contacts/people" }));
 
 // listPeople.query returns raw Person-shaped rows; the client maps them into PeopleListRow.
 const listPeopleQuery = vi.fn();
+const savedViews = vi.fn<() => unknown[]>(() => []);
 vi.mock("@/lib/trpc-client", () => ({
   trpc: {
-    useUtils: () => ({ client: { contacts: { listPeople: { query: listPeopleQuery } } } }),
+    useUtils: () => ({
+      client: { contacts: { listPeople: { query: listPeopleQuery } } },
+      savedFilters: { listByTarget: { invalidate: vi.fn() } },
+    }),
     identity: { assignableUsers: { useQuery: () => ({ data: [] }) } },
+    // The filter builder's Label condition reads the label catalog.
+    labels: {
+      listByTarget: { useQuery: () => ({ data: [] }) },
+      appliedNames: { useQuery: () => ({ data: [] }) },
+    },
+    savedFilters: { listByTarget: { useQuery: () => ({ data: savedViews() }) } },
   },
 }));
 
@@ -30,6 +41,7 @@ afterEach(() => {
   listPeopleQuery.mockReset();
   deletePersonAction.mockReset();
   mergePersonsAction.mockReset();
+  savedViews.mockReturnValue([]);
 });
 
 const rows = [
@@ -184,6 +196,7 @@ describe("PeopleList", () => {
 
     fireEvent.click(screen.getByRole("checkbox", { name: "Select Jane Roe" }));
     fireEvent.click(screen.getByRole("button", { name: "Delete" }));
+    fireEvent.click(screen.getByRole("button", { name: "Delete people" }));
 
     await vi.waitFor(() => expect(deletePersonAction).toHaveBeenCalledWith({ id: "p1" }, "csrf"));
     await vi.waitFor(() => expect(screen.queryByText(/selected/)).not.toBeInTheDocument());
@@ -206,6 +219,7 @@ describe("PeopleList", () => {
 
     fireEvent.click(screen.getByRole("checkbox", { name: "Select all people" }));
     fireEvent.click(screen.getByRole("button", { name: "Delete" }));
+    fireEvent.click(screen.getByRole("button", { name: "Delete people" }));
 
     const alert = await screen.findByRole("alert");
     expect(alert).toHaveTextContent(/couldn't delete|could not delete|failed/i);
@@ -219,6 +233,39 @@ describe("PeopleList", () => {
     expect(screen.queryByRole("button", { name: "Merge duplicates" })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("checkbox", { name: "Select John Doe" }));
     expect(screen.getByRole("button", { name: "Merge duplicates" })).toBeInTheDocument();
+  });
+
+  it("applies a saved person view to the list query", async () => {
+    savedViews.mockReturnValue([
+      {
+        id: "v1",
+        name: "Acme people",
+        favorite: false,
+        isShared: false,
+        isOwn: true,
+        definition: {
+          combinator: "and",
+          conditions: [{ field: "primaryEmail", op: "contains", value: "acme" }],
+        },
+      },
+    ]);
+    listPeopleQuery.mockResolvedValue({ total: 0, rows: [] });
+    const user = userEvent.setup();
+    render(<PeopleList rows={rows} total={2} />);
+
+    await user.click(screen.getByRole("button", { name: "Saved views" }));
+    await user.click(screen.getByRole("menuitem", { name: "Acme people" }));
+
+    await vi.waitFor(() =>
+      expect(listPeopleQuery).toHaveBeenCalledWith(
+        expect.objectContaining({
+          filter: {
+            combinator: "and",
+            conditions: [{ field: "primaryEmail", op: "contains", value: "acme" }],
+          },
+        }),
+      ),
+    );
   });
 
   it("merges the two selected people via mergePersonsAction (survivor kept)", async () => {

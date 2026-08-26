@@ -11,6 +11,7 @@ import type * as schema from "@/db/schema";
 import { activities, activityTypes, emailMessages, emailThreads, notes, users } from "@/db/schema";
 import { leads } from "@/db/schema/leads";
 import type { CalendarActivity } from "@/features/activities/calendar";
+import { isActivityOverdue } from "@/features/activities/overdue";
 import { listChangeLog } from "@/features/collaboration/changeLog";
 import {
   buildHistoryTimeline,
@@ -79,6 +80,7 @@ export async function leadTimeline(
       id: activities.id,
       subject: activities.subject,
       dueAt: activities.dueAt,
+      allDay: activities.allDay,
       durationMinutes: activities.durationMinutes,
       typeKey: activityTypes.key,
       done: activities.done,
@@ -97,6 +99,7 @@ export async function leadTimeline(
       id: row.id,
       subject: row.subject,
       dueAt: row.dueAt,
+      allDay: row.allDay,
       durationMinutes: row.durationMinutes,
       typeKey: row.typeKey,
       done: row.done,
@@ -105,7 +108,7 @@ export async function leadTimeline(
       dealId: null,
       personId: null,
       orgId: null,
-      overdue: row.done === false && row.dueAt.getTime() < now,
+      overdue: isActivityOverdue(row.dueAt, row.allDay, row.done, now),
       ownerName: row.ownerName,
     });
   }

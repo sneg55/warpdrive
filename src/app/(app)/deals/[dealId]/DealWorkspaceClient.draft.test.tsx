@@ -47,6 +47,7 @@ vi.mock("@/utils/csrfCookie", () => ({ readCsrfToken: () => "csrf" }));
 
 vi.mock("@/lib/trpc-client", () => ({
   trpc: {
+    enrichment: { status: { useQuery: () => ({ data: { ready: false, providers: [] } }) } },
     useUtils: () => ({
       activities: { listForEntity: { invalidate: () => {}, setData: () => {} } },
       email: {
@@ -54,6 +55,7 @@ vi.mock("@/lib/trpc-client", () => ({
         drafts: { listForDeal: { invalidate: () => {} } },
       },
     }),
+    files: { listForEntity: { useQuery: () => ({ data: [] }) } },
     collaboration: {
       listNotes: { useQuery: () => ({ data: [] }) },
       listChangeLog: { useQuery: () => ({ data: [] }) },

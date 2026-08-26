@@ -46,6 +46,26 @@ describe("ConditionRowsBuilder", () => {
     expect(screen.getByText("3")).toBeInTheDocument();
   });
 
+  it("renders a date field through the design-system DatePicker, not a native date input", () => {
+    const dateFields: readonly ConditionFieldOption[] = [
+      { field: "closes", label: "Expected close", ops: ["gt"], input: { kind: "date" } },
+    ];
+    const { container } = render(
+      <ConditionRowsBuilder
+        fields={dateFields}
+        opLabels={OP_LABELS}
+        activeCount={0}
+        onApply={vi.fn()}
+        onClear={vi.fn()}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Filter" }));
+    fireEvent.click(screen.getByRole("button", { name: /add condition/i }));
+    expect(container.querySelector('input[type="date"]')).toBeNull();
+    expect(document.querySelector('input[type="date"]')).toBeNull();
+    expect(screen.getByLabelText("Condition 1 value").tagName).toBe("BUTTON");
+  });
+
   it("Clear resets and calls onClear", () => {
     const onClear = vi.fn();
     render(

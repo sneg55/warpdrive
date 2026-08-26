@@ -42,6 +42,7 @@ function makeActivity(over: Partial<CalendarActivity> = {}): CalendarActivity {
     id: "a1",
     subject: "Discovery call",
     dueAt: new Date("2026-07-02T10:00:00Z"),
+    allDay: false,
     durationMinutes: null,
     typeKey: "call",
     done: false,
@@ -236,9 +237,9 @@ describe("ActivityCard", () => {
     const { container } = render(
       <ActivityCard activity={makeActivity({ typeKey: "call" })} at={AT} />,
     );
-    // The card leads with the type glyph: the shared ActivityTypeIcon draws a stroked
-    // (fill="none") svg, unlike the filled overflow-menu dots, so this targets the icon.
-    expect(container.querySelector("svg[fill='none']")).not.toBeNull();
+    // The card leads with the type glyph. Target it by ActivityTypeIcon's own size classes:
+    // the overflow-menu kebab is also a lucide svg, so fill="none" no longer distinguishes them.
+    expect(container.querySelector("svg.lucide-phone.h-4.w-4.shrink-0")).not.toBeNull();
   });
 
   it("renders an OVERDUE badge with the destructive treatment when overdue", () => {

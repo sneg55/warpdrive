@@ -18,6 +18,7 @@ const useQuery = vi.fn((...args: unknown[]) => {
 vi.mock("@/lib/trpc-client", () => ({
   trpc: {
     stats: { dashboard: { useQuery: (input: unknown) => useQuery(input) } },
+    goals: { list: { useQuery: () => ({ data: [] }) } },
     pipeline: {
       list: {
         useQuery: () => ({
@@ -35,7 +36,7 @@ import { Dashboard } from "./Dashboard";
 
 describe("Dashboard heading", () => {
   it("titles the screen 'Performance', not 'Dashboard'", () => {
-    render(<Dashboard canViewOthers currency="USD" />);
+    render(<Dashboard today="2026-03-01" canViewOthers currency="USD" />);
     expect(screen.getByRole("heading", { name: "Performance" })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Dashboard" })).not.toBeInTheDocument();
   });
@@ -43,7 +44,7 @@ describe("Dashboard heading", () => {
 
 describe("Dashboard date range", () => {
   it("passes a from/to range into the stats query and updates it when a date is picked", async () => {
-    render(<Dashboard canViewOthers currency="USD" />);
+    render(<Dashboard today="2026-03-01" canViewOthers currency="USD" />);
     // Default range is the current calendar year.
     const year = new Date().getFullYear();
     expect(useQuery).toHaveBeenLastCalledWith(
@@ -66,7 +67,7 @@ describe("Dashboard pipeline switcher", () => {
     // STATS-08: the dashboard defaults to aggregating across all visible pipelines
     // (null pipelineId), and "All pipelines" is a selectable option.
     useQuery.mockClear();
-    render(<Dashboard canViewOthers currency="USD" />);
+    render(<Dashboard today="2026-03-01" canViewOthers currency="USD" />);
     expect(useQuery).toHaveBeenLastCalledWith(expect.objectContaining({ pipelineId: null }));
 
     fireEvent.click(screen.getByLabelText("Pipeline"));
@@ -75,7 +76,7 @@ describe("Dashboard pipeline switcher", () => {
 
   it("rescopes to a specific pipeline and back to 'All pipelines' without reload", () => {
     useQuery.mockClear();
-    render(<Dashboard canViewOthers currency="USD" />);
+    render(<Dashboard today="2026-03-01" canViewOthers currency="USD" />);
 
     // Pick a specific pipeline: its id flows to the query.
     fireEvent.click(screen.getByLabelText("Pipeline"));

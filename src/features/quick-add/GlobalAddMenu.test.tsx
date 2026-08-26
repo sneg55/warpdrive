@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
@@ -139,5 +139,42 @@ describe("GlobalAddMenu", () => {
     await user.click(screen.getByRole("button", { name: "Quick add" }));
     await user.click(screen.getByRole("menuitem", { name: /Email/ }));
     expect(push).toHaveBeenCalledWith("/inbox/compose");
+  });
+});
+
+describe("GlobalAddMenu open shortcut", () => {
+  it("opens the menu when . is pressed anywhere in the app", async () => {
+    useQuery.mockReturnValue({ data: [PIPE] });
+    render(<GlobalAddMenu />);
+    fireEvent.keyDown(window, { key: "." });
+    expect(await screen.findByRole("menuitem", { name: /Deal/ })).toBeInTheDocument();
+  });
+
+  it("opens the menu when + is pressed", async () => {
+    useQuery.mockReturnValue({ data: [PIPE] });
+    render(<GlobalAddMenu />);
+    fireEvent.keyDown(window, { key: "+" });
+    expect(await screen.findByRole("menuitem", { name: /Deal/ })).toBeInTheDocument();
+  });
+
+  it("stays closed when . is typed into a text field", () => {
+    useQuery.mockReturnValue({ data: [PIPE] });
+    render(<GlobalAddMenu />);
+    const input = document.createElement("input");
+    document.body.append(input);
+    fireEvent.keyDown(input, { key: "." });
+    input.remove();
+    expect(screen.queryByRole("menuitem", { name: /Deal/ })).toBeNull();
+  });
+
+  it("stays closed when a dialog is already open", () => {
+    useQuery.mockReturnValue({ data: [PIPE] });
+    render(<GlobalAddMenu />);
+    const dialog = document.createElement("div");
+    dialog.setAttribute("role", "dialog");
+    document.body.append(dialog);
+    fireEvent.keyDown(window, { key: "." });
+    dialog.remove();
+    expect(screen.queryByRole("menuitem", { name: /Deal/ })).toBeNull();
   });
 });

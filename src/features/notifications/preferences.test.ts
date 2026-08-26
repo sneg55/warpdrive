@@ -1,11 +1,28 @@
 import { describe, expect, it } from "vitest";
+import type { NotificationType } from "@/constants/notificationTypes";
 import { NOTIFICATION_TYPES } from "@/constants/notificationTypes";
 import { withTestDb } from "@/db/testing";
 import { seedUser } from "@/db/testing/factories";
 import { getPreferences, resolveDelivery, setPreference } from "./preferences";
 
+// Expected email default per type, written out literally rather than imported from the
+// constant it guards: importing DEFAULT_EMAIL_BY_TYPE here would make the test tautological.
+// High-signal, low-volume types are on; per-event and per-edit firehoses are off.
+const EXPECTED_EMAIL_DEFAULT: Record<NotificationType, boolean> = {
+  mention: true,
+  comment_reply: true,
+  activity_assigned: true,
+  activity_reminder: true,
+  deal_won: true,
+  deal_lost: true,
+  deal_followed_update: false,
+  email_open: false,
+  email_click: false,
+  deal_email_received: false,
+};
+
 describe("notification preferences", () => {
-  it("defaults to inApp=true, email=false for every NOTIFICATION_TYPES value when user has no rows", async () => {
+  it("defaults to inApp=true for every type, with email on per DEFAULT_EMAIL_BY_TYPE", async () => {
     await withTestDb(async (db) => {
       const alice = await seedUser(db);
       const sig = new AbortController().signal;
@@ -16,15 +33,20 @@ describe("notification preferences", () => {
       for (const t of NOTIFICATION_TYPES) {
         expect(prefs[t], `missing key: ${t}`).toBeDefined();
       }
-      // Spot-check the required types from the brief.
-      expect(prefs.mention).toEqual({ inApp: true, email: false });
-      expect(prefs.activity_reminder).toEqual({ inApp: true, email: false });
 
-      // Every entry should be the default.
       for (const t of NOTIFICATION_TYPES) {
-        expect(prefs[t]).toEqual({ inApp: true, email: false });
+        expect(prefs[t], `wrong default for ${t}`).toEqual({
+          inApp: true,
+          email: EXPECTED_EMAIL_DEFAULT[t],
+        });
       }
     });
+  });
+
+  it("every notification type has an explicit email default (no type falls through)", () => {
+    for (const t of NOTIFICATION_TYPES) {
+      expect(EXPECTED_EMAIL_DEFAULT[t], `no expectation recorded for ${t}`).toBeTypeOf("boolean");
+    }
   });
 
   it("setPreference then getPreferences round-trips a changed value", async () => {
@@ -37,7 +59,7 @@ describe("notification preferences", () => {
       const prefs = await getPreferences(db, alice.id, sig);
       expect(prefs.mention).toEqual({ inApp: false, email: true });
       // Other types should still be defaults.
-      expect(prefs.activity_reminder).toEqual({ inApp: true, email: false });
+      expect(prefs.activity_reminder).toEqual({ inApp: true, email: true });
     });
   });
 
@@ -66,13 +88,35 @@ describe("notification preferences", () => {
     });
   });
 
-  it("resolveDelivery returns defaults when no row exists", async () => {
+  it("resolveDelivery returns the per-type default when no row exists", async () => {
     await withTestDb(async (db) => {
       const alice = await seedUser(db);
       const sig = new AbortController().signal;
 
-      const result = await resolveDelivery(db, alice.id, "comment_reply", sig);
-      expect(result).toEqual({ inApp: true, email: false });
+      // An on-by-default type and an off-by-default type, so a single blanket
+      // default cannot satisfy both.
+      expect(await resolveDelivery(db, alice.id, "comment_reply", sig)).toEqual({
+        inApp: true,
+        email: true,
+      });
+      expect(await resolveDelivery(db, alice.id, "email_open", sig)).toEqual({
+        inApp: true,
+        email: false,
+      });
+    });
+  });
+
+  it("an explicit opt-out beats an on-by-default type", async () => {
+    await withTestDb(async (db) => {
+      const alice = await seedUser(db);
+      const sig = new AbortController().signal;
+
+      await setPreference(db, alice.id, "mention", { inApp: true, email: false }, sig);
+
+      expect(await resolveDelivery(db, alice.id, "mention", sig)).toEqual({
+        inApp: true,
+        email: false,
+      });
     });
   });
 });

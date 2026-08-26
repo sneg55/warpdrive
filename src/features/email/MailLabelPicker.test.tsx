@@ -77,4 +77,11 @@ describe("MailLabelPicker", () => {
     await userEvent.setup().type(screen.getByPlaceholderText(/search or create/i), "Important");
     expect(screen.queryByText(/create "/i)).not.toBeInTheDocument();
   });
+
+  it("gives the dashed trigger the token border instead of a fixed gray", () => {
+    render(<MailLabelPicker value={[]} onChange={vi.fn()} />);
+    const trigger = screen.getByRole("button", { name: /add label/i });
+    expect(trigger).toHaveClass("border-dashed", "hover:border-muted-foreground");
+    expect(trigger.className).not.toMatch(/-gray-/);
+  });
 });

@@ -83,16 +83,16 @@ export function RelatedOrgsPanel({
   return (
     <div className="space-y-2">
       {related.length === 0 ? (
-        <p className="text-sm text-gray-500">No related organizations yet.</p>
+        <p className="text-sm text-muted-foreground">No related organizations yet.</p>
       ) : (
         <ul className="space-y-1.5">
           {related.map((r) => (
             <li key={r.orgId} className="flex items-center justify-between gap-2 text-sm">
               <span className="min-w-0 truncate">
-                <a href={`/contacts/orgs/${r.orgId}`} className="text-blue-700 hover:underline">
+                <a href={`/contacts/orgs/${r.orgId}`} className="text-link hover:underline">
                   {r.name}
                 </a>
-                <span className="ml-1.5 text-xs text-gray-500">{r.relationType}</span>
+                <span className="ml-1.5 text-xs text-muted-foreground">{r.relationType}</span>
               </span>
               <button
                 type="button"

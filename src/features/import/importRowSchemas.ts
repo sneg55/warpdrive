@@ -56,6 +56,8 @@ export type OrgImportGroup = z.infer<typeof orgImportGroupSchema>;
 // accepts and that rejects would show as a valid row in preview and then fail on Import.
 export const personImportGroupSchema = personCreateInput.pick({
   name: true,
+  firstName: true,
+  lastName: true,
   emails: true,
   phones: true,
 });

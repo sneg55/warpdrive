@@ -1,4 +1,5 @@
 "use client";
+import { Signature } from "lucide-react";
 import type React from "react";
 import {
   DropdownMenu,
@@ -33,18 +34,7 @@ export function SignatureDropdown({
           aria-label={COMPOSER_STRINGS.signaturePickerLabel}
           className="flex items-center gap-1 rounded border border-border px-1.5 py-1 text-xs text-muted-foreground hover:bg-accent"
         >
-          <svg
-            aria-hidden="true"
-            viewBox="0 0 24 24"
-            className="h-3.5 w-3.5"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.75"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M3 17c3 0 3-8 6-8s3 8 6 8 3-4 6-4" />
-          </svg>
+          <Signature aria-hidden="true" className="h-3.5 w-3.5" />
         </DropdownMenuTrigger>
       </Tip>
       <DropdownMenuContent align="start" className="min-w-32">

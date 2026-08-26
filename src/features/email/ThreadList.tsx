@@ -4,7 +4,9 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { BulkActionBar } from "@/components/data-table/BulkActionBar";
 import { useRowSelection } from "@/components/data-table/useRowSelection";
+import { ThreadRowsSkeleton } from "@/components/shell/skeletons";
 import { Checkbox } from "@/components/ui/Checkbox";
+import { Skeleton } from "@/components/ui/Skeleton";
 import type { AppError } from "@/constants/errorIds";
 import { STRINGS } from "@/constants/strings";
 import { trpc } from "@/lib/trpc-client";
@@ -17,6 +19,7 @@ import { ThreadListToolbar } from "./ThreadListToolbar";
 import { canArchiveInFolder, canSelectInFolder, type ThreadFolder, ThreadRow } from "./ThreadRow";
 import { filterByAttributes, NO_ATTRIBUTE_FILTER } from "./threadAttributeFilter";
 import { BULK_ACTION_ERROR, runBulk } from "./threadBulkActions";
+import { useThreadFeed } from "./useThreadFeed";
 
 interface ThreadListProps {
   // Which backed read feeds the list: Inbox (email.inbox.list), Sent, Archive, or "linked"
@@ -31,44 +34,15 @@ interface ThreadListProps {
   onSelect?: (threadId: string) => void;
   // When provided, render exactly these threads instead of fetching (used by "linked" views).
   threads?: InboxThread[];
+  // Set by callers that supply `threads` from their own query: true while that query is still
+  // pending, so an empty array is painted as loading rather than as an empty mailbox.
+  threadsPending?: boolean;
   // The active quick-filter (all/unmatched/needs_linking + the U5 quick-filters). Lifted to the
   // caller (InboxListClient) so an active in-mail search can narrow by the SAME filter (codex
   // review); it feeds both the inbox feed and the filter toolbar. Optional: callers that only render
   // "linked" views leave it uncontrolled and ThreadList keeps its own local state.
   quickFilter?: InboxFilter;
   onQuickFilterChange?: (next: InboxFilter) => void;
-}
-
-interface ThreadFeed {
-  threads: InboxThread[];
-  hasMore: boolean;
-  loadMore: () => void;
-  loadingMore: boolean;
-}
-
-// All three backed folders page. "linked" supplies its threads directly and never gets here.
-// A null nextCursor means the folder is exhausted; undefined tells TanStack to stop.
-function useThreads(folder: ThreadFolder, filter: InboxFilter): ThreadFeed {
-  const sent = trpc.email.folders.sent.useInfiniteQuery(
-    {},
-    { enabled: folder === "sent", getNextPageParam: (last) => last.nextCursor ?? undefined },
-  );
-  const archive = trpc.email.folders.archive.useInfiniteQuery(
-    {},
-    { enabled: folder === "archive", getNextPageParam: (last) => last.nextCursor ?? undefined },
-  );
-  const inbox = trpc.email.inbox.list.useInfiniteQuery(
-    { filter },
-    { enabled: folder === "inbox", getNextPageParam: (last) => last.nextCursor ?? undefined },
-  );
-
-  const q = folder === "sent" ? sent : folder === "archive" ? archive : inbox;
-  return {
-    threads: q.data?.pages.flatMap((p) => p.threads) ?? [],
-    hasMore: q.hasNextPage,
-    loadMore: () => void q.fetchNextPage(),
-    loadingMore: q.isFetchingNextPage,
-  };
 }
 
 export function ThreadList({
@@ -79,6 +53,7 @@ export function ThreadList({
   selectHref = (id) => `/inbox/${id}?folder=${folder}`,
   onSelect,
   threads: providedThreads,
+  threadsPending = false,
   quickFilter,
   onQuickFilterChange,
 }: ThreadListProps): React.ReactNode {
@@ -91,7 +66,7 @@ export function ThreadList({
   const [attrFilter, setAttrFilter] = useState(NO_ATTRIBUTE_FILTER);
   const [bulkError, setBulkError] = useState<string | null>(null);
   const [bulkBusy, setBulkBusy] = useState(false);
-  const feed = useThreads(folder, filter);
+  const feed = useThreadFeed(folder, filter);
   // Follow-up-status + label + quick-filters (IB1, P2) narrow the rendered list client-side over
   // the attributes each thread already carries. They apply ONLY on the inbox: that is the only
   // folder that shows the filter row and whose feed projects hasAttachment/unread. Applying a
@@ -101,6 +76,10 @@ export function ThreadList({
   const threads =
     folder === "inbox" ? filterByAttributes(sourceThreads, attrFilter) : sourceThreads;
   const selection = useRowSelection();
+  // A pending feed has made no claim about the mailbox yet, so neither the "no threads" copy nor a
+  // conversation count may be painted until it resolves.
+  const pending = providedThreads !== undefined ? threadsPending : feed.pending;
+  const showSkeleton = pending && threads.length === 0;
 
   function afterArchive(): void {
     void utils.email.inbox.list.invalidate();
@@ -201,9 +180,13 @@ export function ThreadList({
               onCheckedChange={() => selection.toggleAll(visibleIds)}
             />
           )}
-          <span className="tabular-nums">
-            {threads.length} {threads.length === 1 ? "conversation" : "conversations"}
-          </span>
+          {showSkeleton ? (
+            <Skeleton className="h-3 w-24" />
+          ) : (
+            <span className="tabular-nums">
+              {threads.length} {threads.length === 1 ? "conversation" : "conversations"}
+            </span>
+          )}
         </div>
       </div>
 
@@ -249,7 +232,8 @@ export function ThreadList({
       )}
 
       <ul className="flex-1 divide-y overflow-y-auto">
-        {threads.length === 0 && (
+        {showSkeleton && <ThreadRowsSkeleton />}
+        {!pending && threads.length === 0 && (
           <li className="p-4 text-sm text-muted-foreground">{STRINGS.inbox.noThreads}</li>
         )}
         {threads.map((thread) => (

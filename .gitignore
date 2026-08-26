@@ -19,3 +19,6 @@ docs/parity-captures/
 
 # Brainstorming visual companion
 .superpowers/
+
+# Impeccable critique snapshots: internal design audits, never publish
+.impeccable/

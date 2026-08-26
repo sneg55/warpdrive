@@ -101,7 +101,7 @@ export function PersonBlock({
       {labels !== undefined && (
         <SidebarFieldRow label="Labels" value={<LabelChips labels={labels} />} readOnly />
       )}
-      {!hideNameParts && (
+      {!hideNameParts && !hidden.has("firstName") && (
         <SidebarFieldRow
           label="First name"
           value={person.firstName ?? "-"}
@@ -114,7 +114,7 @@ export function PersonBlock({
           }}
         />
       )}
-      {!hideNameParts && (
+      {!hideNameParts && !hidden.has("lastName") && (
         <SidebarFieldRow
           label="Last name"
           value={person.lastName ?? "-"}

@@ -1,11 +1,15 @@
 "use client";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import type React from "react";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { BulkActionBar } from "@/components/data-table/BulkActionBar";
 import { type ColumnSort, useColumnSort } from "@/components/data-table/useColumnSort";
 import { RENDER_WINDOW_STEP, useRenderWindow } from "@/components/data-table/useRenderWindow";
 import { useRowSelection } from "@/components/data-table/useRowSelection";
+import { useActionError } from "@/components/shell/ActionErrorProvider";
+import { useRecordPreview } from "@/features/navigation/recordPreviewStore";
+import { useRowCursor } from "@/features/shortcuts/useRowCursor";
 import { trpc } from "@/lib/trpc-client";
 import { readCsrfToken } from "@/utils/csrfCookie";
 import { ActivitiesFilters } from "./ActivitiesFilters";
@@ -16,6 +20,7 @@ import { ActivityTableBody } from "./ActivityTableBody";
 import { AddActivityModal } from "./AddActivityModal";
 import { completeActivityAction } from "./actions";
 import type { ActivityTableRow } from "./activityRows";
+import { activityRowTarget } from "./activityRowTarget";
 import type { ActivityListFilter, ActivitySortField } from "./schemas";
 import { toEditableActivity } from "./toEditableActivity";
 import { useActivityBulkActions } from "./useActivityBulkActions";
@@ -44,6 +49,9 @@ export function ActivitiesTable(): React.ReactNode {
   const selection = useRowSelection();
   const { effective, cycle } = useColumnSort<ActivitySortField>(DEFAULT_SORT);
 
+  const router = useRouter();
+  const setPreview = useRecordPreview((s) => s.setPreview);
+  const reportError = useActionError();
   const rowsQ = trpc.activities.listRows.useQuery({ ...filter, sort: effective });
   const typesQ = trpc.activities.listTypes.useQuery();
   const ownersQ = trpc.identity.assignableUsers.useQuery();
@@ -86,6 +94,30 @@ export function ActivitiesTable(): React.ReactNode {
   // keeps the day headers.
   const groupByDay = effective.field === "dueAtIso";
 
+  // A row points at work on a record, so opening it opens that record's drawer: the deal, or the
+  // contact the activity hangs off when there is no deal. Seeding the preview first lets the
+  // drawer paint a titled skeleton while the server component streams in.
+  const openRow = useCallback(
+    (row: ActivityTableRow) => {
+      const target = activityRowTarget(row);
+      if (target.kind === "edit") {
+        setSelected(row);
+        return;
+      }
+      setPreview(target.preview);
+      router.push(target.href);
+    },
+    [router, setPreview],
+  );
+
+  // j/k walks the painted rows, Enter opens the one under the cursor (Pipedrive list parity).
+  // Indexed over rowWindow.visible because day grouping preserves that order.
+  const cursor = useRowCursor(rowWindow.visible.length, (i) => {
+    const target = rowWindow.visible[i];
+    if (target !== undefined) openRow(target);
+  });
+  const cursorId = cursor === null ? null : (rowWindow.visible[cursor]?.id ?? null);
+
   function renderRow(r: ActivityTableRow): React.ReactNode {
     return (
       <ActivityRow
@@ -94,14 +126,19 @@ export function ActivitiesTable(): React.ReactNode {
         selected={selection.isSelected(r.id)}
         onToggleSelect={selection.toggle}
         onToggleDone={(id, currentDone) => void complete(id, currentDone)}
-        onRowClick={setSelected}
+        onRowClick={openRow}
+        cursor={r.id === cursorId}
       />
     );
   }
 
   async function complete(id: string, currentDone: boolean): Promise<void> {
     const r = await completeActivityAction({ id, done: !currentDone }, readCsrfToken());
-    if (r.ok) await rowsQ.refetch();
+    if (!r.ok) {
+      reportError(r.error.id);
+      return;
+    }
+    await rowsQ.refetch();
   }
 
   return (

@@ -1,0 +1,12 @@
+{
+  "data": [],
+  "meta": {
+    "totalPages": 0,
+    "totalItems": 0,
+    "savedItems": 0,
+    "pageSize": 1,
+    "page": 1,
+    "sort": { "column": "name", "order": "ASC" },
+    "additionalInfo": {}
+  }
+}

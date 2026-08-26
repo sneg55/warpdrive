@@ -38,6 +38,7 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh, push: vi.fn() }
 vi.mock("@/lib/trpc-client", () => ({
   trpc: {
     useUtils: () => ({ deal: { participants: { invalidate: vi.fn() } } }),
+    enrichment: { status: { useQuery: () => ({ data: { ready: false, providers: [] } }) } },
     deal: { participants: { useQuery: () => ({ data: [] }) } },
     contacts: { listPeopleForOrg: { useQuery: () => ({ data: [] }) } },
     // The sidebar's LabelRow reads the label catalog (added by the label-catalog merge).

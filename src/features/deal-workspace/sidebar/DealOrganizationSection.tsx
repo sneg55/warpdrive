@@ -81,13 +81,7 @@ export function DealOrganizationSection({
     return (
       <CollapsibleSection
         title={title}
-        headerActions={({ hideEmpty }) => (
-          <SectionHeaderMenu
-            sectionLabel={title}
-            menuItems={orgMenuItems}
-            fillGapsPressed={!hideEmpty}
-          />
-        )}
+        headerActions={() => <SectionHeaderMenu sectionLabel={title} menuItems={orgMenuItems} />}
       >
         {detailsBlock}
       </CollapsibleSection>

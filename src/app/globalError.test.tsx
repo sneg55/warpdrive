@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { STRINGS } from "@/constants/strings";
 import AppNotFound from "./(app)/not-found";
 import GlobalError from "./global-error";
 
@@ -27,6 +28,15 @@ describe("global error boundary", () => {
       { container: document.documentElement },
     );
     expect(screen.getByText(/abc123/)).not.toBeNull();
+  });
+
+  it("uses the muted token for its body copy", () => {
+    render(<GlobalError error={new Error("boom")} reset={vi.fn()} />, {
+      container: document.documentElement,
+    });
+    expect(screen.getByText(STRINGS.errors.appCrashBody).className).toContain(
+      "text-muted-foreground",
+    );
   });
 });
 

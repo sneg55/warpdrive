@@ -12,34 +12,26 @@ import {
 } from "@dnd-kit/core";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { wsChannel } from "@/constants/wsChannels";
 import { useLabelColorResolver } from "@/features/labels/useLabelColorResolver";
 import { capture, currentRoute } from "@/features/observability/capture";
 import { EVENTS } from "@/features/observability/events";
-import { PresenceBar } from "@/features/presence/ui/PresenceBar";
 import type { FilterDefinition } from "@/features/saved-filters/schemas";
 import { trpc } from "@/lib/trpc-client";
-import { BoardFilterButton } from "./BoardFilterButton";
-import { BoardFilterControl } from "./BoardFilterControl";
-import { BoardSortControl } from "./BoardSortControl";
+import { BoardEmpty } from "./BoardEmpty";
+import { BoardHeader } from "./BoardHeader";
 import { BoardStages } from "./BoardStages";
-import { BoardToolbar } from "./BoardToolbar";
 import { boardAnnouncements } from "./boardAnnouncements";
-import {
-  type BoardSortKey,
-  DEFAULT_SORT_DIRECTION,
-  DEFAULT_SORT_KEY,
-  type SortDirection,
-} from "./boardSort";
+import { boardEmptyKind } from "./boardEmptyKind";
 import type { BoardProps } from "./boardTypes";
+import { isBoardFiltered } from "./boardView";
 import { DealCard } from "./DealCard";
 import { DragDropZones, zoneToStatus } from "./DragDropZones";
 import { resolveNeighbors } from "./dragNeighbors";
 import { MoveDealDialog } from "./MoveDealDialog";
 import { NewDealButton } from "./NewDealButton";
-import type { SavedFilterView } from "./savedFilterView";
 import { useBoardDerived } from "./useBoardDerived";
 import { useBoardRealtime } from "./useBoardRealtime";
+import { useBoardView } from "./useBoardView";
 import { useDealClose } from "./useDealClose";
 import { BOARD_QUERY_KEY, useDealMove } from "./useDealMove";
 
@@ -47,25 +39,22 @@ export type { BoardProps } from "./boardTypes";
 
 export function Board(props: BoardProps): React.ReactNode {
   const { pipelineId, selfActorId, stages, cards, pipelines, density, baseCurrency } = props;
+  const { serverNow } = props;
   const { move } = useDealMove(pipelineId);
   const { close } = useDealClose(pipelineId);
   useBoardRealtime(pipelineId, selfActorId);
   const utils = trpc.useUtils();
   const resolveLabels = useLabelColorResolver("deal");
-  // null = Everyone; otherwise the ownerId chosen in the filter dropdown.
-  const [selectedOwnerId, setSelectedOwnerId] = useState<string | null>(null);
-  // A saved filter applied server-side via the board query (null = none).
-  const [savedFilter, setSavedFilter] = useState<SavedFilterView | null>(null);
+  // Toolbar view (owner filter, saved/ad-hoc filter, sort), seeded from the user's saved
+  // preference and written back on every change.
+  const view = useBoardView(props.initialView);
+  const { ownerId: selectedOwnerId, savedFilter, conditions: inlineDefinition } = view;
+  const { sortKey, sortDir: sortDirection } = view;
   // A not-yet-saved filter definition being previewed from the create-filter modal. When set it
   // overrides the saved filter for the board query, so the board shows the in-progress result
-  // behind the modal; cleared (revert) when the modal closes.
+  // behind the modal; cleared (revert) when the modal closes. Transient by design: a preview
+  // belongs to the open modal, so it is the one filter state that is never persisted.
   const [previewDefinition, setPreviewDefinition] = useState<FilterDefinition | null>(null);
-  // Ad-hoc inline condition builder (additive to the saved-view menu). When active it takes
-  // precedence over the saved filter for the server board read.
-  const [inlineDefinition, setInlineDefinition] = useState<FilterDefinition | null>(null);
-  // The active sort, applied within each column (Pipedrive defaults to Next activity ascending).
-  const [sortKey, setSortKey] = useState<BoardSortKey>(DEFAULT_SORT_KEY);
-  const [sortDirection, setSortDirection] = useState<SortDirection>(DEFAULT_SORT_DIRECTION);
   // Reveals the bottom action bar (Delete/Lost/Won/Move) only while a deal is being dragged.
   const [dragActive, setDragActive] = useState(false);
   // Id of the card currently under the pointer, rendered lifted in the DragOverlay.
@@ -118,10 +107,11 @@ export function Board(props: BoardProps): React.ReactNode {
     sortDirection,
   });
 
-  // Deterministic clock for time-derived visuals: reading it in render diverges between SSR and
-  // hydration (attribute mismatch that also trips dnd-kit's deps-size warning). See DealCard.
-  const [now, setNow] = useState<Date | null>(null);
-  // eslint-disable-next-line react-hooks/set-state-in-effect -- reading the clock during render would differ between SSR and hydration; the mount effect is the fix, not the bug
+  // Clock for time-derived visuals, seeded from the request so SSR and hydration agree on a real
+  // timestamp. Reading `new Date()` during render would diverge between the two; starting from
+  // null would make the first paint assert that nothing is scheduled and nothing is rotting.
+  const [now, setNow] = useState<Date>(serverNow);
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- hands the clock over to the browser after hydration so a long-lived tab does not keep reading the request time
   useEffect(() => setNow(new Date()), []);
 
   const cardTitleById = useMemo(() => new Map(liveCards.map((c) => [c.id, c.title])), [liveCards]);
@@ -130,6 +120,18 @@ export function Board(props: BoardProps): React.ReactNode {
     () => Object.fromEntries(liveCards.map((c) => [c.id, c.updatedAt.toISOString()])),
     [liveCards],
   );
+  // One add-deal control, shared by the toolbar and the empty-pipeline state.
+  const addDeal = (
+    <NewDealButton pipelineId={pipelineId} pipelines={pipelines} baseCurrency={baseCurrency} />
+  );
+  // A filter that excluded every card is a different sentence from an empty pipeline, and only the
+  // first one replaces the stage columns: an empty pipeline keeps them as the drop targets they are.
+  const filtered = isBoardFiltered(view);
+  const emptyKind = boardEmptyKind({
+    shownCount: shownCards.length,
+    liveCount: liveCards.length,
+    filtered,
+  });
   const sensors = useSensors(
     // Require an 8px drag before a pointer gesture becomes a drag, so a plain click on a
     // card fires its onClick (open the deal) instead of starting a drag (Pipedrive parity).
@@ -194,49 +196,17 @@ export function Board(props: BoardProps): React.ReactNode {
       {/* Visually hidden aria-live region for supplemental board status messages (UI 9.1). */}
       <div ref={liveRef} aria-live="assertive" aria-atomic="true" className="sr-only" />
 
-      <BoardToolbar
+      <BoardHeader
         pipelineId={pipelineId}
         pipelines={pipelines}
+        stages={stages}
+        selfActorId={selfActorId}
+        owners={owners}
         totalValue={String(boardTotal)}
         dealCount={shownCards.length}
-        createSlot={
-          <NewDealButton
-            pipelineId={pipelineId}
-            pipelines={pipelines}
-            baseCurrency={baseCurrency}
-          />
-        }
-        sortSlot={
-          <BoardSortControl
-            sortKey={sortKey}
-            direction={sortDirection}
-            onKeyChange={setSortKey}
-            onToggleDirection={() => setSortDirection((d) => (d === "asc" ? "desc" : "asc"))}
-          />
-        }
-        filterSlot={
-          <>
-            <BoardFilterButton
-              owners={owners}
-              activeCount={inlineDefinition?.conditions.length ?? 0}
-              onApply={setInlineDefinition}
-              onPreview={setPreviewDefinition}
-              onClearPreview={() => setPreviewDefinition(null)}
-              onSaveFilter={setSavedFilter}
-            />
-            <BoardFilterControl
-              owners={owners}
-              selectedOwnerId={selectedOwnerId}
-              currentUserId={selfActorId}
-              onSelectOwner={setSelectedOwnerId}
-              selectedFilterId={savedFilter?.id ?? null}
-              onSelectFilter={setSavedFilter}
-              onPreviewFilter={setPreviewDefinition}
-              onClearPreview={() => setPreviewDefinition(null)}
-            />
-          </>
-        }
-        presence={<PresenceBar channel={wsChannel.pipeline(pipelineId)} selfId={selfActorId} />}
+        view={view}
+        addSlot={addDeal}
+        onPreviewFilter={setPreviewDefinition}
       />
 
       <DndContext
@@ -255,16 +225,23 @@ export function Board(props: BoardProps): React.ReactNode {
         onDragEnd={onDragEnd}
         accessibility={{ announcements: boardAnnouncements(cardTitleById, stageNameById) }}
       >
-        <BoardStages
-          stages={stages}
-          sumsByStage={sumsByStage}
-          sortedByStage={sortedByStage}
-          density={density}
-          now={now}
-          pipelineId={pipelineId}
-          pipelines={pipelines}
-          baseCurrency={baseCurrency}
-        />
+        {emptyKind !== "none" && (
+          <BoardEmpty kind={emptyKind} onClearFilters={view.clearFilters} addSlot={addDeal} />
+        )}
+        {/* Only a board proven to be hiding cards drops its columns: the other two states may be
+            an empty pipeline, whose columns are still the drop targets. */}
+        {emptyKind !== "filtered" && (
+          <BoardStages
+            stages={stages}
+            sumsByStage={sumsByStage}
+            sortedByStage={sortedByStage}
+            density={density}
+            now={now}
+            pipelineId={pipelineId}
+            pipelines={pipelines}
+            baseCurrency={baseCurrency}
+          />
+        )}
 
         {/* Bottom Delete/Lost/Won/Move action bar, revealed only during a drag (Pipedrive). */}
         <DragDropZones active={dragActive} />

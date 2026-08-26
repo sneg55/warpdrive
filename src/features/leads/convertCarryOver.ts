@@ -64,6 +64,7 @@ async function copyActivities(
         durationMinutes: act.durationMinutes,
         priority: act.priority,
         done: act.done,
+        allDay: act.allDay,
         doneAt: act.doneAt,
         ownerId: act.ownerId,
         assigneeId: act.assigneeId,

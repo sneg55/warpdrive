@@ -5,7 +5,9 @@ import { customFieldsRouter } from "@/features/custom-fields/router";
 import { dealRouter } from "@/features/deals/dealRouter";
 import { mailLabelsRouter } from "@/features/email/mailLabelsRouter";
 import { emailRouter } from "@/features/email/router";
+import { enrichmentRouter } from "@/features/enrichment/router";
 import { filesRouter } from "@/features/files/router";
+import { goalsRouter } from "@/features/goals/router";
 import { importRouter } from "@/features/import/router";
 import { labelsRouter } from "@/features/labels/router";
 import { leadRouter } from "@/features/leads/leadRouter";
@@ -13,6 +15,7 @@ import { notificationsRouter } from "@/features/notifications/router";
 import { oauthRouter } from "@/features/oauth/router";
 import { pipelineRouter } from "@/features/pipelines/pipelineRouter";
 import { versionRouter } from "@/features/release/router";
+import { savedFiltersRouter } from "@/features/saved-filters/router";
 import { searchRouter } from "@/features/search/router";
 import { statsRouter } from "@/features/stats/router";
 import { identityRouter } from "./routers/identity";
@@ -33,9 +36,12 @@ export const appRouter = router({
   mailLabels: mailLabelsRouter,
   lead: leadRouter,
   email: emailRouter,
+  enrichment: enrichmentRouter,
   files: filesRouter,
+  goals: goalsRouter,
   notifications: notificationsRouter,
   oauth: oauthRouter,
+  savedFilters: savedFiltersRouter,
   search: searchRouter,
   stats: statsRouter,
   version: versionRouter,

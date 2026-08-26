@@ -23,6 +23,49 @@ function fillAndSubmit(): void {
   fireEvent.click(screen.getByRole("button", { name: /invite/i }));
 }
 
+describe("InviteUserForm inline validation", () => {
+  // A malformed email used to trigger Chrome's own "Please include an '@'" popover: OS chrome,
+  // outside the design system, and gone on the next keystroke.
+  it("opts out of native browser validation", () => {
+    const { container } = render(<InviteUserForm onInvited={() => {}} />);
+    expect(container.querySelector("form")).toHaveAttribute("novalidate");
+  });
+
+  it("shows an inline error for a malformed email and does not call the action", async () => {
+    render(<InviteUserForm onInvited={() => {}} />);
+    fireEvent.change(screen.getByLabelText("Email"), { target: { value: "nope" } });
+    fireEvent.change(screen.getByLabelText("Name"), { target: { value: "No Pe" } });
+    fireEvent.click(screen.getByRole("button", { name: /invite/i }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(/valid email address/i);
+    expect(screen.getByLabelText("Email")).toHaveAttribute("aria-invalid", "true");
+    expect(inviteUserAction).not.toHaveBeenCalled();
+  });
+
+  it("shows an inline error when a field is empty", async () => {
+    render(<InviteUserForm onInvited={() => {}} />);
+    fireEvent.change(screen.getByLabelText("Email"), { target: { value: "new@example.com" } });
+    fireEvent.click(screen.getByRole("button", { name: /invite/i }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(/name/i);
+    expect(inviteUserAction).not.toHaveBeenCalled();
+  });
+
+  it("clears the inline error once the email is corrected", async () => {
+    inviteUserAction.mockResolvedValueOnce({ ok: true, userId: "u-1" });
+    render(<InviteUserForm onInvited={() => {}} />);
+    fireEvent.change(screen.getByLabelText("Email"), { target: { value: "nope" } });
+    fireEvent.change(screen.getByLabelText("Name"), { target: { value: "No Pe" } });
+    fireEvent.click(screen.getByRole("button", { name: /invite/i }));
+    expect(await screen.findByRole("alert")).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText("Email"), { target: { value: "ok@example.com" } });
+    fireEvent.click(screen.getByRole("button", { name: /invite/i }));
+    await vi.waitFor(() => expect(inviteUserAction).toHaveBeenCalled());
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+});
+
 describe("InviteUserForm error mapping (IDENTITY-02)", () => {
   it("renders the duplicate-email message for AUTH_EMAIL_TAKEN", async () => {
     inviteUserAction.mockResolvedValueOnce({

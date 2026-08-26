@@ -85,4 +85,13 @@ describe("TeamEditClient", () => {
     expect(deleteTeamAction.mock.calls[0]?.[1]).toMatchObject({ teamId: TEAM_ID });
     await waitFor(() => expect(push).toHaveBeenCalledWith("/settings/teams"));
   });
+
+  it("renders the members help text from the muted token", () => {
+    renderClient();
+    // The same copy also heads the card, so pin the one under the Members field.
+    const help = screen
+      .getAllByText("Select the users who belong to this team.")
+      .find((el) => el.classList.contains("text-xs"));
+    expect(help).toHaveClass("text-muted-foreground");
+  });
 });

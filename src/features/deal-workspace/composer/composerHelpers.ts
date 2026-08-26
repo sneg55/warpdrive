@@ -1,4 +1,8 @@
-import { composeDueAtIso, deriveDurationMinutes } from "@/features/activities/activityTime";
+import {
+  composeDueAt,
+  composeDueAtIso,
+  deriveDurationMinutes,
+} from "@/features/activities/activityTime";
 import { isBlankHtml } from "@/features/activities/isBlankHtml";
 import type { LinkKind, LinkTarget, LinkValue } from "./LinkChips";
 
@@ -21,17 +25,29 @@ export interface ActivityDraft {
   participants: string[];
 }
 
-// Inverse of composeDueAtIso: split a stored ISO timestamp back into the composer's local date
+// Inverse of composeDueAt: split a stored ISO timestamp back into the composer's local date
 // (YYYY-MM-DD) and time (HH:mm) inputs. Uses local getters to match how composeDueAtIso builds the
 // ISO from local parts, so an edit round-trips to the same instant. Empty ISO -> empty inputs.
-export function localPartsFromIso(iso: string | null): { date: string; time: string } {
+// An all-day activity gives back its day and NO time: the stored midnight is a placeholder for
+// the day, not a time the user picked, and echoing it back is the reported bug.
+export function localPartsFromIso(
+  iso: string | null,
+  allDay = false,
+): { date: string; time: string } {
   if (iso === null) return { date: "", time: "" };
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return { date: "", time: "" };
   const pad = (n: number): string => String(n).padStart(2, "0");
   const date = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-  const time = `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  const time = allDay ? "" : `${pad(d.getHours())}:${pad(d.getMinutes())}`;
   return { date, time };
+}
+
+// dueAt and allDay always travel together: a timestamp without the flag is exactly the state
+// that made a blank time read back as midnight.
+function composedDue(d: ActivityDraft): { dueAt: string | null; allDay: boolean } {
+  const { iso, allDay } = composeDueAt(d.startDate, d.startTime);
+  return { dueAt: iso, allDay };
 }
 
 // Map the composer draft to an activityUpdateInput patch for an existing activity. Mirrors
@@ -43,7 +59,7 @@ export function buildActivityUpdateInput(id: string, d: ActivityDraft) {
     typeId: d.typeId,
     subject: d.subject.trim(),
     priority: d.priority === "" ? null : d.priority,
-    dueAt: composeDueAtIso(d.startDate, d.startTime),
+    ...composedDue(d),
     endAt: d.endDate === "" ? null : composeDueAtIso(d.endDate, d.endTime),
     durationMinutes: deriveDurationMinutes(d.startTime, d.endTime),
     dealId: d.links.deal,
@@ -63,7 +79,7 @@ export function buildActivityInput(d: ActivityDraft) {
     typeId: d.typeId,
     subject: d.subject.trim(),
     priority: d.priority === "" ? null : d.priority,
-    dueAt: composeDueAtIso(d.startDate, d.startTime),
+    ...composedDue(d),
     endAt: d.endDate === "" ? null : composeDueAtIso(d.endDate, d.endTime),
     durationMinutes: deriveDurationMinutes(d.startTime, d.endTime),
     dealId: d.links.deal,

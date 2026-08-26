@@ -1,0 +1,9 @@
+{
+  "email": "dana.hoskova@sprinx.com",
+  "status": "valid",
+  "account": "dana.hoskova",
+  "domain": "sprinx.com",
+  "domain_status": "valid",
+  "smtp_provider": "google",
+  "free_email": false
+}

@@ -1,5 +1,6 @@
 "use client";
 
+import { ChevronDown, Paperclip } from "lucide-react";
 import { useState } from "react";
 import { useActionError } from "@/components/shell/ActionErrorProvider";
 import { Checkbox } from "@/components/ui/Checkbox";
@@ -155,19 +156,11 @@ export function ThreadRow({
         )}
       </button>
       {thread.hasAttachment && (
-        <svg
+        <Paperclip
           role="img"
           aria-label={STRINGS.inbox.hasAttachmentLabel}
-          viewBox="0 0 24 24"
           className="h-3.5 w-3.5 shrink-0 text-muted-foreground"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.75"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M21.44 11.05 12.25 20.24a5 5 0 0 1-7.07-7.07l8.49-8.49a3 3 0 0 1 4.24 4.24l-8.49 8.49a1 1 0 0 1-1.41-1.41l7.78-7.78" />
-        </svg>
+        />
       )}
       {/* Privacy toggle stays visible (the lock reflects private/shared at a glance); owner-only.
           A16: a caret sits next to the lock so the affordance reads as a dropdown (the lock is the
@@ -179,19 +172,7 @@ export function ThreadRow({
             visibility={thread.visibility}
             onChanged={onVisibilityChanged}
           />
-          <svg
-            data-privacy-caret="true"
-            aria-hidden="true"
-            viewBox="0 0 24 24"
-            className="-ml-1 h-3 w-3"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="m6 9 6 6 6-6" />
-          </svg>
+          <ChevronDown data-privacy-caret="true" aria-hidden="true" className="-ml-1 h-3 w-3" />
         </div>
       )}
       <div className="shrink-0 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">

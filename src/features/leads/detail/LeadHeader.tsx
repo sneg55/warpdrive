@@ -1,4 +1,5 @@
 "use client";
+import { EllipsisVertical } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type React from "react";
 import { useState } from "react";
@@ -139,11 +140,7 @@ export function LeadHeader({ lead }: { lead: LeadDetail }): React.ReactNode {
             triggerLabel="More lead actions"
             triggerClassName="rounded-md border p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground"
             align="right"
-            trigger={
-              <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor">
-                <path d="M12 8a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm0 6a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm0 6a2 2 0 1 0 0-4 2 2 0 0 0 0 4z" />
-              </svg>
-            }
+            trigger={<EllipsisVertical aria-hidden="true" className="h-4 w-4" />}
           >
             {(close) => (
               <button

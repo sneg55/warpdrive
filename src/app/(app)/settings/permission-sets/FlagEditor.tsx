@@ -94,7 +94,9 @@ export function FlagEditor({ setId, name, flags, onSaved }: Props): React.ReactE
       <h3 className="mb-3 text-sm font-semibold">{name}</h3>
       <div className="grid gap-6 md:grid-cols-2">
         <fieldset>
-          <legend className="mb-2 text-xs font-medium uppercase text-gray-500">{T.global}</legend>
+          <legend className="mb-2 text-xs font-medium uppercase text-muted-foreground">
+            {T.global}
+          </legend>
           <div className="flex flex-col gap-1.5">
             {GLOBAL_FLAGS.map((key) => (
               <FlagCheckbox
@@ -108,13 +110,13 @@ export function FlagEditor({ setId, name, flags, onSaved }: Props): React.ReactE
           </div>
         </fieldset>
         <fieldset>
-          <legend className="mb-2 text-xs font-medium uppercase text-gray-500">
+          <legend className="mb-2 text-xs font-medium uppercase text-muted-foreground">
             {T.ownership}
           </legend>
           <div className="flex flex-col gap-2">
             {OWNERSHIP_FLAGS.map((cap) => (
               <div key={cap} className="flex flex-col gap-1 border-b pb-1.5 last:border-b-0">
-                <span className="text-xs text-gray-600">{cap}</span>
+                <span className="text-xs text-muted-foreground">{cap}</span>
                 <div className="flex flex-wrap gap-x-4 gap-y-2">
                   <FlagCheckbox
                     flagKey={`${cap}_own`}

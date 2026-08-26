@@ -32,6 +32,7 @@ vi.mock("@/features/email/composer/RichTextBody", () => ({
 }));
 vi.mock("@/lib/trpc-client", () => ({
   trpc: {
+    useUtils: () => ({ activities: { dayLoad: { invalidate: () => Promise.resolve() } } }),
     activities: {
       listTypes: {
         useQuery: () => ({
@@ -42,6 +43,7 @@ vi.mock("@/lib/trpc-client", () => ({
         }),
       },
       availability: { useQuery: () => ({ data: { busy: false } }) },
+      dayLoad: { useQuery: () => ({ data: undefined }) },
     },
     identity: { assignableUsers: { useQuery: () => ({ data: [{ id: "u1", name: "Me" }] }) } },
     contacts: { listPeopleForOrg: { useQuery: () => ({ data: [{ id: "p1", name: "Ann" }] }) } },

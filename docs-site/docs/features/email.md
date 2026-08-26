@@ -39,8 +39,9 @@ imported. Only messages that arrive afterwards are synced.
 :::
 
 Sync then polls Gmail's history, pages through the changes, and advances the cursor
-only once every page has been applied. It processes added messages and Trash
-transitions, rather than reconciling every Gmail label.
+only once every page has been applied. It processes added messages and Trash and
+Spam transitions, rather than reconciling every Gmail label, so mail Gmail marks as
+spam stays out of the Warpdrive Inbox.
 
 Sync runs in the background worker process. If mail stops arriving in Warpdrive but
 still arrives in Gmail, an absent worker is the first thing to check.
@@ -67,6 +68,10 @@ The direction determines what is matched:
 
 A thread can be linked to a person, a deal, or both.
 
+On the record itself, linked mail appears as cards in the timeline, one per message,
+interleaved with activities and notes. See
+[Deal workspace](./deal-workspace.md#email) for how they behave.
+
 ## Composing
 
 `/inbox/compose` opens a full-page composer, and the same composer is available in
@@ -87,6 +92,18 @@ example `[NAME]`, is sent exactly as typed and is not a merge field.
 
 Drafts persist, including their visibility setting, so resuming a private draft keeps
 it private.
+
+A draft also remembers the deal or person it was written for. A message started from
+a deal's Email tab keeps that link across autosave and resume, the deal shows your
+own unsent drafts next to its sent mail, and sending files the message on that
+record. Drafts stay private to their author: unsent text in your mailbox is not a
+colleague's business.
+
+### Logging as an activity
+
+The composer's **Add as activity** toggle logs the sent message as a completed
+activity on the linked record, so sent mail counts as done work on the
+[Performance page](./dashboard.md) rather than piling up as open to-dos.
 
 ### Scheduled send
 

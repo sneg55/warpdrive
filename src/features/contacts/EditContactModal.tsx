@@ -138,7 +138,7 @@ export function EditContactModal(props: EditContactModalProps): React.ReactNode 
     <div
       role="dialog"
       aria-label={kind === "person" ? "Edit person" : "Edit organization"}
-      className="space-y-3 rounded-md border border-gray-200 p-4"
+      className="space-y-3 rounded-md border bg-card p-4"
     >
       <TextField
         id="edit-name"

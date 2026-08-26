@@ -1,22 +1,12 @@
 import type React from "react";
 import { Avatar } from "@/components/ui/Avatar";
-import { TabsTrigger } from "@/components/ui/tabs";
+import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
+import {
+  DeleteSavedFilterItem,
+  type PendingFilterDelete,
+} from "@/features/saved-filters/SavedFilterDelete";
 import { cn } from "@/lib/utils";
 import type { SavedFilterView as SavedFilter } from "./savedFilterView";
-
-export type Tab = "favorites" | "owners" | "filters";
-
-// Rendered inside the menu's <Tabs>/<TabsList>; Radix drives the active state.
-export function TabButton({ id, label }: { id: Tab; label: string }): React.ReactNode {
-  return (
-    <TabsTrigger
-      value={id}
-      className="flex-1 border-b-2 border-transparent px-2 py-1.5 text-muted-foreground transition-colors hover:text-foreground data-[state=active]:border-primary data-[state=active]:font-medium data-[state=active]:text-foreground"
-    >
-      {label}
-    </TabsTrigger>
-  );
-}
 
 export function OwnerRow({
   name,
@@ -48,101 +38,52 @@ export function OwnerRow({
   );
 }
 
-export function SavedRow({
+// One saved filter in the Filter menu: the name picks it, the star toggles the favourite and the
+// bin asks to delete it.
+export function SavedFilterItem({
   filter,
   selected,
   onPick,
   onToggleFavorite,
+  onRequestDelete,
 }: {
   filter: SavedFilter;
   selected: boolean;
   onPick: () => void;
   onToggleFavorite?: (id: string) => void;
+  onRequestDelete?: (target: PendingFilterDelete) => void;
 }): React.ReactNode {
   return (
-    <li className="flex items-center">
-      <button
-        type="button"
-        onClick={onPick}
-        className={cn(
-          "flex flex-1 items-center rounded-md px-2 py-1.5 text-sm hover:bg-accent",
-          selected && "bg-accent font-medium",
-        )}
+    <div className="flex items-center">
+      <DropdownMenuItem
+        aria-current={selected ? "true" : undefined}
+        onSelect={onPick}
+        className={cn("min-w-0 flex-1", selected && "bg-accent font-medium")}
       >
         <span className="truncate">{filter.name}</span>
-      </button>
-      {/* Only the owner can toggle the favorite (it is a per-row, owner-scoped flag), so the
-          star is shown as an interactive control only for owned filters. */}
+      </DropdownMenuItem>
+      {/* Only the owner can toggle the favorite (it is a per-row, owner-scoped flag) or delete the
+          row, so both controls are shown only for owned filters. */}
       {filter.isOwn && (
-        <button
-          type="button"
+        <DropdownMenuItem
           aria-label={filter.favorite ? "Unfavorite filter" : "Favorite filter"}
           aria-pressed={filter.favorite}
-          onClick={() => onToggleFavorite?.(filter.id)}
-          className="rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
+          // Starring is not picking, so the menu stays open.
+          onSelect={(e) => {
+            e.preventDefault();
+            onToggleFavorite?.(filter.id);
+          }}
+          className="shrink-0 px-1.5 text-muted-foreground"
         >
           <span aria-hidden="true">{filter.favorite ? "★" : "☆"}</span>
-        </button>
+        </DropdownMenuItem>
       )}
-    </li>
-  );
-}
-
-export function FilterRow({
-  label,
-  selected = false,
-  onClick,
-}: {
-  label: string;
-  selected?: boolean;
-  onClick: () => void;
-}): React.ReactNode {
-  return (
-    <li>
-      <button
-        type="button"
-        onClick={onClick}
-        className={cn(
-          "flex w-full items-center rounded-md px-2 py-1.5 text-sm hover:bg-accent",
-          selected && "bg-accent font-medium",
-        )}
-      >
-        {label}
-      </button>
-    </li>
-  );
-}
-
-export function FunnelIcon(): React.ReactNode {
-  return (
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 24 24"
-      className="h-3.5 w-3.5 text-muted-foreground"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M3 5h18l-7 8v6l-4 2v-8z" />
-    </svg>
-  );
-}
-
-export function ChevronDown(): React.ReactNode {
-  return (
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 24 24"
-      className="h-3.5 w-3.5 text-muted-foreground"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M6 9l6 6 6-6" />
-    </svg>
+      {filter.isOwn && onRequestDelete !== undefined && (
+        <DeleteSavedFilterItem
+          target={{ id: filter.id, name: filter.name, isShared: filter.isShared }}
+          onRequest={onRequestDelete}
+        />
+      )}
+    </div>
   );
 }

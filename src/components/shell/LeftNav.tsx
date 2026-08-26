@@ -1,11 +1,14 @@
 "use client";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type React from "react";
 import { useEffect, useState } from "react";
 import { Tip } from "@/components/ui/tooltip";
 import { NAV_PREF_COOKIE } from "@/constants/cookies";
+import { NAV_ITEMS, type NavKey } from "@/constants/nav";
 import { STRINGS } from "@/constants/strings";
+import { isOverlayOpen, isTypingTarget } from "@/features/shortcuts/shortcutTarget";
 import { cn } from "@/lib/utils";
 import {
   ActivitiesIcon,
@@ -17,32 +20,23 @@ import {
   SettingsIcon,
 } from "./NavIcons";
 
-const ITEMS = [
-  { href: "/pipeline", label: STRINGS.nav.pipeline, section: "/pipeline", Icon: PipelineIcon },
-  { href: "/leads", label: STRINGS.nav.leads, section: "/leads", Icon: LeadsIcon },
-  {
-    href: "/contacts/people",
-    label: STRINGS.nav.contacts,
-    section: "/contacts",
-    Icon: ContactsIcon,
-  },
-  {
-    href: "/activities",
-    label: STRINGS.nav.activities,
-    section: "/activities",
-    Icon: ActivitiesIcon,
-  },
-  { href: "/inbox", label: STRINGS.nav.inbox, section: "/inbox", Icon: InboxIcon },
-  { href: "/dashboard", label: STRINGS.nav.dashboard, section: "/dashboard", Icon: DashboardIcon },
-  {
-    // The /settings index redirects by role (admins -> company settings, everyone else ->
-    // personal preferences), so a non-admin never lands on an admin-only page.
-    href: "/settings",
-    label: STRINGS.nav.settings,
-    section: "/settings",
-    Icon: SettingsIcon,
-  },
-] as const;
+// Icons live here (NAV_ITEMS is a plain constants module and must stay free of JSX), keyed by the
+// shared nav key so the rail and the number shortcuts can never drift out of order.
+const ICONS: Record<NavKey, typeof PipelineIcon> = {
+  pipeline: PipelineIcon,
+  leads: LeadsIcon,
+  contacts: ContactsIcon,
+  activities: ActivitiesIcon,
+  inbox: InboxIcon,
+  dashboard: DashboardIcon,
+  settings: SettingsIcon,
+};
+
+const ITEMS = NAV_ITEMS.map((item) => ({
+  ...item,
+  label: STRINGS.nav[item.key],
+  Icon: ICONS[item.key],
+}));
 
 // The collapsed/expanded rail preference lives in a COOKIE, not localStorage, so the server layout
 // can read it (NAV_PREF_COOKIE, from the shared non-client constants module) and render the correct
@@ -121,6 +115,22 @@ export function LeftNav({ initialExpanded = false }: LeftNavProps = {}): React.R
     });
   }
 
+  // Pipedrive binds the bracket keys to the nav rail. They set an explicit state rather than
+  // toggling, so a user who does not look at the screen still knows where the rail ended up.
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent): void => {
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      if (e.key !== "[" && e.key !== "]") return;
+      if (isTypingTarget(e.target) || isOverlayOpen(document)) return;
+      e.preventDefault();
+      const next = e.key === "[";
+      writePref(next);
+      setExpanded(next);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
+
   return (
     <nav
       aria-label="Primary"
@@ -180,18 +190,6 @@ export function LeftNav({ initialExpanded = false }: LeftNavProps = {}): React.R
 }
 
 function Chevron({ expanded }: { expanded: boolean }): React.ReactNode {
-  return (
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 24 24"
-      className="h-4 w-4"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d={expanded ? "M15 18l-6-6 6-6" : "M9 18l6-6-6-6"} />
-    </svg>
-  );
+  const Glyph = expanded ? ChevronLeft : ChevronRight;
+  return <Glyph aria-hidden="true" className="h-4 w-4" />;
 }

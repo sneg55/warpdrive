@@ -34,6 +34,7 @@ function makeActivity(overrides: Partial<CalendarActivity> = {}): CalendarActivi
     id: "a1",
     subject: "Follow-up call",
     dueAt: new Date("2026-07-03T00:00:00Z"),
+    allDay: false,
     durationMinutes: null,
     typeKey: "call",
     done: false,

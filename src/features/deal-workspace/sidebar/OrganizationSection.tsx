@@ -3,6 +3,7 @@
 import type React from "react";
 import type { Organization } from "@/db/schema";
 import { ContactLabelsControl } from "@/features/contacts/ContactLabelsControl";
+import { EnrichButton } from "@/features/enrichment/EnrichButton";
 import type { CustomFieldDef } from "@/types/customFields";
 import { CollapsibleSection } from "../CollapsibleSection";
 import { OrgBlock } from "./OrgBlock";
@@ -40,14 +41,17 @@ export function OrganizationSection({
   return (
     <CollapsibleSection
       title="Organization"
-      headerActions={({ hideEmpty, showEmptyFields }) => (
-        <SectionHeaderMenu
-          sectionLabel="Organization"
-          onEdit={onStartBulk}
-          menuItems={menuItems}
-          fillGapsPressed={!hideEmpty}
-          onToggleFillGaps={showEmptyFields}
-        />
+      headerActions={() => (
+        <EnrichButton entityType="organization" entityId={org.id} entityName={org.name}>
+          {(fill) => (
+            <SectionHeaderMenu
+              sectionLabel="Organization"
+              onEdit={onStartBulk}
+              menuItems={menuItems}
+              {...fill}
+            />
+          )}
+        </EnrichButton>
       )}
     >
       <OrgBlock

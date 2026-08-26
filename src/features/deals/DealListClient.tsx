@@ -26,6 +26,7 @@ import { bulkStageAction } from "./bulkStageAction";
 import { DealFilterBuilder } from "./DealFilterBuilder";
 import type { DealListProps, DealListRow } from "./DealList";
 import { DealList } from "./DealList";
+import { DealsEmpty } from "./DealsEmpty";
 import { DEAL_LIST_COLUMNS } from "./dealListColumns";
 import type { BoardCard } from "./dealRepo";
 import { NewDealButton } from "./NewDealButton";
@@ -170,6 +171,24 @@ export function DealListClient({
     filteredValue: shownTotalValue,
   });
 
+  // Any narrowing at all, server-side or client-side.
+  const anyFilter = clientFiltered || savedFilter !== null || inlineDefinition !== null;
+  // What this view held before any filter narrowed it: the SSR page reads deal.list with no
+  // definition, and the live query only carries an unfiltered total while nothing is applied.
+  const unfilteredTotal = isUnfiltered ? (data?.total ?? initial.total) : initial.total;
+  // A filter can only be to blame for an empty view if there was something for it to exclude.
+  // Without this an empty pipeline plus any active filter read as "the pipeline still holds deals".
+  const emptiedByFilter = anyFilter && unfilteredTotal > 0;
+  const addDeal = (
+    <NewDealButton pipelineId={pipelineId} pipelines={pipelines} baseCurrency={baseCurrency} />
+  );
+
+  function clearFilters(): void {
+    setSelectedOwnerId(null);
+    setSavedFilter(null);
+    setInlineDefinition(null);
+  }
+
   const handleBulkStage = useCallback(
     async (dealIds: string[], toStageId: string): Promise<boolean> => {
       const r = await bulkStageAction({ dealIds, toStageId }, readCsrfToken());
@@ -201,13 +220,7 @@ export function DealListClient({
         totalValue={footer.totalValue}
         dealCount={footer.total}
         activeView={variant}
-        createSlot={
-          <NewDealButton
-            pipelineId={pipelineId}
-            pipelines={pipelines}
-            baseCurrency={baseCurrency}
-          />
-        }
+        createSlot={addDeal}
         sortSlot={
           <BoardSortControl
             sortKey={sortKey}
@@ -221,14 +234,21 @@ export function DealListClient({
             <DealFilterBuilder
               stages={stages}
               activeCount={inlineDefinition?.conditions.length ?? 0}
+              appliedDefinition={inlineDefinition}
               onApply={setInlineDefinition}
             />
             <BoardFilterControl
               owners={owners}
+              stages={stages}
               selectedOwnerId={selectedOwnerId}
               onSelectOwner={setSelectedOwnerId}
               selectedFilterId={savedFilter?.id ?? null}
               onSelectFilter={setSavedFilter}
+              appliedDefinition={inlineDefinition}
+              onApplyDefinition={setInlineDefinition}
+              // The list keeps its own ad-hoc Filter builder, so this menu is the saved-filter
+              // picker and the badge stays on the builder.
+              triggerLabel="Saved filters"
             />
           </>
         }
@@ -250,6 +270,18 @@ export function DealListClient({
         stages={stages}
         onBulkStage={handleBulkStage}
         onUnarchive={variant === "archived" ? handleUnarchive : undefined}
+        filtered={emptiedByFilter}
+        empty={
+          data === undefined ? undefined : (
+            <DealsEmpty
+              variant={variant}
+              pipelineId={pipelineId}
+              filtered={emptiedByFilter}
+              onClearFilters={clearFilters}
+              addSlot={addDeal}
+            />
+          )
+        }
         visibleColumns={columns.visibleColumns}
         columnsMenu={
           <ColumnsMenu

@@ -148,3 +148,57 @@ describe("LeftNav", () => {
     }
   });
 });
+
+describe("LeftNav bracket shortcuts", () => {
+  test("] collapses an expanded rail", () => {
+    setViewport(true);
+    render(<LeftNav />);
+    fireEvent.keyDown(window, { key: "]" });
+    expect(screen.getByRole("button", { name: "Expand sidebar" })).not.toBeNull();
+  });
+
+  test("[ expands a collapsed rail", () => {
+    setViewport(false);
+    render(<LeftNav />);
+    fireEvent.keyDown(window, { key: "[" });
+    expect(screen.getByRole("button", { name: "Collapse sidebar" })).not.toBeNull();
+  });
+
+  test("[ on an already expanded rail leaves it expanded", () => {
+    setViewport(true);
+    render(<LeftNav />);
+    fireEvent.keyDown(window, { key: "[" });
+    expect(screen.getByRole("button", { name: "Collapse sidebar" })).not.toBeNull();
+  });
+
+  test("the bracket choice persists across mounts like the toggle button", () => {
+    setViewport(true);
+    const first = render(<LeftNav />);
+    fireEvent.keyDown(window, { key: "]" });
+    first.unmount();
+
+    render(<LeftNav />);
+    expect(screen.getByRole("button", { name: "Expand sidebar" })).not.toBeNull();
+  });
+
+  test("does not fire while typing in a text field", () => {
+    setViewport(true);
+    render(<LeftNav />);
+    const input = document.createElement("input");
+    document.body.append(input);
+    fireEvent.keyDown(input, { key: "]" });
+    input.remove();
+    expect(screen.getByRole("button", { name: "Collapse sidebar" })).not.toBeNull();
+  });
+
+  test("does not fire while a dialog is open", () => {
+    setViewport(true);
+    render(<LeftNav />);
+    const dialog = document.createElement("div");
+    dialog.setAttribute("role", "dialog");
+    document.body.append(dialog);
+    fireEvent.keyDown(window, { key: "]" });
+    dialog.remove();
+    expect(screen.getByRole("button", { name: "Collapse sidebar" })).not.toBeNull();
+  });
+});

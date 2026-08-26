@@ -20,6 +20,11 @@ Import is a stepper:
 3. **Preview** the parsed result.
 4. **Commit** the import.
 
+A person's name can be mapped as a single Name column or as separate **First name**
+and **Last name** columns, since contact exports routinely split the name. Mapping
+either part satisfies the required Name field, and mapped parts are joined into the
+display name.
+
 ## How uploads and processing work
 
 The file uploads directly from the browser to object storage using a presigned URL,

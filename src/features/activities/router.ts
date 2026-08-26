@@ -1,11 +1,14 @@
 import { TRPCError } from "@trpc/server";
 import { asc, isNull } from "drizzle-orm";
 import { z } from "zod";
+import { DEFAULT_DAILY_ACTIVITY_TARGET } from "@/constants/activityLoad";
 import { activityTypes } from "@/db/schema";
+import { getPreferencesForActor } from "@/features/identity/preferencesForActor";
 import { protectedProcedure, router } from "@/server/trpc/trpc";
 import { listActivityRows } from "./activityRows";
 import { getBusyWindows } from "./availability";
 import { calendarRange } from "./calendar";
+import { getDayLoad } from "./dayLoad";
 import { listActivitiesForEntity } from "./forEntity";
 import { getActivityForEdit } from "./getForEdit";
 import { activityListFilter, activitySortInput } from "./schemas";
@@ -93,5 +96,32 @@ export const activitiesRouter = router({
         AbortSignal.timeout(10_000),
       );
       return { busy: windows.length > 0 };
+    }),
+
+  dayLoad: protectedProcedure
+    .input(
+      z.object({
+        userId: z.string().uuid().nullable().default(null),
+        from: z.string().datetime(),
+        to: z.string().datetime(),
+        timeZone: z.string().min(1).default("UTC"),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      const userId = input.userId ?? ctx.actor.id;
+      const [counts, prefs] = await Promise.all([
+        getDayLoad(
+          ctx.db,
+          {
+            userId,
+            from: new Date(input.from),
+            to: new Date(input.to),
+            timeZone: input.timeZone,
+          },
+          AbortSignal.timeout(10_000),
+        ),
+        getPreferencesForActor(ctx.db, userId),
+      ]);
+      return { counts, target: prefs.ui.dailyActivityTarget ?? DEFAULT_DAILY_ACTIVITY_TARGET };
     }),
 });

@@ -49,6 +49,9 @@ export function InboxListClient({ selfActorId, folder }: InboxListClientProps): 
             quickFilter={quickFilter}
             onQuickFilterChange={setQuickFilter}
             threads={isSearching ? (searchResults.data ?? []) : undefined}
+            threadsPending={
+              isSearching && searchResults.data === undefined && searchResults.error === null
+            }
           />
         </div>
       </>

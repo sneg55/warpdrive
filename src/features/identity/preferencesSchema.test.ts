@@ -1,6 +1,10 @@
 import { expect, it } from "vitest";
+import { MAX_DAILY_ACTIVITY_TARGET } from "@/constants/activityLoad";
 import {
+  boardViewSchema,
+  dailyActivityTargetSchema,
   leadsViewSchema,
+  openDetailsAfterCreateSchema,
   PREFERENCES_DEFAULT,
   profilePrefsSchema,
   uiFlagInputSchema,
@@ -60,15 +64,83 @@ it("parses the per-entity openDetailsAfterCreate object", () => {
   expect(ui.openDetailsAfterCreate).toEqual({ leadDeal: true, person: false, org: true });
 });
 
-it("rejects a non-boolean Interface flag", () => {
-  expect(uiSchema.safeParse({ winSound: "yes" }).success).toBe(false);
+// The write boundary rejects a bad value; the read schema drops that one key and keeps the rest.
+it("rejects a non-boolean Interface flag on write and drops it on read", () => {
+  expect(uiFlagInputSchema.safeParse({ key: "winSound", value: "yes" }).success).toBe(false);
+  const ui = uiSchema.parse({ winSound: "yes", emailLinksNewTab: true });
+  expect(ui.winSound).toBeUndefined();
+  expect(ui.emailLinksNewTab).toBe(true);
 });
 
-it("rejects an openDetailsAfterCreate missing an entity key", () => {
-  expect(uiSchema.safeParse({ openDetailsAfterCreate: { leadDeal: true } }).success).toBe(false);
+it("rejects an openDetailsAfterCreate missing an entity key on write and drops it on read", () => {
+  expect(openDetailsAfterCreateSchema.safeParse({ leadDeal: true }).success).toBe(false);
+  const ui = uiSchema.parse({ openDetailsAfterCreate: { leadDeal: true }, winSound: true });
+  expect(ui.openDetailsAfterCreate).toBeUndefined();
+  expect(ui.winSound).toBe(true);
 });
 
 it("uiFlagInputSchema accepts a whitelisted key and rejects an unknown one", () => {
   expect(uiFlagInputSchema.safeParse({ key: "winSound", value: true }).success).toBe(true);
   expect(uiFlagInputSchema.safeParse({ key: "dropTable", value: true }).success).toBe(false);
+});
+
+it("parses a persisted board view (owner, sort, saved filter, ad-hoc conditions)", () => {
+  const ui = uiSchema.parse({
+    boardView: {
+      ownerId: "22222222-2222-4222-8222-222222222222",
+      sortKey: "title",
+      sortDir: "desc",
+      savedFilterId: "33333333-3333-4333-8333-333333333333",
+      conditions: { conditions: [{ field: "value", op: "gt", value: 100 }] },
+    },
+  });
+  expect(ui.boardView).toMatchObject({
+    ownerId: "22222222-2222-4222-8222-222222222222",
+    sortKey: "title",
+    sortDir: "desc",
+    savedFilterId: "33333333-3333-4333-8333-333333333333",
+    conditions: { conditions: [{ field: "value", op: "gt", value: 100 }] },
+  });
+});
+
+it("rejects a board view sort key the board cannot render", () => {
+  expect(boardViewSchema.safeParse({ sortKey: "salary", sortDir: "asc" }).success).toBe(false);
+});
+
+it("drops an unparseable stored board view without losing sibling ui prefs", () => {
+  const ui = uiSchema.parse({ boardView: { sortKey: "salary" }, winSound: true });
+  expect(ui.boardView).toBeUndefined();
+  expect(ui.winSound).toBe(true);
+});
+
+// Prod stored a dealSidebarSections entry with a retired id ("details"). That one stale value failed
+// the whole ui parse, and getPreferences falls back to {} on failure, so every sibling preference,
+// the board view among them, silently reset on load.
+it("keeps sibling ui prefs when a stored key holds a value the schema no longer accepts", () => {
+  const ui = uiSchema.parse({
+    dealSidebarSections: [
+      { id: "summary", visible: true },
+      { id: "details", visible: true },
+    ],
+    boardView: {
+      ownerId: "22222222-2222-4222-8222-222222222222",
+      sortKey: "updateTime",
+      sortDir: "desc",
+      savedFilterId: null,
+      conditions: null,
+    },
+    winSound: true,
+  });
+  expect(ui.boardView?.sortKey).toBe("updateTime");
+  expect(ui.winSound).toBe(true);
+});
+
+it("clamps the daily activity target to the allowed range and drops a stale value", () => {
+  expect(dailyActivityTargetSchema.safeParse(3).success).toBe(true);
+  expect(dailyActivityTargetSchema.safeParse(0).success).toBe(false);
+  expect(dailyActivityTargetSchema.safeParse(1.5).success).toBe(false);
+  expect(dailyActivityTargetSchema.safeParse(MAX_DAILY_ACTIVITY_TARGET + 1).success).toBe(false);
+  expect(uiSchema.parse({}).dailyActivityTarget).toBeUndefined();
+  expect(uiSchema.parse({ dailyActivityTarget: 8 }).dailyActivityTarget).toBe(8);
+  expect(uiSchema.parse({ dailyActivityTarget: 0 }).dailyActivityTarget).toBeUndefined();
 });

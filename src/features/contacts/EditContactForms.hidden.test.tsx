@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
+import "@testing-library/jest-dom/vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, expect, it } from "vitest";
-import { PersonBaseFields } from "./EditContactForms";
+import { AddressFields, PersonBaseFields } from "./EditContactForms";
 
 afterEach(cleanup);
 
@@ -56,4 +57,13 @@ it("shows all fields when nothing is hidden", () => {
   );
   expect(screen.getByText("Email")).toBeTruthy();
   expect(screen.getByLabelText("Organization")).toBeTruthy();
+});
+
+it("labels and inputs use theme tokens, so a Night form is not a white box", () => {
+  render(<AddressFields value={{}} onChange={noop} />);
+  const legend = screen.getByText("Address");
+  expect(legend).toHaveClass("text-muted-foreground");
+  const street = screen.getByLabelText("Street");
+  expect(street).toHaveClass("bg-background", "text-foreground");
+  expect(street.className).not.toMatch(/-gray-/);
 });

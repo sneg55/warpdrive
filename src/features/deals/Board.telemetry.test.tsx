@@ -73,6 +73,7 @@ it("emits board_drag_cancelled on drag cancel", () => {
         cards={[]}
         pipelines={[]}
         density="comfortable"
+        serverNow={new Date("2026-06-01T00:00:00Z")}
       />
     </QueryClientProvider>,
   );
@@ -91,6 +92,7 @@ it("emits board_drag_started with the card's current stage", () => {
         cards={[{ ...baseCard, id: "d1", stageId: "stage-1" }]}
         pipelines={[]}
         density="comfortable"
+        serverNow={new Date("2026-06-01T00:00:00Z")}
       />
     </QueryClientProvider>,
   );

@@ -152,6 +152,42 @@ describe("convertLead carries the lead's history onto the deal", () => {
     });
   });
 
+  // The copy is a separate row, so a column added to activities has to be listed in
+  // copyActivities or the deal's copy silently falls back to the database default.
+  it("keeps an all-day activity date-only when the lead converts", async () => {
+    await withTestDb(async (db) => {
+      const owner = await seedUser(db);
+      const pipe = await seedPipelineWithStages(db, ["Qualify"]);
+      await seedSettings(db, { defaultPipelineId: pipe.pipeline.id });
+      const typeId = await anyActivityType(db);
+      const lead = await insertLead(db, owner.id);
+      await db.insert(activities).values({
+        typeId,
+        subject: "Ping",
+        ownerId: owner.id,
+        assigneeId: owner.id,
+        leadId: lead.id,
+        dueAt: new Date("2026-08-31T00:00:00"),
+        allDay: true,
+      });
+
+      const r = await convertLead(
+        db,
+        session(owner.id),
+        { leadId: lead.id, expectedUpdatedAt: lead.updatedAt.toISOString() },
+        sig(),
+      );
+      expect(r).toMatchObject({ ok: true });
+      if (!r.ok) return;
+
+      const onDeal = await db
+        .select()
+        .from(activities)
+        .where(eq(activities.dealId, r.value.dealId));
+      expect(onDeal[0]?.allDay).toBe(true);
+    });
+  });
+
   it("links the lead's email threads to the deal without unlinking the lead", async () => {
     await withTestDb(async (db) => {
       const owner = await seedUser(db);

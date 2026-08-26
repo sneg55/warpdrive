@@ -1,4 +1,5 @@
 "use client";
+import { ChevronDown, Menu } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type React from "react";
 import {
@@ -25,22 +26,9 @@ export function PipelineSelect(props: PipelineSelectProps): React.ReactNode {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger className="inline-flex items-center gap-1.5 rounded-md border bg-card px-2.5 py-1.5 text-sm font-medium text-foreground hover:bg-accent">
-        <svg
-          aria-hidden="true"
-          viewBox="0 0 24 24"
-          className="h-4 w-4 text-muted-foreground"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M3 6h18M3 12h18M3 18h18" />
-        </svg>
+        <Menu aria-hidden="true" className="h-4 w-4 text-muted-foreground" />
         <span className="max-w-40 truncate">{current?.name ?? "Pipeline"}</span>
-        <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="currentColor">
-          <path d="M7 10l5 5 5-5z" />
-        </svg>
+        <ChevronDown aria-hidden="true" className="h-3.5 w-3.5" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" aria-label="Select pipeline" className="min-w-44">
         {pipelines.map((p) => (

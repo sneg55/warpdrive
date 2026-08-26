@@ -97,7 +97,7 @@ export function ImportWizard(props: ImportWizardProps): React.ReactNode {
   return (
     <div className="max-w-3xl space-y-6">
       <div className="space-y-1">
-        <h1 className="text-xl font-semibold">{IMP.title}</h1>
+        <h1 className="text-display font-[450] leading-tight tracking-tight">{IMP.title}</h1>
         <p className="text-sm text-muted-foreground">{IMP.subtitle}</p>
       </div>
 

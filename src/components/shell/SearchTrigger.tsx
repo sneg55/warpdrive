@@ -12,7 +12,7 @@ export function SearchTrigger() {
       static
       aria-label="Open search"
       onClick={() => window.dispatchEvent(new CustomEvent(OPEN_SEARCH_EVENT))}
-      className="w-full max-w-md justify-start bg-background text-left font-normal text-muted-foreground"
+      className="w-full max-w-md justify-start truncate bg-background text-left font-normal text-muted-foreground"
     >
       {STRINGS.search.placeholder}
     </Button>

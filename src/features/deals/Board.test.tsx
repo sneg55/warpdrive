@@ -33,6 +33,11 @@ vi.mock("@/lib/trpc-client", () => ({
     labels: { listByTarget: { useQuery: () => ({ data: [] }) } },
   },
 }));
+// Changing a toolbar control persists the view; the write itself is covered by
+// Board.viewPersistence.test.tsx, so here it only has to stay out of the way.
+vi.mock("@/features/identity/preferencesActions", () => ({
+  setBoardViewAction: () => Promise.resolve({ ok: true }),
+}));
 
 import { Board } from "./Board";
 
@@ -73,6 +78,7 @@ function renderBoard(initialCards: BoardCard[]) {
         cards={initialCards}
         pipelines={[{ id: PIPE, name: "Test pipeline", stages: [] }]}
         density="comfortable"
+        serverNow={new Date("2026-06-01T00:00:00Z")}
       />
     </QueryClientProvider>,
   );

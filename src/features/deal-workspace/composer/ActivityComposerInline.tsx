@@ -85,7 +85,7 @@ export function ActivityComposerInline(props: Props): React.ReactNode {
           setSubjectEdited(true);
         }}
         placeholder="Subject"
-        className="w-full rounded-md border px-3 py-2 text-[23px] font-medium outline-none focus:border-primary focus:ring-1 focus:ring-primary placeholder:text-muted-foreground"
+        className="w-full rounded-md border px-3 py-2 text-display font-medium outline-none focus:border-primary focus:ring-1 focus:ring-primary placeholder:text-muted-foreground"
       />
       <TypeIconRail types={types} value={effectiveTypeId} onChange={setTypeId} />
 
@@ -101,6 +101,7 @@ export function ActivityComposerInline(props: Props): React.ReactNode {
             onEndTime={setEndTime}
             endDate={endDate}
             onEndDate={setEndDate}
+            assigneeId={ownerId}
           />
           <FreeBusyIndicator busy={busy} />
         </div>

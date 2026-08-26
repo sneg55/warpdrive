@@ -1,5 +1,6 @@
 "use client";
 
+import { Forward, Reply, ReplyAll } from "lucide-react";
 import { useState } from "react";
 import { Avatar } from "@/components/ui/Avatar";
 import { STRINGS } from "@/constants/strings";
@@ -57,7 +58,7 @@ export function ReaderActions({
         onClick={() => setMode("reply")}
         className="flex items-center gap-1.5 rounded bg-action px-3 py-1 text-sm font-medium text-action-foreground transition-transform hover:opacity-90 active:scale-[0.96]"
       >
-        <ReplyGlyph />
+        <Reply aria-hidden="true" className="h-3.5 w-3.5" />
         {STRINGS.inbox.replyAction}
       </button>
       <button
@@ -65,7 +66,7 @@ export function ReaderActions({
         onClick={() => setMode("replyAll")}
         className="flex items-center gap-1.5 rounded border border-border px-3 py-1 text-sm text-muted-foreground transition-transform hover:bg-accent active:scale-[0.96]"
       >
-        <ReplyAllGlyph />
+        <ReplyAll aria-hidden="true" className="h-3.5 w-3.5" />
         {STRINGS.inbox.replyAllAction}
       </button>
       <button
@@ -73,56 +74,9 @@ export function ReaderActions({
         onClick={() => setMode("forward")}
         className="flex items-center gap-1.5 rounded border border-border px-3 py-1 text-sm text-muted-foreground transition-transform hover:bg-accent active:scale-[0.96]"
       >
-        <ForwardGlyph />
+        <Forward aria-hidden="true" className="h-3.5 w-3.5" />
         {STRINGS.inbox.forwardAction}
       </button>
     </div>
-  );
-}
-
-// Reply / reply-all / forward glyphs (PD shows an arrow beside each affordance). Decorative: the
-// button's text label supplies the accessible name, so the svg is aria-hidden.
-function GlyphFrame({ children }: { children: React.ReactNode }): React.ReactNode {
-  return (
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 24 24"
-      className="h-3.5 w-3.5"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.75"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      {children}
-    </svg>
-  );
-}
-
-function ReplyGlyph(): React.ReactNode {
-  return (
-    <GlyphFrame>
-      <path d="M9 17l-5-5 5-5" />
-      <path d="M4 12h11a5 5 0 0 1 5 5v1" />
-    </GlyphFrame>
-  );
-}
-
-function ReplyAllGlyph(): React.ReactNode {
-  return (
-    <GlyphFrame>
-      <path d="M7 17l-5-5 5-5" />
-      <path d="M12 17l-5-5 5-5" />
-      <path d="M7 12h9a4 4 0 0 1 4 4v1" />
-    </GlyphFrame>
-  );
-}
-
-function ForwardGlyph(): React.ReactNode {
-  return (
-    <GlyphFrame>
-      <path d="M15 17l5-5-5-5" />
-      <path d="M20 12H9a5 5 0 0 0-5 5v1" />
-    </GlyphFrame>
   );
 }

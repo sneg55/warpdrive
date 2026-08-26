@@ -1,9 +1,11 @@
 import { z } from "zod";
 import { SOURCE_CHANNEL_KEYS } from "@/constants/sourceChannels";
 import { labelNameArray } from "@/features/labels/labelsSchema";
+import { buildFilterSchema } from "@/schemas/filterCondition";
 // Field/op allow-list lives in a zod-free module so the client filter builder can import it
 // without pulling zod; re-exported here so existing importers of leads/schemas.ts still resolve.
 import {
+  LEAD_CONDITION_CONFIG,
   LEAD_FILTER_FIELDS,
   LEAD_FILTER_OPS,
   type LeadFilterField,
@@ -60,40 +62,9 @@ export const leadSortInput = z.object({
   dir: z.enum(["asc", "desc"]).default("desc"),
 });
 
-// Numeric lead fields need a value that parses as a number, or the SQL numeric cast throws at query
-// time and fails the whole list read. Validate that pairing at the boundary (mirrors the deal/
-// contact filter schemas) so a non-UI caller cannot post `{ field: "value", value: "abc" }`.
-const LEAD_NUMERIC_FIELDS: readonly LeadFilterField[] = ["value"];
-
-const leadConditionRow = z
-  .object({
-    field: z.enum(LEAD_FILTER_FIELDS),
-    op: z.enum(LEAD_FILTER_OPS),
-    value: z.union([z.string(), z.number()]),
-  })
-  .superRefine((c, ctx) => {
-    // Reject an operator the field's column type cannot run, so a bad pairing fails at the boundary
-    // instead of throwing later in compileLeadFilter (mirrors the deal/contact filter schemas).
-    if (!OPS_BY_LEAD_FIELD[c.field].includes(c.op)) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: `operator "${c.op}" is not valid for field "${c.field}"`,
-        path: ["op"],
-      });
-    }
-    if (LEAD_NUMERIC_FIELDS.includes(c.field) && !Number.isFinite(Number(c.value))) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: `field "${c.field}" needs a numeric value`,
-        path: ["value"],
-      });
-    }
-  });
-
-export const leadConditionInput = z.object({
-  combinator: z.enum(["and", "or"]),
-  conditions: z.array(leadConditionRow).max(20),
-});
+// The condition rows and the combinator are validated by the shared builder, so the Leads Inbox
+// builder, the leads list read and a saved leads view all accept exactly the same shape.
+export const leadConditionInput = buildFilterSchema(LEAD_CONDITION_CONFIG);
 export type LeadConditionInput = z.infer<typeof leadConditionInput>;
 
 export const leadFiltersInput = z

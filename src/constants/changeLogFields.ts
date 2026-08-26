@@ -3,6 +3,9 @@
 // values in old/new; the read layer resolves those ids to names before rendering.
 export const CHANGE_FIELD_STAGE_ID = "stageId";
 
+// Won/lost/open transitions, written by the won/lost flow rather than updateDeal.
+export const CHANGE_FIELD_STATUS = "status";
+
 // updateDeal writes these when the corresponding deal column changes (data-model
 // deal-history parity). `status` is intentionally absent: won/lost/open transitions
 // are logged by the won/lost flow, not here, to avoid double-logging.

@@ -31,6 +31,7 @@ vi.mock("@/features/email/composer/RichTextBody", () => ({
 }));
 vi.mock("@/lib/trpc-client", () => ({
   trpc: {
+    useUtils: () => ({ activities: { dayLoad: { invalidate: () => Promise.resolve() } } }),
     activities: {
       listTypes: {
         useQuery: () => ({
@@ -41,6 +42,7 @@ vi.mock("@/lib/trpc-client", () => ({
         }),
       },
       availability: { useQuery: () => ({ data: { busy: false } }) },
+      dayLoad: { useQuery: () => ({ data: undefined }) },
     },
     identity: { assignableUsers: { useQuery: () => ({ data: [{ id: "u1", name: "Me" }] }) } },
     contacts: { listPeopleForOrg: { useQuery: () => ({ data: [{ id: "p1", name: "Ann" }] }) } },
@@ -184,9 +186,9 @@ it("renders icon+label type buttons (Pipedrive parity) and selecting one sets th
   expect(screen.getByLabelText<HTMLInputElement>("Subject").value).toBe("Meeting");
 });
 
-it("renders the activity-name input at the large (23px) size", () => {
+it("renders the activity-name input at the display size", () => {
   render(<ActivityComposerInline dealId="d1" personId={null} orgId="o1" onCreated={vi.fn()} />);
-  expect(screen.getByLabelText("Subject")).toHaveClass("text-[23px]");
+  expect(screen.getByLabelText("Subject")).toHaveClass("text-display");
 });
 
 it("lays the start and end date controls out on a single compact row", () => {

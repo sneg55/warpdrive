@@ -75,6 +75,13 @@ export function renderNotificationEmail(
       subject = "Someone replied to your comment in Warpdrive";
       line = `${recipientName}, somebody replied to your comment.`;
       break;
+    case "deal_email_received": {
+      const emailSubject = typeof row.payload.subject === "string" ? row.payload.subject : null;
+      subject =
+        emailSubject !== null ? `New email on a deal: ${emailSubject}` : "New email on a deal";
+      line = `${recipientName}, a new email arrived on a deal you follow.`;
+      break;
+    }
     default: {
       // Unknown future type: render a generic fallback. Never throw (pg-boss resilience).
       subject = "Warpdrive notification";

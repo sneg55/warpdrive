@@ -23,14 +23,14 @@ export function PresenceAvatars({ users, selfId }: PresenceAvatarsProps): React.
           <span
             role="img"
             aria-label={u.name}
-            className="grid size-6 place-items-center rounded-full border border-gray-300 bg-gray-200 text-xs font-medium text-gray-700"
+            className="grid size-6 place-items-center rounded-full border bg-muted text-xs font-medium text-foreground"
           >
             {u.name.slice(0, 1).toUpperCase()}
           </span>
         </Tip>
       ))}
       {overflow > 0 ? (
-        <span className="grid size-6 place-items-center rounded-full border border-gray-300 bg-gray-100 text-xs font-medium text-gray-600 tabular-nums">
+        <span className="grid size-6 place-items-center rounded-full border bg-muted text-xs font-medium text-muted-foreground tabular-nums">
           +{overflow}
         </span>
       ) : null}

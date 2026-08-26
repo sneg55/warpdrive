@@ -1,4 +1,5 @@
 "use client";
+import { EllipsisVertical } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type React from "react";
 import { useState } from "react";
@@ -55,11 +56,7 @@ export function ContactActionsMenu({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger aria-label="Contact actions" disabled={pending} className={ICON_BUTTON}>
-        <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor">
-          <circle cx="12" cy="5" r="2" />
-          <circle cx="12" cy="12" r="2" />
-          <circle cx="12" cy="19" r="2" />
-        </svg>
+        <EllipsisVertical aria-hidden="true" className="h-4 w-4" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-44">
         <DropdownMenuItem onSelect={() => void copyLink()}>Copy link</DropdownMenuItem>

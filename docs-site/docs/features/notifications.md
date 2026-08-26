@@ -16,6 +16,9 @@ indicator.
 - Being **@mentioned** in a note or comment.
 - Activity on a record you **follow**.
 - Assignment of a record or activity to you.
+- **Inbound email arriving on a deal** you own or follow. The notification points at
+  the deal's timeline, not the mailbox thread, and is suppressed for anyone who can
+  no longer see the deal.
 
 ## Following
 
@@ -30,7 +33,12 @@ action updates your badge without a refresh.
 
 ## Preferences
 
-`/settings/notifications` controls which categories you receive.
+`/settings/notifications` controls which categories you receive, separately for
+in-app and email delivery. In-app is on by default for every type. Email is on by
+default only for the types worth interrupting for: mentions, comment replies,
+activity assignments and reminders, and deals won or lost. High-volume types
+(followed-deal updates, email opens and clicks, inbound deal email) default to
+in-app only. Notification emails are sent by the background worker.
 
 ## Visibility
 

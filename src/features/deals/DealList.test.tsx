@@ -55,11 +55,13 @@ const props = {
   visibleColumns: DEAL_LIST_COLUMNS.filter((c) => c.defaultVisible === true),
 };
 
-// Drive the bulk-stage flow: tick a row's checkbox, then pick a stage from the Move-to-stage select.
+// Drive the bulk-stage flow end to end: tick a row's checkbox, pick a stage from the Move-to-stage
+// select, then affirm the confirmation the move now goes through.
 function selectRowAndMove(stageName: string): void {
   fireEvent.click(screen.getByRole("checkbox", { name: "Select Acme renewal" }));
   fireEvent.click(screen.getByLabelText("Move to stage"));
   fireEvent.click(screen.getByRole("option", { name: stageName }));
+  fireEvent.click(screen.getByRole("button", { name: "Move deals" }));
 }
 
 describe("DealList", () => {
@@ -160,6 +162,38 @@ describe("DealList", () => {
     fireEvent.click(screen.getByRole("button", { name: /show more/i }));
     expect(titleLinks()).toHaveLength(60);
     expect(screen.queryByRole("button", { name: /show more/i })).not.toBeInTheDocument();
+  });
+
+  // A nine-column header, a select-all checkbox, a gear and a "0 deals - total value $0" footer
+  // over zero rows is machinery, not information.
+  it("drops the whole table when nothing is there and nothing is filtered", () => {
+    render(
+      <DealList
+        {...props}
+        rows={[]}
+        total={0}
+        totalValue="0"
+        columnsMenu={<button type="button">Columns</button>}
+        empty={<p>Nothing archived</p>}
+      />,
+    );
+
+    expect(screen.queryByRole("table")).toBeNull();
+    expect(screen.queryByRole("checkbox", { name: "Select all deals" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Columns" })).toBeNull();
+    expect(screen.queryByText(/total value/i)).toBeNull();
+    expect(screen.getByText("Nothing archived")).toBeInTheDocument();
+  });
+
+  // A filter narrowed the view to nothing: the columns are still the view the user built, so
+  // they stay, and the message says a filter is what emptied it.
+  it("keeps the table when a filter is what emptied it", () => {
+    render(
+      <DealList {...props} rows={[]} total={0} totalValue="0" filtered empty={<p>No matches</p>} />,
+    );
+
+    expect(screen.getByRole("table")).toBeInTheDocument();
+    expect(screen.getByText("No matches")).toBeInTheDocument();
   });
 
   it("keeps the selection when a bulk stage move fails (does not falsely signal success)", async () => {

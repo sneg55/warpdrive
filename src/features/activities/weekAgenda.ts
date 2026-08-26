@@ -5,6 +5,26 @@ export const DAY_END_HOUR = 24;
 export const HOUR_HEIGHT_PX = 48;
 const MIN_HEIGHT_PX = HOUR_HEIGHT_PX / 2;
 
+export const HOURS: number[] = Array.from(
+  { length: DAY_END_HOUR - DAY_START_HOUR },
+  (_, i) => DAY_START_HOUR + i,
+);
+
+// One template for the header row, the all-day row and the scrolling hour region, so the time
+// gutter and the seven day columns share one set of tracks instead of three that can drift.
+export const AGENDA_GRID_COLS = "3.25rem repeat(7, minmax(0, 1fr))";
+export const AGENDA_GUTTER_WIDTH = "3.25rem";
+
+// 24-hour labels, matching the "HH:mm" the composer's TimePicker reads and writes.
+export function hourLabel(hour: number): string {
+  return `${String(hour).padStart(2, "0")}:00`;
+}
+
+// An activity's own start, in the same local frame and the same "HH:mm" shape.
+export function startTimeLabel(dueAt: Date): string {
+  return `${String(dueAt.getHours()).padStart(2, "0")}:${String(dueAt.getMinutes()).padStart(2, "0")}`;
+}
+
 // Vertical placement of a timed activity block in the hourly week grid. Uses the viewer's
 // local hours (dueAt is a Date; the grid is a local-time agenda). Placement is purely a
 // function of the activity's own dueAt/duration: it does not resolve overlap against other

@@ -1,5 +1,5 @@
 import { toYmd } from "@/components/ui/dateFormat";
-import { composeDueAtIso } from "./activityTime";
+import { composeDueAt } from "./activityTime";
 import type { ActivityUpdateInput } from "./schemas";
 
 // The activity fields ActivityEditModal can prefill and patch. Callers (ActivitiesTable,
@@ -13,9 +13,11 @@ export interface EditableActivity {
   typeId: string;
   priority: string | null;
   dueAtIso: string | null;
+  allDay: boolean;
   durationMinutes: number | null;
   location: string | null;
   done: boolean;
+  assigneeId?: string | null;
 }
 
 export interface EditFormState {
@@ -30,10 +32,18 @@ export interface EditFormState {
 // Local Y-M-D + H:m (24h) derived from an ISO instant, using the same local wall-clock
 // convention as composeDueAtIso/todayLocalDateString, so re-composing unchanged inputs
 // round-trips to the exact same ISO string (no spurious dueAt diff on an untouched date).
-export function isoToLocalParts(iso: string | null): { date: string; time: string } {
+// An all-day activity gives back its day and no time. Seeding the field from the stored
+// midnight would show a time nobody chose AND, on the next save, diff as a real time and
+// quietly convert a date-only activity into a midnight one.
+export function isoToLocalParts(
+  iso: string | null,
+  allDay = false,
+): { date: string; time: string } {
   if (iso === null) return { date: "", time: "" };
   const d = new Date(iso);
-  const time = `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  const time = allDay
+    ? ""
+    : `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
   return { date: toYmd(d), time };
 }
 
@@ -61,9 +71,12 @@ export function buildActivityPatch(
     patch.priority = priority;
     changed = true;
   }
-  const dueAt = composeDueAtIso(state.date, state.time);
-  if (dueAt !== activity.dueAtIso) {
+  // The flag rides with the timestamp: removing a time from an existing activity has to
+  // actually remove it, not leave the old midnight behind looking chosen.
+  const { iso: dueAt, allDay } = composeDueAt(state.date, state.time);
+  if (dueAt !== activity.dueAtIso || allDay !== activity.allDay) {
     patch.dueAt = dueAt;
+    patch.allDay = allDay;
     changed = true;
   }
   const location = state.location.trim() === "" ? null : state.location.trim();

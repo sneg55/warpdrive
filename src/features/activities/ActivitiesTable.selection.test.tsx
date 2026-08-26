@@ -7,7 +7,10 @@ import "@testing-library/jest-dom/vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
-vi.mock("next/navigation", () => ({ usePathname: () => "/activities" }));
+vi.mock("next/navigation", () => ({
+  usePathname: () => "/activities",
+  useRouter: () => ({ push: vi.fn() }),
+}));
 
 beforeAll(() => {
   Element.prototype.scrollIntoView = vi.fn();
@@ -29,6 +32,7 @@ const refetch = vi.fn();
 const useQuery = vi.fn();
 vi.mock("@/lib/trpc-client", () => ({
   trpc: {
+    useUtils: () => ({ activities: { dayLoad: { invalidate: () => Promise.resolve() } } }),
     activities: {
       listRows: { useQuery: (input?: unknown) => useQuery(input) },
       listTypes: { useQuery: () => ({ data: [{ id: "t1", key: "call", name: "Call" }] }) },
@@ -71,6 +75,8 @@ function row(overrides: Record<string, unknown>) {
     dueAtIso: null,
     dealId: null,
     dealTitle: null,
+    leadId: null,
+    leadTitle: null,
     personId: "pe1",
     personName: "Jane Roe",
     personEmail: "jane@acme.com",
@@ -108,6 +114,15 @@ describe("ActivitiesTable selection and bulk actions", () => {
     fireEvent.click(screen.getByRole("checkbox", { name: "Select Call Jane" }));
     expect(screen.getByText("1 selected")).toBeInTheDocument();
     expect(screen.getByRole("checkbox", { name: "Complete Call Jane" })).not.toBeChecked();
+  });
+
+  it("renders Done as a round toggle so it is not mistaken for the square select box", () => {
+    useQuery.mockReturnValue({ data: [row({})], refetch });
+    render(<ActivitiesTable />);
+    const done = screen.getByRole("checkbox", { name: "Complete Call Jane" });
+    const select = screen.getByRole("checkbox", { name: "Select Call Jane" });
+    expect(done.className).toContain("rounded-full");
+    expect(select.className).not.toContain("rounded-full");
   });
 
   it("selecting all visible rows checks the header checkbox", () => {

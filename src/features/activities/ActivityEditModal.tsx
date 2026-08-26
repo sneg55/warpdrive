@@ -1,7 +1,6 @@
 "use client";
 import type React from "react";
 import { useState } from "react";
-import { DatePicker } from "@/components/ui/DatePicker";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, type SelectOption } from "@/components/ui/Select";
 import { TimePicker } from "@/components/ui/TimePicker";
@@ -9,9 +8,11 @@ import { ACTIVITY_PRIORITIES, ACTIVITY_PRIORITY_KEYS } from "@/constants/activit
 import { FIELD_INPUT as FIELD } from "@/constants/formStyles";
 import { trpc } from "@/lib/trpc-client";
 import { readCsrfToken } from "@/utils/csrfCookie";
+import { ActivityDatePicker } from "./ActivityDatePicker";
 import { ActivityTypeIcon } from "./ActivityTypeIcon";
 import { completeActivityAction, deleteActivityAction, editActivityAction } from "./actions";
 import { buildActivityPatch, type EditableActivity, isoToLocalParts } from "./activityEditPatch";
+import { useInvalidateDayLoad } from "./useInvalidateDayLoad";
 
 const NO_PRIORITY_LABEL = "No priority";
 
@@ -25,8 +26,9 @@ interface Props {
 
 export function ActivityEditModal({ activity, onClose, onSaved }: Props): React.ReactNode {
   const typesQ = trpc.activities.listTypes.useQuery();
+  const invalidateDayLoad = useInvalidateDayLoad();
   const types = typesQ.data ?? [];
-  const initialParts = isoToLocalParts(activity.dueAtIso);
+  const initialParts = isoToLocalParts(activity.dueAtIso, activity.allDay);
 
   const [typeId, setTypeId] = useState(activity.typeId);
   // Guard against ActivitiesTable.toEditable opening this modal with typeId: "" (row clicked
@@ -56,11 +58,13 @@ export function ActivityEditModal({ activity, onClose, onSaved }: Props): React.
     setPending(true);
     setError(null);
     const r = await editActivityAction(patch, readCsrfToken());
-    setPending(false);
     if (!r.ok) {
+      setPending(false);
       setError(`Could not save activity (${r.error.id})`);
       return;
     }
+    await invalidateDayLoad();
+    setPending(false);
     onSaved();
     onClose();
   }
@@ -69,11 +73,13 @@ export function ActivityEditModal({ activity, onClose, onSaved }: Props): React.
     setPending(true);
     setError(null);
     const r = await deleteActivityAction({ id: activity.id }, readCsrfToken());
-    setPending(false);
     if (!r.ok) {
+      setPending(false);
       setError(`Could not delete activity (${r.error.id})`);
       return;
     }
+    await invalidateDayLoad();
+    setPending(false);
     onSaved();
     onClose();
   }
@@ -83,11 +89,13 @@ export function ActivityEditModal({ activity, onClose, onSaved }: Props): React.
     setPending(true);
     setError(null);
     const r = await completeActivityAction({ id: activity.id, done: next }, readCsrfToken());
-    setPending(false);
     if (!r.ok) {
+      setPending(false);
       setError(`Could not update activity (${r.error.id})`);
       return;
     }
+    await invalidateDayLoad();
+    setPending(false);
     setDoneNow(next);
     onSaved();
   }
@@ -148,10 +156,11 @@ export function ActivityEditModal({ activity, onClose, onSaved }: Props): React.
           </div>
           <div className="block">
             <span className="mb-1 block font-medium">Due date</span>
-            <DatePicker
+            <ActivityDatePicker
               ariaLabel="Due date"
               value={date === "" ? null : date}
               onChange={(v) => setDate(v ?? "")}
+              assigneeId={activity.assigneeId ?? null}
             />
           </div>
           <div className="block">

@@ -1,0 +1,2 @@
+CREATE UNIQUE INDEX "enrichment_mapping_builtin_target_unique" ON "enrichment_field_mappings" USING btree ("entity","target_key") WHERE "enrichment_field_mappings"."target_kind" = 'builtin';--> statement-breakpoint
+CREATE UNIQUE INDEX "enrichment_mapping_custom_target_unique" ON "enrichment_field_mappings" USING btree ("entity","target_field_def_id") WHERE "enrichment_field_mappings"."target_kind" = 'custom';

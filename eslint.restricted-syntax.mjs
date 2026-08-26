@@ -46,6 +46,13 @@ export const DESIGN_SYSTEM_RESTRICTED_SYNTAX = [
       "Native `title` tooltips are banned. Use the Tip/Tooltip primitive (src/components/ui/tooltip.tsx). (<iframe title> is exempt.)",
   },
   {
+    // One icon system: lucide-react. A hand-rolled <svg> reintroduces the second one, along with
+    // its own stroke weight and sizing conventions.
+    selector: "JSXOpeningElement[name.name='svg']",
+    message:
+      "Inline <svg> icons are banned. Use a lucide-react component (it takes the same className), and add the glyph to lucide's set rather than hand-rolling one.",
+  },
+  {
     // Native browser modals. Only the window-qualified form is matched: several components define
     // a local `confirm()` handler, and bare-identifier matching would flag those.
     selector:

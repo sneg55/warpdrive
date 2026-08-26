@@ -18,6 +18,9 @@ export const COMPOSER_STRINGS = {
   emailActivityTypeKey: "email",
   // Inline validation shown when the Send-later time is not strictly in the future.
   scheduledPastMessage: "Choose a time in the future",
+  // Shown when the send never returned a Result. The deadline is on our view of the action, not
+  // on Gmail, so the mail may well have gone out: this must not assert that the send failed.
+  sendUnconfirmed: "We could not confirm the send. Check the thread before trying again.",
   // Compose header controls (email-tab): Settings cog link + Close.
   headerSettingsLabel: "Email settings",
   headerCloseLabel: "Close",

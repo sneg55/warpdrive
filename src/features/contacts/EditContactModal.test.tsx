@@ -91,6 +91,21 @@ describe("EditContactModal (person)", () => {
     expect(screen.getByLabelText("Role")).toHaveValue("CTO");
   });
 
+  it("sits on a card surface rather than a fixed light border", () => {
+    render(
+      <EditContactModal
+        kind="person"
+        person={person as never}
+        defs={[]}
+        onSaved={() => {}}
+        onClose={() => {}}
+      />,
+    );
+    const panel = screen.getByRole("dialog", { name: "Edit person" });
+    expect(panel).toHaveClass("bg-card");
+    expect(panel.className).not.toMatch(/-gray-/);
+  });
+
   it("submits edited base + custom fields to updatePersonAction with the csrf token, then onSaved", async () => {
     const onSaved = vi.fn();
     render(

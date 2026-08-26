@@ -7,6 +7,7 @@ function act(id: string, dueIso: string, done = false): CalendarActivity {
     id,
     subject: id,
     dueAt: new Date(dueIso),
+    allDay: false,
     durationMinutes: null,
     typeKey: "task",
     done,

@@ -6,15 +6,19 @@
 // 2. OPERATOR ALLOW-LIST: SQL operator strings come from a hardcoded map (sql.raw of a constant).
 // 3. VALUES PARAMETERIZED: every value goes through sql`${value}` (bound parameter). `contains`
 //    emits `ILIKE '%' || ${value} || '%'` with constant wildcards and a bound value.
-// 4. NARROWS ONLY: produces an AND-able boolean predicate; the caller ANDs the visibility clause.
+// 4. ARRAY FIELDS: a labels condition compiles to membership over unnest, with one bound name or
+//    one bound text[]; a list on any other field is rejected, since drizzle expands it to a tuple.
+// 5. NARROWS ONLY: produces an AND-able boolean predicate; the caller ANDs the visibility clause.
 import { type SQL, sql } from "drizzle-orm";
-import { z } from "zod";
 import { AppError, ERROR_IDS } from "@/constants/errorIds";
 import { organizations, persons } from "@/db/schema";
+import { labelMembershipSql } from "@/features/labels/labelMembershipSql";
+import { buildFilterSchema } from "@/schemas/filterCondition";
 // Client-safe field metadata (fields/ops/numeric) lives in a zod- and drizzle-free module so the
 // list filter builders can import it without pulling zod, drizzle, or the db schema into the
 // client bundle. Here on the server we pair it with the SQL column allow-list below.
 import {
+  CONTACT_ARRAY_FIELDS,
   CONTACT_FILTER_OPS,
   type ContactFilterConfig,
   type ContactFilterDefinition,
@@ -22,24 +26,22 @@ import {
   ORG_FILTER_CONFIG,
   PERSON_FILTER_CONFIG,
 } from "./contactFilterConfig";
+// Per-operator SQL branches (null-safe neq, prefix/negated ILIKE, emptiness) live next door.
+import {
+  emptinessCondition,
+  requireLabelValue,
+  requireValue,
+  scalarCondition,
+} from "./contactFilterSql";
 
 export {
+  CONTACT_ARRAY_FIELDS,
   CONTACT_FILTER_OPS,
   type ContactFilterConfig,
   type ContactFilterDefinition,
   type ContactFilterOp,
   ORG_FILTER_CONFIG,
   PERSON_FILTER_CONFIG,
-};
-
-// OPERATOR ALLOW-LIST: fixed SQL operator strings, emitted via sql.raw (constant, never user input).
-const OP_RAW: Record<Exclude<ContactFilterOp, "contains">, string> = {
-  eq: "=",
-  neq: "<>",
-  gt: ">",
-  lt: "<",
-  gte: ">=",
-  lte: "<=",
 };
 
 // FIELD ALLOW-LIST: per-entity SQL column map, keyed by the same field names as the client config.
@@ -48,42 +50,30 @@ export const PERSON_COLUMN_SQL: Record<string, SQL> = {
   name: sql`${persons.name}`,
   primaryEmail: sql`${persons.primaryEmail}`,
   ownerId: sql`${persons.ownerId}`,
+  labels: sql`${persons.labels}`,
 };
 export const ORG_COLUMN_SQL: Record<string, SQL> = {
   name: sql`${organizations.name}`,
   industry: sql`${organizations.industry}`,
   employeeCount: sql`${organizations.employeeCount}`,
   ownerId: sql`${organizations.ownerId}`,
+  labels: sql`${organizations.labels}`,
 };
 
-// Build a Zod schema for one entity's filter, validating field/op pairing + numeric values at the
-// boundary so an invalid pairing is rejected before it can throw a Postgres type error mid-query.
-function buildFilterSchema(config: ContactFilterConfig) {
-  const condition = z
-    .object({
-      field: z.enum(config.fields as [string, ...string[]]),
-      op: z.enum(CONTACT_FILTER_OPS),
-      value: z.union([z.string(), z.number()]),
-    })
-    .superRefine((c, ctx) => {
-      if (!(config.opsByField[c.field] ?? []).includes(c.op)) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: `operator "${c.op}" is not valid for field "${c.field}"`,
-          path: ["op"],
-        });
-      }
-      if (config.numericFields.includes(c.field) && !Number.isFinite(Number(c.value))) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: `field "${c.field}" needs a numeric value`,
-          path: ["value"],
-        });
-      }
-    });
-  return z.object({
-    combinator: z.enum(["and", "or"]),
-    conditions: z.array(condition).max(20),
+// text[] columns compare by membership: "is" means the row carries that label, "is not" means it
+// does not. Case-insensitive to match mergeLabelOptions and resolveLabelChips, which collapse case
+// variants. The unnest shape is constant and ${value} stays a bound parameter.
+function arrayCondition(
+  colSql: SQL,
+  op: ContactFilterOp,
+  value: string | number | string[] | undefined,
+): SQL {
+  if (op === "isEmpty" || op === "isNotEmpty") return emptinessCondition(colSql, op, "array");
+  const member = labelMembershipSql(colSql, requireLabelValue(op, requireValue(op, value)));
+  if (op === "eq") return member;
+  if (op === "neq") return sql`NOT ${member}`;
+  throw new AppError(ERROR_IDS.CONTACT_FILTER_INVALID, "Invalid op for a contacts array field", {
+    op,
   });
 }
 
@@ -107,12 +97,10 @@ export function compileContactFilter(
         op: c.op,
       });
     }
-    if (c.op === "contains") {
-      // Constant '%' wildcards; ${c.value} stays a bound parameter (injection payload = literal).
-      return sql`${colSql} ILIKE '%' || ${String(c.value)} || '%'`;
+    if (CONTACT_ARRAY_FIELDS.includes(c.field)) {
+      return arrayCondition(colSql, c.op, c.value);
     }
-    const opRaw = OP_RAW[c.op];
-    return sql`${colSql} ${sql.raw(opRaw)} ${c.value}`;
+    return scalarCondition(colSql, c.op, c.value, config.numericFields.includes(c.field));
   });
   const joiner = def.combinator === "or" ? sql` OR ` : sql` AND `;
   return sql`(${sql.join(parts, joiner)})`;

@@ -6,29 +6,33 @@
 // 2. OPERATOR ALLOW-LIST: SQL operator strings come from a hardcoded map (sql.raw of a constant).
 // 3. VALUES PARAMETERIZED: every value goes through sql`${value}` (bound parameter). `contains`
 //    emits `ILIKE '%' || ${value} || '%'` with constant wildcards and a bound value.
-// 4. NARROWS ONLY: produces an AND-able boolean predicate; the caller ANDs the visibility clause.
+// 4. ARRAY FIELDS: a labels condition compiles to membership over unnest, with one bound name or
+//    one bound text[]; a list on any other field is rejected, since drizzle expands it to a tuple.
+// 5. NARROWS ONLY: produces an AND-able boolean predicate; the caller ANDs the visibility clause.
 import { type SQL, sql } from "drizzle-orm";
-import { z } from "zod";
 import { AppError, ERROR_IDS } from "@/constants/errorIds";
+import {
+  ARRAY_OPS,
+  EXACT_OPS,
+  FILTER_OP_KEYS,
+  type FilterOpKey,
+  ORDERED_OPS,
+  TEXT_OPS,
+} from "@/constants/filterOps";
 import { leads } from "@/db/schema/leads";
+import { labelMembershipSql } from "@/features/labels/labelMembershipSql";
+import { buildFilterSchema } from "@/schemas/filterCondition";
+import { LEAD_ARRAY_FIELDS, LEAD_CONDITION_CONFIG } from "./leadFilterFields";
+// Per-operator SQL branches (null-safe neq, prefix/negated ILIKE, emptiness) live next door.
+import {
+  emptinessCondition,
+  requireLabelValue,
+  requireValue,
+  scalarCondition,
+} from "./leadFilterSql";
 
-export const LEAD_FILTER_OPS = ["eq", "neq", "gt", "lt", "gte", "lte", "contains"] as const;
-export type LeadFilterOp = (typeof LEAD_FILTER_OPS)[number];
-
-// "contains" first so it defaults for a new text-field condition (substring match is more useful
-// than exact-equals for titles).
-const TEXT_OPS = ["contains", "eq", "neq"] as const;
-const ORDERED_OPS = ["eq", "neq", "gt", "lt", "gte", "lte"] as const;
-const EXACT_OPS = ["eq", "neq"] as const;
-
-const OP_RAW: Record<Exclude<LeadFilterOp, "contains">, string> = {
-  eq: "=",
-  neq: "<>",
-  gt: ">",
-  lt: "<",
-  gte: ">=",
-  lte: "<=",
-};
+export const LEAD_FILTER_OPS = FILTER_OP_KEYS;
+export type LeadFilterOp = FilterOpKey;
 
 export interface LeadFilterConfig {
   fields: readonly string[];
@@ -38,57 +42,44 @@ export interface LeadFilterConfig {
 }
 
 export const LEAD_FILTER_CONFIG: LeadFilterConfig = {
-  fields: ["title", "value", "sourceOrigin", "ownerId"],
+  fields: ["title", "value", "sourceOrigin", "ownerId", "labels"],
   columnSql: {
     title: sql`${leads.title}`,
     value: sql`${leads.value}`,
     sourceOrigin: sql`${leads.sourceOrigin}`,
     ownerId: sql`${leads.ownerId}`,
+    labels: sql`${leads.labels}`,
   },
   opsByField: {
     title: TEXT_OPS,
     value: ORDERED_OPS,
     sourceOrigin: TEXT_OPS,
     ownerId: EXACT_OPS,
+    labels: ARRAY_OPS,
   },
   numericFields: ["value"],
 };
 
-// Zod schema validating field/op pairing + numeric values at the boundary so an invalid pairing is
-// rejected before it can throw a Postgres type error mid-query.
-function buildLeadFilterSchema(config: LeadFilterConfig) {
-  const condition = z
-    .object({
-      field: z.enum(config.fields as [string, ...string[]]),
-      op: z.enum(LEAD_FILTER_OPS),
-      value: z.union([z.string(), z.number()]),
-    })
-    .superRefine((c, ctx) => {
-      if (!(config.opsByField[c.field] ?? []).includes(c.op)) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: `operator "${c.op}" is not valid for field "${c.field}"`,
-          path: ["op"],
-        });
-      }
-      if (config.numericFields.includes(c.field) && !Number.isFinite(Number(c.value))) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: `field "${c.field}" needs a numeric value`,
-          path: ["value"],
-        });
-      }
-    });
-  return z.object({
-    combinator: z.enum(["and", "or"]),
-    conditions: z.array(condition).max(20),
-  });
+// text[] columns compare by membership: "is" means the row carries that label, "is not" means it
+// does not. Case-insensitive to match mergeLabelOptions and resolveLabelChips, which collapse case
+// variants. The unnest shape is constant and ${value} stays a bound parameter.
+function arrayCondition(
+  colSql: SQL,
+  op: LeadFilterOp,
+  value: string | number | string[] | undefined,
+): SQL {
+  if (op === "isEmpty" || op === "isNotEmpty") return emptinessCondition(colSql, op, "array");
+  const member = labelMembershipSql(colSql, requireLabelValue(op, requireValue(op, value)));
+  if (op === "eq") return member;
+  if (op === "neq") return sql`NOT ${member}`;
+  throw new AppError(ERROR_IDS.LEAD_FILTER_INVALID, "Invalid op for a leads array field", { op });
 }
 
-export const leadFilterSchema = buildLeadFilterSchema(LEAD_FILTER_CONFIG);
+export const leadFilterSchema = buildFilterSchema(LEAD_CONDITION_CONFIG);
+// value is absent for the valueless ops (isEmpty / isNotEmpty), which compile to a NULL test.
 export type LeadFilterDefinition = {
   combinator: "and" | "or";
-  conditions: Array<{ field: string; op: LeadFilterOp; value: string | number }>;
+  conditions: Array<{ field: string; op: LeadFilterOp; value?: string | number | string[] }>;
 };
 
 // Compile a filter AST to a boolean SQL fragment (null when there are no conditions). Independently
@@ -103,11 +94,10 @@ export function compileLeadFilter(def: LeadFilterDefinition, config: LeadFilterC
         op: c.op,
       });
     }
-    if (c.op === "contains") {
-      return sql`${colSql} ILIKE '%' || ${String(c.value)} || '%'`;
+    if (LEAD_ARRAY_FIELDS.includes(c.field)) {
+      return arrayCondition(colSql, c.op, c.value);
     }
-    const opRaw = OP_RAW[c.op];
-    return sql`${colSql} ${sql.raw(opRaw)} ${c.value}`;
+    return scalarCondition(colSql, c.op, c.value, config.numericFields.includes(c.field));
   });
   const joiner = def.combinator === "or" ? sql` OR ` : sql` AND `;
   return sql`(${sql.join(parts, joiner)})`;

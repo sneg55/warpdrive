@@ -1,5 +1,6 @@
 "use client";
 
+import { Lock, LockOpen } from "lucide-react";
 import type React from "react";
 import { useState } from "react";
 import { useActionError } from "@/components/shell/ActionErrorProvider";
@@ -12,24 +13,10 @@ import {
 import { readCsrfToken } from "@/utils/csrfCookie";
 import { setThreadVisibilityAction } from "./threadVisibilityActions";
 
-// A closed padlock (private) or an open one (shared). Inline SVG matches the row's other icons
-// (no icon-lib dependency for a single glyph) and swaps only the shackle path on state.
+// A closed padlock (private) or an open one (shared).
 function LockGlyph({ open }: { open: boolean }): React.ReactNode {
-  return (
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 24 24"
-      className="h-3.5 w-3.5"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.75"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <rect x="5" y="11" width="14" height="10" rx="2" />
-      {open ? <path d="M8 11V7a4 4 0 0 1 7.5-1.9" /> : <path d="M8 11V7a4 4 0 0 1 8 0v4" />}
-    </svg>
-  );
+  const Glyph = open ? LockOpen : Lock;
+  return <Glyph aria-hidden="true" className="h-3.5 w-3.5" />;
 }
 
 // Owner-only per-row privacy switch (P5). Private = closed lock; the DropdownMenu offers

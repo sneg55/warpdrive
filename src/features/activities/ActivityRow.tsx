@@ -1,12 +1,26 @@
 "use client";
 import Link from "next/link";
 import type React from "react";
+import { useEffect, useRef } from "react";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { ACTIVITY_PRIORITIES, isActivityPriorityKey } from "@/constants/activityPriorities";
 import { OwnerBadge } from "@/features/identity/OwnerBadge";
 import { cn } from "@/lib/utils";
 import { ActivityTypeIcon } from "./ActivityTypeIcon";
 import type { ActivityTableRow } from "./activityRows";
+import { fmtDue } from "./dueLabel";
+import { isActivityOverdue } from "./overdue";
+
+// Wrapped at module scope so the clock read stays out of the render body (React Compiler
+// flags Date.now() called during render). An all-day row is late only once its DAY has passed.
+function isOverdue(row: ActivityTableRow): boolean {
+  return isActivityOverdue(
+    row.dueAtIso === null ? null : new Date(row.dueAtIso),
+    row.allDay,
+    row.done,
+    Date.now(),
+  );
+}
 
 // Extracted from ActivitiesTable to keep both files under the project's file-size budget
 // (mirrors PeopleTable/PeopleList): a single Pipedrive-style row, with a selection checkbox
@@ -17,26 +31,12 @@ export interface ActivityRowProps {
   onToggleSelect: (id: string) => void;
   onToggleDone: (id: string, currentDone: boolean) => void;
   onRowClick: (row: ActivityTableRow) => void;
-}
-
-function fmtDue(iso: string | null): string {
-  if (iso === null) return "-";
-  return new Date(iso).toLocaleString(undefined, {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
+  // True for the single row under the j/k keyboard cursor.
+  cursor: boolean;
 }
 
 function fmtDuration(minutes: number | null): string {
   return minutes === null ? "" : `${minutes} min`;
-}
-
-// Open (not done) activities whose due date has passed are flagged red (Pipedrive parity).
-// Done rows are never overdue regardless of date, and undated rows have nothing to be overdue.
-function isOverdue(row: ActivityTableRow): boolean {
-  return !row.done && row.dueAtIso !== null && new Date(row.dueAtIso).getTime() < Date.now();
 }
 
 export function ActivityRow({
@@ -45,13 +45,24 @@ export function ActivityRow({
   onToggleSelect,
   onToggleDone,
   onRowClick,
+  cursor,
 }: ActivityRowProps): React.ReactNode {
+  const ref = useRef<HTMLTableRowElement>(null);
+
+  // Keep the cursor row in view when j/k walks past the edge of the scroll container.
+  useEffect(() => {
+    if (cursor) ref.current?.scrollIntoView({ block: "nearest" });
+  }, [cursor]);
+
   return (
     <tr
+      ref={ref}
       onClick={() => onRowClick(row)}
+      data-cursor={cursor ? "true" : undefined}
       className={cn(
         "cursor-pointer border-t hover:bg-accent/40",
         isOverdue(row) && "text-destructive",
+        cursor && "bg-accent/60 ring-1 ring-inset ring-ring",
       )}
     >
       <td className="px-3 py-2">
@@ -76,6 +87,9 @@ export function ActivityRow({
             label={`Complete ${row.subject}`}
             checked={row.done}
             onCheckedChange={() => onToggleDone(row.id, row.done)}
+            // Round and green, matching the deal workspace's activity card, so Done never
+            // reads as a second copy of the square selection box sitting next to it.
+            className="rounded-full data-[state=checked]:border-success data-[state=checked]:bg-success data-[state=checked]:text-success-foreground"
           />
         </span>
       </td>
@@ -141,7 +155,9 @@ export function ActivityRow({
           (row.orgName ?? "-")
         )}
       </td>
-      <td className="px-3 py-2 text-muted-foreground tabular-nums">{fmtDue(row.dueAtIso)}</td>
+      <td className="px-3 py-2 text-muted-foreground tabular-nums">
+        {fmtDue(row.dueAtIso, row.allDay)}
+      </td>
       <td className="px-3 py-2 text-muted-foreground tabular-nums">
         {fmtDuration(row.durationMinutes)}
       </td>

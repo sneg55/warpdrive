@@ -1,0 +1,1 @@
+ALTER TABLE "enrichment_runs" ADD COLUMN "lookup_fingerprint" text;

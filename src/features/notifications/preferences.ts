@@ -1,12 +1,15 @@
 import { and, eq } from "drizzle-orm";
+import { DEFAULT_EMAIL_BY_TYPE, DEFAULT_IN_APP } from "@/constants/notificationDefaults";
 import type { NotificationType } from "@/constants/notificationTypes";
 import { NOTIFICATION_TYPES } from "@/constants/notificationTypes";
 import type { Db } from "@/db/client";
 import { notificationPreferences } from "@/db/schema";
 
-// Single source of truth for the table defaults so both getPreferences and
-// resolveDelivery read them from one place (DRY, no magic-boolean duplication).
-const DEFAULT_PREFERENCE = { inApp: true, email: false } as const;
+// Single source of truth for the defaults applied when a user has no row for a type,
+// so both getPreferences and resolveDelivery read them from one place.
+function defaultPreference(type: NotificationType): { inApp: boolean; email: boolean } {
+  return { inApp: DEFAULT_IN_APP, email: DEFAULT_EMAIL_BY_TYPE[type] };
+}
 
 export async function getPreferences(
   db: Db,
@@ -24,7 +27,7 @@ export async function getPreferences(
 
   const out = {} as Record<NotificationType, { inApp: boolean; email: boolean }>;
   for (const t of NOTIFICATION_TYPES) {
-    out[t] = byType.get(t) ?? { ...DEFAULT_PREFERENCE };
+    out[t] = byType.get(t) ?? defaultPreference(t);
   }
   return out;
 }
@@ -60,5 +63,5 @@ export async function resolveDelivery(
     .where(and(eq(notificationPreferences.userId, userId), eq(notificationPreferences.type, type)));
   signal.throwIfAborted();
 
-  return row ? { inApp: row.inApp, email: row.email } : { ...DEFAULT_PREFERENCE };
+  return row ? { inApp: row.inApp, email: row.email } : defaultPreference(type);
 }

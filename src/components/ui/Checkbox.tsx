@@ -36,10 +36,10 @@ export function Checkbox({
       disabled={disabled}
       aria-label={label}
       className={cn(
-        "peer relative h-4 w-4 shrink-0 rounded-sm border border-input transition-[background-color,border-color,color,scale] duration-150 ease-out",
+        "peer relative h-4 w-4 shrink-0 rounded-sm border border-muted-foreground/50 bg-background transition-[background-color,border-color,color,scale] duration-150 ease-out",
         "after:absolute after:left-1/2 after:top-1/2 after:size-10 after:-translate-x-1/2 after:-translate-y-1/2 after:content-['']",
         "motion-safe:active:not-disabled:scale-[0.96] motion-reduce:transition-colors",
-        "data-[state=unchecked]:hover:border-primary/60 data-[state=unchecked]:hover:bg-accent",
+        "data-[state=unchecked]:hover:border-primary data-[state=unchecked]:hover:bg-accent",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
         "disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50",
         "data-[state=checked]:border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground",

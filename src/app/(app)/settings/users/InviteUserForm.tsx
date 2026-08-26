@@ -7,9 +7,13 @@ import { Input } from "@/components/ui/Input";
 import { Switch } from "@/components/ui/Switch";
 import { ERROR_IDS } from "@/constants/errorIds";
 import { inviteUserAction } from "@/features/identity/actions/invite";
+import { isValidEmail } from "@/lib/isValidEmail";
 import { readCsrfToken } from "@/utils/csrfCookie";
 
 const T = {
+  emailMissing: "Enter an email address.",
+  emailInvalid: "Enter a valid email address.",
+  nameMissing: "Enter a name.",
   emailLabel: "Email",
   emailPlaceholder: "person@example.com",
   nameLabel: "Name",
@@ -39,6 +43,20 @@ function inviteErrorMessage(id: string): string {
   return MESSAGES[id] ?? "Something went wrong. Please try again.";
 }
 
+interface FieldErrors {
+  email: string | null;
+  name: string | null;
+}
+
+const NO_FIELD_ERRORS: FieldErrors = { email: null, name: null };
+
+function validate(email: string, name: string): FieldErrors {
+  return {
+    email: email.length === 0 ? T.emailMissing : isValidEmail(email) ? null : T.emailInvalid,
+    name: name.length === 0 ? T.nameMissing : null,
+  };
+}
+
 interface Props {
   onInvited: () => void;
 }
@@ -49,6 +67,8 @@ export function InviteUserForm({ onInvited }: Props): React.ReactElement {
   const [isAdmin, setIsAdmin] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  // Per-field validation, shown inline instead of the browser's own validation bubble.
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>(NO_FIELD_ERRORS);
   // Set on a successful invite so we can surface the no-email notice + shareable link.
   const [invited, setInvited] = useState<{ name: string; email: string } | null>(null);
   const [copied, setCopied] = useState(false);
@@ -57,7 +77,9 @@ export function InviteUserForm({ onInvited }: Props): React.ReactElement {
     e.preventDefault();
     const email = emailRef.current?.value.trim() ?? "";
     const name = nameRef.current?.value.trim() ?? "";
-    if (email.length === 0 || name.length === 0) return;
+    const invalid = validate(email, name);
+    setFieldErrors(invalid);
+    if (invalid.email !== null || invalid.name !== null) return;
     setError(null);
     const csrf = readCsrfToken();
     startTransition(async () => {
@@ -83,7 +105,11 @@ export function InviteUserForm({ onInvited }: Props): React.ReactElement {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="overflow-hidden rounded-lg border bg-card shadow-sm">
+    <form
+      onSubmit={handleSubmit}
+      noValidate
+      className="overflow-hidden rounded-lg border bg-card shadow-sm"
+    >
       <div className="flex items-start gap-3 border-b px-5 py-4">
         <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-accent text-muted-foreground">
           <UserPlus className="size-4" aria-hidden="true" />
@@ -106,10 +132,17 @@ export function InviteUserForm({ onInvited }: Props): React.ReactElement {
               id="invite-email"
               type="email"
               required
+              aria-invalid={fieldErrors.email !== null}
+              aria-describedby={fieldErrors.email !== null ? "invite-email-error" : undefined}
               placeholder={T.emailPlaceholder}
               className="w-full px-3"
               disabled={isPending}
             />
+            {fieldErrors.email !== null && (
+              <p id="invite-email-error" role="alert" className="text-sm text-red-600">
+                {fieldErrors.email}
+              </p>
+            )}
           </div>
           <div className="flex flex-col gap-1.5">
             <label htmlFor="invite-name" className="text-sm font-medium">
@@ -121,10 +154,17 @@ export function InviteUserForm({ onInvited }: Props): React.ReactElement {
               type="text"
               required
               maxLength={120}
+              aria-invalid={fieldErrors.name !== null}
+              aria-describedby={fieldErrors.name !== null ? "invite-name-error" : undefined}
               placeholder={T.namePlaceholder}
               className="w-full px-3"
               disabled={isPending}
             />
+            {fieldErrors.name !== null && (
+              <p id="invite-name-error" role="alert" className="text-sm text-red-600">
+                {fieldErrors.name}
+              </p>
+            )}
           </div>
         </div>
         <span className="flex items-center gap-2 text-sm">

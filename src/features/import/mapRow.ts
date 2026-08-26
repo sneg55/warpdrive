@@ -4,7 +4,7 @@ import { buildCustomFieldsSchema } from "@/features/custom-fields/validate";
 import type { CustomFieldDef } from "@/types/customFields";
 import type { MappedRow } from "@/types/import";
 import { assertNever } from "@/types/result";
-import { ADDRESS_PREFIX, primaryEntityOf } from "./importFields";
+import { ADDRESS_PREFIX, PERSON_NAME_PARTS, primaryEntityOf } from "./importFields";
 import {
   activityImportRowSchema,
   dealImportRowSchema,
@@ -39,6 +39,19 @@ function setNested(group: Record<string, unknown>, field: string, value: unknown
   const address = (group.address ?? {}) as Record<string, unknown>;
   address[leaf] = value;
   group.address = address;
+}
+
+// A contact export routinely splits the name across two columns and carries no full-name one, so
+// the display name is joined from whichever parts the row mapped. A mapped name column wins: it is
+// what the file says the person is called, and rebuilding it would drop a middle name or a suffix.
+function deriveDisplayName(group: Record<string, unknown> | undefined): void {
+  if (group === undefined || typeof group.name === "string") return;
+  const parts: string[] = [];
+  for (const part of PERSON_NAME_PARTS) {
+    const value = group[part];
+    if (typeof value === "string" && value.trim() !== "") parts.push(value.trim());
+  }
+  if (parts.length > 0) group.name = parts.join(" ");
 }
 
 // Where the cells of one row accumulate as the mapping is walked.
@@ -94,6 +107,8 @@ export function applyMapping(
   }
 
   acc.primary.customFields = acc.customFields;
+  if (primaryEntity === "person") deriveDisplayName(acc.primary);
+  deriveDisplayName(acc.related.person);
 
   const out: MappedRow = { primary: acc.primary };
   if (acc.related.organization !== undefined) out.organization = acc.related.organization;

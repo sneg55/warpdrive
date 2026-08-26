@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildActivityPatch, type EditableActivity, isoToLocalParts } from "./activityEditPatch";
+import { composeDueAt } from "./activityTime";
 
 const activity: EditableActivity = {
   id: "a1",
@@ -7,6 +8,7 @@ const activity: EditableActivity = {
   typeId: "t1",
   priority: null,
   dueAtIso: "2026-07-15T14:30:00.000Z",
+  allDay: false,
   durationMinutes: 30,
   location: null,
   done: false,
@@ -61,5 +63,48 @@ describe("buildActivityPatch", () => {
     const patch = buildActivityPatch(activity, { ...state, date: "2026-07-20" });
     expect(patch?.id).toBe("a1");
     expect(patch?.dueAt).toMatch(/^2026-07-20T/);
+  });
+});
+
+// The same bug on the modal surface: an all-day activity opened from the table must seed a
+// blank time, and saving with it blank must not silently convert it to an explicit midnight.
+describe("all-day activities in the edit modal", () => {
+  const allDayActivity: EditableActivity = {
+    ...activity,
+    dueAtIso: composeDueAt("2026-08-31", "").iso,
+    allDay: true,
+  };
+
+  it("seeds a blank time from an all-day activity", () => {
+    expect(isoToLocalParts(allDayActivity.dueAtIso, true).time).toBe("");
+  });
+
+  it("still seeds the day", () => {
+    expect(isoToLocalParts(allDayActivity.dueAtIso, true).date).toBe("2026-08-31");
+  });
+
+  it("produces no patch when an all-day activity is saved untouched", () => {
+    const parts = isoToLocalParts(allDayActivity.dueAtIso, true);
+    const patch = buildActivityPatch(allDayActivity, {
+      typeId: allDayActivity.typeId,
+      subject: allDayActivity.subject,
+      priority: allDayActivity.priority ?? "",
+      date: parts.date,
+      time: parts.time,
+      location: allDayActivity.location ?? "",
+    });
+    expect(patch).toBeNull();
+  });
+
+  it("turns an all-day activity into a timed one when a time is typed", () => {
+    const patch = buildActivityPatch(allDayActivity, {
+      typeId: allDayActivity.typeId,
+      subject: allDayActivity.subject,
+      priority: allDayActivity.priority ?? "",
+      date: "2026-08-31",
+      time: "09:00",
+      location: allDayActivity.location ?? "",
+    });
+    expect(patch?.allDay).toBe(false);
   });
 });

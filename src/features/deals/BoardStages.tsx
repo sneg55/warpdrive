@@ -11,7 +11,7 @@ interface BoardStagesProps {
   sumsByStage: Map<string, { dealCount: number; total: number }>;
   sortedByStage: Map<string, BoardCard[]>;
   density: BoardProps["density"];
-  now: Date | null;
+  now: Date;
   pipelineId: string;
   pipelines: BoardProps["pipelines"];
   baseCurrency?: string;

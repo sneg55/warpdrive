@@ -12,12 +12,13 @@ export default async function SettingsLayout({
   children: ReactNode;
 }): Promise<ReactNode> {
   const { actor } = await createContext();
-  const isAdmin =
+  const isAdmin = actor !== null && actor.type === "admin";
+  const canManageCompany =
     actor !== null && (actor.type === "admin" || actor.flags.has(PERMISSION_FLAGS.MANAGE));
   const canImport = actor !== null && can(actor, "data.import");
   return (
     <div className="flex gap-6">
-      <SettingsNav isAdmin={isAdmin} canImport={canImport} />
+      <SettingsNav isAdmin={isAdmin} canManageCompany={canManageCompany} canImport={canImport} />
       <div className="min-w-0 flex-1">{children}</div>
     </div>
   );

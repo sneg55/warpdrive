@@ -80,6 +80,7 @@ describe("dealPerformance", () => {
         stageId: stage.id,
         ownerId: user.id,
         visibilityLevel: "all",
+        wonTime: new Date("2025-06-01T00:00:00Z"),
       },
       {
         title: "W2",
@@ -89,6 +90,7 @@ describe("dealPerformance", () => {
         stageId: stage.id,
         ownerId: user.id,
         visibilityLevel: "all",
+        wonTime: new Date("2025-06-02T00:00:00Z"),
       },
     ]);
 
@@ -119,6 +121,7 @@ describe("dealPerformance", () => {
       stageId: stage.id,
       ownerId: bob.id,
       visibilityLevel: "owner",
+      wonTime: new Date("2025-06-01T00:00:00Z"),
     });
 
     const aliceResult = await dealPerformance(
@@ -168,5 +171,144 @@ describe("dealPerformance", () => {
 
     // Alice's me-scope: only her own deal (200), not Bob's (300).
     expect(Number(aliceResult.open.value)).toBe(200);
+  });
+});
+
+// A: each counter windows on the column that records the event it counts.
+describe("dealPerformance date basis", () => {
+  const Y2025 = { from: "2025-01-01", to: "2025-12-31" };
+
+  it("counts a deal won inside the range even though it was created years earlier", async () => {
+    const user = await seedUser({ isAdmin: true });
+    const { pipeline, stage } = await seedPipeline();
+    await h.db.insert(schema.deals).values({
+      title: "long sale",
+      status: "won",
+      value: "1000.00",
+      pipelineId: pipeline.id,
+      stageId: stage.id,
+      ownerId: user.id,
+      visibilityLevel: "all",
+      createdAt: new Date("2019-03-01T00:00:00Z"),
+      wonTime: new Date("2025-06-15T00:00:00Z"),
+    });
+
+    const r = await dealPerformance(
+      h.db,
+      toActor(user),
+      { ...BASE_FILTERS, ...Y2025, pipelineId: pipeline.id },
+      new AbortController().signal,
+    );
+    expect(r.won.count).toBe(1);
+    expect(Number(r.won.value)).toBe(1000);
+  });
+
+  it("excludes a deal created inside the range but won after it", async () => {
+    const user = await seedUser({ isAdmin: true });
+    const { pipeline, stage } = await seedPipeline();
+    await h.db.insert(schema.deals).values({
+      title: "won later",
+      status: "won",
+      value: "500.00",
+      pipelineId: pipeline.id,
+      stageId: stage.id,
+      ownerId: user.id,
+      visibilityLevel: "all",
+      createdAt: new Date("2025-11-01T00:00:00Z"),
+      wonTime: new Date("2026-02-01T00:00:00Z"),
+    });
+
+    const r = await dealPerformance(
+      h.db,
+      toActor(user),
+      { ...BASE_FILTERS, ...Y2025, pipelineId: pipeline.id },
+      new AbortController().signal,
+    );
+    expect(r.won.count).toBe(0);
+  });
+
+  it("counts a deal lost inside the range by its lost time", async () => {
+    const user = await seedUser({ isAdmin: true });
+    const { pipeline, stage } = await seedPipeline();
+    await h.db.insert(schema.deals).values({
+      title: "lost one",
+      status: "lost",
+      value: "300.00",
+      pipelineId: pipeline.id,
+      stageId: stage.id,
+      ownerId: user.id,
+      visibilityLevel: "all",
+      createdAt: new Date("2019-01-01T00:00:00Z"),
+      lostTime: new Date("2025-04-01T00:00:00Z"),
+    });
+
+    const r = await dealPerformance(
+      h.db,
+      toActor(user),
+      { ...BASE_FILTERS, ...Y2025, pipelineId: pipeline.id },
+      new AbortController().signal,
+    );
+    expect(r.lost.count).toBe(1);
+    expect(Number(r.lost.value)).toBe(300);
+  });
+
+  it("reports deals added by creation date, separately from won and lost", async () => {
+    const user = await seedUser({ isAdmin: true });
+    const { pipeline, stage } = await seedPipeline();
+    await h.db.insert(schema.deals).values([
+      {
+        title: "added in range",
+        status: "open",
+        value: "10.00",
+        pipelineId: pipeline.id,
+        stageId: stage.id,
+        ownerId: user.id,
+        visibilityLevel: "all",
+        createdAt: new Date("2025-05-01T00:00:00Z"),
+      },
+      {
+        title: "added before range",
+        status: "open",
+        value: "20.00",
+        pipelineId: pipeline.id,
+        stageId: stage.id,
+        ownerId: user.id,
+        visibilityLevel: "all",
+        createdAt: new Date("2019-05-01T00:00:00Z"),
+      },
+    ]);
+
+    const r = await dealPerformance(
+      h.db,
+      toActor(user),
+      { ...BASE_FILTERS, ...Y2025, pipelineId: pipeline.id },
+      new AbortController().signal,
+    );
+    expect(r.added.count).toBe(1);
+    expect(Number(r.added.value)).toBe(10);
+  });
+
+  it("reports open deals as an unwindowed snapshot, not filtered by the range", async () => {
+    const user = await seedUser({ isAdmin: true });
+    const { pipeline, stage } = await seedPipeline();
+    await h.db.insert(schema.deals).values({
+      title: "old but still open",
+      status: "open",
+      value: "77.00",
+      pipelineId: pipeline.id,
+      stageId: stage.id,
+      ownerId: user.id,
+      visibilityLevel: "all",
+      createdAt: new Date("2019-05-01T00:00:00Z"),
+    });
+
+    const r = await dealPerformance(
+      h.db,
+      toActor(user),
+      { ...BASE_FILTERS, ...Y2025, pipelineId: pipeline.id },
+      new AbortController().signal,
+    );
+    expect(r.open.count).toBe(1);
+    expect(Number(r.open.value)).toBe(77);
   });
 });

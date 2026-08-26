@@ -3,6 +3,7 @@
 import type React from "react";
 import type { Person } from "@/db/schema";
 import { ContactLabelsControl } from "@/features/contacts/ContactLabelsControl";
+import { EnrichButton } from "@/features/enrichment/EnrichButton";
 import type { CustomFieldDef } from "@/types/customFields";
 import { CollapsibleSection } from "../CollapsibleSection";
 import { PersonBlock } from "./PersonBlock";
@@ -40,7 +41,16 @@ export function PersonSection({
     <CollapsibleSection
       title="Person"
       headerActions={() => (
-        <SectionHeaderMenu sectionLabel="Person" onEdit={onStartBulk} menuItems={menuItems} />
+        <EnrichButton entityType="person" entityId={person.id} entityName={person.name}>
+          {(fill) => (
+            <SectionHeaderMenu
+              sectionLabel="Person"
+              onEdit={onStartBulk}
+              menuItems={menuItems}
+              {...fill}
+            />
+          )}
+        </EnrichButton>
       )}
     >
       <PersonBlock

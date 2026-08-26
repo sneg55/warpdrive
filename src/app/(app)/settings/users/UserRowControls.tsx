@@ -1,10 +1,24 @@
 "use client";
 
+import { MoreHorizontal } from "lucide-react";
 import { useState, useTransition } from "react";
-import { Button } from "@/components/ui/Button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { identityErrorMessage } from "@/constants/settingsIdentity";
 import { setUserActiveAction, setUserAdminAction } from "@/features/identity/actions/users";
 import { readCsrfToken } from "@/utils/csrfCookie";
+
+const T = {
+  menu: "User actions",
+  makeAdmin: "Make admin",
+  revokeAdmin: "Revoke admin",
+  activate: "Activate",
+  deactivate: "Deactivate",
+} as const;
 
 interface Props {
   userId: string;
@@ -49,29 +63,24 @@ export function UserRowControls({
   }
 
   return (
-    <span className="flex flex-col gap-1">
-      <span className="flex gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={toggleAdmin}
+    <span className="flex flex-col items-end gap-1">
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          aria-label={T.menu}
           disabled={isPending}
-          aria-label={isAdmin ? "Revoke admin" : "Make admin"}
-          className="relative h-8 px-2 text-xs after:absolute after:left-0 after:top-1/2 after:h-10 after:w-full after:-translate-y-1/2 after:content-['']"
+          className="flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60 motion-reduce:transition-none"
         >
-          {isAdmin ? "Revoke admin" : "Make admin"}
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={toggleActive}
-          disabled={isPending}
-          aria-label={isActive ? "Deactivate" : "Activate"}
-          className="relative h-8 px-2 text-xs after:absolute after:left-0 after:top-1/2 after:h-10 after:w-full after:-translate-y-1/2 after:content-['']"
-        >
-          {isActive ? "Deactivate" : "Activate"}
-        </Button>
-      </span>
+          <MoreHorizontal className="h-4 w-4" aria-hidden="true" />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem disabled={isPending} onSelect={toggleAdmin}>
+            {isAdmin ? T.revokeAdmin : T.makeAdmin}
+          </DropdownMenuItem>
+          <DropdownMenuItem disabled={isPending} onSelect={toggleActive}>
+            {isActive ? T.deactivate : T.activate}
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
       {error !== null && (
         <span role="alert" className="text-xs text-red-600">
           {error}

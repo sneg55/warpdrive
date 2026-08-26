@@ -1,7 +1,7 @@
 "use client";
 import { Copy, Settings } from "lucide-react";
 import type React from "react";
-import { Checkbox } from "@/components/ui/Checkbox";
+import { ToggleField } from "@/components/ui/ToggleField";
 
 interface Props {
   done: boolean;
@@ -34,10 +34,12 @@ export function ComposerFooter({
         <Settings className="h-4 w-4" />
       </a>
       <div className="flex items-center gap-3">
-        <div className="flex items-center gap-1.5">
-          <Checkbox label="Mark as done" checked={done} onCheckedChange={onDone} />
-          <span>Mark as done</span>
-        </div>
+        <ToggleField
+          label="Mark as done"
+          checked={done}
+          onCheckedChange={onDone}
+          className="gap-1.5 text-sm text-foreground"
+        />
         <button
           type="button"
           onClick={onCancel}

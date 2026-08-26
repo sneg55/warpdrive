@@ -44,9 +44,14 @@ vi.mock("@/lib/trpc-client", () => ({
       // Names leads actually carry, unioned into the label filter alongside the catalog.
       appliedNames: { useQuery: () => ({ data: [] }) },
     },
-    useUtils: () => ({ lead: { list: { invalidate: vi.fn(() => Promise.resolve()) } } }),
+    useUtils: () => ({
+      lead: { list: { invalidate: vi.fn(() => Promise.resolve()) } },
+      savedFilters: { listByTarget: { invalidate: vi.fn(() => Promise.resolve()) } },
+    }),
+    savedFilters: { listByTarget: { useQuery: () => ({ data: savedViews() }) } },
   },
 }));
+const savedViews = vi.fn<() => unknown[]>(() => []);
 vi.mock("./AddLeadModal", () => ({ AddLeadModal: () => <div data-testid="add-lead-modal" /> }));
 vi.mock("@/features/identity/preferencesActions", () => ({ setLeadsViewAction: vi.fn() }));
 vi.mock("./leadServerActions", () => ({
@@ -222,6 +227,42 @@ describe("LeadsInbox", () => {
     });
     await waitFor(() => expect(reportError).toHaveBeenCalledWith("E_PERM_001"));
     expect(refetch).not.toHaveBeenCalled();
+  });
+
+  it("applies a saved lead view as the list condition", async () => {
+    savedViews.mockReturnValue([
+      {
+        id: "v1",
+        name: "Web leads",
+        favorite: false,
+        isShared: false,
+        isOwn: true,
+        definition: {
+          combinator: "and",
+          conditions: [{ field: "sourceOrigin", op: "eq", value: "web" }],
+        },
+      },
+    ]);
+    listQuery.mockReturnValue({ data: { rows: [LEAD], total: 1 }, refetch });
+    const user = userEvent.setup();
+    render(<LeadsInbox />);
+
+    await user.click(screen.getByRole("button", { name: "Saved views" }));
+    await user.click(screen.getByRole("menuitem", { name: "Web leads" }));
+
+    await waitFor(() =>
+      expect(listQuery).toHaveBeenCalledWith(
+        expect.objectContaining({
+          filters: expect.objectContaining({
+            condition: {
+              combinator: "and",
+              conditions: [{ field: "sourceOrigin", op: "eq", value: "web" }],
+            },
+          }),
+        }),
+        expect.anything(),
+      ),
+    );
   });
 
   it("guards the bulk Convert to deal button against a rapid double-click", async () => {

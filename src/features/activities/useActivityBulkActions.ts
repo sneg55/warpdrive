@@ -3,6 +3,7 @@ import { useState } from "react";
 import type { RowSelection } from "@/components/data-table/useRowSelection";
 import { readCsrfToken } from "@/utils/csrfCookie";
 import { completeActivityAction, deleteActivityAction } from "./actions";
+import { useInvalidateDayLoad } from "./useInvalidateDayLoad";
 
 const BULK_MARK_DONE_ERROR = "Couldn't mark some activities done. Please try again.";
 const BULK_DELETE_ERROR = "Couldn't delete some activities. Please try again.";
@@ -31,6 +32,7 @@ export function useActivityBulkActions(
   refetch: () => Promise<unknown>,
 ): ActivityBulkActions {
   const [error, setError] = useState<string | null>(null);
+  const invalidateDayLoad = useInvalidateDayLoad();
 
   async function run(
     action: (id: string) => Promise<{ ok: boolean }>,
@@ -39,6 +41,8 @@ export function useActivityBulkActions(
     const ids = [...selection.selected];
     if (ids.length === 0) return;
     const failedIds = await runBulkAction(ids, action);
+    const someSucceeded = failedIds.length < ids.length;
+    if (someSucceeded) await invalidateDayLoad();
     // Don't silently drop failures: clear only the ids that actually succeeded, keep the
     // failed ones selected (so the user sees exactly what still needs attention).
     selection.clear();

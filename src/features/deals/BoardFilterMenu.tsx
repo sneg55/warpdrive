@@ -1,174 +1,154 @@
 "use client";
+import { ChevronDown, Filter } from "lucide-react";
 import type React from "react";
-import { useMemo, useState } from "react";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/Popover";
-import { Tabs, TabsList } from "@/components/ui/tabs";
+import { useState } from "react";
+import { Button } from "@/components/ui/Button";
 import {
-  ChevronDown,
-  FilterRow,
-  FunnelIcon,
-  OwnerRow,
-  SavedRow,
-  type Tab,
-  TabButton,
-} from "./BoardFilterMenuParts";
-import type { BoardOwner } from "./boardFilter";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  DeleteSavedFilterConfirm,
+  type PendingFilterDelete,
+} from "@/features/saved-filters/SavedFilterDelete";
+import type { FilterDefinition } from "@/features/saved-filters/schemas";
+import { cn } from "@/lib/utils";
+import { SavedFilterItem } from "./BoardFilterMenuParts";
+import { filterSaveCopy, filterSaveMode } from "./createFilterModalCopy";
+import { truncateFilterName } from "./filterTriggerCopy";
 import type { SavedFilterView as SavedFilter } from "./savedFilterView";
 
 interface BoardFilterMenuProps {
-  owners: BoardOwner[];
-  selectedOwnerId: string | null;
-  // The signed-in user's id, so their row in the Owners list is marked "(my)".
-  currentUserId?: string;
-  onSelectOwner: (ownerId: string | null) => void;
-  // Opens the "Create new filter" modal (Filters tab). Optional so the menu renders standalone.
-  onCreateFilter?: () => void;
   savedFilters?: SavedFilter[];
   selectedFilterId?: string | null;
+  // The ad-hoc definition applied to the board. It leaves selectedFilterId null too, so the
+  // "All open deals" row is current only when both are empty.
+  appliedDefinition?: FilterDefinition | null;
+  // Number of applied ad-hoc conditions, for the trigger badge (0 hides it).
+  activeCount?: number;
+  // Trigger copy. The deals list keeps its own ad-hoc builder, so there its menu is only the
+  // saved-filter picker and says so.
+  triggerLabel?: string;
+  // True when the board is also narrowed to one owner. That picker is a separate control, so
+  // without this the trigger reads unfiltered and clearing would leave the board filtered.
+  ownerFiltered?: boolean;
   onSelectFilter?: (filter: SavedFilter | null) => void;
+  // Drops any applied ad-hoc definition, so clearing leaves nothing filtering the board.
+  onClearConditions?: () => void;
+  // Resets the owner picker, so "Clear filter" clears every dimension narrowing the board.
+  onClearOwner?: () => void;
   onToggleFavorite?: (id: string) => void;
+  // Removes an owned saved filter, once the user has confirmed it. Omit to offer no delete.
+  onDeleteFilter?: (id: string) => void;
+  // Opens the create/edit filter dialog.
+  onCreateFilter?: () => void;
 }
 
-// The board's filter dropdown (replaces the Everyone/My-deals toggle). A search box plus three
-// tabs: Favorites (saved filters starred by the user), Owners (everyone with a deal on this
-// board), and Filters (predefined + a create action). Owner filtering is the working core.
-// The popover shell (open state, outside-click + Escape dismissal, focus) is the shadcn/Radix
-// Popover primitive; the panel holds a search input + Radix Tabs, so Popover (not DropdownMenu)
-// is used to avoid trapping keyboard focus in the search box.
+// The board toolbar's Filter control: the badge that says the board is filtered, the saved
+// filters, the create/edit entry and the action that clears the filter, in one menu. A list of
+// rows plus actions, so it is the shadcn/Radix DropdownMenu primitive.
 export function BoardFilterMenu(props: BoardFilterMenuProps): React.ReactNode {
-  const { owners, selectedOwnerId, currentUserId, onSelectOwner, onCreateFilter } = props;
-  const { savedFilters = [], selectedFilterId = null, onSelectFilter, onToggleFavorite } = props;
-  const [open, setOpen] = useState(false);
-  const [tab, setTab] = useState<Tab>("owners");
-  const [query, setQuery] = useState("");
+  const { savedFilters = [], selectedFilterId = null, appliedDefinition = null } = props;
+  const { activeCount = 0, triggerLabel = "Filter", onSelectFilter, onClearConditions } = props;
+  const { onToggleFavorite, onDeleteFilter, onCreateFilter } = props;
+  const { ownerFiltered = false, onClearOwner } = props;
+  const [pendingDelete, setPendingDelete] = useState<PendingFilterDelete | null>(null);
 
-  const triggerLabel =
-    selectedOwnerId === null
-      ? "Everyone"
-      : (owners.find((o) => o.ownerId === selectedOwnerId)?.name ?? "Owner");
+  const filtered = selectedFilterId !== null || appliedDefinition !== null || ownerFiltered;
+  // Board filter state survives a reload, so the trigger is the only thing that can explain why
+  // the board is showing a subset. Name the applied filter rather than a bare "Filter", but only
+  // when it is the one filtering: callers resolve `inlineDefinition ?? savedFilter?.definition`,
+  // so an ad-hoc definition overrides the selection and naming it then would be wrong.
+  const appliedName =
+    appliedDefinition === null
+      ? savedFilters.find((f) => f.id === selectedFilterId)?.name
+      : undefined;
+  const triggerCopy = appliedName === undefined ? triggerLabel : `${triggerLabel}: ${appliedName}`;
+  // A name is valid up to 120 chars and the trigger never wraps, so the visible copy is capped to
+  // keep it from pushing the pipeline and action controls off the toolbar. aria-label keeps it all.
+  const visibleCopy =
+    appliedName === undefined
+      ? triggerLabel
+      : `${triggerLabel}: ${truncateFilterName(appliedName)}`;
+  // The entry names what the dialog it opens will do, since the dialog seeds itself from the
+  // selected filter: opening "Create new filter" onto an Edit form misreports the outcome.
+  const selectedFilter = savedFilters.find((f) => f.id === selectedFilterId);
+  const createEntryLabel = filterSaveCopy(filterSaveMode(selectedFilter)).title;
+  const ordered = [...savedFilters].sort((a, b) => Number(b.favorite) - Number(a.favorite));
 
-  const q = query.trim().toLowerCase();
-  const shownOwners = useMemo(
-    () => (q === "" ? owners : owners.filter((o) => o.name.toLowerCase().includes(q))),
-    [owners, q],
-  );
-  const shownFilters = useMemo(
-    () => (q === "" ? savedFilters : savedFilters.filter((f) => f.name.toLowerCase().includes(q))),
-    [savedFilters, q],
-  );
-  const favorites = useMemo(() => shownFilters.filter((f) => f.favorite), [shownFilters]);
-
-  function pickOwner(ownerId: string | null): void {
-    onSelectOwner(ownerId);
+  function clearAll(): void {
     onSelectFilter?.(null);
-    setOpen(false);
-  }
-
-  function pickFilter(filter: SavedFilter): void {
-    onSelectFilter?.(filter);
-    setOpen(false);
+    onClearConditions?.();
+    onClearOwner?.();
   }
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <button
-          type="button"
-          className="inline-flex items-center gap-1.5 rounded-md border bg-card px-2.5 py-1 text-sm text-foreground hover:bg-accent"
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="outline"
+          size="sm"
+          aria-label={triggerCopy}
+          data-filtered={filtered}
+          className={cn(
+            "bg-card font-normal",
+            filtered && "border-ring bg-accent font-medium text-foreground",
+          )}
         >
-          <FunnelIcon />
-          <span className="max-w-32 truncate">{triggerLabel}</span>
-          <ChevronDown />
-        </button>
-      </PopoverTrigger>
+          <Filter aria-hidden="true" className="h-4 w-4" />
+          {visibleCopy}
+          {activeCount > 0 ? (
+            <span className="ml-0.5 rounded-full bg-primary px-1.5 text-primary-foreground text-xs">
+              {activeCount}
+            </span>
+          ) : null}
+          <ChevronDown aria-hidden="true" className="h-3.5 w-3.5 text-muted-foreground" />
+        </Button>
+      </DropdownMenuTrigger>
 
-      <PopoverContent align="end" className="w-72 p-2">
-        <input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search owner or filter"
-          className="mb-2 w-full rounded-md border px-2.5 py-1.5 text-sm"
-        />
-
-        <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)}>
-          <TabsList aria-label="Filter tabs" className="mb-1 border-b">
-            <TabButton id="favorites" label="Favorites" />
-            <TabButton id="owners" label="Owners" />
-            <TabButton id="filters" label="Filters" />
-          </TabsList>
-        </Tabs>
-
-        <div className="max-h-80 overflow-y-auto py-1">
-          {tab === "owners" && (
-            <ul>
-              <OwnerRow
-                name="Everyone"
-                selected={selectedOwnerId === null}
-                onClick={() => pickOwner(null)}
-              />
-              {shownOwners.map((o) => (
-                <OwnerRow
-                  key={o.ownerId}
-                  name={o.name}
-                  selected={selectedOwnerId === o.ownerId}
-                  isCurrentUser={o.ownerId === currentUserId}
-                  onClick={() => pickOwner(o.ownerId)}
-                />
-              ))}
-            </ul>
-          )}
-
-          {tab === "filters" && (
-            <ul>
-              <FilterRow
-                label="All open deals"
-                selected={selectedOwnerId === null && selectedFilterId === null}
-                onClick={() => pickOwner(null)}
-              />
-              {shownFilters.map((f) => (
-                <SavedRow
-                  key={f.id}
-                  filter={f}
-                  selected={selectedFilterId === f.id}
-                  onPick={() => pickFilter(f)}
-                  onToggleFavorite={onToggleFavorite}
-                />
-              ))}
-              <li>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setOpen(false);
-                    onCreateFilter?.();
-                  }}
-                  className="mt-1 flex w-full items-center gap-2 rounded-md px-2 py-2 text-sm font-medium text-primary hover:bg-accent"
-                >
-                  <span aria-hidden="true">+</span> Create new filter
-                </button>
-              </li>
-            </ul>
-          )}
-
-          {tab === "favorites" &&
-            (favorites.length === 0 ? (
-              <p className="px-2 py-6 text-center text-sm text-muted-foreground">
-                No favorite filters yet. Star a saved filter to see it here.
-              </p>
-            ) : (
-              <ul>
-                {favorites.map((f) => (
-                  <SavedRow
-                    key={f.id}
-                    filter={f}
-                    selected={selectedFilterId === f.id}
-                    onPick={() => pickFilter(f)}
-                    onToggleFavorite={onToggleFavorite}
-                  />
-                ))}
-              </ul>
-            ))}
+      <DropdownMenuContent align="start" className="w-64">
+        <div className="max-h-80 overflow-y-auto">
+          <DropdownMenuItem
+            aria-current={filtered ? undefined : "true"}
+            onSelect={clearAll}
+            className={cn(!filtered && "bg-accent font-medium")}
+          >
+            All open deals
+          </DropdownMenuItem>
+          {ordered.map((f) => (
+            <SavedFilterItem
+              key={f.id}
+              filter={f}
+              selected={selectedFilterId === f.id}
+              onPick={() => onSelectFilter?.(f)}
+              onToggleFavorite={onToggleFavorite}
+              onRequestDelete={onDeleteFilter === undefined ? undefined : setPendingDelete}
+            />
+          ))}
         </div>
-      </PopoverContent>
-    </Popover>
+        {onCreateFilter !== undefined && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onSelect={onCreateFilter} className="font-medium text-primary">
+              <span aria-hidden="true">+</span> {createEntryLabel}
+            </DropdownMenuItem>
+          </>
+        )}
+        {filtered && <DropdownMenuItem onSelect={clearAll}>Clear filter</DropdownMenuItem>}
+      </DropdownMenuContent>
+
+      {/* Sibling of the menu content, so a menu that closes cannot take the dialog with it. */}
+      <DeleteSavedFilterConfirm
+        pending={pendingDelete}
+        noun="filter"
+        onOpenChange={(open) => {
+          if (!open) setPendingDelete(null);
+        }}
+        onConfirm={(id) => onDeleteFilter?.(id)}
+      />
+    </DropdownMenu>
   );
 }

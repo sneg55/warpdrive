@@ -140,7 +140,7 @@ export function TeamEditClient({
 
         <div className="flex flex-col gap-1">
           <span className="text-sm font-medium">{T.members}</span>
-          <p className="text-xs text-gray-500">{T.membersHelp}</p>
+          <p className="text-xs text-muted-foreground">{T.membersHelp}</p>
           <MultiCombobox
             ariaLabel={T.members}
             values={memberIds}

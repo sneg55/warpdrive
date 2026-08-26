@@ -7,23 +7,18 @@ import type { ActivityState } from "./cardIndicators";
 import { activityState, activityTooltip, rottingState } from "./cardIndicators";
 import type { BoardCard } from "./dealRepo";
 
-// Placeholder clock passed to activityTooltip only when there is no activity date (pre-mount, or a
-// card with nothing scheduled), where the returned copy ignores `now`. Keeps the call total.
-const NO_CLOCK = new Date(0);
-
 // String constants: no magic strings, no em dashes.
 const STRINGS = {
   roledescription: "draggable deal card",
   contactSeparator: ", ",
-  // Next-action affordance: a small colored circle. Color carries urgency:
-  // green = an activity is due today (act now), amber = scheduled for a later day, red = overdue,
-  // yellow = nothing scheduled (a warning nudge to book the next step). Green is reserved for
-  // "due today" so a glance distinguishes it.
+  // Next-action affordance: a small colored circle, one fill per urgency. Indigo = booked for
+  // later, green = due today, red = overdue, amber = nothing planned. Amber is the nudge, so a
+  // deal that is already handled must not wear it.
   activityCircle: {
-    upcoming: "bg-amber-500 text-white",
-    today: "bg-emerald-500 text-white",
-    overdue: "bg-red-500 text-white",
-    none: "bg-yellow-400 text-white",
+    upcoming: "bg-scheduled text-scheduled-foreground",
+    today: "bg-action text-action-foreground",
+    overdue: "bg-destructive text-destructive-foreground",
+    none: "bg-attention text-attention-foreground",
   } satisfies Record<ActivityState, string>,
   // Glyph inside the circle: a chevron for the scheduled/overdue states (a forward next-step cue),
   // a warning "!" when nothing is planned so the empty state reads as an alert, not an action.
@@ -38,10 +33,12 @@ const STRINGS = {
 // Graded rot background: a healthy card (level 0) keeps bg-card; past the stage's rotting
 // threshold the card reddens in steps, capped at the strongest tint. Red is reserved for this
 // alert (brand accent stays elsewhere). Index by rot level (1..3).
+// Night keeps the same three steps: a near-black red ground with a brighter rail, because the
+// light tints would blow out to pink cards on a dark board.
 const ROT_TINT: Record<number, string> = {
-  1: "bg-red-50 border-l-4 border-l-red-400",
-  2: "bg-red-100 border-l-4 border-l-red-500",
-  3: "bg-red-200 border-l-4 border-l-red-600",
+  1: "bg-red-50 border-l-4 border-l-red-400 dark:bg-[#1e1113] dark:border-l-[#b91c1c]",
+  2: "bg-red-100 border-l-4 border-l-red-500 dark:bg-[#2a1416] dark:border-l-[#dc2626]",
+  3: "bg-red-200 border-l-4 border-l-red-600 dark:bg-[#3a181b] dark:border-l-[#ef4444]",
 } as const;
 
 interface DealCardProps {
@@ -54,9 +51,8 @@ interface DealCardProps {
   labels: Array<{ name: string; color: string }>;
   rottingDays: number | null;
   density: "comfortable" | "compact";
-  // null until the client clock is established (post-mount). Time-derived visuals (rot tint,
-  // activity color) render as a neutral baseline while null so SSR and hydration markup agree.
-  now: Date | null;
+  // Seeded from the request on the server, handed to the browser clock after hydration.
+  now: Date;
   // Invoked on a plain click (not a drag). Opens the deal, matching Pipedrive where clicking
   // a pipeline card opens the deal. Drag is preserved via the sensor activation distance.
   onOpen?: () => void;
@@ -79,20 +75,10 @@ export function DealCard(props: DealCardProps): React.ReactNode {
   } = props;
   const { elevated } = props;
   const compact = density === "compact";
-  // Gate the time-derived state on a client clock. Before mount (now=null) render the neutral
-  // baseline (no rot, no scheduled activity) so the server and first client render are identical.
-  const activity = now === null ? "none" : activityState(card.nextActivityAt, now);
-  // Hover/aria copy for the next-action badge: names the soonest action and its timing. Pre-mount
-  // (now=null) there is no clock, so pass a null date to get the neutral "No activity scheduled".
-  const activityTip = activityTooltip(
-    card.nextActivityTitle ?? null,
-    now === null ? null : card.nextActivityAt,
-    now ?? NO_CLOCK,
-  );
-  const rot =
-    now === null
-      ? { rotting: false, ageDays: 0, level: 0 }
-      : rottingState(card.stageEnteredAt, rottingDays, now);
+  const activity = activityState(card.nextActivityAt, now);
+  // Hover/aria copy for the next-action badge: names the soonest action and its timing.
+  const activityTip = activityTooltip(card.nextActivityTitle ?? null, card.nextActivityAt, now);
+  const rot = rottingState(card.stageEnteredAt, rottingDays, now);
 
   // Pipedrive parity: the deal title leads (bold primary line); the gray description line reads
   // "org, person" (comfortable only), collapsing to whichever of the two is present.
@@ -190,7 +176,7 @@ export function DealCard(props: DealCardProps): React.ReactNode {
             <span
               role="status"
               aria-label={`rotting, idle ${rot.ageDays} days`}
-              className="rounded bg-white/80 px-1 py-0.5 text-xs font-medium tabular-nums text-red-700"
+              className="rounded bg-white/80 px-1 py-0.5 text-xs font-medium tabular-nums text-red-700 dark:bg-black/40 dark:text-red-300"
             >
               {rot.ageDays}d
             </span>

@@ -9,6 +9,7 @@ import { dealVisibilityPredicate } from "@/features/permissions/sql";
 import type { Result } from "@/types/result";
 import { err, ok } from "@/types/result";
 import type { SearchResult, SearchResults } from "@/types/search";
+import { orgDomainTerm } from "./domainTerm";
 
 const PER_SECTION = 8;
 
@@ -58,6 +59,12 @@ export async function searchAll(
   }
 
   const tsq = sql`websearch_to_tsquery('simple', ${trimmed})`;
+
+  // Organizations also index their normalised domain, so OR in the host form of the query. Both
+  // sides stay a plain GIN lookup on org_search_idx; nothing here scans.
+  const domainTerm = orgDomainTerm(trimmed);
+  const orgTsq =
+    domainTerm === null ? tsq : sql`(${tsq} || websearch_to_tsquery('simple', ${domainTerm}))`;
 
   // Deals: requires JOIN pipelines p so dealVisibilityClause can gate on
   // p.visibility_group_id (pipeline restriction).
@@ -115,12 +122,12 @@ export async function searchAll(
   const orgResult = await db.execute(sql`
     SELECT o.id,
            o.name AS primary,
-           NULL::text AS secondary
+           o.domain AS secondary
     FROM organizations o
     WHERE o.deleted_at IS NULL
-      AND o.search_tsv @@ ${tsq}
+      AND o.search_tsv @@ ${orgTsq}
       AND ${orgVisPred}
-    ORDER BY ts_rank(o.search_tsv, ${tsq}) DESC
+    ORDER BY ts_rank(o.search_tsv, ${orgTsq}) DESC
     LIMIT ${PER_SECTION}
   `);
   signal.throwIfAborted();

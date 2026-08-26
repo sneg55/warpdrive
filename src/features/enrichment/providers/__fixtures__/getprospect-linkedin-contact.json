@@ -1,0 +1,21 @@
+{
+  "getProspectId": "5f2b9c1ad4e10a0017a1b2c3",
+  "firstName": "Dana",
+  "lastName": "Hoskova",
+  "email": "dana.hoskova@sprinx.com",
+  "emailCheckedAt": "2026-08-01T09:00:00.000Z",
+  "contactInfo": "+420 555 0100",
+  "summary": "Growth lead at Sprinx Systems.",
+  "phone": "+420 555 0100",
+  "phones": ["+420 555 0100", "+420 555 0199"],
+  "company": [{ "getProspectId": "c-1", "domain": "sprinx.com", "name": "Sprinx Systems" }],
+  "lastUpdatedAt": "2026-08-02T11:30:00.000Z",
+  "linkedin": [{ "id": "dana-hoskova", "type": "profile" }],
+  "geolocation": {
+    "location": "Prague",
+    "countryCode": "CZ",
+    "region": "Praha",
+    "timezone": "Europe/Prague"
+  },
+  "status": "valid"
+}

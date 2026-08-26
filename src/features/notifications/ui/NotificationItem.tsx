@@ -25,6 +25,8 @@ const LABEL: Record<NotificationType, (p: Record<string, unknown>) => string> = 
   deal_won: () => L.deal_won,
   deal_lost: () => L.deal_lost,
   comment_reply: () => L.comment_reply,
+  deal_email_received: (p) =>
+    `${L.deal_email_received}: ${toStr(p.subject) || L.deal_email_received_fallback}`,
 };
 
 export function NotificationItem({
@@ -43,8 +45,8 @@ export function NotificationItem({
       onClick={() => onOpen(item)}
       className={
         unread
-          ? "flex w-full items-center gap-2 bg-blue-50 px-3 py-2 text-left hover:bg-blue-100"
-          : "flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-gray-50"
+          ? "flex w-full items-center gap-2 bg-blue-50 px-3 py-2 text-left hover:bg-blue-100 dark:bg-blue-950/50 dark:hover:bg-blue-900/50"
+          : "flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-accent"
       }
     >
       {unread ? (

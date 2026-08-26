@@ -21,7 +21,9 @@ highlighted. Clicking a stage moves the deal there, the same operation as draggi
 card on the board.
 
 Marking the deal **Won** or **Lost** closes it. Closing removes it from the board and
-the list, since both show only open deals.
+the list, since both show only open deals. Marking it lost asks for a reason and an
+optional comment, and both are kept on the status change in the deal's history, not
+only in the header chip.
 
 ## Summary and inline editing
 
@@ -35,6 +37,9 @@ There is no separate edit mode and no save button.
 
 Custom fields appear here alongside the built-in ones. See
 [Data fields](../administration/data-fields.md) for adding them.
+
+The organization and person sections carry a **Fill the gaps** button that fills
+their empty fields from connected data providers. See [Enrichment](./enrichment.md).
 
 ## Activities
 
@@ -63,8 +68,12 @@ See [Files](./files.md).
 
 ## Email
 
-The email tab shows the threads linked to this deal, and lets you compose a reply or a
-new message in place.
+Linked mail appears in the deal's timeline as one card per message, interleaved
+chronologically with activities and notes, collapsed to a snippet and expanded in
+place. An expanded card offers Reply inline, plus Reply all, Forward, Open in Inbox,
+and Unlink; mailbox triage (archive, delete, labels) stays in the Inbox, one click
+away. Your own unsent drafts for this deal are shown beside the sent messages, with
+Continue and Discard.
 
 Linking happens at the **thread** level. An inbound message is matched on the sender
 address; an outbound one is matched on the recipient. See [Email](./email.md) for the

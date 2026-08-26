@@ -28,7 +28,7 @@ export function cleanAddress(a: Record<string, string>): Record<string, string> 
   return entries.length === 0 ? null : Object.fromEntries(entries);
 }
 
-const INPUT = "w-full rounded border border-gray-300 px-2 py-1 text-sm";
+const INPUT = "w-full rounded border bg-background px-2 py-1 text-sm text-foreground";
 const ADDRESS_FIELDS: Array<[string, string]> = [
   ["street", "Street"],
   ["city", "City"],
@@ -50,7 +50,7 @@ export function TextField({
 }): React.ReactNode {
   return (
     <div className="space-y-1">
-      <label htmlFor={id} className="block text-sm text-gray-700">
+      <label htmlFor={id} className="block text-sm text-muted-foreground">
         {label}
       </label>
       <input id={id} value={value} onChange={(e) => onChange(e.target.value)} className={INPUT} />
@@ -75,7 +75,7 @@ export function ContactPointRows({
   }
   return (
     <div className="space-y-1">
-      <span className="block text-sm text-gray-700">{kind}</span>
+      <span className="block text-sm text-muted-foreground">{kind}</span>
       <div className="flex flex-col gap-2">
         {rows.map((row, idx) => (
           // Positional rows in an ephemeral edit form: index is a stable-enough key here.
@@ -93,7 +93,7 @@ export function ContactPointRows({
               type="button"
               aria-label={`Remove ${kind.toLowerCase()} ${idx + 1}`}
               onClick={() => onChange(rows.filter((_, i) => i !== idx))}
-              className="rounded border border-gray-300 px-2 py-1 text-sm text-gray-600 hover:bg-gray-50"
+              className="rounded border px-2 py-1 text-sm text-muted-foreground hover:bg-muted"
             >
               &times;
             </button>
@@ -105,7 +105,7 @@ export function ContactPointRows({
         onClick={() =>
           onChange([...rows, { label: "Work", value: "", primary: rows.length === 0 }])
         }
-        className="text-sm font-medium text-blue-700 hover:underline"
+        className="text-sm font-medium text-link hover:underline"
       >
         + Add {kind.toLowerCase()}
       </button>
@@ -142,7 +142,7 @@ export function PersonBaseFields({
       {!hidden.has("phones") && <ContactPointRows kind="Phone" rows={phones} onChange={onPhones} />}
       {!hidden.has("org") && (
         <div className="space-y-1">
-          <span className="block text-sm text-gray-700">Organization</span>
+          <span className="block text-sm text-muted-foreground">Organization</span>
           <Select
             ariaLabel="Organization"
             value={orgId}
@@ -168,7 +168,7 @@ export function AddressFields({
 }): React.ReactNode {
   return (
     <fieldset className="space-y-1">
-      <legend className="text-sm text-gray-700">Address</legend>
+      <legend className="text-sm text-muted-foreground">Address</legend>
       {ADDRESS_FIELDS.map(([name, label]) => (
         <input
           key={name}
@@ -197,10 +197,10 @@ export function CustomFieldRows({
   if (defs.length === 0) return null;
   return (
     <fieldset className="space-y-2">
-      <legend className="text-sm font-medium text-gray-700">Custom fields</legend>
+      <legend className="text-sm font-medium text-muted-foreground">Custom fields</legend>
       {defs.map((def) => (
         <div key={def.id} className="space-y-1">
-          <span className="block text-sm text-gray-600">{def.name}</span>
+          <span className="block text-sm text-muted-foreground">{def.name}</span>
           <CustomFieldFormControl
             def={def}
             value={values[def.key]}

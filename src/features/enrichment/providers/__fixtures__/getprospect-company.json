@@ -1,0 +1,32 @@
+{
+  "data": [
+    {
+      "name": "Sprinx Systems",
+      "domain": "sprinx.com",
+      "description": "Custom software development for enterprise clients.",
+      "headquarters": "Prague, Czechia",
+      "industry": "Computer Software",
+      "postalCode": "11000",
+      "size": 120,
+      "phone": "+420 555 0100",
+      "linkedin": [{ "id": "sprinx-systems", "type": "company" }],
+      "location": {
+        "location": "Prague",
+        "countryCode": "CZ",
+        "region": "Praha",
+        "timezone": "Europe/Prague"
+      },
+      "getProspectId": "c-1",
+      "technologies": []
+    }
+  ],
+  "meta": {
+    "totalPages": 1,
+    "totalItems": 1,
+    "savedItems": 0,
+    "pageSize": 1,
+    "page": 1,
+    "sort": { "column": "name", "order": "ASC" },
+    "additionalInfo": {}
+  }
+}

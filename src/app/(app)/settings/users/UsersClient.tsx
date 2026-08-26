@@ -56,43 +56,47 @@ export function UsersClient({ rows }: Props): React.ReactElement {
       <InviteUserForm onInvited={() => router.refresh()} />
       <div className="space-y-3">
         <UserStatusTabs value={status} onChange={setStatus} />
-        <SettingsCard className="overflow-x-auto shadow-none">
-          <table className="w-full min-w-[640px] text-sm">
-            <thead className={SETTINGS_TABLE_HEAD}>
-              <tr className="border-b">
-                <th className={SETTINGS_TABLE_HEADER_CELL}>{C.name}</th>
-                <th className={SETTINGS_TABLE_HEADER_CELL}>{C.email}</th>
-                <th className={SETTINGS_TABLE_HEADER_CELL}>{C.role}</th>
-                <th className={SETTINGS_TABLE_HEADER_CELL}>{C.active}</th>
-                <th className={SETTINGS_TABLE_HEADER_CELL}>{C.actions}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {visible.map((u) => (
-                <tr key={u.id} className={SETTINGS_TABLE_ROW}>
-                  <td className={SETTINGS_TABLE_CELL}>
-                    {u.name}
-                    {u.invitedAt !== null && (
-                      <span className="ml-2 rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
-                        {V.invited}
-                      </span>
-                    )}
-                  </td>
-                  <td className={`${SETTINGS_TABLE_CELL} text-muted-foreground`}>{u.email}</td>
-                  <td className={SETTINGS_TABLE_CELL}>{u.isAdmin ? V.admin : V.regular}</td>
-                  <td className={SETTINGS_TABLE_CELL}>{u.isActive ? V.yes : V.no}</td>
-                  <td className={SETTINGS_TABLE_CELL}>
-                    <UserRowControls
-                      userId={u.id}
-                      isAdmin={u.isAdmin}
-                      isActive={u.isActive}
-                      onChanged={() => router.refresh()}
-                    />
-                  </td>
+        <SettingsCard className="shadow-none">
+          {/* Own scroll container: on the card itself, overflow-x-auto competes with the card's
+              overflow-hidden and the action column ends up clipped instead of scrollable. */}
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[640px] text-sm">
+              <thead className={SETTINGS_TABLE_HEAD}>
+                <tr className="border-b">
+                  <th className={SETTINGS_TABLE_HEADER_CELL}>{C.name}</th>
+                  <th className={SETTINGS_TABLE_HEADER_CELL}>{C.email}</th>
+                  <th className={SETTINGS_TABLE_HEADER_CELL}>{C.role}</th>
+                  <th className={SETTINGS_TABLE_HEADER_CELL}>{C.active}</th>
+                  <th className={SETTINGS_TABLE_HEADER_CELL}>{C.actions}</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {visible.map((u) => (
+                  <tr key={u.id} className={SETTINGS_TABLE_ROW}>
+                    <td className={SETTINGS_TABLE_CELL}>
+                      {u.name}
+                      {u.invitedAt !== null && (
+                        <span className="ml-2 rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
+                          {V.invited}
+                        </span>
+                      )}
+                    </td>
+                    <td className={`${SETTINGS_TABLE_CELL} text-muted-foreground`}>{u.email}</td>
+                    <td className={SETTINGS_TABLE_CELL}>{u.isAdmin ? V.admin : V.regular}</td>
+                    <td className={SETTINGS_TABLE_CELL}>{u.isActive ? V.yes : V.no}</td>
+                    <td className={SETTINGS_TABLE_CELL}>
+                      <UserRowControls
+                        userId={u.id}
+                        isAdmin={u.isAdmin}
+                        isActive={u.isActive}
+                        onChanged={() => router.refresh()}
+                      />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </SettingsCard>
       </div>
     </div>

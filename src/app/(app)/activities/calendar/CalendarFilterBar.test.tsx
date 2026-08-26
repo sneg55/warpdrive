@@ -20,6 +20,24 @@ const types = [
 ];
 
 describe("CalendarFilterBar", () => {
+  it("sizes the owner and status pickers instead of letting them span the page", () => {
+    // Both primitives default to w-full. Dropped into a bare flex row with no width of their own,
+    // each claimed a whole line and wrapped, so two one-word pickers rendered full-bleed, stacked.
+    render(
+      <CalendarFilterBar
+        filter={NO_CALENDAR_FILTER}
+        onChange={() => {}}
+        owners={owners}
+        types={types}
+      />,
+    );
+    for (const name of ["Owner", "Status"]) {
+      const trigger = screen.getByLabelText(name);
+      expect(trigger).not.toHaveClass("w-full");
+      expect(trigger).toHaveClass("w-52");
+    }
+  });
+
   it("renders owner, status, and type controls", () => {
     render(
       <CalendarFilterBar

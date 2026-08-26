@@ -3,12 +3,14 @@
 import Link from "next/link";
 import type React from "react";
 import { useState } from "react";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import type { ColumnDef } from "@/components/data-table/columnModel";
 import { RENDER_WINDOW_STEP, useRenderWindow } from "@/components/data-table/useRenderWindow";
 import { Avatar } from "@/components/ui/Avatar";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { Select, type SelectOption } from "@/components/ui/Select";
 import { formatCurrency } from "@/lib/formatCurrency";
+import { BULK_MOVE_DESCRIPTION, bulkMoveTitle } from "./bulkMoveCopy";
 import { fmtDate, fmtDateOnly } from "./dealListFormat";
 import type { BoardCard } from "./dealRepo";
 import { useInlineEdit } from "./useInlineEdit";
@@ -44,16 +46,25 @@ export interface DealListProps {
   // Present only on the Archive view: renders a per-row Unarchive control. When set the table
   // grows a trailing actions column; the normal list passes nothing and stays unchanged.
   onUnarchive?: (dealId: string) => void;
+  // What to show in place of the rows when there are none. With nothing filtered the table goes
+  // with them: a header, a select-all, a gear and a "0 deals" footer over zero rows is machinery.
+  empty?: React.ReactNode;
+  // Whether any filter narrows this view. A filtered-to-nothing list keeps its columns, since
+  // they are still the view the user built.
+  filtered?: boolean;
 }
 
 export function DealList(props: DealListProps) {
   const { pipelineId, rows, total, totalValue, stages, onBulkStage, onUnarchive } = props;
-  const { visibleColumns, columnsMenu } = props;
+  const { visibleColumns, columnsMenu, empty, filtered = false } = props;
   const { editCell } = useInlineEdit(pipelineId);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   // Which row's title is in inline-edit mode. Pipedrive opens the deal on title
   // click, so edit is behind an explicit control rather than the cell itself.
   const [editingId, setEditingId] = useState<string | null>(null);
+  // The stage a bulk move is headed for, held until the user confirms. Picking from the select
+  // used to move every selected deal on the spot, with no undo and nothing naming the count.
+  const [pendingStageId, setPendingStageId] = useState<string | null>(null);
   // Cap how many rows are painted to the DOM. Filtering, sorting, selection, and the footer
   // totals all operate over the full `rows`/`total` above, so this bounds render cost only: a
   // pipeline with hundreds of deals no longer mounts every <tr> up front.
@@ -90,8 +101,8 @@ export function DealList(props: DealListProps) {
     setSelected(allSelected ? new Set() : new Set(allIds));
   }
 
-  async function handleBulkStage(toStageId: string): Promise<void> {
-    if (!toStageId) return;
+  async function confirmBulkStage(toStageId: string): Promise<void> {
+    setPendingStageId(null);
     // Clear the selection only once the move actually lands. A failed move keeps the selection so
     // the vanishing rows don't read as success (the whole point of the fix).
     const applied = await onBulkStage([...selected], toStageId);
@@ -172,6 +183,10 @@ export function DealList(props: DealListProps) {
 
   const bodyColSpan = 1 + visibleColumns.length + (onUnarchive ? 1 : 0);
 
+  if (rows.length === 0 && empty !== undefined && !filtered) {
+    return <div className="overflow-hidden rounded-lg border bg-card shadow-sm">{empty}</div>;
+  }
+
   return (
     <div className="overflow-hidden rounded-lg border bg-card shadow-sm">
       {columnsMenu !== undefined ? (
@@ -189,12 +204,25 @@ export function DealList(props: DealListProps) {
           <Select
             ariaLabel="Move to stage"
             value=""
-            onChange={(v) => void handleBulkStage(v)}
+            onChange={(v) => setPendingStageId(v === "" ? null : v)}
             placeholder="Move to stage..."
             options={stages.map<SelectOption>((s) => ({ value: s.id, label: s.name }))}
           />
         </div>
       ) : null}
+
+      {pendingStageId !== null && (
+        <ConfirmDialog
+          open
+          onOpenChange={(next) => {
+            if (!next) setPendingStageId(null);
+          }}
+          title={bulkMoveTitle(selected.size, stageNameById.get(pendingStageId) ?? "")}
+          description={BULK_MOVE_DESCRIPTION}
+          confirmLabel="Move deals"
+          onConfirm={() => void confirmBulkStage(pendingStageId)}
+        />
+      )}
 
       <table className="w-full border-collapse text-sm">
         <caption className="sr-only">Deals list</caption>
@@ -250,6 +278,11 @@ export function DealList(props: DealListProps) {
               ) : null}
             </tr>
           ))}
+          {rows.length === 0 && empty !== undefined ? (
+            <tr>
+              <td colSpan={bodyColSpan}>{empty}</td>
+            </tr>
+          ) : null}
           {rowWindow.hasMore ? (
             <tr>
               <td colSpan={bodyColSpan} className="px-3 py-3 text-center">

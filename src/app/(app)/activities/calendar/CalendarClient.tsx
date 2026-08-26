@@ -15,6 +15,9 @@ interface CalendarClientProps {
   anchorIso: string;
   dayIsos: string[];
   activities: CalendarActivity[];
+  // Shown instead of the grid when the window holds nothing. The caller owns the wording because
+  // only it knows whether a filter is doing the excluding, and an empty grid says nothing at all.
+  empty?: React.ReactNode;
 }
 
 function tab(active: boolean): string {
@@ -28,6 +31,7 @@ export function CalendarClient({
   anchorIso,
   dayIsos,
   activities,
+  empty,
 }: CalendarClientProps): React.ReactNode {
   const prevIso = stepAnchorIso(view, anchorIso, -1);
   const nextIso = stepAnchorIso(view, anchorIso, 1);
@@ -36,9 +40,11 @@ export function CalendarClient({
     view === "month" ? monthTitle(anchorIso) : `Week of ${weekTitle(dayIsos[0] ?? anchorIso)}`;
 
   return (
-    <main aria-label="Calendar" className="p-4">
+    // Not <main>: the app shell already owns that landmark, and a second one inside it hides the
+    // shell's from assistive tech instead of adding anything.
+    <section aria-label="Calendar" className="p-4">
       <header className="flex items-center gap-3 mb-4">
-        <div className="flex gap-1 rounded-md border border-gray-200 p-0.5">
+        <div className="flex gap-1 rounded-md border border-border p-0.5">
           <Link
             aria-current={view === "week" ? "page" : undefined}
             href={calendarHref("week", anchorIso)}
@@ -58,28 +64,32 @@ export function CalendarClient({
           <Link
             aria-label="Previous"
             href={calendarHref(view, prevIso)}
-            className="px-2 py-1 text-sm rounded border border-gray-200 hover:bg-accent/60"
+            className="px-2 py-1 text-sm rounded border border-border hover:bg-accent/60"
           >
             {"<"}
           </Link>
           <Link
             href={calendarHref(view, todayIso)}
-            className="px-2 py-1 text-sm rounded border border-gray-200 hover:bg-accent/60"
+            className="px-2 py-1 text-sm rounded border border-border hover:bg-accent/60"
           >
             Today
           </Link>
           <Link
             aria-label="Next"
             href={calendarHref(view, nextIso)}
-            className="px-2 py-1 text-sm rounded border border-gray-200 hover:bg-accent/60"
+            className="px-2 py-1 text-sm rounded border border-border hover:bg-accent/60"
           >
             {">"}
           </Link>
         </div>
-        <span className="text-sm font-medium text-gray-700 tabular-nums">{label}</span>
+        {/* The heading for the window being shown; the page had no heading of any level under
+            its h1 for a screen reader to move between. */}
+        <h2 className="text-sm font-medium text-foreground tabular-nums">{label}</h2>
       </header>
 
-      {view === "month" ? (
+      {empty !== undefined && activities.length === 0 ? (
+        empty
+      ) : view === "month" ? (
         <MonthView
           anchorIso={anchorIso}
           dayIsos={dayIsos}
@@ -89,6 +99,6 @@ export function CalendarClient({
       ) : (
         <WeekAgendaGrid dayIsos={dayIsos} activities={activities} />
       )}
-    </main>
+    </section>
   );
 }

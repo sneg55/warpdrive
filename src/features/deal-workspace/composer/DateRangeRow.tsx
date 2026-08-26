@@ -1,7 +1,7 @@
 "use client";
 import type React from "react";
-import { DatePicker } from "@/components/ui/DatePicker";
 import { TimePicker } from "@/components/ui/TimePicker";
+import { ActivityDatePicker } from "@/features/activities/ActivityDatePicker";
 
 interface Props {
   startDate: string;
@@ -13,6 +13,7 @@ interface Props {
   // Multi-day end date (Pipedrive parity). Empty string means a same-day activity.
   endDate: string;
   onEndDate: (v: string) => void;
+  assigneeId: string;
 }
 
 // Compact, single-row date/time controls (Pipedrive parity, C2): start date + time, an end
@@ -27,24 +28,28 @@ export function DateRangeRow({
   onEndTime,
   endDate,
   onEndDate,
+  assigneeId,
 }: Props): React.ReactNode {
+  const loadFor = assigneeId === "" ? null : assigneeId;
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <DatePicker
+      <ActivityDatePicker
         ariaLabel="Start date"
         value={startDate === "" ? null : startDate}
         onChange={(v) => onStartDate(v ?? "")}
+        assigneeId={loadFor}
       />
       <TimePicker ariaLabel="Start time" value={startTime} onChange={onStartTime} />
       <span aria-hidden="true" className="text-muted-foreground">
         to
       </span>
       <TimePicker ariaLabel="End time" value={endTime} onChange={onEndTime} />
-      <DatePicker
+      <ActivityDatePicker
         ariaLabel="End date"
         placeholder="End date"
         value={endDate === "" ? null : endDate}
         onChange={(v) => onEndDate(v ?? "")}
+        assigneeId={loadFor}
       />
     </div>
   );

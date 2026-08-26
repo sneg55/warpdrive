@@ -13,6 +13,7 @@ vi.mock("@/features/activities/actions", () => ({
   createActivityAction: (...a: unknown[]) => createActivityMock(...(a as [])),
 }));
 
+import { COMPOSER_STRINGS } from "./composer.constants";
 import { buildSendHandlers } from "./useComposerSend";
 
 type Deps = Parameters<typeof buildSendHandlers>[0];
@@ -163,6 +164,18 @@ describe("fireActivity dealId", () => {
     );
   });
 
+  // An email that has already gone out is a thing that happened, not a thing to do. Logging it
+  // open leaves it in the dashboard's `undated` bucket forever (no due date to schedule it, and
+  // nobody goes back to tick off a sent email), so it never reaches the Completed count.
+  it("logs the activity as already done, so a sent email counts as completed", async () => {
+    const { handleSend } = buildSendHandlers(makeDeps({ addAsActivity: true, activityTypes }));
+    await handleSend();
+    expect(createActivityMock).toHaveBeenCalledWith(
+      expect.objectContaining({ done: true }),
+      "csrf",
+    );
+  });
+
   it("keeps using context.dealId for the deal-workspace composer, even when linkDealId is also present (unchanged)", async () => {
     const { handleSend } = buildSendHandlers(
       makeDeps({
@@ -177,6 +190,55 @@ describe("fireActivity dealId", () => {
       expect.objectContaining({ dealId: "ctx-deal" }),
       "csrf",
     );
+  });
+});
+
+// The send action arms its own 8s deadline, so a slow Gmail send rejects the client promise
+// instead of returning a failed Result. A rejection that escapes leaves `sending` true forever,
+// which greys out Send with no banner explaining why.
+describe("send action rejects instead of returning a Result", () => {
+  // The handler logs the rejection; keep it out of the test output.
+  beforeEach(() => void vi.spyOn(console, "warn").mockImplementation(() => undefined));
+  afterEach(() => vi.restoreAllMocks());
+
+  function abortError(): Error {
+    const e = new Error("The operation was aborted due to timeout");
+    e.name = "AbortError";
+    return e;
+  }
+
+  it("clears sending and surfaces an unconfirmed-send message when handleSend rejects", async () => {
+    sendMock.mockImplementationOnce(() => Promise.reject(abortError()));
+    const setSending = vi.fn();
+    const setError = vi.fn();
+    const { handleSend } = buildSendHandlers(makeDeps({ setSending, setError }));
+
+    await expect(handleSend()).resolves.toBeUndefined();
+
+    expect(setSending).toHaveBeenLastCalledWith(false);
+    expect(setError).toHaveBeenLastCalledWith(COMPOSER_STRINGS.sendUnconfirmed);
+  });
+
+  it("clears sending and surfaces an unconfirmed-send message when handleSendLater rejects", async () => {
+    sendMock.mockImplementationOnce(() => Promise.reject(abortError()));
+    const setSending = vi.fn();
+    const setError = vi.fn();
+    const { handleSendLater } = buildSendHandlers(makeDeps({ setSending, setError }));
+
+    await expect(handleSendLater(new Date(Date.now() + 60_000))).resolves.toBeUndefined();
+
+    expect(setSending).toHaveBeenLastCalledWith(false);
+    expect(setError).toHaveBeenLastCalledWith(COMPOSER_STRINGS.sendUnconfirmed);
+  });
+
+  it("keeps the draft intact when the send is unconfirmed, so nothing is lost", async () => {
+    sendMock.mockImplementationOnce(() => Promise.reject(abortError()));
+    const resetDraft = vi.fn();
+    const { handleSend } = buildSendHandlers(makeDeps({ resetDraft }));
+
+    await handleSend();
+
+    expect(resetDraft).not.toHaveBeenCalled();
   });
 });
 

@@ -18,6 +18,7 @@ function mk(id: string, dueIso: string, over = false): CalendarActivity {
     id,
     subject: id,
     dueAt: new Date(dueIso),
+    allDay: false,
     durationMinutes: null,
     typeKey: "meeting",
     done: false,
@@ -81,7 +82,43 @@ it("toggle + prev/next/today render as links carrying the right params", () => {
   expect(screen.getByText("June 2026")).toBeInTheDocument();
 });
 
+// An empty week rendered as a blank grid with no message at all.
+it("shows the caller's empty state only while the window holds nothing", () => {
+  const empty = <p>Nothing scheduled</p>;
+  const { rerender } = render(
+    <CalendarClient
+      view="month"
+      anchorIso="2026-06-15"
+      dayIsos={dayIsos}
+      activities={[]}
+      empty={empty}
+    />,
+  );
+  expect(screen.getByText("Nothing scheduled")).toBeInTheDocument();
+
+  rerender(
+    <CalendarClient
+      view="month"
+      anchorIso="2026-06-15"
+      dayIsos={dayIsos}
+      activities={[mk("a", "2026-06-15T10:00:00Z")]}
+      empty={empty}
+    />,
+  );
+  expect(screen.queryByText("Nothing scheduled")).toBeNull();
+});
+
 it("renders the month grid when view=month (durability: same as a reloaded URL)", () => {
   render(<CalendarClient view="month" anchorIso="2026-06-15" dayIsos={dayIsos} activities={[]} />);
   expect(screen.getAllByRole("gridcell")).toHaveLength(42);
+});
+
+it("draws the header label and the adjacent-month tone from theme tokens", () => {
+  render(<CalendarClient view="month" anchorIso="2026-06-15" dayIsos={dayIsos} activities={[]} />);
+  expect(screen.getByText("June 2026")).toHaveClass("text-foreground");
+  // An adjacent month is de-emphasised by lowering the token's alpha, not by reaching for a
+  // lighter fixed gray, so the cell follows Night with everything else.
+  const julyCell = screen.getByTestId("cell-2026-07-01");
+  expect(julyCell).toHaveClass("bg-muted/50", "text-foreground/60");
+  expect(julyCell.className).not.toMatch(/-gray-/);
 });

@@ -1,10 +1,12 @@
 "use client";
 import { useDraggable, useDroppable } from "@dnd-kit/core";
+import { Scale } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type React from "react";
 import { useState } from "react";
 import { useLabelColorResolver } from "@/features/labels/useLabelColorResolver";
 import { formatCurrency } from "@/lib/formatCurrency";
+import { stageSubtitle } from "./boardColumnSubtitle";
 import { accentForOrder, funnelClip, tint } from "./boardStageHeader";
 import { DealCard } from "./DealCard";
 import type { BoardCard } from "./dealRepo";
@@ -15,7 +17,7 @@ interface DraggableCardProps {
   card: BoardCard;
   rottingDays: number | null;
   density: "comfortable" | "compact";
-  now: Date | null;
+  now: Date;
 }
 
 function DraggableCard(props: DraggableCardProps): React.ReactNode {
@@ -60,7 +62,7 @@ export interface BoardColumnProps {
   totalValue: string;
   density: "comfortable" | "compact";
   // null until the client clock is set (see Board). Threads down to each DealCard's time visuals.
-  now: Date | null;
+  now: Date;
   // For the per-stage add-deal button (opens the modal preset to this stage).
   pipelineId: string;
   pipelines: Array<{ id: string; name: string; stages: Array<{ id: string; name: string }> }>;
@@ -124,26 +126,9 @@ export function BoardColumn(props: BoardColumnProps): React.ReactNode {
         </div>
         <div className="mt-1 flex items-center gap-1 px-1 text-xs text-muted-foreground">
           {/* Balance/scale glyph before the value line (Pipedrive convention). */}
-          <svg
-            data-stage-metric-icon
-            aria-hidden="true"
-            viewBox="0 0 24 24"
-            className="h-3.5 w-3.5 shrink-0"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M12 3v18M7 7h10M5 7l-3 6a3 3 0 0 0 6 0L5 7zm14 0l-3 6a3 3 0 0 0 6 0l-3-6zM8 21h8" />
-          </svg>
+          <Scale data-stage-metric-icon aria-hidden="true" className="h-3.5 w-3.5 shrink-0" />
           <span className="tabular-nums">
-            {formatCurrency(totalValue)}
-            {dealCount > 0 ? (
-              <>
-                &nbsp;&middot;&nbsp; {dealCount} {dealCount === 1 ? "deal" : "deals"}
-              </>
-            ) : null}
+            {stageSubtitle(formatCurrency(totalValue), dealCount)}
           </span>
         </div>
       </header>

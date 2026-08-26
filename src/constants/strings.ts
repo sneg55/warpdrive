@@ -1,6 +1,7 @@
 // Centralized UI copy (ops spec E7: English-only v1, but no hardcoded text in components,
 // so a future locale layer is a drop-in). No em dashes anywhere.
 import { DEAL_SIDEBAR_STRINGS } from "./dealSidebarStrings";
+import { ENRICHMENT_STRINGS } from "./enrichmentStrings";
 import { INBOX_STRINGS } from "./inboxStrings";
 import { SETTINGS_STRINGS } from "./settingsStrings";
 
@@ -71,9 +72,24 @@ export const STRINGS = {
     sourceChannelIdPlaceholder: "Reference / campaign id",
     visibleTo: "Visible to",
     visibleToDefault: "Default",
+    emptyTitle: "No leads yet",
+    emptyBody:
+      "A lead is an unqualified opportunity you work before it earns a place in the pipeline.",
+    emptyAction: "Add lead",
+    emptyArchivedTitle: "Nothing in the archive",
+    emptyArchivedBody:
+      "Archiving a lead takes it out of the inbox without deleting it. Nothing is archived right now.",
+    emptyArchivedAction: "Back to inbox",
+    emptyFilteredTitle: "No leads match these filters",
+    // Every count the inbox has is already narrowed by the filter, so this sentence cannot claim
+    // leads exist behind it. It has to be true of an empty inbox too.
+    emptyFilteredBody:
+      "The filters above are the only thing narrowing this view. Clear them to see it whole.",
+    emptyFilteredAction: "Clear filters",
   },
   reconnect: { reconnecting: "Reconnecting..." },
   dealSidebar: DEAL_SIDEBAR_STRINGS,
+  enrichment: ENRICHMENT_STRINGS,
   inbox: INBOX_STRINGS,
   notifications: {
     title: "Notifications",
@@ -93,6 +109,8 @@ export const STRINGS = {
       deal_won: "A deal you follow was won",
       deal_lost: "A deal you follow was lost",
       comment_reply: "New reply to a comment",
+      deal_email_received: "New email",
+      deal_email_received_fallback: "on a deal",
       fallback: "Notification",
     },
     preferences: {
@@ -111,6 +129,7 @@ export const STRINGS = {
         deal_won: "Deal won",
         deal_lost: "Deal lost",
         comment_reply: "Comment replies",
+        deal_email_received: "New email on my deals",
       },
     },
   },
@@ -127,16 +146,53 @@ export const STRINGS = {
     widgetFunnelConversion: "FUNNEL CONVERSION",
     widgetActivities: "ACTIVITIES PERFORMANCE",
     widgetStageSums: "PER-STAGE VALUE SUMS",
+    added: "Added",
     won: "Won",
     lost: "Lost",
-    open: "Open",
+    open: "Open now",
     completed: "Completed",
     scheduled: "Scheduled",
+    undated: "No due date",
     rangeStartLabel: "Range start",
     rangeEndLabel: "Range end",
     rangeSeparator: "to",
     pipelineLabel: "Pipeline",
     allPipelines: "All pipelines",
+    widgetScoreboard: "SCOREBOARD",
+    widgetActivityTypes: "ACTIVITIES BY TYPE",
+    widgetLostReasons: "WHY DEALS WERE LOST",
+    widgetGoals: "GOALS",
+    scoreWon: "Deals won",
+    scoreWinRate: "Win rate",
+    scoreAvgDeal: "Average won deal",
+    scoreCycle: "Median sales cycle",
+    scoreActivities: "Activities completed",
+    days: "days",
+    noValue: "-",
+    // A duration that rounds to zero days is shorter than the unit reported here, not instant.
+    underADay: "Under a day",
+    emptyGoalsBody: "A goal sets a target for a person or the team over a period you choose.",
+    emptyFunnel: "No deals were created in this range, so there is no funnel to measure.",
+    emptyStageSums: "No open deals in these stages.",
+    emptyActivityTypes: "No activity types are configured.",
+    emptyLostReasons: "No deals were lost in this range.",
+    emptyGoals: "No goals apply to you yet.",
+    goalsSettingsLink: "Set up goals",
+    lostReasonUnspecified: "No reason recorded",
+    goalPeriod: "Period",
+    goalTarget: "Target",
+    goalPace: "Pace",
+    goalNotStarted: "Outside this goal's dates",
+    widgetWonTrend: "WON DEALS BY MONTH",
+    emptyWonTrend: "No deals were won in this range, so there is no trend to draw.",
+    trendTableCaption: "Won deals by month",
+    trendMonth: "Month",
+    trendCount: "Deals won",
+    trendValue: "Value won",
+    // The funnel is a cohort measure and the board is a live snapshot, so the two disagree by
+    // design. The widget has to say which cohort it counted or the gap reads as a bug.
+    funnelBasisMe: "Counts only deals you own that were created in this range.",
+    funnelBasisAll: "Counts deals created in this range, whoever owns them.",
   },
   search: {
     placeholder: "Search deals, people, organizations, leads...",
@@ -191,6 +247,27 @@ export const STRINGS = {
       droppedIn: (stage: string): string => `Dropped in ${stage}`,
       cancelled: "Cancelled",
     },
+  },
+  dealsList: {
+    emptyTitle: "No deals in this pipeline yet",
+    emptyBody:
+      "A deal is one opportunity: a value, a stage and an owner. The first one you add shows up here and on the board.",
+    emptyArchivedTitle: "Nothing archived",
+    emptyArchivedBody:
+      "Archiving a deal takes it off the board without deleting it. Anything you archive lands here, ready to restore.",
+    emptyArchivedAction: "Back to the board",
+    emptyFilteredTitle: "No deals match this filter",
+    emptyFilteredBody: "The pipeline still holds deals. The filters above exclude all of them.",
+    emptyFilteredAction: "Clear filters",
+  },
+  calendar: {
+    emptyTitle: (view: string) => `Nothing scheduled this ${view}`,
+    emptyBody:
+      "Only activities due in this window appear here. Step to another week or month to see the rest.",
+    emptyAction: "Add activity",
+    emptyFilteredTitle: (view: string) => `No activities match these filters this ${view}`,
+    emptyFilteredBody: "This window does have activities. The filters above exclude all of them.",
+    emptyFilteredAction: "Clear filters",
   },
   titles: {
     calendar: "Calendar",

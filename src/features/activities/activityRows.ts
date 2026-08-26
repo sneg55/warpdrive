@@ -3,6 +3,7 @@ import { alias } from "drizzle-orm/pg-core";
 import type { Db } from "@/db/client";
 import { activities, activityTypes, users } from "@/db/schema";
 import { deals } from "@/db/schema/deals";
+import { leads } from "@/db/schema/leads";
 import { organizations } from "@/db/schema/organizations";
 import { persons } from "@/db/schema/persons";
 import { pipelines } from "@/db/schema/pipelines";
@@ -27,6 +28,8 @@ export interface ActivityTableRow {
   priority: string | null;
   done: boolean;
   dueAtIso: string | null;
+  // No time was set; the list shows a date only.
+  allDay: boolean;
   durationMinutes: number | null;
   location: string | null;
   assigneeId: string;
@@ -34,6 +37,8 @@ export interface ActivityTableRow {
   ownerName: string;
   dealId: string | null;
   dealTitle: string | null;
+  leadId: string | null;
+  leadTitle: string | null;
   personId: string | null;
   personName: string | null;
   personEmail: string | null;
@@ -105,6 +110,7 @@ export async function listActivityRows(
       id: activities.id,
       subject: activities.subject,
       dueAt: activities.dueAt,
+      allDay: activities.allDay,
       done: activities.done,
       durationMinutes: activities.durationMinutes,
       location: activities.location,
@@ -117,6 +123,8 @@ export async function listActivityRows(
       personId: activities.personId,
       orgId: activities.orgId,
       dealTitle: deals.title,
+      leadVisibleId: leads.id,
+      leadTitle: leads.title,
       dealOwnerId: deals.ownerId,
       dealLevel: deals.visibilityLevel,
       dealGroupId: deals.visibilityGroupId,
@@ -142,6 +150,7 @@ export async function listActivityRows(
     .innerJoin(activityTypes, eq(activities.typeId, activityTypes.id))
     .leftJoin(deals, and(eq(deals.id, activities.dealId), isNull(deals.deletedAt)))
     .leftJoin(pipelines, eq(pipelines.id, deals.pipelineId))
+    .leftJoin(leads, and(eq(leads.id, activities.leadId), isNull(leads.deletedAt)))
     .leftJoin(persons, and(eq(persons.id, activities.personId), isNull(persons.deletedAt)))
     .leftJoin(
       organizations,
@@ -168,6 +177,7 @@ export async function listActivityRows(
       priority: row.priority,
       done: row.done,
       dueAtIso: row.dueAt === null ? null : row.dueAt.toISOString(),
+      allDay: row.allDay,
       durationMinutes: row.durationMinutes,
       location: row.location,
       assigneeId: row.assigneeId,
@@ -177,6 +187,8 @@ export async function listActivityRows(
       ownerName: row.ownerName ?? "",
       dealId: row.dealId,
       dealTitle: row.dealTitle,
+      leadId: row.leadVisibleId,
+      leadTitle: row.leadTitle,
       // Link-safe ids from the deletedAt-filtered joins (null when the contact is soft-deleted), so
       // the list never links to a deleted contact's 404 page. Raw row.personId/orgId still gate
       // visibility above via buildActivityVisibility.

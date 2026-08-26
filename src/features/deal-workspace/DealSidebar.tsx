@@ -103,11 +103,11 @@ export function DealSidebar({
   function sectionActions(
     label: string,
     menuItems: SectionHeaderMenuItem[],
-    opts: { fillGaps?: boolean; bulkSectionId?: DealSidebarSectionId; noEdit?: boolean } = {},
+    opts: { bulkSectionId?: DealSidebarSectionId; noEdit?: boolean } = {},
   ): (ctx: { hideEmpty: boolean; showEmptyFields: () => void }) => React.ReactNode {
     // Sections with editable fields (bulkSectionId set) turn the pencil into a section bulk-edit;
     // sections without (e.g. Overview) keep the pencil as the reveal-empties toggle.
-    return ({ hideEmpty, showEmptyFields }) => (
+    return ({ showEmptyFields }) => (
       <SectionHeaderMenu
         sectionLabel={label}
         onEdit={
@@ -118,8 +118,6 @@ export function DealSidebar({
               : showEmptyFields
         }
         menuItems={menuItems}
-        fillGapsPressed={!hideEmpty}
-        onToggleFillGaps={opts.fillGaps === true ? showEmptyFields : undefined}
       />
     );
   }

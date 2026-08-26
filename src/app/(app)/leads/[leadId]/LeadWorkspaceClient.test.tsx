@@ -44,6 +44,7 @@ vi.mock("@/features/activities/actions", () => ({ createActivityAction }));
 const refetchTimeline = vi.fn();
 vi.mock("@/lib/trpc-client", () => ({
   trpc: {
+    enrichment: { status: { useQuery: () => ({ data: { ready: false, providers: [] } }) } },
     lead: {
       leadTimeline: {
         useQuery: () => ({
@@ -66,6 +67,7 @@ vi.mock("@/lib/trpc-client", () => ({
     activities: {
       listTypes: { useQuery: () => ({ data: [{ id: "t1", key: "call", name: "Call" }] }) },
       availability: { useQuery: () => ({ data: { busy: false } }) },
+      dayLoad: { useQuery: () => ({ data: undefined }) },
     },
     // ActivityComposerInline (mounted for real via SharedComposeBar in this file's
     // un-mocked render tree) also reads these two.
@@ -80,7 +82,10 @@ vi.mock("@/lib/trpc-client", () => ({
       listPeopleForOrg: { useQuery: () => ({ data: [] }) },
     },
     // LeadHeader invalidates the inbox list after a delete, so it reads utils on every render.
-    useUtils: () => ({ lead: { list: { invalidate: vi.fn(async () => {}) } } }),
+    useUtils: () => ({
+      lead: { list: { invalidate: vi.fn(async () => {}) } },
+      activities: { dayLoad: { invalidate: vi.fn(async () => {}) } },
+    }),
   },
 }));
 

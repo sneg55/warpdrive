@@ -36,6 +36,7 @@ vi.mock("@/features/deal-workspace/DealActionErrorProvider", () => ({
   useDealActionError: () => reportError,
 }));
 
+import { DetailDrawerCloseContext } from "@/features/navigation/detailDrawerClose";
 import { DealActionsMenu } from "./DealActionsMenu";
 
 const writeText = vi.fn(() => Promise.resolve());
@@ -154,6 +155,22 @@ it("confirming the dialog calls deleteDealAction and returns to the pipeline", a
     ),
   );
   await waitFor(() => expect(push).toHaveBeenCalledWith("/pipeline"));
+});
+
+it("dismisses the drawer instead of pushing when the deal is open as a slide-over", async () => {
+  // Pushing here is a soft navigation, and Next renders a parallel slot's previously active state
+  // on one, so the drawer would stay open on the deal that was just deleted.
+  const close = vi.fn();
+  const user = userEvent.setup();
+  render(
+    <DetailDrawerCloseContext.Provider value={close}>
+      <DealActionsMenu {...props} />
+    </DetailDrawerCloseContext.Provider>,
+  );
+  const dialog = await openDeleteConfirm(user);
+  await user.click(within(dialog).getByRole("button", { name: "Delete" }));
+  await waitFor(() => expect(close).toHaveBeenCalled());
+  expect(push).not.toHaveBeenCalled();
 });
 
 it("cancelling the dialog closes it without deleting", async () => {

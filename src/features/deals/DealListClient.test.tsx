@@ -22,6 +22,10 @@ vi.mock("@/lib/trpc-client", () => ({
   trpc: {
     useUtils: () => ({ client: {} }),
     identity: { assignableUsers: { useQuery: () => ({ data: [] }) } },
+    labels: {
+      listByTarget: { useQuery: () => ({ data: [] }) },
+      appliedNames: { useQuery: () => ({ data: [] }) },
+    },
   },
 }));
 vi.mock("@/utils/csrfCookie", () => ({ readCsrfToken: () => "csrf" }));

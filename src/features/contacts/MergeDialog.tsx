@@ -66,9 +66,9 @@ export function MergeDialog({
   }
 
   return (
-    <div className="space-y-3 rounded-md border border-gray-200 p-4">
+    <div className="space-y-3 rounded-md border bg-card p-4">
       <div className="space-y-1">
-        <span className="block text-sm text-gray-700">Merge with</span>
+        <span className="block text-sm text-muted-foreground">Merge with</span>
         <Select
           ariaLabel="Merge with"
           value={partnerId}
@@ -85,7 +85,7 @@ export function MergeDialog({
       </div>
 
       <div className="space-y-1">
-        <span className="block text-sm text-gray-700">Survivor</span>
+        <span className="block text-sm text-muted-foreground">Survivor</span>
         <div className={partner === null ? "pointer-events-none opacity-50" : undefined}>
           <Select
             ariaLabel="Survivor"

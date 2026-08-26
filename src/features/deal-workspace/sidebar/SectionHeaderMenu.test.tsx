@@ -14,14 +14,13 @@ it("renders a pencil, exact Organization menu items, handlers, and Fill the gaps
   const onSwitch = vi.fn();
   const onUnlink = vi.fn();
   const onCustomize = vi.fn();
-  const onToggleFillGaps = vi.fn();
+  const onFillGaps = vi.fn();
 
   render(
     <SectionHeaderMenu
       sectionLabel={STRINGS.dealSidebar.sections.organization}
       onEdit={onEdit}
-      fillGapsPressed={false}
-      onToggleFillGaps={onToggleFillGaps}
+      onFillGaps={onFillGaps}
       menuItems={[
         { label: STRINGS.dealSidebar.menu.switchOrganization, onSelect: onSwitch },
         { label: STRINGS.dealSidebar.menu.unlinkOrganization, onSelect: onUnlink },
@@ -34,7 +33,7 @@ it("renders a pencil, exact Organization menu items, handlers, and Fill the gaps
   expect(onEdit).toHaveBeenCalledTimes(1);
 
   await user.click(screen.getByRole("button", { name: "Fill the gaps" }));
-  expect(onToggleFillGaps).toHaveBeenCalledTimes(1);
+  expect(onFillGaps).toHaveBeenCalledTimes(1);
 
   const trigger = screen.getByRole("button", { name: "Organization options" });
   expect(trigger).toHaveAttribute("aria-haspopup", "menu");
@@ -69,4 +68,39 @@ it("renders a pencil, exact Organization menu items, handlers, and Fill the gaps
     screen.getByRole("menuitem", { name: STRINGS.dealSidebar.menu.customizeFields }),
   );
   expect(onCustomize).toHaveBeenCalledTimes(1);
+});
+
+it("omits Fill the gaps entirely when no handler is supplied", () => {
+  render(<SectionHeaderMenu sectionLabel="Person" menuItems={[]} />);
+  expect(
+    screen.queryByRole("button", { name: STRINGS.dealSidebar.menu.fillGaps }),
+  ).not.toBeInTheDocument();
+});
+
+it("disables Fill the gaps and describes why", async () => {
+  const user = userEvent.setup();
+  const onFillGaps = vi.fn();
+  render(
+    <SectionHeaderMenu
+      sectionLabel="Person"
+      menuItems={[]}
+      onFillGaps={onFillGaps}
+      fillGapsDisabledReason="Every provider is rate limited until 14:20"
+    />,
+  );
+
+  const button = screen.getByRole("button", { name: STRINGS.dealSidebar.menu.fillGaps });
+  expect(button).toBeDisabled();
+  await user.hover(button);
+  expect(await screen.findAllByText("Every provider is rate limited until 14:20")).not.toHaveLength(
+    0,
+  );
+  expect(onFillGaps).not.toHaveBeenCalled();
+});
+
+it("disables Fill the gaps while a run is in flight", () => {
+  render(
+    <SectionHeaderMenu sectionLabel="Person" menuItems={[]} onFillGaps={() => {}} fillGapsBusy />,
+  );
+  expect(screen.getByRole("button", { name: STRINGS.dealSidebar.menu.fillGaps })).toBeDisabled();
 });

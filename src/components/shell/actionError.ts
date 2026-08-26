@@ -38,6 +38,12 @@ const CONTENT: Record<string, ActionErrorContent> = {
     title: "This lead is already converted",
     body: "It already has a deal. Refresh the page to see the current state.",
   },
+  // The server rejected the filter's shape, so refreshing changes nothing: the user has to fix a
+  // condition before the save can succeed.
+  [ERROR_IDS.DEAL_FILTER_INVALID]: {
+    title: "One of these conditions isn't valid",
+    body: "Check each condition's value: a number field needs a number, and a date field needs a date.",
+  },
 };
 
 export function actionErrorContent(errorId?: string): ActionErrorContent {

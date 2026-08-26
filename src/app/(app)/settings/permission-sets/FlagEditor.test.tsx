@@ -68,4 +68,11 @@ describe("FlagEditor", () => {
     fireEvent.click(screen.getByRole("button", { name: "Save flags" }));
     expect(await screen.findByRole("alert")).toHaveTextContent(IDENTITY_ERROR_MESSAGES.permission);
   });
+
+  it("labels its fieldsets with the muted token so Night keeps them readable", () => {
+    render(<FlagEditor setId={SET_ID} name="Sales" flags={{}} onSaved={vi.fn()} />);
+    const legend = screen.getByText("Global");
+    expect(legend).toHaveClass("text-muted-foreground");
+    expect(legend.className).not.toMatch(/-gray-/);
+  });
 });

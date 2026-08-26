@@ -17,12 +17,14 @@ import { canSee } from "@/features/permissions/canSee";
 import type { PermSetUser } from "@/features/permissions/effective";
 import type { VisiblePersonOrOrg } from "@/features/permissions/types";
 import type { CalendarActivity } from "./calendar";
+import { isActivityOverdue } from "./overdue";
 import { resolveActivityVisibility } from "./visibility";
 
 interface ActivityRow {
   id: string;
   subject: string;
   dueAt: Date | null;
+  allDay: boolean;
   durationMinutes: number | null;
   typeKey: string;
   done: boolean;
@@ -65,6 +67,7 @@ function toActivity(row: ActivityRow): Activity {
     subject: row.subject,
     priority: null,
     dueAt: row.dueAt,
+    allDay: row.allDay,
     endAt: null,
     durationMinutes: row.durationMinutes,
     done: row.done,
@@ -117,6 +120,7 @@ function toCalendarActivity(
     id: row.id,
     subject: row.subject,
     dueAt: row.dueAt,
+    allDay: row.allDay,
     durationMinutes: row.durationMinutes,
     typeKey: row.typeKey,
     done: row.done,
@@ -126,7 +130,7 @@ function toCalendarActivity(
     // authorized via its deal parent, which does not imply access to an owner-only linked record.
     personId: personOk ? row.personVisibleId : null,
     orgId: orgOk ? row.orgVisibleId : null,
-    overdue: row.done === false && row.dueAt.getTime() < now,
+    overdue: isActivityOverdue(row.dueAt, row.allDay, row.done, now),
     ownerName: row.ownerName,
     // Defense in depth: re-sanitize author HTML at the read boundary (same pattern as
     // emailAuthoringReads). Idempotent on already-clean HTML written via createActivity, so no
@@ -164,6 +168,7 @@ export async function listActivitiesForEntity(
       id: activities.id,
       subject: activities.subject,
       dueAt: activities.dueAt,
+      allDay: activities.allDay,
       durationMinutes: activities.durationMinutes,
       typeKey: activityTypes.key,
       done: activities.done,

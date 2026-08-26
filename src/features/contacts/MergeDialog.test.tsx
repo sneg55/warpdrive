@@ -99,4 +99,13 @@ describe("MergeDialog", () => {
     // The current record (p1) was merged away, so the caller must be told to go to p2.
     await vi.waitFor(() => expect(onMerged).toHaveBeenCalledWith("p2"));
   });
+
+  it("sits on a card surface with token-coloured labels", () => {
+    render(<MergeDialog kind="org" current={{ id: "o1", name: "Acme" }} onMerged={() => {}} />);
+    const label = screen.getByText("Merge with");
+    expect(label).toHaveClass("text-muted-foreground");
+    const panel = label.closest("div.rounded-md");
+    expect(panel).toHaveClass("bg-card");
+    expect(panel?.className).not.toMatch(/-gray-/);
+  });
 });

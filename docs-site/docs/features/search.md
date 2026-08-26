@@ -14,6 +14,11 @@ leads at once.
 Results are grouped by record type, so a company name that matches both an
 organization and several deals shows both rather than burying one.
 
+Organizations are also reachable by their **domain**: searching `example.com`, a
+full URL, or a pasted email address finds the organization holding that domain, and
+the domain is shown on the result row. A name match still ranks above an
+organization that merely shares the domain.
+
 Selecting a result opens that record.
 
 ## Visibility

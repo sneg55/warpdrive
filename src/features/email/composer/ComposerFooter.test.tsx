@@ -1,10 +1,12 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 afterEach(cleanup);
 
+import { INLINE_CONTROL_SURFACE } from "@/components/ui/inlineControlSurface";
 import { ComposerFooter } from "./ComposerFooter";
 import { COMPOSER_STRINGS } from "./composer.constants";
 
@@ -204,5 +206,48 @@ describe("ComposerFooter tracking toggles", () => {
     // Flex row with no `order` styling, so DOM order equals visual left-to-right order.
     // PD places Discard to the LEFT of the Send split; Send must follow Discard in the document.
     expect(discard.compareDocumentPosition(send) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  // The tracking toggles sit in the same bar as the visibility picker, so their visible text is
+  // part of the hit area and the whole control takes the shared hover surface too.
+  it.each([
+    ["Opens", "onTrackOpensChange"],
+    ["Links", "onTrackLinksChange"],
+  ] as const)("toggles %s when its visible label text is clicked", async (text, handlerProp) => {
+    const user = userEvent.setup();
+    const handler = vi.fn();
+    render(
+      <ComposerFooter
+        canSend={true}
+        sending={false}
+        onSend={vi.fn()}
+        onDiscard={vi.fn()}
+        trackOpens={false}
+        onTrackOpensChange={handlerProp === "onTrackOpensChange" ? handler : vi.fn()}
+        trackLinks={false}
+        onTrackLinksChange={handlerProp === "onTrackLinksChange" ? handler : vi.fn()}
+      />,
+    );
+    await user.click(screen.getByText(text));
+    expect(handler).toHaveBeenCalledWith(true);
+  });
+
+  it.each([
+    "Opens",
+    "Links",
+  ])("gives the %s toggle the same inline hover surface as the visibility control", (text) => {
+    render(
+      <ComposerFooter
+        canSend={true}
+        sending={false}
+        onSend={vi.fn()}
+        onDiscard={vi.fn()}
+        trackOpens={false}
+        onTrackOpensChange={vi.fn()}
+        trackLinks={false}
+        onTrackLinksChange={vi.fn()}
+      />,
+    );
+    expect(screen.getByText(text).parentElement).toHaveClass(...INLINE_CONTROL_SURFACE.split(" "));
   });
 });

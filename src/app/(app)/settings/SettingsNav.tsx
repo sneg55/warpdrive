@@ -8,7 +8,9 @@ import {
   MailCheck,
   Plug,
   ShieldCheck,
+  Sparkles,
   Table2,
+  Target,
   Upload,
   User,
   Users,
@@ -17,6 +19,8 @@ import {
 import { usePathname } from "next/navigation";
 import type React from "react";
 import { SecondaryNavLink } from "@/components/navigation/SecondaryNavLink";
+import { ENRICHMENT_STRINGS } from "@/constants/enrichmentStrings";
+import { SETTINGS_STRINGS } from "@/constants/settingsStrings";
 import { STRINGS } from "@/constants/strings";
 
 interface NavItem {
@@ -41,13 +45,14 @@ const MY_ACCOUNT: NavSection = {
   ],
 };
 
-// Company items are admin-only; hidden (not disabled) for non-admins.
+// Company items need the MANAGE flag (or admin); hidden, not disabled, for everyone else.
 const COMPANY: NavSection = {
   title: STRINGS.settings.companyOverview,
   items: [
     { href: "/settings/company", label: STRINGS.settings.companySettings, icon: Building2 },
     { href: "/settings/users", label: STRINGS.settings.users, icon: Users },
     { href: "/settings/teams", label: STRINGS.settings.teams, icon: UsersRound },
+    { href: "/settings/goals", label: SETTINGS_STRINGS.goals, icon: Target },
     {
       href: "/settings/permission-sets",
       label: STRINGS.settings.permissionSets,
@@ -58,13 +63,23 @@ const COMPANY: NavSection = {
   ],
 };
 
+// The enrichment page, its config query and its settings actions all require a real admin, so the
+// MANAGE flag alone must not surface this link.
+const ENRICHMENT_ITEM: NavItem = {
+  href: "/settings/enrichment",
+  label: ENRICHMENT_STRINGS.nav,
+  icon: Sparkles,
+};
+
 // Grouped left secondary menu (Pipedrive settings IA): My account for everyone, Company overview
-// for admins. Replaces the old flat tab bar.
+// for managers and admins. Replaces the old flat tab bar.
 export function SettingsNav({
   isAdmin,
+  canManageCompany,
   canImport,
 }: {
   isAdmin: boolean;
+  canManageCompany: boolean;
   canImport: boolean;
 }): React.ReactNode {
   const pathname = usePathname();
@@ -73,12 +88,13 @@ export function SettingsNav({
     label: STRINGS.settings.importData,
     icon: Upload,
   };
-  const company: NavSection = {
-    title: COMPANY.title,
-    items: canImport ? [...COMPANY.items, importItem] : COMPANY.items,
-  };
-  const sections = isAdmin
-    ? [MY_ACCOUNT, company]
+  const companyItems = [
+    ...COMPANY.items,
+    ...(isAdmin ? [ENRICHMENT_ITEM] : []),
+    ...(canImport ? [importItem] : []),
+  ];
+  const sections = canManageCompany
+    ? [MY_ACCOUNT, { title: COMPANY.title, items: companyItems }]
     : canImport
       ? [MY_ACCOUNT, { title: COMPANY.title, items: [importItem] }]
       : [MY_ACCOUNT];

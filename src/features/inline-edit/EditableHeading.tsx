@@ -27,7 +27,7 @@ export function EditableHeading({ title, label, onCommit }: EditableHeadingProps
 
   const editor = f.editing ? (
     <div className="min-w-0">
-      <h1 className="min-w-0 text-[25px]">
+      <h1 className="min-w-0 text-display">
         <input
           // biome-ignore lint/a11y/noAutofocus: inline edit focuses immediately on activation
           autoFocus
@@ -64,7 +64,7 @@ export function EditableHeading({ title, label, onCommit }: EditableHeadingProps
         onStartEdit={f.start}
         value={title}
         valueElement="h1"
-        valueClassName="truncate text-[25px] font-semibold text-foreground"
+        valueClassName="truncate text-display font-semibold text-foreground"
       >
         {editor}
       </InlineFieldShell>

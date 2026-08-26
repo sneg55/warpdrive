@@ -1,4 +1,5 @@
 "use client";
+import { Ellipsis, Pin } from "lucide-react";
 import type React from "react";
 import { useCallback, useState } from "react";
 import {
@@ -142,20 +143,14 @@ export function NoteCard({
                 : "shrink-0 rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
             }
           >
-            <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor">
-              <path d="M14 4v6l3 3v2h-5v5l-1 1-1-1v-5H4v-2l3-3V4H6V2h10v2z" />
-            </svg>
+            <Pin aria-hidden="true" className="h-4 w-4" />
           </button>
           <DropdownMenu>
             <DropdownMenuTrigger
               aria-label="More actions"
               className="relative shrink-0 rounded p-1 text-muted-foreground after:absolute after:-inset-2 after:content-[''] hover:bg-accent hover:text-foreground"
             >
-              <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor">
-                <circle cx="5" cy="12" r="1.6" />
-                <circle cx="12" cy="12" r="1.6" />
-                <circle cx="19" cy="12" r="1.6" />
-              </svg>
+              <Ellipsis aria-hidden="true" className="h-4 w-4" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" aria-label="More actions" className="min-w-40">
               <DropdownMenuItem onSelect={() => setEditing(true)}>Edit</DropdownMenuItem>

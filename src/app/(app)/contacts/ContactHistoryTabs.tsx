@@ -4,6 +4,7 @@ import { useState } from "react";
 import { PILL_TAB, Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { HistoryFeed } from "@/features/deal-workspace/HistoryFeed";
 import type { HistoryTab } from "@/features/deal-workspace/HistoryTypeTabs";
+import { historyTabLabel } from "@/features/deal-workspace/historyTabCounts";
 import type { HistoryItem } from "@/features/deal-workspace/historyTimeline";
 import type { EmailCardScope } from "@/features/email/EmailTimelineCard";
 import { FileAttachments } from "@/features/files/FileAttachments";
@@ -63,15 +64,11 @@ export function ContactHistoryTabs({
   return (
     <Tabs value={tab} onValueChange={(v) => setTab(v as HistoryTab)}>
       <TabsList className="flex-wrap gap-1">
-        {TABS.map((t) => {
-          const count = counts[t];
-          return (
-            <TabsTrigger key={t} value={t} className={PILL_TAB}>
-              {TAB_LABELS[t]}
-              {count !== undefined ? ` (${count})` : ""}
-            </TabsTrigger>
-          );
-        })}
+        {TABS.map((t) => (
+          <TabsTrigger key={t} value={t} className={PILL_TAB}>
+            {historyTabLabel(TAB_LABELS[t], counts[t])}
+          </TabsTrigger>
+        ))}
       </TabsList>
 
       <div className="pt-4">

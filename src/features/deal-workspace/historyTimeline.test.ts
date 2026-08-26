@@ -13,6 +13,7 @@ function activity(id: string, subject: string, dueAt: Date, done = false): Calen
     id,
     subject,
     dueAt,
+    allDay: false,
     durationMinutes: null,
     typeKey: "call",
     done,

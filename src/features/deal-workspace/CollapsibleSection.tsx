@@ -1,5 +1,5 @@
 "use client";
-import { Filter } from "lucide-react";
+import { ChevronDown, Filter } from "lucide-react";
 import type React from "react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -34,21 +34,13 @@ export function CollapsibleSection({
           onClick={() => setOpen((v) => !v)}
           className="flex flex-1 items-center gap-2 px-3 py-2 text-base font-semibold text-foreground hover:bg-accent/50"
         >
-          <svg
+          <ChevronDown
             aria-hidden="true"
-            viewBox="0 0 24 24"
             className={cn(
               "h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform duration-150 ease-out motion-reduce:transition-none",
               open ? "" : "-rotate-90",
             )}
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M6 9l6 6 6-6" />
-          </svg>
+          />
           {title}
         </button>
         {showFilter && (

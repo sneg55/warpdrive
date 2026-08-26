@@ -7,6 +7,14 @@ import type { Organization } from "@/db/schema";
 // Stub the heavy field-grid block and the labels control so this test isolates the section's own
 // wiring decision: does it render the (opt-in) labels control, with the right entity + labels?
 vi.mock("./OrgBlock", () => ({ OrgBlock: () => <div data-testid="org-block" /> }));
+// The header's enrichment button asks tRPC whether a provider is connected; nothing is here.
+vi.mock("@/lib/trpc-client", () => ({
+  trpc: {
+    enrichment: { status: { useQuery: () => ({ data: { ready: false, providers: [] } }) } },
+    useUtils: () => ({ contacts: { contactTimeline: { invalidate: () => Promise.resolve() } } }),
+  },
+}));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 vi.mock("@/features/contacts/ContactLabelsControl", () => ({
   ContactLabelsControl: (props: { entityType: string; entityId: string; labels: string[] }) => (
     <div data-testid="labels-control">

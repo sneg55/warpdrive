@@ -207,6 +207,61 @@ export async function notifyDealWonLost(
   }
 }
 
+// notifyDealEmailReceived: an inbound email landed on a thread linked to this deal.
+// System event, so there is no actor and nobody is excluded: the mailbox owner wants the
+// deal-side notification too. Recipients mirror notifyDealWonLost (owner union followers,
+// deduplicated) so a deal you own reaches you without having to follow it first.
+export async function notifyDealEmailReceived(
+  db: Db,
+  args: {
+    dealId: string;
+    threadId: string;
+    messageId: string;
+    subject: string | null;
+    fromEmail: string;
+    signal: AbortSignal;
+  },
+): Promise<void> {
+  args.signal.throwIfAborted();
+
+  const [dealRow] = await db
+    .select({ ownerId: deals.ownerId })
+    .from(deals)
+    .where(eq(deals.id, args.dealId));
+  args.signal.throwIfAborted();
+  if (dealRow === undefined) return;
+
+  const fIds = await followerIds(db, args.dealId, null, args.signal);
+  const ids = fIds.includes(dealRow.ownerId) ? fIds : [...fIds, dealRow.ownerId];
+
+  const type = "deal_email_received" satisfies NotificationType;
+  const results = await fanOut(
+    db,
+    ids.map((id) => ({
+      recipientId: id,
+      type,
+      entityType: "deal",
+      entityId: args.dealId,
+      actorId: null,
+      payload: {
+        threadId: args.threadId,
+        messageId: args.messageId,
+        subject: args.subject,
+        fromEmail: args.fromEmail,
+      },
+    })),
+    args.signal,
+  );
+
+  for (let i = 0; i < ids.length; i++) {
+    const r = results[i];
+    const recipientId = ids[i];
+    if (r === undefined || recipientId === undefined) continue;
+    if (!r.ok || "suppressed" in r.value) continue;
+    await enqueueEmailNotification(db, r.value.notificationId, recipientId, type, args.signal);
+  }
+}
+
 // notifyEmailEvent: notify the mailbox owner of an email open or click event.
 // The producer routes email_message entityType through canSeeEmailParent
 // (no admin bypass) automatically.

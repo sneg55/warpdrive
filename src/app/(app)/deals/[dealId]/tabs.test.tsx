@@ -29,6 +29,7 @@ vi.mock("@/lib/trpc-client", () => ({
       listMessagesForDeal: { useQuery: () => ({ data: [] }) },
       drafts: { listForDeal: { useQuery: () => ({ data: [] }) } },
     },
+    files: { listForEntity: { useQuery: () => ({ data: [] }) } },
     collaboration: {
       listNotes: {
         useQuery: () => ({ data: noteState.notes }),
@@ -68,6 +69,7 @@ function makeActivity(overrides: Partial<CalendarActivity> = {}): CalendarActivi
     id: "a1",
     subject: "Call",
     dueAt: new Date("2026-07-03T00:00:00Z"),
+    allDay: false,
     durationMinutes: null,
     typeKey: "call",
     done: false,
@@ -121,24 +123,6 @@ it("shows Focus and History at once with no toggle", () => {
 });
 
 describe("WorkspaceTabs", () => {
-  it("keeps Activities and Notes counts but drops the changelog count", () => {
-    // A completed activity so it lands in the History bucket the badge counts from.
-    render(
-      <WorkspaceTabs
-        deal={deal}
-        tab="all"
-        onTab={() => {}}
-        activities={[makeActivity({ done: true })]}
-        stages={stages}
-        createdActorName="Nick"
-      />,
-    );
-    expect(screen.getByRole("tab", { name: "Activities (1)" })).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: "Notes (1)" })).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: "Changelog" })).toBeInTheDocument();
-    expect(screen.queryByRole("tab", { name: /Changelog \(/ })).not.toBeInTheDocument();
-  });
-
   it("Activities badge counts only the completed activities shown in History, not the unfiltered total", () => {
     // 3 open (Focus-bound) + 1 completed (History-bound): the badge above the
     // single-item History list must read (1), not the raw activities.length of 4.
@@ -214,8 +198,9 @@ describe("WorkspaceTabs", () => {
     // History (default tab "all") is unaffected by Focus and still shows the rest of the log.
     expect(historySection.getByText("Deal created")).toBeInTheDocument();
     expect(historySection.getByText("hi")).toBeInTheDocument();
-    // The open activity lives in Focus, so History's Activities badge reads (0), not (1).
-    expect(historySection.getByRole("tab", { name: "Activities (0)" })).toBeInTheDocument();
+    // The open activity lives in Focus, so History's Activities tab carries no badge at all.
+    expect(historySection.getByRole("tab", { name: "Activities" })).toBeInTheDocument();
+    expect(historySection.queryByRole("tab", { name: "Activities (1)" })).not.toBeInTheDocument();
   });
 
   it("floats a pinned note into a Pinned section above Focus, out of the History Notes list", () => {

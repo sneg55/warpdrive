@@ -129,4 +129,18 @@ describe("RelatedOrgsPanel", () => {
 
     expect(await screen.findByText(/couldn.t add/i)).toBeInTheDocument();
   });
+
+  it("draws the relation type and empty line from theme tokens", () => {
+    render(
+      <RelatedOrgsPanel orgId="o1" related={related} orgOptions={orgOptions} onChanged={vi.fn()} />,
+    );
+    expect(screen.getByText("partner")).toHaveClass("text-muted-foreground");
+    expect(screen.getByText("Beta Co")).toHaveClass("text-link");
+
+    cleanup();
+    render(
+      <RelatedOrgsPanel orgId="o1" related={[]} orgOptions={orgOptions} onChanged={vi.fn()} />,
+    );
+    expect(screen.getByText(/no related organizations yet/i)).toHaveClass("text-muted-foreground");
+  });
 });

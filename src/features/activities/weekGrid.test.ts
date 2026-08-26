@@ -19,6 +19,7 @@ describe("week grid", () => {
         id: "m",
         subject: "Conference",
         dueAt: new Date("2026-06-30T09:00:00Z"), // Tuesday, before the week
+        allDay: false,
         endAt: new Date("2026-07-02T17:00:00Z"), // Thursday, inside the week
         durationMinutes: null,
         typeKey: "meeting",
@@ -46,6 +47,7 @@ describe("week grid", () => {
         id: "1",
         subject: "A",
         dueAt: new Date("2026-07-02T10:00:00Z"),
+        allDay: false,
         durationMinutes: 30,
         typeKey: "call",
         done: false,
@@ -59,6 +61,7 @@ describe("week grid", () => {
         id: "2",
         subject: "B",
         dueAt: new Date("2026-06-20T10:00:00Z"),
+        allDay: false,
         durationMinutes: null,
         typeKey: "task",
         done: false,
@@ -82,6 +85,7 @@ describe("week grid", () => {
       id: "od",
       subject: "Past due",
       dueAt: new Date("2026-07-02T10:00:00Z"),
+      allDay: false,
       durationMinutes: null,
       typeKey: "task",
       done: false,

@@ -3,23 +3,31 @@ import { Building2, CalendarClock, Clock, User } from "lucide-react";
 import type React from "react";
 import { useState } from "react";
 import { Combobox, type ComboboxOption } from "@/components/ui/Combobox";
-import { DatePicker } from "@/components/ui/DatePicker";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, type SelectOption } from "@/components/ui/Select";
 import { TimePicker } from "@/components/ui/TimePicker";
 import { ACTIVITY_PRIORITIES, ACTIVITY_PRIORITY_KEYS } from "@/constants/activityPriorities";
-import { composeDueAtIso } from "@/features/activities/activityTime";
+import { ActivityDatePicker } from "@/features/activities/ActivityDatePicker";
+import { composeDueAt } from "@/features/activities/activityTime";
 import { ComposerFieldRow } from "@/features/deal-workspace/composer/ComposerFieldRow";
 import { TypeIconRail } from "@/features/deal-workspace/composer/TypeIconRail";
 import { trpc } from "@/lib/trpc-client";
 import { readCsrfToken } from "@/utils/csrfCookie";
 import { createActivityAction } from "./actions";
+import { useInvalidateDayLoad } from "./useInvalidateDayLoad";
 
 // Shared icon size for the composer-style field-row leading icons (matches ActivityComposerInline).
 const ICON = "h-4 w-4";
 
 // Quick-add Activity dialog (Pipedrive): type + subject + priority + due date, with optional
 // person/organization links. Wired to the CSRF-guarded createActivityAction.
+// dueAt and allDay always travel together; sending a timestamp without the flag is what made
+// a blank time read back as midnight.
+function composedDue(date: string, time: string): { dueAt: string | null; allDay: boolean } {
+  const { iso, allDay } = composeDueAt(date, time);
+  return { dueAt: iso, allDay };
+}
+
 export function AddActivityModal({
   onClose,
   onCreated,
@@ -43,6 +51,7 @@ export function AddActivityModal({
   const typesQ = trpc.activities.listTypes.useQuery();
   const peopleQ = trpc.contacts.listPeople.useQuery({ offset: 0, limit: 500 });
   const orgsQ = trpc.contacts.listOrgs.useQuery({ offset: 0, limit: 500 });
+  const invalidateDayLoad = useInvalidateDayLoad();
   const types = typesQ.data ?? [];
 
   const [typeId, setTypeId] = useState("");
@@ -80,7 +89,7 @@ export function AddActivityModal({
         typeId: effectiveTypeId,
         subject: subject.trim(),
         priority: priority === "" ? null : priority,
-        dueAt: due === "" ? null : composeDueAtIso(due, startTime),
+        ...(due === "" ? { dueAt: null, allDay: false } : composedDue(due, startTime)),
         durationMinutes: null,
         dealId,
         leadId,
@@ -92,11 +101,13 @@ export function AddActivityModal({
       },
       readCsrfToken(),
     );
-    setPending(false);
     if (!r.ok) {
+      setPending(false);
       setError(`Could not create activity (${r.error.id})`);
       return;
     }
+    await invalidateDayLoad();
+    setPending(false);
     onCreated();
     onClose();
   }
@@ -125,14 +136,14 @@ export function AddActivityModal({
             value={subject}
             onChange={(e) => setSubject(e.target.value)}
             placeholder="Subject"
-            className="w-full rounded-md border px-3 py-2 text-[23px] font-medium outline-none focus:border-primary focus:ring-1 focus:ring-primary placeholder:text-muted-foreground"
+            className="w-full rounded-md border px-3 py-2 text-display font-medium outline-none focus:border-primary focus:ring-1 focus:ring-primary placeholder:text-muted-foreground"
           />
           <TypeIconRail types={types} value={effectiveTypeId} onChange={setTypeId} />
 
           <ComposerFieldRow icon={<Clock className={ICON} />}>
             <div className="flex flex-wrap items-center gap-2">
               <div className="w-40">
-                <DatePicker
+                <ActivityDatePicker
                   ariaLabel="Due date"
                   value={due === "" ? null : due}
                   placeholder="Due date"

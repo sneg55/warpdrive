@@ -9,7 +9,10 @@ import "@testing-library/jest-dom/vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("next/navigation", () => ({ usePathname: () => "/activities" }));
+vi.mock("next/navigation", () => ({
+  usePathname: () => "/activities",
+  useRouter: () => ({ push: vi.fn() }),
+}));
 
 afterEach(() => {
   cleanup();
@@ -20,6 +23,7 @@ const refetch = vi.fn();
 const useQuery = vi.fn();
 vi.mock("@/lib/trpc-client", () => ({
   trpc: {
+    useUtils: () => ({ activities: { dayLoad: { invalidate: () => Promise.resolve() } } }),
     activities: {
       listRows: { useQuery: (input?: unknown) => useQuery(input) },
       listTypes: { useQuery: () => ({ data: [{ id: "t1", key: "call", name: "Call" }] }) },
@@ -57,6 +61,8 @@ function row(overrides: Record<string, unknown>) {
     dueAtIso: null,
     dealId: null,
     dealTitle: null,
+    leadId: null,
+    leadTitle: null,
     personId: "pe1",
     personName: "Jane Roe",
     personEmail: "jane@acme.com",

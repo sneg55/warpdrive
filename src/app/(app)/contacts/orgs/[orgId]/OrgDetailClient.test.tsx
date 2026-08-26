@@ -45,6 +45,7 @@ const invalidateRelatedOrgs = vi.fn();
 const invalidateActivityStats = vi.fn();
 vi.mock("@/lib/trpc-client", () => ({
   trpc: {
+    enrichment: { status: { useQuery: () => ({ data: { ready: false, providers: [] } }) } },
     customFields: {
       hiddenBuiltins: {
         useQuery: () => ({ data: { person: [], organization: [], deal: [], activity: [] } }),
@@ -79,11 +80,14 @@ vi.mock("@/lib/trpc-client", () => ({
       listForEntity: { useQuery: () => ({ data: [] }) },
       listTypes: { useQuery: () => ({ data: [{ id: "t1", key: "call", name: "Call" }] }) },
       availability: { useQuery: () => ({ data: { busy: false } }) },
+      dayLoad: { useQuery: () => ({ data: undefined }) },
     },
     labels: { listByTarget: { useQuery: () => ({ data: [] }) } },
     identity: { assignableUsers: { useQuery: () => ({ data: [] }) } },
     email: { listMessagesForContact: { useQuery: () => ({ data: [], isError: false }) } },
+    files: { listForEntity: { useQuery: () => ({ data: [] }) } },
     useUtils: () => ({
+      activities: { dayLoad: { invalidate: vi.fn(async () => {}) } },
       collaboration: { listNotes: { invalidate: invalidateNotes } },
       contacts: {
         contactTimeline: { invalidate: invalidateContactTimeline },

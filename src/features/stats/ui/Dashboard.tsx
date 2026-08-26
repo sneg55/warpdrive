@@ -7,6 +7,10 @@ import { Select } from "@/components/ui/Select";
 import { Tip } from "@/components/ui/tooltip";
 import { STRINGS } from "@/constants/strings";
 import { trpc } from "@/lib/trpc-client";
+import { ActivityTypesWidget, LostReasonsWidget } from "./Breakdowns";
+import { GoalsWidget } from "./GoalsWidget";
+import { Scoreboard } from "./Scoreboard";
+import { WonTrendWidget } from "./TrendWidget";
 import { ActivitiesWidget, DealPerformanceWidget, FunnelWidget, StageSumsWidget } from "./widgets";
 
 // Date range default: current calendar year, computed at render time so it stays valid.
@@ -22,6 +26,12 @@ const ALL_PIPELINES = "all";
 
 interface DashboardProps {
   canViewOthers: boolean;
+  // Whether to offer the link into goal settings. Reading goals needs no permission; setting
+  // someone's quota does.
+  canManageGoals?: boolean;
+  // Resolved server-side in the viewer's timezone so goal periods do not roll a day early or
+  // late for someone sitting near UTC midnight.
+  today: string;
   currency: string;
   // Retained for API stability with the page that renders this component. The
   // dashboard now defaults to "All pipelines" (STATS-08) instead of preselecting
@@ -29,7 +39,12 @@ interface DashboardProps {
   defaultPipelineId?: string | null;
 }
 
-export function Dashboard({ canViewOthers, currency }: DashboardProps) {
+export function Dashboard({
+  canViewOthers,
+  canManageGoals = false,
+  currency,
+  today,
+}: DashboardProps) {
   const [ownerScope, setOwnerScope] = useState<"me" | "all">("me");
   const initial = currentYearRange();
   const [from, setFrom] = useState(initial.from);
@@ -48,6 +63,8 @@ export function Dashboard({ canViewOthers, currency }: DashboardProps) {
 
   // ALL_PIPELINES => null pipelineId (aggregate across all visible pipelines).
   const pipelineId = selectedPipelineId === ALL_PIPELINES ? null : selectedPipelineId;
+
+  const goalsQ = trpc.goals.list.useQuery({ on: today });
 
   const data = trpc.stats.dashboard.useQuery({
     pipelineId,
@@ -73,11 +90,26 @@ export function Dashboard({ canViewOthers, currency }: DashboardProps) {
     body = <p>{STRINGS.dashboard.loading}</p>;
   } else {
     body = (
-      <div className="grid gap-4 md:grid-cols-2">
-        <DealPerformanceWidget data={result.dealPerformance} currency={currency} />
-        <FunnelWidget data={result.funnel} />
-        <ActivitiesWidget data={result.activities} />
-        <StageSumsWidget data={result.stageSums} currency={currency} />
+      <div className="space-y-4">
+        <Scoreboard
+          deals={result.dealPerformance}
+          won={result.wonDealStats}
+          activities={result.activities}
+          winRate={result.winRate}
+          currency={currency}
+        />
+        <GoalsWidget data={goalsQ.data ?? []} currency={currency} canManage={canManageGoals} />
+        {/* Full width above the grid: a time series is the one panel a reader scans left to
+            right, and half a column squeezes twelve months into an unreadable tick run. */}
+        <WonTrendWidget data={result.wonTrend} currency={currency} />
+        <div className="grid gap-4 md:grid-cols-2">
+          <DealPerformanceWidget data={result.dealPerformance} currency={currency} />
+          <FunnelWidget data={result.funnel} ownerScope={result.effectiveOwnerScope} />
+          <ActivitiesWidget data={result.activities} />
+          <StageSumsWidget data={result.stageSums} currency={currency} />
+          <ActivityTypesWidget data={result.activitiesByType} />
+          <LostReasonsWidget data={result.lostReasons} currency={currency} />
+        </div>
       </div>
     );
   }
@@ -85,7 +117,9 @@ export function Dashboard({ canViewOthers, currency }: DashboardProps) {
   return (
     <div className="p-6">
       <div className="mb-4 flex flex-wrap items-center gap-3">
-        <h1 className="text-balance text-lg font-medium">{STRINGS.dashboard.title}</h1>
+        <h1 className="text-balance text-display font-[450] leading-tight tracking-tight">
+          {STRINGS.dashboard.title}
+        </h1>
         <Tip
           label={
             canViewOthers

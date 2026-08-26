@@ -82,7 +82,14 @@ function buildPatch(input: ParsedUpdate): Partial<typeof activities.$inferInsert
     if (input[key] !== undefined) sink[key] = input[key];
   }
   // Transformed columns: dates are coerced and the note is re-sanitized (same helper as create).
-  if (input.dueAt !== undefined) patch.dueAt = input.dueAt === null ? null : new Date(input.dueAt);
+  if (input.dueAt !== undefined) {
+    patch.dueAt = input.dueAt === null ? null : new Date(input.dueAt);
+    // Clearing the date clears the claim with it; otherwise the flag follows what was sent,
+    // so removing a time on an existing activity actually removes it.
+    patch.allDay = input.dueAt !== null && (input.allDay ?? false);
+  } else if (input.allDay !== undefined) {
+    patch.allDay = input.allDay;
+  }
   if (input.endAt !== undefined) patch.endAt = input.endAt === null ? null : new Date(input.endAt);
   if (input.note !== undefined) {
     patch.note = input.note === null ? null : sanitizeAuthorHtml(input.note);

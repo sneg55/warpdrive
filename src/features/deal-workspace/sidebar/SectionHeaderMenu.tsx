@@ -1,5 +1,5 @@
 "use client";
-import { ListPlus, MoreHorizontal, Pencil } from "lucide-react";
+import { MoreHorizontal, Pencil, Sparkles } from "lucide-react";
 import type React from "react";
 import {
   DropdownMenu,
@@ -7,6 +7,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Tip } from "@/components/ui/tooltip";
 import { ICON_BUTTON } from "@/constants/formStyles";
 import { STRINGS } from "@/constants/strings";
 
@@ -24,31 +25,61 @@ interface SectionHeaderMenuProps {
   // kebab; the deal sidebar still passes onEdit for its reveal-empties pencil.
   onEdit?: () => void;
   menuItems: SectionHeaderMenuItem[];
-  fillGapsPressed?: boolean;
-  onToggleFillGaps?: () => void;
+  // Enrichment: the button renders only when a caller supplies a handler, so an install with no
+  // connected provider keeps the header it had before the feature existed.
+  onFillGaps?: () => void;
+  fillGapsBusy?: boolean;
+  // Set means the button is disabled and the text explains it in a tooltip.
+  fillGapsDisabledReason?: string;
 }
 
 const SMALL_ICON_BUTTON = `${ICON_BUTTON} h-8 w-8 border-0 px-0 py-0`;
+
+function FillGapsButton({
+  onFillGaps,
+  fillGapsBusy,
+  fillGapsDisabledReason,
+}: Required<Pick<SectionHeaderMenuProps, "onFillGaps">> &
+  Pick<SectionHeaderMenuProps, "fillGapsBusy" | "fillGapsDisabledReason">): React.ReactNode {
+  const button = (
+    <button
+      type="button"
+      aria-label={STRINGS.dealSidebar.menu.fillGaps}
+      disabled={fillGapsDisabledReason !== undefined || fillGapsBusy === true}
+      onClick={onFillGaps}
+      className={SMALL_ICON_BUTTON}
+    >
+      <Sparkles
+        aria-hidden="true"
+        className={`h-3.5 w-3.5 ${fillGapsBusy === true ? "animate-pulse" : ""}`}
+      />
+    </button>
+  );
+  if (fillGapsDisabledReason === undefined) return button;
+  // A disabled button swallows pointer events, so the tooltip needs a wrapper that still gets them.
+  return (
+    <Tip label={fillGapsDisabledReason}>
+      <span className="inline-flex">{button}</span>
+    </Tip>
+  );
+}
 
 export function SectionHeaderMenu({
   sectionLabel,
   onEdit,
   menuItems,
-  fillGapsPressed,
-  onToggleFillGaps,
+  onFillGaps,
+  fillGapsBusy,
+  fillGapsDisabledReason,
 }: SectionHeaderMenuProps): React.ReactNode {
   return (
     <div className="flex items-center gap-1">
-      {onToggleFillGaps !== undefined && (
-        <button
-          type="button"
-          aria-label={STRINGS.dealSidebar.menu.fillGaps}
-          aria-pressed={fillGapsPressed ?? false}
-          onClick={onToggleFillGaps}
-          className={SMALL_ICON_BUTTON}
-        >
-          <ListPlus aria-hidden="true" className="h-3.5 w-3.5" />
-        </button>
+      {onFillGaps !== undefined && (
+        <FillGapsButton
+          onFillGaps={onFillGaps}
+          fillGapsBusy={fillGapsBusy}
+          fillGapsDisabledReason={fillGapsDisabledReason}
+        />
       )}
       {onEdit !== undefined && (
         <button

@@ -2,11 +2,13 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type React from "react";
+import { useActionError } from "@/components/shell/ActionErrorProvider";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { readCsrfToken } from "@/utils/csrfCookie";
 import { ActivityTypeIcon } from "./ActivityTypeIcon";
 import { completeActivityAction } from "./actions";
 import type { CalendarActivity } from "./calendar";
+import { fmtDue } from "./dueLabel";
 import { groupActivities } from "./groupActivities";
 
 // Serializable row (dueAt as ISO string) so it can cross the server/client boundary.
@@ -14,6 +16,8 @@ export interface ActivityRow {
   id: string;
   subject: string;
   dueAtIso: string;
+  // No time was set; show the day alone.
+  allDay?: boolean;
   typeKey: string;
   done: boolean;
   dealId: string | null;
@@ -33,6 +37,7 @@ function toCalendar(a: ActivityRow): CalendarActivity {
     id: a.id,
     subject: a.subject,
     dueAt: new Date(a.dueAtIso),
+    allDay: a.allDay ?? false,
     durationMinutes: null,
     typeKey: a.typeKey,
     done: a.done,
@@ -58,12 +63,7 @@ function Row({
   onDone: (id: string, currentDone: boolean) => void;
 }): React.ReactNode {
   const href = linkFor(a);
-  const time = new Date(a.dueAtIso).toLocaleString([], {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
+  const time = fmtDue(a.dueAtIso, a.allDay ?? false);
   return (
     <li className="flex items-center gap-3 px-3 py-2 hover:bg-muted/50">
       <Checkbox
@@ -101,13 +101,18 @@ export function ActivityList({
   now: number;
 }): React.ReactNode {
   const router = useRouter();
+  const reportError = useActionError();
   const byId = new Map(items.map((a) => [a.id, a]));
   const grouped = groupActivities(items.map(toCalendar), now);
 
   function onDone(id: string, currentDone: boolean): void {
-    void completeActivityAction({ id, done: !currentDone }, readCsrfToken()).then(() =>
-      router.refresh(),
-    );
+    void completeActivityAction({ id, done: !currentDone }, readCsrfToken()).then((r) => {
+      if (!r.ok) {
+        reportError(r.error.id);
+        return;
+      }
+      router.refresh();
+    });
   }
 
   const sections = (["overdue", "today", "upcoming"] as const)

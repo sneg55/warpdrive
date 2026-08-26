@@ -30,6 +30,8 @@ export const BUILTIN_FIELDS: Record<CustomFieldTarget, readonly BuiltinField[]> 
   ],
   person: [
     L("name", "Name"),
+    F("firstName", "First name"),
+    F("lastName", "Last name"),
     F("emails", "Email"),
     F("phones", "Phone"),
     F("org", "Organization"),

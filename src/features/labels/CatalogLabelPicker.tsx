@@ -46,7 +46,7 @@ export function CatalogLabelPicker({
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className="rounded-full border border-dashed border-gray-300 px-2 py-0.5 text-xs text-muted-foreground hover:border-gray-400 hover:text-foreground">
+      <DropdownMenuTrigger className="rounded-full border border-dashed px-2 py-0.5 text-xs text-muted-foreground hover:border-muted-foreground hover:text-foreground">
         + Add labels
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" aria-label="Labels" className="min-w-52">

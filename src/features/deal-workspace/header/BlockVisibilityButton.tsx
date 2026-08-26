@@ -1,4 +1,5 @@
 "use client";
+import { Eye } from "lucide-react";
 import type React from "react";
 import {
   DropdownMenu,
@@ -23,19 +24,7 @@ export function BlockVisibilityButton({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger aria-label="Toggle detail blocks" className={ICON_BUTTON}>
-        <svg
-          aria-hidden="true"
-          viewBox="0 0 24 24"
-          className="h-4 w-4"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z" />
-          <circle cx="12" cy="12" r="3" />
-        </svg>
+        <Eye aria-hidden="true" className="h-4 w-4" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" aria-label="Detail blocks" className="min-w-44">
         {DEAL_BLOCKS.map((b) => (

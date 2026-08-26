@@ -1,4 +1,5 @@
 "use client";
+import { ArrowUp } from "lucide-react";
 import type React from "react";
 import { Select, type SelectOption } from "@/components/ui/Select";
 import { Tip } from "@/components/ui/tooltip";
@@ -47,20 +48,11 @@ export function BoardSortControl(props: BoardSortControlProps): React.ReactNode 
             onClick={onToggleDirection}
             className="flex items-center justify-center rounded-r-md border-l px-2 py-1.5 text-muted-foreground transition-[color,scale] duration-150 ease-out hover:text-foreground active:scale-[0.96] motion-reduce:transition-colors"
           >
-            <svg
+            {/* Up arrow = ascending; rotated 180deg for descending. */}
+            <ArrowUp
               aria-hidden="true"
-              viewBox="0 0 24 24"
               className={cn("h-4 w-4 transition-transform", direction === "desc" && "rotate-180")}
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              {/* Up arrow = ascending; rotated 180deg for descending. */}
-              <path d="M12 19V5" />
-              <path d="M5 12l7-7 7 7" />
-            </svg>
+            />
           </button>
         </Tip>
       </div>

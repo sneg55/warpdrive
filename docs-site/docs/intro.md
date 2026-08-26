@@ -9,7 +9,8 @@ description: "Warpdrive is an open-source, self-hosted CRM for business-developm
 
 Warpdrive is an open-source, self-hosted CRM for a company's business-development
 team. It covers pipeline management, a deal workspace, contacts and organizations,
-two-way Gmail, user management, notifications, and pipeline stats.
+two-way Gmail, contact enrichment, user management, notifications, and a
+performance page with sales metrics and quota goals.
 
 It runs entirely on infrastructure you control. There is no per-seat bill and no
 vendor holding your customer data.
@@ -25,6 +26,12 @@ vendor holding your customer data.
 - **Email.** Two-way Gmail over OAuth: send from inside the CRM, and see replies on
   the record they belong to.
 - **Activities.** Calls, meetings, and tasks, in a list and on a calendar.
+- **Enrichment.** Fill empty fields on people and organizations from Apollo,
+  RocketReach, and GetProspect, behind an explicit review step.
+- **Performance.** Sales metrics, a stage funnel built from real stage history, and
+  quota goals with pace.
+- **AI access.** An OAuth-protected MCP server so assistants can read and update the
+  CRM under each user's own permissions.
 - **Administration.** Users, teams, permission sets, and visibility groups.
 
 ## What it is not

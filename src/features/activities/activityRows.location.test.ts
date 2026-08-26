@@ -26,6 +26,7 @@ it("surfaces the saved location on an activity table row", async () => {
       ownerId: user.id,
       assigneeId: user.id,
       dueAt: new Date("2026-07-02T10:00:00Z"),
+      allDay: false,
       location: "HQ, 5th floor",
     });
 

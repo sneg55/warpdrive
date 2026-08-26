@@ -33,6 +33,7 @@ interface SelectProps {
   // Native hover tooltip on the trigger, for icon-only triggers that need a title alongside
   // ariaLabel (mirrors the title on other icon-only controls). Omitted by default.
   triggerTitle?: string;
+  disabled?: boolean;
 }
 
 // Radix reserves value="" on RadixSelect.Item/Root to mean "nothing selected, show the
@@ -122,6 +123,20 @@ function SelectSection({
   );
 }
 
+// Radix fills the trigger by portaling the selected item's text into it from an effect, and it
+// only shows its own `placeholder` when its internal value is empty, which EMPTY_SENTINEL makes
+// impossible. So the trigger renders its own content: the matched option's label, or the
+// placeholder when the value matches nothing (unset, or options still loading).
+function triggerLabel(
+  options: SelectOption[],
+  value: string,
+  placeholder: string,
+): React.ReactNode {
+  const selected = options.find((o) => o.value === value);
+  if (selected !== undefined) return selected.label;
+  return <span className="text-muted-foreground">{placeholder}</span>;
+}
+
 // Branded single-select (Radix), the design-system replacement for a native
 // <select>. Supports an optional leading icon per option (activity type picker).
 export function Select({
@@ -133,18 +148,25 @@ export function Select({
   triggerClassName,
   triggerContent,
   triggerTitle,
+  disabled,
 }: SelectProps): React.ReactNode {
   return (
-    <RadixSelect.Root value={toInternal(value)} onValueChange={(v) => onChange(fromInternal(v))}>
+    <RadixSelect.Root
+      value={toInternal(value)}
+      onValueChange={(v) => onChange(fromInternal(v))}
+      disabled={disabled}
+    >
       <RadixSelect.Trigger
         aria-label={ariaLabel}
         title={triggerTitle}
         className={cn(
-          "group flex w-full items-center justify-between rounded-md border bg-card px-2.5 py-1.5 text-sm outline-none transition-[border-color,box-shadow,background-color] duration-150 ease-out focus:border-ring focus:ring-2 focus:ring-ring/50 motion-reduce:transition-none",
+          "group flex w-full items-center justify-between rounded-md border bg-card px-2.5 py-1.5 text-sm outline-none transition-[border-color,box-shadow,background-color] duration-150 ease-out focus:border-ring focus:ring-2 focus:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-60 motion-reduce:transition-none",
           triggerClassName,
         )}
       >
-        <RadixSelect.Value placeholder={placeholder}>{triggerContent}</RadixSelect.Value>
+        <RadixSelect.Value>
+          {triggerContent ?? triggerLabel(options, value, placeholder)}
+        </RadixSelect.Value>
         <RadixSelect.Icon>
           <span className="block transition-transform duration-150 ease-out group-data-[state=open]:rotate-180 motion-reduce:transition-none">
             <ChevronDown className="h-4 w-4 text-muted-foreground" />

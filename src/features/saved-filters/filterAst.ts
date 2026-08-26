@@ -5,18 +5,38 @@
 // 1. FIELD ALLOW-LIST: column references come from a hardcoded map keyed by the
 //    allowed field enum. An unknown field is rejected with AppError. Field names
 //    NEVER reach SQL via interpolation.
-// 2. OPERATOR ALLOW-LIST: SQL operator strings come from a hardcoded map. An
-//    unknown op is rejected. Operator strings NEVER reach SQL via interpolation.
+// 2. OPERATOR ALLOW-LIST: SQL operator strings come from a hardcoded map in
+//    filterAstSql.ts. An unknown op is rejected. Operator strings NEVER reach SQL
+//    via interpolation, and the combinator is picked from two constant fragments.
 // 3. VALUES PARAMETERIZED: every value is passed through sql`${value}` (Drizzle
 //    parameter binding). An injection payload in a value is a literal, not SQL.
-//    The `contains` op emits `ILIKE '%' || ${value} || '%'`: the '%' wildcards are
-//    constant SQL, and ${value} stays a bound parameter, so an injection payload is
-//    a literal search string. A '%' inside a user value acts as a wildcard, which is
-//    acceptable substring-search behavior.
-// 4. NARROWS ONLY: this fragment produces a boolean AND-able predicate. It cannot
+//    The ILIKE ops (`contains`, `startsWith`, `notContains`) build the pattern from
+//    constant '%' wildcards concatenated with the bound value, so the payload is a
+//    literal search string. A '%' inside a user value acts as a wildcard, which is
+//    acceptable substring-search behavior. Every value-taking branch goes through
+//    requireValue: an undefined would bind as NULL and silently drop the condition.
+// 4. ARRAY FIELDS: fields in ARRAY_FIELDS compile to an EXISTS over unnest of the
+//    column, comparing lower(element) to the bound name, or to every name in one
+//    bound text[]; every other op on them is rejected, so no operator string reaches
+//    a text[] column. A list value on any other field is rejected by requireScalar,
+//    since drizzle would expand it into a tuple.
+// 5. NARROWS ONLY: this fragment produces a boolean AND-able predicate. It cannot
 //    widen visibility; the caller is responsible for ANDing dealVisibilityClause.
+//    The rotting narrowing is ANDed outside the combinator group, so an "or" filter
+//    cannot widen past it.
+// 6. NULL-SAFE NEGATION: `neq` uses IS DISTINCT FROM and `notContains` carries an
+//    IS NULL arm, so a row with a null column is compared rather than silently
+//    dropped. `isEmpty`/`isNotEmpty` bind no value at all; their shape comes from
+//    the hardcoded FIELD_KIND map, never from user input.
 import { type SQL, sql } from "drizzle-orm";
 import { AppError, ERROR_IDS } from "@/constants/errorIds";
+import { labelMembershipSql } from "@/features/labels/labelMembershipSql";
+import {
+  emptinessCondition,
+  requireLabelValue,
+  requireValue,
+  scalarCondition,
+} from "./filterAstSql";
 import type { FilterDefinition } from "./schemas";
 
 // FIELD ALLOW-LIST: maps the allowed field names to fixed, hardcoded SQL column
@@ -32,48 +52,55 @@ const COLUMN_SQL: Record<string, SQL> = {
   // Organization name of the linked org. The deal board/list reads LEFT JOIN organizations o,
   // so o.name is in scope wherever this filter is applied (deals only).
   orgName: sql`o.name`,
+  labels: sql`d.labels`,
 } as const;
 
-// OPERATOR ALLOW-LIST: maps the allowed operator names to fixed SQL operator
-// strings emitted via sql.raw (constant, never user input).
-const OP_RAW: Record<string, string> = {
-  eq: "=",
-  neq: "<>",
-  gt: ">",
-  lt: "<",
-  gte: ">=",
-  lte: "<=",
-} as const;
+// Fields whose column is text[]: "is" / "is not" mean membership, so they take the label branch
+// below instead of a scalar comparison.
+const ARRAY_FIELDS: ReadonlySet<string> = new Set(["labels"]);
+
+function conditionSql(c: FilterDefinition["conditions"][number]): SQL {
+  // SECURITY: column comes from the allow-list ONLY; c.field never reaches SQL as text.
+  const colSql = COLUMN_SQL[c.field];
+  if (colSql === undefined) {
+    throw new AppError(ERROR_IDS.DEAL_FILTER_INVALID, "Unknown filter field", { field: c.field });
+  }
+
+  // Valueless ops run first: they compare against no value, so they must not reach any branch
+  // that reads c.value, and the array kind needs cardinality rather than the membership test.
+  if (c.op === "isEmpty" || c.op === "isNotEmpty") {
+    return emptinessCondition(colSql, c.field, c.op);
+  }
+
+  // text[] columns: "is" / "is not" mean membership, not a scalar comparison. Checked before the
+  // scalar branches so no scalar operator (ILIKE included) can reach an array column.
+  if (ARRAY_FIELDS.has(c.field)) {
+    const member = labelMembershipSql(colSql, requireLabelValue(c.op, requireValue(c.op, c.value)));
+    if (c.op === "eq") return member;
+    if (c.op === "neq") return sql`NOT ${member}`;
+    throw new AppError(ERROR_IDS.DEAL_FILTER_INVALID, "Unsupported operator on an array field", {
+      field: c.field,
+      op: c.op,
+    });
+  }
+
+  return scalarCondition(colSql, c.op, c.value);
+}
 
 // filterToSql compiles a FilterDefinition into a boolean SQL fragment that can
 // be ANDed into a WHERE clause over `deals d JOIN pipelines p`.
 //
-// Throws AppError(E_DEAL_001) for unknown fields or operators (validation at
+// Throws AppError(E_DEAL_008) for unknown fields or operators (validation at
 // the boundary via Zod should prevent this in normal usage, but this function
 // is also called with typed inputs and must be independently safe).
 export function filterToSql(def: FilterDefinition): SQL {
-  const parts = def.conditions.map((c) => {
-    // SECURITY: column comes from the allow-list ONLY; c.field never reaches SQL as text.
-    const colSql = COLUMN_SQL[c.field];
-    if (colSql === undefined) {
-      throw new AppError(ERROR_IDS.DEAL_FILTER_INVALID, "Unknown filter field", { field: c.field });
-    }
+  const parts = def.conditions.map(conditionSql);
 
-    // `contains` does not fit the `col OP value` shape. Emit a parameterized ILIKE:
-    // the '%' wildcards are constant SQL, and ${c.value} is a bound parameter, so an
-    // injection payload in the value is a literal search string, never SQL. A '%' inside
-    // the user value acts as a wildcard, which is acceptable substring-search behavior.
-    if (c.op === "contains") {
-      return sql`${colSql} ILIKE '%' || ${c.value} || '%'`;
-    }
-
-    // SECURITY: operator comes from the allow-list ONLY; opStr is emitted via sql.raw.
-    const opStr = OP_RAW[c.op];
-    if (opStr === undefined) {
-      throw new AppError(ERROR_IDS.DEAL_NOT_FOUND, "Unknown filter operator", { op: c.op });
-    }
-    return sql`${colSql} ${sql.raw(opStr)} ${c.value}`;
-  });
+  // Fold the user conditions with the combinator. A group of two or more is parenthesised so the
+  // rotting AND below cannot bind tighter than an OR inside it.
+  const joiner = def.combinator === "or" ? sql` OR ` : sql` AND `;
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  const group = parts.length === 1 ? parts[0]! : sql`(${sql.join(parts, joiner)})`;
 
   // Rotting narrowing: keep deals whose time in the current stage is past the stage's rotting_days
   // limit. Mirrors the client badge (rottingState): rotting once floor(age_days) > rotting_days,
@@ -81,16 +108,11 @@ export function filterToSql(def: FilterDefinition): SQL {
   // stages/deals columns, no user input, so it is injection-safe. Requires the caller to have
   // joined `stages s ON s.id = d.stage_id` (getBoardColumns / listDeals do).
   if (def.rotting === true) {
-    parts.push(
-      sql`s.rotting_days IS NOT NULL AND d.stage_entered_at IS NOT NULL AND d.stage_entered_at <= now() - (s.rotting_days + 1) * interval '1 day'`,
-    );
+    const rotting = sql`s.rotting_days IS NOT NULL AND d.stage_entered_at IS NOT NULL AND d.stage_entered_at <= now() - (s.rotting_days + 1) * interval '1 day'`;
+    // ANDed outside the group: rotting narrows the whole filter, so an "or" group must not widen
+    // past it and hand back deals that are not rotting.
+    return parts.length === 0 ? rotting : sql`${group} AND ${rotting}`;
   }
 
-  if (parts.length === 0) {
-    return sql`true`;
-  }
-
-  // Fold parts into a single AND expression. parts is non-empty (guarded above).
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  return parts.slice(1).reduce((acc, part) => sql`${acc} AND ${part}`, parts[0]!);
+  return parts.length === 0 ? sql`true` : group;
 }

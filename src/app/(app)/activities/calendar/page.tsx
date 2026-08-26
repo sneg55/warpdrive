@@ -28,6 +28,9 @@ export default async function CalendarPage({
 
   return (
     <div className="p-4">
+      {/* The screen's own name. The toggle and the week label read as controls without it, and the
+          page had no heading of any level for a screen reader to land on. */}
+      <h1 className="sr-only">{STRINGS.nav.activities}</h1>
       <ActivitiesToggle active="calendar" />
       <FilterableCalendar
         view={view}

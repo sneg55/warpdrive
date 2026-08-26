@@ -40,6 +40,7 @@ export async function stageSums(
     SELECT
       d.stage_id                                              AS "stageId",
       s.name                                                  AS name,
+      s."order"                                               AS "order",
       count(*)::int                                           AS "dealCount",
       coalesce(sum(d.value), 0)::numeric(14,2)::text          AS total
     FROM deals d
@@ -51,14 +52,21 @@ export async function stageSums(
       AND d.archived_at IS NULL
       ${ownerClause}
       AND ${visClause}
-    GROUP BY d.stage_id, s.name
+    GROUP BY d.stage_id, s.name, s."order"
+    ORDER BY s."order" ASC
   `);
 
   signal.throwIfAborted();
 
   const rows = (
     result as unknown as {
-      rows: Array<{ stageId: string; name: string; dealCount: number; total: string }>;
+      rows: Array<{
+        stageId: string;
+        name: string;
+        order: number;
+        dealCount: number;
+        total: string;
+      }>;
     }
   ).rows;
   return rows;

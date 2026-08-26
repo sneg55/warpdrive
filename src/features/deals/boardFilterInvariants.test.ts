@@ -26,16 +26,30 @@ import { getBoardColumns } from "./dealRepo";
 type AstField = (typeof FILTER_FIELDS)[number];
 type Condition = FilterDefinition["conditions"][number];
 
+// Fixed so the seed and its representative condition cannot drift with the clock.
+const SEED_CLOSE_DATE = "2026-09-30";
+// deals.labels is a text[] of label NAMES, not catalog ids, so the filter value is the name.
+const SEED_LABEL = "Hot";
+
+// Ids only the running seed knows, so their conditions cannot be plain constants.
+interface SeedRefs {
+  ownerId: string;
+  stageId: string;
+}
+
 // A representative condition, per offered field, known to match the seed below. Only the fields the
 // board actually offers have an entry; a lookup miss throws, which is the regression guard: adding
 // a field to OFFERED_BOARD_FILTER_FIELDS without seed coverage fails this test, forcing the author
 // to prove the new option returns results against seeded data before offering it.
-function representativeCondition(field: AstField, ownerId: string): Condition {
+function representativeCondition(field: AstField, seed: SeedRefs): Condition {
   const byField: Partial<Record<AstField, Condition>> = {
     title: { field: "title", op: "contains", value: "Alpha" },
     orgName: { field: "orgName", op: "contains", value: "Apex" },
     value: { field: "value", op: "gt", value: 0 },
-    ownerId: { field: "ownerId", op: "eq", value: ownerId },
+    ownerId: { field: "ownerId", op: "eq", value: seed.ownerId },
+    stageId: { field: "stageId", op: "eq", value: seed.stageId },
+    expectedCloseDate: { field: "expectedCloseDate", op: "gte", value: SEED_CLOSE_DATE },
+    labels: { field: "labels", op: "eq", value: SEED_LABEL },
   };
   const cond = byField[field];
   if (cond === undefined) {
@@ -90,7 +104,13 @@ describe("board filter builder invariants (finder #4)", () => {
         .values({ name: "Apex Labs", ownerId: u.id, visibilityLevel: "all" })
         .returning();
       const seeds = [
-        { title: "Alpha renewal", value: 1000, orgId: org!.id },
+        {
+          title: "Alpha renewal",
+          value: 1000,
+          orgId: org!.id,
+          closeDate: SEED_CLOSE_DATE,
+          labels: [SEED_LABEL],
+        },
         { title: "Beta expansion", value: 5000 },
         { title: "Gamma upsell", value: 250 },
       ];
@@ -104,6 +124,8 @@ describe("board filter builder invariants (finder #4)", () => {
             pipelineId: p.pipeline.id,
             stageId: p.stages[0]!.id,
             orgId: s.orgId ?? null,
+            expectedCloseDate: s.closeDate ?? null,
+            labels: s.labels ?? [],
           },
           new AbortController().signal,
         );
@@ -111,7 +133,7 @@ describe("board filter builder invariants (finder #4)", () => {
       }
 
       for (const f of OFFERED_BOARD_FILTER_FIELDS) {
-        const cond = representativeCondition(f.value, u.id);
+        const cond = representativeCondition(f.value, { ownerId: u.id, stageId: p.stages[0]!.id });
         const res = await getBoardColumns(
           db,
           visSession(u.id),

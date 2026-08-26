@@ -66,4 +66,11 @@ describe("CatalogLabelPicker", () => {
     expect(screen.getByRole("menuitem", { name: /create new label/i })).toBeInTheDocument();
     queryData = catalog;
   });
+
+  it("gives the dashed trigger the token border instead of a fixed gray", () => {
+    render(<CatalogLabelPicker target="person" value={[]} onChange={() => {}} />);
+    const trigger = screen.getByRole("button", { name: /add labels/i });
+    expect(trigger).toHaveClass("border-dashed", "hover:border-muted-foreground");
+    expect(trigger.className).not.toMatch(/-gray-/);
+  });
 });

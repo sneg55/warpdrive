@@ -26,6 +26,10 @@ export const activities = pgTable(
       .references(() => activityTypes.id),
     subject: text("subject").notNull(),
     dueAt: timestamp("due_at", { withTimezone: true }),
+    // The user set a day but no time. due_at still pins the calendar day (at local midnight),
+    // and this says not to render or round-trip a time nobody chose. Without it, "no time" and
+    // "midnight" are the same stored value and the form reads back 00:00.
+    allDay: boolean("all_day").notNull().default(false),
     // Multi-day parity (Pipedrive): an explicit end timestamp for activities that span
     // more than a single day. Null for same-day activities (their span, if any, is the
     // start/end time captured as durationMinutes). Ordering (endAt >= dueAt) is enforced

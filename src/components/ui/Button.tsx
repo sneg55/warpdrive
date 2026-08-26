@@ -5,15 +5,19 @@ import { cn } from "@/lib/utils";
 
 export const buttonVariants = cva(
   // C1 (Pipedrive parity): button/link weight bumped 500 -> 600 (font-medium -> font-semibold).
-  "inline-flex items-center justify-center gap-1.5 rounded-md text-sm font-semibold transition-[color,background-color,opacity,scale] duration-150 ease-out disabled:pointer-events-none disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 motion-reduce:transition-[color,background-color,opacity]",
+  "inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-md text-sm font-semibold transition-[color,background-color,opacity,scale] duration-150 ease-out disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 motion-reduce:transition-[color,background-color,opacity]",
   {
+    // A filled variant swaps to the neutral disabled pair rather than fading: dimming the fill to
+    // 50% left white text on a pale tint at 1.55:1. Unfilled variants have no fill to misread.
     variants: {
       variant: {
-        default: "bg-action text-action-foreground hover:opacity-90",
-        outline: "border bg-card hover:bg-accent",
-        ghost: "hover:bg-accent hover:text-foreground",
+        default:
+          "bg-action text-action-foreground hover:opacity-90 disabled:bg-disabled disabled:text-disabled-foreground",
+        outline: "border bg-card hover:bg-accent disabled:opacity-50",
+        ghost: "hover:bg-accent hover:text-foreground disabled:opacity-50",
         // Irreversible actions (delete, discard). Used by ConfirmDialog's affirmative button.
-        destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
+        destructive:
+          "bg-destructive text-destructive-foreground hover:bg-destructive/90 disabled:bg-disabled disabled:text-disabled-foreground",
       },
       size: {
         sm: "h-8 px-2.5",

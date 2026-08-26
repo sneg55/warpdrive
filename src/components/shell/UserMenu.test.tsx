@@ -52,7 +52,9 @@ describe("UserMenu", () => {
     await user.click(screen.getByRole("button", { name: "Account menu" }));
     const settings = screen.getByRole("menuitem", { name: /Settings/ });
     const logout = screen.getByRole("menuitem", { name: /Log out/ });
-    expect(settings.getAttribute("href")).toBe("/settings/users");
+    // The menu is headed "My account", so Settings lands on the signed-in user's own
+    // preferences. It used to open the company user roster, which is administration.
+    expect(settings.getAttribute("href")).toBe("/settings/profile");
     expect(logout.getAttribute("href")).toBe("/auth/logout");
   });
 });

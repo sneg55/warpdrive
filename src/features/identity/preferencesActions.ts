@@ -4,12 +4,16 @@ import { ERROR_IDS } from "@/constants/errorIds";
 import { db } from "@/db/client";
 import { guardCsrf } from "@/features/identity/actions/shared";
 import { SIG } from "@/features/identity/actions/sig";
+import type { Appearance } from "@/features/theme/appearance";
 import { createContext } from "@/server/trpc/context";
 import { setPreferences, setSidebarSectionsPreference } from "./preferencesRepo";
 import {
+  appearanceSchema,
+  boardViewSchema,
   COLUMN_VIEW_KEYS,
   type ColumnViewName,
   columnViewInputSchema,
+  dailyActivityTargetSchema,
   dealHeaderBlocksSchema,
   dealSidebarSectionsSchema,
   leadsViewSchema,
@@ -77,6 +81,19 @@ export async function setLeadsViewAction(
   return { ok: true };
 }
 
+// The deals board toolbar view (owner filter, sort, applied filter). Written whole each time
+// because the jsonb shallow merge replaces the nested object rather than merging into it.
+export async function setBoardViewAction(
+  input: unknown,
+  csrfToken: string | null = null,
+): Promise<PrefActionResult> {
+  const a = await actorId(csrfToken);
+  if (!a.ok) return a;
+  const boardView = boardViewSchema.parse(input);
+  await setPreferences(db, a.id, { ui: { boardView } }, SIG());
+  return { ok: true };
+}
+
 // Generic list-table column-order persist. `view` selects which top-level ui key is written
 // (dealsListView / peopleView / orgsView), each a distinct key so concurrent writes to different
 // lists never lost-update one another via the jsonb shallow merge.
@@ -92,6 +109,19 @@ export async function setColumnViewAction(
   return { ok: true };
 }
 
+// Day / Night / System. Its own top-level ui key, so the jsonb shallow merge cannot lost-update a
+// sibling preference. The client mirrors the same value into the wd_appearance cookie.
+export async function setAppearanceAction(
+  input: { appearance: Appearance },
+  csrfToken: string | null = null,
+): Promise<PrefActionResult> {
+  const a = await actorId(csrfToken);
+  if (!a.ok) return a;
+  const appearance = appearanceSchema.parse(input.appearance);
+  await setPreferences(db, a.id, { ui: { appearance } }, SIG());
+  return { ok: true };
+}
+
 export async function setScheduleFollowUpAfterWonAction(
   input: { enabled: boolean },
   csrfToken: string | null = null,
@@ -100,6 +130,19 @@ export async function setScheduleFollowUpAfterWonAction(
   if (!a.ok) return a;
   const enabled = scheduleFollowUpAfterWonSchema.parse(input.enabled);
   await setPreferences(db, a.id, { ui: { scheduleFollowUpAfterWon: enabled } }, SIG());
+  return { ok: true };
+}
+
+// Personal daily activity target. Informational: it colors the day dots in activity date
+// pickers and never blocks a create.
+export async function setDailyActivityTargetAction(
+  input: { target: number },
+  csrfToken: string | null = null,
+): Promise<PrefActionResult> {
+  const a = await actorId(csrfToken);
+  if (!a.ok) return a;
+  const target = dailyActivityTargetSchema.parse(input.target);
+  await setPreferences(db, a.id, { ui: { dailyActivityTarget: target } }, SIG());
   return { ok: true };
 }
 

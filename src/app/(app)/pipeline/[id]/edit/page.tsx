@@ -23,7 +23,7 @@ export default async function EditPipelinePage({
 
   return (
     <main aria-label={`Edit pipeline ${pipeline.name}`} className="h-full">
-      <h1 className="mb-4 text-lg font-semibold">Edit pipeline</h1>
+      <h1 className="mb-4 text-display font-[450] leading-tight tracking-tight">Edit pipeline</h1>
       <EditPipelineClient
         pipelineId={pipeline.id}
         pipelineName={pipeline.name}

@@ -1,4 +1,5 @@
 "use client";
+import { Archive, Ellipsis, Inbox } from "lucide-react";
 import type React from "react";
 import type { LeadNextActivityBucket } from "../schemas";
 import { AddLeadButton } from "./AddLeadButton";
@@ -75,9 +76,7 @@ export function LeadsActionBar(props: LeadsActionBarProps): React.ReactNode {
           onClick={() => onFilter("inbox")}
           rounded="rounded-l-md"
         >
-          <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor">
-            <path d="M19 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zm0 12h-4a3 3 0 0 1-6 0H5V5h14v10z" />
-          </svg>
+          <Inbox aria-hidden="true" className="h-4 w-4" />
         </ToggleIcon>
         <ToggleIcon
           active={filter === "archived"}
@@ -85,9 +84,7 @@ export function LeadsActionBar(props: LeadsActionBarProps): React.ReactNode {
           onClick={() => onFilter("archived")}
           rounded="rounded-r-md border-l"
         >
-          <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor">
-            <path d="M20 3H4a1 1 0 0 0-1 1v3a1 1 0 0 0 1 1v11a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V8a1 1 0 0 0 1-1V4a1 1 0 0 0-1-1zm-6 9H10v-2h4v2zM5 6V5h14v1H5z" />
-          </svg>
+          <Archive aria-hidden="true" className="h-4 w-4" />
         </ToggleIcon>
       </div>
 
@@ -120,11 +117,7 @@ export function LeadsActionBar(props: LeadsActionBarProps): React.ReactNode {
           triggerLabel="More actions"
           triggerClassName="rounded-md border p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground"
           align="right"
-          trigger={
-            <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor">
-              <path d="M6 10a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm6 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm6 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4z" />
-            </svg>
-          }
+          trigger={<Ellipsis aria-hidden="true" className="h-4 w-4" />}
         >
           {(close) => (
             <button

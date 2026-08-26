@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { listParticipants } from "@/features/deal-workspace/participantsList";
 import { parseSavedFilterDefinition } from "@/features/saved-filters/parseDefinition";
-import { listSavedFilters } from "@/features/saved-filters/savedFilterActions";
+import { listSavedFilterViews } from "@/features/saved-filters/savedFilterList";
 import { filterDefinition } from "@/features/saved-filters/schemas";
 import { protectedProcedure, router } from "@/server/trpc/trpc";
 import type { DealVisibilitySession } from "@/types/session";
@@ -81,24 +81,10 @@ export const dealRouter = router({
     .query(({ ctx, input }) =>
       listParticipants(ctx.db, ctx.actor, input.dealId, AbortSignal.timeout(10_000)),
     ),
-  // AST saved filters visible to the actor: own filters plus every shared one.
-  savedFilters: protectedProcedure.query(async ({ ctx }) => {
-    const flags: Record<string, boolean> = {};
-    for (const f of ctx.actor.flags) flags[f] = true;
-    const rows = await listSavedFilters(
-      ctx.db,
-      { userId: ctx.actor.id, isAdmin: ctx.actor.type === "admin", flags },
-      "deal",
-      AbortSignal.timeout(10_000),
-    );
-    // isOwn lets the client hide the favorite star on others' shared filters (only the owner
-    // can toggle the owner-scoped favorite flag), so the star is never a dead control.
-    // Parse the jsonb definition here (server-side, where zod already lives) so the board client
-    // receives a trusted FilterDefinition and does not ship zod just to parse its own filters.
-    return rows.map((r) => ({
-      ...r,
-      isOwn: r.ownerId === ctx.actor.id,
-      definition: parseSavedFilterDefinition(r.definition),
-    }));
-  }),
+  // AST saved filters visible to the actor: own filters plus every shared one. A thin wrapper over
+  // the shared saved-view read, kept as its own route because the board's query key is load-bearing
+  // and deal-parsed so the client still receives a FilterDefinition.
+  savedFilters: protectedProcedure.query(({ ctx }) =>
+    listSavedFilterViews(ctx, "deal", parseSavedFilterDefinition),
+  ),
 });

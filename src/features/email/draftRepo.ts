@@ -125,3 +125,41 @@ export async function deleteDraft(
     return err(new AppError(ERROR_IDS.GMAIL_DRAFT_NOT_FOUND, "draft not found", {}));
   return ok({ id: row.id });
 }
+
+// Fields an agent may revise on an existing draft. Omitted means "leave alone": the UPDATE below
+// names only the columns supplied, so a composer autosave landing mid-edit is not replayed over.
+export interface DraftPatch {
+  subject?: string;
+  bodyHtml?: string;
+  toEmails?: string[];
+  ccEmails?: string[];
+}
+
+// Patch a draft the actor owns (mailbox owner). Missing and not-owned both return E_GMAIL_014,
+// matching deleteDraft, so a caller cannot probe which draft ids exist.
+export async function patchDraft(
+  db: Db,
+  args: { actor: AuthUser; draftId: string; patch: DraftPatch },
+  signal: AbortSignal,
+): Promise<Result<{ id: string }, AppError>> {
+  signal.throwIfAborted();
+  const p = args.patch;
+  const sets = [sql`updated_at = now()`];
+  if (p.subject !== undefined) sets.push(sql`subject = ${p.subject}`);
+  if (p.bodyHtml !== undefined) sets.push(sql`body_html = ${p.bodyHtml}`);
+  if (p.toEmails !== undefined) sets.push(sql`to_emails = ${JSON.stringify(p.toEmails)}::jsonb`);
+  if (p.ccEmails !== undefined) sets.push(sql`cc_emails = ${JSON.stringify(p.ccEmails)}::jsonb`);
+  const row = (
+    await db.execute(sql`
+      UPDATE email_drafts d
+      SET ${sql.join(sets, sql`, `)}
+      FROM email_accounts a
+      WHERE d.account_id = a.id AND d.id = ${args.draftId} AND a.user_id = ${args.actor.id}
+      RETURNING d.id
+    `)
+  ).rows[0] as { id: string } | undefined;
+  signal.throwIfAborted();
+  if (row === undefined)
+    return err(new AppError(ERROR_IDS.GMAIL_DRAFT_NOT_FOUND, "draft not found", {}));
+  return ok({ id: row.id });
+}

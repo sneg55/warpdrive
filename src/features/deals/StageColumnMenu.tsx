@@ -1,5 +1,6 @@
 "use client";
 import { useQueryClient } from "@tanstack/react-query";
+import { Ellipsis } from "lucide-react";
 import Link from "next/link";
 import type React from "react";
 import { useState } from "react";
@@ -47,11 +48,7 @@ export function StageColumnMenu(props: StageColumnMenuProps): React.ReactNode {
           aria-label={triggerLabel}
           className="relative flex h-6 w-6 items-center justify-center rounded text-muted-foreground transition-[color,background-color,scale] duration-150 ease-out after:absolute after:-inset-2 after:content-[''] hover:bg-accent hover:text-foreground active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-colors"
         >
-          <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor">
-            <circle cx="5" cy="12" r="1.6" />
-            <circle cx="12" cy="12" r="1.6" />
-            <circle cx="19" cy="12" r="1.6" />
-          </svg>
+          <Ellipsis aria-hidden="true" className="h-4 w-4" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="min-w-52">
           <DropdownMenuItem onSelect={() => setAddOpen(true)}>
