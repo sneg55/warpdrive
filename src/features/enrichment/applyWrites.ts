@@ -12,6 +12,7 @@ import { type ContactActor, updatePerson } from "@/features/contacts/personsRepo
 import { orgUpdateInput } from "@/features/contacts/schemas";
 import { err, ok, type Result } from "@/types/result";
 import type { ApplyInput } from "./applyService";
+import { COMPANY_NAME_KEY } from "./canonicalKeys";
 import { loadOrg, loadPerson, readOrgCurrent, readPersonCurrent } from "./current";
 import { normaliseForCompare } from "./merge";
 import { normaliseDomain, resolveOrgLink, visibleOrgSummary } from "./orgLink";
@@ -20,7 +21,6 @@ import { type AppliedValues, type CustomEntry, planOrgUpdate, planPersonUpdate }
 import type { ProviderOutcome } from "./providers/types";
 import type { ResolvedMapping } from "./types";
 
-const COMPANY_NAME_KEY = "person.companyName";
 const COMPANY_DOMAIN_KEY = "person.companyDomain";
 
 export // What an apply helper reports. `previous` holds the pre-write values keyed by canonical key so the

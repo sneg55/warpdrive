@@ -299,3 +299,12 @@ describe("EmailTimelineCard reply invalidation", () => {
     expect(invalidateContact).toHaveBeenCalled();
   });
 });
+
+// Gmail hands us the snippet HTML-escaped, so rendering it as text prints "wasn&#39;t".
+it("decodes the HTML entities Gmail escapes into the snippet", () => {
+  const escaped = { ...message, snippet: "Your message wasn&#39;t delivered" };
+  render(<EmailTimelineCard message={escaped} scope={dealScope} onUnlinked={() => {}} />);
+
+  expect(screen.getByText("Your message wasn't delivered")).toBeInTheDocument();
+  expect(screen.queryByText(/&#39;/)).not.toBeInTheDocument();
+});

@@ -1,5 +1,6 @@
 "use client";
 import { useMemo, useState } from "react";
+import { Button } from "@/components/ui/Button";
 import { BLOCK_CLASS } from "@/features/observability/replayMasking";
 
 // Sanitized HTML is isolated in an iframe whose sandbox grants allow-same-origin ONLY.
@@ -23,6 +24,20 @@ import { BLOCK_CLASS } from "@/features/observability/replayMasking";
 const MIN_BODY_HEIGHT_PX = 240;
 const IFRAME_SANDBOX = "allow-same-origin";
 
+// Email HTML is authored for a light client surface, and the frame document inherits the app's
+// dark color-scheme unless it is pinned, which leaves a sender's own dark ink on a dark canvas.
+// margin:0 matters for sizing: the frame is sized to body.scrollHeight, which excludes the
+// default 8px body margins, so any margin makes the document overflow the height we just set
+// and grow its own scrollbar.
+const BODY_STYLE = [
+  "html{color-scheme:light}",
+  "body{margin:0;padding:12px;background:#ffffff;color:#1f2328;",
+  'font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;',
+  "overflow-wrap:anywhere}",
+  "img{max-width:100%;height:auto}",
+  "a{color:#0b57d0}",
+].join("");
+
 export function MessageBodyFrame(props: {
   html: string;
   allowRemote: boolean;
@@ -32,7 +47,9 @@ export function MessageBodyFrame(props: {
   // short (or not-yet-loaded) body from collapsing.
   const [height, setHeight] = useState<number | null>(null);
   const srcDoc = useMemo(
-    () => `<!doctype html><meta charset="utf-8"><base target="_blank"><body>${props.html}</body>`,
+    () =>
+      `<!doctype html><meta charset="utf-8"><meta name="color-scheme" content="light">` +
+      `<base target="_blank"><style>${BODY_STYLE}</style><body>${props.html}</body>`,
     [props.html],
   );
 
@@ -45,20 +62,20 @@ export function MessageBodyFrame(props: {
   return (
     <div>
       {!props.allowRemote && (
-        <button type="button" onClick={props.onShowRemote}>
+        <Button variant="outline" size="sm" className="mb-2" onClick={props.onShowRemote}>
           Show remote content
-        </button>
+        </Button>
       )}
       <iframe
         title="email body"
-        className={BLOCK_CLASS}
+        className={`${BLOCK_CLASS} block overflow-hidden rounded-md border border-border`}
         sandbox={IFRAME_SANDBOX}
         srcDoc={srcDoc}
         onLoad={onLoad}
         style={{
           width: "100%",
           border: 0,
-          minHeight: MIN_BODY_HEIGHT_PX,
+          minHeight: height === null ? MIN_BODY_HEIGHT_PX : undefined,
           height: height === null ? undefined : height,
         }}
       />

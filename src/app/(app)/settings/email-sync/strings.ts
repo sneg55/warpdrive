@@ -6,6 +6,9 @@ export const EMAIL_SYNC_STRINGS = {
   statusConnected: "Connected",
   statusDisconnected: "Disconnected",
   statusError: "Needs attention",
+  statusStalled: "Not syncing",
+  stalledHint:
+    "New mail has not arrived for a while. Reconnect the mailbox if this does not clear on its own.",
   connectedAs: (email: string) => `Connected as ${email}`,
   notConnected: "No mailbox is connected yet.",
   lastSynced: (when: string) => `Last synced ${when}`,

@@ -3,12 +3,12 @@ import { useRouter } from "next/navigation";
 import type React from "react";
 import type { Person } from "@/db/schema";
 import { updatePersonAction } from "@/features/contacts/actions";
-import { primaryValue, setPrimaryPoint } from "@/features/contacts/PersonSummaryEditPanel";
 import { ContactCustomFieldRows } from "@/features/custom-fields/ContactCustomFieldRows";
 import type { ContactPoint } from "@/types/contactPoint";
 import type { CustomFieldDef } from "@/types/customFields";
 import { readCsrfToken } from "@/utils/csrfCookie";
-import { LinkValue, mailtoHref, telHref } from "./contactLinks";
+import { ContactPointsValue, contactPointsEditor } from "./ContactPointsField";
+import { committedPoints, orderedPoints, parsePoints, serializePoints } from "./contactPoints";
 import { LabelChips, type ResolvedLabelChip } from "./LabelChips";
 import { PersonBulkEditor } from "./PersonBulkEditor";
 import { SidebarFieldRow } from "./SidebarFieldRow";
@@ -64,13 +64,8 @@ export function PersonBlock({
     return { ok: true };
   }
 
-  // Normalize the stored contact-point shape (primary?: boolean) to the strict primary:
-  // boolean that primaryValue/setPrimaryPoint (and updatePersonAction) expect. Mirrors the
-  // same normalization PersonDetailClient does before handing persons to
-  // PersonSummaryEditPanel.
-  const phones = person.phones.map((p) => ({ ...p, primary: p.primary === true }));
-  const emails = person.emails.map((e) => ({ ...e, primary: e.primary === true }));
-  const phone = primaryValue(phones);
+  const phones = orderedPoints(person.phones);
+  const emails = orderedPoints(person.emails, person.primaryEmail);
 
   if (bulkEditing) {
     return (
@@ -79,7 +74,6 @@ export function PersonBlock({
         lastName={person.lastName}
         phones={phones}
         emails={emails}
-        primaryEmail={person.primaryEmail}
         save={save}
         onExit={onExitBulk ?? (() => {})}
         hidden={hidden}
@@ -130,27 +124,21 @@ export function PersonBlock({
       {!hidden.has("phones") && (
         <SidebarFieldRow
           label="Phone"
-          value={phone === "" ? "-" : <LinkValue href={telHref(phone)}>{phone}</LinkValue>}
-          empty={phone === ""}
-          initialDraft={phone}
-          renderEditor={textEditor("editor-phone")}
-          onSave={(draft) => save({ phones: setPrimaryPoint(phones, draft) })}
+          value={phones.length === 0 ? "-" : <ContactPointsValue points={phones} kind="Phone" />}
+          empty={phones.length === 0}
+          initialDraft={serializePoints(phones)}
+          renderEditor={contactPointsEditor("Phone")}
+          onSave={(draft) => save({ phones: committedPoints(parsePoints(draft)) })}
         />
       )}
       {!hidden.has("emails") && (
         <SidebarFieldRow
           label="Email"
-          value={
-            person.primaryEmail === null ? (
-              "-"
-            ) : (
-              <LinkValue href={mailtoHref(person.primaryEmail)}>{person.primaryEmail}</LinkValue>
-            )
-          }
-          empty={person.primaryEmail === null}
-          initialDraft={person.primaryEmail ?? ""}
-          renderEditor={textEditor("editor-email")}
-          onSave={(draft) => save({ emails: setPrimaryPoint(emails, draft) })}
+          value={emails.length === 0 ? "-" : <ContactPointsValue points={emails} kind="Email" />}
+          empty={emails.length === 0}
+          initialDraft={serializePoints(emails)}
+          renderEditor={contactPointsEditor("Email")}
+          onSave={(draft) => save({ emails: committedPoints(parsePoints(draft)) })}
         />
       )}
       <ContactCustomFieldRows

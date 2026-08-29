@@ -9,6 +9,7 @@ import type { DbOrTx } from "@/server/realtime/channelVersions";
 import { ok, type Result } from "@/types/result";
 import type { GmailClient } from "./gmailClient";
 import { resolveLink } from "./linking";
+import { messageGoneFromMailbox } from "./messageGone";
 import { parseGmailMessage } from "./mimeParse";
 
 // Apply a list of gmail message ids: fetch + parse each, upsert the thread FIRST
@@ -47,7 +48,17 @@ export async function applyMessageIds(
   for (const id of ids) {
     const fetched = await args.gmail.getMessage({ id, signal: args.signal });
     args.signal.throwIfAborted();
-    if (!fetched.ok) return fetched;
+    if (!fetched.ok) {
+      // A 404 means the message is gone from the mailbox (permanently deleted between the history
+      // entry naming it and this fetch). There is nothing to store and no later tick can fetch it,
+      // so skip it and let the page finish. Returning here instead wedged the cursor: the page
+      // never completed, so last_history_id never advanced, so every following tick re-listed the
+      // same page, re-fetched the same dead id, and took the same 404. That is how one deleted
+      // message stopped a mailbox syncing for eight hours. applyTrashTransitions already treats a
+      // getThread 404 the same way, for the same reason.
+      if (messageGoneFromMailbox(fetched.error)) continue;
+      return fetched;
+    }
     const parsed = parseGmailMessage(fetched.value);
     args.touchedThreadIds?.add(parsed.threadId);
 

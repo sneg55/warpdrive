@@ -34,12 +34,22 @@ export function BoardStages({
       aria-label="Pipeline stages"
       className="flex min-h-0 flex-1 list-none gap-4 overflow-x-auto pb-4"
     >
-      {stages.map((s) => {
+      {stages.map((s, index) => {
         const stageSum = sumsByStage.get(s.id);
+        const dividerBefore = index > 0;
         return (
-          // The <li> is the flex item: it must carry flex-1 + min-w so columns grow to fill
-          // the board width. The inner section stretches to fill this item.
-          <li key={s.id} className="flex min-w-72 flex-1">
+          <li
+            key={s.id}
+            data-column-divider={dividerBefore ? "true" : undefined}
+            className={[
+              "relative flex min-w-72 flex-1",
+              dividerBefore
+                ? "before:absolute before:-left-2 before:inset-y-2 before:w-px before:bg-muted-foreground/25"
+                : "",
+            ]
+              .join(" ")
+              .trim()}
+          >
             <BoardColumn
               stageId={s.id}
               stageName={s.name}

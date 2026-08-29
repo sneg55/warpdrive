@@ -1,11 +1,12 @@
 "use client";
 import type React from "react";
 import { useState } from "react";
-import { primaryValue, setPrimaryPoint } from "@/features/contacts/PersonSummaryEditPanel";
 import { InlineEditFooter } from "@/features/inline-edit/InlineEditFooter";
 import { saveErrorMessage } from "@/features/inline-edit/saveError";
 import type { ContactPoint } from "@/types/contactPoint";
 import { BulkEditRow as BulkRow } from "./BulkEditRow";
+import { type ContactPointKind, ContactPointsEditor } from "./ContactPointsField";
+import { committedPoints, parsePoints, serializePoints } from "./contactPoints";
 
 // The change shape PersonBlock.save accepts (kept in sync with it). All optional so the bulk save
 // sends only the fields the user actually changed.
@@ -21,7 +22,6 @@ interface PersonBulkEditorProps {
   lastName: string | null;
   phones: ContactPoint[];
   emails: ContactPoint[];
-  primaryEmail: string | null;
   save: (change: PersonBulkChange) => Promise<{ ok: boolean; errorId?: string }>;
   onExit: () => void;
   // Built-in field keys hidden in Settings > Data fields; a hidden contact point is not offered here.
@@ -40,16 +40,16 @@ export function PersonBulkEditor({
   lastName,
   phones,
   emails,
-  primaryEmail,
   save,
   onExit,
   hidden = NONE,
 }: PersonBulkEditorProps): React.ReactNode {
-  const initialPhone = primaryValue(phones);
+  const initialPhones = serializePoints(phones);
+  const initialEmails = serializePoints(emails);
   const [first, setFirst] = useState(firstName ?? "");
   const [last, setLast] = useState(lastName ?? "");
-  const [phone, setPhone] = useState(initialPhone);
-  const [email, setEmail] = useState(primaryEmail ?? "");
+  const [phoneDraft, setPhoneDraft] = useState(initialPhones);
+  const [emailDraft, setEmailDraft] = useState(initialEmails);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -57,8 +57,8 @@ export function PersonBulkEditor({
     const change: PersonBulkChange = {};
     if (textOrNull(first) !== firstName) change.firstName = textOrNull(first);
     if (textOrNull(last) !== lastName) change.lastName = textOrNull(last);
-    if (phone !== initialPhone) change.phones = setPrimaryPoint(phones, phone);
-    if (email !== (primaryEmail ?? "")) change.emails = setPrimaryPoint(emails, email);
+    if (phoneDraft !== initialPhones) change.phones = committedPoints(parsePoints(phoneDraft));
+    if (emailDraft !== initialEmails) change.emails = committedPoints(parsePoints(emailDraft));
 
     if (Object.keys(change).length === 0) {
       onExit();
@@ -83,10 +83,20 @@ export function PersonBulkEditor({
       <BulkRow label="First name" value={first} onChange={setFirst} disabled={pending} />
       <BulkRow label="Last name" value={last} onChange={setLast} disabled={pending} />
       {!hidden.has("phones") && (
-        <BulkRow label="Phone" value={phone} onChange={setPhone} disabled={pending} />
+        <BulkPointsRow
+          kind="Phone"
+          draft={phoneDraft}
+          setDraft={setPhoneDraft}
+          disabled={pending}
+        />
       )}
       {!hidden.has("emails") && (
-        <BulkRow label="Email" value={email} onChange={setEmail} disabled={pending} />
+        <BulkPointsRow
+          kind="Email"
+          draft={emailDraft}
+          setDraft={setEmailDraft}
+          disabled={pending}
+        />
       )}
       {error !== null ? (
         <span role="alert" className="text-destructive text-xs">
@@ -94,6 +104,25 @@ export function PersonBulkEditor({
         </span>
       ) : null}
       <InlineEditFooter onCancel={onExit} onSave={onSave} saveDisabled={false} pending={pending} />
+    </div>
+  );
+}
+
+function BulkPointsRow({
+  kind,
+  draft,
+  setDraft,
+  disabled,
+}: {
+  kind: ContactPointKind;
+  draft: string;
+  setDraft: (v: string) => void;
+  disabled: boolean;
+}): React.ReactNode {
+  return (
+    <div className="flex flex-col gap-0.5 text-muted-foreground text-xs">
+      <span>{kind}</span>
+      <ContactPointsEditor kind={kind} draft={draft} setDraft={setDraft} disabled={disabled} />
     </div>
   );
 }

@@ -10,6 +10,7 @@ import { makeStorageClient } from "@/features/files/storage";
 import { guardCsrf } from "@/features/identity/actions/shared";
 import { SIG } from "@/features/identity/actions/sig";
 import { createContext } from "@/server/trpc/context";
+import { type ActionResult, clientErr, toClientResult } from "@/types/actionResult";
 import { err, ok, type Result } from "@/types/result";
 import { softDisconnectMailbox } from "./disconnect";
 import { createGmailClient, type GmailClient } from "./gmailClient";
@@ -47,16 +48,18 @@ function scheduledStubGmail(): GmailClient {
 export async function sendEmail(
   csrfToken: string | null,
   rawInput: unknown,
-): Promise<Result<{ status: string; messageId?: string }, AppError>> {
+): Promise<ActionResult<{ status: string; messageId?: string }>> {
   const csrf = await guardCsrf(csrfToken);
-  if (!csrf.ok) return err(new AppError("E_PERM_001", "csrf check failed", {}));
+  if (!csrf.ok) return clientErr(new AppError("E_PERM_001", "csrf check failed", {}));
 
   const ctx = await createContext();
-  if (ctx.actor === null) return err(new AppError("E_PERM_001", "unauthenticated", {}));
+  if (ctx.actor === null) return clientErr(new AppError("E_PERM_001", "unauthenticated", {}));
 
   const parsed = sendEmailInput.safeParse(rawInput);
   if (!parsed.success) {
-    return err(new AppError("E_GMAIL_009", "invalid send input", { issues: parsed.error.issues }));
+    return clientErr(
+      new AppError("E_GMAIL_009", "invalid send input", { issues: parsed.error.issues }),
+    );
   }
   const input: SendEmailInput = parsed.data;
 
@@ -65,39 +68,43 @@ export async function sendEmail(
   // decrypt/refresh side effect. runSend re-checks ownership (defense in depth), but a
   // non-owner must never reach ensureAccessToken and trigger refresh-token rotation.
   const owner = await assertMailboxOwner(db, input.accountId, ctx.actor.id, signal);
-  if (!owner.ok) return owner;
+  if (!owner.ok) return clientErr(owner.error);
 
   // A future scheduled send never calls Gmail now: runSend enqueues + prepares the body,
   // then returns before Gmail I/O. Skip ensureAccessToken so we do NOT trigger a
   // refresh-token rotation (a side effect) for a token this request will never use.
   if (isFutureScheduledSend(input.scheduledSendAt, Date.now())) {
-    return orchestrateSend(db, {
-      actorId: ctx.actor.id,
-      actorType: ctx.actor.type,
-      actorGroupIds: ctx.actor.groupIds,
-      gmail: scheduledStubGmail(),
-      storage: makeStorageClient(),
-      input,
-      signal,
-    });
+    return toClientResult(
+      await orchestrateSend(db, {
+        actorId: ctx.actor.id,
+        actorType: ctx.actor.type,
+        actorGroupIds: ctx.actor.groupIds,
+        gmail: scheduledStubGmail(),
+        storage: makeStorageClient(),
+        input,
+        signal,
+      }),
+    );
   }
 
   const token = await ensureAccessToken(db, {
     accountId: input.accountId,
     deps: { refresh: makeRefresh(signal) },
   });
-  if (!token.ok) return token;
+  if (!token.ok) return clientErr(token.error);
 
   const gmail = createGmailClient(token.value.token);
-  return orchestrateSend(db, {
-    actorId: ctx.actor.id,
-    actorType: ctx.actor.type,
-    actorGroupIds: ctx.actor.groupIds,
-    gmail,
-    storage: makeStorageClient(),
-    input,
-    signal,
-  });
+  return toClientResult(
+    await orchestrateSend(db, {
+      actorId: ctx.actor.id,
+      actorType: ctx.actor.type,
+      actorGroupIds: ctx.actor.groupIds,
+      gmail,
+      storage: makeStorageClient(),
+      input,
+      signal,
+    }),
+  );
 }
 
 // Reader Delete -> Gmail Trash (P4). CSRF first, then the trusted actor. Resolve the thread's

@@ -90,7 +90,7 @@ export function BoardColumn(props: BoardColumnProps): React.ReactNode {
         // flex-1 + min-w lets a few stages fill the board width while many stages scroll.
         // Concentric radius: lane is rounded-xl so its 8px padding + rounded-lg cards nest cleanly
         // (outer radius > inner radius) instead of the equal-radius look that reads as "off".
-        "flex min-w-72 flex-1 flex-col gap-2 rounded-xl p-2 transition-colors",
+        "flex min-w-72 flex-1 flex-col gap-2 overflow-hidden rounded-xl p-2 transition-colors",
         // Collapsed lanes shrink to just their header (no tall empty drop zone); expanded lanes
         // keep the min-height so even empty stages read as a drop target.
         collapsed ? "" : "min-h-96",
@@ -135,12 +135,11 @@ export function BoardColumn(props: BoardColumnProps): React.ReactNode {
 
       {!collapsed && (
         <>
-          <ul className="flex flex-col gap-2" aria-label={`${stageName} deals`}>
+          <ul
+            className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto"
+            aria-label={`${stageName} deals`}
+          >
             {cards.map((card) => (
-              // content-visibility lets the browser skip layout+paint for off-screen cards in a
-              // long lane. Cards are draggables, not drop targets (the stage column and the
-              // DragDropZones are the droppables), and a card is always on-screen when a drag
-              // starts, so skipping off-screen cards does not affect drag/drop measurement.
               <li
                 key={card.id}
                 className="[content-visibility:auto] [contain-intrinsic-size:auto_96px]"

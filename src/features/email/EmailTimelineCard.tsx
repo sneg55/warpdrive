@@ -15,6 +15,7 @@ import { linkThread } from "./linkActions";
 import { ReaderActions } from "./ReaderActions";
 import { ReaderMessageCard } from "./ReaderMessageCard";
 import type { ReplyMode } from "./replyPrefill";
+import { decodeEmailSnippet } from "./snippetText";
 
 // Which record's timeline this card sits on. Unlink clears exactly that link and leaves the
 // other one alone, so detaching a thread from a deal keeps it on the person it belongs to.
@@ -97,7 +98,9 @@ export function EmailTimelineCard({
             )}
           </p>
           {!expanded && message.snippet !== null && message.snippet !== "" && (
-            <p className="mt-1 truncate text-xs text-muted-foreground">{message.snippet}</p>
+            <p className="mt-1 truncate text-xs text-muted-foreground">
+              {decodeEmailSnippet(message.snippet)}
+            </p>
           )}
         </div>
         <div className="flex shrink-0 items-center gap-1">

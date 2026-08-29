@@ -2,7 +2,7 @@
 import { Mail } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type React from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { connectGmailStart, disconnectMailboxAction } from "@/features/email/actions";
 import { readCsrfToken } from "@/utils/csrfCookie";
@@ -12,6 +12,7 @@ import {
   SettingsCardFooter,
   SettingsCardHeader,
 } from "../SettingsSurface";
+import { mailboxDisplayHealth, mailboxDotClass, mailboxStatusLabel } from "./statusLabel";
 import { EMAIL_SYNC_STRINGS } from "./strings";
 
 const S = EMAIL_SYNC_STRINGS;
@@ -29,17 +30,15 @@ function formatSync(iso: string | null): string {
   return S.lastSynced(new Date(iso).toLocaleString());
 }
 
-function statusLabel(mailbox: MailboxView | null): string {
-  if (mailbox === null || mailbox.status === "disconnected") return S.statusDisconnected;
-  if (mailbox.status === "error") return S.statusError;
-  return S.statusConnected;
-}
-
 export function EmailSyncClient({ mailbox }: { mailbox: MailboxView | null }): React.ReactNode {
   const router = useRouter();
+  const [now, setNow] = useState<Date | null>(null);
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- the clock is the browser's, not the request's: rendering a stall from the server time would disagree with the tab a minute later
+  useEffect(() => setNow(new Date()), []);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const connected = mailbox !== null && mailbox.status === "connected";
+  const health = mailboxDisplayHealth(mailbox, now);
 
   // Connect a fresh mailbox or reconnect a disconnected/error one: both mint a consent URL
   // server-side (which also sets the single-use OAuth state cookie) and hand off to Google.
@@ -82,14 +81,20 @@ export function EmailSyncClient({ mailbox }: { mailbox: MailboxView | null }): R
         <div className="mb-1 flex items-center gap-2">
           <span
             data-status={mailbox?.status ?? "none"}
-            className={`inline-block h-2 w-2 rounded-full ${connected ? "bg-green-500" : "bg-muted-foreground/40"}`}
+            data-health={health}
+            className={`inline-block h-2 w-2 rounded-full ${mailboxDotClass(health)}`}
           />
-          <span className="text-sm font-medium">{statusLabel(mailbox)}</span>
+          <span className="text-sm font-medium">{mailboxStatusLabel(mailbox, now)}</span>
         </div>
         {mailbox !== null ? (
           <>
             <p className="text-sm text-muted-foreground">{S.connectedAs(mailbox.emailAddress)}</p>
             <p className="text-sm text-muted-foreground">{formatSync(mailbox.lastSyncAtIso)}</p>
+            {health === "stalled" ? (
+              <p className="rounded-md border border-warning/40 bg-warning/10 p-2 text-sm">
+                {S.stalledHint}
+              </p>
+            ) : null}
             {mailbox.lastErrorId !== null ? (
               <p className="text-sm text-red-600">
                 {S.lastErrorLabel}: {mailbox.lastErrorId}

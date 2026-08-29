@@ -3,6 +3,7 @@ import "@testing-library/jest-dom/vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 import type { Person } from "@/db/schema";
+import type { ContactPoint } from "@/types/contactPoint";
 import { HideEmptyContext } from "./sectionFilter";
 
 const { refresh, updatePersonAction } = vi.hoisted(() => ({
@@ -22,6 +23,9 @@ afterEach(() => {
   cleanup();
   vi.clearAllMocks();
 });
+
+const callArg = (index: number): unknown =>
+  (updatePersonAction.mock.calls as unknown as unknown[][])[index]?.[0];
 
 // Blank firstName/lastName/phones/emails: every row but Name is value-less.
 const blankPerson: Person = {
@@ -171,4 +175,88 @@ it("renders provided label chips under the section (PD's per-person Labels row)"
   );
   expect(screen.getByText("Labels")).toBeInTheDocument();
   expect(screen.getByText("Hot")).toBeInTheDocument();
+});
+
+// A person can hold several addresses (import, merge, enrichment all append them). The sidebar
+// used to render persons.primary_email alone, so every other address was invisible and one
+// inline save rewrote the primary while the rest stayed unreachable.
+const multiPointPerson = {
+  ...blankPerson,
+  primaryEmail: "pat.scrimgeour@ottawa.ca",
+  emails: [
+    { label: "work", value: "pat.scrimgeour@ottawa.ca", primary: true },
+    { label: "home", value: "pat@gmail.com", primary: false },
+  ],
+  phones: [
+    { label: "work", value: "+1 555 111 2222", primary: true },
+    { label: "mobile", value: "+1 555 333 4444", primary: false },
+  ],
+} as unknown as Person;
+
+it("renders every stored email and phone, not just the primary", () => {
+  render(<PersonBlock person={multiPointPerson} />);
+  expect(screen.getByRole("link", { name: "pat.scrimgeour@ottawa.ca" })).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "pat@gmail.com" })).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "+1 555 111 2222" })).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "+1 555 333 4444" })).toBeInTheDocument();
+});
+
+it("shows an address held only in the primary_email column alongside the array", () => {
+  const person = {
+    ...blankPerson,
+    primaryEmail: "column-only@acme.com",
+    emails: [{ label: "work", value: "array@acme.com", primary: false }],
+  } as unknown as Person;
+  render(<PersonBlock person={person} />);
+  expect(screen.getByRole("link", { name: "column-only@acme.com" })).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "array@acme.com" })).toBeInTheDocument();
+});
+
+it("edits a non-primary email and saves the whole array", async () => {
+  render(<PersonBlock person={multiPointPerson} />);
+  fireEvent.click(screen.getByRole("button", { name: "Edit Email" }));
+  fireEvent.change(screen.getByLabelText("Email 2"), { target: { value: "pat@home.ca" } });
+  fireEvent.click(screen.getByRole("button", { name: "Save" }));
+
+  await waitFor(() => expect(updatePersonAction).toHaveBeenCalled());
+  expect(callArg(0)).toEqual({
+    id: "p1",
+    emails: [
+      { label: "work", value: "pat.scrimgeour@ottawa.ca", primary: true },
+      { label: "home", value: "pat@home.ca", primary: false },
+    ],
+  });
+});
+
+it("adds a second email without dropping the first", async () => {
+  const person = {
+    ...blankPerson,
+    primaryEmail: "one@acme.com",
+    emails: [{ label: "work", value: "one@acme.com", primary: true }],
+  } as unknown as Person;
+  render(<PersonBlock person={person} />);
+  fireEvent.click(screen.getByRole("button", { name: "Edit Email" }));
+  fireEvent.click(screen.getByRole("button", { name: "+ Add email" }));
+  fireEvent.change(screen.getByLabelText("Email 2"), { target: { value: "two@acme.com" } });
+  fireEvent.click(screen.getByRole("button", { name: "Save" }));
+
+  await waitFor(() => expect(updatePersonAction).toHaveBeenCalled());
+  expect(callArg(0)).toEqual({
+    id: "p1",
+    emails: [
+      { label: "work", value: "one@acme.com", primary: true },
+      { label: "work", value: "two@acme.com", primary: false },
+    ],
+  });
+});
+
+it("promotes a non-primary email so the derived primary_email follows it", async () => {
+  render(<PersonBlock person={multiPointPerson} />);
+  fireEvent.click(screen.getByRole("button", { name: "Edit Email" }));
+  fireEvent.click(screen.getByRole("radio", { name: "Make email 2 primary" }));
+  fireEvent.click(screen.getByRole("button", { name: "Save" }));
+
+  await waitFor(() => expect(updatePersonAction).toHaveBeenCalled());
+  const emails = (callArg(0) as { emails: ContactPoint[] }).emails;
+  expect(emails.find((e) => e.primary)?.value).toBe("pat@gmail.com");
 });

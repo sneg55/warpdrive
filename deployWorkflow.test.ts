@@ -22,9 +22,40 @@ describe("deploy workflow", () => {
     expect(workflow).toMatch(/^ {2}pull_request:$/m);
   });
 
-  it("keeps the release jobs on push, so a pull request can never reach the box", () => {
-    expect(job("build")).toMatch(/if: github\.event_name == 'push'/);
-    expect(job("deploy")).toMatch(/if: github\.event_name == 'push'/);
+  it("builds an image for every commit on main, so a tag has something to promote", () => {
+    expect(job("build")).toMatch(/refs\/heads\/main/);
+  });
+
+  it("never builds or deploys from a pull request, so a proposal cannot reach the box", () => {
+    expect(job("build")).toMatch(/if: /);
+    expect(job("build")).not.toMatch(/pull_request/);
+    expect(job("deploy")).not.toMatch(/pull_request/);
+  });
+
+  it("ships on a tag, so merging to main no longer deploys prod by itself", () => {
+    expect(workflow).toMatch(/tags: \['v\*'\]/);
+    const deploy = job("deploy");
+    expect(deploy).toMatch(/refs\/tags\/v/);
+    // The escape hatch for a hotfix that must not wait for a release.
+    expect(deploy).toMatch(/workflow_dispatch/);
+  });
+
+  it("promotes the image main already built rather than rebuilding at tag time", () => {
+    // A rebuild would ship an artifact no gate ever ran against. The tag resolves to its commit,
+    // and that commit's image was built and gated when it landed on main.
+    expect(job("deploy")).not.toMatch(/build-push-action/);
+    expect(job("deploy")).toMatch(/github\.sha/);
+  });
+
+  it("refuses to deploy a commit that was never built, instead of pulling a tag that is not there", () => {
+    // Tagging a commit that never reached main, or whose build failed, has no image. Without this
+    // the box's `docker compose pull` is the first thing to notice, mid-deploy.
+    expect(job("deploy")).toMatch(/manifest inspect/);
+  });
+
+  it("serialises prod deploys, so two tags pushed together cannot race on the box", () => {
+    // The workflow-level group keys on the ref, and two tags are two refs.
+    expect(job("deploy")).toMatch(/concurrency:/);
   });
 
   it("checks lint and types in the gate, since a pull request never reaches the build job", () => {
@@ -32,6 +63,12 @@ describe("deploy workflow", () => {
     expect(test).toMatch(/run: pnpm lint/);
     expect(test).toMatch(/run: pnpm typecheck/);
     expect(test).toMatch(/run: pnpm test:unit/);
+  });
+
+  it("runs the OSS publish guard, which nothing ran and which sat red because of it", () => {
+    // The guard decides what may leave for the public mirror. Vitest does not cover it (it is a
+    // shell suite), so until it was in the gate a broken one was invisible.
+    expect(job("test")).toMatch(/run: pnpm test:oss/);
   });
 
   it("fails the deploy when the app does not come up healthy", () => {

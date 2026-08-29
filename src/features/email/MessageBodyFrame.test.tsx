@@ -65,4 +65,45 @@ describe("MessageBodyFrame", () => {
     );
     expect(getByRole("button", { name: /show remote content/i })).toBeTruthy();
   });
+
+  it("zeroes the document margin so the height-sized frame does not grow its own scrollbar", () => {
+    const { container } = render(
+      <MessageBodyFrame html="<p>x</p>" allowRemote={false} onShowRemote={() => {}} />,
+    );
+    const srcDoc = container.querySelector("iframe")?.getAttribute("srcdoc") ?? "";
+    expect(srcDoc).toMatch(/body\s*\{[^}]*margin:\s*0/);
+  });
+
+  it("renders the body on a light surface so a dark theme does not wash out the sender's copy", () => {
+    const { container } = render(
+      <MessageBodyFrame html="<p>x</p>" allowRemote={false} onShowRemote={() => {}} />,
+    );
+    const srcDoc = container.querySelector("iframe")?.getAttribute("srcdoc") ?? "";
+    expect(srcDoc).toMatch(/color-scheme:\s*light/);
+    expect(srcDoc).toMatch(/background:\s*#fff/i);
+  });
+
+  it("styles the show-remote-content control as a design-system button", () => {
+    const { getByRole } = render(
+      <MessageBodyFrame html="<p>x</p>" allowRemote={false} onShowRemote={() => {}} />,
+    );
+    const button = getByRole("button", { name: /show remote content/i });
+    expect(button.className).toMatch(/inline-flex/);
+    expect(button.className).toMatch(/rounded-md/);
+  });
+
+  it("drops the min-height once the frame reports its height, so a short body is not a tall slab", () => {
+    const { container } = render(
+      <MessageBodyFrame html="<p>two lines</p>" allowRemote={false} onShowRemote={() => {}} />,
+    );
+    const iframe = container.querySelector("iframe");
+    if (iframe === null) throw new Error("no iframe");
+    Object.defineProperty(iframe, "contentDocument", {
+      configurable: true,
+      value: { body: { scrollHeight: 64 } },
+    });
+    fireEvent.load(iframe);
+    expect(iframe.style.height).toBe("64px");
+    expect(iframe.style.minHeight).toBe("");
+  });
 });

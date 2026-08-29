@@ -103,3 +103,10 @@ export function elapsedFraction(period: GoalPeriod, on: string): number {
   const doneDays = (day - start) / MS_PER_DAY + 1;
   return Math.min(1, doneDays / totalDays);
 }
+
+export function periodDays(period: GoalPeriod): string[] {
+  const end = parse(period.end).getTime();
+  const days: string[] = [];
+  for (let d = parse(period.start); d.getTime() <= end; d = addDays(d, 1)) days.push(format(d));
+  return days;
+}

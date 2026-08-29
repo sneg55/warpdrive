@@ -10,9 +10,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Skeleton } from "@/components/ui/Skeleton";
 import { ENRICHMENT_STRINGS } from "@/constants/enrichmentStrings";
 import { EnrichFieldRow } from "./EnrichFieldRow";
+import { EnrichLoading } from "./EnrichLoading";
 import type { ProviderOutcome } from "./providers/types";
 import type { RunView } from "./service";
 import type { ProposedField, Selection } from "./types";
@@ -218,14 +218,7 @@ export function EnrichDialog({
           </p>
         ) : null}
 
-        {state.kind === "loading" ? (
-          <div className="flex flex-col gap-2">
-            <p className="text-sm text-muted-foreground">{S.loading}</p>
-            <Skeleton className="h-6 w-full" />
-            <Skeleton className="h-6 w-3/4" />
-            <Skeleton className="h-6 w-2/3" />
-          </div>
-        ) : null}
+        {state.kind === "loading" ? <EnrichLoading /> : null}
 
         {state.kind === "error" ? (
           <p role="alert" className="text-sm text-destructive">

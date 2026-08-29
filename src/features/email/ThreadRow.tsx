@@ -12,6 +12,7 @@ import { readCsrfToken } from "@/utils/csrfCookie";
 import type { InboxThread } from "./emailReads";
 import { archiveThreadAction, unarchiveThreadAction } from "./folderActions";
 import { formatInboxListDate } from "./inboxDate";
+import { decodeEmailSnippet } from "./snippetText";
 import { ThreadLabelChips } from "./ThreadLabelChips";
 import { ThreadPrivacyToggle } from "./ThreadPrivacyToggle";
 
@@ -146,7 +147,10 @@ export function ThreadRow({
           )}
           <span className={`text-foreground ${weight}`}>{subject}</span>
           {thread.snippet !== null && thread.snippet !== "" && (
-            <span className={cn("text-muted-foreground", MASK_CLASS)}> {thread.snippet}</span>
+            <span className={cn("text-muted-foreground", MASK_CLASS)}>
+              {" "}
+              {decodeEmailSnippet(thread.snippet)}
+            </span>
           )}
         </span>
         {thread.personId === null && thread.dealId === null && (

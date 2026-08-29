@@ -5,6 +5,7 @@
 import { z } from "zod";
 import type { Goal } from "@/db/schema/goals";
 import { type GoalProgress, goalProgress } from "@/features/goals/goalProgress";
+import { type GoalSeriesPoint, goalSeries } from "@/features/goals/goalSeries";
 import { listVisibleGoals } from "@/features/goals/goalsRepo";
 import { protectedProcedure, router } from "@/server/trpc/trpc";
 
@@ -13,6 +14,7 @@ const SIG = (): AbortSignal => AbortSignal.timeout(15_000);
 export interface GoalWithProgress {
   goal: Goal;
   progress: GoalProgress | null;
+  series: GoalSeriesPoint[];
 }
 
 export const goalsRouter = router({
@@ -24,10 +26,16 @@ export const goalsRouter = router({
       const signal = SIG();
       const rows = await listVisibleGoals(ctx.db, ctx.actor, signal);
       return Promise.all(
-        rows.map(async (goal) => ({
-          goal,
-          progress: await goalProgress(ctx.db, ctx.actor, goal, input.on, signal),
-        })),
+        rows.map(async (goal) => {
+          const progress = await goalProgress(ctx.db, ctx.actor, goal, input.on, signal);
+          if (progress === null) return { goal, progress, series: [] };
+          const period = { start: progress.periodStart, end: progress.periodEnd };
+          return {
+            goal,
+            progress,
+            series: await goalSeries(ctx.db, ctx.actor, goal, period, input.on, signal),
+          };
+        }),
       );
     }),
 });

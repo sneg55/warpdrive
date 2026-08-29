@@ -4,6 +4,7 @@ import { useId } from "react";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/RadioGroup";
 import { ENRICHMENT_STRINGS } from "@/constants/enrichmentStrings";
+import { overwriteNotice } from "./overwriteNotice";
 import type { ProposedField, ProposedValue } from "./types";
 
 const S = ENRICHMENT_STRINGS.dialog;
@@ -123,6 +124,7 @@ export function EnrichFieldRow({
 }: EnrichFieldRowProps): React.ReactNode {
   const checkboxId = useId();
   const first = field.values[0];
+  const notice = overwriteNotice(field);
   return (
     <div className="grid grid-cols-[auto_8rem_1fr] items-start gap-x-3 gap-y-1 py-2">
       <Checkbox
@@ -145,13 +147,7 @@ export function EnrichFieldRow({
         ) : first !== undefined ? (
           <SingleValue value={first} />
         ) : null}
-        {field.isOverwrite ? (
-          <span className="text-xs text-muted-foreground">
-            {field.currentValue === null
-              ? S.overwritesHidden
-              : S.overwrites(String(field.currentValue))}
-          </span>
-        ) : null}
+        {notice !== null ? <span className="text-xs text-muted-foreground">{notice}</span> : null}
         {field.currentInvalid && field.currentValue !== null ? (
           <span className="text-xs text-muted-foreground">
             {S.currentInvalid(String(field.currentValue))}

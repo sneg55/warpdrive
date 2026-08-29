@@ -173,3 +173,10 @@ describe("ThreadRow U7 visual polish", () => {
     expect(container.querySelector("[data-privacy-caret]")).not.toBeInTheDocument();
   });
 });
+
+it("decodes the HTML entities Gmail escapes into the snippet", () => {
+  render(<ThreadRow {...props} thread={{ ...thread, snippet: "couldn&#39;t be found" }} />);
+
+  expect(screen.getByText(/couldn't be found/)).toBeInTheDocument();
+  expect(screen.queryByText(/&#39;/)).not.toBeInTheDocument();
+});

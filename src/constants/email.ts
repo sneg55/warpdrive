@@ -9,6 +9,7 @@ export const MAIL_LABELS = ["important", "to_do", "later"] as const;
 
 // Inbound polling (ops spec B3): 90s cadence, deterministic per-mailbox jitter.
 export const SYNC_CADENCE_SECONDS = 90;
+export const SYNC_STALL_SECONDS = 15 * 60;
 // Resync gap-recovery (ops spec B3): subtract this margin from last_sync_at when
 // building the recent-window backfill query so boundary replies are not missed.
 export const RESYNC_WINDOW_MARGIN_SECONDS = 600;

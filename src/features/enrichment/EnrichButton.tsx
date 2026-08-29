@@ -10,6 +10,7 @@ import { applyEnrichmentAction, enrichRecordAction } from "./actions";
 import type { EnrichEntity } from "./canonical";
 import { type EnrichApplyError, EnrichDialog, type EnrichRunState } from "./EnrichDialog";
 import { failureReasonsText } from "./failureReasons";
+import { remainingFields } from "./remainingFields";
 import type { Selection } from "./types";
 
 const S = ENRICHMENT_STRINGS.dialog;
@@ -208,7 +209,6 @@ export function EnrichButton({
     // than re-running the fan-out to learn it: with the cache disabled or the run aged out, a
     // re-run would call every paid provider again purely because a name could not be linked.
     if (result.value.unresolved.length > 0) {
-      const written = new Set(result.value.appliedFields);
       setState({
         entityId,
         value: {
@@ -216,9 +216,17 @@ export function EnrichButton({
           run: {
             ...shown.run,
             entityUpdatedAtIso: result.value.entityUpdatedAtIso,
-            // The committed rows leave the dialog. Keeping them would let a retry rewrite fields
-            // that already landed and add a second change-log row for each.
-            fields: shown.run.fields.filter((f) => !written.has(f.canonicalKey)),
+            // The committed rows leave the dialog: keeping them would let a retry rewrite fields
+            // that already landed and add a second change-log row for each. So do the unresolved
+            // ones. An unresolved company name means no single organization matched the provider's
+            // string, which is a property of the string and the org list, not of the attempt, so
+            // the same apply resolves to nothing every time. Leaving it checked with Apply live
+            // offered a retry that could only re-raise the error it had just shown.
+            fields: remainingFields(
+              shown.run.fields,
+              result.value.appliedFields,
+              result.value.unresolved,
+            ),
           },
         },
       });

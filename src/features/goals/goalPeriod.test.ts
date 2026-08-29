@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { currentPeriod, elapsedFraction } from "./goalPeriod";
+import { currentPeriod, elapsedFraction, periodDays } from "./goalPeriod";
 
 describe("currentPeriod", () => {
   test("a weekly goal runs seven days from its start", () => {
@@ -102,5 +102,29 @@ describe("elapsedFraction", () => {
 
   test("is 0 for a day before the period", () => {
     expect(elapsedFraction({ start: "2026-01-10", end: "2026-01-20" }, "2026-01-01")).toBe(0);
+  });
+});
+
+describe("periodDays", () => {
+  test("lists every day of the period, both ends included", () => {
+    expect(periodDays({ start: "2026-01-01", end: "2026-01-04" })).toEqual([
+      "2026-01-01",
+      "2026-01-02",
+      "2026-01-03",
+      "2026-01-04",
+    ]);
+  });
+
+  test("spans a month boundary", () => {
+    expect(periodDays({ start: "2026-01-30", end: "2026-02-02" })).toEqual([
+      "2026-01-30",
+      "2026-01-31",
+      "2026-02-01",
+      "2026-02-02",
+    ]);
+  });
+
+  test("is a single day when the period is one day long", () => {
+    expect(periodDays({ start: "2026-01-01", end: "2026-01-01" })).toEqual(["2026-01-01"]);
   });
 });

@@ -183,6 +183,8 @@ export const STRINGS = {
     goalTarget: "Target",
     goalPace: "Pace",
     goalNotStarted: "Outside this goal's dates",
+    goalBooked: "Booked",
+    goalTargetPace: "On target",
     widgetWonTrend: "WON DEALS BY MONTH",
     emptyWonTrend: "No deals were won in this range, so there is no trend to draw.",
     trendTableCaption: "Won deals by month",

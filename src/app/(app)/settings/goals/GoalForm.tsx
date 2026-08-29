@@ -14,6 +14,7 @@ import {
 } from "@/constants/goals";
 import { SETTINGS_STRINGS } from "@/constants/settingsStrings";
 import type { Goal } from "@/db/schema/goals";
+import { goalTargetInput } from "@/features/goals/goalTargetText";
 
 const S = SETTINGS_STRINGS;
 const ANY = "goal:any";
@@ -69,7 +70,9 @@ export function GoalForm({
   const [pipelineId, setPipelineId] = useState<string>(initial?.pipelineId ?? ANY);
   const [activityTypeId, setActivityTypeId] = useState<string>(initial?.activityTypeId ?? ANY);
   const [interval, setInterval] = useState<string>(initial?.interval ?? "monthly");
-  const [target, setTarget] = useState(initial?.target ?? "");
+  const [target, setTarget] = useState(
+    initial === undefined ? "" : goalTargetInput(initial.target),
+  );
   const [startsOn, setStartsOn] = useState<string>(
     initial?.startsOn ?? new Date().toISOString().slice(0, 10),
   );

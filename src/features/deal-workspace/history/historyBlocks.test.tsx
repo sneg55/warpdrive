@@ -2,6 +2,7 @@
 import "@testing-library/jest-dom/vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
+import { formatTimelineEmailDate } from "@/features/email/inboxDate";
 import { AttributionLine } from "./AttributionLine";
 import { CreatedCard } from "./CreatedCard";
 
@@ -12,9 +13,15 @@ const AT = new Date("2026-07-02T15:37:00Z");
 describe("AttributionLine", () => {
   it("renders a <time> with the actor and (Web App) source", () => {
     render(<AttributionLine at={AT} actorName="Nick Sawinyh" />);
-    const time = screen.getByText(/2026|Jul/i, { selector: "time" });
+    const time = document.querySelector("time");
     expect(time).toHaveAttribute("dateTime", AT.toISOString());
     expect(screen.getByText(/Nick Sawinyh \(Web App\)/)).toBeInTheDocument();
+  });
+
+  it("dates a row the way the email cards in the same feed do", () => {
+    render(<AttributionLine at={AT} actorName="Nick Sawinyh" />);
+    const time = document.querySelector("time");
+    expect(time?.textContent).toBe(formatTimelineEmailDate(AT.toISOString()));
   });
 
   it("humanizes an email-shaped actor name instead of leaking the email", () => {

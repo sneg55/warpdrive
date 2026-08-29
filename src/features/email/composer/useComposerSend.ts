@@ -4,14 +4,18 @@
 // Both handleSend and handleSendLater share the same draft-state setters and
 // activity-creation path; co-locating them here avoids duplication.
 
-import { STRINGS } from "@/constants/strings";
+import { unstable_isUnrecognizedActionError } from "next/navigation";
+import { ERROR_IDS } from "@/constants/errorIds";
 import { createActivityAction } from "@/features/activities/actions";
+import { capture, currentRoute } from "@/features/observability/capture";
+import { EVENTS } from "@/features/observability/events";
 import { readCsrfToken } from "@/utils/csrfCookie";
 import { sendEmail } from "../actions";
 import { deleteDraftAction } from "../folderActions";
 import type { EmailVisibility } from "../threadVisibility";
 import { COMPOSER_STRINGS } from "./composer.constants";
 import type { ComposerContext } from "./composer.types";
+import { sendFailureMessage } from "./sendFailure";
 
 export interface ComposerSendDeps {
   accountId: string;
@@ -165,18 +169,36 @@ export function buildSendHandlers(deps: ComposerSendDeps) {
     return subject.trim() !== "" ? subject : COMPOSER_STRINGS.defaultActivitySubject;
   }
 
+  // Every way a send can fail funnels through here, so it is the one place that names the cause
+  // and reports it. Before this, a revoked Google grant, a dead session, an unreadable attachment
+  // and a page that outlived its deploy all rendered "Failed to send. Please try again." with no
+  // telemetry, which left the box logs as the only way to tell them apart.
+  function failed(errorId: string, scheduled: boolean): { ok: false; msg: string } {
+    capture(EVENTS.actionFailed, {
+      errorId,
+      surface: "email-send",
+      route: currentRoute(),
+      scheduled,
+    });
+    return { ok: false, msg: sendFailureMessage(errorId) };
+  }
+
   // The send action arms its own deadline and can reject rather than return a Result (so can a
   // dropped connection). A rejection means we lost the answer, not that the mail failed, so it
-  // gets its own message. Either way the caller gets a value and can always clear `sending`.
+  // keeps its own message. The exception is a rejection Next itself raises for an action id the
+  // running build no longer has: that one IS a certain non-send, and retrying in the same tab can
+  // never succeed, so it asks for a reload instead.
   async function attemptSend(
     scheduledAt?: Date,
   ): Promise<{ ok: true } | { ok: false; msg: string }> {
+    const scheduled = scheduledAt !== undefined;
     try {
       const result = await sendEmail(readCsrfToken(), buildInput(scheduledAt));
-      return result.ok ? { ok: true } : { ok: false, msg: STRINGS.inbox.errorSend };
+      return result.ok ? { ok: true } : failed(result.error.id, scheduled);
     } catch (e) {
+      if (unstable_isUnrecognizedActionError(e)) return failed(ERROR_IDS.UI_STALE_BUILD, scheduled);
       console.warn("send action rejected without returning a Result", e);
-      return { ok: false, msg: COMPOSER_STRINGS.sendUnconfirmed };
+      return failed(ERROR_IDS.UI_ACTION_UNCONFIRMED, scheduled);
     }
   }
 

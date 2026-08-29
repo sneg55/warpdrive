@@ -5,8 +5,10 @@ import { buttonVariants } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { STRINGS } from "@/constants/strings";
 import { goalLabel } from "@/features/goals/goalLabel";
+import { goalNumberText } from "@/features/goals/goalTargetText";
 import type { GoalWithProgress } from "@/features/goals/router";
-import { Bar, money, Panel } from "./Panel";
+import { GoalChart } from "./GoalChart";
+import { money, Panel } from "./Panel";
 
 function paceTone(pace: number | null): string {
   if (pace === null) return "text-muted-foreground";
@@ -14,10 +16,10 @@ function paceTone(pace: number | null): string {
 }
 
 function GoalRow({ row, currency }: { row: GoalWithProgress; currency: string }): React.ReactNode {
-  const { goal, progress } = row;
+  const { goal, progress, series } = row;
   const label = goalLabel(goal);
   const isValue = goal.metric === "value";
-  const fmt = (v: string) => (isValue ? money(v, currency) : v);
+  const fmt = (v: string) => (isValue ? money(v, currency) : goalNumberText(v, goal.metric));
 
   if (progress === null) {
     return (
@@ -38,7 +40,13 @@ function GoalRow({ row, currency }: { row: GoalWithProgress; currency: string })
           {fmt(progress.actual)} / {fmt(progress.target)}
         </span>
       </div>
-      <Bar label={label} pct={(progress.attainment ?? 0) * 100} />
+      <GoalChart
+        period={{ start: progress.periodStart, end: progress.periodEnd }}
+        series={series}
+        target={progress.target}
+        metric={goal.metric}
+        currency={currency}
+      />
       <p className="mt-0.5 flex justify-between text-xs text-muted-foreground tabular-nums">
         <span>
           {progress.periodStart} {STRINGS.dashboard.rangeSeparator} {progress.periodEnd}

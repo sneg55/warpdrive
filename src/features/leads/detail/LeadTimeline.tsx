@@ -8,6 +8,7 @@ import { partitionFocusHistory } from "@/features/deal-workspace/historyTimeline
 import { PinnedNotesSection } from "@/features/deal-workspace/PinnedNotesSection";
 import type { TimelineView } from "@/features/deal-workspace/TimelineTabs";
 import { TimelineTabs } from "@/features/deal-workspace/TimelineTabs";
+import { decodeEmailSnippet } from "@/features/email/snippetText";
 import { MASK_CLASS } from "@/features/observability/replayMasking";
 import { cn } from "@/lib/utils";
 import type { LeadTimelineEmail } from "../leadTimeline";
@@ -34,7 +35,9 @@ function EmailList({ emails }: { emails: LeadTimelineEmail[] }): React.ReactNode
             {e.direction} · {e.fromEmail}
           </p>
           {e.snippet !== null && (
-            <p className={cn("mt-1 text-sm text-muted-foreground", MASK_CLASS)}>{e.snippet}</p>
+            <p className={cn("mt-1 text-sm text-muted-foreground", MASK_CLASS)}>
+              {decodeEmailSnippet(e.snippet)}
+            </p>
           )}
         </li>
       ))}

@@ -78,6 +78,8 @@ export const ENRICHMENT_STRINGS = {
     nothingFound: "Nothing new found.",
     overwrites: (current: string) => `Overwrites "${current}"`,
     overwritesHidden: "Overwrites a value you do not have access to",
+    relinksOrganization: (current: string) =>
+      `Links this person to another organization, replacing "${current}"`,
     currentInvalid: (current: string) => `"${current}" is not a valid address`,
     primaryChoiceLabel: "Where it goes",
     addAlongside: "Add alongside the current one",
