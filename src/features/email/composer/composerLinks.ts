@@ -21,3 +21,12 @@ export function resolveComposerLinks(args: {
     linkPersonId: contextPersonId ?? args.draft?.linkPersonId ?? undefined,
   };
 }
+
+// The recipient a merge-field preview resolves against. One body is delivered to every
+// To/Cc/Bcc recipient, so a recipient-derived {{person.*}} value is only meaningful when there
+// is exactly one of them. Mirrors the same rule in the send path (runSend), so what the composer
+// previews is what the recipient receives.
+export function mergeRecipientEmail(to: string[], cc: string[], bcc: string[]): string {
+  if (to.length + cc.length + bcc.length !== 1) return "";
+  return to[0] ?? "";
+}

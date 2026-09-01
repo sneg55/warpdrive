@@ -1,33 +1,18 @@
 "use client";
 
-import Link from "next/link";
 import type React from "react";
 import { useState } from "react";
-import { ConfirmDialog } from "@/components/ConfirmDialog";
 import type { ColumnDef } from "@/components/data-table/columnModel";
 import { RENDER_WINDOW_STEP, useRenderWindow } from "@/components/data-table/useRenderWindow";
-import { Avatar } from "@/components/ui/Avatar";
 import { Checkbox } from "@/components/ui/Checkbox";
-import { Select, type SelectOption } from "@/components/ui/Select";
 import { formatCurrency } from "@/lib/formatCurrency";
-import { BULK_MOVE_DESCRIPTION, bulkMoveTitle } from "./bulkMoveCopy";
-import { fmtDate, fmtDateOnly } from "./dealListFormat";
-import type { BoardCard } from "./dealRepo";
+import { DealListBulkBar } from "./DealListBulkBar";
+import { DealListTableBody } from "./DealListTableBody";
+import { MAX_TITLE_LEN } from "./DealTitleCell";
+import type { DealListRow, DealListStage } from "./dealListTypes";
 import { useInlineEdit } from "./useInlineEdit";
 
-// Server caps a deal title at 255 chars; the inline editor rejects anything longer client-side.
-const MAX_TITLE_LEN = 255;
-
-export interface DealListStage {
-  id: string;
-  name: string;
-}
-
-// DealListRow replaces updatedAt with a serialised ISO string so it can be
-// passed over the server/client boundary (Date is not serialisable as JSON).
-export interface DealListRow extends Omit<BoardCard, "updatedAt"> {
-  updatedAt: string;
-}
+export type { DealListRow, DealListStage } from "./dealListTypes";
 
 export interface DealListProps {
   pipelineId: string;
@@ -39,6 +24,7 @@ export interface DealListProps {
   // selection only on true, so a failed move keeps the selection instead of falsely signalling
   // success (the selection vanishing was read as "it worked" even when the server rejected it).
   onBulkStage: (dealIds: string[], toStageId: string) => Promise<boolean>;
+  onBulkArchive?: (dealIds: string[]) => Promise<boolean>;
   // Ordered visible columns (from useColumns/DEAL_LIST_COLUMNS). Title is always first (pinned).
   visibleColumns: readonly ColumnDef[];
   // The Customize-columns cog, rendered by the stateful client above the table.
@@ -55,16 +41,14 @@ export interface DealListProps {
 }
 
 export function DealList(props: DealListProps) {
-  const { pipelineId, rows, total, totalValue, stages, onBulkStage, onUnarchive } = props;
+  const { pipelineId, rows, total, totalValue, stages } = props;
+  const { onBulkStage, onBulkArchive, onUnarchive } = props;
   const { visibleColumns, columnsMenu, empty, filtered = false } = props;
   const { editCell } = useInlineEdit(pipelineId);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   // Which row's title is in inline-edit mode. Pipedrive opens the deal on title
   // click, so edit is behind an explicit control rather than the cell itself.
   const [editingId, setEditingId] = useState<string | null>(null);
-  // The stage a bulk move is headed for, held until the user confirms. Picking from the select
-  // used to move every selected deal on the spot, with no undo and nothing naming the count.
-  const [pendingStageId, setPendingStageId] = useState<string | null>(null);
   // Cap how many rows are painted to the DOM. Filtering, sorting, selection, and the footer
   // totals all operate over the full `rows`/`total` above, so this bounds render cost only: a
   // pipeline with hundreds of deals no longer mounts every <tr> up front.
@@ -82,8 +66,9 @@ export function DealList(props: DealListProps) {
   const stageNameById = new Map(stages.map((s) => [s.id, s.name]));
 
   const allIds = rows.map((r) => r.id);
-  const allSelected = allIds.length > 0 && allIds.every((id) => selected.has(id));
-  const someSelected = selected.size > 0 && !allSelected;
+  const selectedIds = allIds.filter((id) => selected.has(id));
+  const allSelected = allIds.length > 0 && selectedIds.length === allIds.length;
+  const someSelected = selectedIds.length > 0 && !allSelected;
 
   function toggleOne(id: string) {
     setSelected((prev) => {
@@ -101,84 +86,20 @@ export function DealList(props: DealListProps) {
     setSelected(allSelected ? new Set() : new Set(allIds));
   }
 
+  function selectAllState(): boolean | "indeterminate" {
+    if (allSelected) return true;
+    return someSelected ? "indeterminate" : false;
+  }
+
   async function confirmBulkStage(toStageId: string): Promise<void> {
-    setPendingStageId(null);
-    // Clear the selection only once the move actually lands. A failed move keeps the selection so
-    // the vanishing rows don't read as success (the whole point of the fix).
-    const applied = await onBulkStage([...selected], toStageId);
+    const applied = await onBulkStage(selectedIds, toStageId);
     if (applied) setSelected(new Set());
   }
 
-  // Per-column td content. Title is interactive (inline edit); the rest are read cells resolved by
-  // key so a customized/reordered column set renders without a fixed column list.
-  function renderCell(key: string, row: DealListRow): React.ReactNode {
-    switch (key) {
-      case "title":
-        return editingId === row.id ? (
-          <input
-            // biome-ignore lint/a11y/noAutofocus: focus follows the explicit edit click
-            autoFocus
-            aria-label="Edit title"
-            maxLength={MAX_TITLE_LEN}
-            defaultValue={row.title}
-            className="w-full rounded border px-1 py-0.5 text-sm"
-            onBlur={(e) => saveTitle(row, e.currentTarget.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") e.currentTarget.blur();
-              if (e.key === "Escape") setEditingId(null);
-            }}
-          />
-        ) : (
-          <span className="group flex items-center gap-2">
-            <Link href={`/deals/${row.id}`} className="text-primary hover:underline">
-              {row.title}
-            </Link>
-            <button
-              type="button"
-              aria-label="Edit title"
-              onClick={() => setEditingId(row.id)}
-              className="text-xs text-muted-foreground opacity-0 transition-[color,opacity] duration-150 hover:text-foreground focus-visible:opacity-100 group-hover:opacity-100 motion-reduce:transition-none"
-            >
-              Edit
-            </button>
-          </span>
-        );
-      case "org":
-        return row.orgId !== null && (row.orgName ?? null) !== null ? (
-          <Link href={`/contacts/orgs/${row.orgId}`} className="text-primary hover:underline">
-            {row.orgName}
-          </Link>
-        ) : (
-          (row.orgName ?? "")
-        );
-      case "value":
-        return row.value !== null ? formatCurrency(row.value) : "";
-      case "stage":
-        return stageNameById.get(row.stageId) ?? row.stageId;
-      case "owner":
-        return (row.ownerName ?? null) !== null ? (
-          <span className="flex items-center gap-2">
-            <Avatar name={row.ownerName ?? ""} src={row.ownerAvatarUrl} className="h-6 w-6" />
-            {row.ownerName}
-          </span>
-        ) : (
-          ""
-        );
-      case "person":
-        return row.personName ?? "";
-      case "expectedCloseDate":
-        return fmtDateOnly(row.expectedCloseDate);
-      case "nextActivity":
-        return fmtDate(row.nextActivityAt);
-      default:
-        return "";
-    }
-  }
-
-  function cellClass(key: string): string {
-    if (key === "title") return "px-3 py-2 font-semibold";
-    if (key === "value") return "px-3 py-2 tabular-nums text-foreground";
-    return "px-3 py-2 text-muted-foreground";
+  async function confirmBulkArchive(): Promise<void> {
+    if (onBulkArchive === undefined) return;
+    const applied = await onBulkArchive(selectedIds);
+    if (applied) setSelected(new Set());
   }
 
   const bodyColSpan = 1 + visibleColumns.length + (onUnarchive ? 1 : 0);
@@ -192,37 +113,14 @@ export function DealList(props: DealListProps) {
       {columnsMenu !== undefined ? (
         <div className="flex items-center justify-end border-b px-3 py-1.5">{columnsMenu}</div>
       ) : null}
-      {selected.size > 0 ? (
-        <div
-          role="toolbar"
-          aria-label="Bulk actions"
-          className="flex items-center gap-3 border-b bg-accent px-4 py-2"
-        >
-          <span className="text-sm font-medium tabular-nums text-accent-foreground">
-            {selected.size} selected
-          </span>
-          <Select
-            ariaLabel="Move to stage"
-            value=""
-            onChange={(v) => setPendingStageId(v === "" ? null : v)}
-            placeholder="Move to stage..."
-            options={stages.map<SelectOption>((s) => ({ value: s.id, label: s.name }))}
-          />
-        </div>
-      ) : null}
-
-      {pendingStageId !== null && (
-        <ConfirmDialog
-          open
-          onOpenChange={(next) => {
-            if (!next) setPendingStageId(null);
-          }}
-          title={bulkMoveTitle(selected.size, stageNameById.get(pendingStageId) ?? "")}
-          description={BULK_MOVE_DESCRIPTION}
-          confirmLabel="Move deals"
-          onConfirm={() => void confirmBulkStage(pendingStageId)}
+      {selectedIds.length > 0 ? (
+        <DealListBulkBar
+          count={selectedIds.length}
+          stages={stages}
+          onConfirmStage={confirmBulkStage}
+          onConfirmArchive={onBulkArchive === undefined ? undefined : confirmBulkArchive}
         />
-      )}
+      ) : null}
 
       <table className="w-full border-collapse text-sm">
         <caption className="sr-only">Deals list</caption>
@@ -231,7 +129,7 @@ export function DealList(props: DealListProps) {
             <th scope="col" className="w-10 px-3 py-2">
               <Checkbox
                 label="Select all deals"
-                checked={allSelected ? true : someSelected ? "indeterminate" : false}
+                checked={selectAllState()}
                 onCheckedChange={toggleAll}
               />
             </th>
@@ -247,56 +145,21 @@ export function DealList(props: DealListProps) {
             ) : null}
           </tr>
         </thead>
-        <tbody>
-          {rowWindow.visible.map((row) => (
-            <tr
-              key={row.id}
-              className={`border-b last:border-0 hover:bg-muted/50 ${selected.has(row.id) ? "bg-accent/50" : ""}`}
-            >
-              <td className="w-10 px-3 py-2">
-                <Checkbox
-                  label={`Select ${row.title}`}
-                  checked={selected.has(row.id)}
-                  onCheckedChange={() => toggleOne(row.id)}
-                />
-              </td>
-              {visibleColumns.map((col) => (
-                <td key={col.key} className={cellClass(col.key)}>
-                  {renderCell(col.key, row)}
-                </td>
-              ))}
-              {onUnarchive ? (
-                <td className="px-3 py-2">
-                  <button
-                    type="button"
-                    onClick={() => onUnarchive(row.id)}
-                    className="rounded border px-2 py-1 text-xs font-medium text-foreground hover:bg-muted"
-                  >
-                    Unarchive
-                  </button>
-                </td>
-              ) : null}
-            </tr>
-          ))}
-          {rows.length === 0 && empty !== undefined ? (
-            <tr>
-              <td colSpan={bodyColSpan}>{empty}</td>
-            </tr>
-          ) : null}
-          {rowWindow.hasMore ? (
-            <tr>
-              <td colSpan={bodyColSpan} className="px-3 py-3 text-center">
-                <button
-                  type="button"
-                  onClick={rowWindow.showMore}
-                  className="rounded-md border px-4 py-1.5 text-sm transition-transform hover:bg-accent active:scale-[0.96]"
-                >
-                  Show more ({rowWindow.remaining} more)
-                </button>
-              </td>
-            </tr>
-          ) : null}
-        </tbody>
+        <DealListTableBody
+          rowWindow={rowWindow}
+          rowCount={rows.length}
+          visibleColumns={visibleColumns}
+          colSpan={bodyColSpan}
+          selected={selected}
+          onToggleRow={toggleOne}
+          stageNameById={stageNameById}
+          editingId={editingId}
+          onStartEdit={setEditingId}
+          onCancelEdit={() => setEditingId(null)}
+          onCommitTitle={saveTitle}
+          onUnarchive={onUnarchive}
+          empty={empty}
+        />
         <tfoot>
           <tr className="border-t bg-muted/60 font-medium text-foreground">
             <td colSpan={bodyColSpan} className="px-3 py-2 tabular-nums">

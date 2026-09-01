@@ -23,7 +23,6 @@ export const mergeDealsInput = z.object({
   expectedTargetUpdatedAt: z.string().datetime(), // CAS precondition on T
   expectedSourceUpdatedAt: z.string().datetime(), // CAS precondition on S
 });
-export type MergeDealsInput = z.infer<typeof mergeDealsInput>;
 
 // Thrown inside the transaction to roll the whole merge back when either CAS lock loses.
 class MergeConflict extends Error {}

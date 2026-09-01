@@ -48,7 +48,12 @@ const createActivityAction = vi.hoisted(() =>
 vi.mock("@/features/activities/actions", () => ({ createActivityAction }));
 vi.mock("@/lib/trpc-client", () => ({
   trpc: {
-    useUtils: () => ({ activities: { dayLoad: { invalidate: () => Promise.resolve() } } }),
+    useUtils: () => ({
+      activities: {
+        dayLoad: { invalidate: () => Promise.resolve() },
+        listRows: { invalidate: () => Promise.resolve() },
+      },
+    }),
     activities: {
       listTypes: { useQuery: () => ({ data: [] }) },
       dayLoad: { useQuery: () => ({ data: undefined }) },

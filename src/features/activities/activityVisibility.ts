@@ -4,14 +4,14 @@ import type { VisibleActivity } from "@/features/permissions/types";
 // Parent visibility fields pre-fetched via join, so a list can resolve activity visibility in
 // memory instead of re-querying each parent per row (the N+1 the DB resolver in visibility.ts
 // incurs). Same dominant-parent precedence, kept pure so it is cheap to unit-test.
-export interface ParentVisibility {
+interface ParentVisibility {
   ownerId: string;
   visibilityLevel: VisibilityLevel;
   visibilityGroupId: string | null;
   visibleToUserIds: string[];
 }
 
-export interface DealParentVisibility extends ParentVisibility {
+interface DealParentVisibility extends ParentVisibility {
   pipelineVisibilityGroupId: string | null;
   pipelineArchived: boolean;
 }

@@ -16,7 +16,7 @@ import type { PersonSortField } from "./schemas";
 
 // A person row plus the People-list Closed-deals count (won+lost deals linked via person_id or a
 // participant). closedDeals is derived (not a persons column), so it rides as an extra field.
-export type PersonListItem = Person & { closedDeals: number };
+type PersonListItem = Person & { closedDeals: number };
 
 export interface ListPeopleResult {
   rows: PersonListItem[];

@@ -1,4 +1,4 @@
-import { sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { afterAll, beforeAll, beforeEach, expect, test } from "vitest";
 import { users } from "@/db/schema";
 import type { PermSetUser } from "@/features/permissions/effective";
@@ -79,6 +79,39 @@ test("a non-admin manager can assign a set with only non-high-risk flags", async
   const r = await assignPermissionSet(
     h.db,
     manager,
+    { userId: target!.id, setId: set.value.id },
+    SIG(),
+  );
+  expect(r.ok).toBe(true);
+});
+
+test("a non-admin manager cannot assign a set to an admin account", async () => {
+  const set = await createPermissionSet(h.db, admin, { name: "Basic", flags: {} }, SIG());
+  if (set.ok === false) throw new Error("setup: could not create set");
+  const r = await assignPermissionSet(
+    h.db,
+    manager,
+    { userId: admin.id, setId: set.value.id },
+    SIG(),
+  );
+  expect(r.ok).toBe(false);
+  const [after] = await h.db
+    .select({ setId: users.permissionSetId })
+    .from(users)
+    .where(eq(users.id, admin.id));
+  expect(after?.setId).toBeNull();
+});
+
+test("an admin can assign a set to another admin account", async () => {
+  const set = await createPermissionSet(h.db, admin, { name: "Basic", flags: {} }, SIG());
+  if (set.ok === false) throw new Error("setup: could not create set");
+  const [target] = await h.db
+    .insert(users)
+    .values({ email: "a2@example.com", name: "A2", googleSub: "g-a2", isAdmin: true })
+    .returning();
+  const r = await assignPermissionSet(
+    h.db,
+    admin,
     { userId: target!.id, setId: set.value.id },
     SIG(),
   );

@@ -16,7 +16,6 @@ export type {
   ConditionRow,
   ConditionValueInput,
   RawCondition,
-  RowValue,
 } from "./ConditionRows";
 
 interface ConditionRowsBuilderProps {

@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { createActivityAction, editActivityAction } from "@/features/activities/actions";
 import type { EditableActivity } from "@/features/activities/getForEdit";
-import { useInvalidateDayLoad } from "@/features/activities/useInvalidateDayLoad";
+import { useInvalidateActivityLists } from "@/features/activities/useInvalidateActivityLists";
 import { trpc } from "@/lib/trpc-client";
 import { readCsrfToken } from "@/utils/csrfCookie";
 import {
@@ -39,7 +39,7 @@ export function useActivityComposer(props: ActivityComposerProps) {
   const { dealId, leadId, personId, orgId, personName, dealTitle, orgName, onCreated } = props;
   const editing = props.editing ?? null;
 
-  const invalidateDayLoad = useInvalidateDayLoad();
+  const invalidateActivityLists = useInvalidateActivityLists();
   const types = trpc.activities.listTypes.useQuery().data ?? [];
   const owners = trpc.identity.assignableUsers.useQuery().data ?? [];
   const orgPeople = trpc.contacts.listPeopleForOrg.useQuery(
@@ -165,7 +165,7 @@ export function useActivityComposer(props: ActivityComposerProps) {
       setError(`Could not ${verb} activity (${r.error.id})`);
       return;
     }
-    await invalidateDayLoad();
+    await invalidateActivityLists();
     setPending(false);
     if (editing === null) resetForNext();
     onCreated();

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { resolveComposerLinks } from "./composerLinks";
+import { mergeRecipientEmail, resolveComposerLinks } from "./composerLinks";
 
 describe("resolveComposerLinks", () => {
   it("takes the deal and person from a deal-workspace context", () => {
@@ -41,5 +41,21 @@ describe("resolveComposerLinks", () => {
       linkDealId: undefined,
       linkPersonId: undefined,
     });
+  });
+});
+
+describe("mergeRecipientEmail", () => {
+  it("is the single recipient a merge preview can resolve against", () => {
+    expect(mergeRecipientEmail(["buyer@corp.com"], [], [])).toBe("buyer@corp.com");
+  });
+
+  it("is empty for several recipients, since one body reaches all of them", () => {
+    expect(mergeRecipientEmail(["a@x.com", "b@x.com"], [], [])).toBe("");
+    expect(mergeRecipientEmail(["a@x.com"], ["c@x.com"], [])).toBe("");
+    expect(mergeRecipientEmail(["a@x.com"], [], ["d@x.com"])).toBe("");
+  });
+
+  it("is empty when nobody is addressed yet", () => {
+    expect(mergeRecipientEmail([], [], [])).toBe("");
   });
 });

@@ -1,5 +1,5 @@
 // The public OSS mirror we watch for new releases. Self-hosters of a fork can repoint this.
-export const RELEASE_REPO = "sneg55/warpdrive";
+const RELEASE_REPO = "sneg55/warpdrive";
 export const GITHUB_RELEASES_URL = `https://api.github.com/repos/${RELEASE_REPO}/releases/latest`;
 
 // GitHub asks unauthenticated callers to send a User-Agent; omitting it gets requests rejected.

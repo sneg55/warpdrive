@@ -1,4 +1,5 @@
 import { err, ok, type Result } from "@/types/result";
+import { searchPeople } from "./getprospectSearch";
 import { classifyStatus, pickNumber, pickString } from "./http";
 import type {
   EnrichmentProvider,
@@ -248,4 +249,5 @@ export const getprospectProvider: EnrichmentProvider = {
   id: PROVIDER_ID,
   matchPerson,
   matchOrganization,
+  searchPeople,
 };

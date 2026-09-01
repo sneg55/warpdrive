@@ -6,7 +6,7 @@ import type { AttemptRow } from "./outboxReconcile";
 
 // Attachment metadata persisted in the payload so processSendAttempt can rebuild
 // the MIME on replay without re-querying files or re-authorizing the actor.
-export interface PayloadAttachment {
+interface PayloadAttachment {
   fileId: string;
   s3Key: string;
   contentType: string;
@@ -74,20 +74,49 @@ export async function loadAttempt(
   return res.rows[0] as AttemptRow | undefined;
 }
 
-// Load the From address and the queued payload together (both needed to build MIME).
+export interface SendInputs {
+  from: string;
+  payload: SendPayload;
+  // Gmail conversation this send replies into, plus the newest message already in it. Both null
+  // for a fresh compose. The worker turns them into the Gmail threadId and the RFC 5322
+  // In-Reply-To/References headers, without which a reply lands as a standalone message.
+  gmailThreadId: string | null;
+  parentGmailMessageId: string | null;
+}
+
 export async function loadSendInputs(
   db: Db,
   attemptId: string,
   accountId: string,
-): Promise<{ from: string; payload: SendPayload } | undefined> {
+): Promise<SendInputs | undefined> {
   const res = await db.execute(sql`
-    SELECT a.email_address AS from_email, s.payload
-    FROM email_send_attempts s JOIN email_accounts a ON a.id = s.account_id
+    SELECT a.email_address AS from_email, s.payload, t.gmail_thread_id,
+      (
+        SELECT m.gmail_message_id FROM email_messages m
+        WHERE m.thread_id = t.id AND m.account_id = t.account_id
+        ORDER BY m.sent_at DESC NULLS LAST, m.created_at DESC
+        LIMIT 1
+      ) AS parent_gmail_message_id
+    FROM email_send_attempts s
+    JOIN email_accounts a ON a.id = s.account_id
+    LEFT JOIN email_threads t ON t.id = s.thread_id AND t.account_id = s.account_id
     WHERE s.id=${attemptId} AND a.id=${accountId}
   `);
-  const row = res.rows[0] as { from_email: string; payload: SendPayload } | undefined;
+  const row = res.rows[0] as
+    | {
+        from_email: string;
+        payload: SendPayload;
+        gmail_thread_id: string | null;
+        parent_gmail_message_id: string | null;
+      }
+    | undefined;
   if (row === undefined) return undefined;
-  return { from: row.from_email, payload: row.payload };
+  return {
+    from: row.from_email,
+    payload: row.payload,
+    gmailThreadId: row.gmail_thread_id,
+    parentGmailMessageId: row.parent_gmail_message_id,
+  };
 }
 
 // Stamp send_started_at in a standalone committed UPDATE BEFORE any Gmail I/O, guarded

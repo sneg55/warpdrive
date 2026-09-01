@@ -1,0 +1,49 @@
+{
+  "pagination": { "start": 1, "next": 11, "total": 42 },
+  "profiles": [
+    {
+      "id": 8214691,
+      "status": "complete",
+      "name": "Ada Lovelace",
+      "current_title": "VP of Engineering",
+      "current_employer": "Analytical Engines",
+      "current_employer_domain": "analyticalengines.com",
+      "linkedin_url": "https://www.linkedin.com/in/adalovelace",
+      "city": "London",
+      "region": "ENG",
+      "country": "United Kingdom",
+      "country_code": "GB",
+      "teaser": {
+        "emails": ["a***@analyticalengines.com"],
+        "professional_emails": ["ada@analyticalengines.com"],
+        "personal_emails": [],
+        "phones": [{ "number": "+442079460958", "is_premium": true }],
+        "office_phones": ["+442079460959"],
+        "preview": ["ada@analyticalengines.com"],
+        "is_premium_phone_available": true
+      }
+    },
+    {
+      "id": 8214692,
+      "status": "complete",
+      "name": "Charles Babbage",
+      "current_title": "Chief Engineer",
+      "current_employer": "Analytical Engines",
+      "country_code": "GB",
+      "teaser": {
+        "emails": [],
+        "professional_emails": [],
+        "personal_emails": [],
+        "phones": [],
+        "office_phones": [],
+        "preview": [],
+        "is_premium_phone_available": false
+      }
+    },
+    {
+      "status": "complete",
+      "name": "Unreferenced Person",
+      "current_title": "Ghost"
+    }
+  ]
+}

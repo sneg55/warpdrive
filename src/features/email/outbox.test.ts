@@ -60,6 +60,79 @@ describe("enqueueSend", () => {
 });
 
 describe("processSendAttempt", () => {
+  it("sends a reply into the Gmail thread it answers, with RFC 5322 threading headers", async () => {
+    await withTestDb(async (db) => {
+      const acct = await seedAccount(db);
+      const thread = (
+        await db.execute(
+          sql`INSERT INTO email_threads (gmail_thread_id, account_id, subject)
+              VALUES ('gt-1', ${acct}, 'Hi') RETURNING id`,
+        )
+      ).rows[0] as { id: string };
+      await db.execute(
+        sql`INSERT INTO email_messages (thread_id, account_id, gmail_message_id, direction, from_email, sent_at)
+            VALUES (${thread.id}, ${acct}, 'gm-1', 'outbound', 'o@gunsnation.com', now())`,
+      );
+      await enqueueSend(db, {
+        accountId: acct,
+        idempotencyKey: KEY,
+        payload,
+        threadId: thread.id,
+      });
+
+      const fake = new FakeGmailClient();
+      fake.messages.set("gm-1", {
+        id: "gm-1",
+        threadId: "gt-1",
+        labelIds: [],
+        payload: { headers: [{ name: "Message-ID", value: "<orig@ex.com>" }] },
+      });
+
+      const r = await processSendAttempt(db, {
+        accountId: acct,
+        idempotencyKey: KEY,
+        gmail: fake,
+        storage: new FakeStorageClient(),
+        signal: newSignal(),
+      });
+      expect(r.ok).toBe(true);
+
+      const send = fake.calls.find((c) => c.method === "sendRaw")?.args as {
+        rawBase64: string;
+        threadId?: string;
+      };
+      expect(send.threadId).toBe("gt-1");
+      const mime = Buffer.from(send.rawBase64, "base64url").toString("utf8");
+      expect(mime).toContain("In-Reply-To: <orig@ex.com>");
+      expect(mime).toContain("References: <orig@ex.com>");
+    });
+  });
+
+  it("sends a fresh compose with no thread id and no threading headers", async () => {
+    await withTestDb(async (db) => {
+      const acct = await seedAccount(db);
+      await enqueueSend(db, { accountId: acct, idempotencyKey: KEY, payload });
+      const fake = new FakeGmailClient();
+
+      await processSendAttempt(db, {
+        accountId: acct,
+        idempotencyKey: KEY,
+        gmail: fake,
+        storage: new FakeStorageClient(),
+        signal: newSignal(),
+      });
+
+      const send = fake.calls.find((c) => c.method === "sendRaw")?.args as {
+        rawBase64: string;
+        threadId?: string;
+      };
+      expect(send.threadId).toBeUndefined();
+      expect(Buffer.from(send.rawBase64, "base64url").toString("utf8")).not.toContain(
+        "In-Reply-To",
+      );
+    });
+  });
+
   it("sends once and a replay of a sent row does not re-send", async () => {
     await withTestDb(async (db) => {
       const acct = await seedAccount(db);

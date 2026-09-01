@@ -4,6 +4,7 @@ import type React from "react";
 import type { Organization } from "@/db/schema";
 import { ContactLabelsControl } from "@/features/contacts/ContactLabelsControl";
 import { EnrichButton } from "@/features/enrichment/EnrichButton";
+import { FindPeopleButton } from "@/features/enrichment/prospects/FindPeopleButton";
 import type { CustomFieldDef } from "@/types/customFields";
 import { CollapsibleSection } from "../CollapsibleSection";
 import { OrgBlock } from "./OrgBlock";
@@ -44,12 +45,16 @@ export function OrganizationSection({
       headerActions={() => (
         <EnrichButton entityType="organization" entityId={org.id} entityName={org.name}>
           {(fill) => (
-            <SectionHeaderMenu
-              sectionLabel="Organization"
-              onEdit={onStartBulk}
-              menuItems={menuItems}
-              {...fill}
-            />
+            <FindPeopleButton orgId={org.id} orgName={org.name}>
+              {(findPeople) => (
+                <SectionHeaderMenu
+                  sectionLabel="Organization"
+                  onEdit={onStartBulk}
+                  menuItems={findPeople === null ? menuItems : [...menuItems, findPeople]}
+                  {...fill}
+                />
+              )}
+            </FindPeopleButton>
           )}
         </EnrichButton>
       )}

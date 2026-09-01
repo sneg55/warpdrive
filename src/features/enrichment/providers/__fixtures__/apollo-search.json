@@ -1,0 +1,58 @@
+{
+  "total_entries": 68,
+  "people": [
+    {
+      "id": "62a1b3c4d5e6f70011223344",
+      "first_name": "Ada",
+      "last_name_obfuscated": "Lovelace",
+      "title": "Chief Technology Officer",
+      "last_refreshed_at": "2026-08-30T15:40:38.188+00:00",
+      "has_email": true,
+      "has_city": true,
+      "has_state": true,
+      "has_country": true,
+      "has_direct_phone": "Yes",
+      "organization": {
+        "name": "Apollo.io",
+        "has_industry": true,
+        "has_phone": true,
+        "has_city": true,
+        "has_state": true,
+        "has_country": true,
+        "has_zip_code": true,
+        "has_revenue": true,
+        "has_employee_count": true
+      }
+    },
+    {
+      "id": "62a1b3c4d5e6f70011223355",
+      "first_name": "Grace",
+      "last_name_obfuscated": "Ho***r",
+      "title": "VP Engineering",
+      "last_refreshed_at": "2026-08-16T22:59:17.246+00:00",
+      "has_email": false,
+      "has_city": true,
+      "has_state": false,
+      "has_country": true,
+      "has_direct_phone": "No",
+      "organization": {
+        "name": "Apollo.io",
+        "has_industry": true,
+        "has_phone": true,
+        "has_city": true,
+        "has_state": true,
+        "has_country": true,
+        "has_zip_code": true,
+        "has_revenue": true,
+        "has_employee_count": true
+      }
+    },
+    {
+      "first_name": "Anonymous",
+      "last_name_obfuscated": "Analyst",
+      "title": "Analyst",
+      "has_email": false,
+      "has_direct_phone": "No"
+    }
+  ]
+}

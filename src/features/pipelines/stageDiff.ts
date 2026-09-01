@@ -46,8 +46,7 @@ export function diffStages(input: StageDiffInput): StageOps {
       continue;
     }
     const orig = input.originalById[row.id];
-    if (orig === undefined) continue;
-    if (changed(orig, row)) {
+    if (orig === undefined || changed(orig, row)) {
       updates.push({
         stageId: row.id,
         name: row.name,

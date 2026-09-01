@@ -18,7 +18,7 @@ export interface ConditionFieldConfig {
 export const conditionValue = z.union([z.string(), z.number(), z.array(z.string())]);
 export type ConditionValue = z.infer<typeof conditionValue>;
 
-export const CONDITION_COMBINATORS = ["and", "or"] as const;
+const CONDITION_COMBINATORS = ["and", "or"] as const;
 export type ConditionCombinator = (typeof CONDITION_COMBINATORS)[number];
 
 function issue(ctx: z.RefinementCtx, message: string, path: string): void {
@@ -81,7 +81,7 @@ export function refineCondition(
   }
 }
 
-export function buildConditionSchema(config: ConditionFieldConfig) {
+function buildConditionSchema(config: ConditionFieldConfig) {
   return z
     .object({
       field: z.enum(config.fields as unknown as [string, ...string[]]),

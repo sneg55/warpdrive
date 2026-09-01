@@ -5,6 +5,7 @@ import { db } from "@/db/client";
 import { guardCsrf } from "@/features/identity/actions/shared";
 import type { PermSetUser } from "@/features/permissions/effective";
 import { createContext } from "@/server/trpc/context";
+import { type ActionResult, clientErr, toClientResult } from "@/types/actionResult";
 import { err, type Result } from "@/types/result";
 import { confirmUpload, requestDownload, requestUpload } from "./actions";
 import type { RequestUploadInput } from "./schemas";
@@ -34,32 +35,34 @@ async function guardedActor(csrfToken: string | null): Promise<Result<PermSetUse
 export async function requestUploadAction(
   csrfToken: string | null,
   rawInput: RequestUploadInput,
-): Promise<Result<{ fileId: string; post: PresignedPost }, AppError>> {
+): Promise<ActionResult<{ fileId: string; post: PresignedPost }>> {
   const who = await guardedActor(csrfToken);
-  if (!who.ok) return who;
+  if (!who.ok) return clientErr(who.error);
   const signal = AbortSignal.timeout(8000);
   const storage = makeStorageClient();
-  return requestUpload(db, { actor: who.value, storage, input: rawInput }, signal);
+  return toClientResult(
+    await requestUpload(db, { actor: who.value, storage, input: rawInput }, signal),
+  );
 }
 
 export async function confirmUploadAction(
   csrfToken: string | null,
   fileId: string,
-): Promise<Result<{ status: "ready" }, AppError>> {
+): Promise<ActionResult<{ status: "ready" }>> {
   const who = await guardedActor(csrfToken);
-  if (!who.ok) return who;
+  if (!who.ok) return clientErr(who.error);
   const signal = AbortSignal.timeout(8000);
   const storage = makeStorageClient();
-  return confirmUpload(db, { actor: who.value, storage, fileId }, signal);
+  return toClientResult(await confirmUpload(db, { actor: who.value, storage, fileId }, signal));
 }
 
 export async function requestDownloadAction(
   csrfToken: string | null,
   fileId: string,
-): Promise<Result<{ url: string }, AppError>> {
+): Promise<ActionResult<{ url: string }>> {
   const who = await guardedActor(csrfToken);
-  if (!who.ok) return who;
+  if (!who.ok) return clientErr(who.error);
   const signal = AbortSignal.timeout(8000);
   const storage = makeStorageClient();
-  return requestDownload(db, { actor: who.value, storage, fileId }, signal);
+  return toClientResult(await requestDownload(db, { actor: who.value, storage, fileId }, signal));
 }

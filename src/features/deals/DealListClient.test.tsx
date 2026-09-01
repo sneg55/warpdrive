@@ -12,6 +12,7 @@ afterEach(() => {
 // the render reflects the SSR page without spinning up a QueryClientProvider.
 vi.mock("@tanstack/react-query", () => ({
   useQuery: (opts: { initialData: unknown }) => ({ data: opts.initialData }),
+  useQueryClient: () => ({ invalidateQueries: vi.fn() }),
   keepPreviousData: Symbol("keepPreviousData"),
 }));
 vi.mock("next/navigation", () => ({

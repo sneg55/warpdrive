@@ -34,7 +34,7 @@ function isLoopbackHost(hostname: string): boolean {
   return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "[::1]";
 }
 
-export function isAllowedRedirectUri(raw: string): boolean {
+function isAllowedRedirectUri(raw: string): boolean {
   if (raw.length > MAX_REDIRECT_URI_LENGTH) return false;
   let url: URL;
   try {

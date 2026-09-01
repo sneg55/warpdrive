@@ -14,7 +14,6 @@ import { AppError, ERROR_IDS } from "@/constants/errorIds";
 import {
   ARRAY_OPS,
   EXACT_OPS,
-  FILTER_OP_KEYS,
   type FilterOpKey,
   ORDERED_OPS,
   TEXT_OPS,
@@ -31,7 +30,6 @@ import {
   scalarCondition,
 } from "./leadFilterSql";
 
-export const LEAD_FILTER_OPS = FILTER_OP_KEYS;
 export type LeadFilterOp = FilterOpKey;
 
 export interface LeadFilterConfig {

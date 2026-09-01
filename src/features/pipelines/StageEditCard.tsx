@@ -12,6 +12,7 @@ interface StageEditCardProps {
   canDelete: boolean;
   onChange: (patch: Partial<StageRow>) => void;
   onDelete: () => void;
+  dragHandle?: React.ReactNode;
 }
 
 // One stage column in the Edit Pipeline page (each stage is a card with a name and an optional
@@ -23,13 +24,17 @@ export function StageEditCard({
   canDelete,
   onChange,
   onDelete,
+  dragHandle,
 }: StageEditCardProps): React.ReactNode {
   const rottingEnabled = row.rottingDays !== null;
   const nameId = useId();
   return (
     <div className="flex w-64 shrink-0 flex-col gap-3 rounded-lg border bg-card p-3">
       <div className="flex items-center justify-between">
-        <span className="text-xs font-medium text-muted-foreground">Stage {index + 1}</span>
+        <div className="flex items-center gap-1">
+          {dragHandle}
+          <span className="text-xs font-medium text-muted-foreground">Stage {index + 1}</span>
+        </div>
         <button
           type="button"
           aria-label={`Delete stage ${index + 1}`}

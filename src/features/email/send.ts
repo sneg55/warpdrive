@@ -16,7 +16,6 @@ import { enqueueScheduledSendJob, isFutureScheduledSend } from "./sendScheduling
 import { storeOutboundCopy } from "./sendStore";
 import { backfillTokens, disableTokens } from "./tracking";
 
-export type { SystemMessage, SystemSendDeps } from "./sendSystem";
 // The lower-level system-send primitive lives in its own file (send.ts is at the size
 // cap) but is re-exported here so callers import both sends from one module.
 export { sendGmail } from "./sendSystem";

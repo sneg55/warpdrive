@@ -5,6 +5,7 @@ import { AppError, ERROR_IDS } from "@/constants/errorIds";
 import type { Db } from "@/db/client";
 import { type EnrichmentProviderRow, enrichmentProviders } from "@/db/schema/enrichment";
 import { decryptToken, encryptToken } from "@/features/email/crypto";
+import type { DbOrTx } from "@/server/realtime/channelVersions";
 import { err, ok, type Result } from "@/types/result";
 import { ENRICHMENT_PROVIDER_IDS, type ProviderId, type ProviderOutcome } from "./providers/types";
 
@@ -174,7 +175,7 @@ export async function setProviderEnabled(
 // The runtime's half of the row: cooldowns and the rejected badge. It never touches `enabled`,
 // because a temporary 429 must not silently disconnect a provider an admin switched on.
 export async function recordOutcome(
-  db: Db,
+  db: DbOrTx,
   outcome: ProviderOutcome,
   credential: Buffer,
   now: Date,

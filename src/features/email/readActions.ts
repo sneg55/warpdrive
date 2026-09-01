@@ -7,6 +7,7 @@ import { guardCsrf } from "@/features/identity/actions/shared";
 import { SIG } from "@/features/identity/actions/sig";
 import type { AuthUser } from "@/features/permissions/types";
 import { createContext } from "@/server/trpc/context";
+import { type ActionResult, toClientResult } from "@/types/actionResult";
 import { err, type Result } from "@/types/result";
 import { markThreadRead, markThreadUnread } from "./readState";
 
@@ -44,13 +45,13 @@ async function markRead(
 export async function markThreadReadAction(
   csrfToken: string | null,
   rawInput: unknown,
-): Promise<Result<{ threadId: string }, AppError>> {
-  return markRead(csrfToken, rawInput, markThreadRead);
+): Promise<ActionResult<{ threadId: string }>> {
+  return toClientResult(await markRead(csrfToken, rawInput, markThreadRead));
 }
 
 export async function markThreadUnreadAction(
   csrfToken: string | null,
   rawInput: unknown,
-): Promise<Result<{ threadId: string }, AppError>> {
-  return markRead(csrfToken, rawInput, markThreadUnread);
+): Promise<ActionResult<{ threadId: string }>> {
+  return toClientResult(await markRead(csrfToken, rawInput, markThreadUnread));
 }

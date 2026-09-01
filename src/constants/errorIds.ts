@@ -35,6 +35,8 @@ export const ERROR_IDS = {
   DEAL_DUPLICATE_INPUT_INVALID: "E_DEAL_011", // duplicateDeal action input failed Zod validation
   DEAL_CONVERT_INPUT_INVALID: "E_DEAL_012", // convertDealToLead action input failed Zod validation
   DEAL_MERGE_INPUT_INVALID: "E_DEAL_013", // mergeDeals action input failed Zod validation
+  DEAL_BULK_INPUT_INVALID: "E_DEAL_015",
+  DEAL_BULK_ARCHIVE_PARTIAL: "E_DEAL_016",
   // LEAD
   LEAD_NOT_FOUND: "E_LEAD_001", // lead not found or not visible (404-on-invisible)
   LEAD_ARCHIVE_FORBIDDEN: "E_LEAD_002", // archive denied: lead not visible/owned by actor
@@ -164,6 +166,13 @@ export const ERROR_IDS = {
   ENRICH_MAPPINGS_CHANGED: "E_ENRICH_012", // field mapping was repointed while the review was open
   ENRICH_KEY_UNREADABLE: "E_ENRICH_013", // stored API key could not be decrypted; admin must re-enter it
   ENRICH_NOT_ENTITLED: "E_ENRICH_014", // provider plans do not include the endpoint this lookup needs
+  ENRICH_NO_SEARCH_PROVIDER: "E_ENRICH_015", // no enabled provider can search a company for people
+  ENRICH_ORG_NO_DOMAIN: "E_ENRICH_016", // the organization carries no domain to search people by
+  ENRICH_BATCH_NOT_FOUND: "E_ENRICH_017", // reveal batch is missing or belongs to another organization
+  ENRICH_SELECTION_TOO_LARGE: "E_ENRICH_018", // more profiles selected than one reveal batch allows
+  ENRICH_REVEAL_INCOMPLETE: "E_ENRICH_019",
+  ENRICH_APPLIED_PERSON_GONE: "E_ENRICH_020",
+  ENRICH_PROSPECT_MISMATCH: "E_ENRICH_021",
 
   // UI
   UI_CHART_CONTEXT_MISSING: "E_UI_001", // a chart part rendered outside its ChartContainer

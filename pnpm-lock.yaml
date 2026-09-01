@@ -71,9 +71,6 @@ importers:
       '@tiptap/extension-link':
         specifier: ^3.27.1
         version: 3.27.1(@tiptap/core@3.27.1(@tiptap/pm@3.27.1))(@tiptap/pm@3.27.1)
-      '@tiptap/extension-strike':
-        specifier: ^3.27.1
-        version: 3.27.1(@tiptap/core@3.27.1(@tiptap/pm@3.27.1))
       '@tiptap/extension-text-style':
         specifier: ^3.27.1
         version: 3.27.1(@tiptap/core@3.27.1(@tiptap/pm@3.27.1))
@@ -258,9 +255,6 @@ importers:
       tailwindcss:
         specifier: ^4.3.2
         version: 4.3.2
-      testcontainers:
-        specifier: ^12.0.4
-        version: 12.0.4
       tsx:
         specifier: ^4.22.4
         version: 4.22.4

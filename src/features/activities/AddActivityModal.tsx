@@ -14,7 +14,7 @@ import { TypeIconRail } from "@/features/deal-workspace/composer/TypeIconRail";
 import { trpc } from "@/lib/trpc-client";
 import { readCsrfToken } from "@/utils/csrfCookie";
 import { createActivityAction } from "./actions";
-import { useInvalidateDayLoad } from "./useInvalidateDayLoad";
+import { useInvalidateActivityLists } from "./useInvalidateActivityLists";
 
 // Shared icon size for the composer-style field-row leading icons (matches ActivityComposerInline).
 const ICON = "h-4 w-4";
@@ -37,7 +37,7 @@ export function AddActivityModal({
   defaultTime = "",
 }: {
   onClose: () => void;
-  onCreated: () => void;
+  onCreated?: () => void;
   // When set (deal detail composer), the new activity is linked to this deal.
   dealId?: string | null;
   // When set (lead detail composer), the new activity is linked to this lead. Mutually
@@ -51,7 +51,7 @@ export function AddActivityModal({
   const typesQ = trpc.activities.listTypes.useQuery();
   const peopleQ = trpc.contacts.listPeople.useQuery({ offset: 0, limit: 500 });
   const orgsQ = trpc.contacts.listOrgs.useQuery({ offset: 0, limit: 500 });
-  const invalidateDayLoad = useInvalidateDayLoad();
+  const invalidateActivityLists = useInvalidateActivityLists();
   const types = typesQ.data ?? [];
 
   const [typeId, setTypeId] = useState("");
@@ -106,9 +106,9 @@ export function AddActivityModal({
       setError(`Could not create activity (${r.error.id})`);
       return;
     }
-    await invalidateDayLoad();
+    await invalidateActivityLists();
     setPending(false);
-    onCreated();
+    onCreated?.();
     onClose();
   }
 

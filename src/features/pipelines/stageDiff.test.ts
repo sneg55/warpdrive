@@ -60,6 +60,20 @@ describe("diffStages", () => {
     expect(ops.updates).toEqual([]);
   });
 
+  it("emits an update for a row whose id was adopted after a create, not in the original set", () => {
+    const ops = diffStages({
+      originalById: original,
+      rows: [
+        { id: "s1", name: "Qualified", rottingDays: 7 },
+        { id: "s2", name: "Proposal", rottingDays: null },
+        { id: "n1", name: "Negotiation", rottingDays: 14 },
+      ],
+      deletedIds: [],
+    });
+    expect(ops.updates).toEqual([{ stageId: "n1", name: "Negotiation", rottingDays: 14 }]);
+    expect(ops.creates).toEqual([]);
+  });
+
   it("passes through deleted ids", () => {
     const ops = diffStages({
       originalById: original,

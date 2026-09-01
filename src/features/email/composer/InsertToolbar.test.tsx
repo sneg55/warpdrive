@@ -4,7 +4,7 @@
 import "@testing-library/jest-dom/vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 // The Combobox (Popover + cmdk) needs these jsdom polyfills.
 beforeAll(() => {
@@ -21,6 +21,10 @@ beforeAll(() => {
 
 afterEach(cleanup);
 
+beforeEach(() => {
+  mergeContextMock.mockReturnValue({ data: {}, isPending: false });
+});
+
 // Opens the template combobox by its trigger label, then clicks the option by its text.
 function pickTemplate(optionText: string): void {
   fireEvent.click(screen.getByLabelText(/choose template/i));
@@ -29,7 +33,10 @@ function pickTemplate(optionText: string): void {
 
 // Use vi.hoisted so the mock fn is available inside the vi.mock factory (which is hoisted
 // above all imports by Vitest's transform).
-const { getTemplateMock } = vi.hoisted(() => ({ getTemplateMock: vi.fn() }));
+const { getTemplateMock, mergeContextMock } = vi.hoisted(() => ({
+  getTemplateMock: vi.fn(),
+  mergeContextMock: vi.fn(),
+}));
 
 // Mock trpc: templates.list returns two entries; templates.get respects the `enabled`
 // option (item 10d) so tests can assert the guard prevents a fetch.
@@ -52,6 +59,9 @@ vi.mock("@/lib/trpc-client", () => ({
             return getTemplateMock(input, opts);
           },
         },
+      },
+      mergeContext: {
+        useQuery: (input: unknown, opts: unknown) => mergeContextMock(input, opts),
       },
     },
   },
@@ -148,6 +158,209 @@ describe("InsertToolbar - Choose template", () => {
       expect(onSubjectChange).toHaveBeenCalledWith("Welcome!");
       expect(onBodyChange).toHaveBeenCalledWith("<p>Hello there</p>");
     });
+  });
+});
+
+describe("InsertToolbar - merge fields", () => {
+  it("applies a template with its merge fields resolved to the recipient's values", async () => {
+    const onSubjectChange = vi.fn();
+    const onBodyChange = vi.fn();
+    mergeContextMock.mockReturnValue({
+      data: { "person.first_name": "Sofia", "org.name": "Corp Inc" },
+      isPending: false,
+    });
+    getTemplateMock.mockReturnValue({ data: undefined });
+
+    const { rerender } = render(
+      <InsertToolbar
+        onSubjectChange={onSubjectChange}
+        onBodyChange={onBodyChange}
+        recipientEmail="buyer@corp.com"
+      />,
+    );
+    pickTemplate("Welcome");
+
+    getTemplateMock.mockReturnValue({
+      data: {
+        id: "t1",
+        name: "Welcome",
+        subject: "Hi {{person.first_name}}",
+        bodyHtml: '<p>Anyone at {{<a href="http://org.name">org.name</a>}}? {{deal.title}}</p>',
+      },
+    });
+    rerender(
+      <InsertToolbar
+        onSubjectChange={onSubjectChange}
+        onBodyChange={onBodyChange}
+        recipientEmail="buyer@corp.com"
+      />,
+    );
+
+    await waitFor(() => {
+      expect(onSubjectChange).toHaveBeenCalledWith("Hi Sofia");
+      expect(onBodyChange).toHaveBeenCalledWith("<p>Anyone at Corp Inc? {{deal.title}}</p>");
+    });
+  });
+
+  it("waits for the merge values before applying a template, so tokens are never shown raw", () => {
+    const onBodyChange = vi.fn();
+    mergeContextMock.mockReturnValue({ data: undefined, isPending: true });
+    getTemplateMock.mockReturnValue({ data: undefined });
+
+    const { rerender } = render(
+      <InsertToolbar
+        onSubjectChange={vi.fn()}
+        onBodyChange={onBodyChange}
+        recipientEmail="buyer@corp.com"
+      />,
+    );
+    pickTemplate("Welcome");
+    getTemplateMock.mockReturnValue({
+      data: { id: "t1", name: "Welcome", subject: "Hi", bodyHtml: "<p>{{person.first_name}}</p>" },
+    });
+    rerender(
+      <InsertToolbar
+        onSubjectChange={vi.fn()}
+        onBodyChange={onBodyChange}
+        recipientEmail="buyer@corp.com"
+      />,
+    );
+
+    expect(onBodyChange).not.toHaveBeenCalled();
+  });
+
+  it("re-resolves an applied template when the recipient changes", async () => {
+    const onBodyChange = vi.fn();
+    mergeContextMock.mockReturnValue({ data: { "person.first_name": "Sofia" }, isPending: false });
+    getTemplateMock.mockReturnValue({
+      data: { id: "t1", name: "Welcome", subject: null, bodyHtml: "<p>{{person.first_name}}</p>" },
+    });
+
+    const { rerender } = render(
+      <InsertToolbar
+        onSubjectChange={vi.fn()}
+        onBodyChange={onBodyChange}
+        recipientEmail="a@corp.com"
+        bodyHtml=""
+      />,
+    );
+    pickTemplate("Welcome");
+    await waitFor(() => expect(onBodyChange).toHaveBeenCalledWith("<p>Sofia</p>"));
+
+    mergeContextMock.mockReturnValue({ data: { "person.first_name": "Bruno" }, isPending: false });
+    rerender(
+      <InsertToolbar
+        onSubjectChange={vi.fn()}
+        onBodyChange={onBodyChange}
+        recipientEmail="b@corp.com"
+        bodyHtml="<p>Sofia</p>"
+      />,
+    );
+
+    await waitFor(() => expect(onBodyChange).toHaveBeenLastCalledWith("<p>Bruno</p>"));
+  });
+
+  it("leaves a body the author has edited alone when the recipient changes", async () => {
+    const onBodyChange = vi.fn();
+    mergeContextMock.mockReturnValue({ data: { "person.first_name": "Sofia" }, isPending: false });
+    getTemplateMock.mockReturnValue({
+      data: { id: "t1", name: "Welcome", subject: null, bodyHtml: "<p>{{person.first_name}}</p>" },
+    });
+
+    const { rerender } = render(
+      <InsertToolbar
+        onSubjectChange={vi.fn()}
+        onBodyChange={onBodyChange}
+        recipientEmail="a@corp.com"
+        bodyHtml=""
+      />,
+    );
+    pickTemplate("Welcome");
+    await waitFor(() => expect(onBodyChange).toHaveBeenCalledWith("<p>Sofia</p>"));
+    onBodyChange.mockClear();
+
+    mergeContextMock.mockReturnValue({ data: { "person.first_name": "Bruno" }, isPending: false });
+    rerender(
+      <InsertToolbar
+        onSubjectChange={vi.fn()}
+        onBodyChange={onBodyChange}
+        recipientEmail="b@corp.com"
+        bodyHtml="<p>Sofia, one more thing</p>"
+      />,
+    );
+
+    expect(onBodyChange).not.toHaveBeenCalled();
+  });
+
+  it("restores the tokens when a second recipient makes the values unresolvable", async () => {
+    const onBodyChange = vi.fn();
+    mergeContextMock.mockReturnValue({ data: { "person.first_name": "Sofia" }, isPending: false });
+    getTemplateMock.mockReturnValue({
+      data: { id: "t1", name: "Welcome", subject: null, bodyHtml: "<p>{{person.first_name}}</p>" },
+    });
+
+    const { rerender } = render(
+      <InsertToolbar
+        onSubjectChange={vi.fn()}
+        onBodyChange={onBodyChange}
+        recipientEmail="a@corp.com"
+        bodyHtml=""
+      />,
+    );
+    pickTemplate("Welcome");
+    await waitFor(() => expect(onBodyChange).toHaveBeenCalledWith("<p>Sofia</p>"));
+
+    mergeContextMock.mockReturnValue({ data: {}, isPending: false });
+    rerender(
+      <InsertToolbar
+        onSubjectChange={vi.fn()}
+        onBodyChange={onBodyChange}
+        recipientEmail=""
+        bodyHtml="<p>Sofia</p>"
+      />,
+    );
+
+    await waitFor(() =>
+      expect(onBodyChange).toHaveBeenLastCalledWith("<p>{{person.first_name}}</p>"),
+    );
+  });
+
+  it("offers the resolved value for an insert field the recipient has, not the token", async () => {
+    const onInsertField = vi.fn();
+    mergeContextMock.mockReturnValue({
+      data: { "person.first_name": "Sofia" },
+      isPending: false,
+    });
+    getTemplateMock.mockReturnValue({ data: undefined });
+
+    render(
+      <InsertToolbar
+        onSubjectChange={vi.fn()}
+        onBodyChange={vi.fn()}
+        onInsertField={onInsertField}
+        recipientEmail="buyer@corp.com"
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: /insert field/i }));
+    fireEvent.click(await screen.findByText("First name"));
+    expect(onInsertField).toHaveBeenCalledWith("Sofia");
+  });
+
+  it("falls back to the token for an insert field with nothing to resolve", async () => {
+    const onInsertField = vi.fn();
+    getTemplateMock.mockReturnValue({ data: undefined });
+
+    render(
+      <InsertToolbar
+        onSubjectChange={vi.fn()}
+        onBodyChange={vi.fn()}
+        onInsertField={onInsertField}
+        recipientEmail="buyer@corp.com"
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: /insert field/i }));
+    fireEvent.click(await screen.findByText("First name"));
+    expect(onInsertField).toHaveBeenCalledWith("{{person.first_name}}");
   });
 });
 

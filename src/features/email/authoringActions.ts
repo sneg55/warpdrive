@@ -6,7 +6,7 @@ import { db } from "@/db/client";
 import { guardCsrf } from "@/features/identity/actions/shared";
 import { SIG } from "@/features/identity/actions/sig";
 import { createContext } from "@/server/trpc/context";
-import { err, type Result } from "@/types/result";
+import { type ActionResult, clientErr, toClientResult } from "@/types/actionResult";
 import {
   createSignature,
   createTemplate,
@@ -70,169 +70,191 @@ const updateSignatureInput = z.object({ id: z.string().uuid(), patch: signatureP
 export async function createTemplateAction(
   csrfToken: string | null,
   rawInput: unknown,
-): Promise<Result<{ id: string }, AppError>> {
+): Promise<ActionResult<{ id: string }>> {
   const csrf = await guardCsrf(csrfToken);
-  if (!csrf.ok) return err(new AppError("E_PERM_001", "csrf check failed", {}));
+  if (!csrf.ok) return clientErr(new AppError("E_PERM_001", "csrf check failed", {}));
   const ctx = await createContext();
-  if (ctx.actor === null) return err(new AppError("E_AUTH_001", "unauthenticated", {}));
+  if (ctx.actor === null) return clientErr(new AppError("E_AUTH_001", "unauthenticated", {}));
 
   const parsed = templateInput.safeParse(rawInput);
   if (!parsed.success) {
-    return err(
+    return clientErr(
       new AppError("E_GMAIL_010", "invalid template input", { issues: parsed.error.issues }),
     );
   }
   // Admins bypass the flag (they carry no explicit flags), matching the saved-filter share gate.
   const canShare = ctx.actor.type === "admin" || ctx.actor.flags.has("filter.share");
-  return createTemplate(db, { ownerId: ctx.actor.id, canShare, ...parsed.data }, SIG());
+  return toClientResult(
+    await createTemplate(db, { ownerId: ctx.actor.id, canShare, ...parsed.data }, SIG()),
+  );
 }
 
 export async function createSignatureAction(
   csrfToken: string | null,
   rawInput: unknown,
-): Promise<Result<{ id: string }, AppError>> {
+): Promise<ActionResult<{ id: string }>> {
   const csrf = await guardCsrf(csrfToken);
-  if (!csrf.ok) return err(new AppError("E_PERM_001", "csrf check failed", {}));
+  if (!csrf.ok) return clientErr(new AppError("E_PERM_001", "csrf check failed", {}));
   const ctx = await createContext();
-  if (ctx.actor === null) return err(new AppError("E_AUTH_001", "unauthenticated", {}));
+  if (ctx.actor === null) return clientErr(new AppError("E_AUTH_001", "unauthenticated", {}));
 
   const parsed = signatureInput.safeParse(rawInput);
   if (!parsed.success) {
-    return err(
+    return clientErr(
       new AppError("E_GMAIL_010", "invalid signature input", { issues: parsed.error.issues }),
     );
   }
-  return createSignature(db, { userId: ctx.actor.id, ...parsed.data }, SIG());
+  return toClientResult(await createSignature(db, { userId: ctx.actor.id, ...parsed.data }, SIG()));
 }
 
 export async function setDefaultSignatureAction(
   csrfToken: string | null,
   rawInput: unknown,
-): Promise<Result<void, AppError>> {
+): Promise<ActionResult<void>> {
   const csrf = await guardCsrf(csrfToken);
-  if (!csrf.ok) return err(new AppError("E_PERM_001", "csrf check failed", {}));
+  if (!csrf.ok) return clientErr(new AppError("E_PERM_001", "csrf check failed", {}));
   const ctx = await createContext();
-  if (ctx.actor === null) return err(new AppError("E_AUTH_001", "unauthenticated", {}));
+  if (ctx.actor === null) return clientErr(new AppError("E_AUTH_001", "unauthenticated", {}));
 
   const parsed = setDefaultInput.safeParse(rawInput);
   if (!parsed.success) {
-    return err(
+    return clientErr(
       new AppError("E_GMAIL_010", "invalid signature id", { issues: parsed.error.issues }),
     );
   }
-  return setDefaultSignature(
-    db,
-    { userId: ctx.actor.id, signatureId: parsed.data.signatureId },
-    SIG(),
+  return toClientResult(
+    await setDefaultSignature(
+      db,
+      { userId: ctx.actor.id, signatureId: parsed.data.signatureId },
+      SIG(),
+    ),
   );
 }
 
 export async function updateTemplateAction(
   csrfToken: string | null,
   rawInput: unknown,
-): Promise<Result<void, AppError>> {
+): Promise<ActionResult<void>> {
   const csrf = await guardCsrf(csrfToken);
-  if (!csrf.ok) return err(new AppError("E_PERM_001", "csrf check failed", {}));
+  if (!csrf.ok) return clientErr(new AppError("E_PERM_001", "csrf check failed", {}));
   const ctx = await createContext();
-  if (ctx.actor === null) return err(new AppError("E_AUTH_001", "unauthenticated", {}));
+  if (ctx.actor === null) return clientErr(new AppError("E_AUTH_001", "unauthenticated", {}));
   const parsed = updateTemplateInput.safeParse(rawInput);
   if (!parsed.success) {
-    return err(
+    return clientErr(
       new AppError("E_GMAIL_010", "invalid template input", { issues: parsed.error.issues }),
     );
   }
   // Admins bypass the flag (they carry no explicit flags), matching the saved-filter share gate.
   const canShare = ctx.actor.type === "admin" || ctx.actor.flags.has("filter.share");
-  return updateTemplate(
-    db,
-    { id: parsed.data.id, actorId: ctx.actor.id, canShare, patch: parsed.data.patch },
-    SIG(),
+  return toClientResult(
+    await updateTemplate(
+      db,
+      { id: parsed.data.id, actorId: ctx.actor.id, canShare, patch: parsed.data.patch },
+      SIG(),
+    ),
   );
 }
 
 export async function deleteTemplateAction(
   csrfToken: string | null,
   rawInput: unknown,
-): Promise<Result<void, AppError>> {
+): Promise<ActionResult<void>> {
   const csrf = await guardCsrf(csrfToken);
-  if (!csrf.ok) return err(new AppError("E_PERM_001", "csrf check failed", {}));
+  if (!csrf.ok) return clientErr(new AppError("E_PERM_001", "csrf check failed", {}));
   const ctx = await createContext();
-  if (ctx.actor === null) return err(new AppError("E_AUTH_001", "unauthenticated", {}));
+  if (ctx.actor === null) return clientErr(new AppError("E_AUTH_001", "unauthenticated", {}));
   const parsed = idInput.safeParse(rawInput);
   if (!parsed.success) {
-    return err(new AppError("E_GMAIL_010", "invalid template id", { issues: parsed.error.issues }));
+    return clientErr(
+      new AppError("E_GMAIL_010", "invalid template id", { issues: parsed.error.issues }),
+    );
   }
-  return deleteTemplate(db, { id: parsed.data.id, actorId: ctx.actor.id }, SIG());
+  return toClientResult(
+    await deleteTemplate(db, { id: parsed.data.id, actorId: ctx.actor.id }, SIG()),
+  );
 }
 
 export async function reorderTemplatesAction(
   csrfToken: string | null,
   rawInput: unknown,
-): Promise<Result<{ reordered: number }, AppError>> {
+): Promise<ActionResult<{ reordered: number }>> {
   const csrf = await guardCsrf(csrfToken);
-  if (!csrf.ok) return err(new AppError("E_PERM_001", "csrf check failed", {}));
+  if (!csrf.ok) return clientErr(new AppError("E_PERM_001", "csrf check failed", {}));
   const ctx = await createContext();
-  if (ctx.actor === null) return err(new AppError("E_AUTH_001", "unauthenticated", {}));
+  if (ctx.actor === null) return clientErr(new AppError("E_AUTH_001", "unauthenticated", {}));
   const parsed = reorderTemplatesInput.safeParse(rawInput);
   if (!parsed.success) {
-    return err(
+    return clientErr(
       new AppError("E_GMAIL_010", "invalid reorder input", { issues: parsed.error.issues }),
     );
   }
-  return reorderTemplates(db, { actorId: ctx.actor.id, orderedIds: parsed.data.orderedIds }, SIG());
+  return toClientResult(
+    await reorderTemplates(
+      db,
+      { actorId: ctx.actor.id, orderedIds: parsed.data.orderedIds },
+      SIG(),
+    ),
+  );
 }
 
 export async function deleteTemplatesAction(
   csrfToken: string | null,
   rawInput: unknown,
-): Promise<Result<{ deleted: number }, AppError>> {
+): Promise<ActionResult<{ deleted: number }>> {
   const csrf = await guardCsrf(csrfToken);
-  if (!csrf.ok) return err(new AppError("E_PERM_001", "csrf check failed", {}));
+  if (!csrf.ok) return clientErr(new AppError("E_PERM_001", "csrf check failed", {}));
   const ctx = await createContext();
-  if (ctx.actor === null) return err(new AppError("E_AUTH_001", "unauthenticated", {}));
+  if (ctx.actor === null) return clientErr(new AppError("E_AUTH_001", "unauthenticated", {}));
   const parsed = deleteTemplatesInput.safeParse(rawInput);
   if (!parsed.success) {
-    return err(
+    return clientErr(
       new AppError("E_GMAIL_010", "invalid delete input", { issues: parsed.error.issues }),
     );
   }
-  return deleteTemplates(db, { actorId: ctx.actor.id, ids: parsed.data.ids }, SIG());
+  return toClientResult(
+    await deleteTemplates(db, { actorId: ctx.actor.id, ids: parsed.data.ids }, SIG()),
+  );
 }
 
 export async function updateSignatureAction(
   csrfToken: string | null,
   rawInput: unknown,
-): Promise<Result<void, AppError>> {
+): Promise<ActionResult<void>> {
   const csrf = await guardCsrf(csrfToken);
-  if (!csrf.ok) return err(new AppError("E_PERM_001", "csrf check failed", {}));
+  if (!csrf.ok) return clientErr(new AppError("E_PERM_001", "csrf check failed", {}));
   const ctx = await createContext();
-  if (ctx.actor === null) return err(new AppError("E_AUTH_001", "unauthenticated", {}));
+  if (ctx.actor === null) return clientErr(new AppError("E_AUTH_001", "unauthenticated", {}));
   const parsed = updateSignatureInput.safeParse(rawInput);
   if (!parsed.success) {
-    return err(
+    return clientErr(
       new AppError("E_GMAIL_010", "invalid signature input", { issues: parsed.error.issues }),
     );
   }
-  return updateSignature(
-    db,
-    { id: parsed.data.id, userId: ctx.actor.id, patch: parsed.data.patch },
-    SIG(),
+  return toClientResult(
+    await updateSignature(
+      db,
+      { id: parsed.data.id, userId: ctx.actor.id, patch: parsed.data.patch },
+      SIG(),
+    ),
   );
 }
 
 export async function deleteSignatureAction(
   csrfToken: string | null,
   rawInput: unknown,
-): Promise<Result<void, AppError>> {
+): Promise<ActionResult<void>> {
   const csrf = await guardCsrf(csrfToken);
-  if (!csrf.ok) return err(new AppError("E_PERM_001", "csrf check failed", {}));
+  if (!csrf.ok) return clientErr(new AppError("E_PERM_001", "csrf check failed", {}));
   const ctx = await createContext();
-  if (ctx.actor === null) return err(new AppError("E_AUTH_001", "unauthenticated", {}));
+  if (ctx.actor === null) return clientErr(new AppError("E_AUTH_001", "unauthenticated", {}));
   const parsed = idInput.safeParse(rawInput);
   if (!parsed.success) {
-    return err(
+    return clientErr(
       new AppError("E_GMAIL_010", "invalid signature id", { issues: parsed.error.issues }),
     );
   }
-  return deleteSignature(db, { id: parsed.data.id, userId: ctx.actor.id }, SIG());
+  return toClientResult(
+    await deleteSignature(db, { id: parsed.data.id, userId: ctx.actor.id }, SIG()),
+  );
 }

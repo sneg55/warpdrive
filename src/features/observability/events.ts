@@ -8,5 +8,3 @@ export const EVENTS = {
   boardDragEnded: "board_drag_ended",
   boardDragCancelled: "board_drag_cancelled",
 } as const;
-
-export type EventName = (typeof EVENTS)[keyof typeof EVENTS];

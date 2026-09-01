@@ -3,7 +3,7 @@ import type { Db } from "@/db/client";
 import { oauthAccessTokens, oauthClients } from "@/db/schema";
 import { protectedProcedure, router } from "@/server/trpc/trpc";
 
-export async function listConnections(db: Db, userId: string, signal: AbortSignal) {
+async function listConnections(db: Db, userId: string, signal: AbortSignal) {
   signal.throwIfAborted();
   const rows = await db
     .select({

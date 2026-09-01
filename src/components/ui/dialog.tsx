@@ -18,7 +18,7 @@ import { cn } from "@/lib/utils";
 // in this app, so a module-level slot is sufficient.
 let lastCloseReason: "user" | "escape" | "outside" | "programmatic" = "programmatic";
 
-export function setLastCloseReason(reason: "user" | "escape" | "outside"): void {
+function setLastCloseReason(reason: "user" | "escape" | "outside"): void {
   lastCloseReason = reason;
 }
 
@@ -74,10 +74,10 @@ export function Dialog(props: React.ComponentProps<typeof DialogPrimitive.Root>)
   return <DialogPrimitive.Root {...props} onOpenChange={handleOpenChange} />;
 }
 export const DialogTrigger = DialogPrimitive.Trigger;
-export const DialogPortal = DialogPrimitive.Portal;
+const DialogPortal = DialogPrimitive.Portal;
 export const DialogClose = DialogPrimitive.Close;
 
-export const DialogOverlay = forwardRef<
+const DialogOverlay = forwardRef<
   React.ElementRef<typeof DialogPrimitive.Overlay>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Overlay>
 >(({ className, ...props }, ref) => (

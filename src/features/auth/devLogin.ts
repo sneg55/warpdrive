@@ -15,7 +15,7 @@ import { upsertUserOnLogin } from "./bootstrap";
 import { createSession } from "./session";
 
 // Minimal env surface we need (injected for testability).
-export interface DevLoginEnv {
+interface DevLoginEnv {
   nodeEnv: string;
   allowFirstLoginAdmin: boolean;
   workspaceDomain: string;

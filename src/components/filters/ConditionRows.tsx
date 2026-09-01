@@ -7,7 +7,6 @@ import type { RowValue } from "./rowValue";
 
 // Re-exported so the consumers that import the row types from here keep resolving.
 export type { ConditionValueInput } from "./ConditionValue";
-export type { RowValue } from "./rowValue";
 
 // One selectable field: its key, its human label, the operator keys valid for it, and how its value
 // is entered. Op keys map to labels via the opLabels prop.

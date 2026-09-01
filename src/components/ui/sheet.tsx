@@ -9,11 +9,9 @@ import { cn } from "@/lib/utils";
 // the list). Like Dialog it brings focus trap, scroll lock, Escape-to-close, and portal for free;
 // the lint ban on hand-rolled `fixed inset-0` overlays exempts src/components/ui/**.
 export const Sheet = SheetPrimitive.Root;
-export const SheetTrigger = SheetPrimitive.Trigger;
-export const SheetPortal = SheetPrimitive.Portal;
-export const SheetClose = SheetPrimitive.Close;
+const SheetPortal = SheetPrimitive.Portal;
 
-export const SheetOverlay = forwardRef<
+const SheetOverlay = forwardRef<
   React.ElementRef<typeof SheetPrimitive.Overlay>,
   React.ComponentPropsWithoutRef<typeof SheetPrimitive.Overlay>
 >(({ className, ...props }, ref) => (
@@ -65,15 +63,3 @@ export const SheetTitle = forwardRef<
   />
 ));
 SheetTitle.displayName = "SheetTitle";
-
-export const SheetDescription = forwardRef<
-  React.ElementRef<typeof SheetPrimitive.Description>,
-  React.ComponentPropsWithoutRef<typeof SheetPrimitive.Description>
->(({ className, ...props }, ref) => (
-  <SheetPrimitive.Description
-    ref={ref}
-    className={cn("text-sm text-muted-foreground", className)}
-    {...props}
-  />
-));
-SheetDescription.displayName = "SheetDescription";

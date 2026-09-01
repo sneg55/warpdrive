@@ -124,7 +124,7 @@ export function wizardReducer(state: WizardState, action: WizardAction): WizardS
 // The standard (non-custom) fields the current mapping targets, keyed "entity:field". The entity
 // has to be part of the key: Organization > Name and Person > Name are different destinations, and
 // a person import must not count the former as satisfying its required Name.
-export function mappedFields(state: WizardState): Set<string> {
+function mappedFields(state: WizardState): Set<string> {
   const out = new Set<string>();
   for (const col of Object.values(state.columns)) {
     if (!col.isCustom && col.field !== "") out.add(`${col.entity}:${col.field}`);

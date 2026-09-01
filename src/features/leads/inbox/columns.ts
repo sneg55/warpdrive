@@ -39,8 +39,6 @@ export const LEAD_COLUMNS: readonly LeadColumn[] = [
   { key: "owner", header: "Owner", sortField: "ownerName", pinned: false, defaultVisible: true },
 ] as const;
 
-export const LEAD_COLUMN_KEYS = LEAD_COLUMNS.map((c) => c.key);
-
 // The keys visible by default (feeds the initial visible-set before persisted prefs hydrate).
 export const DEFAULT_VISIBLE_COLUMN_KEYS = LEAD_COLUMNS.filter((c) => c.defaultVisible).map(
   (c) => c.key,

@@ -106,10 +106,11 @@ export async function applyEnrichment(
         );
       }
 
+      const subject = { entityId: run.entityId, outcomes: run.outcomes };
       const applied =
         run.entityType === "person"
-          ? await applyToPerson(tx, actor, run, input, mappings, signal)
-          : await applyToOrg(tx, actor, run, input, mappings, signal);
+          ? await applyToPerson(tx, actor, subject, input, mappings, signal)
+          : await applyToOrg(tx, actor, subject, input, mappings, signal);
       if (!applied.ok) throw applied.error;
       const { appliedFields, unresolved, previous, written, appended } = applied.value;
 

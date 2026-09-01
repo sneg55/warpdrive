@@ -80,7 +80,6 @@ export const gmailThreadSchema = z.object({
     .array(z.object({ id: z.string(), labelIds: z.array(z.string()).default([]) }))
     .default([]),
 });
-export type GmailThread = z.infer<typeof gmailThreadSchema>;
 
 export const gmailProfileSchema = z.object({
   historyId: z.string(),
@@ -88,7 +87,6 @@ export const gmailProfileSchema = z.object({
   messagesTotal: z.number().optional(),
   threadsTotal: z.number().optional(),
 });
-export type GmailProfile = z.infer<typeof gmailProfileSchema>;
 
 export const tokenResponseSchema = z.object({
   access_token: z.string(),
@@ -96,7 +94,6 @@ export const tokenResponseSchema = z.object({
   refresh_token: z.string().optional(),
   scope: z.string().optional(),
 });
-export type TokenResponse = z.infer<typeof tokenResponseSchema>;
 
 // Pub/Sub push: base64 JSON { emailAddress, historyId } inside message.data.
 // The transform decodes and re-parses so callers get a flat, typed object.
@@ -111,4 +108,3 @@ export const pushPayloadSchema = z
       historyId: z.union([z.string(), z.number()]).transform(String),
     }),
   );
-export type PushPayload = z.infer<typeof pushPayloadSchema>;

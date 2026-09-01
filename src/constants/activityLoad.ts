@@ -2,8 +2,7 @@ export const DEFAULT_DAILY_ACTIVITY_TARGET = 5;
 export const MIN_DAILY_ACTIVITY_TARGET = 1;
 export const MAX_DAILY_ACTIVITY_TARGET = 50;
 
-export const ACTIVITY_LOAD_LEVELS = ["none", "light", "near", "full"] as const;
-export type ActivityLoadLevel = (typeof ACTIVITY_LOAD_LEVELS)[number];
+export type ActivityLoadLevel = "none" | "light" | "near" | "full";
 
 export const ACTIVITY_LOAD_LIGHT_RATIO = 0.6;
 

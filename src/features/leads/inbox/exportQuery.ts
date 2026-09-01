@@ -57,4 +57,3 @@ export const leadExportQuery = z
       columns: splitCsv(q.columns),
     };
   });
-export type LeadExportQuery = z.infer<typeof leadExportQuery>;

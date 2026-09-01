@@ -17,7 +17,7 @@ import { sniffImageType } from "./imageSniff";
 
 // Only the actor's own id is needed: a user sets their own avatar (self-authz), so the
 // key is derived from the session id and there is no per-entity permission check.
-export interface AvatarActor {
+interface AvatarActor {
   id: string;
 }
 

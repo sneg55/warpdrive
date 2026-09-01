@@ -11,7 +11,7 @@ import { ComposerErrorAlert } from "./ComposerErrorAlert";
 import { ComposerFooter } from "./ComposerFooter";
 import { ComposerHeader } from "./ComposerHeader";
 import type { ComposerContext } from "./composer.types";
-import { resolveComposerLinks } from "./composerLinks";
+import { mergeRecipientEmail, resolveComposerLinks } from "./composerLinks";
 import { dealDefaultRecipients } from "./dealRecipients";
 import { InsertToolbar } from "./InsertToolbar";
 import { RecipientsRow } from "./RecipientsRow";
@@ -232,6 +232,9 @@ export function Composer({
           onInsertField={(text) => setInsertToken((prev) => ({ text, seq: (prev?.seq ?? 0) + 1 }))}
           subject={subject}
           bodyHtml={body}
+          recipientEmail={mergeRecipientEmail(toList, ccList, bccList)}
+          personId={links.linkPersonId ?? null}
+          dealId={links.linkDealId ?? null}
         />
         <SignatureDropdown
           signatures={signatures.map((s) => ({ id: s.id, name: s.name }))}

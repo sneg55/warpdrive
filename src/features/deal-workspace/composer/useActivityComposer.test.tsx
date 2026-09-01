@@ -11,7 +11,12 @@ vi.mock("@/features/activities/actions", () => ({ createActivityAction, editActi
 vi.mock("@/utils/csrfCookie", () => ({ readCsrfToken: () => "csrf" }));
 vi.mock("@/lib/trpc-client", () => ({
   trpc: {
-    useUtils: () => ({ activities: { dayLoad: { invalidate: invalidateDayLoad } } }),
+    useUtils: () => ({
+      activities: {
+        dayLoad: { invalidate: invalidateDayLoad },
+        listRows: { invalidate: () => Promise.resolve() },
+      },
+    }),
     activities: {
       listTypes: { useQuery: () => ({ data: [{ id: "t1", key: "call", name: "Call" }] }) },
       availability: { useQuery: () => ({ data: { busy: false } }) },

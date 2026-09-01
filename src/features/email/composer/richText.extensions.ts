@@ -98,6 +98,7 @@ export const richTextExtensions = [
   FontSize,
   Link.configure({
     openOnClick: false,
+    autolink: false,
     // Restrict protocols at the extension level so javascript:/data: hrefs are rejected.
     protocols: ["http", "https", "mailto"],
     HTMLAttributes: {

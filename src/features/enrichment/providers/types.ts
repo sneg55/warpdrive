@@ -1,5 +1,3 @@
-import type { EnrichEntity } from "../canonical";
-
 export const ENRICHMENT_PROVIDER_IDS = ["apollo", "rocketreach", "getprospect"] as const;
 export type ProviderId = (typeof ENRICHMENT_PROVIDER_IDS)[number];
 
@@ -51,6 +49,7 @@ export interface ProviderOutcome {
 }
 
 export interface PersonLookup {
+  providerRef?: string;
   email?: string;
   linkedinUrl?: string;
   fullName?: string;
@@ -74,10 +73,38 @@ export interface EnrichmentProvider {
     apiKey: string,
     signal: AbortSignal,
   ): Promise<ProviderOutcome>;
+  searchPeople?(
+    input: PeopleSearchInput,
+    apiKey: string,
+    signal: AbortSignal,
+  ): Promise<PeopleSearchOutcome>;
 }
 
-export function entityOf(outcome: ProviderOutcome): EnrichEntity | undefined {
-  const key = Object.keys(outcome.candidate?.fields ?? {})[0];
-  if (key === undefined) return undefined;
-  return key.startsWith("org.") ? "organization" : "person";
+export interface ProspectProfile {
+  providerRef: string;
+  fullName: string;
+  firstName?: string;
+  lastName?: string;
+  title?: string;
+  seniority?: string;
+  department?: string;
+  linkedinUrl?: string;
+  city?: string;
+  country?: string;
+  hasEmail: boolean;
+  hasPhone: boolean;
+}
+
+export interface PeopleSearchInput {
+  companyDomain: string;
+  companyName?: string;
+  titles?: string[];
+  seniorities?: string[];
+  page: number;
+  perPage: number;
+}
+
+export interface PeopleSearchOutcome extends ProviderOutcome {
+  profiles: ProspectProfile[];
+  hasMore: boolean;
 }

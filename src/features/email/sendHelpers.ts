@@ -22,7 +22,7 @@ export interface ResolvedAttachment {
 
 // Pull http(s) link hrefs out of authored html so tracking can tokenize them. The
 // tracking layer re-validates each scheme; this is just a coarse extractor.
-export function extractLinks(html: string): string[] {
+function extractLinks(html: string): string[] {
   const links: string[] = [];
   const re = /href=["']([^"']+)["']/g;
   let m: RegExpExecArray | null = re.exec(html);

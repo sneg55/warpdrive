@@ -9,7 +9,7 @@ import { APPEARANCE_VALUES } from "@/features/theme/appearance";
 // import there would ship the parser on every route.
 export const appearanceSchema = z.enum(APPEARANCE_VALUES);
 
-export const DENSITY_VALUES = ["comfortable", "compact"] as const;
+const DENSITY_VALUES = ["comfortable", "compact"] as const;
 export type Density = (typeof DENSITY_VALUES)[number];
 export const densitySchema = z.enum(DENSITY_VALUES);
 
@@ -50,7 +50,7 @@ export const openDetailsAfterCreateSchema = z.object({
 export type OpenDetailsAfterCreate = z.infer<typeof openDetailsAfterCreateSchema>;
 // The five scalar Interface flags. Each is its own top-level ui key so the jsonb shallow-merge
 // in setPreferences cannot lost-update one flag when another is written.
-export const UI_FLAG_KEYS = [
+const UI_FLAG_KEYS = [
   "usPhoneFormat",
   "winSound",
   "emailLinksNewTab",
@@ -75,7 +75,7 @@ export const dailyActivityTargetSchema = z
 // Persisted visible-column order for a list table (deals list, people, orgs). Each list stores its
 // own top-level ui key (like leadsView) so the jsonb shallow-merge in setPreferences cannot
 // lost-update one list's columns when another is written.
-export const columnOrderSchema = z.array(z.string());
+const columnOrderSchema = z.array(z.string());
 // The list-table views that persist a customized column order. Guards the generic column action.
 export const COLUMN_VIEW_KEYS = {
   dealsList: "dealsListView",

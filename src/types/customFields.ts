@@ -15,5 +15,3 @@ export type CustomFieldDef = {
   order: number;
   archivedAt: Date | null;
 };
-
-export type CustomFieldValues = Record<string, unknown>;

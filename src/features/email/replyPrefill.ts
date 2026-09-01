@@ -85,16 +85,11 @@ export function buildReplyPrefill(
     };
   }
 
-  // Plain reply always targets the sender, even when the sender is self (the mailbox
-  // owner's own last-sent follow-up, common in a BD thread before the prospect replies).
-  // Self-exclusion applies only to reply-all's broader recipients + cc, never to plain
-  // reply's single target: excluding self here would silently empty "To" and disable Send.
-  const to =
-    mode === "replyAll"
-      ? dedupe(excludeSelf([msg.fromEmail, ...msg.toEmails], selfEmail))
-      : dedupe([msg.fromEmail]);
-  // cc also excludes anyone already in `to`: the same address should not appear twice
-  // across the two fields on a reply-all.
+  const selfSent = msg.fromEmail.toLowerCase() === selfEmail.toLowerCase();
+  const candidates =
+    mode === "replyAll" || selfSent ? [msg.fromEmail, ...msg.toEmails] : [msg.fromEmail];
+  const targets = dedupe(excludeSelf(candidates, selfEmail));
+  const to = targets.length > 0 ? targets : dedupe([msg.fromEmail]);
   const cc =
     mode === "replyAll"
       ? excludeSelf(dedupe(msg.ccEmails), selfEmail).filter(

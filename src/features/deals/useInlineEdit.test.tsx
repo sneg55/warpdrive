@@ -9,7 +9,6 @@ import { useInlineEdit } from "./useInlineEdit";
 
 vi.mock("./updateAction");
 
-// Helper: deferred promise so tests can assert optimistic state before settling.
 function deferred<T>() {
   let resolve!: (v: T) => void;
   let reject!: (e: unknown) => void;
@@ -32,20 +31,38 @@ function wrapper(client: QueryClient) {
   );
 }
 
+const liveKey = ["deal-list", "p1", "list", "none", "none"];
+const otherPipelineKey = ["deal-list", "p2", "list", "none", "none"];
+
 const seedData = {
   rows: [{ id: "a", title: "Old", value: "1.00" }],
   total: 1,
   totalValue: "1.00",
 };
 
+const twoRowSeed = {
+  rows: [
+    { id: "a", title: "OldA", value: "1.00" },
+    { id: "b", title: "OldB", value: "2.00" },
+  ],
+  total: 2,
+  totalValue: "3.00",
+};
+
+function readTitle(client: QueryClient, key: unknown[], rowIndex = 0): string {
+  const data = client.getQueryData(key) as { rows: Array<{ title: string }> };
+  return data.rows[rowIndex]!.title;
+}
+
 describe("useInlineEdit", () => {
-  it("optimistically edits a cell then reverts on error", async () => {
+  it("optimistically patches the live deal-list cache then reverts on error", async () => {
     const { promise, resolve } = deferred<UpdateResult>();
     const { updateDealAction } = await import("./updateAction");
     vi.mocked(updateDealAction).mockReturnValue(promise);
 
     const client = makeClient();
-    client.setQueryData(["deals", "p1"], structuredClone(seedData));
+    client.setQueryData(liveKey, structuredClone(seedData));
+    client.setQueryData(otherPipelineKey, structuredClone(seedData));
 
     const { result } = renderHook(() => useInlineEdit("p1"), { wrapper: wrapper(client) });
 
@@ -58,27 +75,71 @@ describe("useInlineEdit", () => {
       });
     });
 
-    // Optimistic patch should land before the mutation resolves.
     await waitFor(() => {
-      const data = client.getQueryData(["deals", "p1"]) as { rows: Array<{ title: string }> };
-      expect(data.rows[0]!.title).toBe("New");
+      expect(readTitle(client, liveKey)).toBe("New");
     });
+    expect(readTitle(client, otherPipelineKey)).toBe("Old");
 
-    // Settle with ok:false (stale precondition): cache must revert.
     resolve({ ok: false, error: { id: "E_DEAL_002" } });
 
     await waitFor(() => {
-      const data = client.getQueryData(["deals", "p1"]) as { rows: Array<{ title: string }> };
-      expect(data.rows[0]!.title).toBe("Old");
+      expect(readTitle(client, liveKey)).toBe("Old");
     });
   });
 
-  it("invalidates the deals query on settled", async () => {
+  it("rolls back only the failed row, keeping a later overlapping edit intact", async () => {
+    const first = deferred<UpdateResult>();
+    const second = deferred<UpdateResult>();
+    const { updateDealAction } = await import("./updateAction");
+    vi.mocked(updateDealAction)
+      .mockReturnValueOnce(first.promise)
+      .mockReturnValueOnce(second.promise);
+
+    const client = makeClient();
+    client.setQueryData(liveKey, structuredClone(twoRowSeed));
+
+    const { result } = renderHook(() => useInlineEdit("p1"), { wrapper: wrapper(client) });
+
+    act(() => {
+      result.current.editCell({
+        dealId: "a",
+        field: "title",
+        value: "NewA",
+        expectedUpdatedAt: "2026-06-29T00:00:00.000Z",
+      });
+    });
+    await waitFor(() => {
+      expect(readTitle(client, liveKey, 0)).toBe("NewA");
+    });
+
+    act(() => {
+      result.current.editCell({
+        dealId: "b",
+        field: "title",
+        value: "NewB",
+        expectedUpdatedAt: "2026-06-29T00:00:00.000Z",
+      });
+    });
+    await waitFor(() => {
+      expect(readTitle(client, liveKey, 1)).toBe("NewB");
+    });
+
+    first.resolve({ ok: false, error: { id: "E_DEAL_002" } });
+
+    await waitFor(() => {
+      expect(readTitle(client, liveKey, 0)).toBe("OldA");
+    });
+    expect(readTitle(client, liveKey, 1)).toBe("NewB");
+
+    second.resolve({ ok: true, deal: { id: "b", updatedAt: "2026-06-29T00:00:01.000Z" } });
+  });
+
+  it("invalidates the deal-list queries for the pipeline on settled", async () => {
     const { updateDealAction } = await import("./updateAction");
     vi.mocked(updateDealAction).mockResolvedValue({ ok: false, error: { id: "E_DEAL_002" } });
 
     const client = makeClient();
-    client.setQueryData(["deals", "p1"], structuredClone(seedData));
+    client.setQueryData(liveKey, structuredClone(seedData));
 
     const invalidateSpy = vi.spyOn(client, "invalidateQueries");
 
@@ -95,7 +156,7 @@ describe("useInlineEdit", () => {
 
     await waitFor(() => {
       expect(invalidateSpy).toHaveBeenCalledWith(
-        expect.objectContaining({ queryKey: ["deals", "p1"] }),
+        expect.objectContaining({ queryKey: ["deal-list", "p1"] }),
       );
     });
   });

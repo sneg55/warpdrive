@@ -7,6 +7,7 @@ import {
   personFields,
   sourceId,
 } from "./rocketreachFields";
+import { searchPeople } from "./rocketreachSearch";
 import type {
   EnrichmentProvider,
   OrgLookup,
@@ -40,7 +41,7 @@ const REQUEST_TIMED_OUT = "Provider did not answer in time";
 const NETWORK_FAILURE = "Provider request failed";
 const UNREADABLE_BODY = "Provider returned an unreadable response";
 
-export type SleepFn = (ms: number, signal: AbortSignal) => Promise<void>;
+type SleepFn = (ms: number, signal: AbortSignal) => Promise<void>;
 
 export interface RocketReachPollOptions {
   budgetMs?: number;
@@ -135,6 +136,8 @@ function inProgress(node: Node): boolean {
 
 function personQuery(input: PersonLookup): URLSearchParams | undefined {
   const params = new URLSearchParams();
+  const profileId = pickString(input.providerRef);
+  if (profileId !== undefined) params.set("id", profileId);
   const email = pickString(input.email);
   if (email !== undefined) params.set("email", email);
   const linkedin = pickString(input.linkedinUrl);
@@ -228,4 +231,5 @@ export const rocketreachProvider: EnrichmentProvider = {
   id: PROVIDER,
   matchPerson,
   matchOrganization,
+  searchPeople,
 };

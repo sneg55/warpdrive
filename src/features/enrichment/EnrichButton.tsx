@@ -22,7 +22,7 @@ const LOADING: EnrichRunState = { kind: "loading" };
 const STATUS_STALE_MS = 5 * 60_000;
 
 // The three props SectionHeaderMenu needs to render the Fill the gaps button.
-export interface FillGapsProps {
+interface FillGapsProps {
   onFillGaps?: () => void;
   fillGapsBusy?: boolean;
   fillGapsDisabledReason?: string;

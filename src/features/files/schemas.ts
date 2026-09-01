@@ -1,11 +1,7 @@
 import { z } from "zod";
 import { env } from "@/config/env";
 import { FILE_ENTITY_TYPE } from "@/constants/fileEntityTypes";
-// The allowlist lives in a client-safe module (no env import) and is re-exported
-// here so existing server-side importers keep the same import path.
 import { ALLOWED_CONTENT_TYPES } from "./contentTypes";
-
-export { ALLOWED_CONTENT_TYPES };
 
 // requestUpload boundary: validated exactly once at entry, trusted thereafter.
 export const requestUploadInput = z.object({

@@ -38,15 +38,15 @@ export function canGrantFlags(
   return ok(true);
 }
 
-// A manager cannot reassign their own permission set.
 export function canAssignPermissionSet(
   actor: PermSetUser,
-  args: { targetUserId: string },
+  args: { targetUserId: string; targetIsAdmin: boolean },
 ): Result<true, string> {
   const gate = requireManage(actor);
   if (!gate.ok) return gate;
   if (actor.type === "admin") return ok(true);
   if (args.targetUserId === actor.id) return err("cannot reassign your own permission set");
+  if (args.targetIsAdmin) return err("admin required to assign an admin's permission set");
   return ok(true);
 }
 

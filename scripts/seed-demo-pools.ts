@@ -205,7 +205,7 @@ export function phone(rng: Rng): string {
 }
 
 // YYYY-MM-DD `days` from today (negative = past). Uses UTC to stay deterministic.
-export function isoDaysFromNow(days: number): string {
+function isoDaysFromNow(days: number): string {
   return new Date(Date.now() + days * 86_400_000).toISOString().slice(0, 10);
 }
 

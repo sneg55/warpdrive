@@ -13,7 +13,7 @@ export const ALL_DAY_ROW_HEIGHT_PX = 22;
 // letters. Past the cap the remainder collapses into a "+N more" chip rather than shrinking every
 // chip in the day. The more-chip itself only has to fit "+12 more", so it takes a narrow slice
 // rather than a whole lane.
-export const MAX_TIMED_LANES = 2;
+const MAX_TIMED_LANES = 2;
 export const MAX_ALL_DAY_ROWS = 3;
 
 // The tallest all-day stack in the week, which is the lane height every column must reserve.

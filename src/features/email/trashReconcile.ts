@@ -9,7 +9,7 @@ const HIDDEN_LABELS = ["TRASH", "SPAM"] as const;
 // A conversation is hidden in WD iff EVERY Gmail message is out of the live view (all TRASH and/or
 // all SPAM), so trashing or spam-flagging one message of a multi-message thread never hides the
 // still-live conversation (P4).
-export function isThreadFullyTrashed(messages: { labelIds: string[] }[]): boolean {
+function isThreadFullyTrashed(messages: { labelIds: string[] }[]): boolean {
   return (
     messages.length > 0 &&
     messages.every((m) => HIDDEN_LABELS.some((label) => m.labelIds.includes(label)))

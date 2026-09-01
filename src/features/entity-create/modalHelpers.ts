@@ -4,7 +4,7 @@ import type { EntityCreateState, Option } from "./modalState";
 
 // Drop blank contact rows so an empty row never becomes a "" contact point; mark the first
 // remaining row primary (Pipedrive treats the top row as primary).
-export function cleanPoints(
+function cleanPoints(
   rows: ContactPoint[],
 ): Array<{ label: string; value: string; primary: boolean }> {
   return rows

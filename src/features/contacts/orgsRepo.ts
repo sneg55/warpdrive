@@ -218,7 +218,7 @@ export async function getOrg(
 }
 
 // A listOrgs row: the organization record plus visibility-gated counts (Task 19).
-export interface OrgListRow extends Organization {
+interface OrgListRow extends Organization {
   peopleCount: number;
   // Pipedrive splits the org list's deal count into Closed (won+lost) and Open columns.
   closedDeals: number;

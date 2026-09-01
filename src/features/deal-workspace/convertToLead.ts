@@ -21,7 +21,6 @@ export const convertDealToLeadInput = z.object({
   dealId: z.string().uuid(),
   expectedUpdatedAt: z.string().datetime(), // ISO; compare-and-swap precondition on the deal
 });
-export type ConvertDealToLeadInput = z.infer<typeof convertDealToLeadInput>;
 
 // Thrown inside the transaction to roll back the lead insert when the deal's CAS lock loses.
 class ConvertConflict extends Error {}

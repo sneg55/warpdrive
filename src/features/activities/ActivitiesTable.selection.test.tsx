@@ -32,7 +32,12 @@ const refetch = vi.fn();
 const useQuery = vi.fn();
 vi.mock("@/lib/trpc-client", () => ({
   trpc: {
-    useUtils: () => ({ activities: { dayLoad: { invalidate: () => Promise.resolve() } } }),
+    useUtils: () => ({
+      activities: {
+        dayLoad: { invalidate: () => Promise.resolve() },
+        listRows: { invalidate: () => Promise.resolve() },
+      },
+    }),
     activities: {
       listRows: { useQuery: (input?: unknown) => useQuery(input) },
       listTypes: { useQuery: () => ({ data: [{ id: "t1", key: "call", name: "Call" }] }) },

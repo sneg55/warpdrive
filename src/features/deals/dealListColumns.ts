@@ -14,14 +14,3 @@ export const DEAL_LIST_COLUMNS: readonly ColumnDef[] = [
   { key: "expectedCloseDate", header: "Expected close date", defaultVisible: true },
   { key: "nextActivity", header: "Next activity", defaultVisible: true },
 ] as const;
-
-// Non-pinned deal-list column keys (everything the generic cell renderer handles; Title is rendered
-// specially by DealList because it carries the inline-edit affordance).
-export type DealListColumnKey =
-  | "org"
-  | "value"
-  | "stage"
-  | "owner"
-  | "person"
-  | "expectedCloseDate"
-  | "nextActivity";

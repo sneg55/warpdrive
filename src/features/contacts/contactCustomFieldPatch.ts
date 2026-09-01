@@ -9,7 +9,11 @@ import { can } from "@/features/permissions/can";
 import { canSee } from "@/features/permissions/canSee";
 import { err, ok, type Result } from "@/types/result";
 import { toVisibleRecord as toVisibleOrg } from "./orgsRepo";
-import { type ContactActor, toVisibleRecord as toVisiblePerson } from "./personsRepo";
+import {
+  type ContactActor,
+  type PersonEditAuthority,
+  toVisibleRecord as toVisiblePerson,
+} from "./personsRepo";
 
 export const contactCustomFieldPatchInput = z.object({
   entity: z.enum(["person", "organization"]),
@@ -29,6 +33,7 @@ export async function patchContactCustomField(
   actor: ContactActor,
   input: ContactCustomFieldPatchInput,
   signal: AbortSignal,
+  authority: PersonEditAuthority = "requires-contact-edit",
 ): Promise<PatchResult> {
   signal.throwIfAborted();
 
@@ -71,7 +76,10 @@ export async function patchContactCustomField(
       if (current === undefined || !canSee(actor, toVisiblePerson(current))) {
         return err(new AppError(ERROR_IDS.CONTACT_NOT_FOUND, "not found", { id: input.id }));
       }
-      if (!can(actor, "contact.edit", toVisiblePerson(current))) {
+      if (
+        authority === "requires-contact-edit" &&
+        !can(actor, "contact.edit", toVisiblePerson(current))
+      ) {
         return err(new AppError(ERROR_IDS.PERM_DENIED, "contact.edit required", { id: input.id }));
       }
       const [updated] = await tx

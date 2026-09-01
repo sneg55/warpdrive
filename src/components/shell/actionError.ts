@@ -44,6 +44,10 @@ const CONTENT: Record<string, ActionErrorContent> = {
     title: "One of these conditions isn't valid",
     body: "Check each condition's value: a number field needs a number, and a date field needs a date.",
   },
+  [ERROR_IDS.DEAL_BULK_ARCHIVE_PARTIAL]: {
+    title: "Some deals weren't archived",
+    body: "Deals you can't edit stayed in the list. The rest moved to the Archive tab.",
+  },
 };
 
 export function actionErrorContent(errorId?: string): ActionErrorContent {

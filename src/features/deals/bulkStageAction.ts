@@ -1,12 +1,13 @@
 "use server";
 
+import { ERROR_IDS } from "@/constants/errorIds";
 import { db } from "@/db/client";
 import { guardCsrf } from "@/features/identity/actions/shared";
 import { SIG } from "@/features/identity/actions/sig";
 import { createContext } from "@/server/trpc/context";
 import type { BulkRowResult } from "./bulkActions";
 import { bulkUpdateStage } from "./bulkActions";
-import type { BulkStageInput } from "./schemas";
+import { type BulkStageInput, bulkStageInput } from "./schemas";
 
 export type BulkStageResult =
   | { ok: true; rows: BulkRowResult[] }
@@ -25,7 +26,10 @@ export async function bulkStageAction(
   const { actor } = await createContext();
   if (actor === null) return { ok: false, error: { id: "E_AUTH_003" } };
 
-  const result = await bulkUpdateStage(db, actor, input, SIG());
+  const parsed = bulkStageInput.safeParse(input);
+  if (!parsed.success) return { ok: false, error: { id: ERROR_IDS.DEAL_BULK_INPUT_INVALID } };
+
+  const result = await bulkUpdateStage(db, actor, parsed.data, SIG());
   if (!result.ok) return { ok: false, error: { id: result.error.id } };
 
   return { ok: true, rows: result.value };

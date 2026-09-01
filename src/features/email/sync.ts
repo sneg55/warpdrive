@@ -79,7 +79,7 @@ async function applyTrashTransitions(
 // message addition (which can trash a thread, e.g. a filtered auto-delete, or un-trash it, e.g. a
 // reply landing back in the inbox). Idempotent: a redelivered page yields the same count (ON
 // CONFLICT DO NOTHING) and re-derives the same trashed_at from the current thread state.
-export async function applyHistoryPage(args: {
+async function applyHistoryPage(args: {
   db: Db;
   accountId: string;
   owner: AuthUser;
@@ -110,9 +110,6 @@ export async function applyHistoryPage(args: {
   if (!trashed.ok) return trashed;
   return applied;
 }
-
-// Re-export so callers that previously imported applyMessageIds from here still work.
-export { applyMessageIds } from "./applyMessages";
 
 // Drive an incremental sync from the OLD cursor through every nextPageToken page,
 // committing ONE checkpoint at the end. A mid-sync failure leaves the cursor at the

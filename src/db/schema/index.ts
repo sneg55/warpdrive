@@ -34,6 +34,7 @@ export * from "./organizationRelations";
 export * from "./organizations";
 export * from "./persons";
 export * from "./pipelines";
+export * from "./prospects";
 export * from "./realtime";
 export * from "./release";
 export * from "./savedFilters";

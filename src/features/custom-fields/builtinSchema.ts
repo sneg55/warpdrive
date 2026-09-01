@@ -9,5 +9,3 @@ export const setBuiltinHiddenSchema = z.object({
   key: z.string().min(1).max(64),
   hidden: z.boolean(),
 });
-
-export type SetBuiltinHiddenActionInput = z.infer<typeof setBuiltinHiddenSchema>;

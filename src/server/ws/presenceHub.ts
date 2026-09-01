@@ -8,13 +8,13 @@
 import { PresenceRegistry, type PresenceUser } from "./presence";
 
 // Channel families that participate in presence tracking.
-export const PRESENCE_CHANNEL_PREFIXES = ["deal:", "pipeline:"] as const;
+const PRESENCE_CHANNEL_PREFIXES = ["deal:", "pipeline:"] as const;
 
 export function isPresenceChannel(channel: string): boolean {
   return PRESENCE_CHANNEL_PREFIXES.some((prefix) => channel.startsWith(prefix));
 }
 
-export interface PresenceFrame {
+interface PresenceFrame {
   kind: "presence";
   channel: string;
   users: PresenceUser[];

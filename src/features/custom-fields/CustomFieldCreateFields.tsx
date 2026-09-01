@@ -23,7 +23,7 @@ function hasObjectValue(value: unknown): boolean {
   });
 }
 
-export function isCreateCustomFieldEmpty(def: CustomFieldDef, value: unknown): boolean {
+function isCreateCustomFieldEmpty(def: CustomFieldDef, value: unknown): boolean {
   if (def.type === "address") return !hasObjectValue(value);
   if (def.type === "date_range" || def.type === "time_range") {
     if (value === null || typeof value !== "object" || Array.isArray(value)) return true;

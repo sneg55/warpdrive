@@ -20,7 +20,15 @@ vi.mock("@/utils/csrfCookie", () => ({ readCsrfToken: () => "csrf" }));
 const setData = vi.fn();
 const invalidate = vi.fn();
 vi.mock("@/lib/trpc-client", () => ({
-  trpc: { useUtils: () => ({ activities: { listForEntity: { setData, invalidate } } }) },
+  trpc: {
+    useUtils: () => ({
+      activities: {
+        listForEntity: { setData, invalidate },
+        dayLoad: { invalidate: () => Promise.resolve() },
+        listRows: { invalidate: () => Promise.resolve() },
+      },
+    }),
+  },
 }));
 
 // Failed completions surface the shared error modal instead of reverting silently.

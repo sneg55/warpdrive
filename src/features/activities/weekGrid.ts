@@ -3,7 +3,7 @@
 // overdue are excluded from the day buckets (they live in the Overdue rail instead).
 import type { CalendarActivity } from "./calendar";
 
-export function isoDay(d: Date): string {
+function isoDay(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
 

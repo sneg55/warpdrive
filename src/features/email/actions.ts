@@ -11,7 +11,7 @@ import { guardCsrf } from "@/features/identity/actions/shared";
 import { SIG } from "@/features/identity/actions/sig";
 import { createContext } from "@/server/trpc/context";
 import { type ActionResult, clientErr, toClientResult } from "@/types/actionResult";
-import { err, ok, type Result } from "@/types/result";
+import { ok } from "@/types/result";
 import { softDisconnectMailbox } from "./disconnect";
 import { createGmailClient, type GmailClient } from "./gmailClient";
 import { makeRefresh } from "./gmailRefresh";
@@ -114,16 +114,17 @@ export async function sendEmail(
 export async function trashThreadAction(
   csrfToken: string | null,
   rawInput: unknown,
-): Promise<Result<{ threadId: string }, AppError>> {
+): Promise<ActionResult<{ threadId: string }>> {
   const csrf = await guardCsrf(csrfToken);
-  if (!csrf.ok) return err(new AppError(ERROR_IDS.PERM_DENIED, "csrf check failed", {}));
+  if (!csrf.ok) return clientErr(new AppError(ERROR_IDS.PERM_DENIED, "csrf check failed", {}));
 
   const ctx = await createContext();
-  if (ctx.actor === null) return err(new AppError(ERROR_IDS.PERM_DENIED, "unauthenticated", {}));
+  if (ctx.actor === null)
+    return clientErr(new AppError(ERROR_IDS.PERM_DENIED, "unauthenticated", {}));
 
   const parsed = z.object({ threadId: z.string().uuid() }).safeParse(rawInput);
   if (!parsed.success) {
-    return err(
+    return clientErr(
       new AppError(ERROR_IDS.GMAIL_TRASH_INPUT_INVALID, "invalid trash input", {
         issues: parsed.error.issues,
       }),
@@ -138,16 +139,18 @@ export async function trashThreadAction(
     `)
   ).rows[0] as { id: string } | undefined;
   if (acct === undefined)
-    return err(new AppError(ERROR_IDS.GMAIL_THREAD_NOT_FOUND, "thread not found", {}));
+    return clientErr(new AppError(ERROR_IDS.GMAIL_THREAD_NOT_FOUND, "thread not found", {}));
 
   const token = await ensureAccessToken(db, {
     accountId: acct.id,
     deps: { refresh: makeRefresh(signal) },
   });
-  if (!token.ok) return token;
+  if (!token.ok) return clientErr(token.error);
 
   const gmail = createGmailClient(token.value.token);
-  return trashThread(db, { actor: ctx.actor, threadId: parsed.data.threadId, gmail }, signal);
+  return toClientResult(
+    await trashThread(db, { actor: ctx.actor, threadId: parsed.data.threadId, gmail }, signal),
+  );
 }
 
 // Start the Gmail connect flow: mints a single-use OAuth state, stores it in an
@@ -184,23 +187,23 @@ const disconnectMailboxInput = z.object({ accountId: z.string().uuid() });
 export async function disconnectMailboxAction(
   csrfToken: string | null,
   rawInput: unknown,
-): Promise<Result<{ disconnected: true }, AppError>> {
+): Promise<ActionResult<{ disconnected: true }>> {
   const csrf = await guardCsrf(csrfToken);
-  if (!csrf.ok) return err(new AppError("E_PERM_001", "csrf check failed", {}));
+  if (!csrf.ok) return clientErr(new AppError("E_PERM_001", "csrf check failed", {}));
 
   const ctx = await createContext();
-  if (ctx.actor === null) return err(new AppError("E_PERM_001", "unauthenticated", {}));
+  if (ctx.actor === null) return clientErr(new AppError("E_PERM_001", "unauthenticated", {}));
 
   const parsed = disconnectMailboxInput.safeParse(rawInput);
   if (!parsed.success) {
-    return err(
+    return clientErr(
       new AppError("E_GMAIL_013", "invalid disconnect input", { issues: parsed.error.issues }),
     );
   }
 
   const signal = SIG();
   const owner = await assertMailboxOwner(db, parsed.data.accountId, ctx.actor.id, signal);
-  if (!owner.ok) return owner;
+  if (!owner.ok) return clientErr(owner.error);
 
   await softDisconnectMailbox(db, parsed.data.accountId, signal);
   return ok({ disconnected: true });

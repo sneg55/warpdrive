@@ -20,7 +20,7 @@ function prefersDark(): boolean {
 
 // Write the cookie the inline no-flash script reads, then paint the class immediately so the
 // change lands without a reload.
-export function applyAppearance(value: Appearance): void {
+function applyAppearance(value: Appearance): void {
   document.cookie = appearanceCookieValue(value);
   document.documentElement.classList.toggle(DARK_CLASS, isDarkAppearance(value, prefersDark()));
 }

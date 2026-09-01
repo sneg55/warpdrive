@@ -14,7 +14,6 @@ beforeAll(() => {
 const editCell = vi.fn();
 vi.mock("./useInlineEdit", () => ({
   useInlineEdit: () => ({ editCell }),
-  DEALS_QUERY_KEY: (p: string) => ["deals", p],
 }));
 
 import { DealList, type DealListRow } from "./DealList";

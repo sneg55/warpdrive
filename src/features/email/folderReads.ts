@@ -62,7 +62,7 @@ const CORRESPONDENT_JOINS = sql`
 
 // Position in a folder's (ordered_at DESC, id DESC) ordering. `id` breaks ties so a page boundary
 // can neither skip nor repeat a thread when two share a timestamp.
-export interface FolderCursor {
+interface FolderCursor {
   at: string;
   id: string;
 }

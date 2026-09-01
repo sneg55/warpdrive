@@ -10,5 +10,3 @@ export const BOARD_EVENT = {
   dealCreated: "deal_created",
   dealUpdated: "deal_updated",
 } as const;
-
-export type BoardEventType = (typeof BOARD_EVENT)[keyof typeof BOARD_EVENT];

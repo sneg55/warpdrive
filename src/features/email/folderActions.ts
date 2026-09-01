@@ -6,6 +6,7 @@ import { guardCsrf } from "@/features/identity/actions/shared";
 import { SIG } from "@/features/identity/actions/sig";
 import type { AuthUser } from "@/features/permissions/types";
 import { createContext } from "@/server/trpc/context";
+import { type ActionResult, clientErr, toClientResult } from "@/types/actionResult";
 import { err, type Result } from "@/types/result";
 import { deleteDraft, saveDraft } from "./draftRepo";
 import {
@@ -65,85 +66,91 @@ async function archiveOrUnarchive(
 export async function archiveThreadAction(
   csrfToken: string | null,
   rawInput: unknown,
-): Promise<Result<{ threadId: string }, AppError>> {
-  return archiveOrUnarchive(csrfToken, rawInput, archiveThread);
+): Promise<ActionResult<{ threadId: string }>> {
+  return toClientResult(await archiveOrUnarchive(csrfToken, rawInput, archiveThread));
 }
 
 export async function unarchiveThreadAction(
   csrfToken: string | null,
   rawInput: unknown,
-): Promise<Result<{ threadId: string }, AppError>> {
-  return archiveOrUnarchive(csrfToken, rawInput, unarchiveThread);
+): Promise<ActionResult<{ threadId: string }>> {
+  return toClientResult(await archiveOrUnarchive(csrfToken, rawInput, unarchiveThread));
 }
 
 export async function saveDraftAction(
   csrfToken: string | null,
   rawInput: unknown,
-): Promise<Result<{ id: string }, AppError>> {
+): Promise<ActionResult<{ id: string }>> {
   const who = await actor(csrfToken);
-  if (!who.ok) return who;
+  if (!who.ok) return clientErr(who.error);
   const parsed = saveDraftInput.safeParse(rawInput);
   if (!parsed.success)
-    return err(
+    return clientErr(
       new AppError(ERROR_IDS.GMAIL_DRAFT_INPUT_INVALID, "invalid draft input", {
         issues: parsed.error.issues,
       }),
     );
   const signal = SIG();
   const owner = await assertMailboxOwner(db, parsed.data.accountId, who.value.id, signal);
-  if (!owner.ok) return owner;
-  return saveDraft(
-    db,
-    {
-      actor: toActor(who.value.id),
-      draft: parsed.data,
-    },
-    signal,
+  if (!owner.ok) return clientErr(owner.error);
+  return toClientResult(
+    await saveDraft(
+      db,
+      {
+        actor: toActor(who.value.id),
+        draft: parsed.data,
+      },
+      signal,
+    ),
   );
 }
 
 export async function deleteDraftAction(
   csrfToken: string | null,
   rawInput: unknown,
-): Promise<Result<{ id: string }, AppError>> {
+): Promise<ActionResult<{ id: string }>> {
   const who = await actor(csrfToken);
-  if (!who.ok) return who;
+  if (!who.ok) return clientErr(who.error);
   const parsed = deleteDraftInput.safeParse(rawInput);
   if (!parsed.success)
-    return err(
+    return clientErr(
       new AppError(ERROR_IDS.GMAIL_DRAFT_INPUT_INVALID, "invalid draft id", {
         issues: parsed.error.issues,
       }),
     );
-  return deleteDraft(
-    db,
-    {
-      actor: toActor(who.value.id),
-      draftId: parsed.data.draftId,
-    },
-    SIG(),
+  return toClientResult(
+    await deleteDraft(
+      db,
+      {
+        actor: toActor(who.value.id),
+        draftId: parsed.data.draftId,
+      },
+      SIG(),
+    ),
   );
 }
 
 export async function cancelOutboxAction(
   csrfToken: string | null,
   rawInput: unknown,
-): Promise<Result<{ id: string }, AppError>> {
+): Promise<ActionResult<{ id: string }>> {
   const who = await actor(csrfToken);
-  if (!who.ok) return who;
+  if (!who.ok) return clientErr(who.error);
   const parsed = cancelOutboxInput.safeParse(rawInput);
   if (!parsed.success)
-    return err(
+    return clientErr(
       new AppError(ERROR_IDS.GMAIL_FOLDER_INPUT_INVALID, "invalid attempt id", {
         issues: parsed.error.issues,
       }),
     );
-  return cancelOutbox(
-    db,
-    {
-      actor: toActor(who.value.id),
-      attemptId: parsed.data.attemptId,
-    },
-    SIG(),
+  return toClientResult(
+    await cancelOutbox(
+      db,
+      {
+        actor: toActor(who.value.id),
+        attemptId: parsed.data.attemptId,
+      },
+      SIG(),
+    ),
   );
 }

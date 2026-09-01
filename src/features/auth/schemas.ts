@@ -12,5 +12,3 @@ export const idTokenClaimsSchema = z.object({
   aud: z.string(),
   iss: z.string(),
 });
-
-export type IdTokenClaims = z.infer<typeof idTokenClaimsSchema>;

@@ -31,7 +31,12 @@ vi.mock("@/features/email/composer/RichTextBody", () => ({
 }));
 vi.mock("@/lib/trpc-client", () => ({
   trpc: {
-    useUtils: () => ({ activities: { dayLoad: { invalidate: () => Promise.resolve() } } }),
+    useUtils: () => ({
+      activities: {
+        dayLoad: { invalidate: () => Promise.resolve() },
+        listRows: { invalidate: () => Promise.resolve() },
+      },
+    }),
     activities: {
       listTypes: {
         useQuery: () => ({

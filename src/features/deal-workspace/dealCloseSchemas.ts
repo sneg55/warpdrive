@@ -7,5 +7,3 @@ export const markLostInput = z.object({
   lostReasonId: z.string().uuid().nullable().default(null),
   lostReason: z.string().trim().min(1).max(500).nullable().default(null),
 });
-
-export type MarkLostInput = z.infer<typeof markLostInput>;

@@ -11,7 +11,7 @@ import { err, ok, type Result } from "@/types/result";
 // is the generic owner-assign capability (ownership-scoped, stored as _own/_any pairs): _any reassigns
 // any record, _own only records the actor already owns; admin is unconditional. Shared by the server
 // resolver below and the detail-page loaders so the write gate and the UI gate can never diverge.
-export function mayTransferOwner(actor: PermSetUser, currentOwnerId: string | null): boolean {
+function mayTransferOwner(actor: PermSetUser, currentOwnerId: string | null): boolean {
   if (actor.type === "admin") return true;
   if (actor.flags.has("deal.changeOwner_any")) return true;
   return actor.flags.has("deal.changeOwner_own") && currentOwnerId === actor.id;

@@ -13,7 +13,7 @@ import type { SendEmailInput } from "./send";
 // created unlinked exactly as before. explicit* come from the composer (e.g. the deal workspace
 // passes its deal + primary contact); when both are null we fall back to recipient-based
 // resolution. Every explicit FK is re-checked for visibility (never trust a client FK).
-export interface OutboundLinkContext {
+interface OutboundLinkContext {
   owner: AuthUser;
   recipients: string[];
   explicitPersonId: string | null;

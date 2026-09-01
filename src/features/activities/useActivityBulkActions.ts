@@ -3,7 +3,7 @@ import { useState } from "react";
 import type { RowSelection } from "@/components/data-table/useRowSelection";
 import { readCsrfToken } from "@/utils/csrfCookie";
 import { completeActivityAction, deleteActivityAction } from "./actions";
-import { useInvalidateDayLoad } from "./useInvalidateDayLoad";
+import { useInvalidateActivityLists } from "./useInvalidateActivityLists";
 
 const BULK_MARK_DONE_ERROR = "Couldn't mark some activities done. Please try again.";
 const BULK_DELETE_ERROR = "Couldn't delete some activities. Please try again.";
@@ -27,12 +27,9 @@ export interface ActivityBulkActions {
 
 // Bulk mark-done/delete for the Activities table's selected rows. Extracted from ActivitiesTable
 // (data logic vs. presentation) and to keep the container under the file-size budget.
-export function useActivityBulkActions(
-  selection: RowSelection,
-  refetch: () => Promise<unknown>,
-): ActivityBulkActions {
+export function useActivityBulkActions(selection: RowSelection): ActivityBulkActions {
   const [error, setError] = useState<string | null>(null);
-  const invalidateDayLoad = useInvalidateDayLoad();
+  const invalidateActivityLists = useInvalidateActivityLists();
 
   async function run(
     action: (id: string) => Promise<{ ok: boolean }>,
@@ -42,12 +39,11 @@ export function useActivityBulkActions(
     if (ids.length === 0) return;
     const failedIds = await runBulkAction(ids, action);
     const someSucceeded = failedIds.length < ids.length;
-    if (someSucceeded) await invalidateDayLoad();
+    if (someSucceeded) await invalidateActivityLists();
     // Don't silently drop failures: clear only the ids that actually succeeded, keep the
     // failed ones selected (so the user sees exactly what still needs attention).
     selection.clear();
     for (const id of failedIds) selection.toggle(id);
-    await refetch();
     setError(failedIds.length > 0 ? failureError : null);
   }
 

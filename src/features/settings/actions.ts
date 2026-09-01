@@ -12,7 +12,6 @@ import { updateSettings } from "./settingsRepo";
 export type SettingsActionResult = { ok: true } | { ok: false; error: { id: string } };
 
 const generalSchema = z.object({ companyName: z.string().trim().max(200) });
-const trackingSchema = z.object({ enabled: z.boolean() });
 
 async function gate(
   csrfToken: string | null,
@@ -41,28 +40,6 @@ export async function updateCompanyGeneralAction(
       targetId: null,
       action: "company.settings.updated",
       after: { companyName: row.companyName },
-    },
-    SIG(),
-  );
-  return { ok: true };
-}
-
-export async function updateEmailTrackingDefaultAction(
-  input: z.input<typeof trackingSchema>,
-  csrfToken: string | null = null,
-): Promise<SettingsActionResult> {
-  const g = await gate(csrfToken);
-  if (!g.ok) return g;
-  const parsed = trackingSchema.parse(input);
-  const row = await updateSettings(db, { emailTrackingDefaultEnabled: parsed.enabled }, SIG());
-  await recordAudit(
-    db,
-    {
-      actorId: g.actorId,
-      targetType: "settings",
-      targetId: null,
-      action: "company.settings.updated",
-      after: { emailTrackingDefaultEnabled: row.emailTrackingDefaultEnabled },
     },
     SIG(),
   );

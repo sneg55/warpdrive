@@ -11,7 +11,7 @@ import { useState } from "react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/Popover";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-export interface InsertFieldItem {
+interface InsertFieldItem {
   label: string;
   value: string;
   // Entity the field belongs to (Person / Deal / Organization), drives the category tabs.

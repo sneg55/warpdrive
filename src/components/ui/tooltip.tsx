@@ -10,10 +10,10 @@ import { cn } from "@/lib/utils";
 // single-hint case; drop to the compound parts for anything richer.
 
 export const TooltipProvider = RadixTooltip.Provider;
-export const Tooltip = RadixTooltip.Root;
-export const TooltipTrigger = RadixTooltip.Trigger;
+const Tooltip = RadixTooltip.Root;
+const TooltipTrigger = RadixTooltip.Trigger;
 
-export const TooltipContent = forwardRef<
+const TooltipContent = forwardRef<
   React.ElementRef<typeof RadixTooltip.Content>,
   React.ComponentPropsWithoutRef<typeof RadixTooltip.Content>
 >(({ className, sideOffset = 4, ...props }, ref) => (

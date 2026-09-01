@@ -72,7 +72,7 @@ export const activityUpdateInput = z
 export type ActivityUpdateInput = z.input<typeof activityUpdateInput>;
 
 // Server-driven ORDER BY for the Activities table (activities.listRows).
-export const ACTIVITY_SORT_FIELDS = ["subject", "dueAtIso", "priority", "duration"] as const;
+const ACTIVITY_SORT_FIELDS = ["subject", "dueAtIso", "priority", "duration"] as const;
 export type ActivitySortField = (typeof ACTIVITY_SORT_FIELDS)[number];
 export const activitySortInput = z.object({
   field: z.enum(ACTIVITY_SORT_FIELDS),

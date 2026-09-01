@@ -18,9 +18,21 @@ describe("buildReplyPrefill", () => {
     expect(p.bodyHtml).toBe("");
   });
 
-  it("reply keeps the sender as recipient even when the sender is self (own last-sent message)", () => {
-    const ownFollowUp = { ...msg, fromEmail: "me@ex.com" };
+  it("reply to a message self sent targets its original recipients, not self", () => {
+    const ownFollowUp = { ...msg, fromEmail: "me@ex.com", toEmails: ["bob@acme.com"] };
     const p = buildReplyPrefill("reply", ownFollowUp, "me@ex.com");
+    expect(p.to).toEqual(["bob@acme.com"]);
+  });
+
+  it("reply to a self-sent message drops self from the original recipients, case-insensitively", () => {
+    const ownFollowUp = { ...msg, fromEmail: "ME@ex.com" };
+    const p = buildReplyPrefill("reply", ownFollowUp, "me@ex.com");
+    expect(p.to).toEqual(["bob@acme.com"]);
+  });
+
+  it("reply to a message self sent only to self falls back to self so To is never empty", () => {
+    const noteToSelf = { ...msg, fromEmail: "me@ex.com", toEmails: ["me@ex.com"] };
+    const p = buildReplyPrefill("reply", noteToSelf, "me@ex.com");
     expect(p.to).toEqual(["me@ex.com"]);
   });
 

@@ -39,7 +39,17 @@ export async function assignPermissionSet(
   input: { userId: string; setId: string },
   signal: AbortSignal,
 ): Promise<Result<true, string>> {
-  const gate = canAssignPermissionSet(actor, { targetUserId: input.userId });
+  signal.throwIfAborted();
+  const [target] = await db
+    .select({ isAdmin: users.isAdmin })
+    .from(users)
+    .where(eq(users.id, input.userId))
+    .limit(1);
+  if (target === undefined) return err("not_found");
+  const gate = canAssignPermissionSet(actor, {
+    targetUserId: input.userId,
+    targetIsAdmin: target.isAdmin,
+  });
   if (gate.ok === false) return gate;
 
   // Escalation gate (F11): assigning a set that CARRIES high-risk flags is admin-only, the

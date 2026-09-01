@@ -20,28 +20,45 @@ interface UserRow {
   isAdmin: boolean;
   isActive: boolean;
   invitedAt: string | null;
+  permissionSetId: string | null;
+}
+
+interface PermissionSetOption {
+  id: string;
+  name: string;
 }
 
 interface Props {
   rows: UserRow[];
+  permissionSets: PermissionSetOption[];
+  viewerIsAdmin: boolean;
 }
 
 const C = {
   name: "Name",
   email: "Email",
   role: "Role",
+  permissionSet: "Permission set",
   active: "Active",
   actions: "Actions",
 } as const;
 
-const V = { admin: "Admin", regular: "Regular", yes: "Yes", no: "No", invited: "Invited" } as const;
+const V = {
+  admin: "Admin",
+  regular: "Regular",
+  yes: "Yes",
+  no: "No",
+  invited: "Invited",
+  noSet: "None",
+} as const;
 
-export function UsersClient({ rows }: Props): React.ReactElement {
+export function UsersClient({ rows, permissionSets, viewerIsAdmin }: Props): React.ReactElement {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const status = parseUserStatusFilter(searchParams.get("status"));
   const visible = filterUsersByStatus(rows, status);
+  const setNames = new Map(permissionSets.map((s) => [s.id, s.name]));
 
   function setStatus(next: UserStatusFilter): void {
     const params = new URLSearchParams(searchParams.toString());
@@ -66,6 +83,7 @@ export function UsersClient({ rows }: Props): React.ReactElement {
                   <th className={SETTINGS_TABLE_HEADER_CELL}>{C.name}</th>
                   <th className={SETTINGS_TABLE_HEADER_CELL}>{C.email}</th>
                   <th className={SETTINGS_TABLE_HEADER_CELL}>{C.role}</th>
+                  <th className={SETTINGS_TABLE_HEADER_CELL}>{C.permissionSet}</th>
                   <th className={SETTINGS_TABLE_HEADER_CELL}>{C.active}</th>
                   <th className={SETTINGS_TABLE_HEADER_CELL}>{C.actions}</th>
                 </tr>
@@ -83,12 +101,20 @@ export function UsersClient({ rows }: Props): React.ReactElement {
                     </td>
                     <td className={`${SETTINGS_TABLE_CELL} text-muted-foreground`}>{u.email}</td>
                     <td className={SETTINGS_TABLE_CELL}>{u.isAdmin ? V.admin : V.regular}</td>
+                    <td className={`${SETTINGS_TABLE_CELL} text-muted-foreground`}>
+                      {u.permissionSetId === null
+                        ? V.noSet
+                        : (setNames.get(u.permissionSetId) ?? V.noSet)}
+                    </td>
                     <td className={SETTINGS_TABLE_CELL}>{u.isActive ? V.yes : V.no}</td>
                     <td className={SETTINGS_TABLE_CELL}>
                       <UserRowControls
                         userId={u.id}
                         isAdmin={u.isAdmin}
                         isActive={u.isActive}
+                        viewerIsAdmin={viewerIsAdmin}
+                        permissionSetId={u.permissionSetId}
+                        permissionSets={permissionSets}
                         onChanged={() => router.refresh()}
                       />
                     </td>

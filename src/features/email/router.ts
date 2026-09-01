@@ -7,21 +7,15 @@ import { listDrafts } from "./draftRepo";
 import * as emailReads from "./emailReads";
 import { listMessagesForContact, listMessagesForDeal } from "./entityMessageReads";
 import { listArchivedThreads, listOutbox, listSentThreads } from "./folderReads";
+import { buildMergeContext } from "./mergeContext";
 import { getMessage } from "./messageReads";
 import { inboxUnreadCount } from "./readState";
 import { searchInbox } from "./searchInbox";
 import { getThreadNeighbors } from "./threadNeighbors";
 
-export type {
-  InboxFilter,
-  InboxThread,
-  TemplateDetail,
-  ThreadMessage,
-  ThreadView,
-} from "./emailReads";
 // Re-export the plain read functions so existing importers (and the test) keep working
 // from ./router while the implementations live in ./emailReads (200-line cap).
-export { getTemplate, getThread, listInbox, listSignatures, listTemplates } from "./emailReads";
+export { getThread, listInbox } from "./emailReads";
 
 const SIG = (): AbortSignal => AbortSignal.timeout(15_000);
 
@@ -119,6 +113,29 @@ export const emailRouter = router({
         unwrap(emailReads.getTemplate(ctx.db, { id: input.id, actor: ctx.actor }, SIG())),
       ),
   }),
+  // Merge-field values for the composer: the same visibility-scoped resolution the send path
+  // runs, so an applied template or an inserted field shows what the recipient will read
+  // instead of a raw {{token}}.
+  mergeContext: protectedProcedure
+    .input(
+      z.object({
+        recipientEmail: z.string().default(""),
+        personId: z.string().uuid().nullish(),
+        dealId: z.string().uuid().nullish(),
+      }),
+    )
+    .query(({ ctx, input }) =>
+      buildMergeContext(
+        ctx.db,
+        {
+          owner: ctx.actor,
+          recipientEmail: input.recipientEmail,
+          explicitPersonId: input.personId ?? null,
+          explicitDealId: input.dealId ?? null,
+        },
+        SIG(),
+      ),
+    ),
   signatures: router({
     list: protectedProcedure.query(({ ctx }) =>
       emailReads.listSignatures(ctx.db, { actor: ctx.actor }, SIG()),

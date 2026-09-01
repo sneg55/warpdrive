@@ -7,10 +7,9 @@ import { useRowSelection } from "@/components/data-table/useRowSelection";
 import { ThreadRowsSkeleton } from "@/components/shell/skeletons";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { Skeleton } from "@/components/ui/Skeleton";
-import type { AppError } from "@/constants/errorIds";
 import { STRINGS } from "@/constants/strings";
 import { trpc } from "@/lib/trpc-client";
-import type { Result } from "@/types/result";
+import type { ActionResult } from "@/types/actionResult";
 import { readCsrfToken } from "@/utils/csrfCookie";
 import type { InboxFilter, InboxThread } from "./emailReads";
 import { archiveThreadAction, unarchiveThreadAction } from "./folderActions";
@@ -122,7 +121,7 @@ export function ThreadList({
   }
 
   async function applyBulk(
-    action: (threadId: string) => Promise<Result<{ threadId: string }, AppError>>,
+    action: (threadId: string) => Promise<ActionResult<{ threadId: string }>>,
     onSettled: () => void,
   ): Promise<void> {
     const ids = [...selection.selected];

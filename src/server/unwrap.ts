@@ -40,6 +40,8 @@ const BAD_REQUEST_IDS = new Set<string>([
   ERROR_IDS.GMAIL_AUTHORING_INPUT_INVALID,
   ERROR_IDS.FILE_PRESIGN_INVALID,
   ERROR_IDS.FILE_METADATA_MISMATCH,
+  ERROR_IDS.ENRICH_ORG_NO_DOMAIN,
+  ERROR_IDS.ENRICH_NO_SEARCH_PROVIDER,
 ]);
 
 // Convert a repo Result into a value or a TRPCError. Sets are checked in order so a

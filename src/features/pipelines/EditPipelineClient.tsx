@@ -1,17 +1,33 @@
 "use client";
+import {
+  DndContext,
+  type DragEndEvent,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import {
+  horizontalListSortingStrategy,
+  SortableContext,
+  sortableKeyboardCoordinates,
+} from "@dnd-kit/sortable";
 import { useRouter } from "next/navigation";
 import type React from "react";
-import { useId, useState } from "react";
+import { useId, useRef, useState } from "react";
 import { Input } from "@/components/ui/Input";
+import { ERROR_IDS } from "@/constants/errorIds";
 import { readCsrfToken } from "@/utils/csrfCookie";
-import {
-  createStageAction,
-  deleteStageAction,
-  renamePipelineAction,
-  updateStageAction,
-} from "./pipelineEditActions";
-import { StageEditCard } from "./StageEditCard";
+import { applyStageOps } from "./applyStageOps";
+import { renamePipelineAction, reorderStagesAction } from "./pipelineEditActions";
+import { SortableStageCard } from "./SortableStageCard";
 import { diffStages, type StageRow } from "./stageDiff";
+import {
+  assignCreatedIds,
+  buildOrderedStageIds,
+  reorderRowsByKey,
+  stageOrderChanged,
+} from "./stageOrder";
 
 interface InitialStage {
   id: string;
@@ -33,6 +49,8 @@ const ERROR_MESSAGE: Record<string, string> = {
   E_STAGE_003: "A pipeline must keep at least one stage.",
   E_PERM_001: "You do not have permission to edit pipelines.",
   E_AUTH_CSRF: "Your session expired. Reload the page and try again.",
+  [ERROR_IDS.UI_ACTION_UNCONFIRMED]:
+    "The save did not reach the server, so some changes may not have been applied. Reload the page and try again.",
 };
 
 export function EditPipelineClient({
@@ -43,21 +61,29 @@ export function EditPipelineClient({
   const router = useRouter();
   const nameId = useId();
   const originalName = pipelineName;
+  const originalIds = stages.map((s) => s.id);
   const originalById = Object.fromEntries(
     stages.map((s) => [s.id, { name: s.name, rottingDays: s.rottingDays }]),
   );
 
   const [name, setName] = useState(pipelineName);
-  const [rows, setRows] = useState<StageRow[]>(
+  const [rows, setRows] = useState<(StageRow & { key: string })[]>(
     stages.map((s) => ({
+      key: s.id,
       id: s.id,
       name: s.name,
       rottingDays: s.rottingDays,
     })),
   );
   const [deletedIds, setDeletedIds] = useState<string[]>([]);
+  const [pendingReorder, setPendingReorder] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const nextKeyRef = useRef(0);
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
 
   function patchRow(idx: number, patch: Partial<StageRow>): void {
     setRows((prev) => prev.map((r, i) => (i === idx ? { ...r, ...patch } : r)));
@@ -73,7 +99,15 @@ export function EditPipelineClient({
   }
 
   function addRow(): void {
-    setRows((prev) => [...prev, { id: null, name: "New stage", rottingDays: null }]);
+    const key = `new-${nextKeyRef.current}`;
+    nextKeyRef.current += 1;
+    setRows((prev) => [...prev, { key, id: null, name: "New stage", rottingDays: null }]);
+  }
+
+  function onDragEnd(e: DragEndEvent): void {
+    const over = e.over;
+    if (over === null) return;
+    setRows((prev) => reorderRowsByKey(prev, String(e.active.id), String(over.id)));
   }
 
   async function save(): Promise<void> {
@@ -88,21 +122,28 @@ export function EditPipelineClient({
         const r = await renamePipelineAction({ pipelineId, name: name.trim() }, csrf);
         if (!r.ok) return fail(r.error.id);
       }
-      // Delete first so a stage freed of deals earlier this session can go before any create.
-      for (const stageId of ops.deletes) {
-        const r = await deleteStageAction({ stageId }, csrf);
-        if (!r.ok) return fail(r.error.id);
-      }
-      for (const c of ops.creates) {
-        const r = await createStageAction({ pipelineId, ...c }, csrf);
-        if (!r.ok) return fail(r.error.id);
-      }
-      for (const u of ops.updates) {
-        const r = await updateStageAction(u, csrf);
-        if (!r.ok) return fail(r.error.id);
+      const applied = await applyStageOps(pipelineId, ops, csrf);
+      setRows((prev) => assignCreatedIds(prev, applied.createdIds));
+      const settled = new Set(applied.settledDeletes);
+      setDeletedIds((prev) => prev.filter((id) => !settled.has(id)));
+      const structuralSettled = applied.createdIds.length > 0 || applied.settledDeletes.length > 0;
+      if (structuralSettled) setPendingReorder(true);
+      if (!applied.ok) return fail(applied.errorId);
+      if (structuralSettled || pendingReorder || stageOrderChanged(originalIds, rows)) {
+        const r = await reorderStagesAction(
+          { pipelineId, orderedStageIds: buildOrderedStageIds(rows, applied.createdIds) },
+          csrf,
+        );
+        if (!r.ok) {
+          setPendingReorder(true);
+          return fail(r.error.id);
+        }
+        setPendingReorder(false);
       }
       router.push(`/pipeline/${pipelineId}`);
       router.refresh();
+    } catch {
+      fail(ERROR_IDS.UI_ACTION_UNCONFIRMED);
     } finally {
       setSaving(false);
     }
@@ -152,17 +193,21 @@ export function EditPipelineClient({
       )}
 
       <div className="flex flex-1 gap-3 overflow-x-auto pb-4">
-        {rows.map((row, idx) => (
-          <StageEditCard
-            // New rows fall back to a positional key; persisted rows use their stable id.
-            key={row.id ?? `new-${idx}`}
-            row={row}
-            index={idx}
-            canDelete={rows.length > 1}
-            onChange={(patch) => patchRow(idx, patch)}
-            onDelete={() => removeRow(idx)}
-          />
-        ))}
+        <DndContext id={`pipeline-edit-${pipelineId}`} sensors={sensors} onDragEnd={onDragEnd}>
+          <SortableContext items={rows.map((r) => r.key)} strategy={horizontalListSortingStrategy}>
+            {rows.map((row, idx) => (
+              <SortableStageCard
+                key={row.key}
+                sortId={row.key}
+                row={row}
+                index={idx}
+                canDelete={rows.length > 1}
+                onChange={(patch) => patchRow(idx, patch)}
+                onDelete={() => removeRow(idx)}
+              />
+            ))}
+          </SortableContext>
+        </DndContext>
         <button
           type="button"
           onClick={addRow}

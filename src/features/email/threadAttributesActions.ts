@@ -8,6 +8,7 @@ import { guardCsrf } from "@/features/identity/actions/shared";
 import { SIG } from "@/features/identity/actions/sig";
 import type { AuthUser } from "@/features/permissions/types";
 import { createContext } from "@/server/trpc/context";
+import { type ActionResult, clientErr, toClientResult } from "@/types/actionResult";
 import { err, ok, type Result } from "@/types/result";
 import { setFollowUpStatus, setThreadLabels } from "./threadAttributes";
 
@@ -37,41 +38,45 @@ async function actor(csrfToken: string | null): Promise<Result<AuthUser, AppErro
 export async function setFollowUpStatusAction(
   csrfToken: string | null,
   rawInput: unknown,
-): Promise<Result<{ threadId: string }, AppError>> {
+): Promise<ActionResult<{ threadId: string }>> {
   const who = await actor(csrfToken);
-  if (!who.ok) return who;
+  if (!who.ok) return clientErr(who.error);
   const parsed = followUpStatusInput.safeParse(rawInput);
   if (!parsed.success) {
-    return err(
+    return clientErr(
       new AppError(ERROR_IDS.GMAIL_ATTR_INPUT_INVALID, "invalid follow-up status input", {
         issues: parsed.error.issues,
       }),
     );
   }
-  return setFollowUpStatus(
-    db,
-    { actor: who.value, threadId: parsed.data.threadId, status: parsed.data.status },
-    SIG(),
+  return toClientResult(
+    await setFollowUpStatus(
+      db,
+      { actor: who.value, threadId: parsed.data.threadId, status: parsed.data.status },
+      SIG(),
+    ),
   );
 }
 
 export async function setThreadLabelsAction(
   csrfToken: string | null,
   rawInput: unknown,
-): Promise<Result<{ threadId: string }, AppError>> {
+): Promise<ActionResult<{ threadId: string }>> {
   const who = await actor(csrfToken);
-  if (!who.ok) return who;
+  if (!who.ok) return clientErr(who.error);
   const parsed = threadLabelsInput.safeParse(rawInput);
   if (!parsed.success) {
-    return err(
+    return clientErr(
       new AppError(ERROR_IDS.GMAIL_ATTR_INPUT_INVALID, "invalid labels input", {
         issues: parsed.error.issues,
       }),
     );
   }
-  return setThreadLabels(
-    db,
-    { actor: who.value, threadId: parsed.data.threadId, labels: parsed.data.labels },
-    SIG(),
+  return toClientResult(
+    await setThreadLabels(
+      db,
+      { actor: who.value, threadId: parsed.data.threadId, labels: parsed.data.labels },
+      SIG(),
+    ),
   );
 }

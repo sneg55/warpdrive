@@ -30,8 +30,6 @@ const BULK_DELETE_ERROR = "Couldn't delete some organizations. Please try again.
 // reference when the sort state itself changes (not on every OrgsList re-render).
 const DEFAULT_SORT: ColumnSort<OrgSortField> = { field: "name", dir: "asc" };
 
-export type { OrgsListRow };
-
 export interface OrgsListProps {
   rows: OrgsListRow[];
   total: number;

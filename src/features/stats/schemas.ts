@@ -8,5 +8,3 @@ export const dashboardInput = z.object({
   from: z.string().date(),
   to: z.string().date(),
 });
-
-export type DashboardInput = z.infer<typeof dashboardInput>;

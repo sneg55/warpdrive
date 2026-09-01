@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { readCsrfToken } from "@/utils/csrfCookie";
-import type { BoardCard } from "./dealRepo";
+import { DEAL_LIST_QUERY_ROOT } from "./dealListQueryKey";
+import type { DealListRow } from "./dealListTypes";
 import { updateDealAction } from "./updateAction";
 
 export interface EditArgs {
@@ -11,20 +12,26 @@ export interface EditArgs {
 }
 
 interface ListData {
-  rows: Array<BoardCard & { updatedAt?: string }>;
+  rows: DealListRow[];
   total: number;
   totalValue: string;
 }
 
-// Named constant so every consumer uses the same cache key shape.
-export const DEALS_QUERY_KEY = (pipelineId: string) => ["deals", pipelineId] as const;
+type RowSnapshot = Array<[readonly unknown[], DealListRow]>;
 
-// Optimistic single-field inline edit for the DealList table.
-// onMutate snapshots then patches the cache; onError and onSettled(ok:false) both
-// restore the snapshot so the row reverts on any failure (UI spec §6 "revert on error").
 export function useInlineEdit(pipelineId: string) {
   const client = useQueryClient();
-  const key = DEALS_QUERY_KEY(pipelineId);
+  const listKey = [DEAL_LIST_QUERY_ROOT, pipelineId];
+
+  const restoreRow = (snapshot: RowSnapshot, dealId: string) => {
+    for (const [key, row] of snapshot) {
+      client.setQueryData<ListData>(key, (data) =>
+        data === undefined
+          ? data
+          : { ...data, rows: data.rows.map((r) => (r.id === dealId ? row : r)) },
+      );
+    }
+  };
 
   const mutation = useMutation({
     mutationFn: (args: EditArgs) =>
@@ -38,33 +45,34 @@ export function useInlineEdit(pipelineId: string) {
       ),
 
     onMutate: async (args: EditArgs) => {
-      // Cancel any in-flight refetches so they do not overwrite the optimistic patch.
-      await client.cancelQueries({ queryKey: key });
-      const previous = client.getQueryData<ListData>(key);
-      if (previous !== undefined) {
-        client.setQueryData<ListData>(key, {
-          ...previous,
-          rows: previous.rows.map((r) =>
-            r.id === args.dealId ? { ...r, [args.field]: args.value } : r,
-          ),
-        });
+      await client.cancelQueries({ queryKey: listKey });
+      const previous: RowSnapshot = [];
+      for (const [key, data] of client.getQueriesData<ListData>({ queryKey: listKey })) {
+        const row = data?.rows.find((r) => r.id === args.dealId);
+        if (row !== undefined) previous.push([key, row]);
       }
+      client.setQueriesData<ListData>({ queryKey: listKey }, (data) =>
+        data === undefined
+          ? data
+          : {
+              ...data,
+              rows: data.rows.map((r) =>
+                r.id === args.dealId ? { ...r, [args.field]: args.value } : r,
+              ),
+            },
+      );
       return { previous };
     },
 
-    onError: (_err, _args, ctx) => {
-      // Thrown rejection (network error, unhandled promise): restore snapshot.
-      if (ctx?.previous !== undefined) {
-        client.setQueryData(key, ctx.previous);
-      }
+    onError: (_err, args, ctx) => {
+      if (ctx !== undefined) restoreRow(ctx.previous, args.dealId);
     },
 
-    onSettled: (result, _err, _args, ctx) => {
-      // ok:false result (stale precondition, permission denied, etc.) also reverts.
-      if (result !== undefined && !result.ok && ctx?.previous !== undefined) {
-        client.setQueryData(key, ctx.previous);
+    onSettled: (result, _err, args, ctx) => {
+      if (result !== undefined && !result.ok && ctx !== undefined) {
+        restoreRow(ctx.previous, args.dealId);
       }
-      void client.invalidateQueries({ queryKey: key });
+      void client.invalidateQueries({ queryKey: listKey });
     },
   });
 

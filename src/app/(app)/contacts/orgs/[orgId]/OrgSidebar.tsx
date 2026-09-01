@@ -10,6 +10,8 @@ import type { OrgDetail } from "@/features/contacts/orgsRepo";
 import { CollapsibleSection } from "@/features/deal-workspace/CollapsibleSection";
 import { FieldRow } from "@/features/deal-workspace/sidebar/FieldRow";
 import { OrganizationSection } from "@/features/deal-workspace/sidebar/OrganizationSection";
+import { SectionHeaderMenu } from "@/features/deal-workspace/sidebar/SectionHeaderMenu";
+import { FindPeopleButton } from "@/features/enrichment/prospects/FindPeopleButton";
 import type { CustomFieldDef } from "@/types/customFields";
 import { ContactOverviewSection } from "../../ContactOverviewSection";
 import { ListPanel } from "../../contactDetail.shared";
@@ -88,7 +90,18 @@ export function OrgSidebar({
       {/* CO-2 / spec B2: PD shows an activity Overview on org detail too, not just person. */}
       <ContactOverviewSection entityType="organization" entityId={org.id} />
 
-      <CollapsibleSection title={sections.people}>
+      <CollapsibleSection
+        title={sections.people}
+        headerActions={() => (
+          <FindPeopleButton orgId={org.id} orgName={org.name}>
+            {(findPeople) =>
+              findPeople === null ? null : (
+                <SectionHeaderMenu sectionLabel={sections.people} menuItems={[findPeople]} />
+              )
+            }
+          </FindPeopleButton>
+        )}
+      >
         <ListPanel
           items={people}
           empty="No people yet."

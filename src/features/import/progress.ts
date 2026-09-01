@@ -4,7 +4,7 @@ import { publishEvent } from "@/server/notify";
 import type { DbOrTx } from "@/server/realtime/channelVersions";
 import type { PublishedEvent } from "@/server/ws/payload";
 
-export type ImportPhase = "prepare" | "validate" | "commit" | "undo";
+type ImportPhase = "prepare" | "validate" | "commit" | "undo";
 
 export interface ProgressArgs {
   batchId: string;

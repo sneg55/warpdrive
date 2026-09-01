@@ -6,7 +6,7 @@ import { useActionError } from "@/components/shell/ActionErrorProvider";
 import { Input } from "@/components/ui/Input";
 import { MAX_DAILY_ACTIVITY_TARGET, MIN_DAILY_ACTIVITY_TARGET } from "@/constants/activityLoad";
 import { STRINGS } from "@/constants/strings";
-import { useInvalidateDayLoad } from "@/features/activities/useInvalidateDayLoad";
+import { useInvalidateActivityLists } from "@/features/activities/useInvalidateActivityLists";
 import { setDailyActivityTargetAction } from "@/features/identity/preferencesActions";
 import { readCsrfToken } from "@/utils/csrfCookie";
 import { SettingsCard, SettingsCardBody, SettingsCardHeader } from "../SettingsSurface";
@@ -25,7 +25,7 @@ function parseTarget(draft: string): number | null {
 export function DailyActivityTarget({ target }: { target: number }): React.ReactNode {
   const router = useRouter();
   const reportError = useActionError();
-  const invalidateDayLoad = useInvalidateDayLoad();
+  const invalidateActivityLists = useInvalidateActivityLists();
   const fieldId = useId();
   const [draft, setDraft] = useState(String(target));
   const committedRef = useRef(target);
@@ -54,7 +54,7 @@ export function DailyActivityTarget({ target }: { target: number }): React.React
       return;
     }
     persistedRef.current = next;
-    void invalidateDayLoad();
+    void invalidateActivityLists();
     if (revision !== revisionRef.current) return;
     router.refresh();
   }

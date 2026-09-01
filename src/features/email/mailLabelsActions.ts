@@ -8,6 +8,7 @@ import { guardCsrf } from "@/features/identity/actions/shared";
 import { SIG } from "@/features/identity/actions/sig";
 import type { AuthUser } from "@/features/permissions/types";
 import { createContext } from "@/server/trpc/context";
+import { type ActionResult, clientErr } from "@/types/actionResult";
 import { err, ok, type Result } from "@/types/result";
 import { createMailLabel } from "./mailLabelsRepo";
 
@@ -30,18 +31,18 @@ async function actor(csrfToken: string | null): Promise<Result<AuthUser, AppErro
 export async function createMailLabelAction(
   csrfToken: string | null,
   rawInput: unknown,
-): Promise<Result<{ key: string; name: string }, AppError>> {
+): Promise<ActionResult<{ key: string; name: string }>> {
   const who = await actor(csrfToken);
-  if (!who.ok) return who;
+  if (!who.ok) return clientErr(who.error);
   const parsed = createInput.safeParse(rawInput);
   if (!parsed.success) {
-    return err(
+    return clientErr(
       new AppError(ERROR_IDS.GMAIL_MAIL_LABEL_INPUT_INVALID, "invalid mail label input", {
         issues: parsed.error.issues,
       }),
     );
   }
   const created = await createMailLabel(db, parsed.data, SIG());
-  if (!created.ok) return created;
+  if (!created.ok) return clientErr(created.error);
   return ok({ key: created.value.key, name: created.value.name });
 }

@@ -14,7 +14,7 @@ export const DATABASE_URL: string = (() => {
   return v;
 })();
 
-export const WORKSPACE_DOMAIN = process.env.GOOGLE_WORKSPACE_DOMAIN ?? "example.com";
+const WORKSPACE_DOMAIN = process.env.GOOGLE_WORKSPACE_DOMAIN ?? "example.com";
 export const BASE_CURRENCY = process.env.BASE_CURRENCY ?? "USD";
 
 export const SMOKE_EMAIL = `smoke@${WORKSPACE_DOMAIN}`;

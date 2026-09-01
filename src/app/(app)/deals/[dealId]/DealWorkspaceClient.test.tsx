@@ -42,7 +42,11 @@ vi.mock("@/lib/trpc-client", () => ({
   trpc: {
     enrichment: { status: { useQuery: () => ({ data: { ready: false, providers: [] } }) } },
     useUtils: () => ({
-      activities: { listForEntity: { invalidate: () => {}, setData: () => {} } },
+      activities: {
+        listForEntity: { invalidate: () => {}, setData: () => {} },
+        dayLoad: { invalidate: () => Promise.resolve() },
+        listRows: { invalidate: () => Promise.resolve() },
+      },
       email: {
         listMessagesForDeal: { invalidate: () => {} },
         drafts: { listForDeal: { invalidate: () => {} } },

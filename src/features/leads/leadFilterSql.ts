@@ -31,10 +31,7 @@ export function requireValue(
 
 // A scalar column cannot take a list: drizzle expands an array into a tuple, which would bind
 // `($1, $2)` where a single value belongs.
-export function requireScalar(
-  op: LeadFilterOp,
-  value: string | number | string[],
-): string | number {
+function requireScalar(op: LeadFilterOp, value: string | number | string[]): string | number {
   if (Array.isArray(value)) {
     throw new AppError(ERROR_IDS.LEAD_FILTER_INVALID, "List value on a scalar leads field", { op });
   }

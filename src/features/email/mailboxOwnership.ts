@@ -23,7 +23,7 @@ export async function getActorMailbox(
   return { id: row.id, emailAddress: row.email_address };
 }
 
-export type MailboxStatus = (typeof EMAIL_ACCOUNT_STATUS)[number];
+type MailboxStatus = (typeof EMAIL_ACCOUNT_STATUS)[number];
 
 export interface ActorMailboxStatus {
   id: string;

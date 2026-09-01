@@ -34,8 +34,6 @@ const DEFAULT_SORT: ColumnSort<PersonSortField> = { field: "name", dir: "asc" };
 // depends on it) re-fire on every render instead of only on a real sort change.
 const EMPTY_ORG_NAMES: Record<string, string> = {};
 
-export type { PeopleListRow };
-
 export interface PeopleListProps {
   rows: PeopleListRow[];
   total: number;

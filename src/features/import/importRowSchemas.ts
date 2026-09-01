@@ -47,7 +47,6 @@ export const orgImportGroupSchema = z.object({
     })
     .optional(),
 });
-export type OrgImportGroup = z.infer<typeof orgImportGroupSchema>;
 
 // The person block of a deal row: the contact the deal belongs to, resolved by name or email.
 //
@@ -61,7 +60,6 @@ export const personImportGroupSchema = personCreateInput.pick({
   emails: true,
   phones: true,
 });
-export type PersonImportGroup = z.infer<typeof personImportGroupSchema>;
 
 // The 50k cap mirrors noteCreateInput. createNote does not re-parse its input, so a row whose note
 // body (a huge mapped cell, or a wide rowNoteFromUnmapped dump) exceeds it would otherwise insert
@@ -76,7 +74,6 @@ export const dealImportRowSchema = z.object({
   stage: z.string().trim().min(1).nullable().default(null),
   customFields: z.record(z.string(), z.unknown()).default({}),
 });
-export type DealImportRow = z.infer<typeof dealImportRowSchema>;
 
 // A lead's organization is no longer a lead-level "orgName" cell: it lives in the row's
 // organization group (orgImportGroupSchema) and is resolved to a real orgId at commit time via
@@ -94,7 +91,6 @@ export const leadImportRowSchema = z.object({
     .default(null),
   sourceChannelId: z.string().trim().min(1).max(255).nullable().default(null),
 });
-export type LeadImportRow = z.infer<typeof leadImportRowSchema>;
 
 // CSV due dates are rarely full ISO datetimes; normalize any Date-parseable string to one so
 // activityCreateInput's z.string().datetime() (strict ISO) accepts it downstream. An
@@ -119,4 +115,3 @@ export const activityImportRowSchema = z.object({
   // orgCreateInput declare so the value round-trips unchanged.
   customFields: z.record(z.string(), z.unknown()).default({}),
 });
-export type ActivityImportRow = z.infer<typeof activityImportRowSchema>;

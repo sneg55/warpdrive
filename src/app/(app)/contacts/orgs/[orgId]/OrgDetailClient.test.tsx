@@ -87,7 +87,10 @@ vi.mock("@/lib/trpc-client", () => ({
     email: { listMessagesForContact: { useQuery: () => ({ data: [], isError: false }) } },
     files: { listForEntity: { useQuery: () => ({ data: [] }) } },
     useUtils: () => ({
-      activities: { dayLoad: { invalidate: vi.fn(async () => {}) } },
+      activities: {
+        dayLoad: { invalidate: vi.fn(async () => {}) },
+        listRows: { invalidate: () => Promise.resolve() },
+      },
       collaboration: { listNotes: { invalidate: invalidateNotes } },
       contacts: {
         contactTimeline: { invalidate: invalidateContactTimeline },

@@ -19,7 +19,12 @@ const { invalidateDayLoad } = vi.hoisted(() => ({
 }));
 vi.mock("@/lib/trpc-client", () => ({
   trpc: {
-    useUtils: () => ({ activities: { dayLoad: { invalidate: invalidateDayLoad } } }),
+    useUtils: () => ({
+      activities: {
+        dayLoad: { invalidate: invalidateDayLoad },
+        listRows: { invalidate: () => Promise.resolve() },
+      },
+    }),
     activities: {
       listTypes: {
         useQuery: () => ({

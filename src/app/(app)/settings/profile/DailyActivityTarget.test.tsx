@@ -24,7 +24,14 @@ const { invalidateDayLoad } = vi.hoisted(() => ({
   invalidateDayLoad: vi.fn((): Promise<void> => Promise.resolve()),
 }));
 vi.mock("@/lib/trpc-client", () => ({
-  trpc: { useUtils: () => ({ activities: { dayLoad: { invalidate: invalidateDayLoad } } }) },
+  trpc: {
+    useUtils: () => ({
+      activities: {
+        dayLoad: { invalidate: invalidateDayLoad },
+        listRows: { invalidate: () => Promise.resolve() },
+      },
+    }),
+  },
 }));
 
 import { DailyActivityTarget } from "./DailyActivityTarget";

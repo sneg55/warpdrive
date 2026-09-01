@@ -3,10 +3,6 @@
 export const FIELD_INPUT =
   "w-full rounded-md border px-2.5 py-1.5 text-sm outline-none transition-[border-color,box-shadow,background-color] duration-150 ease-out focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50 motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-50";
 
-// Compact inline <select> used in toolbars (pipeline switcher, board sort field).
-export const SELECT_INPUT =
-  "rounded-md border bg-card px-2 py-1 text-sm text-foreground outline-none transition-[border-color,box-shadow,background-color] duration-150 ease-out focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50 motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-50";
-
 // A single bordered icon button (edit-pipeline pencil, board sort-direction toggle). Pairs a
 // muted resting color with a foreground hover.
 export const ICON_BUTTON =

@@ -14,7 +14,7 @@ export interface EngagementFilter {
   typeKey: string | null;
 }
 
-export interface EngagementTypeOption {
+interface EngagementTypeOption {
   key: string;
   name: string;
 }

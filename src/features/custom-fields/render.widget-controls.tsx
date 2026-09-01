@@ -8,7 +8,6 @@ import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
 import { TimePicker } from "@/components/ui/TimePicker";
 import { trpc } from "@/lib/trpc-client";
-import type { CustomFieldDef } from "@/types/customFields";
 import type { ControlProps } from "./render.widget-types";
 import { addrVal, numVal, rangeVal, strVal } from "./render.widget-types";
 
@@ -250,6 +249,3 @@ export function AddressControl({ def, value, onChange }: ControlProps) {
     </fieldset>
   );
 }
-
-// Unused import suppression: CustomFieldDef is used via ControlProps
-export type { CustomFieldDef };

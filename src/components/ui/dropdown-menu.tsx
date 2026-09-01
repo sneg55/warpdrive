@@ -10,8 +10,6 @@ import { cn } from "@/lib/utils";
 // "Use the design system, never reinvent". A lint rule bans new hand-rolled menus.
 export const DropdownMenu = DropdownMenuPrimitive.Root;
 export const DropdownMenuTrigger = DropdownMenuPrimitive.Trigger;
-export const DropdownMenuGroup = DropdownMenuPrimitive.Group;
-export const DropdownMenuPortal = DropdownMenuPrimitive.Portal;
 export const DropdownMenuSub = DropdownMenuPrimitive.Sub;
 export const DropdownMenuRadioGroup = DropdownMenuPrimitive.RadioGroup;
 

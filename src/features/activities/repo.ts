@@ -61,7 +61,7 @@ function resolveDoneAt(done: boolean): Date | null {
 
 // Multi-day guard: a provided endAt must not precede the start (dueAt). Both are ISO strings
 // at this point. No-op when either bound is absent (a dateless or open-ended activity).
-export function assertEndNotBeforeStart(
+function assertEndNotBeforeStart(
   dueAt: string | null,
   endAt: string | null,
 ): Result<undefined, AppError> {

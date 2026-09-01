@@ -9,6 +9,23 @@ import type { GmailClient } from "./gmailClient";
 import { buildMime, deriveMessageId, type MimeAttachment, toRawBase64 } from "./mime";
 import { claim, loadAttempt, loadSendInputs, type SendPayload, stamp } from "./outboxClaim";
 import { markSent, reconcile, type SendOutcome } from "./outboxReconcile";
+import { type ReplyThreadHeaders, replyThreadHeaders } from "./replyHeaders";
+
+// Resolve the RFC 5322 threading headers for a reply. The parent's Message-ID lives only in
+// Gmail (we never stored the header), so it costs one metadata read per reply. A failed read
+// degrades to Gmail-side threading via the threadId rather than failing an otherwise good send.
+async function loadReplyThreadHeaders(
+  gmail: GmailClient,
+  parentGmailMessageId: string | null,
+  gmailThreadId: string | null,
+  signal: AbortSignal,
+): Promise<ReplyThreadHeaders> {
+  if (gmailThreadId === null || parentGmailMessageId === null) return {};
+  const parent = await gmail.getMessage({ id: parentGmailMessageId, signal });
+  signal.throwIfAborted();
+  if (!parent.ok) return {};
+  return replyThreadHeaders(parent.value);
+}
 
 // Classify a sendRaw failure. A definite pre-acceptance rejection is an HTTP 4xx: Gmail
 // rejected the request and did NOT accept the message, so a retry is a safe fresh send.
@@ -115,21 +132,31 @@ export async function processSendAttempt(
     });
   }
 
-  // (d) stamp send_started_at and COMMIT before any Gmail I/O. A lost stamp race is
+  // (d) everything fallible that is NOT the send itself happens BEFORE the stamp. Once
+  // send_started_at is committed a later failure can no longer be treated as definitely-unsent:
+  // it routes into reconcile, which searches for a Message-ID that was never sent and parks the
+  // attempt as needs_review. So load the inputs and resolve the reply's threading headers here.
+  const inputs = await loadSendInputs(db, existing.id, args.accountId);
+  if (inputs === undefined) return err(new AppError("E_DB_002", "send inputs not found", args));
+  args.signal.throwIfAborted();
+  const { from, payload, gmailThreadId, parentGmailMessageId } = inputs;
+
+  const threading = await loadReplyThreadHeaders(
+    args.gmail,
+    parentGmailMessageId,
+    gmailThreadId,
+    args.signal,
+  );
+
+  // (e) stamp send_started_at and COMMIT before the Gmail send. A lost stamp race is
   // expected contention (E_GMAIL_008), not an API failure.
   const stamped = await stamp(db, existing.id, token, args.signal);
   if (!stamped) return err(new AppError("E_GMAIL_008", "stamp race lost", { id: existing.id }));
 
-  // (e) build MIME with the FIXED Message-ID, then send with NO DB tx held open.
-  const inputs = await loadSendInputs(db, existing.id, args.accountId);
-  if (inputs === undefined) return err(new AppError("E_DB_002", "send inputs not found", args));
-  // An aborted request must not proceed to actually send.
-  args.signal.throwIfAborted();
-  const { from, payload } = inputs;
-
   const attResult = await fetchAttachmentBytes(payload, args.storage, args.signal);
   if (!attResult.ok) return attResult;
 
+  // (f) build MIME with the FIXED Message-ID, then send with NO DB tx held open.
   const mime = buildMime({
     from,
     to: payload.to,
@@ -139,9 +166,15 @@ export async function processSendAttempt(
     html: payload.html,
     text: payload.text,
     messageId: existing.message_id_header,
+    inReplyTo: threading.inReplyTo,
+    references: threading.references,
     attachments: attResult.value.length > 0 ? attResult.value : undefined,
   });
-  const sent = await args.gmail.sendRaw({ rawBase64: toRawBase64(mime), signal: args.signal });
+  const sent = await args.gmail.sendRaw({
+    rawBase64: toRawBase64(mime),
+    threadId: gmailThreadId ?? undefined,
+    signal: args.signal,
+  });
   args.signal.throwIfAborted();
 
   if (!sent.ok) {

@@ -41,7 +41,7 @@ export type ColumnMapping = z.infer<typeof columnMappingSchema>;
 export type ColumnMappingInput = z.input<typeof columnMappingSchema>;
 
 // A column choice with its entity resolved. This, not ColumnMapping, is what mapRow consumes.
-export interface ResolvedColumnChoice {
+interface ResolvedColumnChoice {
   entity: MappableEntity;
   field: string;
   isCustom: boolean;

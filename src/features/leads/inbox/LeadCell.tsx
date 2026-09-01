@@ -8,7 +8,7 @@ import { formatCurrency } from "@/lib/formatCurrency";
 import type { LeadRow } from "../leadRepo";
 import { nextActivityState } from "./nextActivityState";
 
-export function fmtDate(d: Date | string | null): string {
+function fmtDate(d: Date | string | null): string {
   if (d === null) return "-";
   const dt = typeof d === "string" ? new Date(d) : d;
   return dt.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });

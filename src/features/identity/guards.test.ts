@@ -33,8 +33,22 @@ describe("identity self-escalation guards (permissions spec 5.2)", () => {
     expect(canGrantFlags(mgr(), ["deal.create"]).ok).toBe(true);
   });
   test("manager cannot reassign their OWN permission set", () => {
-    expect(canAssignPermissionSet(mgr(), { targetUserId: "actor" }).ok).toBe(false);
-    expect(canAssignPermissionSet(mgr(), { targetUserId: "other" }).ok).toBe(true);
+    expect(canAssignPermissionSet(mgr(), { targetUserId: "actor", targetIsAdmin: false }).ok).toBe(
+      false,
+    );
+    expect(canAssignPermissionSet(mgr(), { targetUserId: "other", targetIsAdmin: false }).ok).toBe(
+      true,
+    );
+  });
+  test("manager cannot assign a permission set to an admin account", () => {
+    expect(canAssignPermissionSet(mgr(), { targetUserId: "other", targetIsAdmin: true }).ok).toBe(
+      false,
+    );
+  });
+  test("an admin can assign a permission set to another admin", () => {
+    expect(
+      canAssignPermissionSet(actor("admin"), { targetUserId: "other", targetIsAdmin: true }).ok,
+    ).toBe(true);
   });
   test("manager cannot add themselves to a group, nor manage a group they belong to", () => {
     expect(

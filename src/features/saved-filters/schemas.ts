@@ -2,8 +2,6 @@ import { z } from "zod";
 import { ORG_FILTER_CONFIG, PERSON_FILTER_CONFIG } from "@/features/contacts/contactFilterConfig";
 import { LEAD_CONDITION_CONFIG } from "@/features/leads/leadFilterFields";
 import { buildFilterSchema, conditionValue, refineCondition } from "@/schemas/filterCondition";
-// Field/op/sort allow-list lives in a zod-free module so the client filter builder can import it
-// without pulling zod; re-exported here so existing importers of saved-filters/schemas.ts resolve.
 import {
   DEAL_CONDITION_CONFIG,
   FILTER_FIELDS,
@@ -12,7 +10,7 @@ import {
   SORT_DIRS,
 } from "./filterFields";
 
-export { FILTER_FIELDS, FILTER_OPS, OPS_BY_FIELD, SORT_DIRS };
+export { FILTER_FIELDS, OPS_BY_FIELD };
 
 export const filterCondition = z
   .object({
@@ -92,14 +90,8 @@ export function updateSavedFilterInputFor(targetEntity: SavedFilterTargetEntity)
   });
 }
 
-export const updateSavedFilterInput = updateSavedFilterInputFor("deal");
-
 // combinator stays optional on the type even though the schema fills it, so a definition built by
 // hand (a stored row, a test, an inline builder) reads as AND without restating the default.
 export type FilterDefinition = Omit<z.infer<typeof filterDefinition>, "combinator"> & {
   combinator?: "and" | "or";
 };
-// Pre-parse shapes: both are the argument a caller hands the action, which safeParses it and fills
-// the defaults (combinator, isShared).
-export type SaveFilterInput = z.input<typeof saveFilterInput>;
-export type UpdateSavedFilterInput = z.input<typeof updateSavedFilterInput>;

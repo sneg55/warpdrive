@@ -25,7 +25,7 @@ type GmailPart = NonNullable<GmailMessage["payload"]>;
 // name and bare address. The address is what we match contacts on and fall back to for display;
 // the name is what the list/reader shows. Bodies of the header are trimmed; a quoted name is
 // unquoted. No angle brackets means the whole value is the address (name null).
-export function parseAddress(raw: string): { name: string | null; email: string } {
+function parseAddress(raw: string): { name: string | null; email: string } {
   const value = raw.trim();
   const open = value.lastIndexOf("<");
   const close = value.lastIndexOf(">");

@@ -12,11 +12,19 @@ const { completeActivityAction, deleteActivityAction } = vi.hoisted(() => ({
 vi.mock("./actions", () => ({ completeActivityAction, deleteActivityAction }));
 vi.mock("@/utils/csrfCookie", () => ({ readCsrfToken: () => "csrf" }));
 
-const { invalidateDayLoad } = vi.hoisted(() => ({
+const { invalidateDayLoad, invalidateListRows } = vi.hoisted(() => ({
   invalidateDayLoad: vi.fn(() => Promise.resolve()),
+  invalidateListRows: vi.fn(() => Promise.resolve()),
 }));
 vi.mock("@/lib/trpc-client", () => ({
-  trpc: { useUtils: () => ({ activities: { dayLoad: { invalidate: invalidateDayLoad } } }) },
+  trpc: {
+    useUtils: () => ({
+      activities: {
+        dayLoad: { invalidate: invalidateDayLoad },
+        listRows: { invalidate: invalidateListRows },
+      },
+    }),
+  },
 }));
 
 import { useActivityBulkActions } from "./useActivityBulkActions";
@@ -41,18 +49,17 @@ function makeSelection(ids: readonly string[]): RowSelection {
 }
 
 function renderActions(ids: readonly string[]) {
-  const refetch = vi.fn(() => Promise.resolve());
-  const { result } = renderHook(() => useActivityBulkActions(makeSelection(ids), refetch));
-  return { result, refetch };
+  const { result } = renderHook(() => useActivityBulkActions(makeSelection(ids)));
+  return { result };
 }
 
 describe("useActivityBulkActions", () => {
-  it("deletes every selected activity and refetches", async () => {
-    const { result, refetch } = renderActions(["a1", "a2"]);
+  it("deletes every selected activity and refreshes the list once", async () => {
+    const { result } = renderActions(["a1", "a2"]);
     await act(() => result.current.bulkDelete());
     expect(deleteActivityAction).toHaveBeenCalledTimes(2);
     expect(deleteActivityAction).toHaveBeenCalledWith({ id: "a1" }, "csrf");
-    expect(refetch).toHaveBeenCalledTimes(1);
+    expect(invalidateListRows).toHaveBeenCalledTimes(1);
     expect(result.current.error).toBeNull();
   });
 
@@ -68,6 +75,7 @@ describe("useActivityBulkActions", () => {
     await act(() => result.current.bulkDelete());
     expect(result.current.error).not.toBeNull();
     expect(invalidateDayLoad).not.toHaveBeenCalled();
+    expect(invalidateListRows).not.toHaveBeenCalled();
     deleteActivityAction.mockResolvedValue({ ok: true });
   });
 
@@ -78,12 +86,12 @@ describe("useActivityBulkActions", () => {
     expect(invalidateDayLoad).toHaveBeenCalledTimes(1);
   });
 
-  it("marks every selected activity done and refetches", async () => {
-    const { result, refetch } = renderActions(["a1", "a2"]);
+  it("marks every selected activity done and refreshes the list once", async () => {
+    const { result } = renderActions(["a1", "a2"]);
     await act(() => result.current.bulkMarkDone());
     expect(completeActivityAction).toHaveBeenCalledWith({ id: "a1", done: true }, "csrf");
     expect(completeActivityAction).toHaveBeenCalledTimes(2);
-    expect(refetch).toHaveBeenCalledTimes(1);
+    expect(invalidateListRows).toHaveBeenCalledTimes(1);
   });
 
   it("invalidates the day load once for a whole successful bulk mark-done", async () => {
@@ -93,10 +101,10 @@ describe("useActivityBulkActions", () => {
   });
 
   it("does nothing when the selection is empty", async () => {
-    const { result, refetch } = renderActions([]);
+    const { result } = renderActions([]);
     await act(() => result.current.bulkDelete());
     expect(deleteActivityAction).not.toHaveBeenCalled();
-    expect(refetch).not.toHaveBeenCalled();
+    expect(invalidateListRows).not.toHaveBeenCalled();
     expect(invalidateDayLoad).not.toHaveBeenCalled();
   });
 });

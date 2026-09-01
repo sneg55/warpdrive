@@ -12,12 +12,12 @@ import path from "node:path";
 // The last alternative matches direct testcontainers use. Without it a file that builds its own
 // container instead of going through the shared harness (src/db/migrate.test.ts did) silently lands
 // in the unit lane, where it only passes because the runner image happens to ship Docker.
-export const DB_MARKER =
+const DB_MARKER =
   /@\/test\/db|@\/db\/testing|makeTestDb|withTestDb|test-helpers|testHarness|@testcontainers\//;
 
 // Walk the repo (skipping node_modules and dot-dirs) so root-level meta-tests like
 // eslint.config.test.ts are classified too, matching the old project-wide glob.
-export function collectTests(dir: string, acc: string[] = []): string[] {
+function collectTests(dir: string, acc: string[] = []): string[] {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) {

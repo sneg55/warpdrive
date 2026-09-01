@@ -9,7 +9,7 @@ import { type SQL, sql } from "drizzle-orm";
 import type { PermSetUser } from "@/features/permissions/effective";
 import { dealVisibilityPredicate, type VisibilityCtx } from "@/features/permissions/sql";
 
-export function toVisibilityCtx(actor: PermSetUser): VisibilityCtx {
+function toVisibilityCtx(actor: PermSetUser): VisibilityCtx {
   return {
     userId: actor.id,
     isAdmin: actor.type === "admin",

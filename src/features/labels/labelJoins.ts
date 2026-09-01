@@ -31,13 +31,6 @@ export function labelJoin(target: LabelTarget): LabelJoin {
   }
 }
 
-export const ALL_LABEL_JOINS: LabelJoin[] = [
-  labelJoin("deal"),
-  labelJoin("person"),
-  labelJoin("organization"),
-  labelJoin("lead"),
-];
-
 // The entity table + its denormalized `labels` text[] column, per target. This array is what the
 // list cells, board cards and filters actually read, so any question about "is this label in use"
 // has to be answered here, not from the join tables alone.

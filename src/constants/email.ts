@@ -20,8 +20,7 @@ export const TOKEN_REFRESH_SKEW_SECONDS = 60;
 export const CLAIM_LEASE_SECONDS = 120;
 // Reconcile settling window for accepted-unknown sends (ops spec B6).
 export const RECONCILE_WINDOW_MS = 600_000;
-// Quota backoff (ops spec B3): 2s start, double to 15 min cap.
+// Quota backoff (ops spec B3): 2s start.
 export const BACKOFF_START_MS = 2_000;
-export const BACKOFF_CAP_MS = 900_000;
 // In-mail search input debounce (InboxSearchBar): batches keystrokes into one query.
 export const INBOX_SEARCH_DEBOUNCE_MS = 250;

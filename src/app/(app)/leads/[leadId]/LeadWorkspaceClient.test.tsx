@@ -84,7 +84,10 @@ vi.mock("@/lib/trpc-client", () => ({
     // LeadHeader invalidates the inbox list after a delete, so it reads utils on every render.
     useUtils: () => ({
       lead: { list: { invalidate: vi.fn(async () => {}) } },
-      activities: { dayLoad: { invalidate: vi.fn(async () => {}) } },
+      activities: {
+        dayLoad: { invalidate: vi.fn(async () => {}) },
+        listRows: { invalidate: () => Promise.resolve() },
+      },
     }),
   },
 }));

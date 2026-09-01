@@ -3,6 +3,7 @@ import type { Result } from "./result";
 
 export interface ClientError {
   id: string;
+  message?: never;
 }
 
 export type ActionResult<Ok> = Result<Ok, ClientError>;

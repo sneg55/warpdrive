@@ -8,6 +8,7 @@ import { guardCsrf } from "@/features/identity/actions/shared";
 import { SIG } from "@/features/identity/actions/sig";
 import type { AuthUser } from "@/features/permissions/types";
 import { createContext } from "@/server/trpc/context";
+import { type ActionResult, clientErr, toClientResult } from "@/types/actionResult";
 import { err, ok, type Result } from "@/types/result";
 import { setThreadVisibility } from "./threadVisibility";
 
@@ -28,20 +29,22 @@ async function actor(csrfToken: string | null): Promise<Result<AuthUser, AppErro
 export async function setThreadVisibilityAction(
   csrfToken: string | null,
   rawInput: unknown,
-): Promise<Result<{ threadId: string }, AppError>> {
+): Promise<ActionResult<{ threadId: string }>> {
   const who = await actor(csrfToken);
-  if (!who.ok) return who;
+  if (!who.ok) return clientErr(who.error);
   const parsed = visibilityInput.safeParse(rawInput);
   if (!parsed.success) {
-    return err(
+    return clientErr(
       new AppError(ERROR_IDS.GMAIL_VISIBILITY_INPUT_INVALID, "invalid visibility input", {
         issues: parsed.error.issues,
       }),
     );
   }
-  return setThreadVisibility(
-    db,
-    { actor: who.value, threadId: parsed.data.threadId, visibility: parsed.data.visibility },
-    SIG(),
+  return toClientResult(
+    await setThreadVisibility(
+      db,
+      { actor: who.value, threadId: parsed.data.threadId, visibility: parsed.data.visibility },
+      SIG(),
+    ),
   );
 }

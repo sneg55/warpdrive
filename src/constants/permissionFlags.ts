@@ -40,7 +40,6 @@ export const TEAM_SCOPED_FLAGS = [
   "deal.changeOwner",
 ] as const;
 
-export type GlobalFlag = (typeof GLOBAL_FLAGS)[number];
 export type OwnershipCapability = (typeof OWNERSHIP_FLAGS)[number];
 export type TeamScopedCapability = (typeof TEAM_SCOPED_FLAGS)[number];
 

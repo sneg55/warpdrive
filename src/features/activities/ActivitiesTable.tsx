@@ -55,7 +55,7 @@ export function ActivitiesTable(): React.ReactNode {
   const rowsQ = trpc.activities.listRows.useQuery({ ...filter, sort: effective });
   const typesQ = trpc.activities.listTypes.useQuery();
   const ownersQ = trpc.identity.assignableUsers.useQuery();
-  const { error, bulkMarkDone, bulkDelete } = useActivityBulkActions(selection, rowsQ.refetch);
+  const { error, bulkMarkDone, bulkDelete } = useActivityBulkActions(selection);
   const rows = useMemo(() => rowsQ.data ?? [], [rowsQ.data]);
   // Cap how many rows are painted; the count header, select-all, and bulk actions all operate
   // over the full `rows` set, so this bounds render cost only. listRows is pagination-free, so
@@ -221,18 +221,12 @@ export function ActivitiesTable(): React.ReactNode {
         </p>
       )}
 
-      {modalOpen && (
-        <AddActivityModal
-          onClose={() => setModalOpen(false)}
-          onCreated={() => void rowsQ.refetch()}
-        />
-      )}
+      {modalOpen && <AddActivityModal onClose={() => setModalOpen(false)} />}
 
       {selected !== null && (
         <ActivityEditModal
           activity={toEditableActivity(selected, typeIdByKey)}
           onClose={() => setSelected(null)}
-          onSaved={() => void rowsQ.refetch()}
         />
       )}
     </div>

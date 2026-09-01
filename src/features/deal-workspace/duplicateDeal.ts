@@ -21,7 +21,6 @@ import { publishBoardEvent } from "@/server/realtime/events";
 import { err, ok, type Result } from "@/types/result";
 
 export const duplicateDealInput = z.object({ dealId: z.string().uuid() });
-export type DuplicateDealInput = z.infer<typeof duplicateDealInput>;
 
 // Suffix appended to the cloned title (Pipedrive parity: "Deal (copy)").
 const COPY_SUFFIX = " (copy)";

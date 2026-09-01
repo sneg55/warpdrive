@@ -6,7 +6,7 @@ import { Checkbox } from "@/components/ui/Checkbox";
 import { completeActivityAction, deleteActivityAction } from "@/features/activities/actions";
 import type { CalendarActivity } from "@/features/activities/calendar";
 import { ActivityTypeIcon } from "@/features/activities/typeIcons";
-import { useInvalidateDayLoad } from "@/features/activities/useInvalidateDayLoad";
+import { useInvalidateActivityLists } from "@/features/activities/useInvalidateActivityLists";
 import { formatUserName } from "@/features/identity/formatUserName";
 import { trpc } from "@/lib/trpc-client";
 import { readCsrfToken } from "@/utils/csrfCookie";
@@ -51,7 +51,7 @@ export function ActivityCard({
   const [done, setDone] = useState(activity.done);
   const [busy, setBusy] = useState(false);
   const utils = trpc.useUtils();
-  const invalidateDayLoad = useInvalidateDayLoad();
+  const invalidateActivityLists = useInvalidateActivityLists();
   const reportError = useDealActionError();
 
   // Every listForEntity timeline this activity appears in (deal / person / org pages). Flipping
@@ -84,6 +84,7 @@ export function ActivityCard({
     }
     const res = await completeActivityAction({ id: activity.id, done: next }, readCsrfToken());
     if (res.ok) {
+      await invalidateActivityLists();
       onChanged?.(); // reconcile with server truth (real doneAt, ordering)
     } else {
       // Roll the optimistic move back by refetching, and explain the failure instead of a silent
@@ -93,7 +94,7 @@ export function ActivityCard({
       reportError(res.error.id);
     }
     setBusy(false);
-  }, [busy, done, activity.id, entityKeys, utils, onChanged, reportError]);
+  }, [busy, done, activity.id, entityKeys, utils, invalidateActivityLists, onChanged, reportError]);
 
   // Delete is not optimistic: the row leaves every timeline cache only once the server has
   // accepted it, so a denied delete leaves the card exactly where it was.
@@ -107,13 +108,13 @@ export function ActivityCard({
           old === undefined ? old : old.filter((a) => a.id !== activity.id),
         );
       }
-      await invalidateDayLoad();
+      await invalidateActivityLists();
       onChanged?.();
     } else {
       reportError(res.error.id);
     }
     setBusy(false);
-  }, [busy, activity.id, entityKeys, utils, invalidateDayLoad, onChanged, reportError]);
+  }, [busy, activity.id, entityKeys, utils, invalidateActivityLists, onChanged, reportError]);
 
   return (
     <div className="overflow-hidden rounded-md border bg-card transition-colors hover:border-ring/40">

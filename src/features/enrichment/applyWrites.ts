@@ -5,10 +5,13 @@ import { eq } from "drizzle-orm";
 import { AppError, ERROR_IDS } from "@/constants/errorIds";
 import type { Db } from "@/db/client";
 import { organizations } from "@/db/schema";
-import type { EnrichmentRunRow } from "@/db/schema/enrichment";
 import { patchContactCustomField } from "@/features/contacts/contactCustomFieldPatch";
 import { updateOrg } from "@/features/contacts/orgsRepo";
-import { type ContactActor, updatePerson } from "@/features/contacts/personsRepo";
+import {
+  type ContactActor,
+  type PersonEditAuthority,
+  updatePerson,
+} from "@/features/contacts/personsRepo";
 import { orgUpdateInput } from "@/features/contacts/schemas";
 import { err, ok, type Result } from "@/types/result";
 import type { ApplyInput } from "./applyService";
@@ -20,6 +23,11 @@ import { parsePersonPatch } from "./personPatchGuard";
 import { type AppliedValues, type CustomEntry, planOrgUpdate, planPersonUpdate } from "./plan";
 import type { ProviderOutcome } from "./providers/types";
 import type { ResolvedMapping } from "./types";
+
+export interface ApplySubject {
+  entityId: string;
+  outcomes: ProviderOutcome[];
+}
 
 const COMPANY_DOMAIN_KEY = "person.companyDomain";
 
@@ -40,12 +48,13 @@ interface Outcome {
 export async function applyToPerson(
   tx: Db,
   actor: ContactActor,
-  run: EnrichmentRunRow,
+  subject: ApplySubject,
   input: ApplyInput,
   mappings: readonly ResolvedMapping[],
   signal: AbortSignal,
+  authority: PersonEditAuthority = "requires-contact-edit",
 ): Promise<Result<Outcome, AppError>> {
-  const personId = run.entityId;
+  const personId = subject.entityId;
   const person = await loadPerson(tx, personId, signal);
   if (person === null) return err(new AppError(ERROR_IDS.CONTACT_NOT_FOUND, "not found", {}));
 
@@ -72,7 +81,7 @@ export async function applyToPerson(
       tx,
       {
         name: planned.value.orgCandidateName,
-        domain: candidateDomain(run.outcomes, planned.value.orgCandidateName),
+        domain: candidateDomain(subject.outcomes, planned.value.orgCandidateName),
       },
       signal,
       actor,
@@ -109,11 +118,19 @@ export async function applyToPerson(
         new AppError(ERROR_IDS.ENRICH_INPUT_INVALID, "planned patch failed validation", {}),
       );
     }
-    const result = await updatePerson(tx, actor, parsed.value, signal);
+    const result = await updatePerson(tx, actor, parsed.value, signal, authority);
     if (!result.ok) return result;
   }
 
-  const custom = await writeCustomEntries(tx, actor, "person", personId, planned.value, signal);
+  const custom = await writeCustomEntries(
+    tx,
+    actor,
+    "person",
+    personId,
+    planned.value,
+    signal,
+    authority,
+  );
   if (!custom.ok) return custom;
   return ok({
     appliedFields,
@@ -154,6 +171,7 @@ async function writeCustomEntries(
   id: string,
   planned: { customEntries: readonly CustomEntry[] },
   signal: AbortSignal,
+  authority: PersonEditAuthority = "requires-contact-edit",
 ): Promise<Result<void, AppError>> {
   for (const entry of planned.customEntries) {
     const patched = await patchContactCustomField(
@@ -161,6 +179,7 @@ async function writeCustomEntries(
       actor,
       { entity, id, key: entry.key, value: entry.value },
       signal,
+      authority,
     );
     if (!patched.ok) return patched;
   }
@@ -170,12 +189,12 @@ async function writeCustomEntries(
 export async function applyToOrg(
   tx: Db,
   actor: ContactActor,
-  run: EnrichmentRunRow,
+  subject: ApplySubject,
   input: ApplyInput,
   mappings: readonly ResolvedMapping[],
   signal: AbortSignal,
 ): Promise<Result<Outcome, AppError>> {
-  const orgId = run.entityId;
+  const orgId = subject.entityId;
   const org = await loadOrg(tx, orgId, signal);
   if (org === null) return err(new AppError(ERROR_IDS.CONTACT_NOT_FOUND, "not found", {}));
 

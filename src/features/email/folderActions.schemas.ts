@@ -24,5 +24,3 @@ export const saveDraftInput = z.object({
 export const deleteDraftInput = z.object({ draftId: z.string().uuid() });
 
 export const cancelOutboxInput = z.object({ attemptId: z.string().uuid() });
-
-export type SaveDraftInput = z.infer<typeof saveDraftInput>;

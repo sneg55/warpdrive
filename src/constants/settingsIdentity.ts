@@ -50,6 +50,7 @@ const RAW_ERROR_TO_KEY: Record<string, ErrorKey> = {
   "permissions.manage required": "permission",
   "admin required to change admin role": "permission",
   "admin required to deactivate users": "permission",
+  "admin required to assign an admin's permission set": "permission",
   "admin required to reactivate users": "reactivateAdmin",
   "missing csrf token": "session",
   "csrf token mismatch": "session",

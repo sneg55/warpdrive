@@ -13,7 +13,7 @@ import { enqueueBatchJob } from "./jobRunner";
 
 const IMPORT_TARGETS = ["person", "organization", "deal", "lead", "activity"] as const;
 
-export const requestImportUploadInput = z.object({
+const requestImportUploadInput = z.object({
   targetEntity: z.enum(IMPORT_TARGETS),
   filename: z.string().min(1).max(255),
   contentType: z.literal("text/csv"),
@@ -23,7 +23,7 @@ export type RequestImportUploadInput = z.infer<typeof requestImportUploadInput>;
 
 // Import CSVs get their own object namespace (not an entity attachment). buildObjectKey
 // accepts a free-form entityType string, so no coupling to the files FileEntityType enum.
-export function buildImportObjectKey(batchId: string, fileId: string, filename: string): string {
+function buildImportObjectKey(batchId: string, fileId: string, filename: string): string {
   return buildObjectKey({ entityType: "import", entityId: batchId, fileId, filename });
 }
 
@@ -97,6 +97,6 @@ export async function confirmImportUpload(
   return ok({ batchId: args.batchId });
 }
 
-export async function enqueuePrepareJob(batchId: string, signal: AbortSignal): Promise<void> {
+async function enqueuePrepareJob(batchId: string, signal: AbortSignal): Promise<void> {
   await enqueueBatchJob(PGBOSS_QUEUE_IMPORT_PREPARE, batchId, signal);
 }

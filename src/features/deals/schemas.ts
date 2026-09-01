@@ -83,8 +83,6 @@ export const dealMoveInput = z.object({
   expectedUpdatedAt: z.string().datetime(), // ISO datetime; compare-and-swap precondition
 });
 
-// Bulk stage change: a set of deal ids moved to one target stage. Validated at the
-// router boundary; the bulk action then applies §6.5 two-stage visibility per row.
 export const bulkStageInput = z.object({
   dealIds: z.array(z.string().uuid()).min(1).max(500),
   toStageId: z.string().uuid(),

@@ -12,7 +12,7 @@ import { ActivityDatePicker } from "./ActivityDatePicker";
 import { ActivityTypeIcon } from "./ActivityTypeIcon";
 import { completeActivityAction, deleteActivityAction, editActivityAction } from "./actions";
 import { buildActivityPatch, type EditableActivity, isoToLocalParts } from "./activityEditPatch";
-import { useInvalidateDayLoad } from "./useInvalidateDayLoad";
+import { useInvalidateActivityLists } from "./useInvalidateActivityLists";
 
 const NO_PRIORITY_LABEL = "No priority";
 
@@ -21,12 +21,12 @@ export type { EditableActivity } from "./activityEditPatch";
 interface Props {
   activity: EditableActivity;
   onClose: () => void;
-  onSaved: () => void;
+  onSaved?: () => void;
 }
 
 export function ActivityEditModal({ activity, onClose, onSaved }: Props): React.ReactNode {
   const typesQ = trpc.activities.listTypes.useQuery();
-  const invalidateDayLoad = useInvalidateDayLoad();
+  const invalidateActivityLists = useInvalidateActivityLists();
   const types = typesQ.data ?? [];
   const initialParts = isoToLocalParts(activity.dueAtIso, activity.allDay);
 
@@ -63,9 +63,9 @@ export function ActivityEditModal({ activity, onClose, onSaved }: Props): React.
       setError(`Could not save activity (${r.error.id})`);
       return;
     }
-    await invalidateDayLoad();
+    await invalidateActivityLists();
     setPending(false);
-    onSaved();
+    onSaved?.();
     onClose();
   }
 
@@ -78,9 +78,9 @@ export function ActivityEditModal({ activity, onClose, onSaved }: Props): React.
       setError(`Could not delete activity (${r.error.id})`);
       return;
     }
-    await invalidateDayLoad();
+    await invalidateActivityLists();
     setPending(false);
-    onSaved();
+    onSaved?.();
     onClose();
   }
 
@@ -94,10 +94,10 @@ export function ActivityEditModal({ activity, onClose, onSaved }: Props): React.
       setError(`Could not update activity (${r.error.id})`);
       return;
     }
-    await invalidateDayLoad();
+    await invalidateActivityLists();
     setPending(false);
     setDoneNow(next);
-    onSaved();
+    onSaved?.();
   }
 
   return (

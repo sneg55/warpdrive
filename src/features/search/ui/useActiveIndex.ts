@@ -2,7 +2,7 @@
 import { useMemo, useState } from "react";
 import type { SearchResult, SearchResults } from "@/types/search";
 
-export type ResultKind = "deal" | "person" | "organization" | "lead";
+type ResultKind = "deal" | "person" | "organization" | "lead";
 
 export interface FlatResult {
   kind: ResultKind;

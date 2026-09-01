@@ -14,9 +14,7 @@ import { type TrackingEvent, trackingForMessages } from "./trackingReads";
 // Template and signature reads live in emailAuthoringReads.ts (200-line cap split); the paged
 // Inbox list lives in inboxList.ts and the shared row shape in threadShape.ts (300-line cap split).
 // All re-exported here so callers keep a single import point.
-export type { TemplateDetail } from "./emailAuthoringReads";
 export { getTemplate, listSignatures, listTemplates } from "./emailAuthoringReads";
-export type { InboxCursor, InboxPage } from "./inboxList";
 export { listInbox } from "./inboxList";
 export type { InboxFilter, InboxThread } from "./threadShape";
 export { toInboxThread } from "./threadShape";

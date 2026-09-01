@@ -35,7 +35,7 @@ export interface EngagementTimelineOptions {
   maxRows?: number;
 }
 
-export interface EngagementMarker {
+interface EngagementMarker {
   id: string;
   typeKey: string;
   subject: string;
@@ -70,7 +70,7 @@ function monthKey(y: number, mZeroBased: number): string {
   return `${y}-${String(mZeroBased + 1).padStart(2, "0")}`;
 }
 
-export function monthKeysForPeriod(now: Date, monthsBack: number): string[] {
+function monthKeysForPeriod(now: Date, monthsBack: number): string[] {
   const y = now.getUTCFullYear();
   const m = now.getUTCMonth();
   const keys: string[] = [];

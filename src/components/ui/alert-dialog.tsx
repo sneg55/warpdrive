@@ -10,9 +10,9 @@ import { cn } from "@/lib/utils";
 // See CLAUDE.md "Use the design system, never reinvent".
 export const AlertDialog = AlertDialogPrimitive.Root;
 export const AlertDialogTrigger = AlertDialogPrimitive.Trigger;
-export const AlertDialogPortal = AlertDialogPrimitive.Portal;
+const AlertDialogPortal = AlertDialogPrimitive.Portal;
 
-export const AlertDialogOverlay = forwardRef<
+const AlertDialogOverlay = forwardRef<
   React.ElementRef<typeof AlertDialogPrimitive.Overlay>,
   React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Overlay>
 >(({ className, ...props }, ref) => (

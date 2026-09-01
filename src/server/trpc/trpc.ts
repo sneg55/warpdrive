@@ -5,7 +5,6 @@ import type { AppContext } from "./context";
 const t = initTRPC.context<AppContext>().create({ transformer: superjson });
 
 export const router = t.router;
-export const publicProcedure = t.procedure;
 
 // Rejects unauthenticated / dead-session / deactivated callers (rule 0).
 export const protectedProcedure = t.procedure.use(({ ctx, next }) => {

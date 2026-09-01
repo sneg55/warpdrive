@@ -17,26 +17,22 @@ const OWNERSHIP_ACTIONS = [
 // activity.complete is record-scoped and gated by the assignee exception or activity.edit flags.
 const RECORD_SCOPED_ONLY = ["activity.complete"] as const;
 
-const GLOBAL_ACTIONS = [
-  "deal.create",
-  "contact.create",
-  "activity.create",
-  "bulk.edit",
-  "data.import",
-  "data.export",
-  "filter.share",
-  "stats.viewOthers",
-  "pipeline.manage",
-  "metadata.manage",
-  "goals.manage",
-  "permissions.manage",
-] as const;
+type GlobalAction =
+  | "deal.create"
+  | "contact.create"
+  | "activity.create"
+  | "bulk.edit"
+  | "data.import"
+  | "data.export"
+  | "filter.share"
+  | "stats.viewOthers"
+  | "pipeline.manage"
+  | "metadata.manage"
+  | "goals.manage"
+  | "permissions.manage";
 
 export type OwnershipAction = (typeof OWNERSHIP_ACTIONS)[number];
-export type Action =
-  | OwnershipAction
-  | (typeof RECORD_SCOPED_ONLY)[number]
-  | (typeof GLOBAL_ACTIONS)[number];
+export type Action = OwnershipAction | (typeof RECORD_SCOPED_ONLY)[number] | GlobalAction;
 
 // Team-scoped subset: actions a team manager may perform on a managed member's record (a _team
 // flag variant). Mirrors TEAM_SCOPED_FLAGS; excludes delete/merge/share by design.
@@ -50,8 +46,6 @@ const TEAM_SCOPED_ACTIONS = [
 const teamScopedSet = new Set<string>(TEAM_SCOPED_ACTIONS);
 const ownershipSet = new Set<string>(OWNERSHIP_ACTIONS);
 const recordScopedSet = new Set<string>([...OWNERSHIP_ACTIONS, ...RECORD_SCOPED_ONLY]);
-// Used at runtime to validate action strings against the known global action set.
-export const globalActionSet = new Set<string>(GLOBAL_ACTIONS);
 
 export function isOwnershipScoped(action: Action): action is OwnershipAction {
   return ownershipSet.has(action);

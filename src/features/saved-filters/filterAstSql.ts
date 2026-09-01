@@ -6,9 +6,9 @@ import { AppError, ERROR_IDS } from "@/constants/errorIds";
 
 // Column kind, which decides what "empty" means: a text column is empty when NULL or '', a
 // numeric or date column only when NULL, and an array column when it holds no elements.
-export type FieldKind = "text" | "scalar" | "array";
+type FieldKind = "text" | "scalar" | "array";
 
-export const FIELD_KIND: Record<string, FieldKind> = {
+const FIELD_KIND: Record<string, FieldKind> = {
   status: "scalar",
   value: "scalar",
   stageId: "scalar",
@@ -52,7 +52,7 @@ export function requireValue(
 
 // A scalar column cannot take a list: drizzle expands an array into a tuple, which would bind
 // `($1, $2)` where a single value belongs.
-export function requireScalar(op: string, value: string | number | string[]): string | number {
+function requireScalar(op: string, value: string | number | string[]): string | number {
   if (Array.isArray(value)) {
     throw new AppError(ERROR_IDS.DEAL_FILTER_INVALID, "List value on a scalar deal field", { op });
   }

@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { AppError } from "@/constants/errorIds";
 
 vi.mock("@/features/identity/actions/shared", () => ({
   guardCsrf: vi.fn(() => Promise.resolve({ ok: true })),
@@ -137,5 +138,21 @@ describe("signature name length (S1)", () => {
     });
     expect(r.ok).toBe(true);
     expect(updateSignature).toHaveBeenCalled();
+  });
+});
+
+describe("failure shape at the React boundary", () => {
+  it("carries the error id and nothing else, so telemetry can name the cause", async () => {
+    const r = await deleteTemplateAction("csrf", { id: "not-a-uuid" });
+    expect(r).toEqual({ ok: false, error: { id: "E_GMAIL_010" } });
+  });
+
+  it("keeps the repo's own id rather than replacing it with the input-validation one", async () => {
+    deleteTemplate.mockResolvedValueOnce({
+      ok: false,
+      error: new AppError("E_PERM_005", "template not owned", {}),
+    });
+    const r = await deleteTemplateAction("csrf", { id: "11111111-1111-4111-8111-111111111111" });
+    expect(r).toEqual({ ok: false, error: { id: "E_PERM_005" } });
   });
 });

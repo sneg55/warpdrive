@@ -1,0 +1,92 @@
+{
+  "meta": {
+    "totalItems": 68,
+    "totalPages": 3,
+    "pageSize": 25,
+    "page": 1,
+    "sort": {}
+  },
+  "data": [
+    {
+      "getProspectId": "5f76c7817c58001e1a115ba6",
+      "firstName": "Ada",
+      "lastName": "Lovelace",
+      "contactInfo": "website: http://www.analytical-engine.org \n",
+      "summary": "Mathematician and writer, chiefly known for her work on the Analytical Engine.",
+      "companies": [
+        {
+          "email": {
+            "value": "ada@acme.com",
+            "status": "valid",
+            "lastCheckedAt": "2026-08-14T00:00:00.000Z"
+          },
+          "position": "Chief Technology Officer",
+          "company": {
+            "getProspectId": "5f7203a4502521426f810af2",
+            "domain": "acme.com",
+            "name": "Acme"
+          }
+        }
+      ],
+      "linkedin": [
+        { "id": "ada-lovelace", "type": "common" },
+        { "id": "ACoAAAIVY04BOTl3TS7QaDh19MAGE8MRHI9u8tw", "type": "sales" }
+      ],
+      "geolocation": "London, England, United Kingdom",
+      "lastUpdatedAt": "2026-08-14T00:00:00.000Z"
+    },
+    {
+      "getProspectId": "5f76c333777da51e41909187",
+      "firstName": "Grace",
+      "lastName": "Hopper",
+      "contactInfo": null,
+      "summary": null,
+      "companies": [
+        {
+          "position": "Consulting Engineer",
+          "company": {
+            "getProspectId": "6673b1e69c481019b6646348",
+            "domain": "eckert-mauchly.com",
+            "name": "Eckert-Mauchly"
+          }
+        },
+        {
+          "email": { "lastCheckedAt": "2026-08-01T00:00:00.000Z" },
+          "position": "VP Engineering",
+          "company": {
+            "getProspectId": "5f7203a4502521426f810af2",
+            "domain": "acme.com",
+            "name": "Acme"
+          }
+        }
+      ],
+      "linkedin": [{ "id": "grace-hopper", "type": "common" }],
+      "geolocation": "Palo Alto, California",
+      "lastUpdatedAt": "2026-08-01T00:00:00.000Z"
+    },
+    {
+      "getProspectId": "6287d6b35245490059539fe0",
+      "firstName": "Jean",
+      "lastName": "Bartik",
+      "companies": [
+        {
+          "position": "Programmer",
+          "company": {
+            "getProspectId": "5f7203a4502521426f810af2",
+            "domain": "acme.com",
+            "name": "Acme"
+          }
+        }
+      ],
+      "linkedin": [],
+      "geolocation": "United States",
+      "lastUpdatedAt": "2026-07-30T00:00:00.000Z"
+    },
+    {
+      "firstName": "Anonymous",
+      "lastName": "Analyst",
+      "companies": [],
+      "geolocation": ""
+    }
+  ]
+}

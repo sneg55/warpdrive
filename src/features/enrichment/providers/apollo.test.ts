@@ -3,7 +3,7 @@ import { isCanonicalKey } from "../canonical";
 import orgMatch from "./__fixtures__/apollo-org-match.json";
 import personMatch from "./__fixtures__/apollo-person-match.json";
 import personMiss from "./__fixtures__/apollo-person-miss.json";
-import { selfThrottleUntil } from "./apollo";
+import { selfThrottleUntil } from "./apolloHeaders";
 import {
   API_KEY,
   body,

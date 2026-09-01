@@ -1,7 +1,7 @@
 import { STRINGS } from "@/constants/strings";
 import type { CalendarViewName } from "@/features/activities/calendarView";
 
-export type CalendarEmptyKind = "none" | "filtered";
+type CalendarEmptyKind = "none" | "filtered";
 
 export interface CalendarEmpty {
   kind: CalendarEmptyKind;

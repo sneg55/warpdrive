@@ -265,8 +265,3 @@ export function planPersonUpdate(
     appendedFields,
   });
 }
-
-// Exported so the settings page can explain which canonical keys can only carry numbers.
-export function isNumericCanonicalKey(canonicalKey: string): boolean {
-  return valueTypeOf(canonicalKey) === "number";
-}

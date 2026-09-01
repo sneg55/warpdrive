@@ -31,6 +31,7 @@ vi.mock("@/lib/trpc-client", () => ({
       activities: {
         listForEntity: { setData, invalidate },
         dayLoad: { invalidate: invalidateDayLoad },
+        listRows: { invalidate: () => Promise.resolve() },
       },
     }),
   },

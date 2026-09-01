@@ -37,7 +37,7 @@ function demoteExistingPrimary(emails: PlanContactPoint[]): void {
   }
 }
 
-export interface EmailAddResult {
+interface EmailAddResult {
   added: boolean;
   // A promotion displaces the address the record answered to, so it is a replacement rather than
   // an append, and the change log has to show what it displaced.
@@ -46,11 +46,7 @@ export interface EmailAddResult {
 
 // Adds an address the record lacks. Nothing is ever removed: promoting demotes the previous
 // primary and leaves it on the record, so a wrong promotion stays recoverable.
-export function addEmail(
-  emails: PlanContactPoint[],
-  raw: string,
-  makePrimary: boolean,
-): EmailAddResult {
+function addEmail(emails: PlanContactPoint[], raw: string, makePrimary: boolean): EmailAddResult {
   const value = raw.trim();
   const known = emails.some((e) => foldEmail(e.value) === foldEmail(value));
   if (known || value.length === 0) return { added: false, promoted: false };

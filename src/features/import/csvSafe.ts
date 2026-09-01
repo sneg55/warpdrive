@@ -1,6 +1,6 @@
 // Neutralize spreadsheet formula injection: prefix a cell that a spreadsheet would treat as a
 // formula lead (= + - @, or a tab/CR) with an apostrophe so it renders as literal text.
-export function neutralizeFormula(v: string): string {
+function neutralizeFormula(v: string): string {
   return /^[=+\-@\t\r]/.test(v) ? `'${v}` : v;
 }
 

@@ -2,17 +2,7 @@ import { z } from "zod";
 import { SOURCE_CHANNEL_KEYS } from "@/constants/sourceChannels";
 import { labelNameArray } from "@/features/labels/labelsSchema";
 import { buildFilterSchema } from "@/schemas/filterCondition";
-// Field/op allow-list lives in a zod-free module so the client filter builder can import it
-// without pulling zod; re-exported here so existing importers of leads/schemas.ts still resolve.
-import {
-  LEAD_CONDITION_CONFIG,
-  LEAD_FILTER_FIELDS,
-  LEAD_FILTER_OPS,
-  type LeadFilterField,
-  OPS_BY_LEAD_FIELD,
-} from "./leadFilterFields";
-
-export { LEAD_FILTER_FIELDS, LEAD_FILTER_OPS, type LeadFilterField, OPS_BY_LEAD_FIELD };
+import { LEAD_CONDITION_CONFIG } from "./leadFilterFields";
 
 // CLIENT input only. visibilityLevel / visibleToUserIds are never accepted (derived server-side).
 // ownerId is accepted but honored only for actors with deal.changeOwner (see createLead).
@@ -57,7 +47,7 @@ export type LeadSortField = (typeof LEAD_SORT_FIELDS)[number];
 export const LEAD_NEXT_ACTIVITY_BUCKETS = ["overdue", "today", "week", "none"] as const;
 export type LeadNextActivityBucket = (typeof LEAD_NEXT_ACTIVITY_BUCKETS)[number];
 
-export const leadSortInput = z.object({
+const leadSortInput = z.object({
   field: z.enum(LEAD_SORT_FIELDS).default("createdAt"),
   dir: z.enum(["asc", "desc"]).default("desc"),
 });
@@ -67,7 +57,7 @@ export const leadSortInput = z.object({
 export const leadConditionInput = buildFilterSchema(LEAD_CONDITION_CONFIG);
 export type LeadConditionInput = z.infer<typeof leadConditionInput>;
 
-export const leadFiltersInput = z
+const leadFiltersInput = z
   .object({
     ownerIds: z.array(z.string().uuid()).optional(),
     labelKeys: z.array(z.string()).optional(),
@@ -89,10 +79,8 @@ export type LeadListInput = z.input<typeof leadListInput>;
 export type LeadListParsed = z.output<typeof leadListInput>;
 
 export const leadByIdInput = z.object({ id: z.string().uuid() });
-export type LeadByIdInput = z.infer<typeof leadByIdInput>;
 
 export const leadTimelineInput = z.object({ leadId: z.string().uuid() });
-export type LeadTimelineInput = z.infer<typeof leadTimelineInput>;
 
 // Convert a lead to a deal. pipelineId optional (defaults to the org default pipeline);
 // expectedUpdatedAt is the CAS token sourced from lead.updatedAt (ISO string).

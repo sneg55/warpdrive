@@ -6,10 +6,19 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { identityErrorMessage } from "@/constants/settingsIdentity";
-import { setUserActiveAction, setUserAdminAction } from "@/features/identity/actions/users";
+import {
+  assignPermissionSetAction,
+  setUserActiveAction,
+  setUserAdminAction,
+} from "@/features/identity/actions/users";
 import { readCsrfToken } from "@/utils/csrfCookie";
 
 const T = {
@@ -18,12 +27,16 @@ const T = {
   revokeAdmin: "Revoke admin",
   activate: "Activate",
   deactivate: "Deactivate",
+  changeSet: "Change permission set",
 } as const;
 
 interface Props {
   userId: string;
   isAdmin: boolean;
   isActive: boolean;
+  viewerIsAdmin: boolean;
+  permissionSetId: string | null;
+  permissionSets: { id: string; name: string }[];
   onChanged: () => void;
 }
 
@@ -31,16 +44,34 @@ export function UserRowControls({
   userId,
   isAdmin,
   isActive,
+  viewerIsAdmin,
+  permissionSetId,
+  permissionSets,
   onChanged,
 }: Props): React.ReactElement {
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const canAssignSet = permissionSets.length > 0 && (viewerIsAdmin || !isAdmin);
 
   function toggleAdmin(): void {
     setError(null);
     const csrf = readCsrfToken();
     startTransition(async () => {
       const result = await setUserAdminAction(csrf, { userId, isAdmin: !isAdmin });
+      if (result.ok) {
+        onChanged();
+      } else {
+        setError(identityErrorMessage(result.error));
+      }
+    });
+  }
+
+  function assignSet(setId: string): void {
+    if (setId === permissionSetId) return;
+    setError(null);
+    const csrf = readCsrfToken();
+    startTransition(async () => {
+      const result = await assignPermissionSetAction(csrf, { userId, setId });
       if (result.ok) {
         onChanged();
       } else {
@@ -79,6 +110,20 @@ export function UserRowControls({
           <DropdownMenuItem disabled={isPending} onSelect={toggleActive}>
             {isActive ? T.deactivate : T.activate}
           </DropdownMenuItem>
+          {canAssignSet && (
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger disabled={isPending}>{T.changeSet}</DropdownMenuSubTrigger>
+              <DropdownMenuSubContent className="max-h-56 min-w-40 overflow-auto">
+                <DropdownMenuRadioGroup value={permissionSetId ?? ""} onValueChange={assignSet}>
+                  {permissionSets.map((set) => (
+                    <DropdownMenuRadioItem key={set.id} value={set.id} disabled={isPending}>
+                      {set.name}
+                    </DropdownMenuRadioItem>
+                  ))}
+                </DropdownMenuRadioGroup>
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
       {error !== null && (

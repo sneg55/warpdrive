@@ -112,11 +112,14 @@ export async function createPerson(
   });
 }
 
+export type PersonEditAuthority = "requires-contact-edit" | "actor-just-created-this-person";
+
 export async function updatePerson(
   db: Db,
   actor: ContactActor,
   input: PersonUpdateInput,
   signal: AbortSignal,
+  authority: PersonEditAuthority = "requires-contact-edit",
 ): Promise<Result<Person, AppError>> {
   signal.throwIfAborted();
 
@@ -133,7 +136,10 @@ export async function updatePerson(
     }
     // Edit capability gate (F2): visibility alone is not authority to mutate.
     // contact.edit is ownership-scoped (_own requires ownership, _any is unconditional).
-    if (!can(actor, "contact.edit", toVisibleRecord(current))) {
+    if (
+      authority === "requires-contact-edit" &&
+      !can(actor, "contact.edit", toVisibleRecord(current))
+    ) {
       return err(new AppError(ERROR_IDS.PERM_DENIED, "contact.edit required", { id: input.id }));
     }
 

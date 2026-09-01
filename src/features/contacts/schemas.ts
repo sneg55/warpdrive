@@ -10,7 +10,7 @@ import {
   MAX_PHONE_LEN,
 } from "./fieldBounds";
 
-export { MAX_DOMAIN_LEN, MAX_EMAIL_LEN, MAX_INDUSTRY_LEN, MAX_LINKEDIN_URL_LEN, MAX_PHONE_LEN };
+export { MAX_DOMAIN_LEN, MAX_EMAIL_LEN, MAX_INDUSTRY_LEN, MAX_LINKEDIN_URL_LEN };
 
 // Person/org labels reuse the shared catalog-label schema (validated by name against the
 // user-managed catalog in the UI), mirroring deals + leads. Deduped + capped by labelNameArray.
@@ -50,7 +50,7 @@ const addressObject = z.object({
   lng: z.number().optional(),
 });
 
-export const addressInputSchema = addressObject.nullable().default(null);
+const addressInputSchema = addressObject.nullable().default(null);
 
 // CLIENT input: ownerId/visibility derived server-side, never accepted here.
 export const personCreateInput = z.object({
@@ -83,25 +83,22 @@ export const personUpdateInput = personCreateInput.partial().extend({
 export type PersonUpdateInput = z.infer<typeof personUpdateInput>;
 
 export const personDeleteInput = z.object({ id: z.string().uuid() });
-export type PersonDeleteInput = z.infer<typeof personDeleteInput>;
 
 // Server-driven ORDER BY for the People list (contacts.listPeople).
-export const PERSON_SORT_FIELDS = ["name", "primaryEmail"] as const;
+const PERSON_SORT_FIELDS = ["name", "primaryEmail"] as const;
 export type PersonSortField = (typeof PERSON_SORT_FIELDS)[number];
 export const personSortInput = z.object({
   field: z.enum(PERSON_SORT_FIELDS),
   dir: z.enum(["asc", "desc"]),
 });
-export type PersonSort = z.infer<typeof personSortInput>;
 
 // Server-driven ORDER BY for the Organizations list (contacts.listOrgs).
-export const ORG_SORT_FIELDS = ["name"] as const;
+const ORG_SORT_FIELDS = ["name"] as const;
 export type OrgSortField = (typeof ORG_SORT_FIELDS)[number];
 export const orgSortInput = z.object({
   field: z.enum(ORG_SORT_FIELDS),
   dir: z.enum(["asc", "desc"]),
 });
-export type OrgSort = z.infer<typeof orgSortInput>;
 
 export const orgCreateInput = z.object({
   name: z.string().min(1).max(255),
@@ -129,11 +126,10 @@ export const orgUpdateInput = orgCreateInput.partial().extend({
 export type OrgUpdateInput = z.infer<typeof orgUpdateInput>;
 
 export const orgDeleteInput = z.object({ id: z.string().uuid() });
-export type OrgDeleteInput = z.infer<typeof orgDeleteInput>;
 
 // Related organizations (Wave 3, Task 23). relationType is a free-text label from the
 // creator's perspective (e.g. "parent", "subsidiary", "partner"), not a closed enum.
-export const MAX_RELATION_TYPE_LEN = 100;
+const MAX_RELATION_TYPE_LEN = 100;
 
 export const addOrgRelationInput = z.object({
   sourceOrgId: z.string().uuid(),

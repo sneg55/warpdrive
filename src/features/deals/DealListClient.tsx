@@ -1,16 +1,12 @@
 "use client";
 
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
-import { useCallback, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { ColumnsMenu } from "@/components/data-table/ColumnsMenu";
 import { useColumns } from "@/components/data-table/useColumns";
 import { usePersistColumns } from "@/components/data-table/usePersistColumns";
-import { useActionError } from "@/components/shell/ActionErrorProvider";
 import type { FilterDefinition } from "@/features/saved-filters/schemas";
 import { trpc } from "@/lib/trpc-client";
-import { readCsrfToken } from "@/utils/csrfCookie";
-import { archiveDealAction } from "./archiveActions";
 import { BoardFilterControl } from "./BoardFilterControl";
 import { BoardSortControl } from "./BoardSortControl";
 import { BoardToolbar } from "./BoardToolbar";
@@ -22,15 +18,16 @@ import {
   type SortDirection,
   sortBoardCards,
 } from "./boardSort";
-import { bulkStageAction } from "./bulkStageAction";
 import { DealFilterBuilder } from "./DealFilterBuilder";
 import type { DealListProps, DealListRow } from "./DealList";
 import { DealList } from "./DealList";
 import { DealsEmpty } from "./DealsEmpty";
 import { DEAL_LIST_COLUMNS } from "./dealListColumns";
+import { DEAL_LIST_QUERY_ROOT } from "./dealListQueryKey";
 import type { BoardCard } from "./dealRepo";
 import { NewDealButton } from "./NewDealButton";
 import type { SavedFilterView } from "./savedFilterView";
+import { useDealListActions } from "./useDealListActions";
 
 // Stable empty array: a new [] each render would churn the useMemo dependencies below.
 const EMPTY_ROWS: never[] = [];
@@ -39,7 +36,7 @@ type PipelineOption = { id: string; name: string; stages: Array<{ id: string; na
 
 type InitialData = Omit<
   DealListProps,
-  "onBulkStage" | "onUnarchive" | "visibleColumns" | "columnsMenu"
+  "onBulkStage" | "onBulkArchive" | "onUnarchive" | "visibleColumns" | "columnsMenu"
 > & {
   pipelines: PipelineOption[];
   baseCurrency?: string;
@@ -88,15 +85,12 @@ function sortRows(rows: DealListRow[], key: BoardSortKey, dir: SortDirection): D
   });
 }
 
-// Client wrapper that owns the list-view sort/filter/owner state (mirroring Board.tsx) and the
-// bulk-stage / unarchive handlers. DealList itself stays a pure presentational component.
 export function DealListClient({
   initial,
   variant = "list",
 }: DealListClientProps): React.ReactNode {
   const { pipelineId, stages, pipelines, baseCurrency } = initial;
-  const router = useRouter();
-  const reportError = useActionError();
+  const actions = useDealListActions();
   const utils = trpc.useUtils();
   const [selectedOwnerId, setSelectedOwnerId] = useState<string | null>(null);
   const [savedFilter, setSavedFilter] = useState<SavedFilterView | null>(null);
@@ -115,7 +109,7 @@ export function DealListClient({
   const isUnfiltered = savedFilter === null && inlineDefinition === null;
   const listQuery = useQuery({
     queryKey: [
-      "deal-list",
+      DEAL_LIST_QUERY_ROOT,
       pipelineId,
       variant,
       savedFilter?.id ?? "none",
@@ -189,29 +183,6 @@ export function DealListClient({
     setInlineDefinition(null);
   }
 
-  const handleBulkStage = useCallback(
-    async (dealIds: string[], toStageId: string): Promise<boolean> => {
-      const r = await bulkStageAction({ dealIds, toStageId }, readCsrfToken());
-      if (!r.ok) {
-        reportError(r.error.id);
-        return false;
-      }
-      router.refresh();
-      return true;
-    },
-    [router, reportError],
-  );
-
-  const handleUnarchive = useCallback(
-    (dealId: string): void => {
-      void archiveDealAction({ dealId, archived: false }, readCsrfToken()).then((r) => {
-        if (r.ok) router.refresh();
-        else reportError(r.error.id);
-      });
-    },
-    [router, reportError],
-  );
-
   return (
     <>
       <BoardToolbar
@@ -268,8 +239,9 @@ export function DealListClient({
         total={footer.total}
         totalValue={footer.totalValue}
         stages={stages}
-        onBulkStage={handleBulkStage}
-        onUnarchive={variant === "archived" ? handleUnarchive : undefined}
+        onBulkStage={actions.bulkStage}
+        onBulkArchive={variant === "archived" ? undefined : actions.bulkArchive}
+        onUnarchive={variant === "archived" ? actions.unarchive : undefined}
         filtered={emptiedByFilter}
         empty={
           data === undefined ? undefined : (

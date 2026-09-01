@@ -34,7 +34,7 @@ export type DedupMode = (typeof DEDUP_MODES)[number];
 export const IMPORTING_LEASE_MS = 60_000;
 
 // Batch statuses at which the commit is done and polling can stop.
-export const TERMINAL_IMPORT_STATUSES = ["completed", "failed", "partial"] as const;
+const TERMINAL_IMPORT_STATUSES = ["completed", "failed", "partial"] as const;
 
 // Batch statuses that represent a real, undo-able import. The history list shows only these, so
 // abandoned wizard sessions (uploaded, mapping_ready) and failed runs are hidden.

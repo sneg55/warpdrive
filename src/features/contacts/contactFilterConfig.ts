@@ -6,13 +6,11 @@
 import {
   ARRAY_OPS,
   EXACT_OPS,
-  FILTER_OP_KEYS,
   type FilterOpKey,
   ORDERED_OPS,
   TEXT_OPS,
 } from "@/constants/filterOps";
 
-export const CONTACT_FILTER_OPS = FILTER_OP_KEYS;
 export type ContactFilterOp = FilterOpKey;
 
 // Fields whose column is a text[]. The compiler emits the overlap branch for these, and the

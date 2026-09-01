@@ -28,7 +28,12 @@ vi.mock("@/lib/trpc-client", () => ({
       },
       dayLoad: { useQuery: dayLoadQuery },
     },
-    useUtils: () => ({ activities: { dayLoad: { invalidate: invalidateDayLoad } } }),
+    useUtils: () => ({
+      activities: {
+        dayLoad: { invalidate: invalidateDayLoad },
+        listRows: { invalidate: () => Promise.resolve() },
+      },
+    }),
   },
 }));
 

@@ -1,4 +1,6 @@
 import { isCanonicalKey } from "../canonical";
+import { quotaRemainingFrom, selfThrottleUntil } from "./apolloHeaders";
+import { searchPeople } from "./apolloSearch";
 import { classifyStatus, pickNumber, pickString } from "./http";
 import type {
   EnrichmentProvider,
@@ -8,15 +10,12 @@ import type {
   ProviderCandidate,
   ProviderId,
   ProviderOutcome,
-  QuotaRemaining,
 } from "./types";
 
 const PROVIDER: ProviderId = "apollo";
 const PERSON_URL = "https://api.apollo.io/api/v1/people/match";
 const ORG_URL = "https://api.apollo.io/api/v1/organizations/enrich";
 const KEY_HEADER = "x-api-key";
-const HOUR_MS = 60 * 60 * 1000;
-const DAY_MS = 24 * HOUR_MS;
 
 // Messages reach the dialog footer and the run row, so they name the failure and nothing else:
 // never the key, the request headers, or the response body.
@@ -27,31 +26,6 @@ const MESSAGE_UNREACHABLE = "Provider was unreachable";
 type Fields = Record<string, string | number>;
 type Json = Record<string, unknown>;
 type Fetched = { body: Json; headers: Headers } | { outcome: ProviderOutcome };
-
-// Apollo publishes what is left of each window on every response. Zero means the next call is a
-// guaranteed 429, so the caller records a cooldown instead of spending it. The per-minute window
-// is ignored: it refills faster than one fan-out round trip.
-export function selfThrottleUntil(headers: Headers, now: Date = new Date()): string | undefined {
-  if (pickNumber(headers.get("x-24-hour-requests-left")) === 0) {
-    return new Date(now.getTime() + DAY_MS).toISOString();
-  }
-  if (pickNumber(headers.get("x-hourly-requests-left")) === 0) {
-    return new Date(now.getTime() + HOUR_MS).toISOString();
-  }
-  return undefined;
-}
-
-// The same headers the self-throttle reads, kept as numbers so the settings card can report where
-// the account stands instead of only reacting when a window hits zero.
-export function quotaRemainingFrom(headers: Headers): QuotaRemaining | undefined {
-  const hourly = pickNumber(headers.get("x-hourly-requests-left"));
-  const daily = pickNumber(headers.get("x-24-hour-requests-left"));
-  if (hourly === undefined && daily === undefined) return undefined;
-  return {
-    ...(hourly === undefined ? {} : { hourly }),
-    ...(daily === undefined ? {} : { daily }),
-  };
-}
 
 function asObject(value: unknown): Json | undefined {
   if (typeof value !== "object" || value === null || Array.isArray(value)) return undefined;
@@ -205,6 +179,7 @@ async function matchPerson(
   // returns `person: null` for a lookup that would otherwise have matched.
   const query = new URLSearchParams({
     ...compact({
+      id: input.providerRef,
       email: input.email,
       linkedin_url: input.linkedinUrl,
       name: input.fullName,
@@ -239,4 +214,5 @@ export const apolloProvider: EnrichmentProvider = {
   id: PROVIDER,
   matchPerson,
   matchOrganization,
+  searchPeople,
 };

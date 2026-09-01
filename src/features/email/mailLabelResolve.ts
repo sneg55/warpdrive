@@ -38,7 +38,7 @@ export function buildMailLabelIndex(catalog: MailCatalogEntry[]): MailLabelIndex
 }
 
 // Resolve against a prebuilt index (the hot path: called once per thread row).
-export function resolveMailLabelChipsWith(
+function resolveMailLabelChipsWith(
   index: MailLabelIndex,
   appliedKeys: string[],
 ): ResolvedMailLabel[] {

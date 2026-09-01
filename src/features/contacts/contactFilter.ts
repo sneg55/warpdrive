@@ -19,7 +19,6 @@ import { buildFilterSchema } from "@/schemas/filterCondition";
 // client bundle. Here on the server we pair it with the SQL column allow-list below.
 import {
   CONTACT_ARRAY_FIELDS,
-  CONTACT_FILTER_OPS,
   type ContactFilterConfig,
   type ContactFilterDefinition,
   type ContactFilterOp,
@@ -35,8 +34,6 @@ import {
 } from "./contactFilterSql";
 
 export {
-  CONTACT_ARRAY_FIELDS,
-  CONTACT_FILTER_OPS,
   type ContactFilterConfig,
   type ContactFilterDefinition,
   type ContactFilterOp,

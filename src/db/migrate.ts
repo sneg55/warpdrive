@@ -31,7 +31,7 @@ export async function applyMigrations(
 
 // Public interface (E4 Compose entrypoint / first-run bootstrap import this): apply against
 // the app db. Lazy import keeps tests from constructing the app pool just by importing here.
-export async function runMigrations(
+async function runMigrations(
   signal?: AbortSignal,
   migrationsFolder?: string,
 ): Promise<Result<{ applied: true }, string>> {
