@@ -4,6 +4,7 @@ import { AppError, ERROR_IDS } from "@/constants/errorIds";
 import type * as schema from "@/db/schema";
 import { leads } from "@/db/schema/leads";
 import { settings } from "@/db/schema/system";
+import { validateCustomFieldsForCreate } from "@/features/custom-fields/validateForTarget";
 import { syncEntityLabelNames } from "@/features/labels/labelsRepo.entities";
 import {
   type EntityCreateSession,
@@ -77,6 +78,14 @@ export async function createLead(
   const refResult = await assertLeadReferences(db, session, input, signal);
   if (!refResult.ok) return refResult;
 
+  const customFields = await validateCustomFieldsForCreate(
+    db,
+    "lead",
+    input.customFields ?? {},
+    signal,
+  );
+  if (!customFields.ok) return customFields;
+
   // Visibility derived server-side from the deal default (leads share the deal visibility policy).
   const [cfg] = await db.select().from(settings).where(eq(settings.id, true));
   const level = (cfg?.defaultVisibilityLevels.deal ?? "owner") as "owner" | "group" | "all";
@@ -97,6 +106,7 @@ export async function createLead(
       orgId: input.orgId,
       expectedCloseDate: input.expectedCloseDate,
       labels: input.labels,
+      customFields: customFields.value,
       sourceChannel: input.sourceChannel,
       sourceChannelId: input.sourceChannelId,
       sourceOrigin: input.sourceOrigin,

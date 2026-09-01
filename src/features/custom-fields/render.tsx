@@ -3,10 +3,12 @@
 import { DEFAULT_BASE_CURRENCY } from "@/constants/currency";
 import type { CustomFieldDef } from "@/types/customFields";
 import { assertNever } from "@/types/result";
+import { isCustomFieldValueEmpty } from "./valueEmpty";
 
 // Re-export widgets from sibling file to keep this file under 200 lines.
 export { CustomFieldDetail, CustomFieldFormControl } from "./render.widgets";
 export type { CustomFieldDef };
+export { isCustomFieldValueEmpty };
 
 const EMPTY = "(empty)";
 
@@ -21,18 +23,6 @@ function formatMoney(n: number, currency = DEFAULT_BASE_CURRENCY): string {
     style: "currency",
     currency,
   }).format(n);
-}
-
-// Shared blank-value notion for custom fields (undefined/null/""/empty array), used both to
-// render the "(empty)" placeholder here and to drive the sidebar's hide-empty-fields funnel
-// (FieldRow.empty), so the two never drift apart on what counts as blank.
-export function isCustomFieldValueEmpty(value: unknown): boolean {
-  return (
-    value === undefined ||
-    value === null ||
-    value === "" ||
-    (Array.isArray(value) && value.length === 0)
-  );
 }
 
 export function formatCustomFieldDisplay(

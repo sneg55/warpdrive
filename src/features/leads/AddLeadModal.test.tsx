@@ -173,6 +173,36 @@ describe("AddLeadModal", () => {
     expect(screen.getByLabelText<HTMLInputElement>("Lead title").value).toBe("Acme Corp");
   });
 
+  it("renders lead fields, blocks submit on a missing important one, and submits the payload", async () => {
+    customFieldDefs.push({
+      id: "cf-grade",
+      targetEntity: "lead",
+      type: "text",
+      name: "Grade",
+      key: "grade",
+      options: [],
+      isRequired: false,
+      isImportant: true,
+      showInAddForm: true,
+      order: 0,
+      archivedAt: null,
+    });
+    render(<AddLeadModal onClose={vi.fn()} onCreated={vi.fn()} />);
+    fireEvent.change(screen.getByLabelText("Lead title"), { target: { value: "Graded lead" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    expect(await screen.findByText("Grade is required")).toBeInTheDocument();
+    expect(createLeadAction).not.toHaveBeenCalled();
+
+    fireEvent.change(screen.getByLabelText("Grade"), { target: { value: "A" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() =>
+      expect(createLeadAction).toHaveBeenCalledWith(
+        expect.objectContaining({ customFields: { grade: "A" } }),
+        "csrf",
+      ),
+    );
+  });
+
   it("navigates to the new lead after create when the open-details leadDeal flag is on", async () => {
     render(
       <InterfacePrefsProvider

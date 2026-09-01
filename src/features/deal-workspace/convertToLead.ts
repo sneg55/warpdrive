@@ -11,8 +11,10 @@ import type { Db } from "@/db/client";
 import { deals } from "@/db/schema/deals";
 import { leads } from "@/db/schema/leads";
 import { recordChange } from "@/features/collaboration/changeLog";
+import { listDefs } from "@/features/custom-fields/defsRepo";
 import { loadEditableDeal } from "@/features/deals/dealAuth";
 import { syncEntityLabelNames } from "@/features/labels/labelsRepo.entities";
+import { carryCustomFields } from "@/features/leads/convertCustomFields";
 import type { PermSetUser } from "@/features/permissions/effective";
 import { publishBoardEvent } from "@/server/realtime/events";
 import { err, ok, type Result } from "@/types/result";
@@ -59,6 +61,16 @@ export async function convertDealToLead(
   }
   signal.throwIfAborted();
 
+  const [dealDefs, leadDefs] = await Promise.all([
+    listDefs(db, "deal", {}, signal),
+    listDefs(db, "lead", {}, signal),
+  ]);
+  const customFields = carryCustomFields(
+    dealDefs,
+    leadDefs,
+    deal.customFields as Record<string, unknown>,
+  );
+
   try {
     return await db.transaction(async (tx) => {
       const [lead] = await tx
@@ -70,6 +82,7 @@ export async function convertDealToLead(
           orgId: deal.orgId,
           expectedCloseDate: deal.expectedCloseDate,
           labels: deal.labels,
+          customFields,
           sourceChannel: deal.sourceChannel,
           sourceChannelId: deal.sourceChannelId,
           ownerId: deal.ownerId,

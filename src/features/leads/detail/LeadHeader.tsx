@@ -12,6 +12,7 @@ import { useDetailDrawerClose } from "@/features/navigation/detailDrawerClose";
 import { trpc } from "@/lib/trpc-client";
 import { readCsrfToken } from "@/utils/csrfCookie";
 import { ConvertLeadDialog } from "../ConvertLeadDialog";
+import { carryCustomFields } from "../convertCustomFields";
 import { POP_ITEM, PopMenu } from "../inbox/PopMenu";
 import type { LeadDetail } from "../leadRepo";
 import {
@@ -29,7 +30,13 @@ export function LeadHeader({ lead }: { lead: LeadDetail }): React.ReactNode {
   const [pending, setPending] = useState(false);
   const [convertDialogOpen, setConvertDialogOpen] = useState(false);
   const dealFieldsQ = trpc.customFields.listDefs.useQuery({ target: "deal" });
+  const leadFieldsQ = trpc.customFields.listDefs.useQuery({ target: "lead" });
   const dealFields = dealFieldsQ.data ?? [];
+  const carried = carryCustomFields(
+    leadFieldsQ.data ?? [],
+    dealFields,
+    lead.customFields as Record<string, unknown>,
+  );
   const archived = lead.archivedAt !== null;
   const converted = lead.convertedDealId !== null;
   const closeDrawer = useDetailDrawerClose();
@@ -119,7 +126,7 @@ export function LeadHeader({ lead }: { lead: LeadDetail }): React.ReactNode {
         <div className="flex shrink-0 items-center gap-2">
           <button
             type="button"
-            disabled={pending || converted || dealFieldsQ.isLoading}
+            disabled={pending || converted || dealFieldsQ.isLoading || leadFieldsQ.isLoading}
             onClick={() => {
               if (addFormCustomFieldDefs(dealFields).length > 0) setConvertDialogOpen(true);
               else void convert();
@@ -161,6 +168,7 @@ export function LeadHeader({ lead }: { lead: LeadDetail }): React.ReactNode {
       {convertDialogOpen && (
         <ConvertLeadDialog
           defs={dealFields}
+          initialValues={carried}
           onClose={() => setConvertDialogOpen(false)}
           onConvert={convert}
         />

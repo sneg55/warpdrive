@@ -32,6 +32,7 @@ interface AddLeadLeftColumnProps {
   groups: Option[] | null;
   baseCurrency: string;
   organizationCustomFields?: React.ReactNode;
+  leadCustomFields?: React.ReactNode;
 }
 
 // Left column of the Add lead dialog (Pipedrive): contact/org, title, value, label, owner, close
@@ -47,6 +48,7 @@ export function AddLeadLeftColumn(props: AddLeadLeftColumnProps): React.ReactNod
     groups,
     baseCurrency,
     organizationCustomFields,
+    leadCustomFields,
   } = props;
   const titleId = useId();
   const sourceChannelIdId = useId();
@@ -185,6 +187,8 @@ export function AddLeadLeftColumn(props: AddLeadLeftColumnProps): React.ReactNod
           />
         </div>
       )}
+
+      {leadCustomFields}
     </div>
   );
 }

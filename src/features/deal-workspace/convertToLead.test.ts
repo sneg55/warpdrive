@@ -4,6 +4,7 @@ import { afterAll, beforeAll, expect, it } from "vitest";
 import type { PermissionFlagKey } from "@/constants/permissionFlags";
 import { changeLogs, deals, leads } from "@/db/schema";
 import { seedPipelineWithStages, seedUser } from "@/db/testing/factories";
+import { createDef } from "@/features/custom-fields/defsRepo";
 import type { PermSetUser } from "@/features/permissions/effective";
 import { makeTestDb } from "@/test/db";
 import { convertDealToLead } from "./convertToLead";
@@ -107,6 +108,39 @@ it("creates a lead carrying the deal's title/value/labels, archives the deal, lo
     .from(changeLogs)
     .where(and(eq(changeLogs.entityId, r.value.leadId), eq(changeLogs.field, "createdFromDealId")));
   expect(leadLog.length).toBe(1);
+});
+
+it("carries deal custom fields onto the lead where a lead def matches key and type", async () => {
+  const u = await seedUser(h.db);
+  const p = await seedPipelineWithStages(h.db, ["A"]);
+  const signal = new AbortController().signal;
+  for (const def of [
+    { targetEntity: "deal" as const, type: "text" as const, name: "Grade" },
+    { targetEntity: "lead" as const, type: "text" as const, name: "Grade" },
+    { targetEntity: "deal" as const, type: "text" as const, name: "Only deal" },
+  ]) {
+    const created = await createDef(h.db, def, signal);
+    if (!created.ok) throw new Error("def seed failed");
+  }
+  const seeded = await seedDeal(p.pipeline.id, p.stages[0]!.id, u.id);
+  const [deal] = await h.db
+    .update(deals)
+    .set({ customFields: { grade: "A", only_deal: "x" } })
+    .where(eq(deals.id, seeded.id))
+    .returning();
+  if (deal === undefined) throw new Error("customFields seed failed");
+
+  const r = await convertDealToLead(
+    h.db,
+    regularActor(u.id, ["deal.create", "deal.edit_own"]),
+    { dealId: deal.id, expectedUpdatedAt: deal.updatedAt.toISOString() },
+    new AbortController().signal,
+  );
+  expect(r.ok).toBe(true);
+  if (r.ok === false) return;
+
+  const [lead] = await h.db.select().from(leads).where(eq(leads.id, r.value.leadId));
+  expect(lead?.customFields).toEqual({ grade: "A" });
 });
 
 it("denies an editor without deal.create and creates no lead / leaves the deal active", async () => {

@@ -142,7 +142,7 @@ function primarySchema(target: ImportTarget, cfSchema: z.ZodTypeAny): z.ZodTypeA
     case "deal":
       return dealImportRowSchema.extend({ customFields: cfSchema });
     case "lead":
-      return leadImportRowSchema;
+      return leadImportRowSchema.extend({ customFields: cfSchema });
     case "activity":
       return activityImportRowSchema.extend({ customFields: cfSchema });
     default:
@@ -150,10 +150,6 @@ function primarySchema(target: ImportTarget, cfSchema: z.ZodTypeAny): z.ZodTypeA
   }
 }
 
-// Per-target CSV-boundary validation of every group the row produced. person/organization/deal/
-// activity support custom fields (validated against the live defs); lead does not. Referential
-// fields (deal pipeline/stage names, activity typeKey, an org's name) are only shape-checked
-// here; resolving them to real ids happens later, at commit time.
 export function validateMappedRow(
   target: ImportTarget,
   mapped: MappedRow,

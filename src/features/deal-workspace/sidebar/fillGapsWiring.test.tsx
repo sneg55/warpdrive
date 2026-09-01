@@ -30,10 +30,10 @@ vi.mock("@/features/contacts/ContactLabelsControl", () => ({
   ContactLabelsControl: () => <div />,
 }));
 
-import { DealOrganizationSection } from "./DealOrganizationSection";
 import { DealPersonSection } from "./DealPersonSection";
 import { OrganizationSection } from "./OrganizationSection";
 import { PersonSection } from "./PersonSection";
+import { RecordOrganizationSection } from "./RecordOrganizationSection";
 
 const BUTTON = ENRICHMENT_STRINGS.button.label;
 const person = { id: "p1", name: "Jane Doe", labels: [] } as unknown as Person;
@@ -47,7 +47,7 @@ const personProps = {
   onExitBulk: () => {},
 };
 const orgProps = { ...personProps, org };
-const dealOrgProps = {
+const recordOrgProps = {
   hidden: false,
   org,
   orgMenuItems: [],
@@ -57,10 +57,9 @@ const dealOrgProps = {
   hiddenOrgFields: new Set<string>(),
   organizationCustomFieldDefs: [],
   currency: "USD",
-  dealId: "d1",
-  dealCustomFields: {},
-  dealCustomFieldDefs: [],
-  expectedUpdatedAt: "2026-08-24T09:00:00.000Z",
+  customFields: {},
+  customFieldDefs: [],
+  onSaveCustomFields: () => Promise.resolve({ ok: true as const, value: {} }),
   title: "Organization",
 };
 const dealPersonProps = {
@@ -74,7 +73,7 @@ const sections: [string, () => React.ReactNode][] = [
   ["PersonSection", () => <PersonSection {...personProps} />],
   ["DealPersonSection", () => <DealPersonSection {...dealPersonProps} />],
   ["OrganizationSection", () => <OrganizationSection {...orgProps} />],
-  ["DealOrganizationSection", () => <DealOrganizationSection {...dealOrgProps} />],
+  ["RecordOrganizationSection", () => <RecordOrganizationSection {...recordOrgProps} />],
 ];
 
 beforeEach(() => {

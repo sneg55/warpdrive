@@ -23,7 +23,7 @@ describe("custom field constants", () => {
     ]);
   });
 
-  it("scopes defs to four target entities", () => {
-    expect(CUSTOM_FIELD_TARGETS).toEqual(["deal", "person", "organization", "activity"]);
+  it("scopes defs to five target entities, lead directly after deal", () => {
+    expect(CUSTOM_FIELD_TARGETS).toEqual(["deal", "lead", "person", "organization", "activity"]);
   });
 });

@@ -1,11 +1,3 @@
-// Lead import commit authority (Wave 3 Task 12). Reuses the REAL createLead authority (deal.
-// create gate, owner/visibility derivation) rather than duplicating insert logic. Leads have no
-// pipeline/stage (they live outside any pipeline) and no natural dedup key, so commit.ts always
-// creates (never updates). Leads also have no custom fields (CUSTOM_FIELD_TARGETS has no "lead"
-// entry), so the lead's own cells are just title/value/date/source.
-//
-// A lead row may also describe its organization and a note. Resolving and writing those is
-// commit.ts's job (one savepoint for the whole row); this file only takes the resolved orgId.
 import { createLead } from "@/features/leads/leadActions";
 import { leadCreateInput } from "@/features/leads/schemas";
 import { err, ok, type Result } from "@/types/result";
@@ -37,6 +29,7 @@ export async function applyCreateLead(
     orgId,
     expectedCloseDate: data.expectedCloseDate,
     sourceOrigin: "imported",
+    customFields: data.customFields,
     ...(data.sourceChannel !== null ? { sourceChannel: data.sourceChannel } : {}),
     ...(data.sourceChannelId !== null ? { sourceChannelId: data.sourceChannelId } : {}),
   };

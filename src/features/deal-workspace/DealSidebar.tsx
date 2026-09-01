@@ -12,16 +12,18 @@ import { STRINGS } from "@/constants/strings";
 import type { PersonMatchCandidate } from "@/features/contacts/personOptionsRepo";
 import { useDealActionError } from "@/features/deal-workspace/DealActionErrorProvider";
 import { updateDealAction } from "@/features/deals/updateAction";
+import { err, ok } from "@/types/result";
 import { readCsrfToken } from "@/utils/csrfCookie";
 import { CollapsibleSection } from "./CollapsibleSection";
 import { DealSummaryActionList } from "./DealSummaryActionList";
 import { dealOverview } from "./dealOverview";
-import { DealOrganizationSection } from "./sidebar/DealOrganizationSection";
+import type { CustomFieldsSave } from "./sidebar/customFieldsSave";
 import { DealPersonSection } from "./sidebar/DealPersonSection";
 import { FieldRow } from "./sidebar/FieldRow";
 import { ManageSectionsDialog } from "./sidebar/ManageSectionsDialogLazy";
 import { OrgSwitchDialog } from "./sidebar/OrgSwitchDialog";
 import { ParticipantsSection } from "./sidebar/ParticipantsSection";
+import { RecordOrganizationSection } from "./sidebar/RecordOrganizationSection";
 import { SectionHeaderMenu, type SectionHeaderMenuItem } from "./sidebar/SectionHeaderMenu";
 import { SourceBlock } from "./sidebar/SourceBlock";
 import type { DealWorkspace } from "./summaryRepo";
@@ -99,6 +101,14 @@ export function DealSidebar({
       reportError(r.error.id);
     }
   }
+
+  const saveDealCustomFields: CustomFieldsSave = async (patch) => {
+    const r = await updateDealAction(
+      { dealId: deal.id, expectedUpdatedAt, customFields: patch },
+      readCsrfToken(),
+    );
+    return r.ok ? ok(r.deal) : err(r.error.id);
+  };
 
   function sectionActions(
     label: string,
@@ -220,7 +230,7 @@ export function DealSidebar({
     ),
 
     organization: (
-      <DealOrganizationSection
+      <RecordOrganizationSection
         key="organization"
         hidden={isHidden("organization")}
         org={org}
@@ -231,10 +241,9 @@ export function DealSidebar({
         hiddenOrgFields={hiddenOrgFields}
         organizationCustomFieldDefs={organizationCustomFieldDefs}
         currency={baseCurrency}
-        dealId={deal.id}
-        dealCustomFields={deal.customFields as Record<string, unknown>}
-        dealCustomFieldDefs={customFieldDefs}
-        expectedUpdatedAt={expectedUpdatedAt}
+        customFields={deal.customFields as Record<string, unknown>}
+        customFieldDefs={customFieldDefs}
+        onSaveCustomFields={saveDealCustomFields}
         title={sections.organization}
       />
     ),

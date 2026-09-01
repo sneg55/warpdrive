@@ -512,6 +512,13 @@
       "when": 1788196064812,
       "tag": "0072_prospect_reveals",
       "breakpoints": true
+    },
+    {
+      "idx": 73,
+      "version": "7",
+      "when": 1788295227278,
+      "tag": "0073_lead_custom_fields",
+      "breakpoints": true
     }
   ]
 }

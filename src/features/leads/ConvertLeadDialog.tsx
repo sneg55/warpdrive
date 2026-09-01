@@ -3,6 +3,7 @@
 import type React from "react";
 import { useRef, useState } from "react";
 import {
+  addFormCustomFieldDefs,
   CustomFieldCreateFields,
   customFieldCreatePayload,
   firstMissingImportantField,
@@ -12,14 +13,16 @@ import type { CustomFieldDef } from "@/types/customFields";
 
 export function ConvertLeadDialog({
   defs,
+  initialValues = {},
   onClose,
   onConvert,
 }: {
   defs: CustomFieldDef[];
+  initialValues?: Record<string, unknown>;
   onClose: () => void;
   onConvert: (customFields: Record<string, unknown>) => Promise<boolean>;
 }): React.ReactNode {
-  const [values, setValues] = useState<Record<string, unknown>>({});
+  const [values, setValues] = useState<Record<string, unknown>>(() => ({ ...initialValues }));
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const submitting = useRef(false);
@@ -36,7 +39,11 @@ export function ConvertLeadDialog({
     setPending(true);
     setError(null);
     try {
-      const converted = await onConvert(customFieldCreatePayload(defs, values));
+      const payload = customFieldCreatePayload(defs, values);
+      for (const def of addFormCustomFieldDefs(defs)) {
+        if (def.key in initialValues && !(def.key in payload)) payload[def.key] = null;
+      }
+      const converted = await onConvert(payload);
       if (converted) onClose();
     } finally {
       submitting.current = false;

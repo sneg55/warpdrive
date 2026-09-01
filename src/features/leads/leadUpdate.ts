@@ -8,6 +8,7 @@ import { AppError, ERROR_IDS } from "@/constants/errorIds";
 import type * as schema from "@/db/schema";
 import { users } from "@/db/schema/identity";
 import { leads } from "@/db/schema/leads";
+import { validateCustomFieldsPartial } from "@/features/custom-fields/validateForTarget";
 import { syncEntityLabelNames } from "@/features/labels/labelsRepo.entities";
 import { err, ok, type Result } from "@/types/result";
 import type { LeadSession } from "./leadActions";
@@ -17,7 +18,11 @@ import { leadVisibilityClause } from "./visibility";
 type Db = NodePgDatabase<typeof schema>;
 type LeadPatch = Partial<typeof leads.$inferInsert>;
 
-function buildPatch(input: LeadUpdateInput, now: Date): LeadPatch {
+function buildPatch(
+  input: LeadUpdateInput,
+  customFields: Record<string, unknown> | undefined,
+  now: Date,
+): LeadPatch {
   const patch: LeadPatch = { updatedAt: now };
   if (input.title !== undefined) patch.title = input.title;
   if (input.value !== undefined) {
@@ -26,6 +31,10 @@ function buildPatch(input: LeadUpdateInput, now: Date): LeadPatch {
   if (input.ownerId !== undefined) patch.ownerId = input.ownerId;
   if (input.expectedCloseDate !== undefined) patch.expectedCloseDate = input.expectedCloseDate;
   if (input.labels !== undefined) patch.labels = input.labels;
+  if (customFields !== undefined) {
+    const jsonPatch = JSON.stringify(customFields);
+    patch.customFields = sql`${leads.customFields} || ${jsonPatch}::jsonb`;
+  }
   return patch;
 }
 
@@ -80,6 +89,13 @@ export async function updateLead(
     if (!ownerCheck.ok) return ownerCheck;
   }
 
+  let customFields: Record<string, unknown> | undefined;
+  if (input.customFields !== undefined) {
+    const validated = await validateCustomFieldsPartial(db, "lead", input.customFields, signal);
+    if (!validated.ok) return validated;
+    customFields = validated.value;
+  }
+
   // Load under the visibility gate (404-on-invisible): an invisible lead must not leak existence
   // via a distinguishable CAS-mismatch response.
   const [visible] = await db
@@ -95,7 +111,7 @@ export async function updateLead(
     );
   }
 
-  const patch = buildPatch(input, new Date());
+  const patch = buildPatch(input, customFields, new Date());
 
   // Atomic CAS: single UPDATE WHERE id=:id AND date_trunc('milliseconds', updated_at)=:expected.
   // 0 rows means a concurrent write won; we write nothing.

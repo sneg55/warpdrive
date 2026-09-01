@@ -161,6 +161,7 @@ const lead: LeadDetail = {
   ownerId: "u1",
   expectedCloseDate: "2026-08-01",
   labels: ["hot"],
+  customFields: {},
   sourceChannel: "inbound",
   sourceChannelId: null,
   sourceOrigin: "manually_created",

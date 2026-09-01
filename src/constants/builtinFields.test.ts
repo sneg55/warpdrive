@@ -21,6 +21,7 @@ describe("BUILTIN_FIELDS catalog", () => {
     expect(BUILTIN_FIELDS.organization.find((f) => f.key === "name")?.locked).toBe(true);
     expect(BUILTIN_FIELDS.person.find((f) => f.key === "name")?.locked).toBe(true);
     expect(BUILTIN_FIELDS.deal.find((f) => f.key === "title")?.locked).toBe(true);
+    expect(BUILTIN_FIELDS.lead.find((f) => f.key === "title")?.locked).toBe(true);
     expect(BUILTIN_FIELDS.activity.find((f) => f.key === "subject")?.locked).toBe(true);
   });
 

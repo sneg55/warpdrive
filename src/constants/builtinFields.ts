@@ -49,6 +49,15 @@ export const BUILTIN_FIELDS: Record<CustomFieldTarget, readonly BuiltinField[]> 
     F("owner", "Owner"),
     F("label", "Label"),
   ],
+  lead: [
+    L("title", "Title"),
+    F("value", "Value"),
+    F("expectedCloseDate", "Expected close date"),
+    F("org", "Organization"),
+    F("person", "Person"),
+    F("owner", "Owner"),
+    F("label", "Label"),
+  ],
   activity: [
     L("subject", "Subject"),
     F("typeKey", "Type"),

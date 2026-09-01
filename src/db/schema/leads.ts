@@ -3,6 +3,7 @@ import {
   customType,
   date,
   index,
+  jsonb,
   numeric,
   pgTable,
   text,
@@ -35,6 +36,7 @@ export const leads = pgTable(
       .references(() => users.id),
     expectedCloseDate: date("expected_close_date"),
     labels: text("labels").array().notNull().default(sql`'{}'`),
+    customFields: jsonb("custom_fields").notNull().default(sql`'{}'::jsonb`),
     sourceChannel: text("source_channel"),
     sourceChannelId: text("source_channel_id"),
     // Where the lead originated (Pipedrive "source origin"): manually created, import, web form, etc.
@@ -69,6 +71,7 @@ export const leads = pgTable(
       .where(sql`visibility_level = 'group'`),
     // GIN: full-text search (mirrors deals.ts).
     index("leads_search_idx").using("gin", t.searchTsv),
+    index("leads_cf_idx").using("gin", t.customFields),
   ],
 );
 

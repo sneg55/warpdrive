@@ -2,6 +2,7 @@
 import "@testing-library/jest-dom/vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeAll, expect, it, vi } from "vitest";
+import type { CustomFieldDef } from "@/types/customFields";
 
 beforeAll(() => {
   Element.prototype.scrollIntoView = vi.fn();
@@ -57,7 +58,7 @@ vi.mock("@/lib/trpc-client", () => ({
         useQuery: () => ({
           data: {
             status: "mapping_ready",
-            headers: ["name"],
+            headers: ["name", "grade"],
             totalRows: 1,
             validRows: 0,
             errorRows: 0,
@@ -71,7 +72,9 @@ vi.mock("@/lib/trpc-client", () => ({
 import { ImportWizard } from "./ImportWizard";
 
 it("uploads via the presign handshake, then advances to the map step", async () => {
-  render(<ImportWizard personDefs={[]} orgDefs={[]} dealDefs={[]} activityDefs={[]} />);
+  render(
+    <ImportWizard personDefs={[]} orgDefs={[]} dealDefs={[]} activityDefs={[]} leadDefs={[]} />,
+  );
   const file = new File(["name\nJane\n"], "c.csv", { type: "text/csv" });
   fireEvent.change(screen.getByLabelText("CSV file"), { target: { files: [file] } });
 
@@ -86,8 +89,43 @@ it("surfaces an error banner when the upload request fails", async () => {
     ok: false,
     error: { id: "E_PERM_DENIED" },
   });
-  render(<ImportWizard personDefs={[]} orgDefs={[]} dealDefs={[]} activityDefs={[]} />);
+  render(
+    <ImportWizard personDefs={[]} orgDefs={[]} dealDefs={[]} activityDefs={[]} leadDefs={[]} />,
+  );
   const file = new File(["name\nJane\n"], "c.csv", { type: "text/csv" });
   fireEvent.change(screen.getByLabelText("CSV file"), { target: { files: [file] } });
   await waitFor(() => expect(screen.getByRole("alert")).toBeInTheDocument());
+});
+
+const gradeDef: CustomFieldDef = {
+  id: "cf",
+  targetEntity: "lead",
+  type: "text",
+  name: "Grade",
+  key: "grade",
+  options: [],
+  isRequired: false,
+  isImportant: false,
+  showInAddForm: false,
+  order: 0,
+  archivedAt: null,
+};
+
+it("offers a lead custom field in the map step when the target is lead", async () => {
+  render(
+    <ImportWizard
+      personDefs={[]}
+      orgDefs={[]}
+      dealDefs={[]}
+      activityDefs={[]}
+      leadDefs={[gradeDef]}
+    />,
+  );
+  fireEvent.click(screen.getByLabelText("Leads"));
+  const file = new File(["grade\nA\n"], "c.csv", { type: "text/csv" });
+  fireEvent.change(screen.getByLabelText("CSV file"), { target: { files: [file] } });
+
+  await waitFor(() => expect(screen.getByLabelText("Maps to: grade")).toBeInTheDocument());
+  fireEvent.click(screen.getByLabelText("Maps to: grade"));
+  expect(screen.getByRole("option", { name: "Grade" })).toBeInTheDocument();
 });

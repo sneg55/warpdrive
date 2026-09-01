@@ -9,6 +9,7 @@ import { pipelines } from "@/db/schema/pipelines";
 import { stages } from "@/db/schema/stages";
 import { settings } from "@/db/schema/system";
 import { recordChange } from "@/features/collaboration/changeLog";
+import { listDefs } from "@/features/custom-fields/defsRepo";
 import { midpoint } from "@/features/deals/boardPosition";
 import { validateDealCustomFieldsForCreate } from "@/features/deals/dealCustomFieldsValidation";
 import { syncEntityLabelNames } from "@/features/labels/labelsRepo.entities";
@@ -17,6 +18,7 @@ import { publishBoardEvent } from "@/server/realtime/events";
 import type { EntityType } from "@/types/entityRef";
 import { err, ok, type Result } from "@/types/result";
 import { carryLeadHistoryToDeal } from "./convertCarryOver";
+import { carryCustomFields, overlayCustomFields } from "./convertCustomFields";
 import { resolveConvertReferences } from "./convertReferences";
 import type { LeadSession } from "./leadActions";
 import { type ConvertLeadInput, convertLeadInput } from "./schemas";
@@ -153,9 +155,20 @@ export async function convertLead(
   const refs = await resolveConvertReferences(db, session, lead, signal);
   if (!refs.ok) return refs;
 
-  // Conversion is a deal-creation boundary, so it must enforce the same active definitions and
-  // Important-field requirements as Add deal. The validated payload is the only payload persisted.
-  const customFields = await validateDealCustomFieldsForCreate(db, input.customFields, signal);
+  const [leadDefs, dealDefs] = await Promise.all([
+    listDefs(db, "lead", {}, signal),
+    listDefs(db, "deal", {}, signal),
+  ]);
+  const carried = carryCustomFields(
+    leadDefs,
+    dealDefs,
+    lead.customFields as Record<string, unknown>,
+  );
+  const customFields = await validateDealCustomFieldsForCreate(
+    db,
+    overlayCustomFields(carried, input.customFields),
+    signal,
+  );
   if (!customFields.ok) return customFields;
 
   // Visibility derived server-side (same policy as createLead).

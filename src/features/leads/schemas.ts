@@ -21,6 +21,7 @@ export const leadCreateInput = z.object({
   sourceOrigin: z.string().max(60).default("manually_created"),
   ownerId: z.string().uuid().optional(),
   visibilityGroupId: z.string().uuid().optional(),
+  customFields: z.record(z.string(), z.unknown()).optional(),
 });
 export type LeadCreateInput = z.input<typeof leadCreateInput>;
 
@@ -136,5 +137,6 @@ export const leadUpdateInput = z.object({
   ownerId: z.string().uuid().optional(),
   expectedCloseDate: z.string().date().nullable().optional(),
   labels: labelNameArray.optional(),
+  customFields: z.record(z.string(), z.unknown()).optional(),
 });
 export type LeadUpdateInput = z.infer<typeof leadUpdateInput>;

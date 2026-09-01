@@ -162,6 +162,7 @@ export const SETTINGS_STRINGS = {
     "Hiding a built-in field removes it from add forms, record detail, and the import mapping. Its data is kept and reappears when you unhide it.",
   builtinHideFailed: "Could not update the field. Please try again.",
   entityDeal: "Deal",
+  entityLead: "Lead",
   entityPerson: "Person",
   entityOrganization: "Organization",
   entityActivity: "Activity",

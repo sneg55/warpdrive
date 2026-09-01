@@ -1,6 +1,8 @@
-import { inArray } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import { ERROR_IDS } from "@/constants/errorIds";
+import { customFieldDefs } from "@/db/schema/customFieldDefs";
+import { deals } from "@/db/schema/deals";
 import { leads } from "@/db/schema/leads";
 import { persons } from "@/db/schema/persons";
 import { settings } from "@/db/schema/system";
@@ -221,6 +223,37 @@ describe("bulkConvertLeads", () => {
       expect(r.ok).toBe(false);
       if (r.ok) return;
       expect(r.error.id).toBe(ERROR_IDS.LEAD_BULK_CONVERT_INPUT_INVALID);
+    });
+  });
+
+  it("carries each lead's own custom fields onto its deal, under the shared overlay", async () => {
+    await withTestDb(async (db) => {
+      const owner = await seedUser(db);
+      const pipe = await seedPipelineWithStages(db, ["Qualify"]);
+      await seedSettings(db, { defaultPipelineId: pipe.pipeline.id });
+      await db.insert(customFieldDefs).values([
+        { targetEntity: "lead", type: "text", name: "Grade", key: "grade" },
+        { targetEntity: "deal", type: "text", name: "Grade", key: "grade" },
+      ]);
+      const a = await insertLead(db, owner.id, { title: "A", customFields: { grade: "A" } });
+      const b = await insertLead(db, owner.id, { title: "B", customFields: { grade: "B" } });
+
+      const r = await bulkConvertLeads(db, session(owner.id), { ids: [a.id, b.id] }, sig());
+      expect(r.ok).toBe(true);
+      if (!r.ok) return;
+      expect(r.value).toEqual({ converted: 2, skipped: 0 });
+
+      const rows = await db
+        .select()
+        .from(leads)
+        .where(inArray(leads.id, [a.id, b.id]));
+      for (const row of rows) {
+        const [deal] = await db
+          .select()
+          .from(deals)
+          .where(eq(deals.id, row.convertedDealId ?? ""));
+        expect(deal?.customFields).toEqual({ grade: row.title });
+      }
     });
   });
 });

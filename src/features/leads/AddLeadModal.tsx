@@ -46,6 +46,7 @@ export function AddLeadModal({
   const groupsQ = trpc.identity.listVisibilityGroups.useQuery(undefined, { retry: false });
   const personFieldsQ = trpc.customFields.listDefs.useQuery({ target: "person" });
   const orgFieldsQ = trpc.customFields.listDefs.useQuery({ target: "organization" });
+  const leadFieldsQ = trpc.customFields.listDefs.useQuery({ target: "lead" });
 
   const set = (patch: Partial<AddLeadState>): void => setState((s) => ({ ...s, ...patch }));
 
@@ -82,6 +83,12 @@ export function AddLeadModal({
         setError(parsed.error);
         return;
       }
+      const leadFields = leadFieldsQ.data ?? [];
+      const missingLeadField = firstMissingImportantField(leadFields, state.leadCustomFields);
+      if (missingLeadField !== null) {
+        setError(`${missingLeadField.name} is required`);
+        return;
+      }
       const personFields = personFieldsQ.data ?? [];
       const orgFields = orgFieldsQ.data ?? [];
       if (state.orgMode === "new") {
@@ -116,7 +123,15 @@ export function AddLeadModal({
         setError(personId.error);
         return;
       }
-      const result = await createLeadAction({ ...parsed.input, personId, orgId }, csrf);
+      const result = await createLeadAction(
+        {
+          ...parsed.input,
+          personId,
+          orgId,
+          customFields: customFieldCreatePayload(leadFields, state.leadCustomFields),
+        },
+        csrf,
+      );
       if (!result.ok) {
         setError(`Could not create lead (${result.error.id})`);
         return;
@@ -151,7 +166,7 @@ export function AddLeadModal({
       }
       error={error}
       pending={pending}
-      submitDisabled={personFieldsQ.isLoading || orgFieldsQ.isLoading}
+      submitDisabled={personFieldsQ.isLoading || orgFieldsQ.isLoading || leadFieldsQ.isLoading}
       onSubmit={() => void submit()}
       onClose={onClose}
       leftColumn={
@@ -174,6 +189,16 @@ export function AddLeadModal({
               values={state.orgCustomFields}
               onChange={(key, value) =>
                 set({ orgCustomFields: { ...state.orgCustomFields, [key]: value } })
+              }
+            />
+          }
+          leadCustomFields={
+            <CustomFieldCreateFields
+              title="Lead fields"
+              defs={leadFieldsQ.data ?? []}
+              values={state.leadCustomFields}
+              onChange={(key, value) =>
+                set({ leadCustomFields: { ...state.leadCustomFields, [key]: value } })
               }
             />
           }

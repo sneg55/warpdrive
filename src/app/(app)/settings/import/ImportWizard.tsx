@@ -26,13 +26,12 @@ export interface ImportWizardProps {
   orgDefs: CustomFieldDef[];
   dealDefs: CustomFieldDef[];
   activityDefs: CustomFieldDef[];
+  leadDefs: CustomFieldDef[];
   // Hidden built-in fields per entity (settings > Data fields). Arrays over the wire; the map step
   // turns them into Sets. Optional so callers/tests without the data still render every field.
   hiddenBuiltins?: Partial<Record<MappableEntity, readonly string[]>>;
 }
 
-// Per-target custom-field defs for the map step. Lead has no entry: CUSTOM_FIELD_TARGETS
-// has no "lead" (leads.customFields does not exist), so it always offers none.
 function defsForTarget(props: ImportWizardProps, target: ImportTarget): CustomFieldDef[] {
   switch (target) {
     case "person":
@@ -44,7 +43,7 @@ function defsForTarget(props: ImportWizardProps, target: ImportTarget): CustomFi
     case "activity":
       return props.activityDefs;
     case "lead":
-      return [];
+      return props.leadDefs;
     default:
       return assertNever(target);
   }

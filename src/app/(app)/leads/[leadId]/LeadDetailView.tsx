@@ -47,14 +47,21 @@ export async function LeadDetailView({ leadId }: { leadId: string }): Promise<Re
   // Person/Organization blocks render the contact's full field set (PD parity), dropping the same
   // built-in rows the contact detail pages do. The lead visibility gate above is the authority.
   const signal = AbortSignal.timeout(10_000);
-  const [relations, hidden, personCustomFieldDefs, organizationCustomFieldDefs, baseCurrency] =
-    await Promise.all([
-      getLeadRelations(db, loaded.lead, signal),
-      listHiddenBuiltins(db, signal),
-      listDefs(db, "person", {}, signal),
-      listDefs(db, "organization", {}, signal),
-      readBaseCurrency(db, signal),
-    ]);
+  const [
+    relations,
+    hidden,
+    personCustomFieldDefs,
+    organizationCustomFieldDefs,
+    leadCustomFieldDefs,
+    baseCurrency,
+  ] = await Promise.all([
+    getLeadRelations(db, loaded.lead, signal),
+    listHiddenBuiltins(db, signal),
+    listDefs(db, "person", {}, signal),
+    listDefs(db, "organization", {}, signal),
+    listDefs(db, "lead", {}, signal),
+    readBaseCurrency(db, signal),
+  ]);
 
   return (
     <main aria-label="Lead" className="h-full">
@@ -66,6 +73,7 @@ export async function LeadDetailView({ leadId }: { leadId: string }): Promise<Re
         hiddenOrgFields={hidden.organization}
         personCustomFieldDefs={personCustomFieldDefs}
         organizationCustomFieldDefs={organizationCustomFieldDefs}
+        leadCustomFieldDefs={leadCustomFieldDefs}
         baseCurrency={baseCurrency}
       />
     </main>

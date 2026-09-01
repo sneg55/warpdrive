@@ -32,10 +32,6 @@ vi.mock("@/features/inline-edit/InlineEditFooter", () => ({
     </div>
   ),
 }));
-vi.mock("@/features/deals/updateAction", () => ({
-  updateDealAction: () => Promise.resolve({ ok: true as const, value: {} }),
-}));
-vi.mock("@/utils/csrfCookie", () => ({ readCsrfToken: () => "csrf" }));
 
 import { DetailsBlock } from "./DetailsBlock";
 
@@ -48,8 +44,7 @@ function def(): CustomFieldDef {
 }
 
 const base = {
-  dealId: "d1",
-  expectedUpdatedAt: "2026-07-20T00:00:00Z",
+  onSave: () => Promise.resolve({ ok: true as const, value: {} }),
   customFields: {},
   currency: "USD",
 };

@@ -4,17 +4,15 @@ import type React from "react";
 import { useState } from "react";
 import { STRINGS } from "@/constants/strings";
 import { CustomFieldFormControl, isCustomFieldValueEmpty } from "@/features/custom-fields/render";
-import { updateDealAction } from "@/features/deals/updateAction";
 import { InlineEditFooter } from "@/features/inline-edit/InlineEditFooter";
 import { saveErrorMessage } from "@/features/inline-edit/saveError";
 import type { CustomFieldDef } from "@/types/customFields";
-import { readCsrfToken } from "@/utils/csrfCookie";
+import type { CustomFieldsSave } from "./customFieldsSave";
 import { FieldRow } from "./FieldRow";
 import { InlineCustomField } from "./InlineCustomField";
 
 interface DetailsBlockProps {
-  dealId: string;
-  expectedUpdatedAt: string;
+  onSave: CustomFieldsSave;
   customFieldDefs: CustomFieldDef[];
   customFields: Record<string, unknown>;
   currency: string;
@@ -22,21 +20,14 @@ interface DetailsBlockProps {
   onExitBulk?: () => void;
 }
 
-// Details section: one row per deal custom field. Per-field inline editing normally; the section
-// pencil opens every custom field at once behind a single Save (bulk mode), committing one
-// updateDealAction with just the changed keys.
 export function DetailsBlock({
-  dealId,
-  expectedUpdatedAt,
+  onSave,
   customFieldDefs,
   customFields,
   currency,
   bulkEditing = false,
   onExitBulk,
 }: DetailsBlockProps): React.ReactNode {
-  // No custom fields defined for this entity: show a hint, never a blank box (read) or an editor
-  // with only Cancel/Save and nothing to edit (bulk). The section's pencil is also hidden upstream
-  // when there is nothing to edit, so bulkEditing should not even be reachable here.
   if (customFieldDefs.length === 0) {
     return (
       <p className="text-muted-foreground text-xs">{STRINGS.dealSidebar.emptyState.details}</p>
@@ -45,8 +36,7 @@ export function DetailsBlock({
   if (bulkEditing) {
     return (
       <DetailsBulkEditor
-        dealId={dealId}
-        expectedUpdatedAt={expectedUpdatedAt}
+        onSave={onSave}
         customFieldDefs={customFieldDefs}
         customFields={customFields}
         onExit={onExitBulk ?? (() => {})}
@@ -59,13 +49,7 @@ export function DetailsBlock({
         const value = customFields[def.key];
         return (
           <FieldRow key={def.id} label={def.name} empty={isCustomFieldValueEmpty(value)}>
-            <InlineCustomField
-              dealId={dealId}
-              expectedUpdatedAt={expectedUpdatedAt}
-              def={def}
-              value={value}
-              currency={currency}
-            />
+            <InlineCustomField onSave={onSave} def={def} value={value} currency={currency} />
           </FieldRow>
         );
       })}
@@ -74,14 +58,12 @@ export function DetailsBlock({
 }
 
 function DetailsBulkEditor({
-  dealId,
-  expectedUpdatedAt,
+  onSave,
   customFieldDefs,
   customFields,
   onExit,
 }: {
-  dealId: string;
-  expectedUpdatedAt: string;
+  onSave: CustomFieldsSave;
   customFieldDefs: CustomFieldDef[];
   customFields: Record<string, unknown>;
   onExit: () => void;
@@ -106,7 +88,7 @@ function DetailsBulkEditor({
     return patch;
   }
 
-  function onSave(): void {
+  function commit(): void {
     const patch = changedKeys();
     if (Object.keys(patch).length === 0) {
       onExit();
@@ -114,14 +96,14 @@ function DetailsBulkEditor({
     }
     setPending(true);
     setError(null);
-    updateDealAction({ dealId, expectedUpdatedAt, customFields: patch }, readCsrfToken())
+    onSave(patch)
       .then((r) => {
         setPending(false);
         if (r.ok) {
           router.refresh();
           onExit();
         } else {
-          setError(saveErrorMessage(r.error.id));
+          setError(saveErrorMessage(r.error));
         }
       })
       .catch(() => {
@@ -147,7 +129,7 @@ function DetailsBulkEditor({
           {error}
         </span>
       ) : null}
-      <InlineEditFooter onCancel={onExit} onSave={onSave} saveDisabled={false} pending={pending} />
+      <InlineEditFooter onCancel={onExit} onSave={commit} saveDisabled={false} pending={pending} />
     </div>
   );
 }

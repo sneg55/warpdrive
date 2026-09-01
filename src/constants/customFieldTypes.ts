@@ -18,5 +18,5 @@ export const CUSTOM_FIELD_TYPES = [
 ] as const;
 export type CustomFieldType = (typeof CUSTOM_FIELD_TYPES)[number];
 
-export const CUSTOM_FIELD_TARGETS = ["deal", "person", "organization", "activity"] as const;
+export const CUSTOM_FIELD_TARGETS = ["deal", "lead", "person", "organization", "activity"] as const;
 export type CustomFieldTarget = (typeof CUSTOM_FIELD_TARGETS)[number];

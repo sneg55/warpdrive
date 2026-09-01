@@ -3,6 +3,7 @@ import "@testing-library/jest-dom/vitest";
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 import type { Organization, Person } from "@/db/schema";
+import type { CustomFieldDef } from "@/types/customFields";
 import type { LeadDetail } from "../leadRepo";
 import { LeadSidebar } from "./LeadSidebar";
 
@@ -14,9 +15,12 @@ vi.mock("@/lib/trpc-client", () => ({
     useUtils: () => ({ contacts: { contactTimeline: { invalidate: () => Promise.resolve() } } }),
   },
 }));
-vi.mock("@/features/leads/leadServerActions", () => ({
-  updateLeadAction: vi.fn(() => Promise.resolve({ ok: true, lead: { id: "l1" } })),
-}));
+const updateLeadAction = vi.hoisted(() =>
+  vi.fn(() =>
+    Promise.resolve({ ok: true, value: { id: "l1", updatedAt: "2026-06-02T00:00:00.000Z" } }),
+  ),
+);
+vi.mock("@/features/leads/leadServerActions", () => ({ updateLeadAction }));
 // PersonBlock/OrgBlock (reused from the deal sidebar) save through these actions.
 vi.mock("@/features/contacts/actions", () => ({
   updatePersonAction: vi.fn(() => Promise.resolve({ ok: true, value: {} })),
@@ -77,6 +81,7 @@ const baseLead: LeadDetail = {
   ownerId: "u1",
   expectedCloseDate: null,
   labels: [],
+  customFields: {},
   sourceChannel: null,
   sourceChannelId: null,
   sourceOrigin: "manually_created",
@@ -181,4 +186,69 @@ it("honors hidden built-in org fields (Settings > Data fields)", () => {
   expect(orgSection.queryByText("Website")).not.toBeInTheDocument();
   // A non-hidden firmographic still renders.
   expect(orgSection.getByText("Industry")).toBeInTheDocument();
+});
+
+const leadDef = (over: Partial<CustomFieldDef>): CustomFieldDef => ({
+  id: over.key ?? "id",
+  targetEntity: "lead",
+  type: "text",
+  name: "F",
+  key: "f",
+  options: [],
+  isRequired: false,
+  isImportant: false,
+  showInAddForm: false,
+  order: 0,
+  archivedAt: null,
+  ...over,
+});
+
+it("renders one row per lead custom field inside the Organization section", () => {
+  render(
+    <LeadSidebar
+      lead={{ ...baseLead, customFields: { grade: "A" } }}
+      owners={[]}
+      person={null}
+      org={baseOrg}
+      leadCustomFieldDefs={[leadDef({ key: "grade", name: "Grade" })]}
+    />,
+  );
+  const section = within(screen.getByRole("region", { name: "Organization" }));
+  expect(section.getByText("Grade")).toBeInTheDocument();
+  expect(section.getByText("A")).toBeInTheDocument();
+});
+
+it("shows lead custom fields on an org-less lead as a bare Organization card", () => {
+  render(
+    <LeadSidebar
+      lead={{ ...baseLead, customFields: {} }}
+      owners={[]}
+      person={null}
+      org={null}
+      leadCustomFieldDefs={[leadDef({ key: "grade", name: "Grade" })]}
+    />,
+  );
+  const section = within(screen.getByRole("region", { name: "Organization" }));
+  expect(section.getByText("Grade")).toBeInTheDocument();
+});
+
+it("saves an inline lead custom field through updateLeadAction", async () => {
+  render(
+    <LeadSidebar
+      lead={{ ...baseLead, customFields: { grade: "A" } }}
+      owners={[]}
+      person={null}
+      org={baseOrg}
+      leadCustomFieldDefs={[leadDef({ key: "grade", name: "Grade" })]}
+    />,
+  );
+  fireEvent.click(screen.getByRole("button", { name: "Edit Grade" }));
+  fireEvent.change(screen.getByLabelText("Grade"), { target: { value: "B" } });
+  fireEvent.click(screen.getByRole("button", { name: "Save" }));
+  await vi.waitFor(() =>
+    expect(updateLeadAction).toHaveBeenCalledWith(
+      expect.objectContaining({ leadId: baseLead.id, customFields: { grade: "B" } }),
+      "csrf",
+    ),
+  );
 });

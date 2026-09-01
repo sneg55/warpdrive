@@ -19,6 +19,7 @@ export interface LeadWorkspaceClientProps {
   hiddenOrgFields: ReadonlySet<string>;
   personCustomFieldDefs?: CustomFieldDef[];
   organizationCustomFieldDefs?: CustomFieldDef[];
+  leadCustomFieldDefs?: CustomFieldDef[];
   baseCurrency?: string;
 }
 
@@ -32,6 +33,7 @@ export function LeadWorkspaceClient({
   hiddenOrgFields,
   personCustomFieldDefs = [],
   organizationCustomFieldDefs = [],
+  leadCustomFieldDefs = [],
   baseCurrency = "USD",
 }: LeadWorkspaceClientProps): React.ReactNode {
   const timelineQ = trpc.lead.leadTimeline.useQuery({ leadId: lead.id });
@@ -54,6 +56,7 @@ export function LeadWorkspaceClient({
           hiddenOrgFields={hiddenOrgFields}
           personCustomFieldDefs={personCustomFieldDefs}
           organizationCustomFieldDefs={organizationCustomFieldDefs}
+          leadCustomFieldDefs={leadCustomFieldDefs}
           baseCurrency={baseCurrency}
         />
         <div className="min-w-0">

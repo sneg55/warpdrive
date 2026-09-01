@@ -17,6 +17,7 @@ beforeAll(() => {
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
+  for (const key of Object.keys(customFieldDefsByTarget)) delete customFieldDefsByTarget[key];
 });
 
 const push = vi.fn();
@@ -26,9 +27,17 @@ vi.mock("@/utils/csrfCookie", () => ({ readCsrfToken: () => "csrf" }));
 // The Leads inbox list is a tRPC query rather than part of the route payload, so a delete has to
 // invalidate it explicitly (LeadsInbox's own bulk delete calls refetch() for the same reason).
 const invalidateLeadList = vi.fn(async () => {});
+const customFieldDefsByTarget: Record<string, unknown[]> = {};
 vi.mock("@/lib/trpc-client", () => ({
   trpc: {
-    customFields: { listDefs: { useQuery: () => ({ data: [], isLoading: false }) } },
+    customFields: {
+      listDefs: {
+        useQuery: ({ target }: { target: string }) => ({
+          data: customFieldDefsByTarget[target] ?? [],
+          isLoading: false,
+        }),
+      },
+    },
     useUtils: () => ({ lead: { list: { invalidate: invalidateLeadList } } }),
   },
 }));
@@ -62,6 +71,7 @@ const LEAD = {
   archivedAt: null,
   convertedDealId: null,
   updatedAt: new Date("2026-06-01T00:00:00Z"),
+  customFields: {},
 } as unknown as LeadDetail;
 
 describe("LeadHeader PD lead-drawer parity", () => {
@@ -238,5 +248,46 @@ describe("LeadHeader delete dismissal", () => {
 
     await waitFor(() => expect(reportError).toHaveBeenCalledWith("E_PERM_001"));
     expect(invalidateLeadList).not.toHaveBeenCalled();
+  });
+});
+
+describe("LeadHeader convert dialog prefill", () => {
+  it("opens the convert dialog with a matching lead value carried into the deal field", async () => {
+    const user = userEvent.setup();
+    customFieldDefsByTarget.lead = [
+      {
+        id: "cf-lead-grade",
+        targetEntity: "lead",
+        type: "text",
+        name: "Grade",
+        key: "grade",
+        options: [],
+        isRequired: false,
+        isImportant: false,
+        showInAddForm: false,
+        order: 0,
+        archivedAt: null,
+      },
+    ];
+    customFieldDefsByTarget.deal = [
+      {
+        id: "cf-deal-grade",
+        targetEntity: "deal",
+        type: "text",
+        name: "Grade",
+        key: "grade",
+        options: [],
+        isRequired: false,
+        isImportant: false,
+        showInAddForm: true,
+        order: 0,
+        archivedAt: null,
+      },
+    ];
+    render(<LeadHeader lead={{ ...LEAD, customFields: { grade: "A" } }} />);
+
+    await user.click(screen.getByRole("button", { name: "Convert to deal" }));
+
+    expect(screen.getByLabelText("Grade")).toHaveValue("A");
   });
 });

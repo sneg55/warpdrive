@@ -9,10 +9,6 @@ import { ImportWizard } from "../ImportWizard";
 
 export const metadata = { title: STRINGS.settings.importer.title };
 
-// New CSV import (settings section 10): gated on data.import (the same flag the import server
-// actions enforce). Targets person/organization/deal/lead/activity; the custom-field defs for
-// every target that supports them (all but lead) are prefetched so the mapping step can offer
-// them without a client round-trip.
 export default async function NewImportPage(): Promise<ReactNode> {
   const { actor } = await createContext();
   if (actor === null) {
@@ -27,12 +23,14 @@ export default async function NewImportPage(): Promise<ReactNode> {
   const orgDefs = await listDefs(db, "organization", {}, signal);
   const dealDefs = await listDefs(db, "deal", {}, signal);
   const activityDefs = await listDefs(db, "activity", {}, signal);
+  const leadDefs = await listDefs(db, "lead", {}, signal);
   const hidden = await listHiddenBuiltins(db, signal);
   const hiddenBuiltins = {
     person: [...hidden.person],
     organization: [...hidden.organization],
     deal: [...hidden.deal],
     activity: [...hidden.activity],
+    lead: [...hidden.lead],
   };
 
   return (
@@ -41,6 +39,7 @@ export default async function NewImportPage(): Promise<ReactNode> {
       orgDefs={orgDefs}
       dealDefs={dealDefs}
       activityDefs={activityDefs}
+      leadDefs={leadDefs}
       hiddenBuiltins={hiddenBuiltins}
     />
   );

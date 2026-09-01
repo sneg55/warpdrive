@@ -5,6 +5,7 @@ import { leads } from "@/db/schema/leads";
 import { settings } from "@/db/schema/system";
 import { withTestDb } from "@/db/testing";
 import { seedUser } from "@/db/testing/factories";
+import { createDef, setDefFlags } from "@/features/custom-fields/defsRepo";
 import { archiveLead, createLead, type LeadSession } from "./leadActions";
 import { listLeads } from "./leadRepo";
 
@@ -128,6 +129,35 @@ describe("createLead", () => {
       const [b] = await db.select().from(leads).where(eq(leads.id, honored.value.id));
       expect(a?.ownerId).toBe(creator.id);
       expect(b?.ownerId).toBe(target.id);
+    });
+  });
+
+  it("stores validated custom fields and requires important ones", async () => {
+    await withTestDb(async (db) => {
+      await seedSettings(db);
+      const u = await seedUser(db);
+      const grade = await createDef(
+        db,
+        { targetEntity: "lead", type: "text", name: "Grade" },
+        sig(),
+      );
+      if (!grade.ok) throw new Error("def seed failed");
+      await setDefFlags(db, { id: grade.value.id, isImportant: true, showInAddForm: true }, sig());
+
+      const missing = await createLead(db, session(u.id), { title: "No grade" }, sig());
+      expect(missing.ok).toBe(false);
+      if (!missing.ok) expect(missing.error.id).toBe("E_CF_003");
+
+      const r = await createLead(
+        db,
+        session(u.id),
+        { title: "Graded", customFields: { grade: "A", unknown_key: "x" } },
+        sig(),
+      );
+      expect(r.ok).toBe(true);
+      if (!r.ok) return;
+      const [row] = await db.select().from(leads).where(eq(leads.id, r.value.id));
+      expect(row?.customFields).toEqual({ grade: "A" });
     });
   });
 });

@@ -24,6 +24,7 @@ import type { BuiltinRow, FieldRow } from "./types";
 const S = STRINGS.settings;
 const TARGET_LABEL: Record<CustomFieldTarget, string> = {
   deal: S.entityDeal,
+  lead: S.entityLead,
   person: S.entityPerson,
   organization: S.entityOrganization,
   activity: S.entityActivity,

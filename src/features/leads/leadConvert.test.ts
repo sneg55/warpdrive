@@ -189,4 +189,79 @@ describe("convertLead", () => {
       expect(again.error.id).toBe("E_LEAD_003");
     });
   });
+
+  it("carries lead custom fields onto the deal where key and type match; typed values win", async () => {
+    await withTestDb(async (db) => {
+      const owner = await seedUser(db);
+      const pipe = await seedPipelineWithStages(db, ["Qualify"]);
+      await seedSettings(db, { defaultPipelineId: pipe.pipeline.id });
+      await db.insert(customFieldDefs).values([
+        { targetEntity: "lead", type: "text", name: "Grade", key: "grade" },
+        { targetEntity: "deal", type: "text", name: "Grade", key: "grade" },
+        { targetEntity: "lead", type: "text", name: "Language", key: "language" },
+        { targetEntity: "deal", type: "numeric", name: "Language", key: "language" },
+        { targetEntity: "lead", type: "text", name: "Only lead", key: "only_lead" },
+      ]);
+      const values = { grade: "A", language: "en", only_lead: "x" };
+      const carried = await insertLead(db, owner.id, { customFields: values });
+      const overridden = await insertLead(db, owner.id, { customFields: values });
+
+      const carryOnly = await convertLead(
+        db,
+        session(owner.id),
+        { leadId: carried.id, expectedUpdatedAt: carried.updatedAt.toISOString() },
+        sig(),
+      );
+      expect(carryOnly.ok).toBe(true);
+      if (!carryOnly.ok) return;
+      const [carriedDeal] = await db
+        .select()
+        .from(deals)
+        .where(eq(deals.id, carryOnly.value.dealId));
+      expect(carriedDeal?.customFields).toEqual({ grade: "A" });
+
+      const typed = await convertLead(
+        db,
+        session(owner.id),
+        {
+          leadId: overridden.id,
+          expectedUpdatedAt: overridden.updatedAt.toISOString(),
+          customFields: { grade: "B" },
+        },
+        sig(),
+      );
+      expect(typed.ok).toBe(true);
+      if (!typed.ok) return;
+      const [typedDeal] = await db.select().from(deals).where(eq(deals.id, typed.value.dealId));
+      expect(typedDeal?.customFields).toEqual({ grade: "B" });
+    });
+  });
+
+  it("drops a carried value the dialog explicitly cleared", async () => {
+    await withTestDb(async (db) => {
+      const owner = await seedUser(db);
+      const pipe = await seedPipelineWithStages(db, ["Qualify"]);
+      await seedSettings(db, { defaultPipelineId: pipe.pipeline.id });
+      await db.insert(customFieldDefs).values([
+        { targetEntity: "lead", type: "text", name: "Grade", key: "grade" },
+        { targetEntity: "deal", type: "text", name: "Grade", key: "grade" },
+      ]);
+      const lead = await insertLead(db, owner.id, { customFields: { grade: "A" } });
+
+      const r = await convertLead(
+        db,
+        session(owner.id),
+        {
+          leadId: lead.id,
+          expectedUpdatedAt: lead.updatedAt.toISOString(),
+          customFields: { grade: null },
+        },
+        sig(),
+      );
+      expect(r.ok).toBe(true);
+      if (!r.ok) return;
+      const [deal] = await db.select().from(deals).where(eq(deals.id, r.value.dealId));
+      expect(deal?.customFields).toEqual({});
+    });
+  });
 });

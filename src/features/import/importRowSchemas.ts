@@ -90,6 +90,7 @@ export const leadImportRowSchema = z.object({
     .nullable()
     .default(null),
   sourceChannelId: z.string().trim().min(1).max(255).nullable().default(null),
+  customFields: z.record(z.string(), z.unknown()).default({}),
 });
 
 // CSV due dates are rarely full ISO datetimes; normalize any Date-parseable string to one so

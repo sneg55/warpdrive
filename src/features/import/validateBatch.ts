@@ -3,7 +3,6 @@ import { AppError, ERROR_IDS } from "@/constants/errorIds";
 import type { Db } from "@/db/client";
 import { importBatches, importRows } from "@/db/schema";
 import { listDefs } from "@/features/custom-fields/defsRepo";
-import type { CustomFieldDef } from "@/types/customFields";
 import { err, ok, type Result } from "@/types/result";
 import { loadOwnedBatch, narrowTarget } from "./batchHelpers";
 import type { ImportActor } from "./commit";
@@ -11,19 +10,6 @@ import { tallyRows } from "./finalize";
 import { applyMapping, validateMappedRow } from "./mapRow";
 import { publishImportProgress, shouldEmit } from "./progress";
 import { columnMappingSchema, normalizeMapping } from "./schemas";
-import type { ImportTarget } from "./wizardState";
-
-// listDefs only knows about CUSTOM_FIELD_TARGETS ("deal" | "person" | "organization" |
-// "activity"); leads have no custom-field support at all, so skip the lookup entirely rather
-// than widen listDefs's own type for a target it structurally cannot serve.
-async function defsForTarget(
-  db: Db,
-  target: ImportTarget,
-  signal: AbortSignal,
-): Promise<CustomFieldDef[]> {
-  if (target === "lead") return [];
-  return listDefs(db, target, {}, signal);
-}
 
 // Validate every still-pending/invalid row against the mapping + custom-field defs.
 // Row updates + batch update + counts all in one transaction; batch lands "ready".
@@ -46,7 +32,7 @@ export async function validateBatch(
   // normalizeMapping (not the raw parse) so a batch mapped before cross-entity mapping existed,
   // whose columns carry no `entity`, still resolves to the same destinations.
   const mapping = normalizeMapping(batch.columnMapping, target);
-  const defs = await defsForTarget(db, target, signal);
+  const defs = await listDefs(db, target, {}, signal);
   signal.throwIfAborted();
 
   // Fold the "validating" flip, row updates, and final "ready" flip into one tx so a

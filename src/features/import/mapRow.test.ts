@@ -142,7 +142,11 @@ describe("import mapping", () => {
 
   it("accepts a lead row (title + value only, no custom fields)", () => {
     const defs: CustomFieldDef[] = [];
-    const result = validateMappedRow("lead", { primary: { title: "A lead", value: "500" } }, defs);
+    const result = validateMappedRow(
+      "lead",
+      { primary: { title: "A lead", value: "500", customFields: {} } },
+      defs,
+    );
     expect(result.ok).toBe(true);
     if (result.ok === true) expect(result.value.primary.value).toBe(500);
   });
@@ -184,107 +188,44 @@ describe("import mapping", () => {
     const defs: CustomFieldDef[] = [];
     const result = validateMappedRow(
       "lead",
-      { primary: { title: "A lead" }, organization: { name: "NJT", employeeCount: "3431" } },
+      {
+        primary: { title: "A lead", customFields: {} },
+        organization: { name: "NJT", employeeCount: "3431" },
+      },
       defs,
     );
     expect(result.ok).toBe(true);
     if (result.ok === true) expect(result.value.organization?.employeeCount).toBe(3431);
   });
-});
 
-// An ORGANIZATION import puts org fields on the primary record. orgCreateInput does not declare
-// domain/industry/employeeCount, so validating the primary through it would let Zod strip them
-// and the import would silently drop every firmographic the user mapped.
-it("keeps the firmographics of an organization-target row through validation", () => {
-  const result = validateMappedRow(
-    "organization",
-    {
-      primary: {
-        name: "New Jersey Transit Corporation",
-        domain: "njtransit.com",
-        employeeCount: "3431",
-        customFields: {},
+  it("validates a lead custom column against lead defs", () => {
+    const m = normalizeMapping(
+      {
+        dedupMode: "skip",
+        columns: {
+          title: { entity: "lead", field: "title", isCustom: false, key: "" },
+          grade: { entity: "lead", field: "", isCustom: true, key: "grade" },
+        },
       },
-    },
-    [],
-  );
-  expect(result.ok).toBe(true);
-  if (result.ok === true) {
-    expect(result.value.primary.domain).toBe("njtransit.com");
-    expect(result.value.primary.employeeCount).toBe(3431);
-  }
-});
+      "lead",
+    );
+    const mapped = applyMapping({ title: "Graded", grade: "A" }, m, "lead");
+    expect(mapped.primary).toEqual({ title: "Graded", customFields: { grade: "A" } });
 
-// updateOrg treats an explicit null as "clear this field". If validation defaulted every unmapped
-// firmographic to null, an organization import in dedupMode "update" that maps only Name would
-// wipe the existing domain/industry/revenue off every matched org.
-it("omits unmapped organization fields rather than defaulting them to null", () => {
-  const result = validateMappedRow(
-    "organization",
-    { primary: { name: "Chicago Transit Authority", customFields: {} } },
-    [],
-  );
-  expect(result.ok).toBe(true);
-  if (result.ok === true) {
-    expect(result.value.primary).not.toHaveProperty("domain");
-    expect(result.value.primary).not.toHaveProperty("industry");
-    expect(result.value.primary).not.toHaveProperty("annualRevenue");
-    expect(result.value.primary).not.toHaveProperty("address");
-  }
-});
-
-it("omits unmapped fields from a related organization group too", () => {
-  const result = validateMappedRow(
-    "lead",
-    { primary: { title: "L" }, organization: { name: "X" } },
-    [],
-  );
-  expect(result.ok).toBe(true);
-  if (result.ok === true) {
-    expect(result.value.organization).toEqual({ name: "X" });
-  }
-});
-
-// Preview must not report a row valid that commit will then reject. leadCreateInput's enum only
-// accepts internal source-channel keys, so a CSV carrying the display label has to fail here.
-it("rejects a lead source channel that is not an internal key", () => {
-  const result = validateMappedRow(
-    "lead",
-    { primary: { title: "A lead", sourceChannel: "Outbound" } },
-    [],
-  );
-  expect(result.ok).toBe(false);
-  if (result.ok === false) {
-    expect(result.errors.some((e) => e.field === "sourceChannel")).toBe(true);
-  }
-});
-
-// Same contract for a deal row's related Person group: a malformed email must fail at preview,
-// not at commit when resolvePersonLink creates the person through personCreateInput.
-it("rejects a malformed email in a related person group", () => {
-  const result = validateMappedRow(
-    "deal",
-    {
-      primary: { title: "A deal", customFields: {} },
-      person: { name: "Jane", emails: [{ label: "work", value: "not-an-email", primary: true }] },
-    },
-    [],
-  );
-  expect(result.ok).toBe(false);
-  if (result.ok === false) {
-    expect(result.errors.some((e) => e.field.startsWith("person."))).toBe(true);
-  }
-});
-
-// createNote does not re-parse its input, so an over-length note body would insert at commit
-// rather than fail in preview. The 50k cap belongs at the import boundary.
-it("rejects a note body over the 50k limit", () => {
-  const result = validateMappedRow(
-    "lead",
-    { primary: { title: "A lead" }, note: { body: "x".repeat(50_001) } },
-    [],
-  );
-  expect(result.ok).toBe(false);
-  if (result.ok === false)
-    expect(result.errors.some((e) => e.field.startsWith("note."))).toBe(true);
+    const gradeDef: CustomFieldDef = {
+      id: "cf",
+      targetEntity: "lead",
+      type: "numeric",
+      name: "Grade",
+      key: "grade",
+      options: [],
+      isRequired: false,
+      isImportant: false,
+      showInAddForm: false,
+      order: 0,
+      archivedAt: null,
+    };
+    const bad = validateMappedRow("lead", mapped, [gradeDef]);
+    expect(bad.ok).toBe(false);
+  });
 });

@@ -6,12 +6,16 @@ import { isSourceChannelKey, SOURCE_CHANNELS } from "@/constants/sourceChannels"
 import { STRINGS } from "@/constants/strings";
 import type { Organization, Person } from "@/db/schema";
 import { CollapsibleSection } from "@/features/deal-workspace/CollapsibleSection";
+import type { CustomFieldsSave } from "@/features/deal-workspace/sidebar/customFieldsSave";
 import { FieldRow } from "@/features/deal-workspace/sidebar/FieldRow";
-import { OrganizationSection } from "@/features/deal-workspace/sidebar/OrganizationSection";
 import { PersonSection } from "@/features/deal-workspace/sidebar/PersonSection";
+import { RecordOrganizationSection } from "@/features/deal-workspace/sidebar/RecordOrganizationSection";
 import { sectionHeaderActions } from "@/features/deal-workspace/sidebar/sectionActions";
 import type { CustomFieldDef } from "@/types/customFields";
+import { err, ok } from "@/types/result";
+import { readCsrfToken } from "@/utils/csrfCookie";
 import type { LeadDetail } from "../leadRepo";
+import { updateLeadAction } from "../leadServerActions";
 import { LeadLabelRow } from "./LeadLabelRow";
 import { LeadSummaryEditPanel } from "./LeadSummaryEditPanel";
 
@@ -34,6 +38,7 @@ export function LeadSidebar({
   hiddenOrgFields = NONE,
   personCustomFieldDefs = [],
   organizationCustomFieldDefs = [],
+  leadCustomFieldDefs = [],
   baseCurrency = "USD",
 }: {
   lead: LeadDetail;
@@ -44,6 +49,7 @@ export function LeadSidebar({
   hiddenOrgFields?: ReadonlySet<string>;
   personCustomFieldDefs?: CustomFieldDef[];
   organizationCustomFieldDefs?: CustomFieldDef[];
+  leadCustomFieldDefs?: CustomFieldDef[];
   baseCurrency?: string;
 }): React.ReactNode {
   const router = useRouter();
@@ -54,21 +60,30 @@ export function LeadSidebar({
       ? SOURCE_CHANNELS[lead.sourceChannel].name
       : (lead.sourceChannel ?? "-");
 
-  // Leads have no dedicated custom-field target: they reuse the deal domain (a lead converts to a
-  // deal), so the "Customize fields" kebab item points at deal fields, with the Person/Organization
-  // sections pointing at their own entities.
-  const fieldsItem = (entity: "deal" | "person" | "organization") => [
+  const fieldsItem = (entity: "lead" | "person" | "organization") => [
     {
       label: STRINGS.dealSidebar.menu.customizeFields,
       onSelect: () => router.push(`/settings/fields?entity=${entity}`),
     },
   ];
 
+  const saveLeadCustomFields: CustomFieldsSave = async (patch) => {
+    const r = await updateLeadAction(
+      {
+        leadId: lead.id,
+        expectedUpdatedAt: new Date(lead.updatedAt).toISOString(),
+        customFields: patch,
+      },
+      readCsrfToken(),
+    );
+    return r.ok ? ok(r.value) : err(r.error.id);
+  };
+
   return (
     <aside className="min-w-0 space-y-2">
       <CollapsibleSection
         title="Summary"
-        headerActions={sectionHeaderActions("Summary", fieldsItem("deal"))}
+        headerActions={sectionHeaderActions("Summary", fieldsItem("lead"))}
       >
         <LeadSummaryEditPanel
           lead={{
@@ -92,7 +107,7 @@ export function LeadSidebar({
 
       <CollapsibleSection
         title="Source"
-        headerActions={sectionHeaderActions("Source", fieldsItem("deal"))}
+        headerActions={sectionHeaderActions("Source", fieldsItem("lead"))}
       >
         <FieldRow label="Origin">{lead.sourceOrigin.replace(/_/g, " ")}</FieldRow>
         <FieldRow label="Channel" empty={lead.sourceChannel === null}>
@@ -117,23 +132,25 @@ export function LeadSidebar({
         />
       )}
 
-      {org !== null && (
-        <OrganizationSection
-          org={org}
-          menuItems={fieldsItem("organization")}
-          bulkEditing={organizationBulkEditing}
-          onStartBulk={() => setOrganizationBulkEditing(true)}
-          onExitBulk={() => setOrganizationBulkEditing(false)}
-          hidden={hiddenOrgFields}
-          customFieldDefs={organizationCustomFieldDefs}
-          currency={baseCurrency}
-          showLabels
-        />
-      )}
+      <RecordOrganizationSection
+        hidden={false}
+        org={org}
+        orgMenuItems={fieldsItem("organization")}
+        bulkEditing={organizationBulkEditing}
+        onStartBulk={() => setOrganizationBulkEditing(true)}
+        onExitBulk={() => setOrganizationBulkEditing(false)}
+        hiddenOrgFields={hiddenOrgFields}
+        organizationCustomFieldDefs={organizationCustomFieldDefs}
+        currency={baseCurrency}
+        customFields={lead.customFields as Record<string, unknown>}
+        customFieldDefs={leadCustomFieldDefs}
+        onSaveCustomFields={saveLeadCustomFields}
+        title="Organization"
+      />
 
       <CollapsibleSection
         title="Overview"
-        headerActions={sectionHeaderActions("Overview", fieldsItem("deal"))}
+        headerActions={sectionHeaderActions("Overview", fieldsItem("lead"))}
       >
         <FieldRow label="Created">{lead.createdAt.toLocaleDateString()}</FieldRow>
       </CollapsibleSection>
