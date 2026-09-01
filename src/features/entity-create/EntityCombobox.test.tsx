@@ -172,4 +172,79 @@ describe("EntityCombobox", () => {
     fireEvent.mouseDown(screen.getByText(/Add 'Globex' as new organization/));
     expect(screen.queryByText("Similar organization already exists.")).toBeNull();
   });
+
+  it("fires onPick only on an explicit menu choice, never on keystrokes or blur", () => {
+    const onPick = vi.fn();
+    renderCombobox({ onPick });
+    const input = screen.getByLabelText("Organization");
+    fireEvent.change(input, { target: { value: "Acme Inc" } });
+    fireEvent.change(input, { target: { value: "Gamma" } });
+    fireEvent.blur(input);
+    expect(onPick).not.toHaveBeenCalled();
+
+    fireEvent.click(input);
+    fireEvent.change(input, { target: { value: "Bet" } });
+    fireEvent.mouseDown(screen.getByRole("button", { name: "Beta LLC" }));
+    expect(onPick).toHaveBeenLastCalledWith({ kind: "existing", id: "or2" });
+
+    fireEvent.change(input, { target: { value: "Gamma" } });
+    fireEvent.mouseDown(screen.getByRole("button", { name: "+ Add 'Gamma' as new organization" }));
+    expect(onPick).toHaveBeenLastCalledWith({ kind: "new", name: "Gamma" });
+  });
+
+  it("Enter commits the typed text through onPick: an exact name picks it, anything else creates", () => {
+    const onPick = vi.fn();
+    renderCombobox({ onPick });
+    const input = screen.getByLabelText("Organization");
+    fireEvent.change(input, { target: { value: "beta llc" } });
+    fireEvent.keyDown(input, { key: "Enter" });
+    expect(onPick).toHaveBeenLastCalledWith({ kind: "existing", id: "or2" });
+
+    fireEvent.change(input, { target: { value: "Gamma" } });
+    fireEvent.keyDown(input, { key: "Enter" });
+    expect(onPick).toHaveBeenLastCalledWith({ kind: "new", name: "Gamma" });
+
+    fireEvent.change(input, { target: { value: "   " } });
+    fireEvent.keyDown(input, { key: "Enter" });
+    expect(onPick).toHaveBeenCalledTimes(2);
+  });
+
+  it("ignores Enter while an IME composition is active", () => {
+    const onPick = vi.fn();
+    renderCombobox({ onPick });
+    const input = screen.getByLabelText("Organization");
+    fireEvent.change(input, { target: { value: "Gamma" } });
+    fireEvent.keyDown(input, { key: "Enter", isComposing: true });
+    expect(onPick).not.toHaveBeenCalled();
+  });
+
+  it("excludeIds hides an option from the menu but still counts it as an exact match", () => {
+    const onPick = vi.fn();
+    renderCombobox({ onPick, excludeIds: new Set(["or1"]) });
+    const input = screen.getByLabelText("Organization");
+    fireEvent.click(input);
+    expect(screen.queryByRole("button", { name: "Acme Inc" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Beta LLC" })).toBeInTheDocument();
+
+    fireEvent.change(input, { target: { value: "acme inc" } });
+    expect(screen.queryByRole("button", { name: /as new organization/ })).not.toBeInTheDocument();
+    fireEvent.keyDown(input, { key: "Enter" });
+    expect(onPick).toHaveBeenLastCalledWith({ kind: "existing", id: "or1" });
+  });
+
+  it("Review keeps excluded options out of the similar-match list too", () => {
+    renderCombobox({
+      options: [
+        { id: "or3", name: "test org" },
+        { id: "or4", name: "test organisation" },
+      ],
+      excludeIds: new Set(["or3"]),
+      similarWarning: "Similar organization already exists.",
+    });
+    fireEvent.change(screen.getByLabelText("Organization"), { target: { value: "test" } });
+    fireEvent.mouseDown(screen.getByText(/Add 'test' as new organization/));
+    fireEvent.mouseDown(screen.getByRole("button", { name: "Review" }));
+    expect(screen.getByText("test organisation")).toBeInTheDocument();
+    expect(screen.queryByText("test org")).toBeNull();
+  });
 });

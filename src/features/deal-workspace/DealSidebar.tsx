@@ -223,7 +223,6 @@ export function DealSidebar({
         key="participants"
         title={sections.participants}
         dealId={deal.id}
-        person={person !== null ? { id: person.id, name: person.name } : null}
         orgId={org?.id ?? null}
         orgName={org?.name ?? null}
       />

@@ -149,7 +149,6 @@ export function DealSummaryActionList({
           right={
             <ParticipantsControl
               dealId={deal.id}
-              person={person}
               orgId={org?.id ?? null}
               orgName={org?.name ?? null}
             />

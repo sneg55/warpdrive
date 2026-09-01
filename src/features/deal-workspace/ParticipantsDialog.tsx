@@ -2,15 +2,12 @@
 import { Trash2 } from "lucide-react";
 import Link from "next/link";
 import type React from "react";
-import { Combobox } from "@/components/ui/Combobox";
+import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { formatUserName } from "@/features/identity/formatUserName";
+import { ParticipantLinkField } from "./ParticipantLinkField";
 import type { useParticipants } from "./useParticipants";
 
-// PD-parity participants table (opened from the Summary count-link and the sidebar section's
-// View All): Name / Organization / Email / Phone / Closed deals / Open deals / Next activity
-// date / Owner, a per-row remove, and a link-participant combobox. Data + mutations come from
-// the caller's useParticipants so every surface shares one cache.
 export function ParticipantsDialog({
   open,
   onOpenChange,
@@ -22,7 +19,8 @@ export function ParticipantsDialog({
   title: string;
   data: ReturnType<typeof useParticipants>;
 }): React.ReactNode {
-  const { participants, options, add, remove } = data;
+  const { participants, add, remove, createAndAdd } = data;
+  const [removeError, setRemoveError] = useState<string | null>(null);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -31,15 +29,17 @@ export function ParticipantsDialog({
           <DialogTitle>Participants ({title})</DialogTitle>
         </DialogHeader>
 
-        <div className="w-64">
-          <Combobox
-            ariaLabel="Link participant"
-            placeholder="Link participant"
-            value=""
-            onChange={(id) => void add(id)}
-            options={options}
+        {open && (
+          <ParticipantLinkField
+            linked={participants.map((p) => ({ id: p.personId, name: p.name }))}
+            onPick={(pick) => (pick.kind === "existing" ? add(pick.id) : createAndAdd(pick.name))}
           />
-        </div>
+        )}
+        {removeError !== null && (
+          <p role="alert" className="text-xs text-destructive">
+            {removeError}
+          </p>
+        )}
 
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -89,7 +89,7 @@ export function ParticipantsDialog({
                     <button
                       type="button"
                       aria-label={`Remove ${p.name}`}
-                      onClick={() => void remove(p.personId)}
+                      onClick={() => void remove(p.personId).then(setRemoveError)}
                       className="rounded p-1 text-muted-foreground hover:text-destructive"
                     >
                       <Trash2 className="h-4 w-4" />

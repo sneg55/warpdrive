@@ -1,56 +1,70 @@
 "use client";
 import { useRouter } from "next/navigation";
-import type { ComboboxOption } from "@/components/ui/Combobox";
+import { ERROR_IDS } from "@/constants/errorIds";
+import { createPersonAction } from "@/features/contacts/actions";
 import type { DealParticipant } from "@/features/deal-workspace/participantsList";
 import { trpc } from "@/lib/trpc-client";
 import { readCsrfToken } from "@/utils/csrfCookie";
 import { addParticipantAction, removeParticipantAction } from "./actions";
 
-// Shared data + mutations for every participants surface (Summary count-link, sidebar section,
-// participants dialog): one tRPC cache key, so an add/remove anywhere updates all three.
+export type ParticipantMutation = (personId: string) => Promise<string | null>;
+
+function createFailureMessage(errorId: string): string {
+  if (errorId === ERROR_IDS.CF_VALUE_INVALID) {
+    return "This workspace requires more person fields; add the person under Contacts first.";
+  }
+  return `Could not create person (${errorId})`;
+}
+
 export function useParticipants(
   dealId: string,
-  person: { id: string; name: string } | null,
   orgId: string | null,
 ): {
   participants: DealParticipant[];
-  options: ComboboxOption[];
-  add: (personId: string) => Promise<void>;
-  remove: (personId: string) => Promise<void>;
+  add: ParticipantMutation;
+  remove: ParticipantMutation;
+  createAndAdd: (name: string) => Promise<string | null>;
 } {
   const router = useRouter();
   const utils = trpc.useUtils();
   const participantsQ = trpc.deal.participants.useQuery({ dealId });
-  const orgPeopleQ = trpc.contacts.listPeopleForOrg.useQuery(
-    { orgId: orgId ?? "" },
-    { enabled: orgId !== null },
-  );
   const participants = participantsQ.data ?? [];
-
-  // Candidates: the linked org's people plus the deal's own contact, minus current participants.
-  const current = new Set(participants.map((p) => p.personId));
-  const candidates = new Map<string, string>();
-  if (person !== null) candidates.set(person.id, person.name);
-  for (const p of orgPeopleQ.data ?? []) candidates.set(p.id, p.name);
-  const options = [...candidates]
-    .filter(([id]) => !current.has(id))
-    .map<ComboboxOption>(([id, name]) => ({ value: id, label: name }));
 
   async function refresh(): Promise<void> {
     await utils.deal.participants.invalidate({ dealId });
     router.refresh();
   }
 
-  return {
-    participants,
-    options,
-    add: async (personId: string) => {
-      await addParticipantAction({ dealId, personId, role: null }, readCsrfToken());
-      await refresh();
-    },
-    remove: async (personId: string) => {
-      await removeParticipantAction({ dealId, personId }, readCsrfToken());
-      await refresh();
-    },
-  };
+  async function link(personId: string): Promise<string | null> {
+    const r = await addParticipantAction({ dealId, personId, role: null }, readCsrfToken());
+    if (!r.ok) return r.error.id;
+    await refresh();
+    return null;
+  }
+
+  async function add(personId: string): Promise<string | null> {
+    const failure = await link(personId);
+    return failure === null ? null : `Could not link participant (${failure})`;
+  }
+
+  async function remove(personId: string): Promise<string | null> {
+    const r = await removeParticipantAction({ dealId, personId }, readCsrfToken());
+    if (!r.ok) return `Could not remove participant (${r.error.id})`;
+    await refresh();
+    return null;
+  }
+
+  async function createAndAdd(name: string): Promise<string | null> {
+    const r = await createPersonAction(
+      { name, orgId, emails: [], phones: [], customFields: {} },
+      readCsrfToken(),
+    );
+    if (!r.ok) return createFailureMessage(r.error.id);
+    await utils.contacts.personOptions.invalidate();
+    const linkError = await link(r.value.id);
+    if (linkError !== null) return `${name} was created but could not be linked (${linkError})`;
+    return null;
+  }
+
+  return { participants, add, remove, createAndAdd };
 }

@@ -14,18 +14,16 @@ import { useParticipants } from "../useParticipants";
 export function ParticipantsSection({
   title,
   dealId,
-  person,
   orgId,
   orgName,
 }: {
   title: string;
   dealId: string;
-  person: { id: string; name: string } | null;
   orgId: string | null;
   orgName: string | null;
 }): React.ReactNode {
   const [open, setOpen] = useState(false);
-  const data = useParticipants(dealId, person, orgId);
+  const data = useParticipants(dealId, orgId);
   if (data.participants.length === 0) return null;
 
   return (

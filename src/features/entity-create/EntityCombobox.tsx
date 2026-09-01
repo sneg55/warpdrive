@@ -5,6 +5,8 @@ import { FIELD_INPUT as FIELD } from "@/constants/formStyles";
 import type { Option } from "./modalState";
 import { findSimilarOptions } from "./similarMatch";
 
+export type EntityPick = { kind: "existing"; id: string } | { kind: "new"; name: string };
+
 export interface EntityComboboxProps {
   label: string;
   options: Option[];
@@ -12,6 +14,8 @@ export interface EntityComboboxProps {
   onSelectExisting: (id: string) => void;
   onCreateNew: (name: string) => void;
   onClear: () => void;
+  onPick?: (pick: EntityPick) => void;
+  excludeIds?: ReadonlySet<string>;
   placeholder?: string;
   // Shown under the field after choosing "create new" when an existing option looks like a
   // duplicate (e.g. "Similar organization already exists."). Omit to disable the warning.
@@ -38,7 +42,7 @@ const ROW = "block w-full px-2.5 py-1.5 text-left text-sm hover:bg-accent";
 export function EntityCombobox(props: EntityComboboxProps): React.ReactNode {
   const { label, options, createLabel, onSelectExisting, onCreateNew, onClear, placeholder } =
     props;
-  const { similarWarning, hideLabel } = props;
+  const { similarWarning, hideLabel, onPick, excludeIds } = props;
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const [chosen, setChosen] = useState<"existing" | "new" | null>(null);
@@ -49,15 +53,19 @@ export function EntityCombobox(props: EntityComboboxProps): React.ReactNode {
   const inReview = chosen === "new";
   // The similar-match scan (normalize + Levenshtein over every option) is only needed in review
   // mode, so gate it there; useMemo keeps focus/open toggles from re-running the list work.
+  const listed = useMemo(
+    () => (excludeIds === undefined ? options : options.filter((o) => !excludeIds.has(o.id))),
+    [options, excludeIds],
+  );
   const similar = useMemo(
-    () => (inReview && q !== "" ? findSimilarOptions(options, query) : []),
-    [inReview, q, query, options],
+    () => (inReview && q !== "" ? findSimilarOptions(listed, query) : []),
+    [inReview, q, query, listed],
   );
   const { exact, menuOptions } = useMemo(() => {
     const isExact = options.some((o) => o.name.trim().toLowerCase() === q);
-    const filtered = q === "" ? options : options.filter((o) => o.name.toLowerCase().includes(q));
+    const filtered = q === "" ? listed : listed.filter((o) => o.name.toLowerCase().includes(q));
     return { exact: isExact, menuOptions: inReview ? similar : filtered };
-  }, [options, q, inReview, similar]);
+  }, [options, listed, q, inReview, similar]);
   const showCreate = q !== "" && !exact;
   // Warn only once the user has committed to creating new and the typed name looks like a duplicate.
   const showWarning = inReview && similarWarning !== undefined && similar.length > 0;
@@ -85,6 +93,7 @@ export function EntityCombobox(props: EntityComboboxProps): React.ReactNode {
     setChosen("existing");
     setOpen(false);
     onSelectExisting(option.id);
+    onPick?.({ kind: "existing", id: option.id });
   }
 
   function createNew(): void {
@@ -92,12 +101,21 @@ export function EntityCombobox(props: EntityComboboxProps): React.ReactNode {
     setChosen("new");
     setOpen(false);
     onCreateNew(name);
+    onPick?.({ kind: "new", name });
   }
 
   // Free-text commit: on blur, reconcile whatever the user typed into a committed choice so the
   // visible text and the saved value never diverge. Empty clears; an exact existing name selects
   // that record; anything else becomes a create-new. Menu clicks use onMouseDown (which fires
   // before blur), so an explicit selection has already committed by the time this runs.
+  function commitFromKeyboard(): void {
+    const text = query.trim();
+    if (text === "") return;
+    const match = options.find((o) => o.name.trim().toLowerCase() === text.toLowerCase());
+    if (match !== undefined) selectExisting(match);
+    else createNew();
+  }
+
   function reconcile(): void {
     const text = query.trim();
     if (text === "") {
@@ -130,6 +148,11 @@ export function EntityCombobox(props: EntityComboboxProps): React.ReactNode {
         // autofocus their first field on mount, and opening on that programmatic focus dumped the
         // whole option list open before the user touched anything. Typing opens via handleChange.
         onClick={() => setOpen(true)}
+        onKeyDown={(e) => {
+          if (e.key !== "Enter" || e.nativeEvent.isComposing) return;
+          e.preventDefault();
+          commitFromKeyboard();
+        }}
         onBlur={() => {
           setOpen(false);
           reconcile();

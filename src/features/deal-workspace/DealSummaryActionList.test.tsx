@@ -20,23 +20,42 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
-const { updateDealAction, addParticipantAction, removeParticipantAction } = vi.hoisted(() => ({
-  updateDealAction: vi.fn(() =>
-    Promise.resolve({ ok: true, deal: { id: "d1", updatedAt: "2026-01-03T00:00:00.000Z" } }),
-  ),
-  addParticipantAction: vi.fn(() => Promise.resolve({ ok: true })),
-  removeParticipantAction: vi.fn(() => Promise.resolve({ ok: true })),
-}));
+const { updateDealAction, addParticipantAction, removeParticipantAction, createPersonAction } =
+  vi.hoisted(() => ({
+    updateDealAction: vi.fn(() =>
+      Promise.resolve({ ok: true, deal: { id: "d1", updatedAt: "2026-01-03T00:00:00.000Z" } }),
+    ),
+    addParticipantAction: vi.fn(() => Promise.resolve({ ok: true })),
+    removeParticipantAction: vi.fn(() => Promise.resolve({ ok: true })),
+    createPersonAction: vi.fn(() => Promise.resolve({ ok: true as const, value: { id: "pnew" } })),
+  }));
 vi.mock("@/features/deals/updateAction", () => ({ updateDealAction }));
+vi.mock("@/features/contacts/actions", () => ({ createPersonAction }));
 vi.mock("@/features/deal-workspace/actions", () => ({
   addParticipantAction,
   removeParticipantAction,
 }));
 vi.mock("@/utils/csrfCookie", () => ({ readCsrfToken: () => "csrf" }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
+const { personOptionsQuery, invalidatePersonOptions } = vi.hoisted(() => ({
+  personOptionsQuery: {
+    current: {
+      data: [
+        { id: "p2", name: "Ann Guest" },
+        { id: "p3", name: "Bob Free" },
+        { id: "p4", name: "Cara Far" },
+      ] as Array<{ id: string; name: string }> | undefined,
+      isError: false,
+    },
+  },
+  invalidatePersonOptions: vi.fn(),
+}));
 vi.mock("@/lib/trpc-client", () => ({
   trpc: {
-    useUtils: () => ({ deal: { participants: { invalidate: vi.fn() } } }),
+    useUtils: () => ({
+      deal: { participants: { invalidate: vi.fn() } },
+      contacts: { personOptions: { invalidate: invalidatePersonOptions } },
+    }),
     deal: {
       participants: {
         useQuery: () => ({
@@ -57,13 +76,8 @@ vi.mock("@/lib/trpc-client", () => ({
       },
     },
     contacts: {
-      listPeopleForOrg: {
-        useQuery: () => ({
-          data: [
-            { id: "p2", name: "Ann Guest" },
-            { id: "p3", name: "Bob Free" },
-          ],
-        }),
+      personOptions: {
+        useQuery: () => personOptionsQuery.current,
       },
     },
     labels: {
@@ -170,12 +184,103 @@ it("shows the participant count-link (PD parity) and opens the participants tabl
   fireEvent.click(screen.getByRole("button", { name: "Remove Ann Guest" }));
   await vi.waitFor(() => expect(removeParticipantAction).toHaveBeenCalled());
 
-  // Candidates offered exclude existing participants; adding calls the action.
-  fireEvent.click(screen.getByLabelText("Link participant"));
-  fireEvent.click(screen.getByRole("option", { name: "Bob Free" }));
+  const field = screen.getByLabelText("Link participant");
+  fireEvent.click(field);
+  expect(screen.queryByRole("button", { name: "Ann Guest" })).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Cara Far" })).toBeInTheDocument();
+  fireEvent.change(field, { target: { value: "bob" } });
+  fireEvent.mouseDown(screen.getByRole("button", { name: "Bob Free" }));
   await vi.waitFor(() => expect(addParticipantAction).toHaveBeenCalled());
   const [payload] = addParticipantAction.mock.calls[0] as unknown as [Record<string, unknown>];
   expect(payload.personId).toBe("p3");
+  expect(createPersonAction).not.toHaveBeenCalled();
+});
+
+it("creates a new person from the participants dialog and links them (Add deal pattern)", async () => {
+  renderList();
+  fireEvent.click(screen.getByRole("button", { name: "1 participant" }));
+  const field = screen.getByLabelText("Link participant");
+  fireEvent.change(field, { target: { value: "Zed New" } });
+  fireEvent.mouseDown(screen.getByRole("button", { name: "+ Add 'Zed New' as new person" }));
+  await vi.waitFor(() => expect(addParticipantAction).toHaveBeenCalled());
+  expect(createPersonAction).toHaveBeenCalledWith(
+    { name: "Zed New", orgId: "o1", emails: [], phones: [], customFields: {} },
+    "csrf",
+  );
+  const [payload] = addParticipantAction.mock.calls[0] as unknown as [Record<string, unknown>];
+  expect(payload.personId).toBe("pnew");
+});
+
+it("keeps the link field disabled until the people list has loaded (no create-a-duplicate window)", () => {
+  personOptionsQuery.current = { data: undefined, isError: false };
+  try {
+    renderList();
+    fireEvent.click(screen.getByRole("button", { name: "1 participant" }));
+    const field = screen.getByLabelText("Link participant");
+    expect(field).toBeDisabled();
+    fireEvent.change(field, { target: { value: "Bob Free" } });
+    expect(screen.queryByRole("button", { name: /as new person/ })).not.toBeInTheDocument();
+  } finally {
+    personOptionsQuery.current = {
+      data: [
+        { id: "p2", name: "Ann Guest" },
+        { id: "p3", name: "Bob Free" },
+        { id: "p4", name: "Cara Far" },
+      ],
+      isError: false,
+    };
+  }
+});
+
+it("says so when the person was created but the link failed, and refreshes the people list", async () => {
+  addParticipantAction.mockResolvedValueOnce({
+    ok: false,
+    error: { id: "E_PERM_001" },
+  } as unknown as { ok: true });
+  renderList();
+  fireEvent.click(screen.getByRole("button", { name: "1 participant" }));
+  fireEvent.change(screen.getByLabelText("Link participant"), { target: { value: "Zed New" } });
+  fireEvent.mouseDown(screen.getByRole("button", { name: "+ Add 'Zed New' as new person" }));
+  expect(
+    await screen.findByText("Zed New was created but could not be linked (E_PERM_001)"),
+  ).toBeInTheDocument();
+  expect(invalidatePersonOptions).toHaveBeenCalled();
+});
+
+it("does not create a duplicate when the typed name is already a participant", async () => {
+  renderList();
+  fireEvent.click(screen.getByRole("button", { name: "1 participant" }));
+  const field = screen.getByLabelText("Link participant");
+  fireEvent.change(field, { target: { value: "ann guest" } });
+  expect(screen.queryByRole("button", { name: /as new person/ })).not.toBeInTheDocument();
+  fireEvent.keyDown(field, { key: "Enter" });
+  expect(await screen.findByText("Ann Guest is already a participant")).toBeInTheDocument();
+  expect(createPersonAction).not.toHaveBeenCalled();
+  expect(addParticipantAction).not.toHaveBeenCalled();
+});
+
+it("ignores a second commit while the first create-and-link is still in flight", async () => {
+  renderList();
+  fireEvent.click(screen.getByRole("button", { name: "1 participant" }));
+  const field = screen.getByLabelText("Link participant");
+  fireEvent.change(field, { target: { value: "Zed New" } });
+  fireEvent.keyDown(field, { key: "Enter" });
+  fireEvent.keyDown(field, { key: "Enter" });
+  await vi.waitFor(() => expect(addParticipantAction).toHaveBeenCalled());
+  expect(createPersonAction).toHaveBeenCalledTimes(1);
+});
+
+it("surfaces a failed participant create inline instead of swallowing it", async () => {
+  createPersonAction.mockResolvedValueOnce({
+    ok: false,
+    error: { id: "E_PERM_001" },
+  } as unknown as { ok: true; value: { id: string } });
+  renderList();
+  fireEvent.click(screen.getByRole("button", { name: "1 participant" }));
+  fireEvent.change(screen.getByLabelText("Link participant"), { target: { value: "Zed New" } });
+  fireEvent.mouseDown(screen.getByRole("button", { name: "+ Add 'Zed New' as new person" }));
+  expect(await screen.findByText("Could not create person (E_PERM_001)")).toBeInTheDocument();
+  expect(addParticipantAction).not.toHaveBeenCalled();
 });
 
 it("edits the value ONLY via the pencil, with a dirty-gated Save footer (PD mechanism)", async () => {

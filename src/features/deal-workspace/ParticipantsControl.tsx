@@ -9,17 +9,15 @@ import { useParticipants } from "./useParticipants";
 // then an "N participants" count-link. Either opens the participants table dialog.
 export function ParticipantsControl({
   dealId,
-  person,
   orgId,
   orgName,
 }: {
   dealId: string;
-  person: { id: string; name: string } | null;
   orgId: string | null;
   orgName: string | null;
 }): React.ReactNode {
   const [open, setOpen] = useState(false);
-  const data = useParticipants(dealId, person, orgId);
+  const data = useParticipants(dealId, orgId);
   const count = data.participants.length;
 
   return (
