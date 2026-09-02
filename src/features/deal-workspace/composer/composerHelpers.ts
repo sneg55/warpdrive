@@ -53,7 +53,17 @@ function composedDue(d: ActivityDraft): { dueAt: string | null; allDay: boolean 
 // Map the composer draft to an activityUpdateInput patch for an existing activity. Mirrors
 // buildActivityInput but carries the id and the update-shaped fields (the composer's participants
 // are person guests -> guestPersonIds, matching create; participantUserIds is not edited here).
-export function buildActivityUpdateInput(id: string, d: ActivityDraft) {
+type StoredLinks = Pick<OwnLinks, "dealId" | "personId" | "orgId">;
+
+function changedLinks(links: LinkValue, stored: StoredLinks) {
+  return {
+    ...(links.deal === stored.dealId ? {} : { dealId: links.deal }),
+    ...(links.person === stored.personId ? {} : { personId: links.person }),
+    ...(links.org === stored.orgId ? {} : { orgId: links.org }),
+  };
+}
+
+export function buildActivityUpdateInput(id: string, d: ActivityDraft, stored: StoredLinks) {
   return {
     id,
     typeId: d.typeId,
@@ -62,9 +72,7 @@ export function buildActivityUpdateInput(id: string, d: ActivityDraft) {
     ...composedDue(d),
     endAt: d.endDate === "" ? null : composeDueAtIso(d.endDate, d.endTime),
     durationMinutes: deriveDurationMinutes(d.startTime, d.endTime),
-    dealId: d.links.deal,
-    personId: d.links.person,
-    orgId: d.links.org,
+    ...changedLinks(d.links, stored),
     location: d.location.trim() === "" ? null : d.location.trim(),
     note: isBlankHtml(d.note) ? null : d.note,
     videoCallUrl: d.videoCallUrl === "" ? null : d.videoCallUrl,
@@ -148,4 +156,42 @@ export function buildLinkTargets(
   if (orgId !== null)
     targets.push({ kind: "org", id: orgId, label: labels.org ?? LINK_FALLBACK.org });
   return targets;
+}
+
+interface OwnLinks {
+  dealId: string | null;
+  personId: string | null;
+  orgId: string | null;
+  dealTitle: string | null;
+  personName: string | null;
+  orgName: string | null;
+}
+
+interface PageLinkContext {
+  dealId: string | null;
+  personId: string | null;
+  orgId: string | null;
+  dealTitle?: string;
+  personName?: string;
+  orgName?: string;
+}
+
+function editTarget(
+  kind: LinkKind,
+  ownId: string | null,
+  ownName: string | null,
+  pageId: string | null,
+  pageLabel?: string,
+): LinkTarget | null {
+  if (ownId !== null) return ownName === null ? null : { kind, id: ownId, label: ownName };
+  if (pageId === null) return null;
+  return { kind, id: pageId, label: pageLabel ?? LINK_FALLBACK[kind] };
+}
+
+export function buildEditLinkTargets(own: OwnLinks, page: PageLinkContext): LinkTarget[] {
+  return [
+    editTarget("deal", own.dealId, own.dealTitle, page.dealId, page.dealTitle),
+    editTarget("person", own.personId, own.personName, page.personId, page.personName),
+    editTarget("org", own.orgId, own.orgName, page.orgId, page.orgName),
+  ].filter((t): t is LinkTarget => t !== null);
 }

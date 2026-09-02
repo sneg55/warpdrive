@@ -8,6 +8,7 @@ import { readCsrfToken } from "@/utils/csrfCookie";
 import {
   buildActivityInput,
   buildActivityUpdateInput,
+  buildEditLinkTargets,
   buildLinkTargets,
   localPartsFromIso,
   todayLocalDateString,
@@ -85,11 +86,15 @@ export function useActivityComposer(props: ActivityComposerProps) {
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
-  const linkTargets = buildLinkTargets(dealId, personId, orgId, {
-    deal: dealTitle,
-    person: personName,
-    org: orgName,
-  });
+  const pageLinks = { dealId, personId, orgId, dealTitle, personName, orgName };
+  const linkTargets =
+    editing === null
+      ? buildLinkTargets(dealId, personId, orgId, {
+          deal: dealTitle,
+          person: personName,
+          org: orgName,
+        })
+      : buildEditLinkTargets(editing, pageLinks);
   function setLink(kind: LinkKind, id: string | null): void {
     setLinks((prev) => ({ ...prev, [kind]: id }));
   }
@@ -157,7 +162,7 @@ export function useActivityComposer(props: ActivityComposerProps) {
     const csrf = readCsrfToken();
     const r =
       editing !== null
-        ? await editActivityAction(buildActivityUpdateInput(editing.id, draft()), csrf)
+        ? await editActivityAction(buildActivityUpdateInput(editing.id, draft(), editing), csrf)
         : await createActivityAction(buildActivityInput(draft()), csrf);
     if (!r.ok) {
       setPending(false);

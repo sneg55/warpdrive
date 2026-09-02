@@ -1,11 +1,19 @@
 import { and, eq, isNull } from "drizzle-orm";
 import { ACTIVITY_PRIORITIES, isActivityPriorityKey } from "@/constants/activityPriorities";
 import { AppError, ERROR_IDS } from "@/constants/errorIds";
-import { activities, activityGuests, activityParticipants } from "@/db/schema";
+import {
+  activities,
+  activityGuests,
+  activityParticipants,
+  deals,
+  organizations,
+  persons,
+} from "@/db/schema";
 import { canSee } from "@/features/permissions/canSee";
 import type { PermSetUser } from "@/features/permissions/effective";
 import type { DbOrTx } from "@/server/realtime/channelVersions";
 import { err, ok, type Result } from "@/types/result";
+import { linkedParentVisible } from "./parentLinkVisibility";
 import { resolveActivityVisibility } from "./visibility";
 
 // Every field the inline composer needs to prefill an edit. Timestamps are ISO strings so the
@@ -30,6 +38,59 @@ export interface EditableActivity {
   orgId: string | null;
   guestPersonIds: string[];
   participantUserIds: string[];
+  dealTitle: string | null;
+  personName: string | null;
+  orgName: string | null;
+}
+
+type LinkNames = Pick<EditableActivity, "dealTitle" | "personName" | "orgName">;
+
+async function visibleLinkedName(
+  db: DbOrTx,
+  actor: PermSetUser,
+  kind: "person" | "organization",
+  id: string | null,
+): Promise<string | null> {
+  if (id === null) return null;
+  const table = kind === "person" ? persons : organizations;
+  const [row] = await db
+    .select({
+      id: table.id,
+      name: table.name,
+      ownerId: table.ownerId,
+      level: table.visibilityLevel,
+      groupId: table.visibilityGroupId,
+      visibleTo: table.visibleToUserIds,
+    })
+    .from(table)
+    .where(and(eq(table.id, id), isNull(table.deletedAt)));
+  if (row === undefined) return null;
+  return linkedParentVisible(actor, kind, row.id, row) ? row.name : null;
+}
+
+async function dealTitleOf(db: DbOrTx, dealId: string | null): Promise<string | null> {
+  if (dealId === null) return null;
+  const [deal] = await db
+    .select({ title: deals.title })
+    .from(deals)
+    .where(and(eq(deals.id, dealId), isNull(deals.deletedAt)));
+  return deal?.title ?? null;
+}
+
+async function linkNames(
+  db: DbOrTx,
+  actor: PermSetUser,
+  links: { dealId: string | null; personId: string | null; orgId: string | null },
+  signal: AbortSignal,
+): Promise<LinkNames> {
+  signal.throwIfAborted();
+  const [dealTitle, personName, orgName] = await Promise.all([
+    dealTitleOf(db, links.dealId),
+    visibleLinkedName(db, actor, "person", links.personId),
+    visibleLinkedName(db, actor, "organization", links.orgId),
+  ]);
+  signal.throwIfAborted();
+  return { dealTitle, personName, orgName };
 }
 
 // Coerce a stored priority to a valid key so the edit round-trips through the update schema's enum.
@@ -75,9 +136,10 @@ export async function getActivityForEdit(
     .select({ userId: activityParticipants.userId })
     .from(activityParticipants)
     .where(eq(activityParticipants.activityId, id));
-  signal.throwIfAborted();
+  const names = await linkNames(db, actor, row, signal);
 
   return ok({
+    ...names,
     id: row.id,
     typeId: row.typeId,
     subject: row.subject,
