@@ -13,6 +13,11 @@ beforeAll(() => {
   Element.prototype.scrollIntoView = vi.fn();
   Element.prototype.hasPointerCapture = vi.fn(() => false);
   Element.prototype.releasePointerCapture = vi.fn();
+  global.ResizeObserver = class {
+    observe = vi.fn();
+    unobserve = vi.fn();
+    disconnect = vi.fn();
+  };
 });
 
 afterEach(() => {
@@ -27,6 +32,11 @@ const { invalidateForEntity, invalidateLead, invalidateContactTimeline, invalida
     invalidateContactTimeline: vi.fn(() => Promise.resolve()),
     invalidateStats: vi.fn(() => Promise.resolve()),
   }));
+vi.mock("@/features/email/composer/RichTextBodyLazy", () => ({
+  RichTextBody: ({ onChange }: { onChange: (h: string) => void }) => (
+    <textarea aria-label="Note" onChange={(e) => onChange(e.target.value)} />
+  ),
+}));
 vi.mock("@/lib/trpc-client", () => ({
   trpc: {
     useUtils: () => ({
@@ -44,26 +54,24 @@ vi.mock("@/lib/trpc-client", () => ({
     activities: {
       listTypes: { useQuery: () => ({ data: [{ id: "t1", key: "call", name: "Call" }] }) },
       dayLoad: { useQuery: () => ({ data: undefined }) },
+      availability: { useQuery: () => ({ data: { busy: false } }) },
     },
-    contacts: {
-      listPeople: {
-        useQuery: () => ({ data: { rows: [{ id: "p9", name: "Zed Quill" }], total: 1 } }),
-      },
-      listOrgs: { useQuery: () => ({ data: { rows: [], total: 0 } }) },
-    },
+    identity: { assignableUsers: { useQuery: () => ({ data: [{ id: "u1", name: "Me" }] }) } },
+    contacts: { listPeopleForOrg: { useQuery: () => ({ data: [] }) } },
   },
 }));
 
 const { createActivityAction } = vi.hoisted(() => ({
   createActivityAction: vi.fn(() => Promise.resolve({ ok: true as const, value: { id: "a2" } })),
 }));
-vi.mock("./actions", () => ({ createActivityAction }));
+vi.mock("./actions", () => ({ createActivityAction, editActivityAction: vi.fn() }));
 vi.mock("@/utils/csrfCookie", () => ({ readCsrfToken: () => "csrf" }));
 
 import { FollowUpPromptProvider, useFollowUpAfterDone } from "./followUpAfterDone";
 
 const LINKS = {
   dealId: "d1",
+  dealTitle: "Acme renewal",
   leadId: null,
   personId: "p1",
   personName: "Mia Costa",
@@ -72,6 +80,7 @@ const LINKS = {
 };
 const OTHER_LINKS = {
   dealId: "d2",
+  dealTitle: null,
   leadId: null,
   personId: null,
   personName: null,
@@ -80,6 +89,7 @@ const OTHER_LINKS = {
 };
 const PERSON_ONLY = {
   dealId: null,
+  dealTitle: null,
   leadId: null,
   personId: "p1",
   personName: "Mia Costa",
@@ -134,9 +144,9 @@ describe("FollowUpPromptProvider invalidation", () => {
   it("refreshes every linked record's timeline after the follow-up is created", async () => {
     renderProbe(true);
     fireEvent.click(screen.getByRole("button", { name: "done" }));
-    fireEvent.change(screen.getByLabelText("Subject"), { target: { value: "Send proposal" } });
-    fireEvent.click(screen.getByLabelText("Due date"));
-    fireEvent.click(await screen.findByText("10"));
+    fireEvent.change(await screen.findByLabelText("Subject"), {
+      target: { value: "Send proposal" },
+    });
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
     expect(invalidateForEntity).toHaveBeenCalledWith({ entityType: "deal", entityId: "d1" });
@@ -158,24 +168,23 @@ describe("FollowUpPromptProvider invalidation", () => {
     expect(invalidateLead).not.toHaveBeenCalled();
   });
 
-  it("also refreshes a contact the user picked in the form instead of the prefilled one", async () => {
+  it("still refreshes a record the user unlinked in the form, and skips it in the saved set", async () => {
     renderProbe(true);
-    fireEvent.click(screen.getByRole("button", { name: "done other" }));
-    fireEvent.change(screen.getByLabelText("Subject"), { target: { value: "Send proposal" } });
-    fireEvent.click(screen.getByLabelText("Due date"));
-    fireEvent.click(await screen.findByText("10"));
-    fireEvent.click(screen.getByLabelText("Contact person"));
-    fireEvent.click(await screen.findByText("Zed Quill"));
+    fireEvent.click(screen.getByRole("button", { name: "done" }));
+    fireEvent.change(await screen.findByLabelText("Subject"), {
+      target: { value: "Send proposal" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Remove organization link" }));
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
     expect(createActivityAction).toHaveBeenCalledWith(
-      expect.objectContaining({ dealId: "d2", personId: "p9" }),
+      expect.objectContaining({ dealId: "d1", personId: "p1", orgId: null }),
       "csrf",
     );
     expect(invalidateContactTimeline).toHaveBeenCalledWith({
-      entityType: "person",
-      entityId: "p9",
+      entityType: "organization",
+      entityId: "o1",
     });
-    expect(invalidateForEntity).toHaveBeenCalledWith({ entityType: "deal", entityId: "d2" });
+    expect(invalidateForEntity).toHaveBeenCalledWith({ entityType: "deal", entityId: "d1" });
   });
 });

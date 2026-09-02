@@ -16,7 +16,17 @@ beforeAll(() => {
   Element.prototype.scrollIntoView = vi.fn();
   Element.prototype.hasPointerCapture = vi.fn(() => false);
   Element.prototype.releasePointerCapture = vi.fn();
+  global.ResizeObserver = class {
+    observe = vi.fn();
+    unobserve = vi.fn();
+    disconnect = vi.fn();
+  };
 });
+vi.mock("@/features/email/composer/RichTextBodyLazy", () => ({
+  RichTextBody: ({ onChange }: { onChange: (h: string) => void }) => (
+    <textarea aria-label="Note" onChange={(e) => onChange(e.target.value)} />
+  ),
+}));
 
 const completeActivityAction = vi.fn((...args: unknown[]) => {
   void args;
@@ -28,6 +38,7 @@ const createActivityAction = vi.fn(() =>
 vi.mock("@/features/activities/actions", () => ({
   completeActivityAction: (...args: unknown[]) => completeActivityAction(...args),
   createActivityAction: (...args: unknown[]) => createActivityAction(...(args as [])),
+  editActivityAction: vi.fn(),
   deleteActivityAction: () => Promise.resolve({ ok: true as const, value: { id: "a1" } }),
 }));
 vi.mock("@/utils/csrfCookie", () => ({ readCsrfToken: () => "csrf" }));
@@ -52,11 +63,10 @@ vi.mock("@/lib/trpc-client", () => ({
     activities: {
       listTypes: { useQuery: () => ({ data: [{ id: "t1", key: "call", name: "Call" }] }) },
       dayLoad: { useQuery: () => ({ data: undefined }) },
+      availability: { useQuery: () => ({ data: { busy: false } }) },
     },
-    contacts: {
-      listPeople: { useQuery: () => ({ data: { rows: [], total: 0 } }) },
-      listOrgs: { useQuery: () => ({ data: { rows: [], total: 0 } }) },
-    },
+    identity: { assignableUsers: { useQuery: () => ({ data: [{ id: "u1", name: "Me" }] }) } },
+    contacts: { listPeopleForOrg: { useQuery: () => ({ data: [] }) } },
   },
 }));
 
@@ -152,8 +162,6 @@ describe("ActivityCard follow-up prompt after mark-done", () => {
     onChanged.mockClear();
     invalidate.mockClear();
     fireEvent.change(screen.getByLabelText("Subject"), { target: { value: "Send proposal" } });
-    fireEvent.click(screen.getByLabelText("Due date"));
-    fireEvent.click(await screen.findByText("10"));
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
     await waitFor(() =>
       expect(createActivityAction).toHaveBeenCalledWith(
@@ -171,8 +179,6 @@ describe("ActivityCard follow-up prompt after mark-done", () => {
     fireEvent.click(screen.getByRole("checkbox", { name: /mark as done/i }));
     await screen.findByRole("dialog", { name: "Add activity" });
     fireEvent.change(screen.getByLabelText("Subject"), { target: { value: "Qualify" } });
-    fireEvent.click(screen.getByLabelText("Due date"));
-    fireEvent.click(await screen.findByText("10"));
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
     await waitFor(() =>
       expect(createActivityAction).toHaveBeenCalledWith(

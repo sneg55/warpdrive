@@ -1,36 +1,17 @@
 "use client";
+import dynamic from "next/dynamic";
 import type React from "react";
 import { createContext, useCallback, useContext, useRef, useState } from "react";
 import { useInterfacePrefs } from "@/features/identity/InterfacePrefsProvider";
 import { trpc } from "@/lib/trpc-client";
-import { AddActivityModal, type CreatedActivityLinks } from "./AddActivityModal";
+import type { FollowUpLinks } from "./followUpLinks";
 
-export interface FollowUpLinks {
-  dealId: string | null;
-  leadId: string | null;
-  personId: string | null;
-  personName: string | null;
-  orgId: string | null;
-  orgName: string | null;
-}
+const FollowUpActivityDialog = dynamic(
+  async () => (await import("./FollowUpActivityDialog")).FollowUpActivityDialog,
+  { ssr: false },
+);
 
-export function followUpLinksOf(activity: {
-  dealId: string | null;
-  leadId?: string | null;
-  personId: string | null;
-  personName?: string | null;
-  orgId: string | null;
-  orgName?: string | null;
-}): FollowUpLinks {
-  return {
-    dealId: activity.dealId,
-    leadId: activity.leadId ?? null,
-    personId: activity.personId,
-    personName: activity.personName ?? null,
-    orgId: activity.orgId,
-    orgName: activity.orgName ?? null,
-  };
-}
+export { type FollowUpLinks, followUpLinksOf } from "./followUpLinks";
 
 export type PromptAfterDone = (links: FollowUpLinks, onCreated?: () => void) => boolean;
 
@@ -44,7 +25,7 @@ const FollowUpPromptContext = createContext<PromptAfterDone>(() => false);
 
 type Utils = ReturnType<typeof trpc.useUtils>;
 
-function invalidateLinkedTimelines(utils: Utils, links: CreatedActivityLinks): void {
+function invalidateLinkedTimelines(utils: Utils, links: FollowUpLinks): void {
   if (links.dealId !== null) {
     void utils.activities.listForEntity.invalidate({ entityType: "deal", entityId: links.dealId });
   }
@@ -81,10 +62,10 @@ export function FollowUpPromptProvider({
     setPending((current) => (current?.seq === seq ? null : current));
   }, []);
   const createdFor = useCallback(
-    (prompt: PendingPrompt, saved: CreatedActivityLinks) => {
+    (prompt: PendingPrompt) => {
       invalidateLinkedTimelines(utils, prompt.links);
-      invalidateLinkedTimelines(utils, saved);
       prompt.onCreated?.();
+      setPending((current) => (current?.seq === prompt.seq ? null : current));
     },
     [utils],
   );
@@ -92,16 +73,10 @@ export function FollowUpPromptProvider({
     <FollowUpPromptContext.Provider value={promptAfterDone}>
       {children}
       {pending !== null && (
-        <AddActivityModal
+        <FollowUpActivityDialog
           key={pending.seq}
-          dealId={pending.links.dealId}
-          leadId={pending.links.leadId}
-          defaultPersonId={pending.links.personId}
-          defaultPersonName={pending.links.personName}
-          defaultOrgId={pending.links.orgId}
-          defaultOrgName={pending.links.orgName}
-          requireDue
-          onCreated={(saved) => createdFor(pending, saved)}
+          links={pending.links}
+          onCreated={() => createdFor(pending)}
           onClose={() => dismissSeq(pending.seq)}
         />
       )}

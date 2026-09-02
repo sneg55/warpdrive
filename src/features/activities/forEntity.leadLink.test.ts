@@ -1,9 +1,9 @@
 import { eq } from "drizzle-orm";
 import { expect, it } from "vitest";
-import { activities, activityTypes, persons } from "@/db/schema";
+import { activities, activityTypes, deals, persons } from "@/db/schema";
 import { leads } from "@/db/schema/leads";
 import { withTestDb } from "@/db/testing";
-import { seedUser } from "@/db/testing/factories";
+import { seedPipelineWithStages, seedUser } from "@/db/testing/factories";
 import type { PermSetUser } from "@/features/permissions/effective";
 import { listActivitiesForEntity } from "./forEntity";
 
@@ -41,6 +41,41 @@ it("carries the lead link of a lead-scoped activity listed from a contact page",
     const rows = await listActivitiesForEntity(db, actor, "person", person.id, signal);
     expect(rows[0]?.subject).toBe("Qualify");
     expect(rows[0]?.leadId).toBe(lead.id);
+  });
+});
+
+it("carries the deal title so a follow-up prompt can label the deal chip", async () => {
+  await withTestDb(async (db) => {
+    const signal = new AbortController().signal;
+    const user = await seedUser(db);
+    const actor = makeActor(user.id);
+    const pipe = await seedPipelineWithStages(db, ["Lead"]);
+    const stage = pipe.stages[0];
+    if (stage === undefined) throw new Error("stage seed failed");
+    const [deal] = await db
+      .insert(deals)
+      .values({
+        title: "Acme renewal",
+        pipelineId: pipe.pipeline.id,
+        stageId: stage.id,
+        ownerId: user.id,
+        visibilityLevel: "all",
+      })
+      .returning();
+    if (deal === undefined) throw new Error("deal seed failed");
+    const [type] = await db.select().from(activityTypes).where(eq(activityTypes.key, "call"));
+    if (type === undefined) throw new Error("activity type 'call' not found");
+    await db.insert(activities).values({
+      typeId: type.id,
+      subject: "Renewal call",
+      ownerId: user.id,
+      assigneeId: user.id,
+      dealId: deal.id,
+      dueAt: new Date("2026-07-02T10:00:00Z"),
+    });
+
+    const rows = await listActivitiesForEntity(db, actor, "deal", deal.id, signal);
+    expect(rows[0]?.dealTitle).toBe("Acme renewal");
   });
 });
 

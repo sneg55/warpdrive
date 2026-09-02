@@ -19,13 +19,6 @@ import { useInvalidateActivityLists } from "./useInvalidateActivityLists";
 // Shared icon size for the composer-style field-row leading icons (matches ActivityComposerInline).
 const ICON = "h-4 w-4";
 
-export interface CreatedActivityLinks {
-  dealId: string | null;
-  leadId: string | null;
-  personId: string | null;
-  orgId: string | null;
-}
-
 // Quick-add Activity dialog (Pipedrive): type + subject + priority + due date, with optional
 // person/organization links. Wired to the CSRF-guarded createActivityAction.
 // dueAt and allDay always travel together; sending a timestamp without the flag is what made
@@ -35,17 +28,6 @@ function composedDue(date: string, time: string): { dueAt: string | null; allDay
   return { dueAt: iso, allDay };
 }
 
-function withDefaultOption(
-  options: ComboboxOption[],
-  id: string | null,
-  name: string | null,
-): ComboboxOption[] {
-  const none: ComboboxOption = { value: "", label: "None" };
-  if (id === null || options.some((o) => o.value === id)) return [none, ...options];
-  const label = name ?? id;
-  return [none, { value: id, label, avatarName: name ?? undefined }, ...options];
-}
-
 export function AddActivityModal({
   onClose,
   onCreated,
@@ -53,14 +35,9 @@ export function AddActivityModal({
   leadId = null,
   defaultDate = "",
   defaultTime = "",
-  defaultPersonId = null,
-  defaultPersonName = null,
-  defaultOrgId = null,
-  defaultOrgName = null,
-  requireDue = false,
 }: {
   onClose: () => void;
-  onCreated?: (created: CreatedActivityLinks) => void;
+  onCreated?: () => void;
   // When set (deal detail composer), the new activity is linked to this deal.
   dealId?: string | null;
   // When set (lead detail composer), the new activity is linked to this lead. Mutually
@@ -70,11 +47,6 @@ export function AddActivityModal({
   // date/time from the clicked slot instead of leaving both blank).
   defaultDate?: string;
   defaultTime?: string;
-  defaultPersonId?: string | null;
-  defaultPersonName?: string | null;
-  defaultOrgId?: string | null;
-  defaultOrgName?: string | null;
-  requireDue?: boolean;
 }): React.ReactNode {
   const typesQ = trpc.activities.listTypes.useQuery();
   const peopleQ = trpc.contacts.listPeople.useQuery({ offset: 0, limit: 500 });
@@ -87,27 +59,13 @@ export function AddActivityModal({
   const [priority, setPriority] = useState("");
   const [due, setDue] = useState(defaultDate);
   const [startTime, setStartTime] = useState(defaultTime);
-  const [personId, setPersonId] = useState(defaultPersonId ?? "");
-  const [orgId, setOrgId] = useState(defaultOrgId ?? "");
+  const [personId, setPersonId] = useState("");
+  const [orgId, setOrgId] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
   const effectiveTypeId = typeId === "" ? (types[0]?.id ?? "") : typeId;
-  const dueRequired = requireDue || leadId !== null || dealId !== null;
-  const personOptions = withDefaultOption(
-    (peopleQ.data?.rows ?? []).map<ComboboxOption>((p) => ({
-      value: p.id,
-      label: p.name,
-      avatarName: p.name,
-    })),
-    defaultPersonId,
-    defaultPersonName,
-  );
-  const orgOptions = withDefaultOption(
-    (orgsQ.data?.rows ?? []).map<ComboboxOption>((o) => ({ value: o.id, label: o.name })),
-    defaultOrgId,
-    defaultOrgName,
-  );
+  const dueRequired = leadId !== null || dealId !== null;
 
   async function submit(): Promise<void> {
     if (subject.trim() === "") {
@@ -124,12 +82,6 @@ export function AddActivityModal({
     }
     setPending(true);
     setError(null);
-    const links: CreatedActivityLinks = {
-      dealId,
-      leadId,
-      personId: personId === "" ? null : personId,
-      orgId: orgId === "" ? null : orgId,
-    };
     const r = await createActivityAction(
       {
         typeId: effectiveTypeId,
@@ -137,7 +89,10 @@ export function AddActivityModal({
         priority: priority === "" ? null : priority,
         ...(due === "" ? { dueAt: null, allDay: false } : composedDue(due, startTime)),
         durationMinutes: null,
-        ...links,
+        dealId,
+        leadId,
+        personId: personId === "" ? null : personId,
+        orgId: orgId === "" ? null : orgId,
         guestPersonIds: [],
         participantUserIds: [],
         customFields: {},
@@ -151,7 +106,7 @@ export function AddActivityModal({
     }
     await invalidateActivityLists();
     setPending(false);
-    onCreated?.(links);
+    onCreated?.();
     onClose();
   }
 
@@ -223,7 +178,14 @@ export function AddActivityModal({
               value={personId}
               onChange={setPersonId}
               placeholder="Contact person"
-              options={personOptions}
+              options={[
+                { value: "", label: "None" },
+                ...(peopleQ.data?.rows ?? []).map<ComboboxOption>((p) => ({
+                  value: p.id,
+                  label: p.name,
+                  avatarName: p.name,
+                })),
+              ]}
             />
           </ComposerFieldRow>
 
@@ -233,7 +195,13 @@ export function AddActivityModal({
               value={orgId}
               onChange={setOrgId}
               placeholder="Organization"
-              options={orgOptions}
+              options={[
+                { value: "", label: "None" },
+                ...(orgsQ.data?.rows ?? []).map<ComboboxOption>((o) => ({
+                  value: o.id,
+                  label: o.name,
+                })),
+              ]}
             />
           </ComposerFieldRow>
 

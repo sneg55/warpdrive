@@ -110,31 +110,6 @@ describe("AddActivityModal", () => {
     await waitFor(() => expect(onCreated).toHaveBeenCalled());
   });
 
-  it("reports the saved links to onCreated so callers can refresh the right records", async () => {
-    const onCreated = vi.fn();
-    render(
-      <AddActivityModal
-        onClose={vi.fn()}
-        onCreated={onCreated}
-        dealId="d1"
-        defaultPersonId="p1"
-        defaultPersonName="Mia Costa"
-      />,
-    );
-    fireEvent.change(screen.getByLabelText("Subject"), { target: { value: "Follow up" } });
-    fireEvent.click(screen.getByLabelText("Due date"));
-    fireEvent.click(await screen.findByText("10"));
-    fireEvent.click(screen.getByRole("button", { name: "Save" }));
-    await waitFor(() =>
-      expect(onCreated).toHaveBeenCalledWith({
-        dealId: "d1",
-        leadId: null,
-        personId: "p1",
-        orgId: null,
-      }),
-    );
-  });
-
   it("submits with the leadId and dueAt when a date is provided (lead workspace composer)", async () => {
     render(<AddActivityModal onClose={vi.fn()} onCreated={vi.fn()} leadId="lead-1" />);
     fireEvent.change(screen.getByLabelText("Subject"), { target: { value: "Log a call" } });
@@ -175,27 +150,6 @@ describe("AddActivityModal", () => {
     expect(screen.getByRole("button", { name: "Save" })).toBeDisabled();
   });
 
-  it("requireDue blocks Save without a date even when nothing is linked", () => {
-    render(<AddActivityModal onClose={vi.fn()} onCreated={vi.fn()} requireDue />);
-    fireEvent.change(screen.getByLabelText("Subject"), { target: { value: "Send recap" } });
-    expect(screen.getByRole("button", { name: "Save" })).toBeDisabled();
-  });
-
-  it("shows the prefilled person and organization names when they are not among the loaded options", () => {
-    render(
-      <AddActivityModal
-        onClose={vi.fn()}
-        onCreated={vi.fn()}
-        defaultPersonId="p-far"
-        defaultPersonName="Mia Costa"
-        defaultOrgId="o-far"
-        defaultOrgName="Silver Labs"
-      />,
-    );
-    expect(screen.getByLabelText("Contact person")).toHaveTextContent("Mia Costa");
-    expect(screen.getByLabelText("Organization")).toHaveTextContent("Silver Labs");
-  });
-
   it("blocks an empty subject with an inline error", async () => {
     render(<AddActivityModal onClose={vi.fn()} onCreated={vi.fn()} />);
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
@@ -217,28 +171,6 @@ describe("AddActivityModal", () => {
     );
     expect(screen.getByLabelText("Due date")).toHaveTextContent("07/15/2026");
     expect(screen.getByLabelText("Start time")).toHaveValue("14:00");
-  });
-
-  it("seeds the person and organization links from defaultPersonId/defaultOrgId (follow-up prompt)", async () => {
-    render(
-      <AddActivityModal
-        onClose={vi.fn()}
-        onCreated={vi.fn()}
-        dealId="d1"
-        defaultPersonId="p1"
-        defaultOrgId="o1"
-      />,
-    );
-    fireEvent.change(screen.getByLabelText("Subject"), { target: { value: "Send proposal" } });
-    fireEvent.click(screen.getByLabelText("Due date"));
-    fireEvent.click(await screen.findByText("10"));
-    fireEvent.click(screen.getByRole("button", { name: "Save" }));
-    await waitFor(() =>
-      expect(createActivityAction).toHaveBeenCalledWith(
-        expect.objectContaining({ dealId: "d1", personId: "p1", orgId: "o1" }),
-        expect.anything(),
-      ),
-    );
   });
 
   it("sends the chosen time of day, not a hardcoded 09:00", async () => {

@@ -45,23 +45,22 @@ vi.mock("@/lib/trpc-client", () => ({
     identity: { assignableUsers: { useQuery: () => ({ data: [] }) } },
   },
 }));
-vi.mock("./AddActivityModal", () => ({
-  AddActivityModal: ({
-    dealId,
-    leadId,
-    defaultPersonId,
-    defaultOrgId,
+vi.mock("./FollowUpActivityDialog", () => ({
+  FollowUpActivityDialog: ({
+    links,
     onClose,
   }: {
-    dealId?: string | null;
-    leadId?: string | null;
-    defaultPersonId?: string | null;
-    defaultOrgId?: string | null;
+    links: {
+      dealId: string | null;
+      leadId: string | null;
+      personId: string | null;
+      orgId: string | null;
+    };
     onClose: () => void;
   }) => (
     <div data-testid="add-modal">
       <span data-testid="add-modal-links">
-        {[dealId, leadId, defaultPersonId, defaultOrgId].map((v) => v ?? "-").join(",")}
+        {[links.dealId, links.leadId, links.personId, links.orgId].map((v) => v ?? "-").join(",")}
       </span>
       <button type="button" onClick={onClose}>
         Close add

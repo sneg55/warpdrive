@@ -13,6 +13,11 @@ beforeAll(() => {
   Element.prototype.scrollIntoView = vi.fn();
   Element.prototype.hasPointerCapture = vi.fn(() => false);
   Element.prototype.releasePointerCapture = vi.fn();
+  global.ResizeObserver = class {
+    observe = vi.fn();
+    unobserve = vi.fn();
+    disconnect = vi.fn();
+  };
 });
 
 afterEach(() => {
@@ -27,6 +32,11 @@ const { invalidateForEntity, invalidateLead, invalidateContactTimeline, invalida
     invalidateContactTimeline: vi.fn(() => Promise.resolve()),
     invalidateStats: vi.fn(() => Promise.resolve()),
   }));
+vi.mock("@/features/email/composer/RichTextBodyLazy", () => ({
+  RichTextBody: ({ onChange }: { onChange: (h: string) => void }) => (
+    <textarea aria-label="Note" onChange={(e) => onChange(e.target.value)} />
+  ),
+}));
 vi.mock("@/lib/trpc-client", () => ({
   trpc: {
     useUtils: () => ({
@@ -44,26 +54,24 @@ vi.mock("@/lib/trpc-client", () => ({
     activities: {
       listTypes: { useQuery: () => ({ data: [{ id: "t1", key: "call", name: "Call" }] }) },
       dayLoad: { useQuery: () => ({ data: undefined }) },
+      availability: { useQuery: () => ({ data: { busy: false } }) },
     },
-    contacts: {
-      listPeople: {
-        useQuery: () => ({ data: { rows: [{ id: "p9", name: "Zed Quill" }], total: 1 } }),
-      },
-      listOrgs: { useQuery: () => ({ data: { rows: [], total: 0 } }) },
-    },
+    identity: { assignableUsers: { useQuery: () => ({ data: [{ id: "u1", name: "Me" }] }) } },
+    contacts: { listPeopleForOrg: { useQuery: () => ({ data: [] }) } },
   },
 }));
 
 const { createActivityAction } = vi.hoisted(() => ({
   createActivityAction: vi.fn(() => Promise.resolve({ ok: true as const, value: { id: "a2" } })),
 }));
-vi.mock("./actions", () => ({ createActivityAction }));
+vi.mock("./actions", () => ({ createActivityAction, editActivityAction: vi.fn() }));
 vi.mock("@/utils/csrfCookie", () => ({ readCsrfToken: () => "csrf" }));
 
 import { FollowUpPromptProvider, followUpLinksOf, useFollowUpAfterDone } from "./followUpAfterDone";
 
 const LINKS = {
   dealId: "d1",
+  dealTitle: "Acme renewal",
   leadId: null,
   personId: "p1",
   personName: "Mia Costa",
@@ -72,6 +80,7 @@ const LINKS = {
 };
 const OTHER_LINKS = {
   dealId: "d2",
+  dealTitle: null,
   leadId: null,
   personId: null,
   personName: null,
@@ -80,6 +89,7 @@ const OTHER_LINKS = {
 };
 const PERSON_ONLY = {
   dealId: null,
+  dealTitle: null,
   leadId: null,
   personId: "p1",
   personName: "Mia Costa",
@@ -131,10 +141,10 @@ function renderProbe(enabled: boolean, onCreated?: () => void): void {
 }
 
 describe("FollowUpPromptProvider + useFollowUpAfterDone", () => {
-  it("opens the add-activity prompt when the preference is on", () => {
+  it("opens the add-activity prompt when the preference is on", async () => {
     renderProbe(true);
     fireEvent.click(screen.getByRole("button", { name: "done" }));
-    expect(screen.getByRole("dialog", { name: "Add activity" })).toBeInTheDocument();
+    expect(await screen.findByRole("dialog", { name: "Add activity" })).toBeInTheDocument();
     expect(screen.getByTestId("state")).toHaveTextContent("true");
   });
 
@@ -158,35 +168,54 @@ describe("FollowUpPromptProvider + useFollowUpAfterDone", () => {
     expect(screen.getByTestId("state")).toHaveTextContent("false");
   });
 
-  it("keeps the prompt open when the component that requested it unmounts", () => {
+  it("keeps the prompt open when the component that requested it unmounts", async () => {
     renderProbe(true);
     fireEvent.click(screen.getByRole("button", { name: "done" }));
+    await screen.findByRole("dialog", { name: "Add activity" });
     fireEvent.click(screen.getByRole("button", { name: "unmount", hidden: true }));
     expect(screen.queryByRole("button", { name: "done", hidden: true })).toBeNull();
     expect(screen.getByRole("dialog", { name: "Add activity" })).toBeInTheDocument();
   });
 
-  it("a later prompt replaces an open one with fresh fields instead of mixing state", () => {
+  it("renders the full activity composer with the completed activity's links as chips", async () => {
     renderProbe(true);
     fireEvent.click(screen.getByRole("button", { name: "done" }));
-    fireEvent.change(screen.getByLabelText("Subject"), { target: { value: "First" } });
-    expect(screen.getByLabelText("Contact person")).toHaveTextContent("Mia Costa");
-    fireEvent.click(screen.getByRole("button", { name: "done other", hidden: true }));
-    expect(screen.getByLabelText("Subject")).toHaveValue("");
-    expect(screen.getByLabelText("Contact person")).not.toHaveTextContent("Mia Costa");
+    expect(await screen.findByText("Acme renewal")).toBeInTheDocument();
+    expect(screen.getByText("Silver Labs")).toBeInTheDocument();
+    expect(screen.getAllByText("Mia Costa").length).toBeGreaterThan(0);
+    expect(screen.getByRole("button", { name: "Remove person link" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Owner")).toBeInTheDocument();
+    expect(screen.getByLabelText("Start date")).toHaveTextContent(/\d{2}\/\d{2}\/\d{4}/);
   });
 
-  it("requires a due date even when the completed activity only links a contact", () => {
+  it("a later prompt replaces an open one with fresh fields instead of mixing state", async () => {
+    renderProbe(true);
+    fireEvent.click(screen.getByRole("button", { name: "done" }));
+    fireEvent.change(await screen.findByLabelText("Subject"), { target: { value: "First" } });
+    expect(screen.getByText("Silver Labs")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "done other", hidden: true }));
+    await waitFor(() => expect(screen.getByLabelText("Subject")).toHaveValue("Call"));
+    expect(screen.queryByText("Silver Labs")).toBeNull();
+  });
+
+  it("a person-only completion still prompts and links the follow-up to that person", async () => {
     renderProbe(true);
     fireEvent.click(screen.getByRole("button", { name: "done person" }));
-    fireEvent.change(screen.getByLabelText("Subject"), { target: { value: "Call back" } });
-    expect(screen.getByRole("button", { name: "Save" })).toBeDisabled();
+    fireEvent.change(await screen.findByLabelText("Subject"), { target: { value: "Call back" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() =>
+      expect(createActivityAction).toHaveBeenCalledWith(
+        expect.objectContaining({ dealId: null, personId: "p1", orgId: null }),
+        "csrf",
+      ),
+    );
   });
 
   it("followUpLinksOf carries the linked names so the prompt can label them", () => {
     expect(
       followUpLinksOf({
         dealId: "d1",
+        dealTitle: "Acme renewal",
         personId: "p1",
         personName: "Mia Costa",
         orgId: "o1",
@@ -195,6 +224,7 @@ describe("FollowUpPromptProvider + useFollowUpAfterDone", () => {
     ).toEqual(LINKS);
     expect(followUpLinksOf({ dealId: null, personId: null, orgId: null })).toEqual({
       dealId: null,
+      dealTitle: null,
       leadId: null,
       personId: null,
       personName: null,
@@ -213,14 +243,12 @@ describe("FollowUpPromptProvider + useFollowUpAfterDone", () => {
     );
     renderProbe(true);
     fireEvent.click(screen.getByRole("button", { name: "done" }));
-    fireEvent.change(screen.getByLabelText("Subject"), { target: { value: "First" } });
-    fireEvent.click(screen.getByLabelText("Due date"));
-    fireEvent.click(await screen.findByText("10"));
+    fireEvent.change(await screen.findByLabelText("Subject"), { target: { value: "First" } });
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
     await waitFor(() => expect(createActivityAction).toHaveBeenCalledTimes(1));
     fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
     fireEvent.click(screen.getByRole("button", { name: "done other" }));
-    fireEvent.change(screen.getByLabelText("Subject"), { target: { value: "Second" } });
+    fireEvent.change(await screen.findByLabelText("Subject"), { target: { value: "Second" } });
     await act(async () => {
       finish();
       await Promise.resolve();
@@ -230,10 +258,10 @@ describe("FollowUpPromptProvider + useFollowUpAfterDone", () => {
     expect(screen.getByLabelText("Subject")).toHaveValue("Second");
   });
 
-  it("dismissing the prompt closes it without creating anything", () => {
+  it("dismissing the prompt closes it without creating anything", async () => {
     renderProbe(true);
     fireEvent.click(screen.getByRole("button", { name: "done" }));
-    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Cancel" }));
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(createActivityAction).not.toHaveBeenCalled();
   });
@@ -242,9 +270,9 @@ describe("FollowUpPromptProvider + useFollowUpAfterDone", () => {
     const onCreated = vi.fn();
     renderProbe(true, onCreated);
     fireEvent.click(screen.getByRole("button", { name: "done" }));
-    fireEvent.change(screen.getByLabelText("Subject"), { target: { value: "Send proposal" } });
-    fireEvent.click(screen.getByLabelText("Due date"));
-    fireEvent.click(await screen.findByText("10"));
+    fireEvent.change(await screen.findByLabelText("Subject"), {
+      target: { value: "Send proposal" },
+    });
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
     await waitFor(() =>
       expect(createActivityAction).toHaveBeenCalledWith(

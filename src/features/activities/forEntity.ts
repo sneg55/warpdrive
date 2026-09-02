@@ -8,6 +8,7 @@ import {
   type Activity,
   activities,
   activityTypes,
+  deals,
   organizations,
   persons,
   users,
@@ -32,6 +33,7 @@ interface ActivityRow {
   done: boolean;
   doneAt: Date | null;
   dealId: string | null;
+  dealTitle: string | null;
   leadId: string | null;
   leadVisibleId: string | null;
   leadOwnerId: string | null;
@@ -134,6 +136,7 @@ function toCalendarActivity(
     done: row.done,
     doneAt: row.doneAt,
     dealId: row.dealId,
+    dealTitle: row.dealTitle,
     leadId: leadOk ? row.leadVisibleId : null,
     // Gate the link + name by the actor's visibility of the linked contact: the activity is
     // authorized via its deal parent, which does not imply access to an owner-only linked record.
@@ -183,6 +186,7 @@ export async function listActivitiesForEntity(
       done: activities.done,
       doneAt: activities.doneAt,
       dealId: activities.dealId,
+      dealTitle: deals.title,
       leadId: activities.leadId,
       leadVisibleId: leads.id,
       leadOwnerId: leads.ownerId,
@@ -214,6 +218,7 @@ export async function listActivitiesForEntity(
     .from(activities)
     .innerJoin(activityTypes, eq(activities.typeId, activityTypes.id))
     .leftJoin(users, eq(users.id, activities.ownerId))
+    .leftJoin(deals, and(eq(deals.id, activities.dealId), isNull(deals.deletedAt)))
     .leftJoin(leads, and(eq(leads.id, activities.leadId), isNull(leads.deletedAt)))
     .leftJoin(persons, and(eq(persons.id, activities.personId), isNull(persons.deletedAt)))
     .leftJoin(

@@ -31,28 +31,41 @@ vi.mock("@/features/activities/AddActivityModal", () => ({
   AddActivityModal: ({
     defaultDate,
     defaultTime,
-    dealId,
-    leadId,
-    defaultPersonId,
-    defaultOrgId,
     onClose,
   }: {
     defaultDate?: string;
     defaultTime?: string;
-    dealId?: string | null;
-    leadId?: string | null;
-    defaultPersonId?: string | null;
-    defaultOrgId?: string | null;
     onClose: () => void;
   }) => (
     <div data-testid="add-modal">
       <span data-testid="add-modal-date">{defaultDate}</span>
       <span data-testid="add-modal-time">{defaultTime}</span>
-      <span data-testid="add-modal-links">
-        {[dealId, leadId, defaultPersonId, defaultOrgId].map((v) => v ?? "-").join(",")}
-      </span>
       <button type="button" onClick={onClose}>
         Close add
+      </button>
+    </div>
+  ),
+}));
+
+vi.mock("@/features/activities/FollowUpActivityDialog", () => ({
+  FollowUpActivityDialog: ({
+    links,
+    onClose,
+  }: {
+    links: {
+      dealId: string | null;
+      leadId: string | null;
+      personId: string | null;
+      orgId: string | null;
+    };
+    onClose: () => void;
+  }) => (
+    <div data-testid="follow-up-dialog">
+      <span data-testid="add-modal-links">
+        {[links.dealId, links.leadId, links.personId, links.orgId].map((v) => v ?? "-").join(",")}
+      </span>
+      <button type="button" onClick={onClose}>
+        Close follow-up
       </button>
     </div>
   ),
@@ -253,7 +266,7 @@ describe("WeekAgendaGrid", () => {
     expect(screen.queryByTestId("add-modal")).toBeNull();
   });
 
-  it("marking done in the edit modal closes it and opens the follow-up prompt when the preference is on", () => {
+  it("marking done in the edit modal closes it and opens the follow-up prompt when the preference is on", async () => {
     render(
       <InterfacePrefsProvider
         value={{ ...INTERFACE_PREFS_DEFAULT, scheduleFollowUpAfterDone: true }}
@@ -266,7 +279,7 @@ describe("WeekAgendaGrid", () => {
     fireEvent.click(screen.getByRole("button", { name: /Call a1/ }));
     fireEvent.click(screen.getByRole("button", { name: "Mark as done" }));
     expect(screen.queryByTestId("edit-modal")).toBeNull();
-    expect(screen.getByTestId("add-modal-links")).toHaveTextContent("-,-,-,-");
+    expect(await screen.findByTestId("add-modal-links")).toHaveTextContent("-,-,-,-");
   });
 
   it("marking done in the edit modal leaves it open when the preference is off", () => {
