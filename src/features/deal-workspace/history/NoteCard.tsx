@@ -22,6 +22,7 @@ import {
   togglePinAction,
   updateNoteAction,
 } from "@/features/collaboration/actions";
+import { LinkifiedText } from "@/features/collaboration/LinkifiedText";
 import { useDealActionError } from "@/features/deal-workspace/DealActionErrorProvider";
 import { readCsrfToken } from "@/utils/csrfCookie";
 import { AttributionLine } from "./AttributionLine";
@@ -128,7 +129,9 @@ export function NoteCard({
       ) : (
         <div className="flex items-start gap-2">
           <div className="min-w-0 flex-1">
-            <p className="whitespace-pre-wrap text-pretty text-sm text-foreground">{body}</p>
+            <p className="whitespace-pre-wrap text-pretty text-sm text-foreground">
+              <LinkifiedText text={body} />
+            </p>
             <AttributionLine at={at} actorName={actorName} />
           </div>
           <button

@@ -7,7 +7,9 @@ import { completeActivityAction, deleteActivityAction } from "@/features/activit
 import type { CalendarActivity } from "@/features/activities/calendar";
 import { ActivityTypeIcon } from "@/features/activities/typeIcons";
 import { useInvalidateActivityLists } from "@/features/activities/useInvalidateActivityLists";
+import { linkifyHtml } from "@/features/collaboration/linkify";
 import { formatUserName } from "@/features/identity/formatUserName";
+import { useInterfacePrefs } from "@/features/identity/InterfacePrefsProvider";
 import { trpc } from "@/lib/trpc-client";
 import { readCsrfToken } from "@/utils/csrfCookie";
 import { useDealActionError } from "../DealActionErrorProvider";
@@ -53,6 +55,7 @@ export function ActivityCard({
   const utils = trpc.useUtils();
   const invalidateActivityLists = useInvalidateActivityLists();
   const reportError = useDealActionError();
+  const { emailLinksNewTab } = useInterfacePrefs();
 
   // Every listForEntity timeline this activity appears in (deal / person / org pages). Flipping
   // its done in each cache moves it between Focus and History instantly, before the server replies.
@@ -208,7 +211,9 @@ export function ActivityCard({
           className="border-t bg-warning/10 px-3 py-2 text-pretty text-xs text-foreground/80 [&_a]:text-link [&_a]:underline [&_p]:m-0"
           // Note HTML is sanitized on write (createActivity -> sanitizeAuthorHtml); safe to render.
           // biome-ignore lint/security/noDangerouslySetInnerHtml: sanitized server-side before storage
-          dangerouslySetInnerHTML={{ __html: activity.note }}
+          dangerouslySetInnerHTML={{
+            __html: linkifyHtml(activity.note, { emailNewTab: emailLinksNewTab }),
+          }}
         />
       )}
     </div>

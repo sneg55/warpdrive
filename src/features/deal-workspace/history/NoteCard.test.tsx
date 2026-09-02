@@ -3,6 +3,10 @@ import "@testing-library/jest-dom/vitest";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, expect, it, vi } from "vitest";
+import {
+  INTERFACE_PREFS_DEFAULT,
+  InterfacePrefsProvider,
+} from "@/features/identity/InterfacePrefsProvider";
 import { NoteCard } from "./NoteCard";
 
 const togglePin = vi.fn<(...args: unknown[]) => Promise<{ ok: true; value: { id: string } }>>(() =>
@@ -43,6 +47,43 @@ it("renders the note body and an inline pin control", () => {
   render(<NoteCard {...base} />);
   expect(screen.getByText("Called the buyer")).toBeInTheDocument();
   expect(screen.getByRole("button", { name: /pin/i })).toBeInTheDocument();
+});
+
+it("renders a URL in the body as a link that opens in a new tab, punctuation left outside", () => {
+  render(<NoteCard {...base} body="Deck: https://example.com/deck?v=2, see p3." />);
+  const link = screen.getByRole("link", { name: "https://example.com/deck?v=2" });
+  expect(link).toHaveAttribute("href", "https://example.com/deck?v=2");
+  expect(link).toHaveAttribute("target", "_blank");
+  expect(link).toHaveAttribute("rel", "noopener noreferrer");
+  expect(link.className).toMatch(/text-link/);
+  expect(screen.getByText(/, see p3\./)).toBeInTheDocument();
+});
+
+it("renders an email in the body as a mailto link", () => {
+  render(<NoteCard {...base} body="CC ann@example.com" />);
+  expect(screen.getByRole("link", { name: "ann@example.com" })).toHaveAttribute(
+    "href",
+    "mailto:ann@example.com",
+  );
+});
+
+it("opens an email link in a new tab when the interface preference is on", () => {
+  render(
+    <InterfacePrefsProvider value={{ ...INTERFACE_PREFS_DEFAULT, emailLinksNewTab: true }}>
+      <NoteCard {...base} body="CC ann@example.com" />
+    </InterfacePrefsProvider>,
+  );
+  const link = screen.getByRole("link", { name: "ann@example.com" });
+  expect(link).toHaveAttribute("target", "_blank");
+  expect(link).toHaveAttribute("rel", "noopener noreferrer");
+});
+
+it("keeps the raw text in the edit textarea, not link markup", async () => {
+  const user = userEvent.setup();
+  render(<NoteCard {...base} body="see https://example.com." />);
+  await user.click(screen.getByRole("button", { name: /more actions/i }));
+  await user.click(screen.getByRole("menuitem", { name: /edit/i }));
+  expect(screen.getByRole("textbox", { name: /note/i })).toHaveValue("see https://example.com.");
 });
 
 it("pins in one click", async () => {

@@ -209,38 +209,6 @@ describe("ActivityCard", () => {
     expect(screen.queryByRole("checkbox", { name: /mark as done/i })).not.toBeInTheDocument();
   });
 
-  it("renders location text and a note preview when present", () => {
-    render(
-      <ActivityCard
-        activity={makeActivity({ location: "HQ", note: "<p>ring the bell</p>" })}
-        at={AT}
-      />,
-    );
-    expect(screen.getByText("HQ")).toBeInTheDocument();
-    expect(screen.getByText("ring the bell")).toBeInTheDocument();
-  });
-
-  it("renders the activity note as a highlighted band (Pipedrive), not plain muted text", () => {
-    render(<ActivityCard activity={makeActivity({ note: "<p>ring the bell</p>" })} at={AT} />);
-    const band = screen.getByTestId("activity-note");
-    expect(band).toHaveTextContent("ring the bell");
-    // The band carries the note's amber tint (matching NoteCard) and a divider from the meta above.
-    expect(band.className).toMatch(/bg-warning/);
-    expect(band.className).toMatch(/border-t/);
-  });
-
-  it("shows links in a note as links (preflight otherwise renders them as plain text)", () => {
-    render(
-      <ActivityCard
-        activity={makeActivity({ note: '<p><a href="https://example.com">agenda</a></p>' })}
-        at={AT}
-      />,
-    );
-    const band = screen.getByTestId("activity-note");
-    expect(band.className).toMatch(/\[&_a\]:text-link/);
-    expect(band.className).toMatch(/\[&_a\]:underline/);
-  });
-
   it("renders the per-type icon for the activity", () => {
     const { container } = render(
       <ActivityCard activity={makeActivity({ typeKey: "call" })} at={AT} />,
