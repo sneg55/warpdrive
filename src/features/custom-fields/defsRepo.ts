@@ -17,6 +17,10 @@ function defsCacheKey(target: CustomFieldTarget, includeArchived: boolean): stri
   return `${target}:${includeArchived ? "all" : "active"}`;
 }
 
+export function invalidateDefsCache(db: Db): void {
+  defsCache.invalidate(db);
+}
+
 export type CreateDefInput = {
   targetEntity: CustomFieldTarget;
   type: CustomFieldType;
@@ -83,6 +87,13 @@ export async function createDef(
 ): Promise<Result<CustomFieldDef, AppError>> {
   signal.throwIfAborted();
   const key = slugify(input.name);
+  if (key === "") {
+    return err(
+      new AppError(ERROR_IDS.CF_INPUT_INVALID, "custom-field name yields an empty key", {
+        name: input.name,
+      }),
+    );
+  }
   const existing = await db
     .select({ id: customFieldDefs.id })
     .from(customFieldDefs)

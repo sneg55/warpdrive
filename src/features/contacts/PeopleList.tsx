@@ -1,6 +1,6 @@
 "use client";
 import type React from "react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { BulkActionBar } from "@/components/data-table/BulkActionBar";
 import { BulkDeleteButton } from "@/components/data-table/BulkDeleteButton";
 import { ColumnsMenu } from "@/components/data-table/ColumnsMenu";
@@ -8,23 +8,29 @@ import { type ColumnSort, useColumnSort } from "@/components/data-table/useColum
 import { useColumns } from "@/components/data-table/useColumns";
 import { usePersistColumns } from "@/components/data-table/usePersistColumns";
 import { useRowSelection } from "@/components/data-table/useRowSelection";
+import { DEFAULT_BASE_CURRENCY } from "@/constants/currency";
 import { STRINGS } from "@/constants/strings";
+import { customFieldColumns } from "@/features/custom-fields/listColumns";
+import {
+  type CustomFieldRefLabels,
+  CustomFieldRefLabelsProvider,
+  EMPTY_REF_LABELS,
+} from "@/features/custom-fields/refLabelsContext";
 import { SavedViewControl } from "@/features/saved-filters/SavedViewControl";
-import { trpc } from "@/lib/trpc-client";
+import type { CustomFieldDef } from "@/types/customFields";
 import { readCsrfToken } from "@/utils/csrfCookie";
 import { deletePersonAction } from "./actions";
 import { BulkMergeDialog } from "./BulkMergeDialog";
 import { ContactFilterBuilder } from "./ContactFilterBuilder";
 import { type ContactFilterDefinition, PERSON_FILTER_CONFIG } from "./contactFilterConfig";
 import { PERSON_FILTER_LABELS } from "./contactFilterRows";
-import { type PeopleListRow, PeopleTable, type RawPersonRow, toRow } from "./PeopleTable";
+import type { PeopleListRow } from "./PeopleTable";
+import { PeopleTable } from "./PeopleTable";
 import { PEOPLE_COLUMNS } from "./peopleColumns";
 import type { PersonSortField } from "./schemas";
+import { usePeopleListPaging } from "./usePeopleListPaging";
 
-const PAGE_SIZE = 50;
 const LOAD_MORE = "Load more";
-const LOAD_MORE_ERROR = "Couldn't load more people. Please try again.";
-const RELOAD_ERROR = "Couldn't load people. Please try again.";
 const BULK_DELETE_ERROR = "Couldn't delete some people. Please try again.";
 // Stable module reference: passed as useColumnSort's fallback, so `effective` only changes
 // reference when the sort state itself changes (not on every PeopleList re-render).
@@ -33,6 +39,7 @@ const DEFAULT_SORT: ColumnSort<PersonSortField> = { field: "name", dir: "asc" };
 // every call, which would make fetchPage's useCallback (and the sort-change effect that
 // depends on it) re-fire on every render instead of only on a real sort change.
 const EMPTY_ORG_NAMES: Record<string, string> = {};
+const EMPTY_CUSTOM_FIELD_DEFS: CustomFieldDef[] = [];
 
 export interface PeopleListProps {
   rows: PeopleListRow[];
@@ -42,6 +49,9 @@ export interface PeopleListProps {
   orgNames?: Record<string, string>;
   // Seeded from user_preferences.ui.peopleView (server); falls back to catalog defaults.
   initialColumns?: string[];
+  customFieldDefs?: CustomFieldDef[];
+  baseCurrency?: string;
+  refLabels?: CustomFieldRefLabels;
 }
 
 // People list for the Contacts nav. Client-side "Load more" pages through the rest of the
@@ -53,24 +63,16 @@ export function PeopleList({
   total: initialTotal,
   orgNames = EMPTY_ORG_NAMES,
   initialColumns,
+  customFieldDefs = EMPTY_CUSTOM_FIELD_DEFS,
+  baseCurrency = DEFAULT_BASE_CURRENCY,
+  refLabels: initialRefLabels = EMPTY_REF_LABELS,
 }: PeopleListProps): React.ReactNode {
-  const columns = useColumns(PEOPLE_COLUMNS, initialColumns);
+  const catalog = useMemo(
+    () => [...PEOPLE_COLUMNS, ...customFieldColumns(customFieldDefs)],
+    [customFieldDefs],
+  );
+  const columns = useColumns(catalog, initialColumns);
   usePersistColumns("people", columns.order);
-  const utils = trpc.useUtils();
-  // A ref, not a dependency: trpc.useUtils() is documented as stable, but reading through a ref
-  // means fetchPage's identity can't be knocked loose by a caller (e.g. a test double) that
-  // returns a fresh object per render, which would otherwise cascade into reload/the sort-change
-  // effect and re-fire on every render.
-  const utilsRef = useRef(utils);
-  // Written in an effect, not during render: ref writes during render are unsafe under concurrent
-  // rendering. fetchPage only reads utilsRef inside callbacks, which always run after commit.
-  useEffect(() => {
-    utilsRef.current = utils;
-  });
-  const [rows, setRows] = useState<PeopleListRow[]>(initial);
-  const [total, setTotal] = useState(initialTotal);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const selection = useRowSelection();
   // Depend on the stable callback, not the selection object, which is recreated every render.
   const clearSelection = selection.clear;
@@ -82,52 +84,15 @@ export function PeopleList({
   const [savedViewId, setSavedViewId] = useState<string | null>(null);
   // Whether the pair-merge dialog is open (only reachable with exactly two rows selected).
   const [merging, setMerging] = useState(false);
-
-  const fetchPage = useCallback(
-    async (offset: number): Promise<{ rows: PeopleListRow[]; total: number }> => {
-      const page = await utilsRef.current.client.contacts.listPeople.query({
-        offset,
-        limit: PAGE_SIZE,
-        sort: effective,
-        filter: filter ?? undefined,
-      });
-      return {
-        rows: page.rows.map((r) => toRow(r as RawPersonRow, orgNames)),
-        total: page.total,
-      };
-    },
-    [effective, orgNames, filter],
-  );
-
-  const loadMore = useCallback(async (): Promise<void> => {
-    setLoading(true);
-    setError(null);
-    try {
-      const page = await fetchPage(rows.length);
-      setRows((prev) => [...prev, ...page.rows]);
-      setTotal(page.total);
-    } catch {
-      // The list query has a server-side AbortSignal.timeout, so rejection is realistic.
-      // Surface it inline and leave the button enabled to retry rather than swallow it.
-      setError(LOAD_MORE_ERROR);
-    } finally {
-      setLoading(false);
-    }
-  }, [fetchPage, rows.length]);
-
-  const reload = useCallback(async (): Promise<void> => {
-    setLoading(true);
-    setError(null);
-    try {
-      const page = await fetchPage(0);
-      setRows(page.rows);
-      setTotal(page.total);
-    } catch {
-      setError(RELOAD_ERROR);
-    } finally {
-      setLoading(false);
-    }
-  }, [fetchPage]);
+  const { rows, total, refLabels, loading, error, setError, loadMore, reload } =
+    usePeopleListPaging({
+      initial,
+      initialTotal,
+      initialRefLabels,
+      orgNames,
+      sort: effective,
+      filter,
+    });
 
   // Re-query the first page under the new sort. Skip the initial mount: the first page is
   // already seeded server-side under the default sort, so firing here too would double-fetch.
@@ -238,25 +203,28 @@ export function PeopleList({
         />
       )}
       <div className="overflow-hidden rounded-lg border bg-card shadow-sm">
-        <PeopleTable
-          rows={rows}
-          sort={effective}
-          onSort={cycle}
-          isSelected={selection.isSelected}
-          allSelected={selection.allSelected(visibleIds)}
-          onToggleRow={selection.toggle}
-          onToggleAll={() => selection.toggleAll(visibleIds)}
-          visibleColumns={columns.visibleColumns}
-          columnsMenu={
-            <ColumnsMenu
-              catalog={PEOPLE_COLUMNS}
-              order={columns.order}
-              visibleKeys={columns.visibleKeys}
-              onToggle={columns.toggle}
-              onReorder={columns.reorder}
-            />
-          }
-        />
+        <CustomFieldRefLabelsProvider value={refLabels}>
+          <PeopleTable
+            rows={rows}
+            sort={effective}
+            onSort={cycle}
+            isSelected={selection.isSelected}
+            allSelected={selection.allSelected(visibleIds)}
+            onToggleRow={selection.toggle}
+            onToggleAll={() => selection.toggleAll(visibleIds)}
+            visibleColumns={columns.visibleColumns}
+            currency={baseCurrency}
+            columnsMenu={
+              <ColumnsMenu
+                catalog={catalog}
+                order={columns.order}
+                visibleKeys={columns.visibleKeys}
+                onToggle={columns.toggle}
+                onReorder={columns.reorder}
+              />
+            }
+          />
+        </CustomFieldRefLabelsProvider>
       </div>
       {error !== null && (
         <p role="alert" className="self-center text-sm text-red-600">

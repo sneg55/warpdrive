@@ -59,6 +59,7 @@ export const ERROR_IDS = {
   CF_INPUT_INVALID: "E_CF_004", // custom-field create/archive input failed Zod validation
   CF_BUILTIN_LOCKED: "E_CF_005", // attempted to hide a locked (identity) built-in field
   CF_BUILTIN_UNKNOWN: "E_CF_006", // attempted to hide an unknown built-in field key
+  CF_SORT_FIELD_INVALID: "E_CF_007", // list sort names an unknown, archived or unsortable custom field
   // CONTACT
   CONTACT_NOT_FOUND: "E_CONTACT_001", // person/org not found OR not visible (404-shaped)
   CONTACT_ADDRESS_INVALID: "E_CONTACT_002", // structured address failed validation

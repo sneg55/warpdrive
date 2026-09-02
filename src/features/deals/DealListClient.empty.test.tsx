@@ -52,6 +52,7 @@ const row: DealListRow = {
   lastActivityAt: null,
   stageEnteredAt: new Date("2026-06-01T00:00:00Z"),
   updatedAt: "2026-06-01T00:00:00.000Z",
+  customFields: {},
 };
 
 function renderClient(initial: { rows: DealListRow[]; total: number }): void {

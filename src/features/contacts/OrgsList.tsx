@@ -1,6 +1,6 @@
 "use client";
 import type React from "react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BulkActionBar } from "@/components/data-table/BulkActionBar";
 import { BulkDeleteButton } from "@/components/data-table/BulkDeleteButton";
 import { ColumnsMenu } from "@/components/data-table/ColumnsMenu";
@@ -8,15 +8,22 @@ import { type ColumnSort, useColumnSort } from "@/components/data-table/useColum
 import { useColumns } from "@/components/data-table/useColumns";
 import { usePersistColumns } from "@/components/data-table/usePersistColumns";
 import { useRowSelection } from "@/components/data-table/useRowSelection";
+import { DEFAULT_BASE_CURRENCY } from "@/constants/currency";
 import { STRINGS } from "@/constants/strings";
-import { SavedViewControl } from "@/features/saved-filters/SavedViewControl";
+import { customFieldColumns } from "@/features/custom-fields/listColumns";
+import {
+  type CustomFieldRefLabels,
+  CustomFieldRefLabelsProvider,
+  EMPTY_REF_LABELS,
+  mergeRefLabels,
+} from "@/features/custom-fields/refLabelsContext";
 import { trpc } from "@/lib/trpc-client";
+import type { CustomFieldDef } from "@/types/customFields";
 import { readCsrfToken } from "@/utils/csrfCookie";
 import { deleteOrgAction } from "./actions";
 import { BulkMergeDialog } from "./BulkMergeDialog";
-import { ContactFilterBuilder } from "./ContactFilterBuilder";
-import { type ContactFilterDefinition, ORG_FILTER_CONFIG } from "./contactFilterConfig";
-import { ORG_FILTER_LABELS } from "./contactFilterRows";
+import type { ContactFilterDefinition } from "./contactFilterConfig";
+import { OrgsListToolbar } from "./OrgsListToolbar";
 import { type OrgsListRow, OrgsTable } from "./OrgsTable";
 import { ORG_COLUMNS } from "./orgColumns";
 import type { OrgSortField } from "./schemas";
@@ -35,6 +42,9 @@ export interface OrgsListProps {
   total: number;
   // Seeded from user_preferences.ui.orgsView (server); falls back to catalog defaults.
   initialColumns?: string[];
+  customFieldDefs?: CustomFieldDef[];
+  baseCurrency?: string;
+  refLabels?: CustomFieldRefLabels;
 }
 
 // Organizations list for the Contacts nav. Client-side "Load more" pages through the rest
@@ -45,8 +55,15 @@ export function OrgsList({
   rows: initial,
   total: initialTotal,
   initialColumns,
+  customFieldDefs = [],
+  baseCurrency = DEFAULT_BASE_CURRENCY,
+  refLabels: initialRefLabels = EMPTY_REF_LABELS,
 }: OrgsListProps): React.ReactNode {
-  const columns = useColumns(ORG_COLUMNS, initialColumns);
+  const catalog = useMemo(
+    () => [...ORG_COLUMNS, ...customFieldColumns(customFieldDefs)],
+    [customFieldDefs],
+  );
+  const columns = useColumns(catalog, initialColumns);
   usePersistColumns("orgs", columns.order);
   const utils = trpc.useUtils();
   // A ref, not a dependency: trpc.useUtils() is documented as stable, but reading through a ref
@@ -61,6 +78,7 @@ export function OrgsList({
   });
   const [rows, setRows] = useState<OrgsListRow[]>(initial);
   const [total, setTotal] = useState(initialTotal);
+  const [refLabels, setRefLabels] = useState(initialRefLabels);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const selection = useRowSelection();
@@ -74,7 +92,9 @@ export function OrgsList({
   const [merging, setMerging] = useState(false);
 
   const fetchPage = useCallback(
-    async (offset: number): Promise<{ rows: OrgsListRow[]; total: number }> => {
+    async (
+      offset: number,
+    ): Promise<{ rows: OrgsListRow[]; total: number; refLabels: CustomFieldRefLabels }> => {
       const page = await utilsRef.current.client.contacts.listOrgs.query({
         offset,
         limit: PAGE_SIZE,
@@ -86,11 +106,13 @@ export function OrgsList({
           id: r.id,
           name: r.name,
           address: r.address,
+          customFields: r.customFields,
           peopleCount: r.peopleCount,
           closedDeals: r.closedDeals,
           openDeals: r.openDeals,
         })),
         total: page.total,
+        refLabels: page.refLabels,
       };
     },
     [effective, filter],
@@ -103,6 +125,7 @@ export function OrgsList({
       const page = await fetchPage(rows.length);
       setRows((prev) => [...prev, ...page.rows]);
       setTotal(page.total);
+      setRefLabels((prev) => mergeRefLabels(prev, page.refLabels));
     } catch {
       // The list query has a server-side AbortSignal.timeout, so rejection is realistic.
       // Surface it inline and leave the button enabled to retry rather than swallow it.
@@ -119,6 +142,7 @@ export function OrgsList({
       const page = await fetchPage(0);
       setRows(page.rows);
       setTotal(page.total);
+      setRefLabels(page.refLabels);
     } catch {
       setError(RELOAD_ERROR);
     } finally {
@@ -179,29 +203,18 @@ export function OrgsList({
         <p className="text-xs text-muted-foreground tabular-nums">
           {STRINGS.contacts.countLabel(rows.length, total)}
         </p>
-        <div className="flex items-center gap-2">
-          <SavedViewControl
-            targetEntity="organization"
-            allLabel="All organizations"
-            currentDefinition={filter}
-            selectedViewId={savedViewId}
-            onSelectView={(view) => {
-              setSavedViewId(view?.id ?? null);
-              setFilter(view?.definition ?? null);
-            }}
-          />
-          <ContactFilterBuilder
-            config={ORG_FILTER_CONFIG}
-            fieldLabels={ORG_FILTER_LABELS}
-            activeCount={filter?.conditions.length ?? 0}
-            appliedDefinition={filter}
-            onApply={(def) => {
-              // An ad-hoc edit is no longer the saved view, so the picker stops claiming it is.
-              setSavedViewId(null);
-              setFilter(def);
-            }}
-          />
-        </div>
+        <OrgsListToolbar
+          filter={filter}
+          savedViewId={savedViewId}
+          onSelectView={(view) => {
+            setSavedViewId(view?.id ?? null);
+            setFilter(view?.definition ?? null);
+          }}
+          onApplyFilter={(def) => {
+            setSavedViewId(null);
+            setFilter(def);
+          }}
+        />
       </div>
       {selection.count > 0 && (
         <BulkActionBar count={selection.count} onClear={selection.clear}>
@@ -235,25 +248,28 @@ export function OrgsList({
         />
       )}
       <div className="overflow-hidden rounded-lg border bg-card shadow-sm">
-        <OrgsTable
-          rows={rows}
-          sort={effective}
-          onSort={cycle}
-          isSelected={selection.isSelected}
-          allSelected={selection.allSelected(visibleIds)}
-          onToggleRow={selection.toggle}
-          onToggleAll={() => selection.toggleAll(visibleIds)}
-          visibleColumns={columns.visibleColumns}
-          columnsMenu={
-            <ColumnsMenu
-              catalog={ORG_COLUMNS}
-              order={columns.order}
-              visibleKeys={columns.visibleKeys}
-              onToggle={columns.toggle}
-              onReorder={columns.reorder}
-            />
-          }
-        />
+        <CustomFieldRefLabelsProvider value={refLabels}>
+          <OrgsTable
+            rows={rows}
+            sort={effective}
+            onSort={cycle}
+            isSelected={selection.isSelected}
+            allSelected={selection.allSelected(visibleIds)}
+            onToggleRow={selection.toggle}
+            onToggleAll={() => selection.toggleAll(visibleIds)}
+            visibleColumns={columns.visibleColumns}
+            currency={baseCurrency}
+            columnsMenu={
+              <ColumnsMenu
+                catalog={catalog}
+                order={columns.order}
+                visibleKeys={columns.visibleKeys}
+                onToggle={columns.toggle}
+                onReorder={columns.reorder}
+              />
+            }
+          />
+        </CustomFieldRefLabelsProvider>
       </div>
       {error !== null && (
         <p role="alert" className="self-center text-sm text-red-600">

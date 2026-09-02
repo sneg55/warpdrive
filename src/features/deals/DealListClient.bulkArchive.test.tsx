@@ -78,6 +78,7 @@ const row = {
   lastActivityAt: null,
   stageEnteredAt: new Date("2026-06-24T00:00:00Z"),
   updatedAt: "2026-06-24T00:00:00Z",
+  customFields: {},
 };
 
 const initial = {

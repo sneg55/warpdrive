@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { attachRefLabels } from "@/features/custom-fields/refLabels";
 import { listParticipants } from "@/features/deal-workspace/participantsList";
 import { parseSavedFilterDefinition } from "@/features/saved-filters/parseDefinition";
 import { listSavedFilterViews } from "@/features/saved-filters/savedFilterList";
@@ -60,8 +61,9 @@ export const dealRouter = router({
         definition: filterDefinition.optional(),
       }),
     )
-    .query(({ ctx, input }) =>
-      listDeals(
+    .query(async ({ ctx, input }) => {
+      const signal = AbortSignal.timeout(10_000);
+      const result = await listDeals(
         ctx.db,
         actorToSession(ctx.actor),
         {
@@ -71,9 +73,10 @@ export const dealRouter = router({
           archived: input.archived,
           filter: input.definition,
         },
-        AbortSignal.timeout(10_000),
-      ),
-    ),
+        signal,
+      );
+      return attachRefLabels(ctx.db, ctx.actor, "deal", result, signal);
+    }),
   // Deal participants for the Summary "+ Participants" control. Visibility is enforced in
   // listParticipants (deal gate + per-person gate); an invisible deal returns [].
   participants: protectedProcedure

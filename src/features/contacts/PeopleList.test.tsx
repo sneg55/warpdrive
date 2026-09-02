@@ -53,6 +53,7 @@ const rows = [
     orgId: "o1",
     orgName: "Acme Inc",
     closedDeals: 0,
+    customFields: {},
   },
   {
     id: "p2",
@@ -62,6 +63,7 @@ const rows = [
     orgId: null,
     orgName: null,
     closedDeals: 0,
+    customFields: {},
   },
 ];
 
@@ -103,8 +105,10 @@ describe("PeopleList", () => {
           primaryEmail: "zed@globex.com",
           phones: [{ label: "work", value: "+1999", primary: true }],
           orgId: "o2",
+          customFields: {},
         },
       ],
+      refLabels: { user: {}, person: {}, org: {} },
     });
     render(<PeopleList rows={rows} total={3} orgNames={{ o2: "Globex" }} />);
     const loadMore = screen.getByRole("button", { name: /load more/i });
@@ -146,8 +150,10 @@ describe("PeopleList", () => {
           primaryEmail: null,
           phones: [],
           orgId: null,
+          customFields: {},
         },
       ],
+      refLabels: { user: {}, person: {}, org: {} },
     });
     render(<PeopleList rows={rows} total={3} />);
 

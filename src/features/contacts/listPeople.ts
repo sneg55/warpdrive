@@ -1,7 +1,9 @@
-import { and, asc, desc, isNull } from "drizzle-orm";
+import { and, asc, desc, isNull, type SQL } from "drizzle-orm";
 import type { Db } from "@/db/client";
 import type { Person } from "@/db/schema";
 import { persons } from "@/db/schema";
+import { isCustomFieldSortKey } from "@/features/custom-fields/sortKey";
+import { customFieldOrderBy, resolveCustomFieldSort } from "@/features/custom-fields/sortSql";
 import { canSee } from "@/features/permissions/canSee";
 import { assertNever } from "@/types/result";
 import {
@@ -12,11 +14,9 @@ import {
 } from "./contactFilter";
 import { closedDealCountsForPeople } from "./peopleDealCounts";
 import { type ContactActor, toVisibleRecord } from "./personsRepo";
-import type { PersonSortField } from "./schemas";
+import type { PersonBuiltinSortField, PersonSortField } from "./schemas";
 
-// A person row plus the People-list Closed-deals count (won+lost deals linked via person_id or a
-// participant). closedDeals is derived (not a persons column), so it rides as an extra field.
-type PersonListItem = Person & { closedDeals: number };
+type PersonListItem = Person & { closedDeals: number; customFields: Record<string, unknown> };
 
 export interface ListPeopleResult {
   rows: PersonListItem[];
@@ -24,7 +24,7 @@ export interface ListPeopleResult {
 }
 
 // Map a sort field to its ORDER BY column. Extend here as more People-list columns become sortable.
-function personSortColumn(field: PersonSortField) {
+function personSortColumn(field: PersonBuiltinSortField) {
   switch (field) {
     case "name":
       return persons.name;
@@ -33,6 +33,21 @@ function personSortColumn(field: PersonSortField) {
     default:
       return assertNever(field);
   }
+}
+
+async function personOrderBy(
+  db: Db,
+  sort: { field: PersonSortField; dir: "asc" | "desc" } | undefined,
+  signal: AbortSignal,
+): Promise<SQL> {
+  const dir = sort?.dir ?? "asc";
+  const field = sort?.field ?? "name";
+  if (isCustomFieldSortKey(field)) {
+    const def = await resolveCustomFieldSort(db, "person", field, signal);
+    return customFieldOrderBy(persons.customFields, def, dir);
+  }
+  const col = personSortColumn(field);
+  return dir === "desc" ? desc(col) : asc(col);
 }
 
 // Global people list for the contacts nav. Persons carry JS-side visibility (canSee), consistent
@@ -52,9 +67,6 @@ export async function listPeople(
 ): Promise<ListPeopleResult> {
   signal.throwIfAborted();
 
-  const orderDir = opts.sort?.dir === "desc" ? desc : asc;
-  const orderCol =
-    opts.sort !== undefined ? personSortColumn(opts.sort.field) : personSortColumn("name");
   // Server-side condition filter (AND-ed after the not-deleted guard, BEFORE the JS visibility
   // filter so an actor never learns hidden rows exist). Null when no conditions were given.
   const filterSql =
@@ -71,7 +83,7 @@ export async function listPeople(
     // id is the unique tiebreaker: the sort column is non-unique, and load-more issues a separate
     // offset query per page, so equal-value rows straddling a boundary can dup or skip without a
     // stable secondary sort.
-    .orderBy(orderDir(orderCol), persons.id);
+    .orderBy(await personOrderBy(db, opts.sort, signal), persons.id);
   signal.throwIfAborted();
 
   const visible = rows.filter((row) => canSee(actor, toVisibleRecord(row)));
@@ -86,6 +98,10 @@ export async function listPeople(
   );
   return {
     total: visible.length,
-    rows: page.map((p) => ({ ...p, closedDeals: closedCounts.get(p.id) ?? 0 })),
+    rows: page.map((p) => ({
+      ...p,
+      closedDeals: closedCounts.get(p.id) ?? 0,
+      customFields: p.customFields as Record<string, unknown>,
+    })),
   };
 }

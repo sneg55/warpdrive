@@ -46,7 +46,10 @@ export function ColumnsMenu({
       >
         <Settings aria-hidden="true" className="h-4 w-4" />
       </PopoverTrigger>
-      <PopoverContent align="end" className="min-w-56 p-1 text-sm">
+      <PopoverContent
+        align="end"
+        className="min-w-56 max-h-[min(70vh,32rem)] overflow-y-auto p-1 text-sm"
+      >
         <p className="px-2 py-1 text-xs font-medium uppercase text-muted-foreground">Columns</p>
         <ColumnsMenuSortableList
           catalog={catalog}

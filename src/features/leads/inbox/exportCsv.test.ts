@@ -19,6 +19,7 @@ const row: LeadRow = {
   archivedAt: null,
   updatedAt: new Date("2026-06-01T00:00:00Z"),
   convertedDealId: null,
+  customFields: {},
 };
 
 describe("leadRowsToCsv", () => {

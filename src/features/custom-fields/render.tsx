@@ -1,8 +1,10 @@
 // Custom-field render dispatch: maps each field type to a display string and a UI widget.
 // Adding a new field type forces a case here via assertNever (compile-time exhaustiveness).
 import { DEFAULT_BASE_CURRENCY } from "@/constants/currency";
+import { STRINGS } from "@/constants/strings";
 import type { CustomFieldDef } from "@/types/customFields";
 import { assertNever } from "@/types/result";
+import type { CustomFieldRefLabels } from "./refLabelsShared";
 import { isCustomFieldValueEmpty } from "./valueEmpty";
 
 // Re-export widgets from sibling file to keep this file under 200 lines.
@@ -29,6 +31,7 @@ export function formatCustomFieldDisplay(
   def: CustomFieldDef,
   value: unknown,
   currency = DEFAULT_BASE_CURRENCY,
+  refLabels?: CustomFieldRefLabels,
 ): string {
   if (isCustomFieldValueEmpty(value)) {
     return EMPTY;
@@ -63,9 +66,17 @@ export function formatCustomFieldDisplay(
 
     case "user":
     case "person":
-    case "org":
-      // Full entity-picker (chip/avatar) is a later page concern; string id is the fallback.
-      return value as string;
+    case "org": {
+      const id = value as string;
+      if (refLabels === undefined) return id;
+      const bucket =
+        def.type === "user"
+          ? refLabels.user
+          : def.type === "person"
+            ? refLabels.person
+            : refLabels.org;
+      return bucket[id] ?? STRINGS.customFields.restrictedRef;
+    }
 
     case "address": {
       const a = value as Record<string, string>;

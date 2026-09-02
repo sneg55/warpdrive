@@ -9,10 +9,16 @@ import { useLeadList } from "./useLeadList";
 // 250-row result); the second page (offset 200) is deferred so the test can inspect the header
 // counts WHILE the next-page fetch is still in flight.
 const pager = vi.hoisted(() => {
+  type RefLabels = {
+    user: Record<string, string>;
+    person: Record<string, string>;
+    org: Record<string, string>;
+  };
+  type Page = { rows: { id: string }[]; total: number; refLabels: RefLabels };
   const rows = (start: number, count: number): { id: string }[] =>
     Array.from({ length: count }, (_v, i) => ({ id: String(start + i) }));
-  let resolveSecond: (v: { rows: { id: string }[]; total: number }) => void = () => {};
-  const second = new Promise<{ rows: { id: string }[]; total: number }>((res) => {
+  let resolveSecond: (v: Page) => void = () => {};
+  const second = new Promise<Page>((res) => {
     resolveSecond = res;
   });
   // Page 0's shape is mutable so a test can shrink it between fetches, the way a delete elsewhere
@@ -20,17 +26,30 @@ const pager = vi.hoisted(() => {
   const page0 = { count: 200, total: 250 };
   // The trailing page shifts too when a lead is deleted ahead of it, so it is mutable as well.
   const page2 = { count: 50 };
+  const page0RefLabels: RefLabels = { user: { u1: "Ada" }, person: {}, org: {} };
+  const page2RefLabels: RefLabels = { user: { u2: "Bea" }, person: {}, org: {} };
   return {
     page0,
     page2,
+    page0RefLabels,
+    page2RefLabels,
     // Each call resolves to a FRESH object, the way a real refetch does: react-query keeps the
     // previous data identity when a queryFn returns the very same object, which would hide a
     // refetch from the merge effect.
     fetchPage: (offset: number) =>
       offset === 0
-        ? Promise.resolve({ rows: rows(0, page0.count), total: page0.total })
-        : second.then(() => ({ rows: rows(200, page2.count), total: page0.total })),
-    releaseSecondPage: () => resolveSecond({ rows: rows(200, 50), total: 250 }),
+        ? Promise.resolve({
+            rows: rows(0, page0.count),
+            total: page0.total,
+            refLabels: page0RefLabels,
+          })
+        : second.then(() => ({
+            rows: rows(200, page2.count),
+            total: page0.total,
+            refLabels: page2RefLabels,
+          })),
+    releaseSecondPage: () =>
+      resolveSecond({ rows: rows(200, 50), total: 250, refLabels: page2RefLabels }),
   };
 });
 
@@ -149,5 +168,35 @@ describe("useLeadList", () => {
 
     await waitFor(() => expect(result.current.total).toBe(2));
     expect(result.current.rows).toHaveLength(2);
+  });
+
+  it("merges refLabels across pages and resets them on refetch", async () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    pager.page0.count = 200;
+    pager.page0.total = 250;
+    pager.page2.count = 50;
+    const { result } = renderHook(() => useLeadList(params), { wrapper: wrapper(client) });
+
+    await waitFor(() => expect(result.current.rows).toHaveLength(200));
+    expect(result.current.refLabels).toEqual(pager.page0RefLabels);
+
+    act(() => {
+      result.current.loadMore();
+    });
+    act(() => {
+      pager.releaseSecondPage();
+    });
+    await waitFor(() => expect(result.current.rows).toHaveLength(250));
+    expect(result.current.refLabels).toEqual({
+      user: { ...pager.page0RefLabels.user, ...pager.page2RefLabels.user },
+      person: {},
+      org: {},
+    });
+
+    await act(async () => {
+      await result.current.refetch();
+    });
+    await waitFor(() => expect(result.current.rows).toHaveLength(200));
+    expect(result.current.refLabels).toEqual(pager.page0RefLabels);
   });
 });

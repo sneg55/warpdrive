@@ -1,8 +1,10 @@
 "use client";
 import type React from "react";
+import { CustomFieldCell, customFieldCellClass } from "@/components/data-table/CustomFieldCell";
 import type { ColumnSort } from "@/components/data-table/useColumnSort";
 import { Avatar } from "@/components/ui/Avatar";
 import { Checkbox } from "@/components/ui/Checkbox";
+import { DEFAULT_BASE_CURRENCY } from "@/constants/currency";
 import { useInterfacePrefs } from "@/features/identity/InterfacePrefsProvider";
 import { RecordLink } from "@/features/navigation/RecordLink";
 import { formatUsPhone } from "@/utils/phone";
@@ -18,6 +20,7 @@ export interface PeopleListRow {
   orgName: string | null;
   // Won+lost deal count (Closed deals column); server-computed via a batched deal-count join.
   closedDeals: number;
+  customFields: Record<string, unknown>;
 }
 
 // Raw persons.list row shape the load-more query returns (a subset of Person plus closedDeals).
@@ -28,6 +31,7 @@ export interface RawPersonRow {
   phones: { value: string; primary?: boolean }[];
   orgId: string | null;
   closedDeals: number;
+  customFields: Record<string, unknown>;
 }
 
 export function toRow(raw: RawPersonRow, orgNames: Record<string, string>): PeopleListRow {
@@ -40,6 +44,7 @@ export function toRow(raw: RawPersonRow, orgNames: Record<string, string>): Peop
     orgId: raw.orgId,
     orgName: raw.orgId !== null ? (orgNames[raw.orgId] ?? null) : null,
     closedDeals: raw.closedDeals,
+    customFields: raw.customFields,
   };
 }
 
@@ -54,6 +59,7 @@ export interface PeopleTableProps {
   // Ordered visible columns (Name pinned first) + the Customize-columns cog rendered by PeopleList.
   visibleColumns: readonly PeopleColumn[];
   columnsMenu?: React.ReactNode;
+  currency?: string;
 }
 
 function SortGlyph({ dir }: { dir: "asc" | "desc" | null }): React.ReactNode {
@@ -94,11 +100,21 @@ function SortableHeader({
 // per-row checkbox. Extracted from PeopleList (the data/fetch container) to keep both files
 // under the project's file-size budget, mirroring LeadsTable/LeadsInbox.
 function renderPersonCell(
-  key: string,
+  col: PeopleColumn,
   row: PeopleListRow,
   usPhoneFormat: boolean,
+  currency: string,
 ): React.ReactNode {
-  switch (key) {
+  if (col.customField !== undefined) {
+    return (
+      <CustomFieldCell
+        def={col.customField}
+        value={row.customFields[col.customField.key]}
+        currency={currency}
+      />
+    );
+  }
+  switch (col.key) {
     case "name":
       return (
         <span className="flex items-center gap-2.5 font-medium">
@@ -139,10 +155,11 @@ function renderPersonCell(
   }
 }
 
-function cellClass(key: string): string {
-  if (key === "phone" || key === "closedDeals")
+function cellClass(col: PeopleColumn): string {
+  if (col.customField !== undefined) return customFieldCellClass(col.customField);
+  if (col.key === "phone" || col.key === "closedDeals")
     return "px-3 py-2 tabular-nums text-muted-foreground";
-  if (key === "name") return "px-3 py-2";
+  if (col.key === "name") return "px-3 py-2";
   return "px-3 py-2 text-muted-foreground";
 }
 
@@ -156,6 +173,7 @@ export function PeopleTable({
   onToggleAll,
   visibleColumns,
   columnsMenu,
+  currency = DEFAULT_BASE_CURRENCY,
 }: PeopleTableProps): React.ReactNode {
   const { usPhoneFormat } = useInterfacePrefs();
   return (
@@ -163,52 +181,54 @@ export function PeopleTable({
       {columnsMenu !== undefined ? (
         <div className="flex items-center justify-end pb-1.5">{columnsMenu}</div>
       ) : null}
-      <table className="w-full border-collapse text-sm">
-        <thead>
-          <tr className="border-b bg-muted/60 text-left text-muted-foreground">
-            <th className="w-8 px-3 py-2">
-              <Checkbox
-                label="Select all people"
-                checked={allSelected}
-                onCheckedChange={onToggleAll}
-              />
-            </th>
-            {visibleColumns.map((col) =>
-              col.sortField !== undefined ? (
-                <SortableHeader
-                  key={col.key}
-                  field={col.sortField}
-                  label={col.header}
-                  sort={sort}
-                  onSort={onSort}
-                />
-              ) : (
-                <th key={col.key} className="px-3 py-2 font-semibold">
-                  {col.header}
-                </th>
-              ),
-            )}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => (
-            <tr key={row.id} className="border-b last:border-0 hover:bg-muted/50">
-              <td className="px-3 py-2">
+      <div className="overflow-x-auto">
+        <table className="w-full border-collapse text-sm">
+          <thead>
+            <tr className="border-b bg-muted/60 text-left text-muted-foreground">
+              <th className="w-8 px-3 py-2">
                 <Checkbox
-                  label={`Select ${row.name}`}
-                  checked={isSelected(row.id)}
-                  onCheckedChange={() => onToggleRow(row.id)}
+                  label="Select all people"
+                  checked={allSelected}
+                  onCheckedChange={onToggleAll}
                 />
-              </td>
-              {visibleColumns.map((col) => (
-                <td key={col.key} className={cellClass(col.key)}>
-                  {renderPersonCell(col.key, row, usPhoneFormat)}
-                </td>
-              ))}
+              </th>
+              {visibleColumns.map((col) =>
+                col.sortField !== undefined ? (
+                  <SortableHeader
+                    key={col.key}
+                    field={col.sortField}
+                    label={col.header}
+                    sort={sort}
+                    onSort={onSort}
+                  />
+                ) : (
+                  <th key={col.key} className="px-3 py-2 font-semibold">
+                    {col.header}
+                  </th>
+                ),
+              )}
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {rows.map((row) => (
+              <tr key={row.id} className="border-b last:border-0 hover:bg-muted/50">
+                <td className="px-3 py-2">
+                  <Checkbox
+                    label={`Select ${row.name}`}
+                    checked={isSelected(row.id)}
+                    onCheckedChange={() => onToggleRow(row.id)}
+                  />
+                </td>
+                {visibleColumns.map((col) => (
+                  <td key={col.key} className={cellClass(col)}>
+                    {renderPersonCell(col, row, usPhoneFormat, currency)}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

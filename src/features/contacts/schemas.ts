@@ -1,4 +1,6 @@
 import { z } from "zod";
+import type { CustomFieldSortKey } from "@/features/custom-fields/sortKey";
+import { customFieldSortKeySchema } from "@/features/custom-fields/sortKeySchema";
 import { labelNameArray } from "@/features/labels/labelsSchema";
 // Field length bounds live in a zod-free module so client forms can read a maxLength hint without
 // pulling zod; re-exported here so existing importers of contacts/schemas.ts still resolve.
@@ -86,17 +88,19 @@ export const personDeleteInput = z.object({ id: z.string().uuid() });
 
 // Server-driven ORDER BY for the People list (contacts.listPeople).
 const PERSON_SORT_FIELDS = ["name", "primaryEmail"] as const;
-export type PersonSortField = (typeof PERSON_SORT_FIELDS)[number];
+export type PersonBuiltinSortField = (typeof PERSON_SORT_FIELDS)[number];
+export type PersonSortField = PersonBuiltinSortField | CustomFieldSortKey;
 export const personSortInput = z.object({
-  field: z.enum(PERSON_SORT_FIELDS),
+  field: z.union([z.enum(PERSON_SORT_FIELDS), customFieldSortKeySchema]),
   dir: z.enum(["asc", "desc"]),
 });
 
 // Server-driven ORDER BY for the Organizations list (contacts.listOrgs).
 const ORG_SORT_FIELDS = ["name"] as const;
-export type OrgSortField = (typeof ORG_SORT_FIELDS)[number];
+export type OrgBuiltinSortField = (typeof ORG_SORT_FIELDS)[number];
+export type OrgSortField = OrgBuiltinSortField | CustomFieldSortKey;
 export const orgSortInput = z.object({
-  field: z.enum(ORG_SORT_FIELDS),
+  field: z.union([z.enum(ORG_SORT_FIELDS), customFieldSortKeySchema]),
   dir: z.enum(["asc", "desc"]),
 });
 

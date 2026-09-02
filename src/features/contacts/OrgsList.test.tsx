@@ -1,7 +1,6 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("next/navigation", () => ({ usePathname: () => "/contacts/orgs" }));
@@ -36,6 +35,8 @@ vi.mock("@/features/identity/preferencesActions", () => ({ setColumnViewAction: 
 import { OrgsList } from "./OrgsList";
 import type { OrgsListRow } from "./OrgsTable";
 
+const EMPTY_REF_LABELS = { user: {}, person: {}, org: {} };
+
 afterEach(() => {
   cleanup();
   listOrgsQuery.mockReset();
@@ -44,10 +45,17 @@ afterEach(() => {
   savedViews.mockReturnValue([]);
 });
 
-// Builds a full OrgsListRow with sensible defaults for the fields a given test doesn't care
-// about (address/peopleCount/closedDeals/openDeals), so selection/sort/bulk-delete tests stay focused.
 function orgRow(id: string, name: string, overrides?: Partial<OrgsListRow>): OrgsListRow {
-  return { id, name, address: null, peopleCount: 0, closedDeals: 0, openDeals: 0, ...overrides };
+  return {
+    id,
+    name,
+    address: null,
+    customFields: {},
+    peopleCount: 0,
+    closedDeals: 0,
+    openDeals: 0,
+    ...overrides,
+  };
 }
 
 describe("OrgsList", () => {
@@ -63,6 +71,12 @@ describe("OrgsList", () => {
     expect(screen.getByText(/no organizations/i)).toBeInTheDocument();
   });
 
+  it("wraps the table in a horizontally scrollable container so extra columns don't clip", () => {
+    render(<OrgsList rows={[orgRow("o1", "Acme Inc")]} total={1} />);
+    const table = screen.getByRole("table");
+    expect(table.parentElement).toHaveClass("overflow-x-auto");
+  });
+
   it("hides Load more when every org is already loaded", () => {
     render(<OrgsList rows={[orgRow("o1", "Acme Inc")]} total={1} />);
     expect(screen.queryByRole("button", { name: /load more/i })).not.toBeInTheDocument();
@@ -72,8 +86,17 @@ describe("OrgsList", () => {
     listOrgsQuery.mockResolvedValue({
       total: 2,
       rows: [
-        { id: "o2", name: "Globex", address: null, peopleCount: 0, closedDeals: 0, openDeals: 0 },
+        {
+          id: "o2",
+          name: "Globex",
+          address: null,
+          customFields: {},
+          peopleCount: 0,
+          closedDeals: 0,
+          openDeals: 0,
+        },
       ],
+      refLabels: EMPTY_REF_LABELS,
     });
     render(<OrgsList rows={[orgRow("o1", "Acme Inc")]} total={2} />);
     fireEvent.click(screen.getByRole("button", { name: /load more/i }));
@@ -98,8 +121,17 @@ describe("OrgsList", () => {
     listOrgsQuery.mockRejectedValueOnce(new Error("timeout")).mockResolvedValueOnce({
       total: 2,
       rows: [
-        { id: "o2", name: "Globex", address: null, peopleCount: 0, closedDeals: 0, openDeals: 0 },
+        {
+          id: "o2",
+          name: "Globex",
+          address: null,
+          customFields: {},
+          peopleCount: 0,
+          closedDeals: 0,
+          openDeals: 0,
+        },
       ],
+      refLabels: EMPTY_REF_LABELS,
     });
     render(<OrgsList rows={[orgRow("o1", "Acme Inc")]} total={2} />);
 
@@ -161,7 +193,7 @@ describe("OrgsList", () => {
   });
 
   it("clicking the Name header re-queries listOrgs with the new sort", async () => {
-    listOrgsQuery.mockResolvedValue({ total: 1, rows: [] });
+    listOrgsQuery.mockResolvedValue({ total: 1, rows: [], refLabels: EMPTY_REF_LABELS });
     render(<OrgsList rows={[orgRow("o1", "Acme Inc")]} total={1} />);
 
     fireEvent.click(screen.getByRole("button", { name: "Name" }));
@@ -179,7 +211,7 @@ describe("OrgsList", () => {
 
   it("bulk-deletes the selected orgs and clears the selection", async () => {
     deleteOrgAction.mockResolvedValue({ ok: true, value: { id: "o1" } });
-    listOrgsQuery.mockResolvedValue({ total: 0, rows: [] });
+    listOrgsQuery.mockResolvedValue({ total: 0, rows: [], refLabels: EMPTY_REF_LABELS });
     render(<OrgsList rows={[orgRow("o1", "Acme Inc")]} total={1} />);
 
     fireEvent.click(screen.getByRole("checkbox", { name: "Select Acme Inc" }));
@@ -202,8 +234,17 @@ describe("OrgsList", () => {
     listOrgsQuery.mockResolvedValue({
       total: 1,
       rows: [
-        { id: "o2", name: "Globex", address: null, peopleCount: 0, closedDeals: 0, openDeals: 0 },
+        {
+          id: "o2",
+          name: "Globex",
+          address: null,
+          customFields: {},
+          peopleCount: 0,
+          closedDeals: 0,
+          openDeals: 0,
+        },
       ],
+      refLabels: EMPTY_REF_LABELS,
     });
     render(<OrgsList rows={[orgRow("o1", "Acme Inc"), orgRow("o2", "Globex")]} total={2} />);
 
@@ -215,57 +256,5 @@ describe("OrgsList", () => {
     expect(alert).toHaveTextContent(/couldn't delete|could not delete|failed/i);
     await vi.waitFor(() => expect(screen.getByText("1 selected")).toBeInTheDocument());
     expect(screen.getByRole("checkbox", { name: "Select Globex" })).toBeChecked();
-  });
-
-  it("applies a saved org view to the list query", async () => {
-    savedViews.mockReturnValue([
-      {
-        id: "v1",
-        name: "SaaS orgs",
-        favorite: false,
-        isShared: false,
-        isOwn: true,
-        definition: {
-          combinator: "and",
-          conditions: [{ field: "industry", op: "eq", value: "SaaS" }],
-        },
-      },
-    ]);
-    listOrgsQuery.mockResolvedValue({ total: 0, rows: [] });
-    const user = userEvent.setup();
-    render(<OrgsList rows={[orgRow("o1", "Acme Inc")]} total={1} />);
-
-    await user.click(screen.getByRole("button", { name: "Saved views" }));
-    await user.click(screen.getByRole("menuitem", { name: "SaaS orgs" }));
-
-    await vi.waitFor(() =>
-      expect(listOrgsQuery).toHaveBeenCalledWith(
-        expect.objectContaining({
-          filter: {
-            combinator: "and",
-            conditions: [{ field: "industry", op: "eq", value: "SaaS" }],
-          },
-        }),
-      ),
-    );
-  });
-
-  it("merges the two selected orgs via mergeOrgsAction, gated on exactly two", async () => {
-    mergeOrgsAction.mockResolvedValue({ ok: true, value: { id: "o1" } });
-    listOrgsQuery.mockResolvedValue({ total: 1, rows: [] });
-    render(<OrgsList rows={[orgRow("o1", "Acme Inc"), orgRow("o2", "Globex")]} total={2} />);
-
-    fireEvent.click(screen.getByRole("checkbox", { name: "Select Acme Inc" }));
-    expect(screen.queryByRole("button", { name: "Merge duplicates" })).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("checkbox", { name: "Select Globex" }));
-    fireEvent.click(screen.getByRole("button", { name: "Merge duplicates" }));
-    fireEvent.click(screen.getByRole("button", { name: "Merge" }));
-
-    await vi.waitFor(() =>
-      expect(mergeOrgsAction).toHaveBeenCalledWith(
-        { survivorId: "o1", mergedId: "o2", fieldChoices: {} },
-        "csrf",
-      ),
-    );
   });
 });

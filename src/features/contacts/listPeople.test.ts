@@ -1,8 +1,10 @@
 import { isNull } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
+import { ERROR_IDS } from "@/constants/errorIds";
 import { dealParticipants, deals, persons } from "@/db/schema";
 import { withTestDb } from "@/db/testing";
 import { seedPipelineWithStages, seedUser } from "@/db/testing/factories";
+import { createDef } from "@/features/custom-fields/defsRepo";
 import { listPeople } from "./listPeople";
 import type { ContactActor } from "./personsRepo";
 
@@ -20,7 +22,12 @@ function regularActor(id: string): ContactActor {
 // Seed a person directly (bypassing createPerson) so the test controls owner + visibility.
 async function seedPerson(
   db: Parameters<Parameters<typeof withTestDb>[0]>[0],
-  opts: { name: string; ownerId: string; visibilityLevel: "owner" | "group" | "all" },
+  opts: {
+    name: string;
+    ownerId: string;
+    visibilityLevel: "owner" | "group" | "all";
+    customFields?: Record<string, unknown>;
+  },
 ): Promise<void> {
   await db.insert(persons).values({
     name: opts.name,
@@ -31,7 +38,7 @@ async function seedPerson(
     ownerId: opts.ownerId,
     visibilityLevel: opts.visibilityLevel,
     visibilityGroupId: null,
-    customFields: {},
+    customFields: opts.customFields ?? {},
   });
 }
 
@@ -221,6 +228,48 @@ describe("listPeople", () => {
         signal,
       );
       expect(desc.rows.map((r) => r.name)).toEqual(["Cara", "Bob", "Anna"]);
+    });
+  });
+
+  it("sorts by a numeric custom field, empties last, and rejects an unknown key", async () => {
+    await withTestDb(async (db) => {
+      const signal = new AbortController().signal;
+      const me = await seedUser(db);
+      const r = await createDef(
+        db,
+        { targetEntity: "person", type: "numeric", name: "Seats" },
+        signal,
+      );
+      if (!r.ok) throw r.error;
+      await seedPerson(db, {
+        name: "ten",
+        ownerId: me.id,
+        visibilityLevel: "all",
+        customFields: { seats: 10 },
+      });
+      await seedPerson(db, { name: "none", ownerId: me.id, visibilityLevel: "all" });
+      await seedPerson(db, {
+        name: "two",
+        ownerId: me.id,
+        visibilityLevel: "all",
+        customFields: { seats: 2 },
+      });
+      const res = await listPeople(
+        db,
+        regularActor(me.id),
+        { offset: 0, limit: 50, sort: { field: "cf:seats", dir: "desc" } },
+        signal,
+      );
+      expect(res.rows.map((p) => p.name)).toEqual(["ten", "two", "none"]);
+      expect(res.rows[0]?.customFields).toEqual({ seats: 10 });
+      await expect(
+        listPeople(
+          db,
+          regularActor(me.id),
+          { offset: 0, limit: 50, sort: { field: "cf:nope", dir: "asc" } },
+          signal,
+        ),
+      ).rejects.toMatchObject({ id: ERROR_IDS.CF_SORT_FIELD_INVALID });
     });
   });
 });

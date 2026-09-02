@@ -250,6 +250,9 @@ export const STRINGS = {
       cancelled: "Cancelled",
     },
   },
+  customFields: {
+    restrictedRef: "Restricted",
+  },
   dealsList: {
     emptyTitle: "No deals in this pipeline yet",
     emptyBody:

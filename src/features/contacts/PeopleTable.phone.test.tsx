@@ -20,6 +20,7 @@ const row: PeopleListRow = {
   orgId: null,
   orgName: null,
   closedDeals: 0,
+  customFields: {},
 };
 
 function renderTable(usPhoneFormat: boolean): void {
@@ -49,5 +50,11 @@ describe("PeopleTable phone formatting", () => {
   it("formats the phone column when usPhoneFormat is on", () => {
     renderTable(true);
     expect(screen.getByText("(415) 555-1234")).toBeInTheDocument();
+  });
+
+  it("wraps the table in a horizontally scrollable container so extra columns don't clip", () => {
+    renderTable(false);
+    const table = screen.getByRole("table");
+    expect(table.parentElement).toHaveClass("overflow-x-auto");
   });
 });

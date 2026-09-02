@@ -31,6 +31,18 @@ it("freezes a slug key from the name and rejects a duplicate", async () => {
   });
 });
 
+it("rejects a name that slugifies to an empty key", async () => {
+  await withTestDb(async (db) => {
+    const r = await createDef(
+      db,
+      { targetEntity: "deal", type: "text", name: "!!!" },
+      new AbortController().signal,
+    );
+    expect(r.ok).toBe(false);
+    if (r.ok === false) expect(r.error.id).toBe("E_CF_004");
+  });
+});
+
 it("serves a cached def list within the TTL and invalidates it on a mutation", async () => {
   await withTestDb(async (db) => {
     const sig = (): AbortSignal => new AbortController().signal;

@@ -1,11 +1,13 @@
 "use client";
 import { TriangleAlert } from "lucide-react";
 import type React from "react";
+import { CustomFieldCell } from "@/components/data-table/CustomFieldCell";
 import { OwnerBadge } from "@/features/identity/OwnerBadge";
 import type { ResolvedLabel } from "@/features/labels/resolveLabels";
 import { useLabelChipResolver } from "@/features/labels/useLabelChipResolver";
 import { formatCurrency } from "@/lib/formatCurrency";
 import type { LeadRow } from "../leadRepo";
+import type { LeadColumn } from "./columns";
 import { nextActivityState } from "./nextActivityState";
 
 function fmtDate(d: Date | string | null): string {
@@ -53,20 +55,28 @@ function Labels({ chips }: { chips: ResolvedLabel[] }): React.ReactNode {
   );
 }
 
-// Render one table cell for a lead row by column key. Presentational: no data fetching.
 export function LeadCell({
-  columnKey,
+  column,
   row,
   now,
   currency,
 }: {
-  columnKey: string;
+  column: LeadColumn;
   row: LeadRow;
   now: Date | null;
   currency: string;
 }): React.ReactNode {
   const resolveLabels = useLabelChipResolver("lead");
-  switch (columnKey) {
+  if (column.customField) {
+    return (
+      <CustomFieldCell
+        def={column.customField}
+        value={row.customFields[column.customField.key]}
+        currency={currency}
+      />
+    );
+  }
+  switch (column.key) {
     case "title":
       return <span className="font-medium text-foreground">{row.title}</span>;
     case "nextActivity":

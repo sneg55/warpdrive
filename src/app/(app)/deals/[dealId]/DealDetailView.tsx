@@ -4,6 +4,8 @@ import { db } from "@/db/client";
 import { listOrgOptions } from "@/features/contacts/orgOptionsRepo";
 import { listPersonMatchCandidates } from "@/features/contacts/personOptionsRepo";
 import { listHiddenBuiltins } from "@/features/custom-fields/hiddenBuiltinsRepo";
+import { resolveCustomFieldRefLabelsFor } from "@/features/custom-fields/refLabels";
+import { CustomFieldRefLabelsProvider } from "@/features/custom-fields/refLabelsContext";
 import { getWorkspace } from "@/features/deal-workspace/summaryRepo";
 import { toVisibleDeal } from "@/features/deals/dealAuth";
 import { getActorMailbox } from "@/features/email/mailboxOwnership";
@@ -31,43 +33,75 @@ export async function DealDetailView({ dealId }: { dealId: string }): Promise<Re
 
   // None of these reads depend on each other, only on the already-loaded deal and actor, so they
   // are issued together rather than one round trip at a time.
-  const [mailbox, prefs, baseCurrency, assignableUsers, orgOptions, personOptions, hiddenBuiltins] =
-    await Promise.all([
-      getActorMailbox(db, loaded.actor.id, AbortSignal.timeout(10_000)),
+  const [
+    mailbox,
+    prefs,
+    baseCurrency,
+    assignableUsers,
+    orgOptions,
+    personOptions,
+    hiddenBuiltins,
+    refLabels,
+  ] = await Promise.all([
+    getActorMailbox(db, loaded.actor.id, AbortSignal.timeout(10_000)),
 
-      // Hidden deal-block ids persist per user in user_preferences.ui.dealHeaderBlocks (spec 0).
-      getPreferencesForActor(db, loaded.actor.id),
+    // Hidden deal-block ids persist per user in user_preferences.ui.dealHeaderBlocks (spec 0).
+    getPreferencesForActor(db, loaded.actor.id),
 
-      readBaseCurrency(db, AbortSignal.timeout(8000)),
+    readBaseCurrency(db, AbortSignal.timeout(8000)),
 
-      // Owner-reassignment options come from Unit 0's non-privileged listAssignableUsers
-      // (active users projected to { id, name }); unlike listUsers it is not MANAGE-gated, so any
-      // actor holding deal.changeOwner can populate the picker. Called directly on the loaded db
-      // to avoid rebuilding the request context (the tRPC caller would re-hydrate the session).
-      listAssignableUsers(db, AbortSignal.timeout(5000)),
+    // Owner-reassignment options come from Unit 0's non-privileged listAssignableUsers
+    // (active users projected to { id, name }); unlike listUsers it is not MANAGE-gated, so any
+    // actor holding deal.changeOwner can populate the picker. Called directly on the loaded db
+    // to avoid rebuilding the request context (the tRPC caller would re-hydrate the session).
+    listAssignableUsers(db, AbortSignal.timeout(5000)),
 
-      listOrgOptions(
-        db,
-        { ...loaded.actor, primaryVisibilityGroupId: null },
-        AbortSignal.timeout(5000),
-      ),
+    listOrgOptions(
+      db,
+      { ...loaded.actor, primaryVisibilityGroupId: null },
+      AbortSignal.timeout(5000),
+    ),
 
-      // Feeds the sidebar Person panel's suggestions, so a deal with no contact person can link an
-      // existing one (matched on name, email, or phone) instead of duplicating them. Skipped
-      // entirely when the deal already has a person: that panel renders the linked contact and
-      // never opens the editor, so scanning every visible person would be pure cost.
-      loaded.value.person === null
-        ? listPersonMatchCandidates(
-            db,
-            { ...loaded.actor, primaryVisibilityGroupId: null },
-            AbortSignal.timeout(5000),
-          )
-        : Promise.resolve([]),
+    // Feeds the sidebar Person panel's suggestions, so a deal with no contact person can link an
+    // existing one (matched on name, email, or phone) instead of duplicating them. Skipped
+    // entirely when the deal already has a person: that panel renders the linked contact and
+    // never opens the editor, so scanning every visible person would be pure cost.
+    loaded.value.person === null
+      ? listPersonMatchCandidates(
+          db,
+          { ...loaded.actor, primaryVisibilityGroupId: null },
+          AbortSignal.timeout(5000),
+        )
+      : Promise.resolve([]),
 
-      // Built-in fields hidden in Settings > Data fields, so the sidebar Organization/Person
-      // sections drop the same rows the standalone detail pages do (bucketed per entity).
-      listHiddenBuiltins(db, AbortSignal.timeout(10_000)),
-    ]);
+    // Built-in fields hidden in Settings > Data fields, so the sidebar Organization/Person
+    // sections drop the same rows the standalone detail pages do (bucketed per entity).
+    listHiddenBuiltins(db, AbortSignal.timeout(10_000)),
+
+    resolveCustomFieldRefLabelsFor(
+      db,
+      loaded.actor,
+      [
+        {
+          defs: loaded.value.customFieldDefs,
+          rows: [{ customFields: loaded.value.deal.customFields as Record<string, unknown> }],
+        },
+        {
+          defs: loaded.value.personCustomFieldDefs,
+          rows: [
+            { customFields: (loaded.value.person?.customFields ?? {}) as Record<string, unknown> },
+          ],
+        },
+        {
+          defs: loaded.value.organizationCustomFieldDefs,
+          rows: [
+            { customFields: (loaded.value.org?.customFields ?? {}) as Record<string, unknown> },
+          ],
+        },
+      ],
+      AbortSignal.timeout(8000),
+    ),
+  ]);
 
   // getWorkspace already read the pipeline row for its own visibility gate and hands back the
   // group, so this builds the same VisibleDeal without a second query for that row.
@@ -78,22 +112,24 @@ export async function DealDetailView({ dealId }: { dealId: string }): Promise<Re
   const canDelete = can(loaded.actor, "deal.delete", visibleDeal);
 
   return (
-    <DealWorkspaceClient
-      workspace={loaded.value}
-      selfActorId={loaded.actor.id}
-      emailAccountId={mailbox?.id ?? null}
-      emailAddress={mailbox?.emailAddress}
-      canChangeOwner={canChangeOwner}
-      canDelete={canDelete}
-      assignableUsers={assignableUsers}
-      initialHiddenBlocks={prefs.ui.dealHeaderBlocks ?? []}
-      initialSidebarSections={prefs.ui.dealSidebarSections}
-      baseCurrency={baseCurrency}
-      orgOptions={orgOptions}
-      personOptions={personOptions}
-      scheduleFollowUpAfterWon={prefs.ui.scheduleFollowUpAfterWon ?? false}
-      hiddenOrgFields={hiddenBuiltins.organization}
-      hiddenPersonFields={hiddenBuiltins.person}
-    />
+    <CustomFieldRefLabelsProvider value={refLabels}>
+      <DealWorkspaceClient
+        workspace={loaded.value}
+        selfActorId={loaded.actor.id}
+        emailAccountId={mailbox?.id ?? null}
+        emailAddress={mailbox?.emailAddress}
+        canChangeOwner={canChangeOwner}
+        canDelete={canDelete}
+        assignableUsers={assignableUsers}
+        initialHiddenBlocks={prefs.ui.dealHeaderBlocks ?? []}
+        initialSidebarSections={prefs.ui.dealSidebarSections}
+        baseCurrency={baseCurrency}
+        orgOptions={orgOptions}
+        personOptions={personOptions}
+        scheduleFollowUpAfterWon={prefs.ui.scheduleFollowUpAfterWon ?? false}
+        hiddenOrgFields={hiddenBuiltins.organization}
+        hiddenPersonFields={hiddenBuiltins.person}
+      />
+    </CustomFieldRefLabelsProvider>
   );
 }

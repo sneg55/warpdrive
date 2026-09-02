@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
+import { customFieldDefs } from "@/db/schema";
 import { withTestDb } from "@/db/testing";
 import { seedPipelineWithStages, seedUser } from "@/db/testing/factories";
 import { createDeal } from "./dealActions";
 import { admin, ownerOnly, seedAllVisible, seedOwnerOnly } from "./dealList.test-helpers";
-import { listDeals } from "./dealRepo";
+import { getBoardColumns, listDeals } from "./dealRepo";
 
 describe("listDeals", () => {
   it("paginates and totals the filtered set value", async () => {
@@ -71,6 +72,55 @@ describe("listDeals", () => {
       expect(out.total).toBe(1);
       expect(Number(out.totalValue)).toBe(100);
       expect(out.rows.find((r) => r.title === "hidden")).toBeUndefined();
+    });
+  });
+
+  it("carries customFields on rows, and excludes it from board cards", async () => {
+    await withTestDb(async (db) => {
+      await seedAllVisible(db);
+      const u = await seedUser(db);
+      const p = await seedPipelineWithStages(db, ["A"]);
+      const stage = p.stages[0];
+      if (!stage) throw new Error("setup: no stage");
+      await db.insert(customFieldDefs).values({
+        targetEntity: "deal",
+        type: "text",
+        name: "Region",
+        key: "region",
+      });
+      const created = await createDeal(
+        db,
+        admin(u.id),
+        {
+          title: "with region",
+          pipelineId: p.pipeline.id,
+          stageId: stage.id,
+          value: 100,
+          customFields: { region: "west" },
+        },
+        new AbortController().signal,
+      );
+      if (!created.ok) throw new Error("createDeal failed");
+
+      const out = await listDeals(
+        db,
+        admin(u.id),
+        { pipelineId: p.pipeline.id, offset: 0, limit: 50 },
+        new AbortController().signal,
+      );
+      const row = out.rows[0];
+      if (!row) throw new Error("no row");
+      expect(row.customFields.region).toBe("west");
+
+      const { cards } = await getBoardColumns(
+        db,
+        admin(u.id),
+        p.pipeline.id,
+        new AbortController().signal,
+      );
+      const card = cards[0];
+      if (!card) throw new Error("no card");
+      expect("customFields" in card).toBe(false);
     });
   });
 });

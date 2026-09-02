@@ -3,6 +3,8 @@ import type React from "react";
 import { db } from "@/db/client";
 import { listDefs } from "@/features/custom-fields/defsRepo";
 import { listHiddenBuiltins } from "@/features/custom-fields/hiddenBuiltinsRepo";
+import { resolveCustomFieldRefLabelsFor } from "@/features/custom-fields/refLabels";
+import { CustomFieldRefLabelsProvider } from "@/features/custom-fields/refLabelsContext";
 import { getLeadById, getLeadRelations } from "@/features/leads/leadRepo";
 import { readBaseCurrency } from "@/features/settings/readBaseCurrency";
 import { createContext } from "@/server/trpc/context";
@@ -35,7 +37,7 @@ export async function loadLead(leadId: string) {
   if (ctx.actor === null) return { kind: "unauth" as const };
   const lead = await getLeadById(db, toSession(ctx.actor), leadId, AbortSignal.timeout(10_000));
   if (lead === null) return { kind: "notfound" as const };
-  return { kind: "ok" as const, lead };
+  return { kind: "ok" as const, lead, actor: ctx.actor };
 }
 
 export async function LeadDetailView({ leadId }: { leadId: string }): Promise<React.ReactNode> {
@@ -63,19 +65,41 @@ export async function LeadDetailView({ leadId }: { leadId: string }): Promise<Re
     readBaseCurrency(db, signal),
   ]);
 
+  const refLabels = await resolveCustomFieldRefLabelsFor(
+    db,
+    loaded.actor,
+    [
+      {
+        defs: leadCustomFieldDefs,
+        rows: [{ customFields: loaded.lead.customFields as Record<string, unknown> }],
+      },
+      {
+        defs: personCustomFieldDefs,
+        rows: [{ customFields: (relations.person?.customFields ?? {}) as Record<string, unknown> }],
+      },
+      {
+        defs: organizationCustomFieldDefs,
+        rows: [{ customFields: (relations.org?.customFields ?? {}) as Record<string, unknown> }],
+      },
+    ],
+    signal,
+  );
+
   return (
     <main aria-label="Lead" className="h-full">
-      <LeadWorkspaceClient
-        lead={loaded.lead}
-        person={relations.person}
-        org={relations.org}
-        hiddenPersonFields={hidden.person}
-        hiddenOrgFields={hidden.organization}
-        personCustomFieldDefs={personCustomFieldDefs}
-        organizationCustomFieldDefs={organizationCustomFieldDefs}
-        leadCustomFieldDefs={leadCustomFieldDefs}
-        baseCurrency={baseCurrency}
-      />
+      <CustomFieldRefLabelsProvider value={refLabels}>
+        <LeadWorkspaceClient
+          lead={loaded.lead}
+          person={relations.person}
+          org={relations.org}
+          hiddenPersonFields={hidden.person}
+          hiddenOrgFields={hidden.organization}
+          personCustomFieldDefs={personCustomFieldDefs}
+          organizationCustomFieldDefs={organizationCustomFieldDefs}
+          leadCustomFieldDefs={leadCustomFieldDefs}
+          baseCurrency={baseCurrency}
+        />
+      </CustomFieldRefLabelsProvider>
     </main>
   );
 }

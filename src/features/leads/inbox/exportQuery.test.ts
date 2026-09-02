@@ -37,6 +37,13 @@ describe("leadExportQuery", () => {
     expect(leadExportQuery.safeParse({ sortField: "bogus" }).success).toBe(false);
   });
 
+  it("accepts a custom-field sort key and rejects its bare key form", () => {
+    const cf = leadExportQuery.safeParse({ sortField: "cf:region" });
+    expect(cf.success).toBe(true);
+    if (cf.success) expect(cf.data.sort.field).toBe("cf:region");
+    expect(leadExportQuery.safeParse({ sortField: "region" }).success).toBe(false);
+  });
+
   it("parses a JSON `condition` param into filters.condition", () => {
     const condition = {
       combinator: "and",

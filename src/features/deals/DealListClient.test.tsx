@@ -32,17 +32,20 @@ vi.mock("@/lib/trpc-client", () => ({
 vi.mock("@/utils/csrfCookie", () => ({ readCsrfToken: () => "csrf" }));
 vi.mock("@/features/identity/preferencesActions", () => ({ setColumnViewAction: vi.fn() }));
 
-// DealList is presentational; stub it to surface the footer inputs it receives.
 vi.mock("./DealList", () => ({
-  DealList: (p: { total: number; totalValue: string }) => (
+  DealList: (p: { total: number; totalValue: string; rows: { id: string }[] }) => (
     <div data-testid="deal-list">
-      total:{p.total} value:{p.totalValue}
+      total:{p.total} value:{p.totalValue} rows:{p.rows.map((r) => r.id).join(",")}
     </div>
   ),
 }));
-// Toolbar just renders its slots; expose the filter slot so the owner filter is reachable.
 vi.mock("./BoardToolbar", () => ({
-  BoardToolbar: (p: { filterSlot: React.ReactNode }) => <div>{p.filterSlot}</div>,
+  BoardToolbar: (p: { filterSlot: React.ReactNode; sortSlot: React.ReactNode }) => (
+    <div>
+      {p.filterSlot}
+      {p.sortSlot}
+    </div>
+  ),
 }));
 vi.mock("./BoardFilterControl", () => ({
   BoardFilterControl: (p: { onSelectOwner: (id: string) => void }) => (
@@ -51,9 +54,23 @@ vi.mock("./BoardFilterControl", () => ({
     </button>
   ),
 }));
-vi.mock("./BoardSortControl", () => ({ BoardSortControl: () => null }));
+vi.mock("./BoardSortControl", () => ({
+  BoardSortControl: (p: {
+    extraOptions?: readonly { key: string; label: string }[];
+    onKeyChange: (key: string) => void;
+  }) => (
+    <div data-testid="extra-sort-options">
+      {(p.extraOptions ?? []).map((o) => (
+        <button key={o.key} type="button" onClick={() => p.onKeyChange(o.key)}>
+          {o.label}
+        </button>
+      ))}
+    </div>
+  ),
+}));
 vi.mock("./NewDealButton", () => ({ NewDealButton: () => null }));
 
+import type { CustomFieldDef } from "@/types/customFields";
 import { DealListClient, resolveDealListFooter } from "./DealListClient";
 
 const rowU1 = {
@@ -71,6 +88,7 @@ const rowU1 = {
   lastActivityAt: null,
   stageEnteredAt: new Date("2026-06-24T00:00:00Z"),
   updatedAt: "2026-06-24T00:00:00Z",
+  customFields: {},
 };
 const rowU2 = { ...rowU1, id: "d2", ownerId: "u2", ownerName: "User B", value: "5000.00" };
 
@@ -132,5 +150,37 @@ describe("DealListClient footer count", () => {
     // The misleading whole-pipeline denominator (500) must NOT appear: the filtered subset count and
     // the server total are computed over different bases, so "1 of 500" is meaningless.
     expect(indicator).not.toHaveTextContent("500");
+  });
+});
+
+const regionDef: CustomFieldDef = {
+  id: "def1",
+  targetEntity: "deal",
+  type: "text",
+  name: "Region",
+  key: "region",
+  options: [],
+  isRequired: false,
+  isImportant: false,
+  showInAddForm: false,
+  order: 0,
+  archivedAt: null,
+};
+
+describe("DealListClient custom field sort", () => {
+  it("sorts rows by a custom field when its sort option is chosen", () => {
+    const rowZ = { ...rowU1, customFields: { region: "z" } };
+    const rowA = { ...rowU2, customFields: { region: "a" } };
+    render(
+      <DealListClient initial={{ ...initial, rows: [rowZ, rowA], customFieldDefs: [regionDef] }} />,
+    );
+    expect(screen.getByTestId("deal-list")).toHaveTextContent("rows:d1,d2");
+    fireEvent.click(screen.getByRole("button", { name: "Region" }));
+    expect(screen.getByTestId("deal-list")).toHaveTextContent("rows:d2,d1");
+  });
+
+  it("passes no extra sort options when there are no custom field defs", () => {
+    render(<DealListClient initial={initial} />);
+    expect(screen.getByTestId("extra-sort-options").children.length).toBe(0);
   });
 });

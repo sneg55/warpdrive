@@ -1,5 +1,6 @@
 "use client";
 import type React from "react";
+import { customFieldCellClass } from "@/components/data-table/CustomFieldCell";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { type RecordPreview, useRecordPreview } from "@/features/navigation/recordPreviewStore";
 import type { LeadRow } from "../leadRepo";
@@ -77,7 +78,7 @@ export function LeadsTable({
           </th>
           {columns.map((col) => (
             <th key={col.key} className="px-3 py-2 font-semibold">
-              {col.sortField !== null ? (
+              {col.sortField !== undefined ? (
                 <button
                   type="button"
                   onClick={() => onSort(col.sortField as LeadSortField)}
@@ -132,8 +133,11 @@ export function LeadsTable({
                 </span>
               </td>
               {columns.map((col) => (
-                <td key={col.key} className="px-3 py-2">
-                  <LeadCell columnKey={col.key} row={row} now={now} currency={currency} />
+                <td
+                  key={col.key}
+                  className={col.customField ? customFieldCellClass(col.customField) : "px-3 py-2"}
+                >
+                  <LeadCell column={col} row={row} now={now} currency={currency} />
                 </td>
               ))}
               <td className="px-3 py-2 text-right">{renderRowActions(row)}</td>

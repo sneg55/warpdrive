@@ -3,31 +3,36 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { ColumnsMenu } from "@/components/data-table/ColumnsMenu";
+import type { ColumnDef } from "@/components/data-table/columnModel";
 import { useColumns } from "@/components/data-table/useColumns";
 import { usePersistColumns } from "@/components/data-table/usePersistColumns";
+import { DEFAULT_BASE_CURRENCY } from "@/constants/currency";
+import { customFieldColumns } from "@/features/custom-fields/listColumns";
+import {
+  type CustomFieldRefLabels,
+  CustomFieldRefLabelsProvider,
+  EMPTY_REF_LABELS,
+} from "@/features/custom-fields/refLabelsContext";
+import type { CustomFieldSortKey } from "@/features/custom-fields/sortKey";
 import type { FilterDefinition } from "@/features/saved-filters/schemas";
 import { trpc } from "@/lib/trpc-client";
+import type { CustomFieldDef } from "@/types/customFields";
 import { BoardFilterControl } from "./BoardFilterControl";
 import { BoardSortControl } from "./BoardSortControl";
 import { BoardToolbar } from "./BoardToolbar";
 import { distinctBoardOwners, matchesOwnerFilter } from "./boardFilter";
-import {
-  type BoardSortKey,
-  DEFAULT_SORT_DIRECTION,
-  DEFAULT_SORT_KEY,
-  type SortDirection,
-  sortBoardCards,
-} from "./boardSort";
+import { DEFAULT_SORT_DIRECTION, DEFAULT_SORT_KEY, type SortDirection } from "./boardSort";
 import { DealFilterBuilder } from "./DealFilterBuilder";
 import type { DealListProps, DealListRow } from "./DealList";
 import { DealList } from "./DealList";
 import { DealsEmpty } from "./DealsEmpty";
 import { DEAL_LIST_COLUMNS } from "./dealListColumns";
 import { DEAL_LIST_QUERY_ROOT } from "./dealListQueryKey";
-import type { BoardCard } from "./dealRepo";
+import { type DealListSortKey, sortRows } from "./dealListSort";
 import { NewDealButton } from "./NewDealButton";
 import type { SavedFilterView } from "./savedFilterView";
 import { useDealListActions } from "./useDealListActions";
+import { useDealListRefLabels } from "./useDealListRefLabels";
 
 // Stable empty array: a new [] each render would churn the useMemo dependencies below.
 const EMPTY_ROWS: never[] = [];
@@ -36,12 +41,14 @@ type PipelineOption = { id: string; name: string; stages: Array<{ id: string; na
 
 type InitialData = Omit<
   DealListProps,
-  "onBulkStage" | "onBulkArchive" | "onUnarchive" | "visibleColumns" | "columnsMenu"
+  "onBulkStage" | "onBulkArchive" | "onUnarchive" | "visibleColumns" | "columnsMenu" | "currency"
 > & {
   pipelines: PipelineOption[];
   baseCurrency?: string;
   // Seeded from user_preferences.ui.dealsListView (server); falls back to catalog defaults.
   initialColumns?: string[];
+  customFieldDefs?: CustomFieldDef[];
+  refLabels?: CustomFieldRefLabels;
 };
 
 interface DealListClientProps {
@@ -73,23 +80,12 @@ export function resolveDealListFooter(args: {
     : { total: args.serverTotal, totalValue: args.serverTotalValue, filtered: false };
 }
 
-// Sort mirrors the board: sortBoardCards wants BoardCard (updatedAt: Date), but list rows carry
-// a serialised ISO string over the server boundary. Widen updatedAt to a Date for the compare,
-// then reorder the original rows by the sorted ids so the rendered rows keep their string shape.
-function sortRows(rows: DealListRow[], key: BoardSortKey, dir: SortDirection): DealListRow[] {
-  const asCards: BoardCard[] = rows.map((r) => ({ ...r, updatedAt: new Date(r.updatedAt) }));
-  const rowById = new Map(rows.map((r) => [r.id, r]));
-  return sortBoardCards(asCards, key, dir).flatMap((c) => {
-    const r = rowById.get(c.id);
-    return r ? [r] : [];
-  });
-}
-
 export function DealListClient({
   initial,
   variant = "list",
 }: DealListClientProps): React.ReactNode {
   const { pipelineId, stages, pipelines, baseCurrency } = initial;
+  const currency = baseCurrency ?? DEFAULT_BASE_CURRENCY;
   const actions = useDealListActions();
   const utils = trpc.useUtils();
   const [selectedOwnerId, setSelectedOwnerId] = useState<string | null>(null);
@@ -97,9 +93,22 @@ export function DealListClient({
   // Ad-hoc inline condition builder (additive to the saved-view menu). When active it takes
   // precedence over the saved filter for the server read (the read path accepts one definition).
   const [inlineDefinition, setInlineDefinition] = useState<FilterDefinition | null>(null);
-  const [sortKey, setSortKey] = useState<BoardSortKey>(DEFAULT_SORT_KEY);
+  const [sortKey, setSortKey] = useState<DealListSortKey>(DEFAULT_SORT_KEY);
   const [sortDirection, setSortDirection] = useState<SortDirection>(DEFAULT_SORT_DIRECTION);
-  const columns = useColumns(DEAL_LIST_COLUMNS, initial.initialColumns);
+  const catalog = useMemo<(ColumnDef & { sortField?: CustomFieldSortKey })[]>(
+    () => [...DEAL_LIST_COLUMNS, ...customFieldColumns(initial.customFieldDefs ?? [])],
+    [initial.customFieldDefs],
+  );
+  const extraSortOptions = useMemo(
+    () =>
+      catalog.flatMap((c) =>
+        c.customField !== undefined && c.sortField !== undefined
+          ? [{ key: c.sortField, label: c.header }]
+          : [],
+      ),
+    [catalog],
+  );
+  const columns = useColumns(catalog, initial.initialColumns);
   usePersistColumns("dealsList", columns.order);
 
   // Live rows: seeded by the SSR page as initialData ONLY for the unfiltered key. A saved or inline
@@ -115,7 +124,12 @@ export function DealListClient({
       savedFilter?.id ?? "none",
       inlineDefinition ?? "none",
     ],
-    queryFn: async (): Promise<{ rows: DealListRow[]; total: number; totalValue: string }> => {
+    queryFn: async (): Promise<{
+      rows: DealListRow[];
+      total: number;
+      totalValue: string;
+      refLabels: CustomFieldRefLabels;
+    }> => {
       const res = await utils.client.deal.list.query({
         pipelineId,
         offset: 0,
@@ -127,10 +141,16 @@ export function DealListClient({
         rows: res.rows.map((r) => ({ ...r, updatedAt: r.updatedAt.toISOString() })),
         total: res.total,
         totalValue: res.totalValue,
+        refLabels: res.refLabels,
       };
     },
     initialData: isUnfiltered
-      ? { rows: initial.rows, total: initial.total, totalValue: initial.totalValue }
+      ? {
+          rows: initial.rows,
+          total: initial.total,
+          totalValue: initial.totalValue,
+          refLabels: initial.refLabels ?? EMPTY_REF_LABELS,
+        }
       : undefined,
     placeholderData: keepPreviousData,
     staleTime: 5_000,
@@ -140,12 +160,17 @@ export function DealListClient({
   const data = listQuery.data;
   // Stable identity while data is absent, so the useMemos below do not rebuild every render.
   const rows = data?.rows ?? EMPTY_ROWS;
+  const refLabels = useDealListRefLabels(
+    initial.refLabels,
+    data?.refLabels,
+    listQuery.isPlaceholderData,
+  );
 
   const owners = useMemo(() => distinctBoardOwners(rows), [rows]);
   const shownRows = useMemo(() => {
     const filtered = rows.filter((r) => matchesOwnerFilter(r, selectedOwnerId));
-    return sortRows(filtered, sortKey, sortDirection);
-  }, [rows, selectedOwnerId, sortKey, sortDirection]);
+    return sortRows(filtered, sortKey, sortDirection, initial.customFieldDefs ?? []);
+  }, [rows, selectedOwnerId, sortKey, sortDirection, initial.customFieldDefs]);
 
   // The client-side owner filter is the only thing that narrows the loaded rows past what the server
   // already returned (the saved filter is applied server-side, so listQuery.data.total already
@@ -193,11 +218,12 @@ export function DealListClient({
         activeView={variant}
         createSlot={addDeal}
         sortSlot={
-          <BoardSortControl
+          <BoardSortControl<DealListSortKey>
             sortKey={sortKey}
             direction={sortDirection}
             onKeyChange={setSortKey}
             onToggleDirection={() => setSortDirection((d) => (d === "asc" ? "desc" : "asc"))}
+            extraOptions={extraSortOptions}
           />
         }
         filterSlot={
@@ -233,38 +259,41 @@ export function DealListClient({
           Showing {footer.total} filtered {footer.total === 1 ? "deal" : "deals"}
         </p>
       ) : null}
-      <DealList
-        pipelineId={pipelineId}
-        rows={shownRows}
-        total={footer.total}
-        totalValue={footer.totalValue}
-        stages={stages}
-        onBulkStage={actions.bulkStage}
-        onBulkArchive={variant === "archived" ? undefined : actions.bulkArchive}
-        onUnarchive={variant === "archived" ? actions.unarchive : undefined}
-        filtered={emptiedByFilter}
-        empty={
-          data === undefined ? undefined : (
-            <DealsEmpty
-              variant={variant}
-              pipelineId={pipelineId}
-              filtered={emptiedByFilter}
-              onClearFilters={clearFilters}
-              addSlot={addDeal}
+      <CustomFieldRefLabelsProvider value={refLabels}>
+        <DealList
+          pipelineId={pipelineId}
+          rows={shownRows}
+          total={footer.total}
+          totalValue={footer.totalValue}
+          stages={stages}
+          currency={currency}
+          onBulkStage={actions.bulkStage}
+          onBulkArchive={variant === "archived" ? undefined : actions.bulkArchive}
+          onUnarchive={variant === "archived" ? actions.unarchive : undefined}
+          filtered={emptiedByFilter}
+          empty={
+            data === undefined ? undefined : (
+              <DealsEmpty
+                variant={variant}
+                pipelineId={pipelineId}
+                filtered={emptiedByFilter}
+                onClearFilters={clearFilters}
+                addSlot={addDeal}
+              />
+            )
+          }
+          visibleColumns={columns.visibleColumns}
+          columnsMenu={
+            <ColumnsMenu
+              catalog={catalog}
+              order={columns.order}
+              visibleKeys={columns.visibleKeys}
+              onToggle={columns.toggle}
+              onReorder={columns.reorder}
             />
-          )
-        }
-        visibleColumns={columns.visibleColumns}
-        columnsMenu={
-          <ColumnsMenu
-            catalog={DEAL_LIST_COLUMNS}
-            order={columns.order}
-            visibleKeys={columns.visibleKeys}
-            onToggle={columns.toggle}
-            onReorder={columns.reorder}
-          />
-        }
-      />
+          }
+        />
+      </CustomFieldRefLabelsProvider>
     </>
   );
 }

@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import { cache } from "react";
 import { STRINGS } from "@/constants/strings";
+import { listDefs } from "@/features/custom-fields/defsRepo";
 import { DealListClient } from "@/features/deals/DealListClient";
 import { getPreferencesForActor } from "@/features/identity/preferencesForActor";
 import { entityTitle } from "@/features/navigation/pageTitle";
 import { resolveVisiblePipeline } from "@/features/navigation/resolvePipeline";
+import { readBaseCurrency } from "@/features/settings/readBaseCurrency";
 import { createContext } from "@/server/trpc/context";
 import { createCaller } from "@/server/trpc/root";
 
@@ -48,7 +50,7 @@ export default async function PipelineArchivedPage({
   // A nonexistent (or hidden) pipeline 404s like the entity detail routes, not a 200 soft-404.
   const pipeline = resolveVisiblePipeline(pipelines, id);
 
-  const [list, prefs] = await Promise.all([
+  const [list, prefs, customFieldDefs, baseCurrency] = await Promise.all([
     createCaller(ctx).deal.list({
       pipelineId: id,
       offset: 0,
@@ -56,6 +58,8 @@ export default async function PipelineArchivedPage({
       archived: true,
     }),
     getPreferencesForActor(ctx.db, ctx.actor.id),
+    listDefs(ctx.db, "deal", {}, AbortSignal.timeout(8000)),
+    readBaseCurrency(ctx.db, AbortSignal.timeout(8000)),
   ]);
   const stages = pipeline.stages.map((s) => ({ id: s.id, name: s.name }));
   const pipelineOptions = pipelines.map((p) => ({
@@ -76,6 +80,9 @@ export default async function PipelineArchivedPage({
           stages,
           pipelines: pipelineOptions,
           initialColumns: prefs.ui.dealsListView,
+          customFieldDefs,
+          refLabels: list.refLabels,
+          baseCurrency,
         }}
       />
     </main>

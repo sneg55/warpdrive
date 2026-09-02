@@ -73,3 +73,18 @@ describe("BoardSortControl", () => {
     expect(screen.getByRole("button", { name: "Sort ascending" })).toBeInTheDocument();
   });
 });
+
+describe("BoardSortControl extraOptions", () => {
+  it("lists extra options after the built-in ones", () => {
+    render(
+      <BoardSortControl
+        sortKey="cf:region"
+        direction="asc"
+        onKeyChange={vi.fn()}
+        onToggleDirection={vi.fn()}
+        extraOptions={[{ key: "cf:region", label: "Region" }]}
+      />,
+    );
+    expect(screen.getByRole("combobox", { name: "Sort by" }).textContent).toContain("Region");
+  });
+});

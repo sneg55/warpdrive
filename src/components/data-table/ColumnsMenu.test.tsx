@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import "@testing-library/jest-dom/vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -51,5 +52,13 @@ describe("ColumnsMenu", () => {
     await user.click(screen.getByRole("button", { name: "Customize columns" }));
     await user.click(screen.getByRole("checkbox", { name: "Value" }));
     expect(onToggle).toHaveBeenCalledWith("value");
+  });
+
+  it("bounds the popover content height so many hidden entries stay scrollable", async () => {
+    const user = userEvent.setup();
+    setup(["title", "org"]);
+    await user.click(screen.getByRole("button", { name: "Customize columns" }));
+    const content = await screen.findByRole("dialog");
+    expect(content).toHaveClass("overflow-y-auto");
   });
 });

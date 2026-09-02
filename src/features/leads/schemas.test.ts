@@ -186,3 +186,14 @@ describe("leadConditionInput combinator", () => {
     expect(leadConditionInput.safeParse({ combinator: "xor", conditions: [] }).success).toBe(false);
   });
 });
+
+describe("leadListInput sort field", () => {
+  it("accepts a cf: custom-field sort key", () => {
+    const r = leadListInput.parse({ sort: { field: "cf:score", dir: "asc" } });
+    expect(r.sort.field).toBe("cf:score");
+  });
+
+  it("rejects an unknown built-in sort field", () => {
+    expect(leadListInput.safeParse({ sort: { field: "score", dir: "asc" } }).success).toBe(false);
+  });
+});

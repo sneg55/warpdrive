@@ -1,12 +1,12 @@
+import { asc, desc, type SQL } from "drizzle-orm";
+import type { Db } from "@/db/client";
 import { organizations } from "@/db/schema";
+import { isCustomFieldSortKey } from "@/features/custom-fields/sortKey";
+import { customFieldOrderBy, resolveCustomFieldSort } from "@/features/custom-fields/sortSql";
 import { assertNever } from "@/types/result";
-import type { OrgSortField } from "./schemas";
+import type { OrgBuiltinSortField, OrgSortField } from "./schemas";
 
-// Map an Organizations-list sort field to its ORDER BY column. Extend here as more columns become
-// sortable (mirrors personSortColumn). ORG_SORT_FIELDS has one member today, so TS narrows the
-// switch to a single literal; kept as a switch/assertNever so the exhaustiveness check is already
-// wired up for the next sortable column. Extracted from orgsRepo to keep that file under budget.
-export function orgSortColumn(field: OrgSortField) {
+export function orgSortColumn(field: OrgBuiltinSortField) {
   switch (field) {
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     case "name":
@@ -14,4 +14,19 @@ export function orgSortColumn(field: OrgSortField) {
     default:
       return assertNever(field);
   }
+}
+
+export async function orgOrderBy(
+  db: Db,
+  sort: { field: OrgSortField; dir: "asc" | "desc" } | undefined,
+  signal: AbortSignal,
+): Promise<SQL> {
+  const dir = sort?.dir ?? "asc";
+  const field = sort?.field ?? "name";
+  if (isCustomFieldSortKey(field)) {
+    const def = await resolveCustomFieldSort(db, "organization", field, signal);
+    return customFieldOrderBy(organizations.customFields, def, dir);
+  }
+  const col = orgSortColumn(field);
+  return dir === "desc" ? desc(col) : asc(col);
 }

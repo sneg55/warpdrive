@@ -22,9 +22,14 @@ function toDate(v: string | null): Date | null {
   return v === null ? null : new Date(v);
 }
 
-// Coerce the string timestamp columns to Date so the BoardCard contract holds at
-// runtime (consumers call .toISOString()/.getTime() and would otherwise crash).
-function normalizeCard(row: RawCard): BoardCard {
+function normalizeCard<T extends RawCard>(
+  row: T,
+): Omit<T, "nextActivityAt" | "lastActivityAt" | "stageEnteredAt" | "updatedAt"> & {
+  nextActivityAt: Date | null;
+  lastActivityAt: Date | null;
+  stageEnteredAt: Date;
+  updatedAt: Date;
+} {
   return {
     ...row,
     nextActivityAt: toDate(row.nextActivityAt),
@@ -67,6 +72,8 @@ export interface BoardCard {
   // deal's updated_at: used as the compare-and-swap precondition for optimistic updates.
   updatedAt: Date;
 }
+
+export type DealListCard = BoardCard & { customFields: Record<string, unknown> };
 
 // Returns open, non-deleted, visible cards for the pipeline ordered by
 // (stageId, boardPosition). Owner/person/org are returned as IDs only;
@@ -184,7 +191,7 @@ export async function listDeals(
     filter?: FilterDefinition;
   },
   signal: AbortSignal,
-): Promise<{ rows: BoardCard[]; total: number; totalValue: string }> {
+): Promise<{ rows: DealListCard[]; total: number; totalValue: string }> {
   signal.throwIfAborted();
   const pipelineFilter =
     opts.pipelineId !== undefined ? sql`AND d.pipeline_id = ${opts.pipelineId}` : sql``;
@@ -236,7 +243,8 @@ export async function listDeals(
         d.last_activity_at   AS "lastActivityAt",
         d.expected_close_date AS "expectedCloseDate",
         d.stage_entered_at   AS "stageEnteredAt",
-        d.updated_at         AS "updatedAt"
+        d.updated_at         AS "updatedAt",
+        d.custom_fields       AS "customFields"
       ${base}
       ORDER BY d.updated_at DESC
       LIMIT ${opts.limit} OFFSET ${opts.offset}
@@ -254,7 +262,9 @@ export async function listDeals(
   if (agg === undefined) {
     return { rows: [], total: 0, totalValue: "0.00" };
   }
-  const rawRows = (rowsRes as unknown as { rows: RawCard[] }).rows;
+  const rawRows = (
+    rowsRes as unknown as { rows: (RawCard & { customFields: Record<string, unknown> })[] }
+  ).rows;
   return {
     rows: rawRows.map(normalizeCard),
     total: agg.total,

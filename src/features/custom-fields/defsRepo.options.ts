@@ -4,7 +4,7 @@ import type { Db } from "@/db/client";
 import { customFieldDefs } from "@/db/schema";
 import type { CustomFieldDef, CustomFieldOption } from "@/types/customFields";
 import { err, ok, type Result } from "@/types/result";
-import { toDef } from "./defsRepo";
+import { invalidateDefsCache, toDef } from "./defsRepo";
 
 // Read-modify-write of the options jsonb in one transaction. The mutate fn returns
 // the next array; callers never remove entries (archive flags in place) so stored
@@ -16,7 +16,7 @@ async function writeOptions(
   signal: AbortSignal,
 ): Promise<Result<CustomFieldDef, AppError>> {
   signal.throwIfAborted();
-  return db.transaction(async (tx) => {
+  const result = await db.transaction(async (tx) => {
     const [current] = await tx
       .select({ options: customFieldDefs.options })
       .from(customFieldDefs)
@@ -34,6 +34,8 @@ async function writeOptions(
     }
     return ok(toDef(row));
   });
+  if (result.ok) invalidateDefsCache(db);
+  return result;
 }
 
 export function addOption(

@@ -1,7 +1,7 @@
 import { expect, it } from "vitest";
 import type { Db } from "@/db/client";
 import { withTestDb } from "@/db/testing";
-import { createDef } from "./defsRepo";
+import { createDef, listDefs } from "./defsRepo";
 import { addOption, archiveOption, renameOption } from "./defsRepo.options";
 
 const sig = () => new AbortController().signal;
@@ -73,5 +73,42 @@ it("returns CF_DEF_NOT_FOUND for a missing def", async () => {
     );
     expect(r.ok).toBe(false);
     if (r.ok === false) expect(r.error.id).toBe("E_CF_002");
+  });
+});
+
+it("invalidates the cached defs list when an option is added, so a later read sees it", async () => {
+  await withTestDb(async (db) => {
+    const def = await seedOptionDef(db);
+    await listDefs(db, "deal", {}, sig());
+    const r = await addOption(db, { id: def.id, label: "Medium" }, sig());
+    expect(r.ok).toBe(true);
+    const fresh = await listDefs(db, "deal", {}, sig());
+    expect(fresh.find((d) => d.id === def.id)?.options).toHaveLength(3);
+  });
+});
+
+it("invalidates the cached defs list when an option is renamed, so a later read sees it (finding 3 regression net)", async () => {
+  await withTestDb(async (db) => {
+    const def = await seedOptionDef(db);
+    await listDefs(db, "deal", {}, sig());
+    const r = await renameOption(db, { id: def.id, optionId: "opt-1", label: "Lowest" }, sig());
+    expect(r.ok).toBe(true);
+    const fresh = await listDefs(db, "deal", {}, sig());
+    expect(fresh.find((d) => d.id === def.id)?.options.find((o) => o.id === "opt-1")?.label).toBe(
+      "Lowest",
+    );
+  });
+});
+
+it("invalidates the cached defs list when an option is archived, so a later read sees it (finding 3 regression net)", async () => {
+  await withTestDb(async (db) => {
+    const def = await seedOptionDef(db);
+    await listDefs(db, "deal", {}, sig());
+    const r = await archiveOption(db, { id: def.id, optionId: "opt-2" }, sig());
+    expect(r.ok).toBe(true);
+    const fresh = await listDefs(db, "deal", {}, sig());
+    expect(
+      fresh.find((d) => d.id === def.id)?.options.find((o) => o.id === "opt-2")?.archived,
+    ).toBe(true);
   });
 });

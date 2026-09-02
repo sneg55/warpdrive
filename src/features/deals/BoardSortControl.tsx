@@ -9,19 +9,26 @@ import { BOARD_SORT_KEYS, type BoardSortKey, type SortDirection } from "./boardS
 
 const SORT = STRINGS.board.sort;
 
-export interface BoardSortControlProps {
-  sortKey: BoardSortKey;
+export interface BoardSortControlProps<K extends string = BoardSortKey> {
+  sortKey: K;
   direction: SortDirection;
-  onKeyChange: (key: BoardSortKey) => void;
+  onKeyChange: (key: K) => void;
   onToggleDirection: () => void;
+  extraOptions?: readonly { key: K; label: string }[];
 }
 
 // The "Sort by" cluster Pipedrive puts above the board: a field dropdown plus an asc/desc
 // arrow toggle. The chosen sort applies within each column (BoardColumn stays position-agnostic).
-export function BoardSortControl(props: BoardSortControlProps): React.ReactNode {
-  const { sortKey, direction, onKeyChange, onToggleDirection } = props;
+export function BoardSortControl<K extends string = BoardSortKey>(
+  props: BoardSortControlProps<K>,
+): React.ReactNode {
+  const { sortKey, direction, onKeyChange, onToggleDirection, extraOptions = [] } = props;
   // The arrow points the way the data currently reads; the button offers the opposite action.
   const toggleLabel = direction === "asc" ? SORT.descending : SORT.ascending;
+  const options: SelectOption[] = [
+    ...BOARD_SORT_KEYS.map<SelectOption>((key) => ({ value: key, label: SORT.options[key] })),
+    ...extraOptions.map<SelectOption>((o) => ({ value: o.key, label: o.label })),
+  ];
 
   return (
     <div className="inline-flex items-center gap-2">
@@ -34,11 +41,8 @@ export function BoardSortControl(props: BoardSortControlProps): React.ReactNode 
         <Select
           ariaLabel={SORT.label}
           value={sortKey}
-          onChange={(v) => onKeyChange(v as BoardSortKey)}
-          options={BOARD_SORT_KEYS.map<SelectOption>((key) => ({
-            value: key,
-            label: SORT.options[key],
-          }))}
+          onChange={(v) => onKeyChange(v as K)}
+          options={options}
           triggerClassName="w-auto rounded-r-none border-0 bg-transparent"
         />
         <Tip label={toggleLabel}>

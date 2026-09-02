@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { attachRefLabels } from "@/features/custom-fields/refLabels";
 import { dealsForOrg, dealsForPerson } from "@/features/deal-workspace/participants";
 import { protectedProcedure, router } from "@/server/trpc/trpc";
 import { unwrap } from "@/server/unwrap";
@@ -33,14 +34,16 @@ export const contactsRouter = router({
         filter: personFilterSchema.optional(),
       }),
     )
-    .query(({ ctx, input }) =>
-      listPeople(
+    .query(async ({ ctx, input }) => {
+      const signal = AbortSignal.timeout(10_000);
+      const res = await listPeople(
         ctx.db,
         toContactActor(ctx.actor),
         { offset: input.offset, limit: input.limit, sort: input.sort, filter: input.filter },
-        AbortSignal.timeout(10_000),
-      ),
-    ),
+        signal,
+      );
+      return attachRefLabels(ctx.db, ctx.actor, "person", res, signal);
+    }),
 
   // Full visible {id,name} sets (no pagination cap) for the Add deal/lead comboboxes, which need
   // every option both to select and to run the duplicate-name check.
@@ -85,14 +88,16 @@ export const contactsRouter = router({
         filter: orgFilterSchema.optional(),
       }),
     )
-    .query(({ ctx, input }) =>
-      listOrgs(
+    .query(async ({ ctx, input }) => {
+      const signal = AbortSignal.timeout(10_000);
+      const res = await listOrgs(
         ctx.db,
         toContactActor(ctx.actor),
         { offset: input.offset, limit: input.limit, sort: input.sort, filter: input.filter },
-        AbortSignal.timeout(10_000),
-      ),
-    ),
+        signal,
+      );
+      return attachRefLabels(ctx.db, ctx.actor, "organization", res, signal);
+    }),
 
   // Merged Focus/History feed (Wave 3, Task 21): activities + notes + change-log events
   // for a single person or organization, visibility-gated the same way getPerson/getOrg are.

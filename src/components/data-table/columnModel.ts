@@ -3,6 +3,8 @@
 // list inherits identical behavior. Mirrors the original leads-only useLeadColumns helpers, now
 // parameterized by a column catalog + its single pinned column (the row-link anchor).
 
+import type { CustomFieldDef } from "@/types/customFields";
+
 export interface ColumnDef {
   key: string;
   header: string;
@@ -10,6 +12,7 @@ export interface ColumnDef {
   pinned?: boolean;
   // Seeds the default visible set before any stored preference loads.
   defaultVisible?: boolean;
+  customField?: CustomFieldDef;
 }
 
 export function pinnedKey(catalog: readonly ColumnDef[]): string | undefined {

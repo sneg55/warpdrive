@@ -38,10 +38,11 @@ export interface DealListProps {
   // Whether any filter narrows this view. A filtered-to-nothing list keeps its columns, since
   // they are still the view the user built.
   filtered?: boolean;
+  currency: string;
 }
 
 export function DealList(props: DealListProps) {
-  const { pipelineId, rows, total, totalValue, stages } = props;
+  const { pipelineId, rows, total, totalValue, stages, currency } = props;
   const { onBulkStage, onBulkArchive, onUnarchive } = props;
   const { visibleColumns, columnsMenu, empty, filtered = false } = props;
   const { editCell } = useInlineEdit(pipelineId);
@@ -122,53 +123,56 @@ export function DealList(props: DealListProps) {
         />
       ) : null}
 
-      <table className="w-full border-collapse text-sm">
-        <caption className="sr-only">Deals list</caption>
-        <thead>
-          <tr className="border-b bg-muted/60 text-left text-muted-foreground">
-            <th scope="col" className="w-10 px-3 py-2">
-              <Checkbox
-                label="Select all deals"
-                checked={selectAllState()}
-                onCheckedChange={toggleAll}
-              />
-            </th>
-            {visibleColumns.map((col) => (
-              <th key={col.key} scope="col" className="px-3 py-2 font-semibold">
-                {col.header}
+      <div className="overflow-x-auto">
+        <table className="w-full border-collapse text-sm">
+          <caption className="sr-only">Deals list</caption>
+          <thead>
+            <tr className="border-b bg-muted/60 text-left text-muted-foreground">
+              <th scope="col" className="w-10 px-3 py-2">
+                <Checkbox
+                  label="Select all deals"
+                  checked={selectAllState()}
+                  onCheckedChange={toggleAll}
+                />
               </th>
-            ))}
-            {onUnarchive ? (
-              <th scope="col" className="px-3 py-2 font-semibold">
-                Actions
-              </th>
-            ) : null}
-          </tr>
-        </thead>
-        <DealListTableBody
-          rowWindow={rowWindow}
-          rowCount={rows.length}
-          visibleColumns={visibleColumns}
-          colSpan={bodyColSpan}
-          selected={selected}
-          onToggleRow={toggleOne}
-          stageNameById={stageNameById}
-          editingId={editingId}
-          onStartEdit={setEditingId}
-          onCancelEdit={() => setEditingId(null)}
-          onCommitTitle={saveTitle}
-          onUnarchive={onUnarchive}
-          empty={empty}
-        />
-        <tfoot>
-          <tr className="border-t bg-muted/60 font-medium text-foreground">
-            <td colSpan={bodyColSpan} className="px-3 py-2 tabular-nums">
-              {total} {total === 1 ? "deal" : "deals"} &middot; total value{" "}
-              {formatCurrency(totalValue)}
-            </td>
-          </tr>
-        </tfoot>
-      </table>
+              {visibleColumns.map((col) => (
+                <th key={col.key} scope="col" className="px-3 py-2 font-semibold">
+                  {col.header}
+                </th>
+              ))}
+              {onUnarchive ? (
+                <th scope="col" className="px-3 py-2 font-semibold">
+                  Actions
+                </th>
+              ) : null}
+            </tr>
+          </thead>
+          <DealListTableBody
+            rowWindow={rowWindow}
+            rowCount={rows.length}
+            visibleColumns={visibleColumns}
+            colSpan={bodyColSpan}
+            selected={selected}
+            onToggleRow={toggleOne}
+            stageNameById={stageNameById}
+            editingId={editingId}
+            onStartEdit={setEditingId}
+            onCancelEdit={() => setEditingId(null)}
+            onCommitTitle={saveTitle}
+            onUnarchive={onUnarchive}
+            empty={empty}
+            currency={currency}
+          />
+          <tfoot>
+            <tr className="border-t bg-muted/60 font-medium text-foreground">
+              <td colSpan={bodyColSpan} className="px-3 py-2 tabular-nums">
+                {total} {total === 1 ? "deal" : "deals"} &middot; total value{" "}
+                {formatCurrency(totalValue)}
+              </td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
     </div>
   );
 }

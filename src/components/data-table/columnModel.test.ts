@@ -61,4 +61,22 @@ describe("columnModel", () => {
       "owner",
     ]);
   });
+
+  it("keeps a stored cf: key that is in the catalog and drops one whose def is gone", () => {
+    const withCf: readonly ColumnDef[] = [...CATALOG, { key: "cf:region", header: "Region" }];
+    expect(resolveVisibleOrder(withCf, ["org", "cf:region", "cf:archived"])).toEqual([
+      "title",
+      "org",
+      "cf:region",
+    ]);
+  });
+
+  it("toggling a cf: key appends it like any other column", () => {
+    const withCf: readonly ColumnDef[] = [...CATALOG, { key: "cf:region", header: "Region" }];
+    expect(toggleColumnOrder(withCf, ["title", "org"], "cf:region")).toEqual([
+      "title",
+      "org",
+      "cf:region",
+    ]);
+  });
 });

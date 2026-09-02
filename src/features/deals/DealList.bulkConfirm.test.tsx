@@ -35,6 +35,7 @@ function makeRow(i: number): DealListRow {
     lastActivityAt: null,
     stageEnteredAt: new Date("2026-06-24T00:00:00Z"),
     updatedAt: "2026-06-24T00:00:00Z",
+    customFields: {},
   };
 }
 
@@ -52,6 +53,7 @@ function baseProps(onBulkStage: (ids: string[], to: string) => Promise<boolean>)
     ],
     onBulkStage,
     visibleColumns: DEAL_LIST_COLUMNS.filter((c) => c.defaultVisible === true),
+    currency: "USD",
   };
 }
 

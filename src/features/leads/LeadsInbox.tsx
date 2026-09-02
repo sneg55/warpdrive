@@ -2,14 +2,19 @@
 import { useRouter } from "next/navigation";
 import type React from "react";
 import { useEffect, useMemo, useState } from "react";
+import { useColumns } from "@/components/data-table/useColumns";
 import { useActionError } from "@/components/shell/ActionErrorProvider";
 import { DEFAULT_BASE_CURRENCY } from "@/constants/currency";
 import { STRINGS } from "@/constants/strings";
 import { addFormCustomFieldDefs } from "@/features/custom-fields/CustomFieldCreateFields";
+import { customFieldColumns } from "@/features/custom-fields/listColumns";
+import { CustomFieldRefLabelsProvider } from "@/features/custom-fields/refLabelsContext";
 import { trpc } from "@/lib/trpc-client";
+import type { CustomFieldDef } from "@/types/customFields";
 import { readCsrfToken } from "@/utils/csrfCookie";
 import { ConvertLeadDialog } from "./ConvertLeadDialog";
 import { BulkEditPanel } from "./inbox/BulkEditPanel";
+import { LEAD_COLUMNS, type LeadColumn } from "./inbox/columns";
 import { buildLeadExportHref } from "./inbox/exportHref";
 import type { OwnerFilter } from "./inbox/LeadFilters";
 import { LeadRowActions } from "./inbox/LeadRowActions";
@@ -18,7 +23,6 @@ import { LeadsEmpty } from "./inbox/LeadsEmpty";
 import { LeadsFilterControls } from "./inbox/LeadsFilterControls";
 import { LeadsLoadMore } from "./inbox/LeadsLoadMore";
 import { LeadsTable } from "./inbox/LeadsTable";
-import { useLeadColumns } from "./inbox/useLeadColumns";
 import { useLeadConvert } from "./inbox/useLeadConvert";
 import { useLeadList } from "./inbox/useLeadList";
 import { useLeadSelection } from "./inbox/useLeadSelection";
@@ -36,12 +40,14 @@ export interface LeadsInboxProps {
   initialView?: { columns: string[]; sort: LeadSort } | null;
   // Whether the actor holds data.import; gates the action bar's "Import leads" link.
   canImport?: boolean;
+  customFieldDefs?: CustomFieldDef[];
 }
 
 export function LeadsInbox({
   baseCurrency,
   initialView,
   canImport = false,
+  customFieldDefs = [],
 }: LeadsInboxProps): React.ReactNode {
   const router = useRouter();
   const reportError = useActionError();
@@ -61,7 +67,11 @@ export function LeadsInbox({
 
   const sort = useLeadSort(initialView?.sort ?? null);
   const selection = useLeadSelection();
-  const columns = useLeadColumns(initialView?.columns);
+  const catalog = useMemo<readonly LeadColumn[]>(
+    () => [...LEAD_COLUMNS, ...customFieldColumns(customFieldDefs)],
+    [customFieldDefs],
+  );
+  const columns = useColumns(catalog, initialView?.columns);
 
   // Ungated: every user gets the full active-user list so owner filtering runs server-side by id.
   const usersQ = trpc.identity.assignableUsers.useQuery(undefined, { retry: false });
@@ -195,6 +205,7 @@ export function LeadsInbox({
         nextActivity={nextActivity}
         onNextActivity={setNextActivity}
         owner={owner}
+        catalog={catalog}
         order={columns.order}
         visibleKeys={columns.visibleKeys}
         onToggleColumn={columns.toggle}
@@ -238,21 +249,23 @@ export function LeadsInbox({
         {empty !== null && !hasFilter ? (
           empty
         ) : (
-          <LeadsTable
-            rows={rows}
-            columns={columns.visibleColumns}
-            now={now}
-            currency={currency}
-            sort={sort.effective}
-            onSort={sort.cycle}
-            isSelected={selection.isSelected}
-            allSelected={selection.allSelected(visibleIds)}
-            onToggleRow={selection.toggle}
-            onToggleAll={() => selection.toggleAll(visibleIds)}
-            onOpen={(id) => router.push(`/leads/${id}`)}
-            renderRowActions={renderRowActions}
-            empty={empty}
-          />
+          <CustomFieldRefLabelsProvider value={list.refLabels}>
+            <LeadsTable
+              rows={rows}
+              columns={columns.visibleColumns}
+              now={now}
+              currency={currency}
+              sort={sort.effective}
+              onSort={sort.cycle}
+              isSelected={selection.isSelected}
+              allSelected={selection.allSelected(visibleIds)}
+              onToggleRow={selection.toggle}
+              onToggleAll={() => selection.toggleAll(visibleIds)}
+              onOpen={(id) => router.push(`/leads/${id}`)}
+              renderRowActions={renderRowActions}
+              empty={empty}
+            />
+          </CustomFieldRefLabelsProvider>
         )}
       </div>
 

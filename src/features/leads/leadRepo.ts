@@ -17,15 +17,17 @@ import { users } from "@/db/schema/identity";
 import { type Lead, leads } from "@/db/schema/leads";
 import { type Organization, organizations } from "@/db/schema/organizations";
 import { type Person, persons } from "@/db/schema/persons";
+import { isCustomFieldSortKey } from "@/features/custom-fields/sortKey";
+import { customFieldOrderBy, resolveCustomFieldSort } from "@/features/custom-fields/sortSql";
 import { isUuidParam } from "@/lib/isUuidParam";
 import { assertNever } from "@/types/result";
 import type { DealVisibilitySession } from "@/types/session";
 import { compileLeadFilter, LEAD_FILTER_CONFIG } from "./leadFilter";
 import {
+  type LeadBuiltinSortField,
   type LeadListInput,
   type LeadListParsed,
   type LeadNextActivityBucket,
-  type LeadSortField,
   leadListInput,
 } from "./schemas";
 import { leadVisibilityClause } from "./visibility";
@@ -47,6 +49,7 @@ const leadRowSelection = {
   archivedAt: leads.archivedAt,
   updatedAt: leads.updatedAt,
   convertedDealId: leads.convertedDealId,
+  customFields: sql<Record<string, unknown>>`${leads.customFields}`,
 } as const;
 
 export interface LeadRow {
@@ -63,6 +66,7 @@ export interface LeadRow {
   archivedAt: Date | null;
   updatedAt: Date;
   convertedDealId: string | null;
+  customFields: Record<string, unknown>;
 }
 
 // The full lead record plus resolved person/org/owner display names (detail page).
@@ -137,7 +141,7 @@ export async function getLeadById(
 
 // Map a sort field to its ORDER BY column. 'ownerName' sorts on the joined users.name;
 // 'label' sorts on the leads.labels array (lexicographic, Postgres default).
-function sortColumn(field: LeadSortField): SQL {
+function sortColumn(field: LeadBuiltinSortField): SQL {
   switch (field) {
     case "title":
       return sql`${leads.title}`;
@@ -174,6 +178,19 @@ function nextActivityClause(bucket: LeadNextActivityBucket): SQL {
     default:
       return assertNever(bucket);
   }
+}
+
+async function leadOrderBy(
+  db: Db,
+  sort: LeadListParsed["sort"],
+  signal: AbortSignal,
+): Promise<SQL> {
+  if (isCustomFieldSortKey(sort.field)) {
+    const def = await resolveCustomFieldSort(db, "lead", sort.field, signal);
+    return customFieldOrderBy(leads.customFields, def, sort.dir);
+  }
+  const col = sortColumn(sort.field);
+  return sort.dir === "asc" ? asc(col) : desc(col);
 }
 
 function buildFilters(parsed: LeadListParsed): SQL[] {
@@ -215,8 +232,7 @@ export async function listLeads(
     ...buildFilters(parsed),
   );
 
-  const direction = parsed.sort.dir === "asc" ? asc : desc;
-  const orderBy = sortColumn(parsed.sort.field);
+  const orderBy = await leadOrderBy(db, parsed.sort, signal);
 
   const rows = await db
     .select(leadRowSelection)
@@ -227,7 +243,7 @@ export async function listLeads(
     .where(where)
     // Stable tiebreak so equal sort keys keep a deterministic order. leads.id is the final,
     // guaranteed-unique key so offset pagination can never dup or skip on equal sort + createdAt.
-    .orderBy(direction(orderBy), desc(leads.createdAt), asc(leads.id))
+    .orderBy(orderBy, desc(leads.createdAt), asc(leads.id))
     .offset(parsed.offset)
     .limit(parsed.limit);
   signal.throwIfAborted();
@@ -254,8 +270,7 @@ export async function listLeadsForExport(
     leadVisibilityClause(session),
     ...buildFilters(parsed),
   );
-  const direction = parsed.sort.dir === "asc" ? asc : desc;
-  const orderBy = sortColumn(parsed.sort.field);
+  const orderBy = await leadOrderBy(db, parsed.sort, signal);
 
   const rows = await db
     .select(leadRowSelection)
@@ -264,7 +279,7 @@ export async function listLeadsForExport(
     .leftJoin(organizations, eq(organizations.id, leads.orgId))
     .leftJoin(users, eq(users.id, leads.ownerId))
     .where(where)
-    .orderBy(direction(orderBy), desc(leads.createdAt), asc(leads.id));
+    .orderBy(orderBy, desc(leads.createdAt), asc(leads.id));
   signal.throwIfAborted();
   return rows;
 }

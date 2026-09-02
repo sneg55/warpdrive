@@ -6,6 +6,8 @@ import { getOrg } from "@/features/contacts/orgsRepo";
 import { getPerson } from "@/features/contacts/personsRepo";
 import { listDefs } from "@/features/custom-fields/defsRepo";
 import { listHiddenBuiltins } from "@/features/custom-fields/hiddenBuiltinsRepo";
+import { resolveCustomFieldRefLabels } from "@/features/custom-fields/refLabels";
+import { CustomFieldRefLabelsProvider } from "@/features/custom-fields/refLabelsContext";
 import { cachedDetailLoad } from "@/features/navigation/cachedDetailLoad";
 import { can } from "@/features/permissions/can";
 import type { VisiblePersonOrOrg } from "@/features/permissions/types";
@@ -59,17 +61,27 @@ export async function PersonDetailView({
   const canMerge = can(actor, "contact.merge", record);
   const canDelete = can(actor, "contact.delete", record);
 
+  const refLabels = await resolveCustomFieldRefLabels(
+    ctx.db,
+    actor,
+    defs,
+    [{ customFields: person.customFields as Record<string, unknown> }],
+    AbortSignal.timeout(8000),
+  );
+
   return (
-    <PersonDetailClient
-      person={person}
-      orgName={orgName}
-      defs={defs}
-      hiddenBuiltins={hidden.person}
-      canMerge={canMerge}
-      canDelete={canDelete}
-      baseCurrency={baseCurrency}
-      followers={followers}
-      isFollowedBySelf={isFollowedBySelf}
-    />
+    <CustomFieldRefLabelsProvider value={refLabels}>
+      <PersonDetailClient
+        person={person}
+        orgName={orgName}
+        defs={defs}
+        hiddenBuiltins={hidden.person}
+        canMerge={canMerge}
+        canDelete={canDelete}
+        baseCurrency={baseCurrency}
+        followers={followers}
+        isFollowedBySelf={isFollowedBySelf}
+      />
+    </CustomFieldRefLabelsProvider>
   );
 }

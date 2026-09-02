@@ -43,6 +43,20 @@ describe("formatCustomFieldDisplay", () => {
   });
 });
 
+describe("formatCustomFieldDisplay reference labels", () => {
+  const userDef = def({ type: "user", key: "rep" });
+  const labels = { user: { u1: "Ada" }, person: {}, org: {} };
+  it("shows the name when a label is present", () => {
+    expect(formatCustomFieldDisplay(userDef, "u1", "USD", labels)).toBe("Ada");
+  });
+  it("shows Restricted when the id has no label", () => {
+    expect(formatCustomFieldDisplay(userDef, "u2", "USD", labels)).toBe("Restricted");
+  });
+  it("shows the raw id when no labels are passed", () => {
+    expect(formatCustomFieldDisplay(userDef, "u2")).toBe("u2");
+  });
+});
+
 describe("isCustomFieldValueEmpty", () => {
   it("is true for undefined, null, an empty string, and an empty array", () => {
     expect(isCustomFieldValueEmpty(undefined)).toBe(true);

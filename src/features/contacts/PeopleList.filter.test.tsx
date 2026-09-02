@@ -40,6 +40,7 @@ const ROWS = [
     orgId: null,
     orgName: null,
     closedDeals: 0,
+    customFields: {},
   },
 ];
 

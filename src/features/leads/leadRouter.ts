@@ -1,3 +1,4 @@
+import { attachRefLabels } from "@/features/custom-fields/refLabels";
 import { protectedProcedure, router } from "@/server/trpc/trpc";
 import type { DealVisibilitySession } from "@/types/session";
 import { getLeadById, listLeads } from "./leadRepo";
@@ -23,11 +24,11 @@ function actorToSession(actor: {
 }
 
 export const leadRouter = router({
-  list: protectedProcedure
-    .input(leadListInput)
-    .query(({ ctx, input }) =>
-      listLeads(ctx.db, actorToSession(ctx.actor), input, AbortSignal.timeout(10_000)),
-    ),
+  list: protectedProcedure.input(leadListInput).query(async ({ ctx, input }) => {
+    const signal = AbortSignal.timeout(10_000);
+    const res = await listLeads(ctx.db, actorToSession(ctx.actor), input, signal);
+    return attachRefLabels(ctx.db, ctx.actor, "lead", res, signal);
+  }),
   byId: protectedProcedure
     .input(leadByIdInput)
     .query(({ ctx, input }) =>

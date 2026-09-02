@@ -1,5 +1,7 @@
 import { z } from "zod";
 import { SOURCE_CHANNEL_KEYS } from "@/constants/sourceChannels";
+import type { CustomFieldSortKey } from "@/features/custom-fields/sortKey";
+import { customFieldSortKeySchema } from "@/features/custom-fields/sortKeySchema";
 import { labelNameArray } from "@/features/labels/labelsSchema";
 import { buildFilterSchema } from "@/schemas/filterCondition";
 import { LEAD_CONDITION_CONFIG } from "./leadFilterFields";
@@ -42,14 +44,15 @@ export const LEAD_SORT_FIELDS = [
   "label",
   "sourceOrigin",
 ] as const;
-export type LeadSortField = (typeof LEAD_SORT_FIELDS)[number];
+export type LeadBuiltinSortField = (typeof LEAD_SORT_FIELDS)[number];
+export type LeadSortField = LeadBuiltinSortField | CustomFieldSortKey;
 
 // Next-activity buckets computed server-side against next_activity_at (Pipedrive parity).
 export const LEAD_NEXT_ACTIVITY_BUCKETS = ["overdue", "today", "week", "none"] as const;
 export type LeadNextActivityBucket = (typeof LEAD_NEXT_ACTIVITY_BUCKETS)[number];
 
 const leadSortInput = z.object({
-  field: z.enum(LEAD_SORT_FIELDS).default("createdAt"),
+  field: z.union([z.enum(LEAD_SORT_FIELDS), customFieldSortKeySchema]).default("createdAt"),
   dir: z.enum(["asc", "desc"]).default("desc"),
 });
 

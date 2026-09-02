@@ -39,6 +39,7 @@ const row: DealListRow = {
   lastActivityAt: null,
   stageEnteredAt: new Date("2026-06-24T00:00:00Z"),
   updatedAt: "2026-06-24T00:00:00Z",
+  customFields: {},
 };
 
 const props = {
@@ -52,6 +53,7 @@ const props = {
   ],
   onBulkStage: () => Promise.resolve(true),
   visibleColumns: DEAL_LIST_COLUMNS.filter((c) => c.defaultVisible === true),
+  currency: "USD",
 };
 
 // Drive the bulk-stage flow end to end: tick a row's checkbox, pick a stage from the Move-to-stage
@@ -69,6 +71,12 @@ describe("DealList", () => {
     // Pipedrive opens the deal on title click; the title must be a real link.
     const link = screen.getByRole("link", { name: "Acme renewal" });
     expect(link).toHaveAttribute("href", "/deals/d1");
+  });
+
+  it("wraps the table in a horizontally scrollable container so extra columns don't clip", () => {
+    render(<DealList {...props} />);
+    const table = screen.getByRole("table");
+    expect(table.parentElement).toHaveClass("overflow-x-auto");
   });
 
   it("shows Organization and Owner columns (Pipedrive column-rich list)", () => {

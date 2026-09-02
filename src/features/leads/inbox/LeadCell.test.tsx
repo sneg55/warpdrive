@@ -3,6 +3,7 @@ import "@testing-library/jest-dom/vitest";
 import { cleanup, render } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { LeadRow } from "../leadRepo";
+import { LEAD_COLUMNS, type LeadColumn } from "./columns";
 
 vi.mock("@/lib/trpc-client", () => ({
   trpc: { labels: { listByTarget: { useQuery: () => ({ data: [] }) } } },
@@ -11,6 +12,12 @@ vi.mock("@/lib/trpc-client", () => ({
 import { LeadCell } from "./LeadCell";
 
 afterEach(cleanup);
+
+function col(key: string): LeadColumn {
+  const found = LEAD_COLUMNS.find((c) => c.key === key);
+  if (found === undefined) throw new Error(`no such column: ${key}`);
+  return found;
+}
 
 // Minimal row; LeadCell's nextActivity column only reads nextActivityAt.
 function row(nextActivityAt: string | null): LeadRow {
@@ -28,6 +35,7 @@ function row(nextActivityAt: string | null): LeadRow {
     archivedAt: null,
     updatedAt: "2026-01-01T00:00:00.000Z",
     convertedDealId: null,
+    customFields: {},
   } as unknown as LeadRow;
 }
 
@@ -39,7 +47,7 @@ describe("LeadCell nextActivity clock (F5-16)", () => {
     // the time-based overdue color must NOT be applied yet (that is what caused the board's
     // hydration mismatch). It must render, not crash, with no destructive color.
     const { container } = render(
-      <LeadCell columnKey="nextActivity" row={row(overdue)} now={null} currency="USD" />,
+      <LeadCell column={col("nextActivity")} row={row(overdue)} now={null} currency="USD" />,
     );
     expect(container.querySelector(".text-destructive")).toBeNull();
     expect(container.textContent).not.toBe("");
@@ -48,7 +56,7 @@ describe("LeadCell nextActivity clock (F5-16)", () => {
   it("applies the overdue color once the client clock is set", () => {
     const { container } = render(
       <LeadCell
-        columnKey="nextActivity"
+        column={col("nextActivity")}
         row={row(overdue)}
         now={new Date("2026-06-01T00:00:00.000Z")}
         currency="USD"

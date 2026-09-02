@@ -2,6 +2,11 @@
 import { keepPreviousData } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { LEADS_PAGE_LIMIT } from "@/constants/leads";
+import {
+  type CustomFieldRefLabels,
+  EMPTY_REF_LABELS,
+  mergeRefLabels,
+} from "@/features/custom-fields/refLabelsContext";
 import { trpc } from "@/lib/trpc-client";
 import type { LeadRow } from "../leadRepo";
 import type { LeadConditionInput, LeadNextActivityBucket } from "../schemas";
@@ -20,6 +25,7 @@ export interface UseLeadListParams {
 export interface UseLeadListResult {
   rows: LeadRow[];
   total: number;
+  refLabels: CustomFieldRefLabels;
   // True while the first page is still in flight. Zero rows in that window is not an empty
   // inbox, and the two must not render the same message.
   isLoading: boolean;
@@ -37,6 +43,7 @@ export function useLeadList(params: UseLeadListParams): UseLeadListResult {
   const utils = trpc.useUtils();
   const [offset, setOffset] = useState(0);
   const [rows, setRows] = useState<LeadRow[]>([]);
+  const [refLabels, setRefLabels] = useState<CustomFieldRefLabels>(EMPTY_REF_LABELS);
   // Offset -> the dataUpdatedAt stamp of the delivery merged for it. Storing the stamp rather than
   // just the offset tells a benign re-run of the merge effect (same delivery, unchanged stamp) apart
   // from a genuine refetch of that page, which react-query marks with a new stamp.
@@ -103,6 +110,7 @@ export function useLeadList(params: UseLeadListParams): UseLeadListResult {
     if (offset === 0) {
       merged.current = new Map([[0, stamp]]);
       setRows(data.rows);
+      setRefLabels(data.refLabels);
       return;
     }
     if (merged.current.has(offset)) {
@@ -119,6 +127,7 @@ export function useLeadList(params: UseLeadListParams): UseLeadListResult {
     }
     merged.current.set(offset, stamp);
     setRows((prev) => [...prev, ...data.rows]);
+    setRefLabels((prev) => mergeRefLabels(prev, data.refLabels));
   }, [listQ.data, isPlaceholder, stamp, offset, resetKey]);
 
   const total = listQ.data?.total ?? 0;
@@ -130,6 +139,7 @@ export function useLeadList(params: UseLeadListParams): UseLeadListResult {
   const refetch = useCallback(async () => {
     merged.current = new Map();
     setRows([]);
+    setRefLabels(EMPTY_REF_LABELS);
     setOffset(0);
     await utils.lead.list.invalidate();
   }, [utils]);
@@ -137,6 +147,7 @@ export function useLeadList(params: UseLeadListParams): UseLeadListResult {
   return {
     rows,
     total,
+    refLabels,
     isLoading: listQ.isLoading === true,
     canLoadMore: rows.length < total,
     loadMore,

@@ -64,6 +64,8 @@ vi.mock("@/utils/csrfCookie", () => ({ readCsrfToken: () => "csrf" }));
 
 import { LeadsInbox } from "./LeadsInbox";
 
+const REF_LABELS = { user: {}, person: {}, org: {} };
+
 const LEAD = {
   id: "l1",
   title: "Acme lead",
@@ -82,7 +84,7 @@ const LEAD = {
 
 describe("LeadsInbox", () => {
   it("renders the default table columns and a lead row with its label chip", () => {
-    listQuery.mockReturnValue({ data: { rows: [LEAD], total: 1 }, refetch });
+    listQuery.mockReturnValue({ data: { rows: [LEAD], total: 1, refLabels: REF_LABELS }, refetch });
     render(<LeadsInbox />);
     // Scope header assertions to the table (some labels, e.g. "Next activity", also name a filter).
     const table = within(screen.getByRole("table"));
@@ -104,13 +106,13 @@ describe("LeadsInbox", () => {
   });
 
   it("shows an empty state when there are no leads", () => {
-    listQuery.mockReturnValue({ data: { rows: [], total: 0 }, refetch });
+    listQuery.mockReturnValue({ data: { rows: [], total: 0, refLabels: REF_LABELS }, refetch });
     render(<LeadsInbox />);
     expect(screen.getByText(/No leads yet/i)).toBeInTheDocument();
   });
 
   it("opens the Add lead modal from the + Lead button", () => {
-    listQuery.mockReturnValue({ data: { rows: [], total: 0 }, refetch });
+    listQuery.mockReturnValue({ data: { rows: [], total: 0, refLabels: REF_LABELS }, refetch });
     render(<LeadsInbox />);
     fireEvent.click(screen.getByRole("button", { name: "+ Lead" }));
     expect(screen.getByTestId("add-lead-modal")).toBeInTheDocument();
@@ -118,7 +120,10 @@ describe("LeadsInbox", () => {
 
   it("shows the server total in the header count, not just the loaded page size", () => {
     // rows is capped at the page limit; the header must reflect the full server total.
-    listQuery.mockReturnValue({ data: { rows: [LEAD], total: 250 }, refetch });
+    listQuery.mockReturnValue({
+      data: { rows: [LEAD], total: 250, refLabels: REF_LABELS },
+      refetch,
+    });
     render(<LeadsInbox />);
     expect(screen.getByText("250 leads")).toBeInTheDocument();
   });
@@ -131,8 +136,8 @@ describe("LeadsInbox", () => {
     const page2 = [{ ...LEAD, id: "b0", title: "Lead B0" }];
     listQuery.mockImplementation((input: { offset: number }) =>
       input.offset === 0
-        ? { data: { rows: page1, total: 3 }, refetch }
-        : { data: { rows: page2, total: 3 }, refetch },
+        ? { data: { rows: page1, total: 3, refLabels: REF_LABELS }, refetch }
+        : { data: { rows: page2, total: 3, refLabels: REF_LABELS }, refetch },
     );
     render(<LeadsInbox />);
     expect(screen.getByText("Lead A0")).toBeInTheDocument();
@@ -148,7 +153,7 @@ describe("LeadsInbox", () => {
   });
 
   it("reveals the bulk-edit panel after selecting a row", () => {
-    listQuery.mockReturnValue({ data: { rows: [LEAD], total: 1 }, refetch });
+    listQuery.mockReturnValue({ data: { rows: [LEAD], total: 1, refLabels: REF_LABELS }, refetch });
     render(<LeadsInbox />);
     fireEvent.click(screen.getByRole("checkbox", { name: "Select Acme lead" }));
     expect(screen.getByText("1 selected")).toBeInTheDocument();
@@ -160,7 +165,7 @@ describe("LeadsInbox", () => {
       ok: true,
       value: { converted: 1, skipped: 0 },
     });
-    listQuery.mockReturnValue({ data: { rows: [LEAD], total: 1 }, refetch });
+    listQuery.mockReturnValue({ data: { rows: [LEAD], total: 1, refLabels: REF_LABELS }, refetch });
     render(<LeadsInbox />);
     fireEvent.click(screen.getByRole("checkbox", { name: "Select Acme lead" }));
     fireEvent.click(screen.getByRole("button", { name: "Convert to deal" }));
@@ -178,7 +183,7 @@ describe("LeadsInbox", () => {
       ok: false,
       error: { id: "E_PERM_001" },
     });
-    listQuery.mockReturnValue({ data: { rows: [LEAD], total: 1 }, refetch });
+    listQuery.mockReturnValue({ data: { rows: [LEAD], total: 1, refLabels: REF_LABELS }, refetch });
     render(<LeadsInbox />);
     fireEvent.click(screen.getByRole("checkbox", { name: "Select Acme lead" }));
     fireEvent.click(screen.getByRole("button", { name: "Convert to deal" }));
@@ -199,7 +204,7 @@ describe("LeadsInbox", () => {
       ok: false,
       error: { id: "E_PERM_001" },
     });
-    listQuery.mockReturnValue({ data: { rows: [LEAD], total: 1 }, refetch });
+    listQuery.mockReturnValue({ data: { rows: [LEAD], total: 1, refLabels: REF_LABELS }, refetch });
     render(<LeadsInbox />);
     fireEvent.click(screen.getByRole("checkbox", { name: "Select Acme lead" }));
     fireEvent.click(screen.getByRole("button", { name: "Delete" }));
@@ -216,7 +221,7 @@ describe("LeadsInbox", () => {
     const user = userEvent.setup();
     const { archiveLeadAction } = await import("./leadServerActions");
     vi.mocked(archiveLeadAction).mockResolvedValue({ ok: false, error: { id: "E_PERM_001" } });
-    listQuery.mockReturnValue({ data: { rows: [LEAD], total: 1 }, refetch });
+    listQuery.mockReturnValue({ data: { rows: [LEAD], total: 1, refLabels: REF_LABELS }, refetch });
     render(<LeadsInbox />);
 
     await user.click(screen.getByRole("button", { name: "Lead actions" }));
@@ -243,7 +248,7 @@ describe("LeadsInbox", () => {
         },
       },
     ]);
-    listQuery.mockReturnValue({ data: { rows: [LEAD], total: 1 }, refetch });
+    listQuery.mockReturnValue({ data: { rows: [LEAD], total: 1, refLabels: REF_LABELS }, refetch });
     const user = userEvent.setup();
     render(<LeadsInbox />);
 
@@ -274,7 +279,7 @@ describe("LeadsInbox", () => {
         resolveAction = resolve;
       }),
     );
-    listQuery.mockReturnValue({ data: { rows: [LEAD], total: 1 }, refetch });
+    listQuery.mockReturnValue({ data: { rows: [LEAD], total: 1, refLabels: REF_LABELS }, refetch });
     render(<LeadsInbox />);
     fireEvent.click(screen.getByRole("checkbox", { name: "Select Acme lead" }));
     const button = screen.getByRole("button", { name: "Convert to deal" });

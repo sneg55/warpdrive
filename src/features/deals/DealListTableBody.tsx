@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import type React from "react";
+import { CustomFieldCell, customFieldCellClass } from "@/components/data-table/CustomFieldCell";
 import type { ColumnDef } from "@/components/data-table/columnModel";
 import { Avatar } from "@/components/ui/Avatar";
 import { Checkbox } from "@/components/ui/Checkbox";
@@ -31,21 +32,32 @@ interface DealListTableBodyProps {
   onCommitTitle: (row: DealListRow, value: string) => void;
   onUnarchive?: (dealId: string) => void;
   empty?: React.ReactNode;
+  currency: string;
 }
 
-function cellClass(key: string): string {
-  if (key === "title") return "px-3 py-2 font-semibold";
-  if (key === "value") return "px-3 py-2 tabular-nums text-foreground";
+function cellClass(col: ColumnDef): string {
+  if (col.customField !== undefined) return customFieldCellClass(col.customField);
+  if (col.key === "title") return "px-3 py-2 font-semibold";
+  if (col.key === "value") return "px-3 py-2 tabular-nums text-foreground";
   return "px-3 py-2 text-muted-foreground";
 }
 
 export function DealListTableBody(props: DealListTableBodyProps): React.ReactNode {
   const { rowWindow, rowCount, visibleColumns, colSpan, selected, onToggleRow } = props;
-  const { stageNameById, editingId, onStartEdit, onCancelEdit, onCommitTitle } = props;
+  const { stageNameById, editingId, onStartEdit, onCancelEdit, onCommitTitle, currency } = props;
   const { onUnarchive, empty } = props;
 
-  function renderCell(key: string, row: DealListRow): React.ReactNode {
-    switch (key) {
+  function renderCell(col: ColumnDef, row: DealListRow): React.ReactNode {
+    if (col.customField !== undefined) {
+      return (
+        <CustomFieldCell
+          def={col.customField}
+          value={row.customFields[col.customField.key]}
+          currency={currency}
+        />
+      );
+    }
+    switch (col.key) {
       case "title":
         return (
           <DealTitleCell
@@ -104,8 +116,8 @@ export function DealListTableBody(props: DealListTableBodyProps): React.ReactNod
             />
           </td>
           {visibleColumns.map((col) => (
-            <td key={col.key} className={cellClass(col.key)}>
-              {renderCell(col.key, row)}
+            <td key={col.key} className={cellClass(col)}>
+              {renderCell(col, row)}
             </td>
           ))}
           {onUnarchive ? (

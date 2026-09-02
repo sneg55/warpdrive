@@ -1,9 +1,10 @@
 "use client";
 import { Archive, Ellipsis, Inbox } from "lucide-react";
 import type React from "react";
+import { ColumnsMenu } from "@/components/data-table/ColumnsMenu";
 import type { LeadNextActivityBucket } from "../schemas";
 import { AddLeadButton } from "./AddLeadButton";
-import { ColumnMenu } from "./ColumnMenu";
+import type { LeadColumn } from "./columns";
 import { LeadFilters, type OwnerFilter } from "./LeadFilters";
 import { POP_ITEM, PopMenu } from "./PopMenu";
 
@@ -24,6 +25,7 @@ export interface LeadsActionBarProps {
   onNextActivity: (b: LeadNextActivityBucket | null) => void;
   owner: OwnerFilter;
   // Column show/hide + drag-reorder.
+  catalog: readonly LeadColumn[];
   order: readonly string[];
   visibleKeys: ReadonlySet<string>;
   onToggleColumn: (key: string) => void;
@@ -107,7 +109,8 @@ export function LeadsActionBar(props: LeadsActionBarProps): React.ReactNode {
           onNextActivity={props.onNextActivity}
           owner={props.owner}
         />
-        <ColumnMenu
+        <ColumnsMenu
+          catalog={props.catalog}
           order={props.order}
           visibleKeys={props.visibleKeys}
           onToggle={props.onToggleColumn}

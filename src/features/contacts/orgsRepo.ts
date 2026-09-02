@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, getTableColumns, isNull } from "drizzle-orm";
+import { and, eq, getTableColumns, isNull } from "drizzle-orm";
 import { AppError, ERROR_IDS } from "@/constants/errorIds";
 import type { Db } from "@/db/client";
 import type { Organization } from "@/db/schema";
@@ -17,7 +17,7 @@ import {
 } from "./contactFilter";
 import { validateContactCustomFields } from "./customFieldsValidation";
 import { orgCounts } from "./orgCounts";
-import { orgSortColumn } from "./orgSort";
+import { orgOrderBy } from "./orgSort";
 import type { ContactActor } from "./personsRepo";
 import { resolveOwnerUpdate } from "./resolveOwnerUpdate";
 import type { OrgCreateInput, OrgSortField, OrgUpdateInput } from "./schemas";
@@ -219,6 +219,7 @@ export async function getOrg(
 
 // A listOrgs row: the organization record plus visibility-gated counts (Task 19).
 interface OrgListRow extends Organization {
+  customFields: Record<string, unknown>;
   peopleCount: number;
   // Pipedrive splits the org list's deal count into Closed (won+lost) and Open columns.
   closedDeals: number;
@@ -247,8 +248,6 @@ export async function listOrgs(
 ): Promise<ListOrgsResult> {
   signal.throwIfAborted();
 
-  const orderDir = opts.sort?.dir === "desc" ? desc : asc;
-  const orderCol = opts.sort !== undefined ? orgSortColumn(opts.sort.field) : orgSortColumn("name");
   // Server-side condition filter, AND-ed after the not-deleted guard and before the JS visibility
   // filter (so hidden rows never leak). Null when no conditions were given.
   const filterSql =
@@ -267,7 +266,7 @@ export async function listOrgs(
     // id is the unique tiebreaker: name is non-unique, and load-more issues a separate
     // offset query per page, so equal-name rows straddling a boundary can dup or skip
     // without a stable secondary sort.
-    .orderBy(orderDir(orderCol), organizations.id);
+    .orderBy(await orgOrderBy(db, opts.sort, signal), organizations.id);
   signal.throwIfAborted();
 
   const visible = rows.filter((row) => canSee(actor, toVisibleRecord(row)));
@@ -287,6 +286,7 @@ export async function listOrgs(
     total: visible.length,
     rows: page.map((row) => ({
       ...row,
+      customFields: row.customFields as Record<string, unknown>,
       peopleCount: peopleCounts.get(row.id) ?? 0,
       closedDeals: closedDealCounts.get(row.id) ?? 0,
       openDeals: openDealCounts.get(row.id) ?? 0,
