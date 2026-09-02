@@ -15,7 +15,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useLabelColorResolver } from "@/features/labels/useLabelColorResolver";
 import { capture, currentRoute } from "@/features/observability/capture";
 import { EVENTS } from "@/features/observability/events";
+import { hasDateCondition } from "@/features/saved-filters/filterFields";
 import type { FilterDefinition } from "@/features/saved-filters/schemas";
+import { browserTimeZone } from "@/lib/browserTimeZone";
 import { trpc } from "@/lib/trpc-client";
 import { BoardEmpty } from "./BoardEmpty";
 import { BoardHeader } from "./BoardHeader";
@@ -66,14 +68,17 @@ export function Board(props: BoardProps): React.ReactNode {
   // event (useBoardRealtime) re-renders the board immediately, without a reload. Seeded from
   // the server-rendered cards; invalidation reconciles via the tRPC board query. This closes
   // the bug where a dropped card only appeared in its new column after an F5.
+  const activeDefinition = previewDefinition ?? inlineDefinition ?? savedFilter?.definition;
   const boardQuery = useQuery({
     queryKey: BOARD_QUERY_KEY(pipelineId),
     queryFn: () =>
       utils.client.deal.board.query({
         pipelineId,
-        definition: previewDefinition ?? inlineDefinition ?? savedFilter?.definition,
+        definition: activeDefinition,
+        timeZone: browserTimeZone(),
       }),
     initialData: { cards },
+    initialDataUpdatedAt: hasDateCondition(activeDefinition) ? 0 : undefined,
     staleTime: 5_000,
   });
   const liveCards = boardQuery.data.cards;

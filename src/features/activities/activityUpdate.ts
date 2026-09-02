@@ -17,7 +17,7 @@ import type { PermSetUser } from "@/features/permissions/effective";
 import { assertReferenceVisible } from "@/features/permissions/referenceCheck";
 import type { DbOrTx } from "@/server/realtime/channelVersions";
 import { err, ok, type Result } from "@/types/result";
-import { recomputeNextActivity } from "./nextActivity";
+import { recomputeDealsActivityDates } from "./nextActivity";
 import { type ActivityUpdateInput, activityUpdateInput } from "./schemas";
 import { resolveActivityVisibility } from "./visibility";
 
@@ -231,7 +231,7 @@ export async function updateActivity(
     const affectedDeals = new Set<string>();
     if (row.dealId !== null) affectedDeals.add(row.dealId);
     if (current.dealId !== null && current.dealId !== row.dealId) affectedDeals.add(current.dealId);
-    for (const dealId of affectedDeals) await recomputeNextActivity(tx, dealId, signal);
+    await recomputeDealsActivityDates(tx, affectedDeals, signal);
 
     return ok(row);
   });

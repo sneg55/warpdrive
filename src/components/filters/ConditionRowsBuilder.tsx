@@ -91,7 +91,7 @@ export function ConditionRowsBuilder({
           </span>
         ) : null}
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-96 space-y-2 p-2 text-sm">
+      <PopoverContent align="start" className="w-[36rem] space-y-2 p-2 text-sm">
         <ConditionRows
           fields={fields}
           opLabels={opLabels}

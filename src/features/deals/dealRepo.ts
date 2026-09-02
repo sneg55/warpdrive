@@ -84,11 +84,11 @@ export async function getBoardColumns(
   pipelineId: string,
   signal: AbortSignal,
   filter?: FilterDefinition,
+  timeZone?: string | null,
 ): Promise<{ cards: BoardCard[] }> {
   signal.throwIfAborted();
   const visClause = dealVisibilityClause(session);
-  // filterToSql narrows only (boolean AND-able predicate over d/p); it cannot widen visibility.
-  const filterClause = filter !== undefined ? filterToSql(filter) : sql`true`;
+  const filterClause = filter !== undefined ? filterToSql(filter, { timeZone }) : sql`true`;
   const result = await db.execute(sql`
     SELECT
       d.id,
@@ -189,6 +189,7 @@ export async function listDeals(
     limit: number;
     archived?: boolean;
     filter?: FilterDefinition;
+    timeZone?: string | null;
   },
   signal: AbortSignal,
 ): Promise<{ rows: DealListCard[]; total: number; totalValue: string }> {
@@ -202,7 +203,8 @@ export async function listDeals(
     opts.archived === true ? sql`d.archived_at IS NOT NULL` : sql`d.archived_at IS NULL`;
   const statusGate = opts.archived === true ? sql`` : sql`AND d.status = 'open'`;
   const visClause = dealVisibilityClause(session);
-  const filterClause = opts.filter !== undefined ? filterToSql(opts.filter) : sql`true`;
+  const filterClause =
+    opts.filter !== undefined ? filterToSql(opts.filter, { timeZone: opts.timeZone }) : sql`true`;
   const base = sql`
     FROM deals d
     JOIN pipelines p ON p.id = d.pipeline_id

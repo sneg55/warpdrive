@@ -26,6 +26,7 @@ export function PersonSection({
   customFieldDefs = [],
   currency = "USD",
   showLabels = false,
+  onSaved,
 }: {
   person: Person;
   menuItems: SectionHeaderMenuItem[];
@@ -36,12 +37,18 @@ export function PersonSection({
   customFieldDefs?: CustomFieldDef[];
   currency?: string;
   showLabels?: boolean;
+  onSaved?: () => void;
 }): React.ReactNode {
   return (
     <CollapsibleSection
       title="Person"
       headerActions={() => (
-        <EnrichButton entityType="person" entityId={person.id} entityName={person.name}>
+        <EnrichButton
+          entityType="person"
+          entityId={person.id}
+          entityName={person.name}
+          onApplied={onSaved}
+        >
           {(fill) => (
             <SectionHeaderMenu
               sectionLabel="Person"
@@ -60,6 +67,7 @@ export function PersonSection({
         hidden={hidden}
         customFieldDefs={customFieldDefs}
         currency={currency}
+        onSaved={onSaved}
       />
       {showLabels && !bulkEditing ? (
         <ContactLabelsControl entityType="person" entityId={person.id} labels={person.labels} />

@@ -6,7 +6,7 @@ import { can } from "@/features/permissions/can";
 import { canSee } from "@/features/permissions/canSee";
 import type { PermSetUser } from "@/features/permissions/effective";
 import { err, ok, type Result } from "@/types/result";
-import { recomputeNextActivity } from "./nextActivity";
+import { recomputeDealActivityDates } from "./nextActivity";
 import { resolveActivityVisibility } from "./visibility";
 
 // Soft-delete: mirrors completeActivity's gate order (load -> visibility 404 -> permission 403 ->
@@ -51,7 +51,7 @@ export async function deleteActivity(
     }
 
     if (row.dealId !== null) {
-      await recomputeNextActivity(tx, row.dealId, signal);
+      await recomputeDealActivityDates(tx, row.dealId, signal);
     }
 
     return ok({ id: row.id });

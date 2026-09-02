@@ -10,12 +10,18 @@ const PEOPLE_LOAD_FAILED = "Could not load people to link.";
 
 export function ParticipantLinkField({
   linked,
+  orgId,
   onPick,
 }: {
   linked: ReadonlyArray<{ id: string; name: string }>;
+  orgId: string | null;
   onPick: (pick: EntityPick) => Promise<string | null>;
 }): React.ReactNode {
   const peopleQ = trpc.contacts.personOptions.useQuery();
+  const orgPeopleQ = trpc.contacts.listPeopleForOrg.useQuery(
+    { orgId: orgId ?? "" },
+    { enabled: orgId !== null },
+  );
   const [error, setError] = useState<string | null>(null);
   const [resetKey, setResetKey] = useState(0);
   const inFlight = useRef(false);
@@ -47,10 +53,13 @@ export function ParticipantLinkField({
   }
 
   const people = peopleQ.data;
+  const orgPeople = orgPeopleQ.data?.map((p) => ({ id: p.id, name: p.name }));
+  const awaitingOrgPeople =
+    orgId !== null && orgPeople === undefined && orgPeopleQ.isError !== true;
   const message = peopleQ.isError ? PEOPLE_LOAD_FAILED : error;
   return (
     <div className="w-64">
-      {people === undefined ? (
+      {people === undefined || awaitingOrgPeople ? (
         <Input aria-label={PLACEHOLDER} placeholder={PLACEHOLDER} disabled readOnly />
       ) : (
         <EntityCombobox
@@ -58,6 +67,7 @@ export function ParticipantLinkField({
           label={PLACEHOLDER}
           hideLabel
           options={people}
+          defaultOptions={orgPeople}
           excludeIds={linkedIds}
           placeholder={PLACEHOLDER}
           createLabel={(q) => `Add '${q}' as new person`}

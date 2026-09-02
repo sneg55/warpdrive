@@ -13,6 +13,7 @@ import {
   files,
   notes,
 } from "@/db/schema";
+import { recomputeDealActivityDates } from "@/features/activities/nextActivity";
 
 export type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0];
 
@@ -20,9 +21,10 @@ export async function repointDealChildren(
   tx: Tx,
   sourceId: string,
   targetId: string,
+  signal: AbortSignal,
 ): Promise<void> {
-  // Single-FK children: unconditional repoint.
   await tx.update(activities).set({ dealId: targetId }).where(eq(activities.dealId, sourceId));
+  await recomputeDealActivityDates(tx, targetId, signal);
   await tx.update(emailThreads).set({ dealId: targetId }).where(eq(emailThreads.dealId, sourceId));
   await tx
     .update(notes)

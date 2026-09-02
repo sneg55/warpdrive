@@ -87,7 +87,7 @@ export async function mergeDeals(
         .returning({ id: deals.id });
       if (deleted === undefined) throw new MergeConflict();
 
-      await repointDealChildren(tx, input.sourceDealId, input.targetDealId);
+      await repointDealChildren(tx, input.sourceDealId, input.targetDealId, signal);
 
       await recordChange(
         tx,

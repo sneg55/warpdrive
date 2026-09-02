@@ -1,9 +1,9 @@
 "use client";
 import type React from "react";
-import { DatePicker } from "@/components/ui/DatePicker";
 import { Input } from "@/components/ui/Input";
 import { MultiCombobox } from "@/components/ui/MultiCombobox";
 import { Select, type SelectOption } from "@/components/ui/Select";
+import { DateConditionValue } from "./DateConditionValue";
 import { type RowValue, rowValueList, singleRowValue } from "./rowValue";
 
 // Value-input shape for a field: a plain text/number/date control, a branded Select, or a
@@ -52,15 +52,8 @@ export function ConditionValue({
     );
   }
   if (input?.kind === "date") {
-    const text = singleRowValue(value);
     return (
-      <DatePicker
-        ariaLabel={ariaLabel}
-        value={text === "" ? null : text}
-        onChange={(v) => onChange(v ?? "")}
-        placeholder="Value"
-        triggerClassName="w-full rounded-md border px-2 py-1 text-left text-sm hover:bg-accent"
-      />
+      <DateConditionValue ariaLabel={ariaLabel} value={singleRowValue(value)} onChange={onChange} />
     );
   }
   return (

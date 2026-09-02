@@ -49,6 +49,8 @@ function representativeCondition(field: AstField, seed: SeedRefs): Condition {
     ownerId: { field: "ownerId", op: "eq", value: seed.ownerId },
     stageId: { field: "stageId", op: "eq", value: seed.stageId },
     expectedCloseDate: { field: "expectedCloseDate", op: "gte", value: SEED_CLOSE_DATE },
+    nextActivityAt: { field: "nextActivityAt", op: "isEmpty" },
+    lastActivityAt: { field: "lastActivityAt", op: "isEmpty" },
     labels: { field: "labels", op: "eq", value: SEED_LABEL },
   };
   const cond = byField[field];

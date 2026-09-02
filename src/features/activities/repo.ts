@@ -17,7 +17,7 @@ import type { PermSetUser } from "@/features/permissions/effective";
 import { assertReferenceVisible } from "@/features/permissions/referenceCheck";
 import type { DbOrTx } from "@/server/realtime/channelVersions";
 import { err, ok, type Result } from "@/types/result";
-import { recomputeNextActivity } from "./nextActivity";
+import { recomputeDealActivityDates } from "./nextActivity";
 import { scheduleReminder } from "./reminders";
 import { type ActivityCreateInput, activityCreateInput } from "./schemas";
 import { resolveActivityVisibility } from "./visibility";
@@ -196,7 +196,7 @@ export async function createActivity(
     }
 
     if (row.dealId !== null) {
-      await recomputeNextActivity(tx, row.dealId, signal);
+      await recomputeDealActivityDates(tx, row.dealId, signal);
     }
 
     return ok(row);
@@ -249,7 +249,7 @@ export async function completeActivity(
     }
 
     if (row.dealId !== null) {
-      await recomputeNextActivity(tx, row.dealId, signal);
+      await recomputeDealActivityDates(tx, row.dealId, signal);
     }
 
     return ok(row);

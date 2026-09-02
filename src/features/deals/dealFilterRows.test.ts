@@ -128,6 +128,12 @@ describe("conditionRowIssue", () => {
     expect(conditionRowIssue([{ field: "value", op: "gt", value: "  " }], FIELDS)).toBeNull();
   });
 
+  it("passes a relative period on a date field", () => {
+    expect(
+      conditionRowIssue([{ field: "nextActivityAt", op: "eq", value: "last_week" }], FIELDS),
+    ).toBeNull();
+  });
+
   it("does not flag a valueless row as incomplete", () => {
     expect(conditionRowIssue([{ field: "value", op: "isEmpty", value: "" }], FIELDS)).toBeNull();
     expect(

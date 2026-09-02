@@ -2,7 +2,13 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { ARRAY_OPS, EXACT_OPS, FILTER_OP_KEYS, ORDERED_OPS, TEXT_OPS } from "@/constants/filterOps";
-import { FILTER_FIELDS, FILTER_OPS, OPS_BY_FIELD, SORT_DIRS } from "./filterFields";
+import {
+  DEAL_CONDITION_CONFIG,
+  FILTER_FIELDS,
+  FILTER_OPS,
+  OPS_BY_FIELD,
+  SORT_DIRS,
+} from "./filterFields";
 
 // The deal filter builder (a client component) imports OPS_BY_FIELD to populate its operator
 // dropdown. These constants live in a zod-free module so importing them does not drag zod
@@ -16,6 +22,8 @@ describe("filterFields", () => {
     expect(OPS_BY_FIELD.orgName).toBe(TEXT_OPS);
     expect(OPS_BY_FIELD.value).toBe(ORDERED_OPS);
     expect(OPS_BY_FIELD.expectedCloseDate).toBe(ORDERED_OPS);
+    expect(OPS_BY_FIELD.nextActivityAt).toBe(ORDERED_OPS);
+    expect(OPS_BY_FIELD.lastActivityAt).toBe(ORDERED_OPS);
     expect(OPS_BY_FIELD.status).toBe(EXACT_OPS);
     expect(OPS_BY_FIELD.stageId).toBe(EXACT_OPS);
     expect(OPS_BY_FIELD.ownerId).toBe(EXACT_OPS);
@@ -37,6 +45,14 @@ describe("filterFields", () => {
   it("puts contains first on text fields so it is the default op", () => {
     expect(OPS_BY_FIELD.title[0]).toBe("contains");
     expect(OPS_BY_FIELD.orgName[0]).toBe("contains");
+  });
+
+  it("validates every date-typed column as a date field", () => {
+    expect(DEAL_CONDITION_CONFIG.dateFields).toEqual([
+      "expectedCloseDate",
+      "nextActivityAt",
+      "lastActivityAt",
+    ]);
   });
 
   it("covers exactly the declared filter fields", () => {

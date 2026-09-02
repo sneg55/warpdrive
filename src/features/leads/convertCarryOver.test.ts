@@ -152,6 +152,34 @@ describe("convertLead carries the lead's history onto the deal", () => {
     });
   });
 
+  it("derives the deal's next and last activity dates from the copied activities", async () => {
+    await withTestDb(async (db) => {
+      const owner = await seedUser(db);
+      const pipe = await seedPipelineWithStages(db, ["Qualify"]);
+      await seedSettings(db, { defaultPipelineId: pipe.pipeline.id });
+      const typeId = await anyActivityType(db);
+      const lead = await insertLead(db, owner.id);
+      const base = { typeId, ownerId: owner.id, assigneeId: owner.id, leadId: lead.id };
+      await db.insert(activities).values([
+        { ...base, subject: "done call", done: true, dueAt: new Date("2026-08-01T10:00:00Z") },
+        { ...base, subject: "open call", done: false, dueAt: new Date("2030-01-01T10:00:00Z") },
+      ]);
+
+      const r = await convertLead(
+        db,
+        session(owner.id),
+        { leadId: lead.id, expectedUpdatedAt: lead.updatedAt.toISOString() },
+        sig(),
+      );
+      expect(r).toMatchObject({ ok: true });
+      if (!r.ok) return;
+
+      const [deal] = await db.select().from(deals).where(eq(deals.id, r.value.dealId));
+      expect(deal?.nextActivityAt?.toISOString()).toBe("2030-01-01T10:00:00.000Z");
+      expect(deal?.lastActivityAt?.toISOString()).toBe("2026-08-01T10:00:00.000Z");
+    });
+  });
+
   // The copy is a separate row, so a column added to activities has to be listed in
   // copyActivities or the deal's copy silently falls back to the database default.
   it("keeps an all-day activity date-only when the lead converts", async () => {

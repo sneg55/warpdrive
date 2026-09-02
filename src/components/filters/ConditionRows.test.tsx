@@ -111,7 +111,7 @@ describe("ConditionRows", () => {
   it("keeps the value slot in place so the operator dropdown does not resize", () => {
     const { container, rerender } = renderRows([row({ op: "gt", value: "5" })]);
     const slot = () => container.querySelector('[data-slot="condition-value"]');
-    expect(slot()?.className).toContain("flex-[2]");
+    expect(slot()?.className).toContain("flex-[4]");
     rerender(
       <ConditionRows
         fields={FIELDS}
@@ -122,8 +122,14 @@ describe("ConditionRows", () => {
         onCombinatorChange={vi.fn()}
       />,
     );
-    expect(slot()?.className).toContain("flex-[2]");
+    expect(slot()?.className).toContain("flex-[4]");
     expect(slot()?.childElementCount).toBe(0);
+  });
+
+  it("gives the field column more room than the operator so long labels stay on one line", () => {
+    renderRows([row({ field: "closes", op: "gt" })]);
+    expect(screen.getByLabelText("Condition 1 field").className).toContain("flex-[3]");
+    expect(screen.getByLabelText("Condition 1 operator").className).toContain("flex-[2]");
   });
 
   it("drops a typed value when the operator switches to one that takes none", () => {
@@ -164,8 +170,7 @@ describe("ConditionRows", () => {
   // does no layout, so the shrink classes are the only thing a test can hold here.
   it("lets the field and operator selects shrink instead of claiming the row", () => {
     renderRows([row()]);
-    for (const label of ["Condition 1 field", "Condition 1 operator"]) {
-      expect(screen.getByLabelText(label)).toHaveClass("min-w-0", "flex-1");
-    }
+    expect(screen.getByLabelText("Condition 1 field")).toHaveClass("min-w-0", "flex-[3]");
+    expect(screen.getByLabelText("Condition 1 operator")).toHaveClass("min-w-0", "flex-[2]");
   });
 });

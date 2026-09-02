@@ -2,6 +2,7 @@
 // leads). The field metadata is supplied by each feature's zod-free config module, so the client
 // dropdowns and this server allow-list stay in lockstep without the client importing zod.
 import { z } from "zod";
+import { isDateConditionValue } from "@/constants/dateFilterPresets";
 import { FILTER_OP_KEYS, VALUELESS_OPS } from "@/constants/filterOps";
 
 // Which fields exist, which operators each field's column type can run, and the column classes
@@ -76,8 +77,8 @@ export function refineCondition(
   if (config.numericFields.includes(c.field) && !Number.isFinite(Number(c.value))) {
     issue(ctx, `field "${c.field}" needs a numeric value`, "value");
   }
-  if (config.dateFields?.includes(c.field) === true && Number.isNaN(Date.parse(String(c.value)))) {
-    issue(ctx, `field "${c.field}" needs a date value`, "value");
+  if (config.dateFields?.includes(c.field) === true && !isDateConditionValue(String(c.value))) {
+    issue(ctx, `field "${c.field}" needs a date value or a relative period`, "value");
   }
 }
 

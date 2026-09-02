@@ -7,10 +7,6 @@ import { CollapsibleSection } from "../CollapsibleSection";
 import { ParticipantsDialog } from "../ParticipantsDialog";
 import { useParticipants } from "../useParticipants";
 
-// Sidebar Participants section (Pipedrive parity): person-link rows, a header "+" quick-add, and
-// a "View All" button, both opening the participants table dialog. Matching PD's zero-state, the
-// section renders nothing while the deal has no participants (the Summary "+ Participants" CTA
-// is the entry point).
 export function ParticipantsSection({
   title,
   dealId,
@@ -24,7 +20,8 @@ export function ParticipantsSection({
 }): React.ReactNode {
   const [open, setOpen] = useState(false);
   const data = useParticipants(dealId, orgId);
-  if (data.participants.length === 0) return null;
+  const hasAddedParticipant = data.participants.some((p) => !p.isPrimary);
+  if (!hasAddedParticipant) return null;
 
   return (
     <CollapsibleSection
@@ -65,6 +62,7 @@ export function ParticipantsSection({
         open={open}
         onOpenChange={setOpen}
         title={orgName ?? "this deal"}
+        orgId={orgId}
         data={data}
       />
     </CollapsibleSection>

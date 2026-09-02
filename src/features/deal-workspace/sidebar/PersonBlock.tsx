@@ -38,10 +38,12 @@ export function PersonBlock({
   labels,
   customFieldDefs = [],
   currency = "USD",
+  onSaved,
 }: {
   person: Person;
   bulkEditing?: boolean;
   onExitBulk?: () => void;
+  onSaved?: () => void;
   // Built-in field keys hidden in Settings > Data fields (see BUILTIN_FIELDS.person). A hidden
   // contact-point row is neither shown nor offered in bulk edit, mirroring the person detail page.
   hidden?: ReadonlySet<string>;
@@ -61,6 +63,7 @@ export function PersonBlock({
     if (!r.ok) return { ok: false, errorId: r.error.id };
     // Refresh only after a committed write, and never let a refresh failure mask that success.
     refreshQuietly(router);
+    onSaved?.();
     return { ok: true };
   }
 

@@ -60,7 +60,10 @@ export function useParticipants(
       readCsrfToken(),
     );
     if (!r.ok) return createFailureMessage(r.error.id);
-    await utils.contacts.personOptions.invalidate();
+    await Promise.all([
+      utils.contacts.personOptions.invalidate(),
+      orgId !== null ? utils.contacts.listPeopleForOrg.invalidate({ orgId }) : undefined,
+    ]);
     const linkError = await link(r.value.id);
     if (linkError !== null) return `${name} was created but could not be linked (${linkError})`;
     return null;

@@ -145,6 +145,24 @@ describe("filterCondition with a valueless operator", () => {
   });
 });
 
+describe("filterCondition on a date field", () => {
+  it("accepts a relative preset key as the value", () => {
+    for (const field of ["nextActivityAt", "lastActivityAt", "expectedCloseDate"]) {
+      expect(filterCondition.safeParse({ field, op: "eq", value: "this_week" }).success).toBe(true);
+    }
+  });
+
+  it("accepts an absolute date and rejects other text", () => {
+    expect(
+      filterCondition.safeParse({ field: "nextActivityAt", op: "gte", value: "2026-09-02" })
+        .success,
+    ).toBe(true);
+    expect(
+      filterCondition.safeParse({ field: "nextActivityAt", op: "gte", value: "soon" }).success,
+    ).toBe(false);
+  });
+});
+
 describe("filterCondition with the Tier 2 text operators", () => {
   it("accepts startsWith and notContains on text fields", () => {
     for (const op of ["startsWith", "notContains"]) {

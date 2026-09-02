@@ -11,6 +11,8 @@ export const FILTER_FIELDS = [
   "stageId",
   "ownerId",
   "expectedCloseDate",
+  "nextActivityAt",
+  "lastActivityAt",
   "title",
   "orgName",
   "labels",
@@ -30,6 +32,8 @@ export const OPS_BY_FIELD: Record<(typeof FILTER_FIELDS)[number], readonly strin
   orgName: TEXT_OPS,
   value: ORDERED_OPS,
   expectedCloseDate: ORDERED_OPS,
+  nextActivityAt: ORDERED_OPS,
+  lastActivityAt: ORDERED_OPS,
   status: EXACT_OPS,
   stageId: EXACT_OPS,
   ownerId: EXACT_OPS,
@@ -38,10 +42,19 @@ export const OPS_BY_FIELD: Record<(typeof FILTER_FIELDS)[number], readonly strin
 
 // Column classes that need a value check beyond the op pairing: a numeric cast, a date parse, or
 // text[] membership. Fed to the shared condition validator in src/schemas/filterCondition.ts.
+export function hasDateCondition(
+  def: { conditions: readonly { field: string }[] } | null | undefined,
+): boolean {
+  if (def === null || def === undefined) return false;
+  return def.conditions.some((c) => (DATE_FIELDS as readonly string[]).includes(c.field));
+}
+
+const DATE_FIELDS = ["expectedCloseDate", "nextActivityAt", "lastActivityAt"] as const;
+
 export const DEAL_CONDITION_CONFIG = {
   fields: FILTER_FIELDS,
   opsByField: OPS_BY_FIELD,
   numericFields: ["value"],
-  dateFields: ["expectedCloseDate"],
+  dateFields: DATE_FIELDS,
   arrayFields: ["labels"],
 } as const;

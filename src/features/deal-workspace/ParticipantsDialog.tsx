@@ -12,11 +12,13 @@ export function ParticipantsDialog({
   open,
   onOpenChange,
   title,
+  orgId,
   data,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   title: string;
+  orgId: string | null;
   data: ReturnType<typeof useParticipants>;
 }): React.ReactNode {
   const { participants, add, remove, createAndAdd } = data;
@@ -32,6 +34,7 @@ export function ParticipantsDialog({
         {open && (
           <ParticipantLinkField
             linked={participants.map((p) => ({ id: p.personId, name: p.name }))}
+            orgId={orgId}
             onPick={(pick) => (pick.kind === "existing" ? add(pick.id) : createAndAdd(pick.name))}
           />
         )}
@@ -86,14 +89,18 @@ export function ParticipantsDialog({
                     {p.ownerName !== null ? formatUserName(p.ownerName) : "-"}
                   </td>
                   <td className="py-2 text-right">
-                    <button
-                      type="button"
-                      aria-label={`Remove ${p.name}`}
-                      onClick={() => void remove(p.personId).then(setRemoveError)}
-                      className="rounded p-1 text-muted-foreground hover:text-destructive"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
+                    {p.isPrimary && !p.isExplicit ? (
+                      <span className="text-xs text-muted-foreground">Deal contact</span>
+                    ) : (
+                      <button
+                        type="button"
+                        aria-label={`Remove ${p.name}`}
+                        onClick={() => void remove(p.personId).then(setRemoveError)}
+                        className="rounded p-1 text-muted-foreground hover:text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}

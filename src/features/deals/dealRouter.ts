@@ -1,9 +1,12 @@
 import { z } from "zod";
+import type { Db } from "@/db/client";
 import { attachRefLabels } from "@/features/custom-fields/refLabels";
 import { listParticipants } from "@/features/deal-workspace/participantsList";
+import { getPreferences } from "@/features/identity/preferencesRepo";
+import { hasDateCondition } from "@/features/saved-filters/filterFields";
 import { parseSavedFilterDefinition } from "@/features/saved-filters/parseDefinition";
 import { listSavedFilterViews } from "@/features/saved-filters/savedFilterList";
-import { filterDefinition } from "@/features/saved-filters/schemas";
+import { type FilterDefinition, filterDefinition } from "@/features/saved-filters/schemas";
 import { protectedProcedure, router } from "@/server/trpc/trpc";
 import type { DealVisibilitySession } from "@/types/session";
 import { getBoardColumns, getStageSums, listDeals } from "./dealRepo";
@@ -27,18 +30,39 @@ export function actorToSession(actor: {
   };
 }
 
+const timeZoneInput = z.string().max(64).optional();
+
+async function viewerTimeZone(
+  db: Db,
+  userId: string,
+  definition: FilterDefinition | undefined,
+  requestZone: string | undefined,
+  signal: AbortSignal,
+): Promise<string | null> {
+  if (!hasDateCondition(definition)) return null;
+  return (await getPreferences(db, userId, signal)).timezone ?? requestZone ?? null;
+}
+
 export const dealRouter = router({
   board: protectedProcedure
-    .input(z.object({ pipelineId: z.string().uuid(), definition: filterDefinition.optional() }))
-    .query(({ ctx, input }) =>
-      getBoardColumns(
+    .input(
+      z.object({
+        pipelineId: z.string().uuid(),
+        definition: filterDefinition.optional(),
+        timeZone: timeZoneInput,
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      const signal = AbortSignal.timeout(10_000);
+      return getBoardColumns(
         ctx.db,
         actorToSession(ctx.actor),
         input.pipelineId,
-        AbortSignal.timeout(10_000),
+        signal,
         input.definition,
-      ),
-    ),
+        await viewerTimeZone(ctx.db, ctx.actor.id, input.definition, input.timeZone, signal),
+      );
+    }),
   stageSums: protectedProcedure
     .input(z.object({ pipelineId: z.string().uuid() }))
     .query(({ ctx, input }) =>
@@ -59,6 +83,7 @@ export const dealRouter = router({
         limit: z.number().int().min(1).max(500).default(50),
         archived: z.boolean().optional(),
         definition: filterDefinition.optional(),
+        timeZone: timeZoneInput,
       }),
     )
     .query(async ({ ctx, input }) => {
@@ -72,6 +97,13 @@ export const dealRouter = router({
           limit: input.limit,
           archived: input.archived,
           filter: input.definition,
+          timeZone: await viewerTimeZone(
+            ctx.db,
+            ctx.actor.id,
+            input.definition,
+            input.timeZone,
+            signal,
+          ),
         },
         signal,
       );

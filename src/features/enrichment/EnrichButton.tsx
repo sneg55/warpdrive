@@ -32,6 +32,7 @@ interface EnrichButtonProps {
   entityType: EnrichEntity;
   entityId: string;
   entityName: string;
+  onApplied?: () => void;
   children: (fill: FillGapsProps) => React.ReactNode;
 }
 
@@ -77,6 +78,7 @@ export function EnrichButton({
   entityType,
   entityId,
   entityName,
+  onApplied,
   children,
 }: EnrichButtonProps): React.ReactNode {
   const router = useRouter();
@@ -171,6 +173,7 @@ export function EnrichButton({
   function refreshAfterApply(appliedTo: string): void {
     void utils.contacts.contactTimeline.invalidate({ entityType, entityId: appliedTo });
     router.refresh();
+    onApplied?.();
   }
 
   async function apply(selections: Selection[]): Promise<void> {

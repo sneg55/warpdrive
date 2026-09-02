@@ -26,7 +26,13 @@ vi.mock("@/utils/csrfCookie", () => ({ readCsrfToken: () => "csrf" }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh }) }));
 vi.mock("@/lib/trpc-client", () => ({
   trpc: {
-    useUtils: () => ({ deal: { participants: { invalidate: vi.fn() } } }),
+    useUtils: () => ({
+      deal: { participants: { invalidate: vi.fn() } },
+      contacts: {
+        dealsForPerson: { invalidate: vi.fn() },
+        personOptions: { invalidate: vi.fn() },
+      },
+    }),
     enrichment: { status: { useQuery: () => ({ data: { ready: false, providers: [] } }) } },
     labels: { listByTarget: { useQuery: () => ({ data: [] }) } },
     deal: { participants: { useQuery: () => ({ data: [] }) } },

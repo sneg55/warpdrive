@@ -40,6 +40,18 @@ vi.mock("@/features/contacts/actions", () => ({
 
 vi.mock("@/utils/csrfCookie", () => ({ readCsrfToken: () => "csrf" }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn(), push: vi.fn() }) }));
+const { invalidateParticipants } = vi.hoisted(() => ({ invalidateParticipants: vi.fn() }));
+vi.mock("@/lib/trpc-client", () => ({
+  trpc: {
+    useUtils: () => ({
+      deal: { participants: { invalidate: invalidateParticipants } },
+      contacts: {
+        dealsForPerson: { invalidate: vi.fn() },
+        personOptions: { invalidate: vi.fn() },
+      },
+    }),
+  },
+}));
 
 const OPTIONS: PersonMatchCandidate[] = [
   {
@@ -125,6 +137,7 @@ describe("DealPersonSection with no linked person", () => {
       ),
     );
     expect(createPersonAction).not.toHaveBeenCalled();
+    await waitFor(() => expect(invalidateParticipants).toHaveBeenCalledWith({ dealId: "d1" }));
   });
 
   it("creates a new person and links it when nothing matches", async () => {

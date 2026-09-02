@@ -54,7 +54,10 @@ vi.mock("@/lib/trpc-client", () => ({
   trpc: {
     useUtils: () => ({
       deal: { participants: { invalidate: vi.fn() } },
-      contacts: { personOptions: { invalidate: invalidatePersonOptions } },
+      contacts: {
+        personOptions: { invalidate: invalidatePersonOptions },
+        listPeopleForOrg: { invalidate: vi.fn() },
+      },
     }),
     deal: {
       participants: {
@@ -79,6 +82,7 @@ vi.mock("@/lib/trpc-client", () => ({
       personOptions: {
         useQuery: () => personOptionsQuery.current,
       },
+      listPeopleForOrg: { useQuery: () => ({ data: [] }) },
     },
     labels: {
       listByTarget: {

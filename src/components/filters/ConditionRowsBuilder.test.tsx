@@ -33,6 +33,21 @@ describe("ConditionRowsBuilder", () => {
     expect(onApply).toHaveBeenCalledWith([{ field: "value", op: "gt", value: "1000" }], "and");
   });
 
+  it("opens a popover wide enough for a date row with a period select and a picker", () => {
+    render(
+      <ConditionRowsBuilder
+        fields={FIELDS}
+        opLabels={OP_LABELS}
+        activeCount={0}
+        onApply={vi.fn()}
+        onClear={vi.fn()}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Filter" }));
+    const content = screen.getByRole("button", { name: "Apply" }).closest(".w-\\[36rem\\]");
+    expect(content).not.toBeNull();
+  });
+
   it("shows the active-condition count badge", () => {
     render(
       <ConditionRowsBuilder

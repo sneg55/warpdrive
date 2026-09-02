@@ -1,5 +1,6 @@
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { activities, activityGuests, activityParticipants, emailThreads } from "@/db/schema";
+import { recomputeDealActivityDates } from "@/features/activities/nextActivity";
 import type { DbOrTx } from "@/server/realtime/channelVersions";
 
 // Carry a converted lead's history onto the new deal, inside the convert transaction so the deal is
@@ -31,6 +32,7 @@ export async function carryLeadHistoryToDeal(
   args.signal.throwIfAborted();
 
   await copyActivities(tx, args);
+  await recomputeDealActivityDates(tx, args.dealId, args.signal);
 
   // Email: add the deal link, keep the lead link. Only threads not already tied to another deal.
   await tx

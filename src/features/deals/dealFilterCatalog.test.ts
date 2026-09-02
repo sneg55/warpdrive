@@ -15,8 +15,19 @@ describe("dealFilterFields", () => {
       "ownerId",
       "stageId",
       "expectedCloseDate",
+      "nextActivityAt",
+      "lastActivityAt",
       "labels",
     ]);
+  });
+
+  it("offers the activity dates as date fields with Pipedrive's labels", () => {
+    const fields = dealFilterFields();
+    const byField = (name: string) => fields.find((f) => f.field === name);
+    expect(byField("nextActivityAt")?.label).toBe("Next activity date");
+    expect(byField("nextActivityAt")?.input.kind).toBe("date");
+    expect(byField("lastActivityAt")?.label).toBe("Last activity date");
+    expect(byField("lastActivityAt")?.input.kind).toBe("date");
   });
 
   it("never offers status (the board query hardcodes status = 'open')", () => {

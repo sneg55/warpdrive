@@ -69,6 +69,18 @@ export function dealFilterFields(sources: DealFilterCatalogSources = {}): DealFi
       input: { kind: "date" },
     },
     {
+      field: "nextActivityAt",
+      label: "Next activity date",
+      ops: OPS_BY_FIELD.nextActivityAt,
+      input: { kind: "date" },
+    },
+    {
+      field: "lastActivityAt",
+      label: "Last activity date",
+      ops: OPS_BY_FIELD.lastActivityAt,
+      input: { kind: "date" },
+    },
+    {
       field: "labels",
       label: "Label",
       ops: OPS_BY_FIELD.labels,

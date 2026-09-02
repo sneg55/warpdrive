@@ -23,12 +23,13 @@ import { BoardToolbar } from "./BoardToolbar";
 import { distinctBoardOwners, matchesOwnerFilter } from "./boardFilter";
 import { DEFAULT_SORT_DIRECTION, DEFAULT_SORT_KEY, type SortDirection } from "./boardSort";
 import { DealFilterBuilder } from "./DealFilterBuilder";
-import type { DealListProps, DealListRow } from "./DealList";
+import type { DealListProps } from "./DealList";
 import { DealList } from "./DealList";
 import { DealsEmpty } from "./DealsEmpty";
 import { DEAL_LIST_COLUMNS } from "./dealListColumns";
 import { DEAL_LIST_QUERY_ROOT } from "./dealListQueryKey";
 import { type DealListSortKey, sortRows } from "./dealListSort";
+import { fetchDealListRows } from "./fetchDealListRows";
 import { NewDealButton } from "./NewDealButton";
 import type { SavedFilterView } from "./savedFilterView";
 import { useDealListActions } from "./useDealListActions";
@@ -124,26 +125,12 @@ export function DealListClient({
       savedFilter?.id ?? "none",
       inlineDefinition ?? "none",
     ],
-    queryFn: async (): Promise<{
-      rows: DealListRow[];
-      total: number;
-      totalValue: string;
-      refLabels: CustomFieldRefLabels;
-    }> => {
-      const res = await utils.client.deal.list.query({
+    queryFn: () =>
+      fetchDealListRows(utils, {
         pipelineId,
-        offset: 0,
-        limit: 500,
-        archived: variant === "archived" ? true : undefined,
+        archived: variant === "archived",
         definition: inlineDefinition ?? savedFilter?.definition,
-      });
-      return {
-        rows: res.rows.map((r) => ({ ...r, updatedAt: r.updatedAt.toISOString() })),
-        total: res.total,
-        totalValue: res.totalValue,
-        refLabels: res.refLabels,
-      };
-    },
+      }),
     initialData: isUnfiltered
       ? {
           rows: initial.rows,

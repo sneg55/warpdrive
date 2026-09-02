@@ -14,6 +14,8 @@ export const DEAL_SIDEBAR_STRINGS = {
     fillGaps: "Fill the gaps",
     switchOrganization: "Switch to another organization",
     unlinkOrganization: "Unlink this organization",
+    switchPerson: "Switch to another person",
+    unlinkPerson: "Unlink this person",
     customizeFields: "Customize fields",
     customizeSummary: "Customize Summary",
     manageSections: "Manage sidebar sections",
@@ -26,6 +28,13 @@ export const DEAL_SIDEBAR_STRINGS = {
   orgDialog: {
     title: "Switch organization",
     organization: "Organization",
+    save: "Save",
+    cancel: "Cancel",
+  },
+  personDialog: {
+    title: "Switch person",
+    person: "Person",
+    loadFailed: "Could not load people to link.",
     save: "Save",
     cancel: "Cancel",
   },

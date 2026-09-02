@@ -31,12 +31,14 @@
 import { type SQL, sql } from "drizzle-orm";
 import { AppError, ERROR_IDS } from "@/constants/errorIds";
 import { labelMembershipSql } from "@/features/labels/labelMembershipSql";
+import { dateCondition } from "./filterAstDate";
 import {
   emptinessCondition,
   requireLabelValue,
   requireValue,
   scalarCondition,
 } from "./filterAstSql";
+import { DEAL_CONDITION_CONFIG } from "./filterFields";
 import type { FilterDefinition } from "./schemas";
 
 // FIELD ALLOW-LIST: maps the allowed field names to fixed, hardcoded SQL column
@@ -48,6 +50,8 @@ const COLUMN_SQL: Record<string, SQL> = {
   stageId: sql`d.stage_id`,
   ownerId: sql`d.owner_id`,
   expectedCloseDate: sql`d.expected_close_date`,
+  nextActivityAt: sql`d.next_activity_at`,
+  lastActivityAt: sql`d.last_activity_at`,
   title: sql`d.title`,
   // Organization name of the linked org. The deal board/list reads LEFT JOIN organizations o,
   // so o.name is in scope wherever this filter is applied (deals only).
@@ -59,7 +63,13 @@ const COLUMN_SQL: Record<string, SQL> = {
 // below instead of a scalar comparison.
 const ARRAY_FIELDS: ReadonlySet<string> = new Set(["labels"]);
 
-function conditionSql(c: FilterDefinition["conditions"][number]): SQL {
+const DATE_FIELDS: ReadonlySet<string> = new Set(DEAL_CONDITION_CONFIG.dateFields);
+
+export interface FilterCompileOptions {
+  timeZone?: string | null;
+}
+
+function conditionSql(c: FilterDefinition["conditions"][number], opts: FilterCompileOptions): SQL {
   // SECURITY: column comes from the allow-list ONLY; c.field never reaches SQL as text.
   const colSql = COLUMN_SQL[c.field];
   if (colSql === undefined) {
@@ -84,6 +94,10 @@ function conditionSql(c: FilterDefinition["conditions"][number]): SQL {
     });
   }
 
+  if (DATE_FIELDS.has(c.field)) {
+    return dateCondition(colSql, c.field, c.op, c.value, opts.timeZone);
+  }
+
   return scalarCondition(colSql, c.op, c.value);
 }
 
@@ -93,8 +107,8 @@ function conditionSql(c: FilterDefinition["conditions"][number]): SQL {
 // Throws AppError(E_DEAL_008) for unknown fields or operators (validation at
 // the boundary via Zod should prevent this in normal usage, but this function
 // is also called with typed inputs and must be independently safe).
-export function filterToSql(def: FilterDefinition): SQL {
-  const parts = def.conditions.map(conditionSql);
+export function filterToSql(def: FilterDefinition, opts: FilterCompileOptions = {}): SQL {
+  const parts = def.conditions.map((c) => conditionSql(c, opts));
 
   // Fold the user conditions with the combinator. A group of two or more is parenthesised so the
   // rotting AND below cannot bind tighter than an OR inside it.

@@ -70,9 +70,16 @@ const ready: EnrichmentStatus = {
   providers: [{ provider: "apollo", enabled: true, throttledUntilIso: null }],
 };
 
+const onApplied = vi.fn();
+
 function renderButton(): void {
   render(
-    <EnrichButton entityType="person" entityId={run.entityId} entityName="Jane Doe">
+    <EnrichButton
+      entityType="person"
+      entityId={run.entityId}
+      entityName="Jane Doe"
+      onApplied={onApplied}
+    >
       {(fill) => <SectionHeaderMenu sectionLabel="Person" menuItems={[]} {...fill} />}
     </EnrichButton>,
   );
@@ -167,6 +174,7 @@ it("applies the selection, closes, and refreshes the surface", async () => {
     "csrf-token",
   );
   await waitFor(() => expect(refresh).toHaveBeenCalledTimes(1));
+  await waitFor(() => expect(onApplied).toHaveBeenCalledTimes(1));
   await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
 });
 

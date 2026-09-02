@@ -16,6 +16,7 @@ export interface EntityComboboxProps {
   onClear: () => void;
   onPick?: (pick: EntityPick) => void;
   excludeIds?: ReadonlySet<string>;
+  defaultOptions?: Option[];
   placeholder?: string;
   // Shown under the field after choosing "create new" when an existing option looks like a
   // duplicate (e.g. "Similar organization already exists."). Omit to disable the warning.
@@ -42,7 +43,7 @@ const ROW = "block w-full px-2.5 py-1.5 text-left text-sm hover:bg-accent";
 export function EntityCombobox(props: EntityComboboxProps): React.ReactNode {
   const { label, options, createLabel, onSelectExisting, onCreateNew, onClear, placeholder } =
     props;
-  const { similarWarning, hideLabel, onPick, excludeIds } = props;
+  const { similarWarning, hideLabel, onPick, excludeIds, defaultOptions } = props;
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const [chosen, setChosen] = useState<"existing" | "new" | null>(null);
@@ -57,15 +58,24 @@ export function EntityCombobox(props: EntityComboboxProps): React.ReactNode {
     () => (excludeIds === undefined ? options : options.filter((o) => !excludeIds.has(o.id))),
     [options, excludeIds],
   );
+  const emptyQueryListed = useMemo(() => {
+    if (defaultOptions === undefined) return listed;
+    const narrowed =
+      excludeIds === undefined
+        ? defaultOptions
+        : defaultOptions.filter((o) => !excludeIds.has(o.id));
+    return narrowed.length > 0 ? narrowed : listed;
+  }, [defaultOptions, listed, excludeIds]);
   const similar = useMemo(
     () => (inReview && q !== "" ? findSimilarOptions(listed, query) : []),
     [inReview, q, query, listed],
   );
   const { exact, menuOptions } = useMemo(() => {
     const isExact = options.some((o) => o.name.trim().toLowerCase() === q);
-    const filtered = q === "" ? listed : listed.filter((o) => o.name.toLowerCase().includes(q));
+    const filtered =
+      q === "" ? emptyQueryListed : listed.filter((o) => o.name.toLowerCase().includes(q));
     return { exact: isExact, menuOptions: inReview ? similar : filtered };
-  }, [options, listed, q, inReview, similar]);
+  }, [options, listed, emptyQueryListed, q, inReview, similar]);
   const showCreate = q !== "" && !exact;
   // Warn only once the user has committed to creating new and the typed name looks like a duplicate.
   const showWarning = inReview && similarWarning !== undefined && similar.length > 0;

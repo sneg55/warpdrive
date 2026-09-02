@@ -40,6 +40,7 @@ export function ParticipantsControl({
         open={open}
         onOpenChange={setOpen}
         title={orgName ?? "this deal"}
+        orgId={orgId}
         data={data}
       />
     </>

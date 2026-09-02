@@ -73,6 +73,7 @@ it("re-parents S's children to T, dedups followers, soft-deletes S, and logs the
       ownerId: u.id,
       assigneeId: u.id,
       dealId: source.id,
+      dueAt: new Date("2030-01-01T10:00:00.000Z"),
     })
     .returning();
   const [note] = await h.db
@@ -114,6 +115,8 @@ it("re-parents S's children to T, dedups followers, soft-deletes S, and logs the
   // Children re-parented to T.
   const [movedAct] = await h.db.select().from(activities).where(eq(activities.id, act!.id));
   expect(movedAct?.dealId).toBe(target.id);
+  const [targetAfter] = await h.db.select().from(deals).where(eq(deals.id, target.id));
+  expect(targetAfter?.nextActivityAt?.toISOString()).toBe("2030-01-01T10:00:00.000Z");
   const [movedNote] = await h.db.select().from(notes).where(eq(notes.id, note!.id));
   expect(movedNote?.entityId).toBe(target.id);
   const [movedThread] = await h.db

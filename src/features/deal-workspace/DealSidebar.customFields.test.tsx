@@ -22,7 +22,13 @@ vi.mock("@/features/contacts/actions", () => ({
 // ParticipantsControl (Summary action list) queries tRPC on render; stub it.
 vi.mock("@/lib/trpc-client", () => ({
   trpc: {
-    useUtils: () => ({ deal: { participants: { invalidate: vi.fn() } } }),
+    useUtils: () => ({
+      deal: { participants: { invalidate: vi.fn() } },
+      contacts: {
+        dealsForPerson: { invalidate: vi.fn() },
+        personOptions: { invalidate: vi.fn() },
+      },
+    }),
     labels: { listByTarget: { useQuery: () => ({ data: [] }) } },
     deal: { participants: { useQuery: () => ({ data: [] }) } },
     contacts: { listPeopleForOrg: { useQuery: () => ({ data: [] }) } },

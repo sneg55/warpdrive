@@ -104,18 +104,16 @@ export function ConditionRows({
                 patch(i, { field: v, op: nextDef?.ops[0] ?? "", value: "" });
               }}
               options={fields.map((f) => ({ value: f.field, label: f.label }))}
-              triggerClassName="min-w-0 flex-1"
+              triggerClassName="min-w-0 flex-[3]"
             />
             <Select
               ariaLabel={`Condition ${i + 1} operator`}
               value={row.op}
               onChange={(v) => patch(i, { op: v, value: VALUELESS_OPS.has(v) ? "" : row.value })}
               options={(def?.ops ?? []).map((o) => ({ value: o, label: opLabels[o] ?? o }))}
-              triggerClassName="min-w-0 flex-1"
+              triggerClassName="min-w-0 flex-[2]"
             />
-            {/* The slot keeps its width when empty, so the operator dropdown does not resize. It
-                gets the larger share because it holds label chips and dates, not one short word. */}
-            <div data-slot="condition-value" className="min-w-0 flex-[2]">
+            <div data-slot="condition-value" className="min-w-0 flex-[4]">
               {VALUELESS_OPS.has(row.op) ? null : (
                 <ConditionValue
                   input={def?.input}

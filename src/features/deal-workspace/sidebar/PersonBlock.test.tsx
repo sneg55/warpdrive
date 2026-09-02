@@ -93,6 +93,30 @@ it("does NOT report a failure when the write succeeded but router.refresh throws
   await waitFor(() => expect(screen.queryByLabelText("editor-firstName")).not.toBeInTheDocument());
 });
 
+it("tells the surface a field was committed, so surface-owned reads can be refreshed", async () => {
+  const onSaved = vi.fn();
+  render(<PersonBlock person={{ ...blankPerson, firstName: "Mia" }} onSaved={onSaved} />);
+
+  fireEvent.click(screen.getByRole("button", { name: "Edit First name" }));
+  fireEvent.change(screen.getByLabelText("editor-firstName"), { target: { value: "Mira" } });
+  fireEvent.click(screen.getByRole("button", { name: "Save" }));
+
+  await waitFor(() => expect(onSaved).toHaveBeenCalledTimes(1));
+});
+
+it("does not announce a save the server refused", async () => {
+  updatePersonAction.mockResolvedValueOnce({ ok: false, error: { id: "E_PERM_001" } });
+  const onSaved = vi.fn();
+  render(<PersonBlock person={{ ...blankPerson, firstName: "Mia" }} onSaved={onSaved} />);
+
+  fireEvent.click(screen.getByRole("button", { name: "Edit First name" }));
+  fireEvent.change(screen.getByLabelText("editor-firstName"), { target: { value: "Mira" } });
+  fireEvent.click(screen.getByRole("button", { name: "Save" }));
+
+  await waitFor(() => expect(updatePersonAction).toHaveBeenCalled());
+  expect(onSaved).not.toHaveBeenCalled();
+});
+
 it("renders Phone as a tel: link and Email as a mailto: link", () => {
   const person = {
     ...blankPerson,

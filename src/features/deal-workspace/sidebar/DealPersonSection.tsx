@@ -2,13 +2,19 @@
 
 import { useRouter } from "next/navigation";
 import type React from "react";
+import { useState } from "react";
+import { STRINGS } from "@/constants/strings";
 import type { Person } from "@/db/schema";
 import type { PersonMatchCandidate } from "@/features/contacts/personOptionsRepo";
 import { useDealActionError } from "@/features/deal-workspace/DealActionErrorProvider";
+import { updateDealAction } from "@/features/deals/updateAction";
+import { trpc } from "@/lib/trpc-client";
 import type { CustomFieldDef } from "@/types/customFields";
+import { readCsrfToken } from "@/utils/csrfCookie";
 import { CollapsibleSection } from "../CollapsibleSection";
 import { PersonLinkEditor } from "./PersonLinkEditor";
 import { PersonSection } from "./PersonSection";
+import { PersonSwitchDialog } from "./PersonSwitchDialog";
 import { SectionHeaderMenu, type SectionHeaderMenuItem } from "./SectionHeaderMenu";
 import { SidebarFieldRow } from "./SidebarFieldRow";
 
@@ -58,20 +64,61 @@ export function DealPersonSection({
 }): React.ReactNode {
   const router = useRouter();
   const reportError = useDealActionError();
+  const utils = trpc.useUtils();
+  const [switchOpen, setSwitchOpen] = useState(false);
+  const menu = STRINGS.dealSidebar.menu;
+
+  async function savePersonLink(personId: string | null): Promise<void> {
+    const r = await updateDealAction({ dealId, expectedUpdatedAt, personId }, readCsrfToken());
+    if (!r.ok) {
+      reportError(r.error.id);
+      return;
+    }
+    setSwitchOpen(false);
+    await refreshLinkedReads();
+  }
+
+  async function refreshLinkedReads(): Promise<void> {
+    await Promise.all([
+      utils.deal.participants.invalidate({ dealId }),
+      utils.contacts.dealsForPerson.invalidate(),
+      utils.contacts.personOptions.invalidate(),
+    ]);
+    router.refresh();
+  }
 
   if (person !== null) {
     return (
-      <PersonSection
-        person={person}
-        menuItems={menuItems}
-        bulkEditing={bulkEditing}
-        onStartBulk={onStartBulk}
-        onExitBulk={onExitBulk}
-        hidden={hidden}
-        customFieldDefs={customFieldDefs}
-        currency={currency}
-        showLabels
-      />
+      <>
+        <PersonSection
+          person={person}
+          menuItems={[
+            { label: menu.switchPerson, onSelect: () => setSwitchOpen(true) },
+            {
+              label: menu.unlinkPerson,
+              onSelect: () => void savePersonLink(null),
+              destructive: true,
+            },
+            ...menuItems,
+          ]}
+          bulkEditing={bulkEditing}
+          onStartBulk={onStartBulk}
+          onExitBulk={onExitBulk}
+          hidden={hidden}
+          customFieldDefs={customFieldDefs}
+          currency={currency}
+          showLabels
+          onSaved={() => void refreshLinkedReads()}
+        />
+        {switchOpen && (
+          <PersonSwitchDialog
+            open
+            currentPersonId={person.id}
+            onOpenChange={setSwitchOpen}
+            onSave={savePersonLink}
+          />
+        )}
+      </>
     );
   }
 
@@ -91,7 +138,7 @@ export function DealPersonSection({
           customFieldDefs={customFieldDefs}
           onDone={() => {
             onExitBulk();
-            router.refresh();
+            void refreshLinkedReads();
           }}
           onError={reportError}
         />

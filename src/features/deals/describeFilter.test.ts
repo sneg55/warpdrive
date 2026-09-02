@@ -33,6 +33,15 @@ describe("describeRows", () => {
     ).toBe("Stage is Qualified and Label is not Hot");
   });
 
+  it("reads a relative period by its label and an exact date as typed", () => {
+    expect(describeRows([{ field: "nextActivityAt", op: "eq", value: "this_week" }], FIELDS)).toBe(
+      "Next activity date is This week",
+    );
+    expect(describeRows([{ field: "lastActivityAt", op: "lt", value: "2026-09-02" }], FIELDS)).toBe(
+      "Last activity date less than 2026-09-02",
+    );
+  });
+
   it("skips rows with no value and returns an empty string when nothing is set", () => {
     expect(describeRows([{ field: "title", op: "contains", value: "  " }], FIELDS)).toBe("");
   });

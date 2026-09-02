@@ -52,7 +52,13 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh }) }));
 const participantRows: unknown[] = [];
 vi.mock("@/lib/trpc-client", () => ({
   trpc: {
-    useUtils: () => ({ deal: { participants: { invalidate: vi.fn() } } }),
+    useUtils: () => ({
+      deal: { participants: { invalidate: vi.fn() } },
+      contacts: {
+        dealsForPerson: { invalidate: vi.fn() },
+        personOptions: { invalidate: vi.fn() },
+      },
+    }),
     enrichment: { status: { useQuery: () => ({ data: { ready: false, providers: [] } }) } },
     deal: { participants: { useQuery: () => ({ data: participantRows }) } },
     contacts: { listPeopleForOrg: { useQuery: () => ({ data: [] }) } },

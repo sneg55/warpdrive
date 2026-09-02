@@ -519,6 +519,13 @@
       "when": 1788295227278,
       "tag": "0073_lead_custom_fields",
       "breakpoints": true
+    },
+    {
+      "idx": 74,
+      "version": "7",
+      "when": 1788371581000,
+      "tag": "0074_backfill_deal_last_activity",
+      "breakpoints": true
     }
   ]
 }

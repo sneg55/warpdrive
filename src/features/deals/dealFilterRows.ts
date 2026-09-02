@@ -4,6 +4,7 @@ import type {
   RawCondition,
 } from "@/components/filters/ConditionRowsBuilder";
 import { completeRowValue, type RowValue } from "@/components/filters/rowValue";
+import { isDateConditionValue } from "@/constants/dateFilterPresets";
 import { VALUELESS_OPS } from "@/constants/filterOps";
 import {
   FILTER_FIELDS,
@@ -72,7 +73,7 @@ export function conditionRowIssue(
     if (def.input.kind === "number" && Number.isNaN(Number(value))) {
       return `${def.label} needs a number.`;
     }
-    if (def.input.kind === "date" && Number.isNaN(Date.parse(value))) {
+    if (def.input.kind === "date" && !isDateConditionValue(value)) {
       return `${def.label} needs a date.`;
     }
   }
