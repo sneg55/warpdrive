@@ -243,7 +243,8 @@ export function DealSidebar({
         customFields={deal.customFields as Record<string, unknown>}
         customFieldDefs={customFieldDefs}
         onSaveCustomFields={saveDealCustomFields}
-        title={sections.organization}
+        detailsTitle={sections.details}
+        detailsMenuItems={[dealFieldsItem]}
       />
     ),
 

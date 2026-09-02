@@ -145,7 +145,8 @@ export function LeadSidebar({
         customFields={lead.customFields as Record<string, unknown>}
         customFieldDefs={leadCustomFieldDefs}
         onSaveCustomFields={saveLeadCustomFields}
-        title="Organization"
+        detailsTitle={STRINGS.dealSidebar.sections.details}
+        detailsMenuItems={fieldsItem("lead")}
       />
 
       <CollapsibleSection

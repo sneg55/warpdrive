@@ -22,7 +22,8 @@ export function RecordOrganizationSection({
   customFields,
   customFieldDefs,
   onSaveCustomFields,
-  title,
+  detailsTitle,
+  detailsMenuItems,
 }: {
   hidden: boolean;
   org: Organization | null;
@@ -36,7 +37,8 @@ export function RecordOrganizationSection({
   customFields: Record<string, unknown>;
   customFieldDefs: CustomFieldDef[];
   onSaveCustomFields: CustomFieldsSave;
-  title: string;
+  detailsTitle: string;
+  detailsMenuItems: SectionHeaderMenuItem[];
 }): React.ReactNode {
   if (hidden) return null;
 
@@ -71,8 +73,10 @@ export function RecordOrganizationSection({
   if (customFieldDefs.length > 0) {
     return (
       <CollapsibleSection
-        title={title}
-        headerActions={() => <SectionHeaderMenu sectionLabel={title} menuItems={orgMenuItems} />}
+        title={detailsTitle}
+        headerActions={() => (
+          <SectionHeaderMenu sectionLabel={detailsTitle} menuItems={detailsMenuItems} />
+        )}
       >
         {detailsBlock}
       </CollapsibleSection>

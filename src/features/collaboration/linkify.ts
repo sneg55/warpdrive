@@ -6,7 +6,7 @@ export type LinkToken =
   | { kind: "email"; value: string; href: string };
 
 const TOKEN_RE =
-  /(\bhttps?:\/\/[^\s<>"“”‘’«»]+)|((?<![A-Za-z0-9._%+-])[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,})/gi;
+  /(\bhttps?:\/\/(?:(?!\]\(|\)\[)[^\s<>"“”‘’«»])+)|((?<![A-Za-z0-9._%+-])[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,})/gi;
 
 const URL_TRAILING_CHARS = new Set([".", ",", ";", ":", "!", "?", ")", "]", "'"]);
 const ESCAPED_APOSTROPHE = "&#39;";

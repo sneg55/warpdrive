@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { afterEach, expect, it, vi } from "vitest";
 import type { CustomFieldDef } from "@/types/customFields";
 import { DealSidebar } from "./DealSidebar";
@@ -113,8 +114,8 @@ it("renders an empty custom field with the same dash and hover-pencil mechanism 
     />,
   );
 
-  const organization = within(screen.getByRole("region", { name: "Organization" }));
-  const row = organization.getByText("linkedin").closest('[data-testid="field-row"]');
+  const details = within(screen.getByRole("region", { name: "Details" }));
+  const row = details.getByText("linkedin").closest('[data-testid="field-row"]');
   expect(row).not.toBeNull();
   expect(within(row as HTMLElement).getByText("-")).toBeInTheDocument();
   expect(
@@ -125,7 +126,8 @@ it("renders an empty custom field with the same dash and hover-pencil mechanism 
   ).not.toBeInTheDocument();
 });
 
-it("does not render a Probability row in the Organization section", () => {
+it("titles the deal custom fields Details, with the deal fields menu, when the deal has no organization", async () => {
+  const user = userEvent.setup();
   render(
     <DealSidebar
       workspace={makeWorkspace([def({ id: "d1", key: "notes", name: "Notes" })], { notes: "x" })}
@@ -134,12 +136,18 @@ it("does not render a Probability row in the Organization section", () => {
       baseCurrency="USD"
     />,
   );
-  const organization = within(screen.getByRole("region", { name: "Organization" }));
-  expect(organization.queryByText("Probability")).not.toBeInTheDocument();
-  expect(screen.queryByRole("region", { name: "Details" })).not.toBeInTheDocument();
+  const details = within(screen.getByRole("region", { name: "Details" }));
+  expect(details.getByText("Notes")).toBeInTheDocument();
+  expect(details.queryByText("Probability")).not.toBeInTheDocument();
+  expect(screen.queryByRole("region", { name: "Organization" })).not.toBeInTheDocument();
+  await user.click(details.getByRole("button", { name: "Details options" }));
+  expect(await screen.findByRole("menuitem", { name: "Customize fields" })).toBeInTheDocument();
+  expect(
+    screen.queryByRole("menuitem", { name: "Switch to another organization" }),
+  ).not.toBeInTheDocument();
 });
 
-it("the Organization section's hide-empty-fields funnel hides a blank deal custom field row", () => {
+it("the Details section's hide-empty-fields funnel hides a blank deal custom field row", () => {
   const customFieldDefs = [
     def({ id: "d1", key: "notes", name: "Notes" }),
     def({ id: "d2", key: "budget", name: "Budget", type: "monetary" }),
@@ -152,11 +160,10 @@ it("the Organization section's hide-empty-fields funnel hides a blank deal custo
       baseCurrency="USD"
     />,
   );
-  const organization = within(screen.getByRole("region", { name: "Organization" }));
-  expect(organization.getByText("Notes")).toBeInTheDocument();
-  expect(organization.getByText("Budget")).toBeInTheDocument();
-  fireEvent.click(organization.getByRole("button", { name: "Hide empty fields" }));
-  expect(organization.queryByText("Notes")).not.toBeInTheDocument();
-  // Budget has a real value, so it stays.
-  expect(organization.getByText("Budget")).toBeInTheDocument();
+  const details = within(screen.getByRole("region", { name: "Details" }));
+  expect(details.getByText("Notes")).toBeInTheDocument();
+  expect(details.getByText("Budget")).toBeInTheDocument();
+  fireEvent.click(details.getByRole("button", { name: "Hide empty fields" }));
+  expect(details.queryByText("Notes")).not.toBeInTheDocument();
+  expect(details.getByText("Budget")).toBeInTheDocument();
 });

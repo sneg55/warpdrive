@@ -60,7 +60,8 @@ const recordOrgProps = {
   customFields: {},
   customFieldDefs: [],
   onSaveCustomFields: () => Promise.resolve({ ok: true as const, value: {} }),
-  title: "Organization",
+  detailsTitle: "Details",
+  detailsMenuItems: [],
 };
 const dealPersonProps = {
   ...personProps,

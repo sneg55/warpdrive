@@ -218,7 +218,7 @@ it("renders one row per lead custom field inside the Organization section", () =
   expect(section.getByText("A")).toBeInTheDocument();
 });
 
-it("shows lead custom fields on an org-less lead as a bare Organization card", () => {
+it("titles lead custom fields Details, not Organization, on an org-less lead", () => {
   render(
     <LeadSidebar
       lead={{ ...baseLead, customFields: {} }}
@@ -228,8 +228,9 @@ it("shows lead custom fields on an org-less lead as a bare Organization card", (
       leadCustomFieldDefs={[leadDef({ key: "grade", name: "Grade" })]}
     />,
   );
-  const section = within(screen.getByRole("region", { name: "Organization" }));
+  const section = within(screen.getByRole("region", { name: "Details" }));
   expect(section.getByText("Grade")).toBeInTheDocument();
+  expect(screen.queryByRole("region", { name: "Organization" })).not.toBeInTheDocument();
 });
 
 it("saves an inline lead custom field through updateLeadAction", async () => {
