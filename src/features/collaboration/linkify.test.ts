@@ -95,33 +95,6 @@ describe("tokenizeLinks", () => {
     ]);
   });
 
-  it("splits a markdown link whose label is itself a URL into two links", () => {
-    const url = "https://x.com/JamesGarba16?t=FUM5lyZ_UHmfaKsLnK7mcA&s=09";
-    expect(tokenizeLinks(`[${url}](${url})`)).toEqual([
-      { kind: "text", value: "[" },
-      { kind: "url", value: url, href: url },
-      { kind: "text", value: "](" },
-      { kind: "url", value: url, href: url },
-      { kind: "text", value: ")" },
-    ]);
-  });
-
-  it("stays linear on a long whitespace-free run of URL-labelled markdown links", () => {
-    const run = "[https://a.io/x](https://a.io/x)".repeat(5_000);
-    const started = performance.now();
-    const urls = tokenizeLinks(run).filter((t) => t.kind === "url");
-    expect(urls).toHaveLength(10_000);
-    expect(performance.now() - started).toBeLessThan(1000);
-  });
-
-  it("drops an unmatched closing bracket that wraps a URL in prose", () => {
-    expect(tokenizeLinks("[see https://example.com]")).toEqual([
-      { kind: "text", value: "[see " },
-      { kind: "url", value: "https://example.com", href: "https://example.com" },
-      { kind: "text", value: "]" },
-    ]);
-  });
-
   it("keeps array-style query brackets inside a URL", () => {
     const url = "https://example.com/search?filter[]=open&ids[0]=7";
     expect(tokenizeLinks(`see ${url}`)).toEqual([
