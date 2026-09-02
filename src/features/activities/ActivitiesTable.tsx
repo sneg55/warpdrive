@@ -21,6 +21,7 @@ import { AddActivityModal } from "./AddActivityModal";
 import { completeActivityAction } from "./actions";
 import type { ActivityTableRow } from "./activityRows";
 import { activityRowTarget } from "./activityRowTarget";
+import { followUpLinksOf, useFollowUpAfterDone } from "./followUpAfterDone";
 import type { ActivityListFilter, ActivitySortField } from "./schemas";
 import { toEditableActivity } from "./toEditableActivity";
 import { useActivityBulkActions } from "./useActivityBulkActions";
@@ -56,6 +57,7 @@ export function ActivitiesTable(): React.ReactNode {
   const typesQ = trpc.activities.listTypes.useQuery();
   const ownersQ = trpc.identity.assignableUsers.useQuery();
   const { error, bulkMarkDone, bulkDelete } = useActivityBulkActions(selection);
+  const promptAfterDone = useFollowUpAfterDone();
   const rows = useMemo(() => rowsQ.data ?? [], [rowsQ.data]);
   // Cap how many rows are painted; the count header, select-all, and bulk actions all operate
   // over the full `rows` set, so this bounds render cost only. listRows is pagination-free, so
@@ -139,6 +141,8 @@ export function ActivitiesTable(): React.ReactNode {
       return;
     }
     await rowsQ.refetch();
+    const row = rows.find((x) => x.id === id);
+    if (!currentDone && row !== undefined) promptAfterDone(followUpLinksOf(row));
   }
 
   return (
@@ -227,6 +231,10 @@ export function ActivitiesTable(): React.ReactNode {
         <ActivityEditModal
           activity={toEditableActivity(selected, typeIdByKey)}
           onClose={() => setSelected(null)}
+          onMarkedDone={(activityId) => {
+            if (activityId !== selected.id) return;
+            if (promptAfterDone(followUpLinksOf(selected))) setSelected(null);
+          }}
         />
       )}
     </div>

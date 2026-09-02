@@ -61,6 +61,7 @@ export function InterfacePreferences({
   const reportError = useActionError();
   const [scheduleFollowUp, setScheduleFollowUp] = useState(initialScheduleFollowUp);
   const [flags, setFlags] = useState({
+    scheduleFollowUpAfterDone: prefs.scheduleFollowUpAfterDone,
     usPhoneFormat: prefs.usPhoneFormat,
     winSound: prefs.winSound,
     emailLinksNewTab: prefs.emailLinksNewTab,
@@ -149,6 +150,11 @@ export function InterfacePreferences({
           label={STRINGS.settings.scheduleFollowUpAfterWon}
           checked={scheduleFollowUp}
           onToggle={(v) => void toggleScheduleFollowUp(v)}
+        />
+        <Row
+          label={S.scheduleFollowUpAfterDone}
+          checked={flags.scheduleFollowUpAfterDone}
+          onToggle={(v) => void toggleFlag("scheduleFollowUpAfterDone", v)}
         />
         <Row
           label={S.openDetailsAfterCreate}

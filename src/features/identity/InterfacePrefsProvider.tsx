@@ -14,6 +14,7 @@ export interface InterfacePrefs {
   emailLinksNewTab: boolean;
   prefillParticipantsAsRecipients: boolean;
   autoPrefixLeadDealTitles: boolean;
+  scheduleFollowUpAfterDone: boolean;
   openDetailsAfterCreate: OpenDetailsAfterCreate;
 }
 
@@ -25,6 +26,7 @@ export const INTERFACE_PREFS_DEFAULT: InterfacePrefs = {
   emailLinksNewTab: false,
   prefillParticipantsAsRecipients: false,
   autoPrefixLeadDealTitles: false,
+  scheduleFollowUpAfterDone: false,
   openDetailsAfterCreate: { leadDeal: false, person: false, org: false },
 };
 

@@ -22,9 +22,15 @@ interface Props {
   activity: EditableActivity;
   onClose: () => void;
   onSaved?: () => void;
+  onMarkedDone?: (activityId: string) => void;
 }
 
-export function ActivityEditModal({ activity, onClose, onSaved }: Props): React.ReactNode {
+export function ActivityEditModal({
+  activity,
+  onClose,
+  onSaved,
+  onMarkedDone,
+}: Props): React.ReactNode {
   const typesQ = trpc.activities.listTypes.useQuery();
   const invalidateActivityLists = useInvalidateActivityLists();
   const types = typesQ.data ?? [];
@@ -98,6 +104,7 @@ export function ActivityEditModal({ activity, onClose, onSaved }: Props): React.
     setPending(false);
     setDoneNow(next);
     onSaved?.();
+    if (next) onMarkedDone?.(activity.id);
   }
 
   return (

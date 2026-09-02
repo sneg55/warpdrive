@@ -84,6 +84,17 @@ it("uiFlagInputSchema accepts a whitelisted key and rejects an unknown one", () 
   expect(uiFlagInputSchema.safeParse({ key: "dropTable", value: true }).success).toBe(false);
 });
 
+it("stores scheduleFollowUpAfterDone as a generic Interface flag", () => {
+  expect(
+    uiFlagInputSchema.safeParse({ key: "scheduleFollowUpAfterDone", value: true }).success,
+  ).toBe(true);
+  expect(uiSchema.parse({}).scheduleFollowUpAfterDone).toBeUndefined();
+  expect(uiSchema.parse({ scheduleFollowUpAfterDone: true }).scheduleFollowUpAfterDone).toBe(true);
+  expect(uiSchema.parse({ scheduleFollowUpAfterDone: "yes" }).scheduleFollowUpAfterDone).toBe(
+    undefined,
+  );
+});
+
 it("parses a persisted board view (owner, sort, saved filter, ad-hoc conditions)", () => {
   const ui = uiSchema.parse({
     boardView: {

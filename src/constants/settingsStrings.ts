@@ -52,6 +52,7 @@ export const SETTINGS_STRINGS = {
   scheduleFollowUpAfterWon: "Schedule a follow-up activity after marking a deal Won",
   interfaceHeading: "Interface",
   interface: {
+    scheduleFollowUpAfterDone: "Schedule a follow-up activity after marking an activity done",
     openDetailsAfterCreate: "Open details view after creating a new item",
     openDetailsLeadDeal: "Lead/deal",
     openDetailsPerson: "Person",

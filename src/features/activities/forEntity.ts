@@ -12,12 +12,14 @@ import {
   persons,
   users,
 } from "@/db/schema";
+import { leads } from "@/db/schema/leads";
 import { sanitizeAuthorHtml } from "@/features/email/sanitizeHtml";
 import { canSee } from "@/features/permissions/canSee";
 import type { PermSetUser } from "@/features/permissions/effective";
 import type { VisiblePersonOrOrg } from "@/features/permissions/types";
 import type { CalendarActivity } from "./calendar";
 import { isActivityOverdue } from "./overdue";
+import { linkedParentVisible } from "./parentLinkVisibility";
 import { resolveActivityVisibility } from "./visibility";
 
 interface ActivityRow {
@@ -30,6 +32,12 @@ interface ActivityRow {
   done: boolean;
   doneAt: Date | null;
   dealId: string | null;
+  leadId: string | null;
+  leadVisibleId: string | null;
+  leadOwnerId: string | null;
+  leadVisibilityLevel: VisibilityLevel | null;
+  leadVisibilityGroupId: string | null;
+  leadVisibleToUserIds: string[] | null;
   personId: string | null;
   orgId: string | null;
   // Link-safe ids from the deletedAt-filtered joins: null when the linked person/org is soft-
@@ -75,8 +83,7 @@ function toActivity(row: ActivityRow): Activity {
     ownerId: row.ownerId,
     assigneeId: row.assigneeId,
     dealId: row.dealId,
-    // forEntity lists deal/person/org activities; lead-scoped rows are handled by leadTimeline.
-    leadId: null,
+    leadId: row.leadId,
     personId: row.personId,
     orgId: row.orgId,
     customFields: {},
@@ -112,6 +119,7 @@ function linkedRecord(
 function toCalendarActivity(
   row: ActivityRow,
   now: number,
+  leadOk: boolean,
   personOk: boolean,
   orgOk: boolean,
 ): CalendarActivity | null {
@@ -126,6 +134,7 @@ function toCalendarActivity(
     done: row.done,
     doneAt: row.doneAt,
     dealId: row.dealId,
+    leadId: leadOk ? row.leadVisibleId : null,
     // Gate the link + name by the actor's visibility of the linked contact: the activity is
     // authorized via its deal parent, which does not imply access to an owner-only linked record.
     personId: personOk ? row.personVisibleId : null,
@@ -174,6 +183,12 @@ export async function listActivitiesForEntity(
       done: activities.done,
       doneAt: activities.doneAt,
       dealId: activities.dealId,
+      leadId: activities.leadId,
+      leadVisibleId: leads.id,
+      leadOwnerId: leads.ownerId,
+      leadVisibilityLevel: leads.visibilityLevel,
+      leadVisibilityGroupId: leads.visibilityGroupId,
+      leadVisibleToUserIds: leads.visibleToUserIds,
       personId: activities.personId,
       orgId: activities.orgId,
       personVisibleId: persons.id,
@@ -199,6 +214,7 @@ export async function listActivitiesForEntity(
     .from(activities)
     .innerJoin(activityTypes, eq(activities.typeId, activityTypes.id))
     .leftJoin(users, eq(users.id, activities.ownerId))
+    .leftJoin(leads, and(eq(leads.id, activities.leadId), isNull(leads.deletedAt)))
     .leftJoin(persons, and(eq(persons.id, activities.personId), isNull(persons.deletedAt)))
     .leftJoin(
       organizations,
@@ -229,7 +245,13 @@ export async function listActivitiesForEntity(
     );
     const personOk = personRec !== null && canSee(actor, personRec);
     const orgOk = orgRec !== null && canSee(actor, orgRec);
-    const activity = toCalendarActivity(row, now, personOk, orgOk);
+    const leadOk = linkedParentVisible(actor, "lead", row.leadVisibleId, {
+      ownerId: row.leadOwnerId,
+      level: row.leadVisibilityLevel,
+      groupId: row.leadVisibilityGroupId,
+      visibleTo: row.leadVisibleToUserIds,
+    });
+    const activity = toCalendarActivity(row, now, leadOk, personOk, orgOk);
     if (activity !== null) out.push(activity);
   }
   return out;

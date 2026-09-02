@@ -8,6 +8,7 @@ import { initialScrollHour } from "@/features/activities/agendaScroll";
 import type { CalendarActivity } from "@/features/activities/calendar";
 import { calendarActivityTarget } from "@/features/activities/calendarActivityTarget";
 import { isoToDayLabel } from "@/features/activities/dayHeading";
+import { followUpLinksOf, useFollowUpAfterDone } from "@/features/activities/followUpAfterDone";
 import { useLocalNow } from "@/features/activities/useLocalNow";
 import {
   AGENDA_GRID_COLS,
@@ -75,6 +76,7 @@ export function WeekAgendaGrid({
   const setPreview = useRecordPreview((s) => s.setPreview);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [createSlot, setCreateSlot] = useState<CreateSlot | null>(null);
+  const promptAfterDone = useFollowUpAfterDone();
   const scrollRef = useRef<HTMLDivElement>(null);
   const hoursRef = useRef<HTMLDivElement>(null);
   const now = useLocalNow();
@@ -212,6 +214,10 @@ export function WeekAgendaGrid({
           activity={toEditable(selected, typeIdByKey)}
           onClose={() => setSelectedId(null)}
           onSaved={refresh}
+          onMarkedDone={(activityId) => {
+            if (activityId !== selected.id) return;
+            if (promptAfterDone(followUpLinksOf(selected), refresh)) setSelectedId(null);
+          }}
         />
       )}
     </div>

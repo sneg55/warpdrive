@@ -5,6 +5,7 @@ import { useCallback, useMemo, useState } from "react";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { completeActivityAction, deleteActivityAction } from "@/features/activities/actions";
 import type { CalendarActivity } from "@/features/activities/calendar";
+import { followUpLinksOf, useFollowUpAfterDone } from "@/features/activities/followUpAfterDone";
 import { ActivityTypeIcon } from "@/features/activities/typeIcons";
 import { useInvalidateActivityLists } from "@/features/activities/useInvalidateActivityLists";
 import { linkifyHtml } from "@/features/collaboration/linkify";
@@ -56,6 +57,7 @@ export function ActivityCard({
   const invalidateActivityLists = useInvalidateActivityLists();
   const reportError = useDealActionError();
   const { emailLinksNewTab } = useInterfacePrefs();
+  const promptAfterDone = useFollowUpAfterDone();
 
   // Every listForEntity timeline this activity appears in (deal / person / org pages). Flipping
   // its done in each cache moves it between Focus and History instantly, before the server replies.
@@ -89,6 +91,7 @@ export function ActivityCard({
     if (res.ok) {
       await invalidateActivityLists();
       onChanged?.(); // reconcile with server truth (real doneAt, ordering)
+      if (next) promptAfterDone(followUpLinksOf(activity), onChanged);
     } else {
       // Roll the optimistic move back by refetching, and explain the failure instead of a silent
       // revert (matches the deal sidebar's action-error handling).
@@ -97,7 +100,17 @@ export function ActivityCard({
       reportError(res.error.id);
     }
     setBusy(false);
-  }, [busy, done, activity.id, entityKeys, utils, invalidateActivityLists, onChanged, reportError]);
+  }, [
+    busy,
+    done,
+    activity,
+    entityKeys,
+    utils,
+    invalidateActivityLists,
+    onChanged,
+    reportError,
+    promptAfterDone,
+  ]);
 
   // Delete is not optimistic: the row leaves every timeline cache only once the server has
   // accepted it, so a denied delete leaves the card exactly where it was.

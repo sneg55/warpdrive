@@ -18,6 +18,7 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn(), push }
 
 vi.mock("@/lib/trpc-client", () => ({
   trpc: {
+    useUtils: () => ({}),
     activities: {
       listTypes: {
         useQuery: () => ({ data: [{ id: "t1", key: "call", name: "Call" }] }),
@@ -30,15 +31,26 @@ vi.mock("@/features/activities/AddActivityModal", () => ({
   AddActivityModal: ({
     defaultDate,
     defaultTime,
+    dealId,
+    leadId,
+    defaultPersonId,
+    defaultOrgId,
     onClose,
   }: {
     defaultDate?: string;
     defaultTime?: string;
+    dealId?: string | null;
+    leadId?: string | null;
+    defaultPersonId?: string | null;
+    defaultOrgId?: string | null;
     onClose: () => void;
   }) => (
     <div data-testid="add-modal">
       <span data-testid="add-modal-date">{defaultDate}</span>
       <span data-testid="add-modal-time">{defaultTime}</span>
+      <span data-testid="add-modal-links">
+        {[dealId, leadId, defaultPersonId, defaultOrgId].map((v) => v ?? "-").join(",")}
+      </span>
       <button type="button" onClick={onClose}>
         Close add
       </button>
@@ -50,14 +62,19 @@ vi.mock("@/features/activities/ActivityEditModal", () => ({
   ActivityEditModal: ({
     activity,
     onClose,
+    onMarkedDone,
   }: {
     activity: { id: string; allDay: boolean; assigneeId?: string | null };
     onClose: () => void;
+    onMarkedDone?: (id: string) => void;
   }) => (
     <div data-testid="edit-modal">
       <span data-testid="edit-modal-id">{activity.id}</span>
       <span data-testid="edit-modal-assignee">{activity.assigneeId ?? ""}</span>
       <span data-testid="edit-modal-allday">{String(activity.allDay)}</span>
+      <button type="button" onClick={() => onMarkedDone?.(activity.id)}>
+        Mark as done
+      </button>
       <button type="button" onClick={onClose}>
         Close edit
       </button>
@@ -66,7 +83,12 @@ vi.mock("@/features/activities/ActivityEditModal", () => ({
 }));
 
 import { DEFAULT_START_HOUR } from "@/features/activities/agendaScroll";
+import { FollowUpPromptProvider } from "@/features/activities/followUpAfterDone";
 import { HOUR_HEIGHT_PX } from "@/features/activities/weekAgenda";
+import {
+  INTERFACE_PREFS_DEFAULT,
+  InterfacePrefsProvider,
+} from "@/features/identity/InterfacePrefsProvider";
 import { WeekAgendaGrid } from "./WeekAgendaGrid";
 
 const dayIsos = [
@@ -228,6 +250,32 @@ describe("WeekAgendaGrid", () => {
     expect(screen.getByTestId("add-modal-date")).toHaveTextContent("2026-07-15");
     expect(screen.getByTestId("add-modal-time")).toHaveTextContent("14:00");
     fireEvent.click(screen.getByRole("button", { name: "Close add" }));
+    expect(screen.queryByTestId("add-modal")).toBeNull();
+  });
+
+  it("marking done in the edit modal closes it and opens the follow-up prompt when the preference is on", () => {
+    render(
+      <InterfacePrefsProvider
+        value={{ ...INTERFACE_PREFS_DEFAULT, scheduleFollowUpAfterDone: true }}
+      >
+        <FollowUpPromptProvider>
+          <WeekAgendaGrid dayIsos={dayIsos} activities={[mk("a1", "2026-07-15T09:30:00.000Z")]} />
+        </FollowUpPromptProvider>
+      </InterfacePrefsProvider>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: /Call a1/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Mark as done" }));
+    expect(screen.queryByTestId("edit-modal")).toBeNull();
+    expect(screen.getByTestId("add-modal-links")).toHaveTextContent("-,-,-,-");
+  });
+
+  it("marking done in the edit modal leaves it open when the preference is off", () => {
+    render(
+      <WeekAgendaGrid dayIsos={dayIsos} activities={[mk("a1", "2026-07-15T09:30:00.000Z")]} />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: /Call a1/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Mark as done" }));
+    expect(screen.getByTestId("edit-modal")).toBeInTheDocument();
     expect(screen.queryByTestId("add-modal")).toBeNull();
   });
 });

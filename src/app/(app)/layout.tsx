@@ -8,6 +8,7 @@ import { ReconnectBanner } from "@/components/shell/ReconnectBanner";
 import { TopBar } from "@/components/shell/TopBar";
 import { NAV_PREF_COOKIE } from "@/constants/cookies";
 import { db } from "@/db/client";
+import { FollowUpPromptProvider } from "@/features/activities/followUpAfterDone";
 import { CSRF_COOKIE } from "@/features/auth/csrf";
 import { InterfacePrefsProvider } from "@/features/identity/InterfacePrefsProvider";
 import { interfacePrefsFromUi } from "@/features/identity/interfacePrefs";
@@ -51,23 +52,25 @@ export default async function AppLayout({ children }: { children: ReactNode }): 
         }}
       />
       <InterfacePrefsProvider value={interfacePrefsFromUi(prefs.ui)}>
-        <div data-density={prefs.density} className="flex h-screen flex-col">
-          <CsrfRefresher hasCsrf={hasCsrf} />
-          {ctx.actor.type === "admin" && <VersionBanner />}
-          <ReconnectBanner />
-          <TopBar
-            userId={ctx.actor.id}
-            userName={ctx.actor.name}
-            avatarUrl={ctx.actor.avatarUrl}
-            appearance={parseAppearance(prefs.ui.appearance)}
-          />
-          <div className="flex min-h-0 flex-1">
-            <LeftNav initialExpanded={navExpanded} />
-            <main className="min-w-0 flex-1 overflow-auto bg-muted/70 p-6">{children}</main>
+        <FollowUpPromptProvider>
+          <div data-density={prefs.density} className="flex h-screen flex-col">
+            <CsrfRefresher hasCsrf={hasCsrf} />
+            {ctx.actor.type === "admin" && <VersionBanner />}
+            <ReconnectBanner />
+            <TopBar
+              userId={ctx.actor.id}
+              userName={ctx.actor.name}
+              avatarUrl={ctx.actor.avatarUrl}
+              appearance={parseAppearance(prefs.ui.appearance)}
+            />
+            <div className="flex min-h-0 flex-1">
+              <LeftNav initialExpanded={navExpanded} />
+              <main className="min-w-0 flex-1 overflow-auto bg-muted/70 p-6">{children}</main>
+            </div>
+            <CommandPalette />
+            <GlobalShortcuts />
           </div>
-          <CommandPalette />
-          <GlobalShortcuts />
-        </div>
+        </FollowUpPromptProvider>
       </InterfacePrefsProvider>
     </ActionErrorProvider>
   );

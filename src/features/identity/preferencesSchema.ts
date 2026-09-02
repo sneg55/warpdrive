@@ -56,6 +56,7 @@ const UI_FLAG_KEYS = [
   "emailLinksNewTab",
   "prefillParticipantsAsRecipients",
   "autoPrefixLeadDealTitles",
+  "scheduleFollowUpAfterDone",
 ] as const;
 export type UiFlagKey = (typeof UI_FLAG_KEYS)[number];
 // Boundary schema for the generic flag action: validates the key against the allowed set.
@@ -110,6 +111,7 @@ export const uiSchema = z.object({
   emailLinksNewTab: z.boolean().optional().catch(undefined),
   prefillParticipantsAsRecipients: z.boolean().optional().catch(undefined),
   autoPrefixLeadDealTitles: z.boolean().optional().catch(undefined),
+  scheduleFollowUpAfterDone: z.boolean().optional().catch(undefined),
   // Day / Night / System. The durable, cross-device record; the wd_appearance cookie is only a
   // mirror so the no-flash script can settle the theme before first paint.
   appearance: appearanceSchema.optional().catch(undefined),

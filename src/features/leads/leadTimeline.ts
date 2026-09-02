@@ -8,20 +8,41 @@
 import { and, desc, eq, isNull } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import type * as schema from "@/db/schema";
-import { activities, activityTypes, emailMessages, emailThreads, notes, users } from "@/db/schema";
+import {
+  activities,
+  activityTypes,
+  emailMessages,
+  emailThreads,
+  notes,
+  organizations,
+  persons,
+  users,
+} from "@/db/schema";
 import { leads } from "@/db/schema/leads";
 import type { CalendarActivity } from "@/features/activities/calendar";
 import { isActivityOverdue } from "@/features/activities/overdue";
+import { linkedParentVisible } from "@/features/activities/parentLinkVisibility";
 import { listChangeLog } from "@/features/collaboration/changeLog";
 import {
   buildHistoryTimeline,
   type HistoryItem,
   type NoteItem,
 } from "@/features/deal-workspace/historyTimeline";
+import type { AuthUser } from "@/features/permissions/types";
 import type { DealVisibilitySession } from "@/types/session";
 import { leadVisibilityClause } from "./visibility";
 
 type Db = NodePgDatabase<typeof schema>;
+
+function sessionActor(session: DealVisibilitySession): AuthUser {
+  return {
+    id: session.userId,
+    type: session.isAdmin ? "admin" : "regular",
+    isActive: session.isActive,
+    groupIds: new Set(session.visibilityGroupIds),
+    managedUserIds: new Set(session.managedUserIds ?? []),
+  };
+}
 
 export interface LeadTimelineEmail {
   id: string;
@@ -87,14 +108,44 @@ export async function leadTimeline(
       doneAt: activities.doneAt,
       videoCallUrl: activities.videoCallUrl,
       ownerName: users.name,
+      personVisibleId: persons.id,
+      personName: persons.name,
+      personOwnerId: persons.ownerId,
+      personLevel: persons.visibilityLevel,
+      personGroupId: persons.visibilityGroupId,
+      personVisibleTo: persons.visibleToUserIds,
+      orgVisibleId: organizations.id,
+      orgName: organizations.name,
+      orgOwnerId: organizations.ownerId,
+      orgLevel: organizations.visibilityLevel,
+      orgGroupId: organizations.visibilityGroupId,
+      orgVisibleTo: organizations.visibleToUserIds,
     })
     .from(activities)
     .innerJoin(activityTypes, eq(activities.typeId, activityTypes.id))
     .leftJoin(users, eq(users.id, activities.ownerId))
+    .leftJoin(persons, and(eq(persons.id, activities.personId), isNull(persons.deletedAt)))
+    .leftJoin(
+      organizations,
+      and(eq(organizations.id, activities.orgId), isNull(organizations.deletedAt)),
+    )
     .where(and(eq(activities.leadId, leadId), isNull(activities.deletedAt)));
+  const actor = sessionActor(session);
   const activityItems: CalendarActivity[] = [];
   for (const row of activityRows) {
     if (row.dueAt === null) continue;
+    const personOk = linkedParentVisible(actor, "person", row.personVisibleId, {
+      ownerId: row.personOwnerId,
+      level: row.personLevel,
+      groupId: row.personGroupId,
+      visibleTo: row.personVisibleTo,
+    });
+    const orgOk = linkedParentVisible(actor, "organization", row.orgVisibleId, {
+      ownerId: row.orgOwnerId,
+      level: row.orgLevel,
+      groupId: row.orgGroupId,
+      visibleTo: row.orgVisibleTo,
+    });
     activityItems.push({
       id: row.id,
       subject: row.subject,
@@ -106,8 +157,11 @@ export async function leadTimeline(
       doneAt: row.doneAt,
       videoCallUrl: row.videoCallUrl,
       dealId: null,
-      personId: null,
-      orgId: null,
+      leadId,
+      personId: personOk ? row.personVisibleId : null,
+      personName: personOk ? row.personName : null,
+      orgId: orgOk ? row.orgVisibleId : null,
+      orgName: orgOk ? row.orgName : null,
       overdue: isActivityOverdue(row.dueAt, row.allDay, row.done, now),
       ownerName: row.ownerName,
     });

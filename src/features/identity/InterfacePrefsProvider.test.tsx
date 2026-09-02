@@ -9,7 +9,7 @@ function Probe(): React.ReactNode {
   return (
     <span>
       {`phone:${p.usPhoneFormat}`} {`newtab:${p.emailLinksNewTab}`}{" "}
-      {`person:${p.openDetailsAfterCreate.person}`}
+      {`person:${p.openDetailsAfterCreate.person}`} {`followup:${p.scheduleFollowUpAfterDone}`}
     </span>
   );
 }
@@ -20,6 +20,7 @@ describe("useInterfacePrefs", () => {
     expect(screen.getByText(/phone:false/)).toBeTruthy();
     expect(screen.getByText(/newtab:false/)).toBeTruthy();
     expect(screen.getByText(/person:false/)).toBeTruthy();
+    expect(screen.getByText(/followup:false/)).toBeTruthy();
   });
 
   it("exposes the provided preference values", () => {
@@ -31,6 +32,7 @@ describe("useInterfacePrefs", () => {
           emailLinksNewTab: true,
           prefillParticipantsAsRecipients: false,
           autoPrefixLeadDealTitles: false,
+          scheduleFollowUpAfterDone: true,
           openDetailsAfterCreate: { leadDeal: false, person: true, org: false },
         }}
       >
@@ -40,5 +42,6 @@ describe("useInterfacePrefs", () => {
     expect(screen.getByText(/phone:true/)).toBeTruthy();
     expect(screen.getByText(/newtab:true/)).toBeTruthy();
     expect(screen.getByText(/person:true/)).toBeTruthy();
+    expect(screen.getByText(/followup:true/)).toBeTruthy();
   });
 });

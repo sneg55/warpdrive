@@ -64,6 +64,19 @@ describe("InterfacePreferences", () => {
     expect(setScheduleFollowUpAfterWonAction).toHaveBeenCalledWith({ enabled: true }, "csrf");
   });
 
+  it("persists the schedule-follow-up-after-done toggle as a generic flag, right under the Won row", () => {
+    renderInterface();
+    const toggle = screen.getByRole("switch", { name: t.scheduleFollowUpAfterDone });
+    const switches = screen.getAllByRole("switch");
+    expect(switches.indexOf(toggle)).toBe(1);
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute("aria-checked", "true");
+    expect(setUiFlagAction).toHaveBeenCalledWith(
+      { key: "scheduleFollowUpAfterDone", value: true },
+      "csrf",
+    );
+  });
+
   it("toggling the parent open-details switch sets all three entities", async () => {
     renderInterface();
     const parent = screen.getByRole("switch", { name: t.openDetailsAfterCreate });

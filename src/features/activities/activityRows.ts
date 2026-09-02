@@ -1,5 +1,6 @@
 import { and, asc, desc, eq, gte, isNull, lte, type SQL, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
+import type { VisibilityLevel } from "@/constants/visibility";
 import type { Db } from "@/db/client";
 import { activities, activityTypes, users } from "@/db/schema";
 import { deals } from "@/db/schema/deals";
@@ -11,6 +12,7 @@ import { canSee } from "@/features/permissions/canSee";
 import type { PermSetUser } from "@/features/permissions/effective";
 import { assertNever } from "@/types/result";
 import { buildActivityVisibility } from "./activityVisibility";
+import { linkedParentVisible } from "./parentLinkVisibility";
 import type { ActivityListFilter, ActivitySort, ActivitySortField } from "./schemas";
 import { loadParentlessParticipants } from "./visibility";
 
@@ -53,6 +55,53 @@ type Point = { value: string; primary?: boolean };
 function primaryPoint(points: Point[] | null): string | null {
   if (points === null || points.length === 0) return null;
   return (points.find((p) => p.primary === true) ?? points[0])?.value ?? null;
+}
+
+interface LinkGateColumns {
+  leadVisibleId: string | null;
+  leadOwnerId: string | null;
+  leadLevel: VisibilityLevel | null;
+  leadGroupId: string | null;
+  leadVisibleTo: string[] | null;
+  personVisibleId: string | null;
+  personOwnerId: string | null;
+  personLevel: VisibilityLevel | null;
+  personGroupId: string | null;
+  personVisibleTo: string[] | null;
+  orgVisibleId: string | null;
+  orgOwnerId: string | null;
+  orgLevel: VisibilityLevel | null;
+  orgGroupId: string | null;
+  orgVisibleTo: string[] | null;
+}
+
+interface LinkGates {
+  leadOk: boolean;
+  personOk: boolean;
+  orgOk: boolean;
+}
+
+function linkGates(actor: PermSetUser, row: LinkGateColumns): LinkGates {
+  return {
+    leadOk: linkedParentVisible(actor, "lead", row.leadVisibleId, {
+      ownerId: row.leadOwnerId,
+      level: row.leadLevel,
+      groupId: row.leadGroupId,
+      visibleTo: row.leadVisibleTo,
+    }),
+    personOk: linkedParentVisible(actor, "person", row.personVisibleId, {
+      ownerId: row.personOwnerId,
+      level: row.personLevel,
+      groupId: row.personGroupId,
+      visibleTo: row.personVisibleTo,
+    }),
+    orgOk: linkedParentVisible(actor, "organization", row.orgVisibleId, {
+      ownerId: row.orgOwnerId,
+      level: row.orgLevel,
+      groupId: row.orgGroupId,
+      visibleTo: row.orgVisibleTo,
+    }),
+  };
 }
 
 // Map a sort field to its ORDER BY column. subject is NOT NULL; dueAt/priority/duration rely on
@@ -125,6 +174,10 @@ export async function listActivityRows(
       dealTitle: deals.title,
       leadVisibleId: leads.id,
       leadTitle: leads.title,
+      leadOwnerId: leads.ownerId,
+      leadLevel: leads.visibilityLevel,
+      leadGroupId: leads.visibilityGroupId,
+      leadVisibleTo: leads.visibleToUserIds,
       dealOwnerId: deals.ownerId,
       dealLevel: deals.visibilityLevel,
       dealGroupId: deals.visibilityGroupId,
@@ -170,35 +223,56 @@ export async function listActivityRows(
   for (const row of rows) {
     const vis = buildActivityVisibility(row, participantsByActivity.get(row.id) ?? []);
     if (vis === null || !canSee(actor, vis)) continue;
-    out.push({
-      id: row.id,
-      subject: row.subject,
-      typeKey: row.typeKey,
-      priority: row.priority,
-      done: row.done,
-      dueAtIso: row.dueAt === null ? null : row.dueAt.toISOString(),
-      allDay: row.allDay,
-      durationMinutes: row.durationMinutes,
-      location: row.location,
-      assigneeId: row.assigneeId,
-      // Left-joined names can be null (e.g. a since-deleted user); coalesce so the row type
-      // stays `string` rather than leaking a nullable join artifact into the table's contract.
-      assigneeName: row.assigneeName ?? "",
-      ownerName: row.ownerName ?? "",
-      dealId: row.dealId,
-      dealTitle: row.dealTitle,
-      leadId: row.leadVisibleId,
-      leadTitle: row.leadTitle,
-      // Link-safe ids from the deletedAt-filtered joins (null when the contact is soft-deleted), so
-      // the list never links to a deleted contact's 404 page. Raw row.personId/orgId still gate
-      // visibility above via buildActivityVisibility.
-      personId: row.personVisibleId,
-      personName: row.personName,
-      personEmail: row.personEmail,
-      personPhone: primaryPoint(row.personPhones),
-      orgId: row.orgVisibleId,
-      orgName: row.orgName,
-    });
+    out.push(toTableRow(row, linkGates(actor, row)));
   }
   return out;
+}
+
+type JoinedRow = LinkGateColumns & {
+  id: string;
+  subject: string;
+  typeKey: string;
+  priority: string | null;
+  done: boolean;
+  dueAt: Date | null;
+  allDay: boolean;
+  durationMinutes: number | null;
+  location: string | null;
+  assigneeId: string;
+  assigneeName: string | null;
+  ownerName: string | null;
+  dealId: string | null;
+  dealTitle: string | null;
+  leadTitle: string | null;
+  personName: string | null;
+  personEmail: string | null;
+  personPhones: Point[] | null;
+  orgName: string | null;
+};
+
+function toTableRow(row: JoinedRow, gates: LinkGates): ActivityTableRow {
+  return {
+    id: row.id,
+    subject: row.subject,
+    typeKey: row.typeKey,
+    priority: row.priority,
+    done: row.done,
+    dueAtIso: row.dueAt === null ? null : row.dueAt.toISOString(),
+    allDay: row.allDay,
+    durationMinutes: row.durationMinutes,
+    location: row.location,
+    assigneeId: row.assigneeId,
+    assigneeName: row.assigneeName ?? "",
+    ownerName: row.ownerName ?? "",
+    dealId: row.dealId,
+    dealTitle: row.dealTitle,
+    leadId: gates.leadOk ? row.leadVisibleId : null,
+    leadTitle: gates.leadOk ? row.leadTitle : null,
+    personId: gates.personOk ? row.personVisibleId : null,
+    personName: gates.personOk ? row.personName : null,
+    personEmail: gates.personOk ? row.personEmail : null,
+    personPhone: gates.personOk ? primaryPoint(row.personPhones) : null,
+    orgId: gates.orgOk ? row.orgVisibleId : null,
+    orgName: gates.orgOk ? row.orgName : null,
+  };
 }

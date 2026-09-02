@@ -61,8 +61,10 @@ describe("leadTimeline", () => {
       expect(noteItem).toBeDefined();
       expect(activityItem).toBeDefined();
       if (noteItem?.kind === "note") expect(noteItem.body).toBe("Called the prospect");
-      if (activityItem?.kind === "activity")
+      if (activityItem?.kind === "activity") {
         expect(activityItem.activity.subject).toBe("Follow-up call");
+        expect(activityItem.activity.leadId).toBe(lead.id);
+      }
     });
   });
 

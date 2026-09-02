@@ -9,6 +9,7 @@ describe("interfacePrefsFromUi", () => {
       emailLinksNewTab: false,
       prefillParticipantsAsRecipients: false,
       autoPrefixLeadDealTitles: false,
+      scheduleFollowUpAfterDone: false,
       openDetailsAfterCreate: { leadDeal: false, person: false, org: false },
     });
   });
@@ -17,10 +18,12 @@ describe("interfacePrefsFromUi", () => {
     const r = interfacePrefsFromUi({
       usPhoneFormat: true,
       winSound: true,
+      scheduleFollowUpAfterDone: true,
       openDetailsAfterCreate: { leadDeal: true, person: false, org: true },
     });
     expect(r.usPhoneFormat).toBe(true);
     expect(r.winSound).toBe(true);
+    expect(r.scheduleFollowUpAfterDone).toBe(true);
     expect(r.openDetailsAfterCreate).toEqual({ leadDeal: true, person: false, org: true });
   });
 });

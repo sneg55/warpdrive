@@ -110,6 +110,29 @@ describe("ActivityEditModal", () => {
     );
   });
 
+  it("fires onMarkedDone after a successful Mark as done, but not on Reopen or failure", async () => {
+    const onMarkedDone = vi.fn();
+    render(<ActivityEditModal activity={activity} onClose={vi.fn()} onMarkedDone={onMarkedDone} />);
+    fireEvent.click(screen.getByRole("button", { name: "Mark as done" }));
+    await waitFor(() => expect(onMarkedDone).toHaveBeenCalledWith("a1"));
+    fireEvent.click(screen.getByRole("button", { name: "Reopen" }));
+    await waitFor(() =>
+      expect(completeActivityAction).toHaveBeenLastCalledWith({ id: "a1", done: false }, "csrf"),
+    );
+    expect(onMarkedDone).toHaveBeenCalledTimes(1);
+    cleanup();
+
+    completeActivityAction.mockResolvedValueOnce({
+      ok: false,
+      error: { id: "E_ACTIVITY_006" },
+    } as never);
+    onMarkedDone.mockClear();
+    render(<ActivityEditModal activity={activity} onClose={vi.fn()} onMarkedDone={onMarkedDone} />);
+    fireEvent.click(screen.getByRole("button", { name: "Mark as done" }));
+    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("E_ACTIVITY_006"));
+    expect(onMarkedDone).not.toHaveBeenCalled();
+  });
+
   it("shows an error and keeps the modal open when save fails", async () => {
     editActivityAction.mockResolvedValueOnce({
       ok: false,
