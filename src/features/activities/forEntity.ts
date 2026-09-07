@@ -217,7 +217,7 @@ export async function listActivitiesForEntity(
     })
     .from(activities)
     .innerJoin(activityTypes, eq(activities.typeId, activityTypes.id))
-    .leftJoin(users, eq(users.id, activities.ownerId))
+    .leftJoin(users, eq(users.id, activities.assigneeId))
     .leftJoin(deals, and(eq(deals.id, activities.dealId), isNull(deals.deletedAt)))
     .leftJoin(leads, and(eq(leads.id, activities.leadId), isNull(leads.deletedAt)))
     .leftJoin(persons, and(eq(persons.id, activities.personId), isNull(persons.deletedAt)))

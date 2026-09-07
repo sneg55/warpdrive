@@ -45,8 +45,9 @@ export interface CalendarActivity {
   // owner filter (AC1). Optional like note/location: only calendarRange populates it; the other
   // CalendarActivity builders (forEntity, leadTimeline) leave it undefined.
   assigneeId?: string | null;
-  // Owner (created-by) display name for the history-card footer; null when the
-  // owner is unresolved (should not happen: owner_id is NOT NULL).
+  // Assigned user's display name for the history-card footer (what Pipedrive shows as the
+  // activity's owner); the edit composer's assignee picker must agree with it. null only when
+  // the assignee row is unresolved (should not happen: assignee_id is NOT NULL).
   ownerName: string | null;
   // Optional: only populated by listActivitiesForEntity (deal history card).
   // calendarRange's CalendarRow/toCalendarActivity don't select these yet, so they
@@ -218,7 +219,7 @@ export async function calendarRange(
     })
     .from(activities)
     .innerJoin(activityTypes, eq(activities.typeId, activityTypes.id))
-    .leftJoin(users, eq(users.id, activities.ownerId))
+    .leftJoin(users, eq(users.id, activities.assigneeId))
     .leftJoin(deals, and(eq(deals.id, activities.dealId), isNull(deals.deletedAt)))
     .leftJoin(pipelines, eq(pipelines.id, deals.pipelineId))
     .leftJoin(leads, and(eq(leads.id, activities.leadId), isNull(leads.deletedAt)))

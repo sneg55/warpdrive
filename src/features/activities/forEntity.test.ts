@@ -48,6 +48,44 @@ it("carries the owner display name for deal-scoped activities", async () => {
   });
 });
 
+it("labels the activity with its assignee, not its creator, when they differ", async () => {
+  await withTestDb(async (db) => {
+    const signal = new AbortController().signal;
+    const creator = await seedUser(db, { name: "Nick Sawinyh" });
+    const assignee = await seedUser(db, { name: "Shay Roehm" });
+    const actor = makeActor(creator.id);
+
+    const pipe = await seedPipelineWithStages(db, ["Lead"]);
+    const stage = pipe.stages[0];
+    if (stage === undefined) throw new Error("stage seed failed");
+    const [deal] = await db
+      .insert(deals)
+      .values({
+        title: "D",
+        pipelineId: pipe.pipeline.id,
+        stageId: stage.id,
+        ownerId: creator.id,
+        visibilityLevel: "all",
+      })
+      .returning();
+    if (deal === undefined) throw new Error("deal seed failed");
+
+    const [type] = await db.select().from(activityTypes).where(eq(activityTypes.key, "task"));
+    if (type === undefined) throw new Error("activity type 'task' not found");
+    await db.insert(activities).values({
+      typeId: type.id,
+      subject: "Submit RFI response",
+      ownerId: creator.id,
+      assigneeId: assignee.id,
+      dealId: deal.id,
+      dueAt: new Date("2026-09-17T00:00:00Z"),
+    });
+
+    const rows = await listActivitiesForEntity(db, actor, "deal", deal.id, signal);
+    expect(rows[0]?.ownerName).toBe("Shay Roehm");
+  });
+});
+
 it("carries the linked person and organization display names for deal-scoped activities", async () => {
   await withTestDb(async (db) => {
     const signal = new AbortController().signal;

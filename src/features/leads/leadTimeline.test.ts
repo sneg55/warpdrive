@@ -68,6 +68,36 @@ describe("leadTimeline", () => {
     });
   });
 
+  it("labels a lead activity with its assignee, not its creator", async () => {
+    await withTestDb(async (db) => {
+      const creator = await seedUser(db, { name: "Nick Sawinyh" });
+      const assignee = await seedUser(db, { name: "Shay Roehm" });
+      const [lead] = await db
+        .insert(leads)
+        .values({ title: "L", ownerId: creator.id, visibilityLevel: "all" })
+        .returning();
+      if (lead === undefined) throw new Error("seed lead failed");
+
+      const [type] = await db.select().from(activityTypes).where(eq(activityTypes.key, "call"));
+      if (type === undefined) throw new Error("activity type 'call' not found");
+      await db.insert(activities).values({
+        typeId: type.id,
+        subject: "Reassigned call",
+        dueAt: new Date(),
+        ownerId: creator.id,
+        assigneeId: assignee.id,
+        leadId: lead.id,
+      });
+
+      const feed = await leadTimeline(db, visSession(creator.id), lead.id, sig());
+      const activityItem = feed.items.find((i) => i.kind === "activity");
+      expect(activityItem?.kind).toBe("activity");
+      if (activityItem?.kind === "activity") {
+        expect(activityItem.activity.ownerName).toBe("Shay Roehm");
+      }
+    });
+  });
+
   it("excludes a trashed lead-linked email thread from the feed (P4)", async () => {
     await withTestDb(async (db) => {
       const owner = await seedUser(db, { email: "o@gunsnation.com" });

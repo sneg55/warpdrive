@@ -123,7 +123,7 @@ export async function leadTimeline(
     })
     .from(activities)
     .innerJoin(activityTypes, eq(activities.typeId, activityTypes.id))
-    .leftJoin(users, eq(users.id, activities.ownerId))
+    .leftJoin(users, eq(users.id, activities.assigneeId))
     .leftJoin(persons, and(eq(persons.id, activities.personId), isNull(persons.deletedAt)))
     .leftJoin(
       organizations,

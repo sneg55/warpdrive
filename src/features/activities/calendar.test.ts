@@ -115,6 +115,34 @@ it("resolves the activity owner display name for the created-by footer", async (
   });
 });
 
+it("resolves ownerName from the assignee, not the creator, when they differ", async () => {
+  await withTestDb(async (db) => {
+    const creator = await seedUser(db, { name: "Nick Sawinyh" });
+    const assignee = await seedUser(db, { name: "Shay Roehm" });
+    const actor = makeActor(assignee.id);
+
+    const [type] = await db.select().from(activityTypes).where(eq(activityTypes.key, "meeting"));
+    if (type === undefined) throw new Error("activity type 'meeting' not found");
+
+    await db.insert(activities).values({
+      typeId: type.id,
+      subject: "Reassigned",
+      ownerId: creator.id,
+      assigneeId: assignee.id,
+      dueAt: new Date("2026-07-02T10:00:00Z"),
+    });
+
+    const rows = await calendarRange(
+      db,
+      actor,
+      { from: new Date("2026-06-29T00:00:00Z"), to: new Date("2026-07-06T00:00:00Z") },
+      new AbortController().signal,
+    );
+
+    expect(rows[0]?.ownerName).toBe("Shay Roehm");
+  });
+});
+
 it("serves a full month-grid window across the month boundary (visibility-filtered)", async () => {
   await withTestDb(async (db) => {
     const user = await seedUser(db);
