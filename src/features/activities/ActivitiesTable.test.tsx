@@ -122,7 +122,7 @@ function row(overrides: Record<string, unknown>) {
 describe("ActivitiesTable", () => {
   it("renders all Pipedrive columns and the type tab strip driven by listTypes", () => {
     useQuery.mockReturnValue({ data: [row({})], refetch });
-    render(<ActivitiesTable />);
+    render(<ActivitiesTable currentUserId="me" />);
     for (const h of [
       "Done",
       "Subject",
@@ -158,7 +158,7 @@ describe("ActivitiesTable", () => {
       data: [row({ durationMinutes: 45, assigneeName: "Jane Doe", ownerName: "Someone Else" })],
       refetch,
     });
-    render(<ActivitiesTable />);
+    render(<ActivitiesTable currentUserId="me" />);
     expect(screen.getByText("45 min")).toBeInTheDocument();
     expect(screen.getByText("Jane Doe")).toBeInTheDocument();
     expect(screen.queryByText("Someone Else")).toBeNull();
@@ -166,7 +166,7 @@ describe("ActivitiesTable", () => {
 
   it("renders no duration text when durationMinutes is null", () => {
     useQuery.mockReturnValue({ data: [row({ durationMinutes: null })], refetch });
-    render(<ActivitiesTable />);
+    render(<ActivitiesTable currentUserId="me" />);
     expect(screen.queryByText(/min/)).toBeNull();
   });
 
@@ -176,7 +176,7 @@ describe("ActivitiesTable", () => {
       data: [row({ done: false, dueAtIso: yesterday })],
       refetch,
     });
-    render(<ActivitiesTable />);
+    render(<ActivitiesTable currentUserId="me" />);
     expect(screen.getByText("Call Jane").closest("tr")).toHaveClass("text-destructive");
   });
 
@@ -185,7 +185,7 @@ describe("ActivitiesTable", () => {
       data: [row({ done: true, dueAtIso: new Date(Date.now() - 1000).toISOString() })],
       refetch,
     });
-    render(<ActivitiesTable />);
+    render(<ActivitiesTable currentUserId="me" />);
     expect(screen.getByText("Call Jane").closest("tr")).not.toHaveClass("text-destructive");
   });
 
@@ -199,7 +199,7 @@ describe("ActivitiesTable", () => {
       error: { message: "E_AUTH_003" },
       refetch,
     });
-    render(<ActivitiesTable />);
+    render(<ActivitiesTable currentUserId="me" />);
     expect(screen.queryByText("No activities in this view.")).toBeNull();
     expect(screen.getByRole("alert")).toBeInTheDocument();
     const retry = screen.getByRole("button", { name: /retry/i });
@@ -209,13 +209,13 @@ describe("ActivitiesTable", () => {
 
   it("does not show the empty state while the first load is still pending", () => {
     useQuery.mockReturnValue({ data: undefined, isPending: true, refetch });
-    render(<ActivitiesTable />);
+    render(<ActivitiesTable currentUserId="me" />);
     expect(screen.queryByText("No activities in this view.")).toBeNull();
   });
 
   it("opens the Add activity modal from + Activity", () => {
     useQuery.mockReturnValue({ data: [], refetch });
-    render(<ActivitiesTable />);
+    render(<ActivitiesTable currentUserId="me" />);
     fireEvent.click(screen.getByRole("button", { name: "+ Activity" }));
     expect(screen.getByTestId("activity-modal")).toBeInTheDocument();
   });
@@ -225,7 +225,7 @@ describe("ActivitiesTable", () => {
       data: [row({ done: true, dueAtIso: new Date().toISOString() })],
       refetch,
     });
-    render(<ActivitiesTable />);
+    render(<ActivitiesTable currentUserId="me" />);
     fireEvent.click(screen.getByRole("checkbox", { name: "Complete Call Jane" }));
     expect(complete).toHaveBeenCalledWith({ id: "a1", done: false });
   });
@@ -235,7 +235,7 @@ describe("ActivitiesTable", () => {
       data: [row({ dealId: "d1", dealTitle: "Acme renewal" })],
       refetch,
     });
-    render(<ActivitiesTable />);
+    render(<ActivitiesTable currentUserId="me" />);
     fireEvent.click(screen.getByText("Call Jane"));
     expect(push).toHaveBeenCalledWith("/deals/d1");
     expect(useRecordPreview.getState().preview).toEqual({
@@ -248,7 +248,7 @@ describe("ActivitiesTable", () => {
 
   it("opens the linked person when the activity has no deal", () => {
     useQuery.mockReturnValue({ data: [row({})], refetch });
-    render(<ActivitiesTable />);
+    render(<ActivitiesTable currentUserId="me" />);
     fireEvent.click(screen.getByText("Call Jane"));
     expect(push).toHaveBeenCalledWith("/contacts/people/pe1");
   });
@@ -258,7 +258,7 @@ describe("ActivitiesTable", () => {
       data: [row({ dealId: "d1", dealTitle: "Acme renewal" })],
       refetch,
     });
-    render(<ActivitiesTable />);
+    render(<ActivitiesTable currentUserId="me" />);
     fireEvent.click(screen.getByRole("link", { name: "Jane Roe" }));
     expect(push).not.toHaveBeenCalled();
   });
@@ -268,7 +268,7 @@ describe("ActivitiesTable", () => {
       data: [row({ typeKey: "call", personId: null, personName: null, orgId: null })],
       refetch,
     });
-    render(<ActivitiesTable />);
+    render(<ActivitiesTable currentUserId="me" />);
     expect(screen.queryByTestId("edit-modal")).toBeNull();
     fireEvent.click(screen.getByText("Call Jane"));
     expect(push).not.toHaveBeenCalled();
@@ -280,7 +280,7 @@ describe("ActivitiesTable", () => {
 
   it("does not open the edit modal when the row's checkbox is clicked", () => {
     useQuery.mockReturnValue({ data: [row({})], refetch });
-    render(<ActivitiesTable />);
+    render(<ActivitiesTable currentUserId="me" />);
     fireEvent.click(screen.getByRole("checkbox", { name: "Complete Call Jane" }));
     expect(screen.queryByTestId("edit-modal")).toBeNull();
   });
@@ -290,7 +290,7 @@ describe("ActivitiesTable", () => {
       data: [row({ orgId: "o1", orgName: "Acme Inc" })],
       refetch,
     });
-    render(<ActivitiesTable />);
+    render(<ActivitiesTable currentUserId="me" />);
     expect(screen.getByRole("link", { name: "Jane Roe" })).toHaveAttribute(
       "href",
       "/contacts/people/pe1",
@@ -323,7 +323,7 @@ describe("ActivitiesTable", () => {
       ],
       refetch,
     });
-    render(<ActivitiesTable />);
+    render(<ActivitiesTable currentUserId="me" />);
     expect(screen.queryByRole("link", { name: /Jane|Acme/ })).toBeNull();
   });
 
@@ -332,7 +332,7 @@ describe("ActivitiesTable", () => {
       data: [row({ orgId: "o1", orgName: "Acme Inc" })],
       refetch,
     });
-    render(<ActivitiesTable />);
+    render(<ActivitiesTable currentUserId="me" />);
     fireEvent.click(screen.getByRole("link", { name: "Jane Roe" }));
     expect(screen.queryByTestId("edit-modal")).toBeNull();
     fireEvent.click(screen.getByRole("link", { name: "Acme Inc" }));
@@ -349,14 +349,14 @@ describe("ActivitiesTable j/k row cursor", () => {
 
   it("j marks the first row as the cursor row", () => {
     useQuery.mockReturnValue({ data: rows, refetch });
-    render(<ActivitiesTable />);
+    render(<ActivitiesTable currentUserId="me" />);
     fireEvent.keyDown(window, { key: "j" });
     expect(screen.getByText("Call Jane").closest("tr")).toHaveAttribute("data-cursor", "true");
   });
 
   it("a second j moves the cursor to the next row", () => {
     useQuery.mockReturnValue({ data: rows, refetch });
-    render(<ActivitiesTable />);
+    render(<ActivitiesTable currentUserId="me" />);
     fireEvent.keyDown(window, { key: "j" });
     fireEvent.keyDown(window, { key: "j" });
     expect(screen.getByText("Email Bob").closest("tr")).toHaveAttribute("data-cursor", "true");
@@ -365,7 +365,7 @@ describe("ActivitiesTable j/k row cursor", () => {
 
   it("k moves the cursor back up", () => {
     useQuery.mockReturnValue({ data: rows, refetch });
-    render(<ActivitiesTable />);
+    render(<ActivitiesTable currentUserId="me" />);
     fireEvent.keyDown(window, { key: "j" });
     fireEvent.keyDown(window, { key: "j" });
     fireEvent.keyDown(window, { key: "k" });
@@ -374,7 +374,7 @@ describe("ActivitiesTable j/k row cursor", () => {
 
   it("Enter opens the cursor row's record, like a click on it", () => {
     useQuery.mockReturnValue({ data: rows, refetch });
-    render(<ActivitiesTable />);
+    render(<ActivitiesTable currentUserId="me" />);
     fireEvent.keyDown(window, { key: "j" });
     fireEvent.keyDown(window, { key: "j" });
     fireEvent.keyDown(window, { key: "Enter" });
@@ -383,7 +383,7 @@ describe("ActivitiesTable j/k row cursor", () => {
 
   it("marks no row until j or k is pressed", () => {
     useQuery.mockReturnValue({ data: rows, refetch });
-    const { container } = render(<ActivitiesTable />);
+    const { container } = render(<ActivitiesTable currentUserId="me" />);
     expect(container.querySelector("tr[data-cursor='true']")).toBeNull();
   });
 });

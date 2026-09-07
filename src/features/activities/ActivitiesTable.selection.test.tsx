@@ -99,21 +99,21 @@ function row(overrides: Record<string, unknown>) {
 describe("ActivitiesTable selection and bulk actions", () => {
   it("does not open the edit modal when the row's checkbox is clicked", () => {
     useQuery.mockReturnValue({ data: [row({})], refetch });
-    render(<ActivitiesTable />);
+    render(<ActivitiesTable currentUserId="me" />);
     fireEvent.click(screen.getByRole("checkbox", { name: "Complete Call Jane" }));
     expect(screen.queryByTestId("edit-modal")).toBeNull();
   });
 
   it("does not open the edit modal when the row's select checkbox is clicked", () => {
     useQuery.mockReturnValue({ data: [row({})], refetch });
-    render(<ActivitiesTable />);
+    render(<ActivitiesTable currentUserId="me" />);
     fireEvent.click(screen.getByRole("checkbox", { name: "Select Call Jane" }));
     expect(screen.queryByTestId("edit-modal")).toBeNull();
   });
 
   it("selecting a row's checkbox (distinct from Done) reveals the bulk action bar", () => {
     useQuery.mockReturnValue({ data: [row({})], refetch });
-    render(<ActivitiesTable />);
+    render(<ActivitiesTable currentUserId="me" />);
     // Done and Select are two independent checkboxes on the same row.
     expect(screen.getByRole("checkbox", { name: "Complete Call Jane" })).not.toBeChecked();
     fireEvent.click(screen.getByRole("checkbox", { name: "Select Call Jane" }));
@@ -123,7 +123,7 @@ describe("ActivitiesTable selection and bulk actions", () => {
 
   it("renders Done as a round toggle so it is not mistaken for the square select box", () => {
     useQuery.mockReturnValue({ data: [row({})], refetch });
-    render(<ActivitiesTable />);
+    render(<ActivitiesTable currentUserId="me" />);
     const done = screen.getByRole("checkbox", { name: "Complete Call Jane" });
     const select = screen.getByRole("checkbox", { name: "Select Call Jane" });
     expect(done.className).toContain("rounded-full");
@@ -135,7 +135,7 @@ describe("ActivitiesTable selection and bulk actions", () => {
       data: [row({ id: "a1" }), row({ id: "a2", subject: "Call Bob" })],
       refetch,
     });
-    render(<ActivitiesTable />);
+    render(<ActivitiesTable currentUserId="me" />);
     fireEvent.click(screen.getByRole("checkbox", { name: "Select all activities" }));
     expect(screen.getByText("2 selected")).toBeInTheDocument();
     expect(screen.getByRole("checkbox", { name: "Select all activities" })).toBeChecked();
@@ -143,7 +143,7 @@ describe("ActivitiesTable selection and bulk actions", () => {
 
   it("bulk Mark done calls completeActivityAction({ id, done: true }) for each selected row", async () => {
     useQuery.mockReturnValue({ data: [row({})], refetch });
-    render(<ActivitiesTable />);
+    render(<ActivitiesTable currentUserId="me" />);
     fireEvent.click(screen.getByRole("checkbox", { name: "Select Call Jane" }));
     fireEvent.click(screen.getByRole("button", { name: "Mark done" }));
     await vi.waitFor(() => expect(complete).toHaveBeenCalledWith({ id: "a1", done: true }));
@@ -151,7 +151,7 @@ describe("ActivitiesTable selection and bulk actions", () => {
 
   it("bulk Delete calls deleteActivityAction with the selected id, then clears selection", async () => {
     useQuery.mockReturnValue({ data: [row({})], refetch });
-    render(<ActivitiesTable />);
+    render(<ActivitiesTable currentUserId="me" />);
     fireEvent.click(screen.getByRole("checkbox", { name: "Select Call Jane" }));
     fireEvent.click(screen.getByRole("button", { name: "Delete" }));
     await vi.waitFor(() => expect(deleteActivity).toHaveBeenCalledWith({ id: "a1" }));
@@ -170,7 +170,7 @@ describe("ActivitiesTable selection and bulk actions", () => {
       data: [row({ id: "a1" }), row({ id: "a2", subject: "Call Bob" })],
       refetch,
     });
-    render(<ActivitiesTable />);
+    render(<ActivitiesTable currentUserId="me" />);
 
     fireEvent.click(screen.getByRole("checkbox", { name: "Select all activities" }));
     fireEvent.click(screen.getByRole("button", { name: "Delete" }));

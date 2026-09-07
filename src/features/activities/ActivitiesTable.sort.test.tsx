@@ -30,7 +30,7 @@ vi.mock("@/lib/trpc-client", () => ({
       },
     }),
     activities: {
-      listRows: { useQuery: (input?: unknown) => useQuery(input) },
+      listRows: { useQuery: (input?: unknown, opts?: unknown) => useQuery(input, opts) },
       listTypes: { useQuery: () => ({ data: [{ id: "t1", key: "call", name: "Call" }] }) },
     },
     identity: {
@@ -54,7 +54,13 @@ import { ActivitiesTable } from "./ActivitiesTable";
 
 // The default (unfiltered, "open") ActivityListFilter, unchanged by these tests: only the sort
 // field/direction varies per assertion below.
-const DEFAULT_FILTER = { ownerId: null, done: "open", from: null, to: null, typeKey: null };
+function localYmd(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
+    d.getDate(),
+  ).padStart(2, "0")}`;
+}
+const TODAY = localYmd(new Date());
+const DEFAULT_FILTER = { ownerId: "me", done: "open", from: TODAY, to: TODAY, typeKey: null };
 
 function row(overrides: Record<string, unknown>) {
   return {
@@ -85,43 +91,43 @@ function row(overrides: Record<string, unknown>) {
 describe("ActivitiesTable sort headers", () => {
   it("clicking the Subject header re-queries listRows with the new sort", () => {
     useQuery.mockReturnValue({ data: [row({})], refetch });
-    render(<ActivitiesTable />);
+    render(<ActivitiesTable currentUserId="me" />);
     fireEvent.click(screen.getByRole("button", { name: "Subject" }));
-    expect(useQuery).toHaveBeenLastCalledWith({
-      ...DEFAULT_FILTER,
-      sort: { field: "subject", dir: "asc" },
-    });
+    expect(useQuery).toHaveBeenLastCalledWith(
+      { ...DEFAULT_FILTER, sort: { field: "subject", dir: "asc" } },
+      { enabled: true },
+    );
   });
 
   it("clicking the Duration header re-queries listRows with the new sort", () => {
     useQuery.mockReturnValue({ data: [row({})], refetch });
-    render(<ActivitiesTable />);
+    render(<ActivitiesTable currentUserId="me" />);
     fireEvent.click(screen.getByRole("button", { name: "Duration" }));
-    expect(useQuery).toHaveBeenLastCalledWith({
-      ...DEFAULT_FILTER,
-      sort: { field: "duration", dir: "asc" },
-    });
+    expect(useQuery).toHaveBeenLastCalledWith(
+      { ...DEFAULT_FILTER, sort: { field: "duration", dir: "asc" } },
+      { enabled: true },
+    );
   });
 
   it("cycles the Duration header asc to desc to the default sort on repeated clicks", () => {
     useQuery.mockReturnValue({ data: [row({})], refetch });
-    render(<ActivitiesTable />);
+    render(<ActivitiesTable currentUserId="me" />);
     const header = screen.getByRole("button", { name: "Duration" });
     fireEvent.click(header);
-    expect(useQuery).toHaveBeenLastCalledWith({
-      ...DEFAULT_FILTER,
-      sort: { field: "duration", dir: "asc" },
-    });
+    expect(useQuery).toHaveBeenLastCalledWith(
+      { ...DEFAULT_FILTER, sort: { field: "duration", dir: "asc" } },
+      { enabled: true },
+    );
     fireEvent.click(header);
-    expect(useQuery).toHaveBeenLastCalledWith({
-      ...DEFAULT_FILTER,
-      sort: { field: "duration", dir: "desc" },
-    });
+    expect(useQuery).toHaveBeenLastCalledWith(
+      { ...DEFAULT_FILTER, sort: { field: "duration", dir: "desc" } },
+      { enabled: true },
+    );
     fireEvent.click(header);
-    expect(useQuery).toHaveBeenLastCalledWith({
-      ...DEFAULT_FILTER,
-      sort: { field: "dueAtIso", dir: "asc" },
-    });
+    expect(useQuery).toHaveBeenLastCalledWith(
+      { ...DEFAULT_FILTER, sort: { field: "dueAtIso", dir: "asc" } },
+      { enabled: true },
+    );
   });
 });
 
@@ -134,7 +140,7 @@ describe("ActivitiesTable day-grouping reconciliation", () => {
       ],
       refetch,
     });
-    render(<ActivitiesTable />);
+    render(<ActivitiesTable currentUserId="me" />);
     expect(screen.getAllByRole("heading").length).toBeGreaterThan(0);
   });
 
@@ -146,7 +152,7 @@ describe("ActivitiesTable day-grouping reconciliation", () => {
       ],
       refetch,
     });
-    render(<ActivitiesTable />);
+    render(<ActivitiesTable currentUserId="me" />);
     fireEvent.click(screen.getByRole("button", { name: "Duration" }));
     expect(screen.queryAllByRole("heading")).toHaveLength(0);
     expect(screen.getByText("Call Jane")).toBeInTheDocument();

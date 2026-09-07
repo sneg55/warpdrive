@@ -40,7 +40,7 @@ vi.mock("@/lib/trpc-client", () => ({
       },
     }),
     activities: {
-      listRows: { useQuery: (input?: unknown) => useQuery(input) },
+      listRows: { useQuery: (input?: unknown, opts?: unknown) => useQuery(input, opts) },
       listTypes: {
         useQuery: () => ({
           data: [
@@ -97,46 +97,89 @@ function row(overrides: Record<string, unknown>) {
   };
 }
 
+function localYmd(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
+    d.getDate(),
+  ).padStart(2, "0")}`;
+}
+
+describe("ActivitiesTable default filter", () => {
+  it("opens on the current user's activities due today", () => {
+    useQuery.mockReturnValue({ data: [row({})], refetch });
+    render(<ActivitiesTable currentUserId="me" />);
+    const today = localYmd(new Date());
+    expect(useQuery).toHaveBeenLastCalledWith(
+      expect.objectContaining({ ownerId: "me", from: today, to: today, done: "open" }),
+      expect.anything(),
+    );
+    expect(screen.getByRole("button", { name: "Today" })).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("never fetches the unbounded to-do list while the local date is still unknown", () => {
+    useQuery.mockReturnValue({ data: [row({})], refetch });
+    render(<ActivitiesTable currentUserId="me" />);
+    for (const [input, opts] of useQuery.mock.calls as [
+      { from: string | null },
+      { enabled: boolean },
+    ][]) {
+      if (input.from === null) expect(opts.enabled).toBe(false);
+    }
+  });
+});
+
 describe("ActivitiesTable filter toolbar", () => {
   it("clicking a type tab re-queries listRows with the chosen typeKey", () => {
     useQuery.mockReturnValue({ data: [row({})], refetch });
-    render(<ActivitiesTable />);
+    render(<ActivitiesTable currentUserId="me" />);
     fireEvent.click(screen.getByRole("button", { name: "Meeting" }));
-    expect(useQuery).toHaveBeenLastCalledWith(expect.objectContaining({ typeKey: "meeting" }));
+    expect(useQuery).toHaveBeenLastCalledWith(
+      expect.objectContaining({ typeKey: "meeting" }),
+      expect.anything(),
+    );
   });
 
   it("clicking the All tab resets typeKey to null", () => {
     useQuery.mockReturnValue({ data: [row({})], refetch });
-    render(<ActivitiesTable />);
+    render(<ActivitiesTable currentUserId="me" />);
     fireEvent.click(screen.getByRole("button", { name: "Meeting" }));
     fireEvent.click(screen.getByRole("button", { name: "All" }));
-    expect(useQuery).toHaveBeenLastCalledWith(expect.objectContaining({ typeKey: null }));
+    expect(useQuery).toHaveBeenLastCalledWith(
+      expect.objectContaining({ typeKey: null }),
+      expect.anything(),
+    );
   });
 
   it("choosing an owner re-queries listRows with the chosen ownerId", () => {
     useQuery.mockReturnValue({ data: [row({})], refetch });
-    render(<ActivitiesTable />);
+    render(<ActivitiesTable currentUserId="me" />);
     fireEvent.click(screen.getByLabelText("Owner"));
     fireEvent.click(screen.getByText("Ann Owner"));
-    expect(useQuery).toHaveBeenLastCalledWith(expect.objectContaining({ ownerId: "u1" }));
+    expect(useQuery).toHaveBeenLastCalledWith(
+      expect.objectContaining({ ownerId: "u1" }),
+      expect.anything(),
+    );
   });
 
   it("changing the Status select re-queries listRows with the new done value", () => {
     useQuery.mockReturnValue({ data: [row({})], refetch });
-    render(<ActivitiesTable />);
+    render(<ActivitiesTable currentUserId="me" />);
     fireEvent.click(screen.getByLabelText("Status"));
     fireEvent.click(screen.getByRole("option", { name: "Completed" }));
-    expect(useQuery).toHaveBeenLastCalledWith(expect.objectContaining({ done: "done" }));
+    expect(useQuery).toHaveBeenLastCalledWith(
+      expect.objectContaining({ done: "done" }),
+      expect.anything(),
+    );
   });
 
   it("picking a From date re-queries listRows with the new from value", async () => {
     useQuery.mockReturnValue({ data: [row({})], refetch });
-    render(<ActivitiesTable />);
+    render(<ActivitiesTable currentUserId="me" />);
     fireEvent.click(screen.getByLabelText("From"));
     // findByText: the calendar is a next/dynamic chunk that loads on open.
     fireEvent.click(await screen.findByText("15"));
     expect(useQuery).toHaveBeenLastCalledWith(
       expect.objectContaining({ from: expect.any(String) }),
+      expect.anything(),
     );
   });
 });

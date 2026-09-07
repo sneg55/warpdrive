@@ -16,7 +16,7 @@ export default async function ActivityListPage(): Promise<React.ReactNode> {
   }
   return (
     <main aria-label="Activities" className="h-full">
-      <ActivitiesTable />
+      <ActivitiesTable currentUserId={ctx.actor.id} />
     </main>
   );
 }

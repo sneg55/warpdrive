@@ -44,6 +44,7 @@ const EMPTY_MERGE_CONTEXT: Record<string, string> = {};
 
 interface InsertToolbarProps {
   onSubjectChange: (subject: string) => void;
+  subjectLocked?: boolean;
   onBodyChange: (bodyHtml: string) => void;
   // context is optional; kind="deal" resolves live values, anything else (inbox or
   // undefined) shows the merge-token catalog instead. Insert field menu always renders.
@@ -61,8 +62,14 @@ interface InsertToolbarProps {
   dealId?: string | null;
 }
 
+function templateSubject(subject: string | null, locked: boolean): string | null {
+  if (locked || subject === null || subject.trim() === "") return null;
+  return subject;
+}
+
 export function InsertToolbar({
   onSubjectChange,
+  subjectLocked = false,
   onBodyChange,
   context,
   onInsertField,
@@ -105,8 +112,9 @@ export function InsertToolbar({
     if (mergeQuery.isPending) return;
     const merged = (text: string): string =>
       applyMergeFields(text, mergeCtx, { keepUnresolved: true });
+    const rawSubject = templateSubject(templateDetail.subject, subjectLocked);
     const next = {
-      subject: templateDetail.subject === null ? null : merged(templateDetail.subject),
+      subject: rawSubject === null ? null : merged(rawSubject),
       body: merged(templateDetail.bodyHtml),
     };
     const apply = shouldApplyTemplate({
@@ -127,6 +135,7 @@ export function InsertToolbar({
     mergeQuery.isPending,
     mergeCtx,
     subject,
+    subjectLocked,
     bodyHtml,
     onSubjectChange,
     onBodyChange,

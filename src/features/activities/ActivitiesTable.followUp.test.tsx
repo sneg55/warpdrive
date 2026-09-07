@@ -140,7 +140,7 @@ function renderTable(enabled: boolean): void {
       value={{ ...INTERFACE_PREFS_DEFAULT, scheduleFollowUpAfterDone: enabled }}
     >
       <FollowUpPromptProvider>
-        <ActivitiesTable />
+        <ActivitiesTable currentUserId="me" />
       </FollowUpPromptProvider>
     </InterfacePrefsProvider>,
   );

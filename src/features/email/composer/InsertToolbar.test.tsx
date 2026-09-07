@@ -161,6 +161,34 @@ describe("InsertToolbar - Choose template", () => {
   });
 });
 
+describe("InsertToolbar - subject handling", () => {
+  it("applies only the body when the subject is locked (a reply keeps its Re: subject)", async () => {
+    const onSubjectChange = vi.fn();
+    const onBodyChange = vi.fn();
+    getTemplateMock.mockReturnValue({
+      data: { id: "t2", name: "Follow Up", subject: "Following up", bodyHtml: "<p>Ping</p>" },
+    });
+    render(
+      <InsertToolbar onSubjectChange={onSubjectChange} onBodyChange={onBodyChange} subjectLocked />,
+    );
+    pickTemplate("Follow Up");
+    await waitFor(() => expect(onBodyChange).toHaveBeenCalledWith("<p>Ping</p>"));
+    expect(onSubjectChange).not.toHaveBeenCalled();
+  });
+
+  it("never blanks the subject for a template saved without one", async () => {
+    const onSubjectChange = vi.fn();
+    const onBodyChange = vi.fn();
+    getTemplateMock.mockReturnValue({
+      data: { id: "t2", name: "Follow Up", subject: "", bodyHtml: "<p>Ping</p>" },
+    });
+    render(<InsertToolbar onSubjectChange={onSubjectChange} onBodyChange={onBodyChange} />);
+    pickTemplate("Follow Up");
+    await waitFor(() => expect(onBodyChange).toHaveBeenCalledWith("<p>Ping</p>"));
+    expect(onSubjectChange).not.toHaveBeenCalled();
+  });
+});
+
 describe("InsertToolbar - merge fields", () => {
   it("applies a template with its merge fields resolved to the recipient's values", async () => {
     const onSubjectChange = vi.fn();

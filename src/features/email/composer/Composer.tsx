@@ -227,6 +227,7 @@ export function Composer({
         <InsertToolbar
           key={`toolbar-${recipientsNonce}`}
           onSubjectChange={setSubject}
+          subjectLocked={resolvedThreadId !== undefined}
           onBodyChange={setBody}
           context={context}
           onInsertField={(text) => setInsertToken((prev) => ({ text, seq: (prev?.seq ?? 0) + 1 }))}

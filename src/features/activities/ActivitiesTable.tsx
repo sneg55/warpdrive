@@ -22,9 +22,10 @@ import { completeActivityAction } from "./actions";
 import type { ActivityTableRow } from "./activityRows";
 import { activityRowTarget } from "./activityRowTarget";
 import { followUpLinksOf, useFollowUpAfterDone } from "./followUpAfterDone";
-import type { ActivityListFilter, ActivitySortField } from "./schemas";
+import type { ActivitySortField } from "./schemas";
 import { toEditableActivity } from "./toEditableActivity";
 import { useActivityBulkActions } from "./useActivityBulkActions";
+import { useActivityListFilter } from "./useActivityListFilter";
 
 // Stable module reference: passed as useColumnSort's fallback, so `effective` only changes
 // reference when the sort state itself changes (see PeopleList for the same concern).
@@ -35,16 +36,8 @@ const DEFAULT_SORT: ColumnSort<ActivitySortField> = { field: "dueAtIso", dir: "a
 // so neither has to be kept in sync by hand when a column is added.
 const ACTIVITY_TABLE_COLUMN_COUNT = 12;
 
-const DEFAULT_FILTER: ActivityListFilter = {
-  ownerId: null,
-  done: "open",
-  from: null,
-  to: null,
-  typeKey: null,
-};
-
-export function ActivitiesTable(): React.ReactNode {
-  const [filter, setFilter] = useState<ActivityListFilter>(DEFAULT_FILTER);
+export function ActivitiesTable({ currentUserId }: { currentUserId: string }): React.ReactNode {
+  const { filter, setFilter, ready } = useActivityListFilter(currentUserId);
   const [modalOpen, setModalOpen] = useState(false);
   const [selected, setSelected] = useState<ActivityTableRow | null>(null);
   const selection = useRowSelection();
@@ -53,7 +46,10 @@ export function ActivitiesTable(): React.ReactNode {
   const router = useRouter();
   const setPreview = useRecordPreview((s) => s.setPreview);
   const reportError = useActionError();
-  const rowsQ = trpc.activities.listRows.useQuery({ ...filter, sort: effective });
+  const rowsQ = trpc.activities.listRows.useQuery(
+    { ...filter, sort: effective },
+    { enabled: ready },
+  );
   const typesQ = trpc.activities.listTypes.useQuery();
   const ownersQ = trpc.identity.assignableUsers.useQuery();
   const { error, bulkMarkDone, bulkDelete } = useActivityBulkActions(selection);

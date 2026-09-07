@@ -89,7 +89,7 @@ describe("ActivitiesTable done checkbox failure", () => {
   it("reports the error id when marking done fails", async () => {
     complete.mockResolvedValue({ ok: false, error: { id: "E_AUTH_CSRF" } });
     useQuery.mockReturnValue({ data: [ROW], refetch });
-    render(<ActivitiesTable />);
+    render(<ActivitiesTable currentUserId="me" />);
 
     fireEvent.click(screen.getByRole("checkbox", { name: "Complete Call Jane" }));
 
@@ -101,7 +101,7 @@ describe("ActivitiesTable done checkbox failure", () => {
   it("does not report anything when marking done succeeds", async () => {
     complete.mockResolvedValue({ ok: true, value: { id: "a1" } });
     useQuery.mockReturnValue({ data: [ROW], refetch });
-    render(<ActivitiesTable />);
+    render(<ActivitiesTable currentUserId="me" />);
 
     fireEvent.click(screen.getByRole("checkbox", { name: "Complete Call Jane" }));
 
