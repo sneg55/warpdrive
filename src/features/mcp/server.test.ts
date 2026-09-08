@@ -1,3 +1,5 @@
+import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { expect, test } from "vitest";
 import { withTestDb } from "@/db/testing";
 import { seedUser } from "@/db/testing/factories";
@@ -58,5 +60,27 @@ test("MCP server exposes the complete tool set without destructive tools", async
     // actor's own owner-scoped text, not a record anyone else can see.
     const records = names.filter((name) => !name.endsWith("_email_draft"));
     expect(records.some((name) => /delete|remove|archive|destroy/i.test(name))).toBe(false);
+  });
+});
+
+test("tools/list serves every registered tool over the wire (each input schema is JSON-Schema representable)", async () => {
+  await withTestDb(async (db) => {
+    const user = await seedUser(db, { isAdmin: true });
+    const actor = await hydrateActor(db, user.id, AbortSignal.timeout(5_000));
+    expect(actor).not.toBeNull();
+    if (actor === null) return;
+
+    const server = buildMcpServer(() => buildAppContext(db, actor), db);
+    const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+    await server.connect(serverTransport);
+    const client = new Client({ name: "test", version: "0.0.0" });
+    await client.connect(clientTransport);
+    try {
+      const listed = await client.listTools();
+      expect(listed.tools.map((t) => t.name).sort()).toEqual([...EXPECTED_TOOLS].sort());
+    } finally {
+      await client.close();
+      await server.close();
+    }
   });
 });
