@@ -166,6 +166,29 @@ describe("CreateFilterModal", () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
+  it("disables Save while the action is in flight, so repeated clicks create one filter", async () => {
+    let finish: (value: { ok: true; value: { id: string } }) => void = () => {};
+    createSavedFilterAction.mockReturnValue(
+      new Promise<{ ok: true; value: { id: string } }>((resolve) => {
+        finish = resolve;
+      }),
+    );
+    const onSave = vi.fn();
+    render(<CreateFilterModal onClose={() => {}} onSave={onSave} />);
+    fireEvent.change(screen.getByLabelText("Condition 1 value"), { target: { value: "Acme" } });
+    const save = screen.getByRole("button", { name: "Save" });
+    fireEvent.click(save);
+    fireEvent.click(save);
+    fireEvent.click(save);
+
+    await waitFor(() => expect(save).toBeDisabled());
+    expect(createSavedFilterAction).toHaveBeenCalledTimes(1);
+
+    finish({ ok: true, value: { id: "srv-once" } });
+    await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
+    expect(createSavedFilterAction).toHaveBeenCalledTimes(1);
+  });
+
   it("auto-populates the filter name from the conditions until the user edits it", () => {
     render(<CreateFilterModal onClose={() => {}} onSave={() => {}} />);
     fireEvent.change(screen.getByLabelText("Condition 1 value"), { target: { value: "Acme" } });

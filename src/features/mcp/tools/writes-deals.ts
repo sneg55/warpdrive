@@ -2,10 +2,15 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { Db } from "@/db/client";
 import { createDeal, moveDeal, updateDeal } from "@/features/deals/dealActions";
 import { dealCreateInput, dealMoveInput, dealUpdateInput } from "@/features/deals/schemas";
-import { createLead } from "@/features/leads/leadActions";
+import { archiveLead, createLead } from "@/features/leads/leadActions";
 import { convertLead } from "@/features/leads/leadConvert";
 import { updateLead } from "@/features/leads/leadUpdate";
-import { convertLeadInput, leadCreateInput, leadUpdateInput } from "@/features/leads/schemas";
+import {
+  convertLeadInput,
+  leadArchiveInput,
+  leadCreateInput,
+  leadUpdateInput,
+} from "@/features/leads/schemas";
 import { buildEntityCreateSession, toPermSetUser } from "@/features/mcp/actorContext";
 import {
   type GetCtx,
@@ -84,6 +89,18 @@ export function registerDealWriteTools(
       if (!actor.ok) return toolError(actor.error);
       const session = await buildEntityCreateSession(db, actor.value, signal);
       return resultToTool(await convertLead(db, session, input, signal));
+    },
+  });
+  registerTool(server, registry, {
+    name: "archive_lead",
+    description:
+      "Archive a lead out of the inbox, or restore it with archived=false. Use this to retire a lead whose deal already exists, instead of convert_lead_to_deal.",
+    inputSchema: leadArchiveInput,
+    run: async (input, signal) => {
+      const actor = getToolActor(getCtx);
+      if (!actor.ok) return toolError(actor.error);
+      const session = await buildEntityCreateSession(db, actor.value, signal);
+      return resultToTool(await archiveLead(db, session, input, signal));
     },
   });
 }

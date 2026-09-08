@@ -88,4 +88,8 @@ describe("deploy workflow", () => {
       expect(session).toMatch(/WARPDRIVE_IMAGE=/);
     }
   });
+
+  it("removes every unused image older than a week, since a plain prune keeps each deploy's tagged 1.4 GB image forever", () => {
+    expect(job("deploy")).toMatch(/docker image prune -af --filter "?until=168h"?/);
+  });
 });

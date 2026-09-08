@@ -62,6 +62,8 @@ The remote MCP endpoint is:
 https://<domain>/api/mcp
 ```
 
+Signed-in users can find this URL in Warpdrive under Settings, then Connected apps: the "Connect an AI client" card shows the server URL with a copy button and the Claude Desktop steps below. The card is hidden when `MCP_ENABLED=false`.
+
 Warpdrive supports Streamable HTTP, OAuth discovery, dynamic client registration, authorization code flow, and PKCE with S256.
 
 To connect from Claude or Claude Desktop:

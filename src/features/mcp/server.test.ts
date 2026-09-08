@@ -28,6 +28,7 @@ const EXPECTED_TOOLS = [
   "create_lead",
   "update_lead",
   "convert_lead_to_deal",
+  "archive_lead",
   "create_person",
   "update_person",
   "create_organization",
@@ -59,7 +60,7 @@ test("MCP server exposes the complete tool set without destructive tools", async
     // No destructive tool on a CRM record. Unsent email drafts are the one exception: they are the
     // actor's own owner-scoped text, not a record anyone else can see.
     const records = names.filter((name) => !name.endsWith("_email_draft"));
-    expect(records.some((name) => /delete|remove|archive|destroy/i.test(name))).toBe(false);
+    expect(records.some((name) => /delete|remove|destroy/i.test(name))).toBe(false);
   });
 });
 

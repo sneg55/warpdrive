@@ -82,6 +82,7 @@ export function CreateFilterModal({
   const [nameEdited, setNameEdited] = useState(mode === "update");
   const [isShared, setIsShared] = useState(mode === "update" && savedFilter?.isShared === true);
   const [saveError, setSaveError] = useState<ActionErrorContent | null>(null);
+  const [saving, setSaving] = useState(false);
 
   const effectiveName = nameEdited ? name : describeRows(rows, fields, combinator);
   // Caught as the user types, so a value the server would reject never costs a round trip.
@@ -94,6 +95,16 @@ export function CreateFilterModal({
   }
 
   async function save(): Promise<void> {
+    if (saving) return;
+    setSaving(true);
+    try {
+      await persist();
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function persist(): Promise<void> {
     const definition = buildDefinition();
     const filterName = effectiveName.trim() === "" ? "Untitled filter" : effectiveName.trim();
     if (mode === "update" && savedFilter !== undefined) {
@@ -166,7 +177,7 @@ export function CreateFilterModal({
           />
         </div>
         <CreateFilterModalFooter
-          disabled={issue !== null}
+          disabled={issue !== null || saving}
           onPreview={onPreview === undefined ? undefined : () => onPreview(buildDefinition())}
           onCancel={onClose}
           onApply={
