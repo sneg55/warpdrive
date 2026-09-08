@@ -50,6 +50,7 @@ type InitialData = Omit<
   initialColumns?: string[];
   customFieldDefs?: CustomFieldDef[];
   refLabels?: CustomFieldRefLabels;
+  canManagePipelines?: boolean;
 };
 
 interface DealListClientProps {
@@ -203,6 +204,7 @@ export function DealListClient({
         totalValue={footer.totalValue}
         dealCount={footer.total}
         activeView={variant}
+        canManagePipelines={initial.canManagePipelines}
         createSlot={addDeal}
         sortSlot={
           <BoardSortControl<DealListSortKey>

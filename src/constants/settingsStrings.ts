@@ -124,6 +124,7 @@ export const SETTINGS_STRINGS = {
   pipelines: "Pipelines",
   pipelinesDescription: "Create pipelines and manage their stages.",
   createPipeline: "Create pipeline",
+  addNewPipeline: "Add new pipeline",
   pipelineNameLabel: "Pipeline name",
   pipelineNamePlaceholder: "e.g. Sales Pipeline",
   createPipelineDescription: "New pipelines start with a default set of stages you can edit.",

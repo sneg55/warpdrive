@@ -6,6 +6,7 @@ import { DealListClient } from "@/features/deals/DealListClient";
 import { getPreferencesForActor } from "@/features/identity/preferencesForActor";
 import { entityTitle } from "@/features/navigation/pageTitle";
 import { resolveVisiblePipeline } from "@/features/navigation/resolvePipeline";
+import { canManagePipelines } from "@/features/pipelines/canManagePipelines";
 import { readBaseCurrency } from "@/features/settings/readBaseCurrency";
 import { createContext } from "@/server/trpc/context";
 import { createCaller } from "@/server/trpc/root";
@@ -83,6 +84,7 @@ export default async function PipelineArchivedPage({
           customFieldDefs,
           refLabels: list.refLabels,
           baseCurrency,
+          canManagePipelines: canManagePipelines(ctx.actor),
         }}
       />
     </main>

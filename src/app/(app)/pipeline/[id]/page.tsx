@@ -9,6 +9,7 @@ import { rowToView } from "@/features/deals/savedFilterView";
 import { getPreferencesForActor } from "@/features/identity/preferencesForActor";
 import { entityTitle } from "@/features/navigation/pageTitle";
 import { resolveVisiblePipeline } from "@/features/navigation/resolvePipeline";
+import { canManagePipelines } from "@/features/pipelines/canManagePipelines";
 import { readBaseCurrency } from "@/features/settings/readBaseCurrency";
 import { createContext } from "@/server/trpc/context";
 import { createCaller } from "@/server/trpc/root";
@@ -109,6 +110,7 @@ export default async function PipelineBoardPage({
         density={prefs.density}
         baseCurrency={baseCurrency}
         initialView={initialView}
+        canManagePipelines={canManagePipelines(actor)}
       />
     </main>
   );

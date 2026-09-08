@@ -26,13 +26,14 @@ interface BoardHeaderProps {
   view: BoardViewControls;
   addSlot: React.ReactNode;
   onPreviewFilter: (definition: FilterDefinition | null) => void;
+  canManagePipelines?: boolean;
 }
 
 // Everything above the stage columns: the toolbar with its filter/sort/create slots, and the row
 // of chips naming each narrowing dimension the board currently applies.
 export function BoardHeader(props: BoardHeaderProps): React.ReactNode {
   const { pipelineId, pipelines, stages, selfActorId, owners, view, addSlot } = props;
-  const { totalValue, dealCount, onPreviewFilter } = props;
+  const { totalValue, dealCount, onPreviewFilter, canManagePipelines } = props;
   const ownerName =
     view.ownerId === null
       ? null
@@ -44,6 +45,7 @@ export function BoardHeader(props: BoardHeaderProps): React.ReactNode {
       pipelines={pipelines}
       totalValue={totalValue}
       dealCount={dealCount}
+      canManagePipelines={canManagePipelines}
       createSlot={addSlot}
       sortSlot={
         <BoardSortControl

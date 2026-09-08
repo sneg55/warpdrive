@@ -68,4 +68,14 @@ describe("CreatePipelineButton", () => {
     await waitFor(() => expect(screen.getByRole("alert")).toBeInTheDocument());
     expect(push).not.toHaveBeenCalled();
   });
+
+  it("returns focus to the button when the dialog is dismissed with Escape", async () => {
+    render(<CreatePipelineButton label="Create pipeline" />);
+    const trigger = screen.getByRole("button", { name: "Create pipeline" });
+    fireEvent.click(trigger);
+    const input = await screen.findByLabelText("Pipeline name");
+    fireEvent.keyDown(input, { key: "Escape" });
+    await waitFor(() => expect(screen.queryByLabelText("Pipeline name")).toBeNull());
+    expect(trigger).toHaveFocus();
+  });
 });

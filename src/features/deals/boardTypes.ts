@@ -23,4 +23,5 @@ export interface BoardProps {
   // the first paint claims every deal has nothing scheduled until a mount effect supplies a clock,
   // which is a wrong answer rather than an absent one.
   serverNow: Date;
+  canManagePipelines?: boolean;
 }

@@ -212,6 +212,7 @@ export function Board(props: BoardProps): React.ReactNode {
         view={view}
         addSlot={addDeal}
         onPreviewFilter={setPreviewDefinition}
+        canManagePipelines={props.canManagePipelines}
       />
 
       <DndContext

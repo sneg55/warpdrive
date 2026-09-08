@@ -27,6 +27,7 @@ export interface BoardToolbarProps {
   sortSlot?: React.ReactNode;
   // The quick-filter condition chips row, rendered below the main toolbar row (Pipedrive).
   quickFilters?: React.ReactNode;
+  canManagePipelines?: boolean;
 }
 
 // P6: a labeled segmented control (icon + text) so List/Archive read as available views, not a
@@ -40,7 +41,7 @@ const IDLE = "text-muted-foreground hover:text-foreground";
 // summary with a value toggle, a styled pipeline selector, filter/sort, and an actions overflow.
 export function BoardToolbar(props: BoardToolbarProps): React.ReactNode {
   const { pipelineId, pipelines, totalValue, dealCount, activeView = "board" } = props;
-  const { presence, createSlot, filterSlot, sortSlot, quickFilters } = props;
+  const { presence, createSlot, filterSlot, sortSlot, quickFilters, canManagePipelines } = props;
   const current = (view: BoardToolbarView): "page" | undefined =>
     activeView === view ? "page" : undefined;
 
@@ -81,7 +82,11 @@ export function BoardToolbar(props: BoardToolbarProps): React.ReactNode {
 
         <div className="ml-auto flex items-center gap-3">
           <BoardSummary totalValue={totalValue} dealCount={dealCount} />
-          <PipelineSelect pipelineId={pipelineId} pipelines={pipelines} />
+          <PipelineSelect
+            pipelineId={pipelineId}
+            pipelines={pipelines}
+            canManagePipelines={canManagePipelines}
+          />
 
           <Link
             href={`/pipeline/${pipelineId}/edit`}
