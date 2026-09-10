@@ -274,3 +274,40 @@ describe("formatChangeLabel", () => {
     expect(label).toBe("Label: (none) → (none)");
   });
 });
+
+it("carries the note's own entity scope onto the note item so the card can load its comments", () => {
+  const items = buildHistoryTimeline(
+    [],
+    [],
+    [
+      {
+        id: "n1",
+        body: "b",
+        createdAt: new Date("2026-07-02T10:00:00Z"),
+        entityType: "deal",
+        entityId: "d1",
+      },
+    ],
+  );
+  const note = items.find((i) => i.kind === "note");
+  expect(note?.kind === "note" ? note.entityType : undefined).toBe("deal");
+  expect(note?.kind === "note" ? note.entityId : undefined).toBe("d1");
+});
+
+it("leaves a lead note unscoped so it never offers comments, matching Pipedrive", () => {
+  const items = buildHistoryTimeline(
+    [],
+    [],
+    [
+      {
+        id: "n1",
+        body: "b",
+        createdAt: new Date("2026-07-02T10:00:00Z"),
+        entityType: "lead",
+        entityId: "l1",
+      },
+    ],
+  );
+  const note = items.find((i) => i.kind === "note");
+  expect(note?.kind === "note" ? note.entityType : "set").toBeUndefined();
+});

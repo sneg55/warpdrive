@@ -29,6 +29,7 @@ describe("error IDs", () => {
       "WS",
       "CF",
       "NOTE",
+      "COMMENT",
       "IMPORT",
       "ACTIVITY",
       "USER",

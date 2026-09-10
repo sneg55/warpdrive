@@ -7,6 +7,7 @@ import { assertReferenceVisible } from "@/features/permissions/referenceCheck";
 import { protectedProcedure, router } from "@/server/trpc/trpc";
 import type { EntityType } from "@/types/entityRef";
 import { listChangeLog } from "./changeLog";
+import { listCommentsForEntity } from "./commentsRepo";
 import { listNotes } from "./notesRepo";
 
 // Build the DealVisibilitySession shape assertReferenceVisible expects.
@@ -61,6 +62,11 @@ export const collaborationRouter = router({
     return listChangeLog(ctx.db, input.entityType, input.entityId, signal);
   }),
 
+  listComments: protectedProcedure.input(entityInput).query(async ({ ctx, input }) => {
+    const signal = AbortSignal.timeout(10_000);
+    await gateParent(ctx.db, ctx.actor, input.entityType, input.entityId, signal);
+    return listCommentsForEntity(ctx.db, ctx.actor, input.entityType, input.entityId, signal);
+  }),
+
   // TODO Phase 3 follow-up: listFiles needs a filesRepo with a per-entity list function.
-  // TODO Phase 3 follow-up: createComment needs a createComment function in a commentsRepo.
 });

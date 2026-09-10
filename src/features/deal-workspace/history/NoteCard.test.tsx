@@ -25,6 +25,12 @@ vi.mock("@/features/collaboration/actions", () => ({
   deleteNoteAction: (...a: unknown[]) => deleteNote(...a),
 }));
 vi.mock("@/utils/csrfCookie", () => ({ readCsrfToken: () => "csrf" }));
+vi.mock("@/lib/trpc-client", () => ({
+  trpc: {
+    collaboration: { listComments: { useQuery: () => ({ data: [] }) } },
+    useUtils: () => ({ collaboration: { listComments: { invalidate: () => Promise.resolve() } } }),
+  },
+}));
 const reportError = vi.fn();
 vi.mock("@/features/deal-workspace/DealActionErrorProvider", () => ({
   useDealActionError: () => reportError,
@@ -153,4 +159,14 @@ it("rolls back the pin and surfaces the error when pinning is denied", async () 
     "aria-pressed",
     "false",
   );
+});
+
+it("offers a comment thread on a note that belongs to a commentable record", () => {
+  render(<NoteCard {...base} entityType="deal" entityId="d1" />);
+  expect(screen.getByRole("button", { name: "Comment" })).toBeInTheDocument();
+});
+
+it("offers no comment thread when the note carries no entity scope", () => {
+  render(<NoteCard {...base} />);
+  expect(screen.queryByRole("button", { name: "Comment" })).not.toBeInTheDocument();
 });

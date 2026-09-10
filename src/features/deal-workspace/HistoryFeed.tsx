@@ -113,6 +113,8 @@ export function HistoryFeed({
               actorName={item.actorName}
               pinned={item.pinned}
               onChanged={onNoteChanged}
+              entityType={item.entityType}
+              entityId={item.entityId}
             />
           )}
           {item.kind === "event" && (

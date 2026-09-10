@@ -113,6 +113,25 @@ describe("contactTimeline", () => {
     });
   });
 
+  it("carries the person scope onto each note item so a note can load its comments", async () => {
+    await withTestDb(async (db) => {
+      const owner = await seedUser(db);
+      const [person] = await db
+        .insert(persons)
+        .values({ name: "Scoped", ownerId: owner.id, visibilityLevel: "all" })
+        .returning();
+      if (person === undefined) throw new Error("person seed failed");
+      await db
+        .insert(notes)
+        .values({ entityType: "person", entityId: person.id, body: "n", authorId: owner.id });
+
+      const r = await contactTimeline(db, actor(owner.id), "person", person.id, sig());
+      const note = r.items.find((i) => i.kind === "note");
+      expect(note?.kind === "note" ? note.entityType : undefined).toBe("person");
+      expect(note?.kind === "note" ? note.entityId : undefined).toBe(person.id);
+    });
+  });
+
   it("returns an empty feed for a contact the actor cannot see", async () => {
     await withTestDb(async (db) => {
       const owner = await seedUser(db);

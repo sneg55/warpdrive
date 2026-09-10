@@ -1,4 +1,5 @@
 import { CHANGE_FIELD_STAGE_ID } from "@/constants/changeLogFields";
+import { type CommentableEntityType, isCommentableEntityType } from "@/constants/comments";
 import type { CalendarActivity } from "@/features/activities/calendar";
 import type { ChangeLogEntry } from "@/features/collaboration/changeLog";
 import type { DraftSummary } from "@/features/email/draftRepo";
@@ -16,7 +17,16 @@ export { formatChangeLabel } from "./changeLabel";
 export type HistoryItem =
   | { kind: "created"; id: string; at: Date; actorName: string | null }
   | { kind: "activity"; id: string; at: Date; activity: CalendarActivity }
-  | { kind: "note"; id: string; at: Date; body: string; pinned: boolean; actorName: string | null }
+  | {
+      kind: "note";
+      id: string;
+      at: Date;
+      body: string;
+      pinned: boolean;
+      actorName: string | null;
+      entityType?: CommentableEntityType;
+      entityId?: string;
+    }
   | { kind: "event"; id: string; at: Date; label: string; actorName: string | null }
   // One linked email, per message rather than per thread: Pipedrive splits a thread across the
   // timeline so each message sits at its own moment. The body is absent, it loads on expand.
@@ -29,6 +39,8 @@ export interface NoteItem {
   id: string;
   body: string;
   createdAt: Date;
+  entityType?: string;
+  entityId?: string;
   // Author display name for the attribution line; optional/null when unresolved.
   actorName?: string | null;
   pinned?: boolean;
@@ -77,6 +89,8 @@ export function buildHistoryTimeline(
         body: n.body,
         pinned: n.pinned ?? false,
         actorName: n.actorName ?? null,
+        entityType: isCommentableEntityType(n.entityType) ? n.entityType : undefined,
+        entityId: n.entityId,
       }),
     ),
     ...changelog.map(toChangeItem),

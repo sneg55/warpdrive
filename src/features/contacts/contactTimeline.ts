@@ -55,6 +55,8 @@ export async function contactTimeline(
     id: n.id,
     body: n.body,
     createdAt: n.createdAt,
+    entityType,
+    entityId,
   }));
 
   const changelog = await listChangeLog(db, entityType, entityId, signal);

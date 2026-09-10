@@ -73,6 +73,10 @@ export const ERROR_IDS = {
   CONTACT_CREATE_INPUT_INVALID: "E_CONTACT_010", // createPersonAction input failed Zod validation
   // NOTE
   NOTE_NOT_FOUND: "E_NOTE_001", // note not found or soft-deleted
+  COMMENT_NOT_FOUND: "E_COMMENT_001",
+  COMMENT_FORBIDDEN: "E_COMMENT_002",
+  COMMENT_ENTITY_UNSUPPORTED: "E_COMMENT_003",
+  COMMENT_INPUT_INVALID: "E_COMMENT_004",
   // IMPORT
   IMPORT_ROW_GONE: "E_IMPORT_001", // import row vanished before commit could claim it
   IMPORT_BATCH_NOT_FOUND: "E_IMPORT_002", // import batch not found or not owned (404-on-invisible)

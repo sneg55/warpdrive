@@ -17,6 +17,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { type CommentableEntityType, isCommentableEntityType } from "@/constants/comments";
 import {
   deleteNoteAction,
   togglePinAction,
@@ -26,6 +27,7 @@ import { LinkifiedText } from "@/features/collaboration/LinkifiedText";
 import { useDealActionError } from "@/features/deal-workspace/DealActionErrorProvider";
 import { readCsrfToken } from "@/utils/csrfCookie";
 import { AttributionLine } from "./AttributionLine";
+import { NoteComments } from "./NoteComments";
 
 // Note card (Pipedrive parity): pale-amber body + attribution, with an always-visible
 // inline Pin and a "…" menu (Edit, Delete). Edit swaps the body for a textarea; Delete
@@ -38,6 +40,8 @@ export function NoteCard({
   actorName,
   pinned,
   onChanged,
+  entityType,
+  entityId,
 }: {
   id: string;
   body: string;
@@ -45,6 +49,8 @@ export function NoteCard({
   actorName: string | null;
   pinned: boolean;
   onChanged?: () => void;
+  entityType?: CommentableEntityType;
+  entityId?: string;
 }): React.ReactNode {
   const [isPinned, setPinned] = useState(pinned);
   const [editing, setEditing] = useState(false);
@@ -93,6 +99,9 @@ export function NoteCard({
       reportError(res.error.id);
     }
   }, [busy, id, onChanged, reportError]);
+
+  const commentScope =
+    isCommentableEntityType(entityType) && entityId !== undefined ? { entityType, entityId } : null;
 
   return (
     <div className="rounded-md border bg-warning/10 px-3 py-2 transition-colors hover:border-ring/40">
@@ -166,6 +175,15 @@ export function NoteCard({
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
+      )}
+
+      {commentScope !== null && (
+        <NoteComments
+          noteId={id}
+          entityType={commentScope.entityType}
+          entityId={commentScope.entityId}
+          onError={reportError}
+        />
       )}
 
       <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>

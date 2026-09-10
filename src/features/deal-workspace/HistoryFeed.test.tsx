@@ -7,8 +7,10 @@ import type { CalendarActivity } from "@/features/activities/calendar";
 // ActivityCard (rendered inside HistoryFeed) reads trpc.useUtils for its optimistic mark-done.
 vi.mock("@/lib/trpc-client", () => ({
   trpc: {
+    collaboration: { listComments: { useQuery: () => ({ data: [] }) } },
     useUtils: () => ({
       activities: { listForEntity: { setData: () => {}, invalidate: () => {} } },
+      collaboration: { listComments: { invalidate: () => Promise.resolve() } },
     }),
   },
 }));
@@ -77,4 +79,21 @@ describe("HistoryFeed dispatch", () => {
     // ActivityTypeIcon renders an <svg class="h-4 w-4 shrink-0">; there must be exactly one.
     expect(container.querySelectorAll("svg.h-4.w-4.shrink-0")).toHaveLength(1);
   });
+});
+
+it("gives a note card its entity scope so the note can carry a comment thread", () => {
+  const items: HistoryItem[] = [
+    {
+      kind: "note",
+      id: "n1",
+      at: AT,
+      body: "Called the buyer",
+      pinned: false,
+      actorName: "Nick",
+      entityType: "deal",
+      entityId: "d1",
+    },
+  ];
+  render(<HistoryFeed items={items} emptyLabel="" />);
+  expect(screen.getByRole("button", { name: "Comment" })).toBeInTheDocument();
 });
