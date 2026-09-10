@@ -19,6 +19,7 @@ export const STRINGS = {
     inbox: "Inbox",
     dashboard: "Performance",
     settings: "Settings",
+    docs: "Docs",
   },
   auth: {
     signInWithGoogle: "Sign in with Google",

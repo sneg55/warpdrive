@@ -1,4 +1,5 @@
 import {
+  BookOpen,
   CalendarDays,
   ChartColumn,
   Inbox,
@@ -16,6 +17,10 @@ import type React from "react";
 type IconProps = { className?: string };
 
 const NAV_ICON_CLASS = "h-[18px] w-[18px] shrink-0";
+
+export function DocsIcon({ className }: IconProps): React.ReactNode {
+  return <BookOpen aria-hidden="true" className={className ?? NAV_ICON_CLASS} />;
+}
 
 export function PipelineIcon({ className }: IconProps): React.ReactNode {
   return <Kanban aria-hidden="true" className={className ?? NAV_ICON_CLASS} />;

@@ -2,6 +2,7 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, describe, expect, test, vi } from "vitest";
+import { DOCS_SITE_URL } from "@/constants/docs";
 import { LeftNav } from "./LeftNav";
 
 // LeftNav reads the current path via usePathname to mark the active item; mock it so the
@@ -200,5 +201,28 @@ describe("LeftNav bracket shortcuts", () => {
     fireEvent.keyDown(window, { key: "]" });
     dialog.remove();
     expect(screen.getByRole("button", { name: "Collapse sidebar" })).not.toBeNull();
+  });
+
+  test("links to the docs site in a new tab", () => {
+    setViewport(true);
+    render(<LeftNav />);
+    const docs = screen.getByRole("link", { name: "Docs" });
+    expect(docs.getAttribute("href")).toBe(DOCS_SITE_URL);
+    expect(docs.getAttribute("target")).toBe("_blank");
+    expect(docs.getAttribute("rel")).toContain("noreferrer");
+  });
+
+  test("the docs link sits directly above the collapse toggle", () => {
+    setViewport(true);
+    render(<LeftNav />);
+    const docs = screen.getByRole("link", { name: "Docs" });
+    const toggle = screen.getByRole("button", { name: "Collapse sidebar" });
+    expect(docs.nextElementSibling).toBe(toggle);
+  });
+
+  test("keeps an accessible name for the docs link on the collapsed rail", () => {
+    setViewport(false);
+    render(<LeftNav />);
+    expect(screen.getByRole("link", { name: "Docs" })).not.toBeNull();
   });
 });

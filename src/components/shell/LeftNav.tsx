@@ -6,6 +6,7 @@ import type React from "react";
 import { useEffect, useState } from "react";
 import { Tip } from "@/components/ui/tooltip";
 import { NAV_PREF_COOKIE } from "@/constants/cookies";
+import { DOCS_SITE_URL } from "@/constants/docs";
 import { NAV_ITEMS, type NavKey } from "@/constants/nav";
 import { STRINGS } from "@/constants/strings";
 import { isOverlayOpen, isTypingTarget } from "@/features/shortcuts/shortcutTarget";
@@ -14,6 +15,7 @@ import {
   ActivitiesIcon,
   ContactsIcon,
   DashboardIcon,
+  DocsIcon,
   InboxIcon,
   LeadsIcon,
   PipelineIcon,
@@ -171,6 +173,8 @@ export function LeftNav({ initialExpanded = false }: LeftNavProps = {}): React.R
         );
       })}
 
+      <DocsLink expanded={expanded} />
+
       {/* Collapse/expand toggle sits at the bottom of the rail. */}
       <button
         type="button"
@@ -178,7 +182,7 @@ export function LeftNav({ initialExpanded = false }: LeftNavProps = {}): React.R
         aria-label={expanded ? "Collapse sidebar" : "Expand sidebar"}
         aria-expanded={expanded}
         className={cn(
-          "mt-auto flex items-center rounded-lg text-slate-400 transition-colors hover:bg-slate-800 hover:text-white",
+          "flex items-center rounded-lg text-slate-400 transition-colors hover:bg-slate-800 hover:text-white",
           expanded ? "h-10 gap-3 px-3" : "h-10 w-10 justify-center",
         )}
       >
@@ -187,6 +191,26 @@ export function LeftNav({ initialExpanded = false }: LeftNavProps = {}): React.R
       </button>
     </nav>
   );
+}
+
+function DocsLink({ expanded }: { expanded: boolean }): React.ReactNode {
+  const label = STRINGS.nav.docs;
+  const el = (
+    <a
+      href={DOCS_SITE_URL}
+      target="_blank"
+      rel="noreferrer noopener"
+      aria-label={expanded ? undefined : label}
+      className={cn(
+        "mt-auto flex items-center rounded-lg text-slate-400 transition-colors hover:bg-slate-800 hover:text-white",
+        expanded ? "h-10 gap-3 px-3" : "h-10 w-10 justify-center",
+      )}
+    >
+      <DocsIcon />
+      <span className={cn("text-sm font-medium", expanded ? "" : "sr-only")}>{label}</span>
+    </a>
+  );
+  return expanded ? el : <Tip label={label}>{el}</Tip>;
 }
 
 function Chevron({ expanded }: { expanded: boolean }): React.ReactNode {

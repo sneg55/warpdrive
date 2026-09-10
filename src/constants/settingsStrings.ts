@@ -1,3 +1,4 @@
+import { DOCS_SITE_URL } from "./docs";
 import { IMPORTER_STRINGS } from "./importerStrings";
 
 export const SETTINGS_STRINGS = {
@@ -110,7 +111,7 @@ export const SETTINGS_STRINGS = {
     "Select Connect, sign in to Warpdrive, and approve access on the consent screen.",
   ],
   mcpConnectDocsLink: "Setup guide",
-  mcpConnectDocsUrl: "https://docs.warpdrivecrm.com/features/mcp",
+  mcpConnectDocsUrl: `${DOCS_SITE_URL}/features/mcp`,
   dataFields: "Data fields",
   emailTemplates: "Email templates",
   signatures: "Signatures",
