@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { captureException, currentRoute } from "@/features/observability/capture";
 import { readCsrfToken } from "@/utils/csrfCookie";
 import { deleteDraftAction, saveDraftAction } from "../folderActions";
 import type { EmailVisibility } from "../threadVisibility";
@@ -86,9 +87,13 @@ export function useDraftAutosave(deps: DraftAutosaveDeps): void {
           draftIdRef.current = undefined;
         }
       };
-      inFlightRef.current = run().finally(() => {
-        inFlightRef.current = null;
-      });
+      inFlightRef.current = run()
+        .catch((e: unknown) => {
+          captureException(e, { surface: "email-draft-autosave", route: currentRoute() });
+        })
+        .finally(() => {
+          inFlightRef.current = null;
+        });
     }, DEBOUNCE_MS);
     return () => clearTimeout(timer);
     // Depend on the tracked primitives (and stable refs) only. NOT the deps object literal, whose

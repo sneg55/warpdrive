@@ -13,6 +13,12 @@ vi.mock("../folderActions", () => ({
 // the recorded calls through an unknown[][] view to index the input payload.
 const saveCalls = (): unknown[][] => saveMock.mock.calls;
 vi.mock("@/utils/csrfCookie", () => ({ readCsrfToken: () => "csrf" }));
+const captureExceptionMock = vi.fn();
+vi.mock("@/features/observability/capture", () => ({
+  capture: vi.fn(),
+  captureException: (...a: unknown[]) => captureExceptionMock(...(a as [])),
+  currentRoute: () => "/inbox",
+}));
 
 import { useDraftAutosave } from "./useDraftAutosave";
 
@@ -108,5 +114,19 @@ describe("useDraftAutosave CRM links", () => {
     renderHook((p) => useDraftAutosave(p), { initialProps: { ...base(), subject: "Hi" } });
     await vi.advanceTimersByTimeAsync(1600);
     expect(saveCalls()[0]?.[1]).toMatchObject({ linkDealId: null, linkPersonId: null });
+  });
+
+  it("reports a rejected save instead of leaving an unhandled rejection behind", async () => {
+    const boom = new Error("action id missing from this build");
+    saveMock.mockImplementationOnce(() => Promise.reject(boom));
+    const props = { ...base(), subject: "Hi" };
+    renderHook((p) => useDraftAutosave(p), { initialProps: props });
+
+    await vi.advanceTimersByTimeAsync(1600);
+    await expect(props.inFlightRef.current ?? Promise.resolve()).resolves.toBeUndefined();
+    expect(captureExceptionMock).toHaveBeenCalledWith(
+      boom,
+      expect.objectContaining({ surface: "email-draft-autosave" }),
+    );
   });
 });

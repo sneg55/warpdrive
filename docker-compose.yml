@@ -58,7 +58,7 @@ services:
       retries: 10
 
   minio:
-    image: minio/minio
+    image: quay.io/minio/minio
     restart: unless-stopped
     command: server /data --console-address ":9001"
     environment:
@@ -74,7 +74,7 @@ services:
   # One-shot: create the app bucket idempotently and keep it private. The app itself never
   # creates the bucket, so on a fresh box uploads would fail without this step.
   createbuckets:
-    image: minio/mc
+    image: quay.io/minio/mc
     depends_on:
       minio:
         condition: service_started
