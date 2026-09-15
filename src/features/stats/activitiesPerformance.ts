@@ -7,6 +7,7 @@
 import { sql } from "drizzle-orm";
 import type { Db } from "@/db/client";
 import type { PermSetUser } from "@/features/permissions/effective";
+import { ownerFilterClause } from "@/features/stats/ownerIds";
 import type { ActivityCounters, DashboardFilters } from "@/types/stats";
 import { activityVisibilityPredicate } from "./activityVisibilitySql";
 
@@ -18,8 +19,7 @@ export async function activitiesPerformance(
 ): Promise<ActivityCounters> {
   signal.throwIfAborted();
 
-  const ownerClause =
-    filters.ownerScope === "me" ? sql`AND a.assignee_id = ${actor.id}::uuid` : sql``;
+  const ownerClause = ownerFilterClause(sql`a.assignee_id`, filters.owners);
   const pipelineClause =
     filters.pipelineId !== null
       ? sql`AND EXISTS (

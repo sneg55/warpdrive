@@ -8,6 +8,7 @@ import type { PermSetUser } from "@/features/permissions/effective";
 import { makeTestDb, type TestDb } from "@/test/db";
 import type { DashboardFilters } from "@/types/stats";
 import { activitiesPerformance } from "./activitiesPerformance";
+import { EVERYONE } from "./ownerIds";
 
 let h: TestDb;
 
@@ -71,7 +72,7 @@ async function seedPipeline() {
 
 const BASE_FILTERS: DashboardFilters = {
   pipelineId: null,
-  ownerScope: "all",
+  owners: EVERYONE,
   from: "2020-01-01",
   to: "2030-12-31",
 };

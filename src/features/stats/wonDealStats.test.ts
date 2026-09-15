@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { makeTestDb, type TestDb } from "@/test/db";
 import type { DashboardFilters } from "@/types/stats";
+import { EVERYONE } from "./ownerIds";
 import { seedDeal, seedPipeline, seedUser, toActor } from "./statsTestHelpers";
 import { wonDealStats } from "./wonDealStats";
 
@@ -14,7 +15,7 @@ afterAll(async () => {
 
 const BASE: DashboardFilters = {
   pipelineId: null,
-  ownerScope: "all",
+  owners: EVERYONE,
   from: "2025-01-01",
   to: "2025-12-31",
 };

@@ -1,5 +1,11 @@
 import { STRINGS } from "@/constants/strings";
-import type { ActivityCounters, DealCounters, StageConversionRow, StageSum } from "@/types/stats";
+import type {
+  ActivityCounters,
+  DealCounters,
+  OwnerScope,
+  StageConversionRow,
+  StageSum,
+} from "@/types/stats";
 import { Bar, durationDays, money, Panel } from "./Panel";
 
 export function DealPerformanceWidget({
@@ -34,14 +40,25 @@ export function DealPerformanceWidget({
   );
 }
 
-// ownerScope is the scope the SERVER resolved (effectiveOwnerScope), not the one the client
-// asked for: a regular user requesting "all" is narrowed to "me", and the line must say so.
+function funnelBasis(scope: OwnerScope): string {
+  switch (scope.kind) {
+    case "me":
+      return STRINGS.dashboard.funnelBasisMe;
+    case "all":
+      return STRINGS.dashboard.funnelBasisAll;
+    case "user":
+      return STRINGS.dashboard.funnelBasisUser;
+    case "team":
+      return STRINGS.dashboard.funnelBasisTeam;
+  }
+}
+
 export function FunnelWidget({
   data,
   ownerScope,
 }: {
   data: StageConversionRow[];
-  ownerScope: "me" | "all";
+  ownerScope: OwnerScope;
 }) {
   return (
     <Panel
@@ -50,9 +67,7 @@ export function FunnelWidget({
       emptyText={STRINGS.dashboard.emptyFunnel}
     >
       {data.length > 0 && (
-        <p className="mb-2 text-xs text-muted-foreground">
-          {ownerScope === "me" ? STRINGS.dashboard.funnelBasisMe : STRINGS.dashboard.funnelBasisAll}
-        </p>
+        <p className="mb-2 text-xs text-muted-foreground">{funnelBasis(ownerScope)}</p>
       )}
       <div className="space-y-2">
         {data.map((s) => (

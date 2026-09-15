@@ -6,6 +6,7 @@ import { AppError, ERROR_IDS } from "@/constants/errorIds";
 import * as schema from "@/db/schema";
 import type { PermSetUser } from "@/features/permissions/effective";
 import { makeTestDb, type TestDb } from "@/test/db";
+import { EVERYONE, onlyOwners } from "./ownerIds";
 import { stageSums } from "./stageSums";
 
 let h: TestDb;
@@ -82,7 +83,7 @@ describe("stageSums", () => {
       h.db,
       toActor(admin),
       pipeline.id,
-      "all",
+      EVERYONE,
       new AbortController().signal,
     );
     const row = sums.find((s) => s.stageId === stage.id);
@@ -119,7 +120,7 @@ describe("stageSums", () => {
       h.db,
       toActor(admin),
       pipeline.id,
-      "all",
+      EVERYONE,
       new AbortController().signal,
     );
     const row = sums.find((s) => s.stageId === stage.id);
@@ -147,7 +148,7 @@ describe("stageSums", () => {
       h.db,
       toActor(admin),
       pipeline.id,
-      "all",
+      EVERYONE,
       new AbortController().signal,
     );
     // Won deal must not appear in the stage sum.
@@ -177,7 +178,7 @@ describe("stageSums", () => {
       h.db,
       toActor(alice),
       pipeline.id,
-      "all",
+      EVERYONE,
       new AbortController().signal,
     );
     const row = sums.find((s) => s.stageId === stage.id);
@@ -220,7 +221,7 @@ describe("stageSums", () => {
       h.db,
       toActor(alice),
       pipeline.id,
-      "me",
+      onlyOwners([alice.id]),
       new AbortController().signal,
     );
     const row = sums.find((s) => s.stageId === stage.id);

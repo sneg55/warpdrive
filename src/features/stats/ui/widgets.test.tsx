@@ -45,7 +45,7 @@ describe("stats widgets", () => {
   it("draws a funnel bar per stage with conversion as the progress value", () => {
     render(
       <FunnelWidget
-        ownerScope="all"
+        ownerScope={{ kind: "all" }}
         data={[
           {
             stageId: "s1",
@@ -91,7 +91,7 @@ describe("stats widgets", () => {
 
   // A heading over dead space reads as a broken page. Every panel that can be empty says why.
   it("explains an empty funnel instead of rendering a bare heading", () => {
-    render(<FunnelWidget data={[]} ownerScope="me" />);
+    render(<FunnelWidget data={[]} ownerScope={{ kind: "me" }} />);
     expect(screen.getByText(STRINGS.dashboard.emptyFunnel)).toBeInTheDocument();
   });
 
@@ -193,7 +193,7 @@ describe("stats widgets", () => {
   it("does not report a sub-day stage dwell time as zero days", () => {
     render(
       <FunnelWidget
-        ownerScope="me"
+        ownerScope={{ kind: "me" }}
         data={[
           {
             stageId: "s1",

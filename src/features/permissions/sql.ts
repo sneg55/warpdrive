@@ -23,7 +23,7 @@ export interface DealCols {
 }
 
 // Build a uuid[] literal from a JS string array, handling the empty case.
-function buildUuidArray(ids: string[]): SQL {
+export function buildUuidArray(ids: string[]): SQL {
   if (ids.length === 0) {
     return sql`ARRAY[]::uuid[]`;
   }

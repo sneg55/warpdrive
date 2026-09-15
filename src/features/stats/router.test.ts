@@ -13,7 +13,10 @@ import { createCaller } from "@/server/trpc/root";
 
 // Build a HydratedActor-compatible actor from a seeded user row (name/avatar are placeholders;
 // the stats procedures use only the permission-relevant fields).
-function makeActor(u: { id: string; isAdmin: boolean; isActive: boolean }): HydratedActor {
+function makeActor(
+  u: { id: string; isAdmin: boolean; isActive: boolean },
+  flags: PermissionFlagKey[] = [],
+): HydratedActor {
   return {
     id: u.id,
     type: u.isAdmin ? ("admin" as const) : ("regular" as const),
@@ -21,7 +24,7 @@ function makeActor(u: { id: string; isAdmin: boolean; isActive: boolean }): Hydr
     name: "Test User",
     email: "test@example.com",
     avatarUrl: null,
-    flags: new Set<PermissionFlagKey>(),
+    flags: new Set<PermissionFlagKey>(flags),
     groupIds: new Set<string>(),
   };
 }
@@ -59,13 +62,13 @@ describe("stats tRPC router", () => {
 
       const out = await caller.stats.dashboard({
         pipelineId: pipeline.id,
-        ownerScope: "all",
+        ownerScope: { kind: "all" },
         from: "2026-01-01",
         to: "2026-12-31",
       });
 
       // A regular user without stats.viewOthers must be downgraded to 'me'.
-      expect(out.effectiveOwnerScope).toBe("me");
+      expect(out.effectiveOwnerScope).toEqual({ kind: "me" });
       // The actor's own won deal must be counted.
       expect(out.dealPerformance.won.count).toBe(1);
     });
@@ -98,7 +101,7 @@ describe("stats tRPC router", () => {
       await expect(
         caller.stats.dashboard({
           pipelineId: pipeline.id,
-          ownerScope: "me",
+          ownerScope: { kind: "me" },
           from: "2026-01-01",
           to: "2026-12-31",
         }),
@@ -132,11 +135,11 @@ describe("stats tRPC router", () => {
       // Admin should NOT throw.
       const out = await caller.stats.dashboard({
         pipelineId: pipeline.id,
-        ownerScope: "me",
+        ownerScope: { kind: "me" },
         from: "2026-01-01",
         to: "2026-12-31",
       });
-      expect(out.effectiveOwnerScope).toBe("me");
+      expect(out.effectiveOwnerScope).toEqual({ kind: "me" });
     });
   });
 
@@ -169,7 +172,7 @@ describe("stats tRPC router", () => {
 
       // Omit pipelineId => "All pipelines": Deal Performance must SUM both pipelines.
       const out = await caller.stats.dashboard({
-        ownerScope: "me",
+        ownerScope: { kind: "me" },
         from: "2026-01-01",
         to: "2026-12-31",
       });
@@ -213,7 +216,7 @@ describe("stats tRPC router", () => {
       // "All pipelines": only the live pipeline's deal should count (archived pipelines are
       // hidden from the dropdown and rejected individually, so they must not inflate the aggregate).
       const out = await caller.stats.dashboard({
-        ownerScope: "me",
+        ownerScope: { kind: "me" },
         from: "2026-01-01",
         to: "2026-12-31",
       });
@@ -242,7 +245,7 @@ describe("stats tRPC router", () => {
       await expect(
         caller.stats.dashboard({
           pipelineId: pipeline.id,
-          ownerScope: "me",
+          ownerScope: { kind: "me" },
           from: "2026-01-01",
           to: "2026-12-31",
         }),
@@ -282,7 +285,7 @@ describe("stats tRPC router", () => {
 
       const out = await caller.stats.dashboard({
         pipelineId: null,
-        ownerScope: "me",
+        ownerScope: { kind: "me" },
         from: "2026-01-01",
         to: "2026-12-31",
       });
@@ -315,13 +318,51 @@ describe("stats tRPC router", () => {
 
       const out = await caller.stats.dashboard({
         pipelineId: null,
-        ownerScope: "me",
+        ownerScope: { kind: "me" },
         from: "2026-01-01",
         to: "2026-12-31",
       });
 
       expect(out.funnel.length).toBeGreaterThan(0);
       expect(out.funnel[0]?.reached).toBeGreaterThanOrEqual(1);
+    });
+  });
+
+  it("(f) offers every active user and team to an actor who can view others", async () => {
+    await withTestDb(async (db) => {
+      const userRow = await seedUser(db, { isAdmin: false });
+      const mate = await seedUser(db, { isAdmin: false });
+      const teamRow = (
+        await db.execute(sql`INSERT INTO teams (name) VALUES ('West Coast') RETURNING id`)
+      ).rows[0] as { id: string } | undefined;
+      if (!teamRow) throw new Error("team insert failed");
+
+      const caller = createCaller({
+        db,
+        session: { userId: userRow.id, sessionId: "test-session" },
+        actor: makeActor(userRow, ["stats.viewOthers"]),
+      });
+
+      const out = await caller.stats.ownerOptions();
+      expect(out.users.map((u) => u.id).sort()).toEqual([userRow.id, mate.id].sort());
+      expect(out.teams).toEqual([{ id: teamRow.id, name: "West Coast" }]);
+    });
+  });
+
+  it("(g) offers nobody to an actor who cannot view others", async () => {
+    await withTestDb(async (db) => {
+      const userRow = await seedUser(db, { isAdmin: false });
+      await db.execute(sql`INSERT INTO teams (name) VALUES ('West Coast')`);
+
+      const caller = createCaller({
+        db,
+        session: { userId: userRow.id, sessionId: "test-session" },
+        actor: makeActor(userRow),
+      });
+
+      const out = await caller.stats.ownerOptions();
+      expect(out.users).toEqual([]);
+      expect(out.teams).toEqual([]);
     });
   });
 });

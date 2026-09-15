@@ -17,7 +17,20 @@ const useQuery = vi.fn((...args: unknown[]) => {
 });
 vi.mock("@/lib/trpc-client", () => ({
   trpc: {
-    stats: { dashboard: { useQuery: (input: unknown) => useQuery(input) } },
+    stats: {
+      dashboard: { useQuery: (input: unknown) => useQuery(input) },
+      ownerOptions: {
+        useQuery: () => ({
+          data: {
+            users: [
+              { id: "u1", name: "Dana Scully", avatarUrl: null },
+              { id: "u2", name: "Fox Mulder", avatarUrl: null },
+            ],
+            teams: [{ id: "t1", name: "West Coast" }],
+          },
+        }),
+      },
+    },
     goals: { list: { useQuery: () => ({ data: [] }) } },
     pipeline: {
       list: {
@@ -87,5 +100,50 @@ describe("Dashboard pipeline switcher", () => {
     fireEvent.click(screen.getByLabelText("Pipeline"));
     fireEvent.click(screen.getByRole("option", { name: "All pipelines" }));
     expect(useQuery).toHaveBeenLastCalledWith(expect.objectContaining({ pipelineId: null }));
+  });
+});
+
+describe("Dashboard owner scope", () => {
+  it("defaults to the viewer's own performance", () => {
+    useQuery.mockClear();
+    render(<Dashboard today="2026-03-01" canViewOthers currency="USD" />);
+    expect(useQuery).toHaveBeenLastCalledWith(
+      expect.objectContaining({ ownerScope: { kind: "me" } }),
+    );
+  });
+
+  it("rescopes to one person", () => {
+    useQuery.mockClear();
+    render(<Dashboard today="2026-03-01" canViewOthers currency="USD" />);
+    fireEvent.click(screen.getByLabelText("Owner"));
+    fireEvent.click(screen.getByText("Fox Mulder"));
+    expect(useQuery).toHaveBeenLastCalledWith(
+      expect.objectContaining({ ownerScope: { kind: "user", userId: "u2" } }),
+    );
+  });
+
+  it("rescopes to one team", () => {
+    useQuery.mockClear();
+    render(<Dashboard today="2026-03-01" canViewOthers currency="USD" />);
+    fireEvent.click(screen.getByLabelText("Owner"));
+    fireEvent.click(screen.getByText("West Coast"));
+    expect(useQuery).toHaveBeenLastCalledWith(
+      expect.objectContaining({ ownerScope: { kind: "team", teamId: "t1" } }),
+    );
+  });
+
+  it("rescopes to everyone", () => {
+    useQuery.mockClear();
+    render(<Dashboard today="2026-03-01" canViewOthers currency="USD" />);
+    fireEvent.click(screen.getByLabelText("Owner"));
+    fireEvent.click(screen.getByText("Everyone"));
+    expect(useQuery).toHaveBeenLastCalledWith(
+      expect.objectContaining({ ownerScope: { kind: "all" } }),
+    );
+  });
+
+  it("leaves the picker disabled for a viewer who cannot view others", () => {
+    render(<Dashboard today="2026-03-01" canViewOthers={false} currency="USD" />);
+    expect(screen.getByLabelText("Owner")).toBeDisabled();
   });
 });

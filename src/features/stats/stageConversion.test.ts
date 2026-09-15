@@ -8,11 +8,12 @@ import { seedPipelineWithStages, seedUser } from "@/db/testing/factories";
 import { createDeal, moveDeal } from "@/features/deals/dealActions";
 import { adminSession, createSession, seedSettings } from "@/features/deals/dealMove.test-helpers";
 import type { DashboardFilters } from "@/types/stats";
+import { EVERYONE, onlyOwners } from "./ownerIds";
 import { stageConversion } from "./stageConversion";
 
 const BASE: DashboardFilters = {
   pipelineId: null,
-  ownerScope: "all",
+  owners: EVERYONE,
   from: "2000-01-01",
   to: "2100-12-31",
 };
@@ -216,7 +217,7 @@ describe("stageConversion", () => {
     });
   });
 
-  it("counts only the actor's own deals under ownerScope 'me'", async () => {
+  it("counts only the deals of the owners named in the filter", async () => {
     await withTestDb(async (db) => {
       await seedSettings(db);
       const mine = await seedUser(db);
@@ -231,7 +232,7 @@ describe("stageConversion", () => {
       const scoped = await stageConversion(
         db,
         adminSession(mine.id),
-        { ...BASE, ownerScope: "me", pipelineId: p.pipeline.id },
+        { ...BASE, owners: onlyOwners([mine.id]), pipelineId: p.pipeline.id },
         new AbortController().signal,
       );
       const everyone = await stageConversion(

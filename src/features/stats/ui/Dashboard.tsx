@@ -4,11 +4,12 @@ import type React from "react";
 import { useState } from "react";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { Select } from "@/components/ui/Select";
-import { Tip } from "@/components/ui/tooltip";
 import { STRINGS } from "@/constants/strings";
 import { trpc } from "@/lib/trpc-client";
+import type { OwnerScope } from "@/types/stats";
 import { ActivityTypesWidget, LostReasonsWidget } from "./Breakdowns";
 import { GoalsWidget } from "./GoalsWidget";
+import { OwnerScopeSelect } from "./OwnerScopeSelect";
 import { Scoreboard } from "./Scoreboard";
 import { WonTrendWidget } from "./TrendWidget";
 import { ActivitiesWidget, DealPerformanceWidget, FunnelWidget, StageSumsWidget } from "./widgets";
@@ -23,6 +24,8 @@ function currentYearRange(): { from: string; to: string } {
 // uuid, so this never collides. It maps to a null pipelineId, which the stats
 // router aggregates across every visible pipeline (STATS-08).
 const ALL_PIPELINES = "all";
+
+const ME_SCOPE: OwnerScope = { kind: "me" };
 
 interface DashboardProps {
   canViewOthers: boolean;
@@ -45,7 +48,7 @@ export function Dashboard({
   currency,
   today,
 }: DashboardProps) {
-  const [ownerScope, setOwnerScope] = useState<"me" | "all">("me");
+  const [ownerScope, setOwnerScope] = useState<OwnerScope>(ME_SCOPE);
   const initial = currentYearRange();
   const [from, setFrom] = useState(initial.from);
   const [to, setTo] = useState(initial.to);
@@ -64,6 +67,7 @@ export function Dashboard({
   // ALL_PIPELINES => null pipelineId (aggregate across all visible pipelines).
   const pipelineId = selectedPipelineId === ALL_PIPELINES ? null : selectedPipelineId;
 
+  const ownerOptionsQ = trpc.stats.ownerOptions.useQuery(undefined, { enabled: canViewOthers });
   const goalsQ = trpc.goals.list.useQuery({ on: today });
 
   const data = trpc.stats.dashboard.useQuery({
@@ -120,27 +124,13 @@ export function Dashboard({
         <h1 className="text-balance text-display font-[450] leading-tight tracking-tight">
           {STRINGS.dashboard.title}
         </h1>
-        <Tip
-          label={
-            canViewOthers
-              ? STRINGS.dashboard.ownerToggleTitle
-              : STRINGS.dashboard.ownerToggleDisabledTitle
-          }
-        >
-          <button
-            type="button"
-            disabled={!canViewOthers}
-            onClick={() => {
-              setOwnerScope((s) => (s === "me" ? "all" : "me"));
-            }}
-            className="rounded border px-2 py-1 text-sm transition-transform active:scale-[0.96] disabled:opacity-50"
-          >
-            {STRINGS.dashboard.ownerToggleLabel}{" "}
-            {(result?.effectiveOwnerScope ?? ownerScope) === "all"
-              ? STRINGS.dashboard.ownerAll
-              : STRINGS.dashboard.ownerMe}
-          </button>
-        </Tip>
+        <OwnerScopeSelect
+          value={result?.effectiveOwnerScope ?? ownerScope}
+          onChange={setOwnerScope}
+          canViewOthers={canViewOthers}
+          users={ownerOptionsQ.data?.users ?? []}
+          teams={ownerOptionsQ.data?.teams ?? []}
+        />
         <div className="flex items-center gap-2">
           <DatePicker
             ariaLabel={STRINGS.dashboard.rangeStartLabel}

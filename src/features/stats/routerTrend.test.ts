@@ -49,7 +49,7 @@ describe("stats.dashboard won trend", () => {
 
       const out = await caller.stats.dashboard({
         pipelineId: pipeline.id,
-        ownerScope: "me",
+        ownerScope: { kind: "me" },
         from: "2026-01-01",
         to: "2026-12-31",
       });

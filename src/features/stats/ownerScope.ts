@@ -1,10 +1,11 @@
 import { can } from "@/features/permissions/can";
 import type { PermSetUser } from "@/features/permissions/effective";
+import type { OwnerScope } from "@/types/stats";
 
-// stats.viewOthers widens owner scope only; it can never surface an invisible record
-// because the visibility predicate always runs independently of this helper.
-// Permissions spec 6.6: scope gating is orthogonal to record-level visibility.
-export function ownerScope(actor: PermSetUser, requested: "me" | "all"): "me" | "all" {
-  if (requested === "me") return "me";
-  return can(actor, "stats.viewOthers") ? "all" : "me";
+const ME: OwnerScope = { kind: "me" };
+
+export function ownerScope(actor: PermSetUser, requested: OwnerScope): OwnerScope {
+  if (requested.kind === "me") return ME;
+  if (requested.kind === "user" && requested.userId === actor.id) return ME;
+  return can(actor, "stats.viewOthers") ? requested : ME;
 }

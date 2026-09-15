@@ -9,6 +9,7 @@ import { sql } from "drizzle-orm";
 import type { Db } from "@/db/client";
 import { dealVisibilityClause } from "@/features/deals/visibility";
 import type { PermSetUser } from "@/features/permissions/effective";
+import { ownerFilterClause } from "@/features/stats/ownerIds";
 import type { DashboardFilters, DealCounters, MoneyBucket } from "@/types/stats";
 
 // Build a DealVisibilitySession from a PermSetUser (same shape, different names).
@@ -43,7 +44,7 @@ export async function dealPerformance(
   signal.throwIfAborted();
 
   const visClause = dealVisibilityClause(toSession(actor));
-  const ownerClause = filters.ownerScope === "me" ? sql`AND d.owner_id = ${actor.id}::uuid` : sql``;
+  const ownerClause = ownerFilterClause(sql`d.owner_id`, filters.owners);
   const pipelineClause =
     filters.pipelineId !== null ? sql`AND d.pipeline_id = ${filters.pipelineId}` : sql``;
 

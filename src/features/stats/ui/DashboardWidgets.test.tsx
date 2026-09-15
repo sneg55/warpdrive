@@ -41,7 +41,7 @@ const dashboardData = {
   stageSums: [],
   // The server narrows a regular user's "all" request to "me"; the funnel line must follow the
   // resolved value, not the one the client asked for.
-  effectiveOwnerScope: "me" as const,
+  effectiveOwnerScope: { kind: "me" } as const,
 };
 
 vi.mock("@/lib/trpc-client", () => ({
@@ -50,6 +50,7 @@ vi.mock("@/lib/trpc-client", () => ({
       dashboard: {
         useQuery: () => ({ isLoading: false, isError: false, data: dashboardData }),
       },
+      ownerOptions: { useQuery: () => ({ data: { users: [], teams: [] } }) },
     },
     goals: { list: { useQuery: () => ({ data: [] }) } },
     pipeline: { list: { useQuery: () => ({ data: [{ id: "p1", name: "Sales", stages: [] }] }) } },

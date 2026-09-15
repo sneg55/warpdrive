@@ -17,16 +17,47 @@ function makeActor(flags: PermissionFlagKey[] = []): PermSetUser {
 describe("ownerScope", () => {
   it('always returns "me" when requested is "me"', () => {
     vi.spyOn(perms, "can").mockReturnValue(true);
-    expect(ownerScope(makeActor(["stats.viewOthers"]), "me")).toBe("me");
+    expect(ownerScope(makeActor(["stats.viewOthers"]), { kind: "me" })).toEqual({ kind: "me" });
   });
 
   it('forces "me" when the actor lacks stats.viewOthers', () => {
     vi.spyOn(perms, "can").mockReturnValue(false);
-    expect(ownerScope(makeActor(), "all")).toBe("me");
+    expect(ownerScope(makeActor(), { kind: "all" })).toEqual({ kind: "me" });
   });
 
   it('honors "all" when the actor has stats.viewOthers', () => {
     vi.spyOn(perms, "can").mockReturnValue(true);
-    expect(ownerScope(makeActor(["stats.viewOthers"]), "all")).toBe("all");
+    expect(ownerScope(makeActor(["stats.viewOthers"]), { kind: "all" })).toEqual({ kind: "all" });
+  });
+
+  it("honors a named user when the actor has stats.viewOthers", () => {
+    vi.spyOn(perms, "can").mockReturnValue(true);
+    expect(ownerScope(makeActor(["stats.viewOthers"]), { kind: "user", userId: "u2" })).toEqual({
+      kind: "user",
+      userId: "u2",
+    });
+  });
+
+  it("honors a team when the actor has stats.viewOthers", () => {
+    vi.spyOn(perms, "can").mockReturnValue(true);
+    expect(ownerScope(makeActor(["stats.viewOthers"]), { kind: "team", teamId: "t1" })).toEqual({
+      kind: "team",
+      teamId: "t1",
+    });
+  });
+
+  it("forces a named user to 'me' when the actor lacks stats.viewOthers", () => {
+    vi.spyOn(perms, "can").mockReturnValue(false);
+    expect(ownerScope(makeActor(), { kind: "user", userId: "u2" })).toEqual({ kind: "me" });
+  });
+
+  it("collapses the actor's own id to 'me' without stats.viewOthers", () => {
+    vi.spyOn(perms, "can").mockReturnValue(false);
+    expect(ownerScope(makeActor(), { kind: "user", userId: "u1" })).toEqual({ kind: "me" });
+  });
+
+  it("forces a team to 'me' when the actor lacks stats.viewOthers", () => {
+    vi.spyOn(perms, "can").mockReturnValue(false);
+    expect(ownerScope(makeActor(), { kind: "team", teamId: "t1" })).toEqual({ kind: "me" });
   });
 });

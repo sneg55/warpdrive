@@ -5,6 +5,7 @@ import * as schema from "@/db/schema";
 import { makeTestDb, type TestDb } from "@/test/db";
 import type { DashboardFilters } from "@/types/stats";
 import { activitiesByType } from "./activitiesByType";
+import { EVERYONE } from "./ownerIds";
 import { seedActivityType, seedOrg, seedPerson, seedUser, toActor } from "./statsTestHelpers";
 
 let h: TestDb;
@@ -17,7 +18,7 @@ afterAll(async () => {
 
 const BASE: DashboardFilters = {
   pipelineId: null,
-  ownerScope: "all",
+  owners: EVERYONE,
   from: "2025-01-01",
   to: "2025-12-31",
 };

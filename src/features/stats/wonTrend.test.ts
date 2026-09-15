@@ -6,13 +6,14 @@ import { withTestDb } from "@/db/testing";
 import { seedPipelineWithStages, seedUser } from "@/db/testing/factories";
 import { adminSession, regularSession, seedSettings } from "@/features/deals/dealMove.test-helpers";
 import type { DashboardFilters } from "@/types/stats";
+import { EVERYONE, onlyOwners } from "./ownerIds";
 import { wonTrend } from "./wonTrend";
 
 type Db = Parameters<Parameters<typeof withTestDb>[0]>[0];
 
 const BASE: DashboardFilters = {
   pipelineId: null,
-  ownerScope: "all",
+  owners: EVERYONE,
   from: "2026-01-01",
   to: "2026-04-30",
 };
@@ -130,7 +131,7 @@ describe("wonTrend", () => {
     });
   });
 
-  it("honours ownerScope 'me' by dropping another owner's wins", async () => {
+  it("drops another owner's wins when the owner list names only the actor", async () => {
     await withTestDb(async (db) => {
       const f = await fixture(db);
       const other = await seedUser(db);
@@ -151,7 +152,7 @@ describe("wonTrend", () => {
       const mine = await wonTrend(
         db,
         adminSession(f.user.id),
-        { ...BASE, ownerScope: "me" },
+        { ...BASE, owners: onlyOwners([f.user.id]) },
         new AbortController().signal,
       );
       expect(mine[0]?.count).toBe(1);

@@ -83,12 +83,17 @@ export interface StageSum {
   total: string;
 }
 
-// pipelineId: null means "all pipelines the user can see".
-// ownerScope: 'me' restricts to the actor's own deals; 'all' requires stats.viewOthers.
-// from/to: ISO date strings (YYYY-MM-DD) for the closed/created date window.
+export type OwnerScope =
+  | { kind: "me" }
+  | { kind: "all" }
+  | { kind: "user"; userId: string }
+  | { kind: "team"; teamId: string };
+
+export type OwnerIdFilter = { everyone: true } | { everyone: false; ids: string[] };
+
 export interface DashboardFilters {
   pipelineId: string | null;
-  ownerScope: "me" | "all";
+  owners: OwnerIdFilter;
   from: string;
   to: string;
 }

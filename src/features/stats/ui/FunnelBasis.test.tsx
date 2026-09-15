@@ -34,13 +34,13 @@ const ROWS: StageConversionRow[] = [
 
 describe("FunnelWidget basis", () => {
   it("states that it counts only the viewer's own deals when the scope is 'me'", () => {
-    render(<FunnelWidget data={ROWS} ownerScope="me" />);
+    render(<FunnelWidget data={ROWS} ownerScope={{ kind: "me" }} />);
     expect(screen.getByText(STRINGS.dashboard.funnelBasisMe)).toBeInTheDocument();
     expect(screen.queryByText(STRINGS.dashboard.funnelBasisAll)).toBeNull();
   });
 
   it("states that it counts every owner's deals when the scope is 'all'", () => {
-    render(<FunnelWidget data={ROWS} ownerScope="all" />);
+    render(<FunnelWidget data={ROWS} ownerScope={{ kind: "all" }} />);
     expect(screen.getByText(STRINGS.dashboard.funnelBasisAll)).toBeInTheDocument();
     expect(screen.queryByText(STRINGS.dashboard.funnelBasisMe)).toBeNull();
   });
@@ -48,7 +48,7 @@ describe("FunnelWidget basis", () => {
   // A stage at 0 is exactly the reading the basis line exists to explain, so it must be stated
   // beside the zeros rather than only when there is something to show.
   it("keeps stating its basis when later stages read zero", () => {
-    render(<FunnelWidget data={ROWS} ownerScope="me" />);
+    render(<FunnelWidget data={ROWS} ownerScope={{ kind: "me" }} />);
     expect(screen.getByRole("progressbar", { name: "Contact Made" })).toHaveAttribute(
       "aria-valuenow",
       "0",
@@ -57,8 +57,21 @@ describe("FunnelWidget basis", () => {
   });
 
   it("says nothing about a basis when there is no cohort at all", () => {
-    render(<FunnelWidget data={[]} ownerScope="me" />);
+    render(<FunnelWidget data={[]} ownerScope={{ kind: "me" }} />);
     expect(screen.getByText(STRINGS.dashboard.emptyFunnel)).toBeInTheDocument();
     expect(screen.queryByText(STRINGS.dashboard.funnelBasisMe)).toBeNull();
+  });
+
+  it("names the selected person as the basis when the scope is one user", () => {
+    render(<FunnelWidget data={ROWS} ownerScope={{ kind: "user", userId: "u-1" }} />);
+    expect(screen.getByText(STRINGS.dashboard.funnelBasisUser)).toBeInTheDocument();
+    expect(screen.queryByText(STRINGS.dashboard.funnelBasisMe)).toBeNull();
+    expect(screen.queryByText(STRINGS.dashboard.funnelBasisAll)).toBeNull();
+  });
+
+  it("names the selected team as the basis when the scope is one team", () => {
+    render(<FunnelWidget data={ROWS} ownerScope={{ kind: "team", teamId: "t-1" }} />);
+    expect(screen.getByText(STRINGS.dashboard.funnelBasisTeam)).toBeInTheDocument();
+    expect(screen.queryByText(STRINGS.dashboard.funnelBasisAll)).toBeNull();
   });
 });

@@ -7,6 +7,7 @@ import type { PermSetUser } from "@/features/permissions/effective";
 import { makeTestDb, type TestDb } from "@/test/db";
 import type { DashboardFilters } from "@/types/stats";
 import { dealPerformance } from "./dealPerformance";
+import { EVERYONE, onlyOwners } from "./ownerIds";
 
 let h: TestDb;
 
@@ -61,7 +62,7 @@ async function seedPipeline(visibilityGroupId: string | null = null) {
 
 const BASE_FILTERS: DashboardFilters = {
   pipelineId: null,
-  ownerScope: "all",
+  owners: EVERYONE,
   from: "2020-01-01",
   to: "2030-12-31",
 };
@@ -165,7 +166,7 @@ describe("dealPerformance", () => {
     const aliceResult = await dealPerformance(
       h.db,
       toActor(alice),
-      { ...BASE_FILTERS, pipelineId: pipeline.id, ownerScope: "me" },
+      { ...BASE_FILTERS, pipelineId: pipeline.id, owners: onlyOwners([alice.id]) },
       new AbortController().signal,
     );
 
@@ -310,5 +311,66 @@ describe("dealPerformance date basis", () => {
     );
     expect(r.open.count).toBe(1);
     expect(Number(r.open.value)).toBe(77);
+  });
+
+  it("scopes to another owner's deals when the owner list names them", async () => {
+    const alice = await seedUser();
+    const bob = await seedUser();
+    const { pipeline, stage } = await seedPipeline();
+
+    await h.db.insert(schema.deals).values([
+      {
+        title: "Alice open",
+        status: "open",
+        value: "200.00",
+        pipelineId: pipeline.id,
+        stageId: stage.id,
+        ownerId: alice.id,
+        visibilityLevel: "all",
+      },
+      {
+        title: "Bob open",
+        status: "open",
+        value: "300.00",
+        pipelineId: pipeline.id,
+        stageId: stage.id,
+        ownerId: bob.id,
+        visibilityLevel: "all",
+      },
+    ]);
+
+    const result = await dealPerformance(
+      h.db,
+      toActor(alice),
+      { ...BASE_FILTERS, pipelineId: pipeline.id, owners: onlyOwners([bob.id]) },
+      new AbortController().signal,
+    );
+
+    expect(Number(result.open.value)).toBe(300);
+  });
+
+  it("counts nothing when the owner list is empty", async () => {
+    const alice = await seedUser();
+    const { pipeline, stage } = await seedPipeline();
+
+    await h.db.insert(schema.deals).values({
+      title: "Alice open",
+      status: "open",
+      value: "200.00",
+      pipelineId: pipeline.id,
+      stageId: stage.id,
+      ownerId: alice.id,
+      visibilityLevel: "all",
+    });
+
+    const result = await dealPerformance(
+      h.db,
+      toActor(alice),
+      { ...BASE_FILTERS, pipelineId: pipeline.id, owners: onlyOwners([]) },
+      new AbortController().signal,
+    );
+
+    expect(result.open.count).toBe(0);
+    expect(Number(result.open.value)).toBe(0);
   });
 });

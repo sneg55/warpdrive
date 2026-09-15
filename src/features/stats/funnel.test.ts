@@ -7,6 +7,7 @@ import * as schema from "@/db/schema";
 import type { PermSetUser } from "@/features/permissions/effective";
 import { makeTestDb, type TestDb } from "@/test/db";
 import { funnel } from "./funnel";
+import { EVERYONE, onlyOwners } from "./ownerIds";
 
 let h: TestDb;
 
@@ -84,7 +85,7 @@ describe("funnel", () => {
       h.db,
       toActor(thirdParty),
       pipeline.id,
-      "all",
+      EVERYONE,
       new AbortController().signal,
     );
     const s0 = result.find((s) => s.stageId === stage0.id);
@@ -114,7 +115,7 @@ describe("funnel", () => {
       h.db,
       toActor(viewer),
       pipeline.id,
-      "me",
+      onlyOwners([viewer.id]),
       new AbortController().signal,
     );
     const s0 = result.find((s) => s.stageId === stage0.id);

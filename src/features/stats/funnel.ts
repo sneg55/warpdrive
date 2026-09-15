@@ -2,13 +2,12 @@
 // the first stage. Requires JOIN pipelines p so the visibility predicate can
 // gate on p.visibility_group_id (pipeline restriction).
 // v1 snapshot: no date window (current resting-state count, not a time series).
-// Honors ownerScope: when scope === 'me', counts only the actor's own deals
-// IN ADDITION to the always-on visibility predicate.
 import { sql } from "drizzle-orm";
 import type { Db } from "@/db/client";
 import { dealVisibilityClause } from "@/features/deals/visibility";
 import type { PermSetUser } from "@/features/permissions/effective";
-import type { FunnelStage } from "@/types/stats";
+import { ownerFilterClause } from "@/features/stats/ownerIds";
+import type { FunnelStage, OwnerIdFilter } from "@/types/stats";
 
 function toSession(actor: PermSetUser) {
   return {
@@ -25,7 +24,7 @@ export async function funnel(
   db: Db,
   actor: PermSetUser,
   pipelineId: string,
-  ownerScope: "me" | "all",
+  owners: OwnerIdFilter,
   signal: AbortSignal,
 ): Promise<FunnelStage[]> {
   signal.throwIfAborted();
@@ -46,7 +45,7 @@ export async function funnel(
   if (stageRows.length === 0) return [];
 
   const visClause = dealVisibilityClause(toSession(actor));
-  const ownerClause = ownerScope === "me" ? sql`AND d.owner_id = ${actor.id}::uuid` : sql``;
+  const ownerClause = ownerFilterClause(sql`d.owner_id`, owners);
 
   // Count open deals per stage behind the visibility predicate (+ owner filter when me-scoped).
   const countsResult = await db.execute(sql`

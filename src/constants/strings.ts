@@ -136,11 +136,13 @@ export const STRINGS = {
   },
   dashboard: {
     title: "Performance",
-    ownerToggleLabel: "Owner:",
+    ownerScopeLabel: "Owner",
     ownerMe: "Me",
-    ownerAll: "All",
-    ownerToggleTitle: "Toggle owner scope",
-    ownerToggleDisabledTitle: "You can only view your own stats",
+    ownerAll: "Everyone",
+    ownerGroupPeople: "People",
+    ownerGroupTeams: "Teams",
+    ownerScopeTitle: "Whose performance to show",
+    ownerScopeDisabledTitle: "You can only view your own stats",
     loading: "Loading...",
     statsUnavailable: "Stats unavailable.",
     widgetDealPerformance: "DEAL PERFORMANCE",
@@ -196,6 +198,8 @@ export const STRINGS = {
     // design. The widget has to say which cohort it counted or the gap reads as a bug.
     funnelBasisMe: "Counts only deals you own that were created in this range.",
     funnelBasisAll: "Counts deals created in this range, whoever owns them.",
+    funnelBasisUser: "Counts only deals the selected person owns that were created in this range.",
+    funnelBasisTeam: "Counts only deals the selected team owns that were created in this range.",
   },
   search: {
     placeholder: "Search deals, people, organizations, leads...",

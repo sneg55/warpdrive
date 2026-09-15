@@ -1,13 +1,12 @@
 // Per-stage open-deal counts and values for the dashboard (NOT the kanban board:
 // the board uses deal.stageSums/dealRepo). Requires FROM deals d JOIN pipelines p
 // ON p.id = d.pipeline_id so dealVisibilityClause can gate on p.visibility_group_id.
-// Honors ownerScope like funnel: when scope === 'me', counts only the actor's own
-// deals IN ADDITION to the always-on visibility predicate.
 import { sql } from "drizzle-orm";
 import type { Db } from "@/db/client";
 import { dealVisibilityClause } from "@/features/deals/visibility";
 import type { PermSetUser } from "@/features/permissions/effective";
-import type { StageSum } from "@/types/stats";
+import { ownerFilterClause } from "@/features/stats/ownerIds";
+import type { OwnerIdFilter, StageSum } from "@/types/stats";
 
 function toSession(actor: PermSetUser) {
   return {
@@ -24,13 +23,13 @@ export async function stageSums(
   db: Db,
   actor: PermSetUser,
   pipelineId: string,
-  ownerScope: "me" | "all",
+  owners: OwnerIdFilter,
   signal: AbortSignal,
 ): Promise<StageSum[]> {
   signal.throwIfAborted();
 
   const visClause = dealVisibilityClause(toSession(actor));
-  const ownerClause = ownerScope === "me" ? sql`AND d.owner_id = ${actor.id}::uuid` : sql``;
+  const ownerClause = ownerFilterClause(sql`d.owner_id`, owners);
 
   // JOIN stages so each row carries its own name (mirrors how funnel.ts returns
   // names). The widget then renders names for ANY pipeline, not only the settings

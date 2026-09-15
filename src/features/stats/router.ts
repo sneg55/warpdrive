@@ -4,11 +4,15 @@
 // never reach a user who cannot see that pipeline. That applies to the "All pipelines"
 // aggregate as much as to a single selected pipeline.
 import { AppError, ERROR_IDS } from "@/constants/errorIds";
+import { listTeams } from "@/features/identity/teams.service";
+import { listAssignableUsers } from "@/features/identity/users.service";
+import { can } from "@/features/permissions/can";
 import { activitiesByType } from "@/features/stats/activitiesByType";
 import { activitiesPerformance } from "@/features/stats/activitiesPerformance";
 import { aggregateStageConversion, aggregateStageSums } from "@/features/stats/aggregateStages";
 import { dealPerformance } from "@/features/stats/dealPerformance";
 import { lostReasonBreakdown } from "@/features/stats/lostReasons";
+import { resolveOwnerIds } from "@/features/stats/ownerIds";
 import { ownerScope } from "@/features/stats/ownerScope";
 import { stageConversion } from "@/features/stats/stageConversion";
 import { stageSums } from "@/features/stats/stageSums";
@@ -27,6 +31,7 @@ export const statsRouter = router({
     // Trust boundary: the client cannot widen its own owner scope.
     const effectiveOwnerScope = ownerScope(ctx.actor, input.ownerScope);
     const signal = SIG();
+    const owners = await resolveOwnerIds(ctx.db, ctx.actor, effectiveOwnerScope, signal);
 
     const requested = input.pipelineId;
     if (requested !== null && !(await isPipelineVisible(ctx.db, ctx.actor, requested, signal))) {
@@ -39,7 +44,7 @@ export const statsRouter = router({
 
     const filters = {
       pipelineId: requested,
-      ownerScope: effectiveOwnerScope,
+      owners,
       from: input.from,
       to: input.to,
     };
@@ -63,7 +68,7 @@ export const statsRouter = router({
       ),
       Promise.all(
         stagePipelineIds.map((pipelineId) =>
-          stageSums(ctx.db, ctx.actor, pipelineId, effectiveOwnerScope, signal),
+          stageSums(ctx.db, ctx.actor, pipelineId, owners, signal),
         ),
       ),
     ]);
@@ -80,5 +85,15 @@ export const statsRouter = router({
       stageSums: aggregateStageSums(perPipelineSums),
       effectiveOwnerScope,
     };
+  }),
+
+  ownerOptions: protectedProcedure.query(async ({ ctx }) => {
+    if (!can(ctx.actor, "stats.viewOthers")) return { users: [], teams: [] };
+    const signal = SIG();
+    const [users, teamRows] = await Promise.all([
+      listAssignableUsers(ctx.db, signal),
+      listTeams(ctx.db, signal),
+    ]);
+    return { users, teams: teamRows.map((t) => ({ id: t.id, name: t.name })) };
   }),
 });
