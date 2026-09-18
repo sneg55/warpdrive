@@ -2,6 +2,7 @@
 
 export type ComposerContext =
   | { kind: "inbox"; threadId?: string }
+  | { kind: "person"; personId: string }
   | {
       kind: "deal";
       dealId: string;

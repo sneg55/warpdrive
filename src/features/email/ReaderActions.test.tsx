@@ -15,8 +15,14 @@ beforeAll(() => {
 // without pulling in the real composer tree (trpc, autosave, rich text editor, uploads).
 // A stub close button exercises the same onClose wiring the real Composer header uses.
 vi.mock("./composer/Composer", () => ({
-  Composer: (props: { threadId?: string; prefill?: unknown; onClose?: () => void }) => (
+  Composer: (props: {
+    threadId?: string;
+    prefill?: unknown;
+    context?: unknown;
+    onClose?: () => void;
+  }) => (
     <div data-testid="composer-stub" data-thread-id={props.threadId ?? ""}>
+      <pre data-testid="composer-stub-context">{JSON.stringify(props.context ?? null)}</pre>
       <pre data-testid="composer-stub-prefill">{JSON.stringify(props.prefill)}</pre>
       {props.onClose !== undefined && (
         <button type="button" onClick={props.onClose}>
@@ -45,6 +51,25 @@ function readPrefill(): { to: string[]; cc: string[]; subject: string; bodyHtml:
 }
 
 describe("ReaderActions", () => {
+  it("passes the record context through to the composer", () => {
+    render(
+      <ReaderActions
+        message={message}
+        selfEmail="me@ex.com"
+        accountId="acct-1"
+        threadId="t1"
+        initialMode="reply"
+        context={{ kind: "deal", dealId: "d1", personId: "p1" }}
+      />,
+    );
+
+    expect(JSON.parse(screen.getByTestId("composer-stub-context").textContent ?? "null")).toEqual({
+      kind: "deal",
+      dealId: "d1",
+      personId: "p1",
+    });
+  });
+
   it("shows the three action buttons and no composer until one is clicked", () => {
     render(
       <ReaderActions message={message} selfEmail="me@ex.com" accountId="acct-1" threadId="t1" />,

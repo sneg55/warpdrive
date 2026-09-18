@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Avatar } from "@/components/ui/Avatar";
 import { STRINGS } from "@/constants/strings";
 import { Composer } from "./composer/Composer";
+import type { ComposerContext } from "./composer/composer.types";
 import { buildReplyPrefill, type ReplyMode, type ReplyPrefillSourceMessage } from "./replyPrefill";
 
 interface ReaderActionsProps {
@@ -16,6 +17,7 @@ interface ReaderActionsProps {
   onSent?: () => void;
   // Mode to open in. Omitted by the thread reader, which starts on the footer instead.
   initialMode?: ReplyMode;
+  context?: ComposerContext;
 }
 
 // Reply / Reply all / Forward for the thread reader. Toggles which mode is active; the
@@ -29,6 +31,7 @@ export function ReaderActions({
   threadId,
   onSent,
   initialMode,
+  context,
 }: ReaderActionsProps): React.ReactNode {
   const [mode, setMode] = useState<ReplyMode | null>(initialMode ?? null);
 
@@ -38,6 +41,7 @@ export function ReaderActions({
         accountId={accountId}
         threadId={mode === "forward" ? undefined : threadId}
         prefill={buildReplyPrefill(mode, message, selfEmail)}
+        context={context}
         onSent={onSent}
         onClose={() => setMode(null)}
       />

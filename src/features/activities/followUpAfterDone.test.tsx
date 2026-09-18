@@ -32,6 +32,9 @@ const { invalidateForEntity, invalidateLead, invalidateContactTimeline, invalida
     invalidateContactTimeline: vi.fn(() => Promise.resolve()),
     invalidateStats: vi.fn(() => Promise.resolve()),
   }));
+
+import "./FollowUpActivityDialog";
+
 vi.mock("@/features/email/composer/RichTextBodyLazy", () => ({
   RichTextBody: ({ onChange }: { onChange: (h: string) => void }) => (
     <textarea aria-label="Note" onChange={(e) => onChange(e.target.value)} />

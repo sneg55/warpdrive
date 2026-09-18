@@ -7,6 +7,7 @@ import { useActionError } from "@/components/shell/ActionErrorProvider";
 import { STRINGS } from "@/constants/strings";
 import { trpc } from "@/lib/trpc-client";
 import { readCsrfToken } from "@/utils/csrfCookie";
+import type { ComposerContext } from "./composer/composer.types";
 import { EmailCardMenu } from "./EmailCardMenu";
 import type { EmailTimelineMessage } from "./entityMessageReads";
 import { formatTimelineEmailDate } from "./inboxDate";
@@ -20,8 +21,14 @@ import { decodeEmailSnippet } from "./snippetText";
 // Which record's timeline this card sits on. Unlink clears exactly that link and leaves the
 // other one alone, so detaching a thread from a deal keeps it on the person it belongs to.
 export type EmailCardScope =
-  | { kind: "deal"; dealId: string }
+  | { kind: "deal"; dealId: string; personId?: string }
   | { kind: "person"; personId: string };
+
+function composerContextOf(scope: EmailCardScope): ComposerContext {
+  return scope.kind === "deal"
+    ? { kind: "deal", dealId: scope.dealId, personId: scope.personId }
+    : { kind: "person", personId: scope.personId };
+}
 
 interface EmailTimelineCardProps {
   message: EmailTimelineMessage;
@@ -172,6 +179,7 @@ export function EmailTimelineCard({
                   <ReaderActions
                     key={composeMode}
                     initialMode={composeMode}
+                    context={composerContextOf(scope)}
                     message={body.data}
                     selfEmail={body.data.ownerEmail}
                     accountId={body.data.accountId}

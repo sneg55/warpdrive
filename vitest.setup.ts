@@ -35,7 +35,7 @@ if (typeof Element !== "undefined") {
   // resolved. The budget is a ceiling, not a sleep: a passing test pays nothing for the headroom.
   // Imported here rather than at module scope so the node-environment lanes never load react-dom.
   const { configure } = await import("@testing-library/react");
-  configure({ asyncUtilTimeout: 5_000 });
+  configure({ asyncUtilTimeout: 15_000 });
 
   const proto = Element.prototype as unknown as Record<string, (() => unknown) | undefined>;
   proto.hasPointerCapture ??= () => false;

@@ -23,10 +23,18 @@ vi.mock("@/lib/trpc-client", () => ({
     }),
   },
 }));
+const cardScope = vi.fn();
 vi.mock("@/features/email/EmailTimelineCard", () => ({
-  EmailTimelineCard: ({ message }: { message: { subject: string | null } }) => (
-    <div data-testid="email-card">{message.subject}</div>
-  ),
+  EmailTimelineCard: ({
+    message,
+    scope,
+  }: {
+    message: { subject: string | null };
+    scope: unknown;
+  }) => {
+    cardScope(scope);
+    return <div data-testid="email-card">{message.subject}</div>;
+  },
 }));
 
 import { WorkspaceTabs } from "./tabs";
@@ -36,6 +44,7 @@ afterEach(cleanup);
 const deal = {
   id: "d1",
   title: "Deal",
+  personId: "p1",
   createdAt: new Date("2026-08-18T17:03:00Z"),
 } as unknown as Parameters<typeof WorkspaceTabs>[0]["deal"];
 
@@ -55,6 +64,23 @@ const email = {
 };
 
 describe("deal workspace email timeline", () => {
+  it("scopes each email card to the deal and its primary contact", () => {
+    listQuery.mockReturnValue({ data: [email] });
+
+    render(
+      <WorkspaceTabs
+        deal={deal}
+        tab="email"
+        onTab={() => {}}
+        activities={[]}
+        stages={[]}
+        createdActorName="Jenny"
+      />,
+    );
+
+    expect(cardScope).toHaveBeenCalledWith({ kind: "deal", dealId: "d1", personId: "p1" });
+  });
+
   it("shows a linked email under All, interleaved with the created anchor", () => {
     listQuery.mockReturnValue({ data: [email] });
 

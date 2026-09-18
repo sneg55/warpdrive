@@ -46,8 +46,9 @@ interface InsertToolbarProps {
   onSubjectChange: (subject: string) => void;
   subjectLocked?: boolean;
   onBodyChange: (bodyHtml: string) => void;
-  // context is optional; kind="deal" resolves live values, anything else (inbox or
-  // undefined) shows the merge-token catalog instead. Insert field menu always renders.
+  // context is optional; kind="deal" resolves live values, anything else (inbox, a person
+  // timeline, or undefined) shows the merge-token catalog instead. Insert field menu always
+  // renders.
   context?: InsertFieldContext;
   // Called with the resolved field value when the user picks an insert field.
   onInsertField?: (value: string) => void;

@@ -36,6 +36,14 @@ describe("resolveComposerLinks", () => {
     ).toEqual({ linkDealId: "d1", linkPersonId: "p9" });
   });
 
+  it("takes the person from a person-timeline context", () => {
+    expect(
+      resolveComposerLinks({
+        context: { kind: "person", personId: "p1" },
+      }),
+    ).toEqual({ linkDealId: undefined, linkPersonId: "p1" });
+  });
+
   it("resolves to no links for a plain inbox compose", () => {
     expect(resolveComposerLinks({ context: { kind: "inbox" } })).toEqual({
       linkDealId: undefined,

@@ -183,6 +183,38 @@ describe("EmailTimelineCard compose modes", () => {
     );
   });
 
+  it("hands the reply composer the deal and its primary contact", async () => {
+    render(
+      <EmailTimelineCard
+        message={message}
+        scope={{ kind: "deal", dealId: "d1", personId: "p1" }}
+        onUnlinked={() => {}}
+      />,
+    );
+
+    await userEvent.click(screen.getByRole("button", { name: "Reply" }));
+
+    expect(readerActionsProps).toHaveBeenLastCalledWith(
+      expect.objectContaining({ context: { kind: "deal", dealId: "d1", personId: "p1" } }),
+    );
+  });
+
+  it("hands the reply composer the person a contact-timeline card sits on", async () => {
+    render(
+      <EmailTimelineCard
+        message={message}
+        scope={{ kind: "person", personId: "p7" }}
+        onUnlinked={() => {}}
+      />,
+    );
+
+    await userEvent.click(screen.getByRole("button", { name: "Reply" }));
+
+    expect(readerActionsProps).toHaveBeenLastCalledWith(
+      expect.objectContaining({ context: { kind: "person", personId: "p7" } }),
+    );
+  });
+
   it("opens the composer in reply-all mode from the menu", async () => {
     render(<EmailTimelineCard message={message} scope={dealScope} onUnlinked={() => {}} />);
 

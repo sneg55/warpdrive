@@ -118,7 +118,10 @@ export function WorkspaceTabs({
   const { pinned, focus, history } = useMemo(() => partitionFocusHistory(allItems), [allItems]);
   const historyByType = useMemo(() => bucketByType(history), [history]);
 
-  const emailScope = useMemo(() => ({ kind: "deal" as const, dealId: deal.id }), [deal.id]);
+  const emailScope = useMemo(
+    () => ({ kind: "deal" as const, dealId: deal.id, personId: deal.personId ?? undefined }),
+    [deal.id, deal.personId],
+  );
   const onEmailChanged = useCallback(() => {
     void utils.email.listMessagesForDeal.invalidate({ dealId: deal.id });
   }, [utils, deal.id]);

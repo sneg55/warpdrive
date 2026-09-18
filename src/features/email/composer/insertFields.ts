@@ -1,3 +1,5 @@
+import type { ComposerContext } from "./composer.types";
+
 // insertFields: resolves deal/person/org field values from the composer context.
 // Returns an array of { label, value } pairs for the "Insert field" menu.
 // Only includes fields that have a non-empty resolved value so the menu never
@@ -20,29 +22,12 @@ export interface InsertFieldEntry {
   category?: "Person" | "Deal" | "Organization";
 }
 
-// Extended deal context that carries resolved person/org values for the insert menu.
-// These come from data the deal page already has client-side; no extra fetch needed.
-export type InsertFieldContext =
-  | { kind: "inbox"; threadId?: string }
-  | {
-      kind: "deal";
-      dealId: string;
-      dealTitle?: string;
-      dealValue?: string;
-      personFirstName?: string;
-      personLastName?: string;
-      personEmail?: string;
-      orgName?: string;
-      // Remaining ComposerContext fields passed through transparently
-      defaultTo?: string;
-      personId?: string;
-      orgId?: string;
-    };
+export type InsertFieldContext = ComposerContext;
 
 // Build the insert-field catalogue for the given context. Values are already
 // resolved client-side from the deal workspace data; no server round-trip needed.
 export function insertFields(context: InsertFieldContext): InsertFieldEntry[] {
-  if (context.kind === "inbox") return [];
+  if (context.kind !== "deal") return [];
 
   const candidates: Array<[string, string | undefined, InsertFieldEntry["category"]]> = [
     [INSERT_FIELD_LABELS.DEAL_TITLE, context.dealTitle, "Deal"],
