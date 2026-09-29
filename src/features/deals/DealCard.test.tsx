@@ -7,6 +7,39 @@ afterEach(cleanup);
 import { DealCard } from "./DealCard";
 import { baseCard } from "./dealCardTestFixture";
 
+describe("DealCard status badge", () => {
+  const renderWithStatus = (status: "open" | "won" | "lost") =>
+    render(
+      <DealCard
+        card={{ ...baseCard, status }}
+        ownerName="A.K."
+        personName={null}
+        orgName={null}
+        labels={[]}
+        rottingDays={null}
+        density="comfortable"
+        now={new Date("2026-06-10T00:00:00Z")}
+      />,
+    );
+
+  it("shows a Won badge on a won card", () => {
+    renderWithStatus("won");
+    expect(screen.getByText("Won")).toBeTruthy();
+  });
+
+  it("shows a Lost badge on a lost card", () => {
+    renderWithStatus("lost");
+    expect(screen.getByText("Lost")).toBeTruthy();
+  });
+
+  it("shows no status badge on an open card", () => {
+    renderWithStatus("open");
+    expect(screen.queryByText("Won")).toBeNull();
+    expect(screen.queryByText("Lost")).toBeNull();
+    expect(screen.queryByText("Open")).toBeNull();
+  });
+});
+
 describe("DealCard", () => {
   it("renders the title with a draggable roledescription", () => {
     render(

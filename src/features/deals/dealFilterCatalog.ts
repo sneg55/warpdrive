@@ -2,11 +2,9 @@
 // popover (DealFilterBuilder) and the saved-filter modal (CreateFilterModal) so the two cannot
 // drift apart. Pure data at runtime: every import here is type-only except the operator allow-list,
 // so the finder #4 invariant test can read the offered list without loading React.
-//
-// "status" is intentionally NOT offered: the board query hardcodes status = 'open', so any status
-// condition other than open ANDs to an impossible predicate and returns zero deals.
 import type { ConditionFieldOption, ConditionRow } from "@/components/filters/ConditionRows";
 import type { SelectOption } from "@/components/ui/Select";
+import { DEAL_STATUS, DEAL_STATUS_LABELS } from "@/constants/dealStatus";
 import { FILTER_OP_LABELS } from "@/constants/filterOps";
 import { type FILTER_FIELDS, OPS_BY_FIELD } from "@/features/saved-filters/filterFields";
 
@@ -31,6 +29,11 @@ export interface DealFilterCatalogSources {
 function named(rows: readonly { id: string; name: string }[]): SelectOption[] {
   return rows.map((r) => ({ value: r.id, label: r.name }));
 }
+
+const STATUS_OPTIONS: SelectOption[] = DEAL_STATUS.map((s) => ({
+  value: s,
+  label: DEAL_STATUS_LABELS[s],
+}));
 
 // A fresh, empty row seeded from the first offered field and its first operator, matching what
 // "+ Add condition" produces inside ConditionRows.
@@ -61,6 +64,12 @@ export function dealFilterFields(sources: DealFilterCatalogSources = {}): DealFi
       label: "Stage",
       ops: OPS_BY_FIELD.stageId,
       input: { kind: "select", options: named(stages) },
+    },
+    {
+      field: "status",
+      label: "Status",
+      ops: OPS_BY_FIELD.status,
+      input: { kind: "select", options: STATUS_OPTIONS },
     },
     {
       field: "expectedCloseDate",

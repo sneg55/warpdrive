@@ -28,6 +28,9 @@ export function useDealListActions(): DealListActions {
         reportError(r.error.id);
         return false;
       }
+      if (r.rows.some((row) => row.outcome !== "applied")) {
+        reportError(ERROR_IDS.DEAL_BULK_STAGE_PARTIAL);
+      }
       await queryClient.invalidateQueries({ queryKey: [DEAL_LIST_QUERY_ROOT] });
       router.refresh();
       return true;

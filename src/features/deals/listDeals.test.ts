@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import { customFieldDefs } from "@/db/schema";
 import { withTestDb } from "@/db/testing";
@@ -121,6 +122,66 @@ describe("listDeals", () => {
       const card = cards[0];
       if (!card) throw new Error("no card");
       expect("customFields" in card).toBe(false);
+    });
+  });
+});
+
+describe("listDeals with a status condition", () => {
+  async function seedOpenAndLost(db: Parameters<Parameters<typeof withTestDb>[0]>[0]) {
+    await seedAllVisible(db);
+    const u = await seedUser(db);
+    const p = await seedPipelineWithStages(db, ["A"]);
+    const stage = p.stages[0];
+    if (!stage) throw new Error("setup: no stage");
+    for (const title of ["still open", "gone lost"]) {
+      const r = await createDeal(
+        db,
+        admin(u.id),
+        { title, pipelineId: p.pipeline.id, stageId: stage.id },
+        new AbortController().signal,
+      );
+      if (r.ok === false) throw new Error("seed failed");
+      if (title === "gone lost") {
+        await db.execute(sql`UPDATE deals SET status = 'lost' WHERE id = ${r.value.id}`);
+      }
+    }
+    return { userId: u.id, pipelineId: p.pipeline.id };
+  }
+
+  it("status=lost lists the lost deal in the default (non-archive) list", async () => {
+    await withTestDb(async (db) => {
+      const seed = await seedOpenAndLost(db);
+      const out = await listDeals(
+        db,
+        admin(seed.userId),
+        {
+          pipelineId: seed.pipelineId,
+          offset: 0,
+          limit: 50,
+          filter: { conditions: [{ field: "status", op: "eq", value: "lost" }] },
+        },
+        new AbortController().signal,
+      );
+      expect(out.rows.map((r) => [r.title, r.status])).toEqual([["gone lost", "lost"]]);
+      expect(out.total).toBe(1);
+    });
+  });
+
+  it("without a status condition the list still shows only open deals", async () => {
+    await withTestDb(async (db) => {
+      const seed = await seedOpenAndLost(db);
+      const out = await listDeals(
+        db,
+        admin(seed.userId),
+        {
+          pipelineId: seed.pipelineId,
+          offset: 0,
+          limit: 50,
+          filter: { conditions: [{ field: "title", op: "contains", value: "o" }] },
+        },
+        new AbortController().signal,
+      );
+      expect(out.rows.map((r) => r.title)).toEqual(["still open"]);
     });
   });
 });

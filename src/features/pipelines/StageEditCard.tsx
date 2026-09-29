@@ -5,9 +5,10 @@ import { Checkbox } from "@/components/ui/Checkbox";
 import { Input } from "@/components/ui/Input";
 import { DEFAULT_ROTTING_DAYS } from "@/constants/pipelineDefaults";
 import type { StageRow } from "./stageDiff";
+import { dealCountLabel } from "./stageRemoval";
 
 interface StageEditCardProps {
-  row: StageRow;
+  row: StageRow & { dealCount: number; closedDealCount: number };
   index: number;
   canDelete: boolean;
   onChange: (patch: Partial<StageRow>) => void;
@@ -56,6 +57,9 @@ export function StageEditCard({
           value={row.name}
           onChange={(e) => onChange({ name: e.target.value })}
         />
+        <p className="mt-1 text-xs text-muted-foreground">
+          {dealCountLabel(row.dealCount, row.closedDealCount)}
+        </p>
       </div>
 
       <div className="text-sm">

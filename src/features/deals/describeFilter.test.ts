@@ -15,6 +15,12 @@ describe("describeRows", () => {
     );
   });
 
+  it("labels a status value with its display name", () => {
+    expect(describeRows([{ field: "status", op: "eq", value: "won" }], FIELDS)).toBe(
+      "Status is Won",
+    );
+  });
+
   it("resolves an owner id to the owner's name", () => {
     expect(describeRows([{ field: "ownerId", op: "eq", value: "u1" }], FIELDS)).toBe(
       "Owner is Ada King",

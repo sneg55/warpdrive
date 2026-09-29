@@ -3,6 +3,7 @@ import "@testing-library/jest-dom/vitest";
 import type * as DndCore from "@dnd-kit/core";
 import type { DragEndEvent } from "@dnd-kit/core";
 import type * as DndSortable from "@dnd-kit/sortable";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type React from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -62,13 +63,24 @@ vi.mock("@dnd-kit/sortable", async (importOriginal) => {
 import { EditPipelineClient } from "./EditPipelineClient";
 
 const STAGES = [
-  { id: "s1", name: "Lead in", rottingDays: null },
-  { id: "s2", name: "Contacted", rottingDays: 7 },
-  { id: "s3", name: "Won prep", rottingDays: null },
+  { id: "s1", name: "Lead in", rottingDays: null, dealCount: 12, closedDealCount: 3 },
+  { id: "s2", name: "Contacted", rottingDays: 7, dealCount: 0, closedDealCount: 0 },
+  { id: "s3", name: "Won prep", rottingDays: null, dealCount: 0, closedDealCount: 0 },
 ];
 
+let queryClient = new QueryClient();
+
 function renderEditor(): void {
-  render(<EditPipelineClient pipelineId="p1" pipelineName="Sales" stages={STAGES} />);
+  queryClient = new QueryClient();
+  render(
+    <QueryClientProvider client={queryClient}>
+      <EditPipelineClient pipelineId="p1" pipelineName="Sales" stages={STAGES} />
+    </QueryClientProvider>,
+  );
+}
+
+function confirmMove(): void {
+  fireEvent.click(screen.getByRole("button", { name: "Move deals and delete stage" }));
 }
 
 function drag(activeKey: string, overKey: string): void {
@@ -291,5 +303,212 @@ describe("EditPipelineClient stage reordering", () => {
     await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("E_PIPELINE_001"));
     expect(push).not.toHaveBeenCalled();
     expect(refresh).not.toHaveBeenCalled();
+  });
+});
+
+describe("EditPipelineClient deleting a stage that holds deals", () => {
+  it("shows how many deals each stage holds", () => {
+    renderEditor();
+    expect(screen.getByText("12 deals, 3 won or lost")).toBeInTheDocument();
+    expect(screen.getAllByText("No deals")).toHaveLength(2);
+  });
+
+  it("asks where to move the deals and queues the delete with that destination", async () => {
+    renderEditor();
+    fireEvent.click(screen.getByRole("button", { name: "Delete stage 1" }));
+    const dialog = await screen.findByRole("dialog", { name: "Delete Lead in?" });
+    expect(dialog).toHaveTextContent("12 deals");
+    expect(screen.getByLabelText("Move deals to")).toHaveTextContent("Contacted");
+    confirmMove();
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    expect(screen.queryByDisplayValue("Lead in")).not.toBeInTheDocument();
+    queryClient.setQueryData(["board", "p1"], { cards: [{ id: "d1", stageId: "s1" }] });
+    save();
+    await waitFor(() =>
+      expect(deleteStageAction).toHaveBeenCalledWith(
+        { stageId: "s1", moveDealsToStageId: "s2" },
+        "csrf-token",
+      ),
+    );
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/pipeline/p1"));
+    expect(queryClient.getQueryData(["board", "p1"])).toBeUndefined();
+    expect(refresh).not.toHaveBeenCalled();
+  });
+
+  it("lets the user pick a different destination", async () => {
+    renderEditor();
+    fireEvent.click(screen.getByRole("button", { name: "Delete stage 1" }));
+    await screen.findByRole("dialog");
+    fireEvent.click(screen.getByLabelText("Move deals to"));
+    fireEvent.click(await screen.findByRole("option", { name: "Won prep" }));
+    confirmMove();
+    save();
+    await waitFor(() =>
+      expect(deleteStageAction).toHaveBeenCalledWith(
+        { stageId: "s1", moveDealsToStageId: "s3" },
+        "csrf-token",
+      ),
+    );
+  });
+
+  it("offers only saved stages that are not themselves pending deletion", async () => {
+    renderEditor();
+    fireEvent.click(screen.getByRole("button", { name: "+ Add stage" }));
+    fireEvent.click(screen.getByRole("button", { name: "Delete stage 2" }));
+    fireEvent.click(screen.getByRole("button", { name: "Delete stage 1" }));
+    await screen.findByRole("dialog");
+    expect(screen.getByLabelText("Move deals to")).toHaveTextContent("Won prep");
+    fireEvent.click(screen.getByLabelText("Move deals to"));
+    const options = await screen.findAllByRole("option");
+    expect(options.map((o) => o.textContent)).toEqual(["Won prep"]);
+  });
+
+  it("keeps the stage when the dialog is cancelled", async () => {
+    renderEditor();
+    fireEvent.click(screen.getByRole("button", { name: "Delete stage 1" }));
+    await screen.findByRole("dialog");
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    expect(screen.getByDisplayValue("Lead in")).toBeInTheDocument();
+    save();
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/pipeline/p1"));
+    expect(deleteStageAction).not.toHaveBeenCalled();
+  });
+
+  it("deletes an empty stage without asking", () => {
+    renderEditor();
+    fireEvent.click(screen.getByRole("button", { name: "Delete stage 2" }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(screen.queryByDisplayValue("Contacted")).not.toBeInTheDocument();
+  });
+
+  it("asks for a destination when deleting a stage that will receive deals", async () => {
+    renderEditor();
+    fireEvent.click(screen.getByRole("button", { name: "Delete stage 1" }));
+    await screen.findByRole("dialog");
+    confirmMove();
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    expect(screen.getByText("12 deals, 3 won or lost")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Delete stage 1" }));
+    const dialog = await screen.findByRole("dialog", { name: "Delete Contacted?" });
+    expect(dialog).toHaveTextContent("12 deals, 3 won or lost");
+    expect(screen.getByLabelText("Move deals to")).toHaveTextContent("Won prep");
+    confirmMove();
+    save();
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/pipeline/p1"));
+    expect(deleteStageAction.mock.calls.map((c: unknown[]) => c[0])).toEqual([
+      { stageId: "s1", moveDealsToStageId: "s2" },
+      { stageId: "s2", moveDealsToStageId: "s3" },
+    ]);
+  });
+
+  it("restores a failed delete beside its surviving neighbour, not at a stale index", async () => {
+    deleteStageAction.mockResolvedValueOnce({ ok: false, error: { id: "E_STAGE_002" } });
+    renderEditor();
+    fireEvent.click(screen.getByRole("button", { name: "Delete stage 2" }));
+    fireEvent.click(screen.getByRole("button", { name: "Delete stage 1" }));
+    await screen.findByRole("dialog");
+    confirmMove();
+    save();
+    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("Contacted"));
+    expect(screen.getByLabelText("Stage 1 name")).toHaveValue("Contacted");
+    expect(screen.getByLabelText("Stage 2 name")).toHaveValue("Won prep");
+    save();
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/pipeline/p1"));
+    expect(reorderStagesAction).toHaveBeenLastCalledWith(
+      { pipelineId: "p1", orderedStageIds: ["s2", "s3"] },
+      "csrf-token",
+    );
+  });
+
+  it("keeps moved deals on the destination card when a later step of the save fails", async () => {
+    reorderStagesAction.mockResolvedValueOnce({ ok: false, error: { id: "E_PIPELINE_001" } });
+    renderEditor();
+    fireEvent.click(screen.getByRole("button", { name: "Delete stage 1" }));
+    await screen.findByRole("dialog");
+    confirmMove();
+    save();
+    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("E_PIPELINE_001"));
+    expect(screen.getByText("12 deals, 3 won or lost")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Delete stage 1" }));
+    const dialog = await screen.findByRole("dialog", { name: "Delete Contacted?" });
+    expect(dialog).toHaveTextContent("12 deals, 3 won or lost");
+    confirmMove();
+    save();
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/pipeline/p1"));
+    expect(deleteStageAction).toHaveBeenLastCalledWith(
+      { stageId: "s2", moveDealsToStageId: "s3" },
+      "csrf-token",
+    );
+  });
+
+  it("restores a failed destination stage with the deals that already moved into it", async () => {
+    deleteStageAction
+      .mockResolvedValueOnce({ ok: true, value: undefined })
+      .mockResolvedValueOnce({ ok: false, error: { id: "E_STAGE_002" } });
+    renderEditor();
+    fireEvent.click(screen.getByRole("button", { name: "Delete stage 1" }));
+    await screen.findByRole("dialog");
+    confirmMove();
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    fireEvent.click(screen.getByRole("button", { name: "Delete stage 1" }));
+    await screen.findByRole("dialog", { name: "Delete Contacted?" });
+    confirmMove();
+    save();
+    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("Contacted"));
+    expect(screen.getByLabelText("Stage 1 name")).toHaveValue("Contacted");
+    expect(screen.getByText("12 deals, 3 won or lost")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Delete stage 1" }));
+    const dialog = await screen.findByRole("dialog", { name: "Delete Contacted?" });
+    expect(dialog).toHaveTextContent("12 deals, 3 won or lost");
+  });
+
+  it("drops the board cache when a delete settled even though a later step failed", async () => {
+    reorderStagesAction.mockResolvedValueOnce({ ok: false, error: { id: "E_PIPELINE_001" } });
+    renderEditor();
+    fireEvent.click(screen.getByRole("button", { name: "Delete stage 1" }));
+    await screen.findByRole("dialog");
+    confirmMove();
+    queryClient.setQueryData(["board", "p1"], { cards: [{ id: "d1", stageId: "s1" }] });
+    save();
+    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("E_PIPELINE_001"));
+    expect(queryClient.getQueryData(["board", "p1"])).toBeUndefined();
+  });
+
+  it("does not double count incoming deals on a stage restored after a direct delete", async () => {
+    deleteStageAction
+      .mockResolvedValueOnce({ ok: true, value: undefined })
+      .mockResolvedValueOnce({ ok: false, error: { id: "E_STAGE_002" } });
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <EditPipelineClient pipelineId="p1" pipelineName="Sales" stages={STAGES.slice(0, 2)} />
+      </QueryClientProvider>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Delete stage 1" }));
+    await screen.findByRole("dialog");
+    confirmMove();
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    fireEvent.click(screen.getByRole("button", { name: "+ Add stage" }));
+    fireEvent.click(screen.getByRole("button", { name: "Delete stage 1" }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    save();
+    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("Contacted"));
+    expect(screen.getByText("12 deals, 3 won or lost")).toBeInTheDocument();
+    expect(screen.queryByText("24 deals, 6 won or lost")).not.toBeInTheDocument();
+  });
+
+  it("puts a stage back in place and names it when its delete fails", async () => {
+    deleteStageAction.mockResolvedValueOnce({ ok: false, error: { id: "E_STAGE_004" } });
+    renderEditor();
+    fireEvent.click(screen.getByRole("button", { name: "Delete stage 1" }));
+    await screen.findByRole("dialog");
+    confirmMove();
+    save();
+    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("Lead in"));
+    expect(screen.getByLabelText("Stage 1 name")).toHaveValue("Lead in");
+    expect(push).not.toHaveBeenCalled();
+    save();
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/pipeline/p1"));
+    expect(deleteStageAction).toHaveBeenCalledTimes(1);
   });
 });

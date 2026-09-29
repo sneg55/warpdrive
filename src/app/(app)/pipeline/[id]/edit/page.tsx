@@ -20,6 +20,7 @@ export default async function EditPipelinePage({
   if (pipeline === null) {
     return <main>Pipeline not found</main>;
   }
+  const counts = await caller.pipeline.stageDealCounts(id);
 
   return (
     <main aria-label={`Edit pipeline ${pipeline.name}`} className="h-full">
@@ -31,6 +32,8 @@ export default async function EditPipelinePage({
           id: s.id,
           name: s.name,
           rottingDays: s.rottingDays,
+          dealCount: counts[s.id]?.total ?? 0,
+          closedDealCount: counts[s.id]?.closed ?? 0,
         }))}
       />
     </main>

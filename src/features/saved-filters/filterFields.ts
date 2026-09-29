@@ -51,6 +51,13 @@ export function hasDateCondition(
 
 const DATE_FIELDS = ["expectedCloseDate", "nextActivityAt", "lastActivityAt"] as const;
 
+export function hasStatusCondition(
+  def: { conditions: readonly { field: string }[] } | null | undefined,
+): boolean {
+  if (def === null || def === undefined) return false;
+  return def.conditions.some((c) => c.field === "status");
+}
+
 export const DEAL_CONDITION_CONFIG = {
   fields: FILTER_FIELDS,
   opsByField: OPS_BY_FIELD,

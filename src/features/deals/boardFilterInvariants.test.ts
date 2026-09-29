@@ -48,6 +48,7 @@ function representativeCondition(field: AstField, seed: SeedRefs): Condition {
     value: { field: "value", op: "gt", value: 0 },
     ownerId: { field: "ownerId", op: "eq", value: seed.ownerId },
     stageId: { field: "stageId", op: "eq", value: seed.stageId },
+    status: { field: "status", op: "eq", value: "open" },
     expectedCloseDate: { field: "expectedCloseDate", op: "gte", value: SEED_CLOSE_DATE },
     nextActivityAt: { field: "nextActivityAt", op: "isEmpty" },
     lastActivityAt: { field: "lastActivityAt", op: "isEmpty" },
@@ -72,8 +73,8 @@ describe("board filter builder invariants (finder #4)", () => {
     }
   });
 
-  it("does not offer status (impossible against the board's status='open' hardcode)", () => {
-    expect(OFFERED_BOARD_FILTER_FIELDS.map((f) => f.value)).not.toContain("status");
+  it("offers status now that a status condition replaces the board's open gate", () => {
+    expect(OFFERED_BOARD_FILTER_FIELDS.map((f) => f.value)).toContain("status");
   });
 
   it("never offers an owner value option with zero matching cards", () => {
@@ -151,33 +152,50 @@ describe("board filter builder invariants (finder #4)", () => {
     });
   });
 
-  it("proves why status is not offered: status=won returns 0 cards on the board", async () => {
-    await withTestDb(async (db) => {
-      await db.insert(settings).values({
-        id: true,
-        baseCurrency: "USD",
-        defaultVisibilityLevels: { deal: "all", person: "all", organization: "all" },
-      });
-      const u = await seedUser(db);
-      const p = await seedPipelineWithStages(db, ["A"]);
-      const r = await createDeal(
-        db,
-        createSession(u.id),
-        { title: "Won deal", pipelineId: p.pipeline.id, stageId: p.stages[0]!.id },
-        new AbortController().signal,
-      );
-      if (r.ok === false) throw new Error("seed failed");
-      // createDeal always inserts status='open'; force this one to 'won' to model a real board.
-      await db.execute(sql`UPDATE deals SET status = 'won' WHERE id = ${r.value.id}`);
+  async function seedOneWonDeal(db: Parameters<Parameters<typeof withTestDb>[0]>[0]) {
+    await db.insert(settings).values({
+      id: true,
+      baseCurrency: "USD",
+      defaultVisibilityLevels: { deal: "all", person: "all", organization: "all" },
+    });
+    const u = await seedUser(db);
+    const p = await seedPipelineWithStages(db, ["A"]);
+    const r = await createDeal(
+      db,
+      createSession(u.id),
+      { title: "Won deal", pipelineId: p.pipeline.id, stageId: p.stages[0]!.id },
+      new AbortController().signal,
+    );
+    if (r.ok === false) throw new Error("seed failed");
+    await db.execute(sql`UPDATE deals SET status = 'won' WHERE id = ${r.value.id}`);
+    return { userId: u.id, pipelineId: p.pipeline.id };
+  }
 
+  it("status=won returns the won card on the board, carrying its status", async () => {
+    await withTestDb(async (db) => {
+      const seed = await seedOneWonDeal(db);
       const res = await getBoardColumns(
         db,
-        visSession(u.id),
-        p.pipeline.id,
+        visSession(seed.userId),
+        seed.pipelineId,
         new AbortController().signal,
         { conditions: [{ field: "status", op: "eq", value: "won" }] },
       );
-      expect(res.cards.length).toBe(0);
+      expect(res.cards.map((c) => c.status)).toEqual(["won"]);
+    });
+  });
+
+  it("a filter without a status condition still hides won deals from the board", async () => {
+    await withTestDb(async (db) => {
+      const seed = await seedOneWonDeal(db);
+      const res = await getBoardColumns(
+        db,
+        visSession(seed.userId),
+        seed.pipelineId,
+        new AbortController().signal,
+        { conditions: [{ field: "title", op: "contains", value: "Won" }] },
+      );
+      expect(res.cards).toHaveLength(0);
     });
   });
 });

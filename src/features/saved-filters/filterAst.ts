@@ -122,7 +122,7 @@ export function filterToSql(def: FilterDefinition, opts: FilterCompileOptions = 
   // stages/deals columns, no user input, so it is injection-safe. Requires the caller to have
   // joined `stages s ON s.id = d.stage_id` (getBoardColumns / listDeals do).
   if (def.rotting === true) {
-    const rotting = sql`s.rotting_days IS NOT NULL AND d.stage_entered_at IS NOT NULL AND d.stage_entered_at <= now() - (s.rotting_days + 1) * interval '1 day'`;
+    const rotting = sql`d.status = 'open' AND s.rotting_days IS NOT NULL AND d.stage_entered_at IS NOT NULL AND d.stage_entered_at <= now() - (s.rotting_days + 1) * interval '1 day'`;
     // ANDed outside the group: rotting narrows the whole filter, so an "or" group must not widen
     // past it and hand back deals that are not rotting.
     return parts.length === 0 ? rotting : sql`${group} AND ${rotting}`;

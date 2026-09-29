@@ -131,6 +131,12 @@ export const SETTINGS_STRINGS = {
   createPipelineDescription: "New pipelines start with a default set of stages you can edit.",
   createPipelineError: "Couldn't create the pipeline. Please try again.",
   noPipelinesYet: "No pipelines yet.",
+  deleteStageTitle: (stage: string) => `Delete ${stage}?`,
+  deleteStageDescription: (deals: string) =>
+    `This stage holds ${deals}. Choose the stage they move to. Nothing changes until you save.`,
+  moveDealsTo: "Move deals to",
+  moveDealsAndDeleteStage: "Move deals and delete stage",
+  stageDeleteFailed: (stage: string, reason: string) => `Could not delete "${stage}". ${reason}`,
   editStages: "Edit stages",
   creating: "Creating...",
   createFirstPipeline: "Create your first pipeline",

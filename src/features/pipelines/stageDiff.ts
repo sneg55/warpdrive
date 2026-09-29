@@ -9,10 +9,15 @@ export interface StageRow {
   rottingDays: number | null;
 }
 
+export interface StageDeleteOp {
+  stageId: string;
+  moveDealsToStageId?: string;
+}
+
 export interface StageDiffInput {
   originalById: Record<string, { name: string; rottingDays: number | null }>;
   rows: StageRow[];
-  deletedIds: string[];
+  pendingDeletes: StageDeleteOp[];
 }
 
 export interface StageCreateOp {
@@ -26,7 +31,7 @@ export interface StageUpdateOp extends StageCreateOp {
 export interface StageOps {
   creates: StageCreateOp[];
   updates: StageUpdateOp[];
-  deletes: string[];
+  deletes: StageDeleteOp[];
 }
 
 function changed(
@@ -55,7 +60,16 @@ export function diffStages(input: StageDiffInput): StageOps {
     }
   }
 
-  // Dedupe deletes: a StrictMode double-invoked updater can record the same id twice, and deleting
-  // a stage twice makes the second call fail with STAGE_NOT_FOUND (PIPELINES-07).
-  return { creates, updates, deletes: [...new Set(input.deletedIds)] };
+  return { creates, updates, deletes: dedupeByStageId(input.pendingDeletes) };
+}
+
+function dedupeByStageId(ops: StageDeleteOp[]): StageDeleteOp[] {
+  const seen = new Set<string>();
+  const out: StageDeleteOp[] = [];
+  for (const op of ops) {
+    if (seen.has(op.stageId)) continue;
+    seen.add(op.stageId);
+    out.push(op);
+  }
+  return out;
 }

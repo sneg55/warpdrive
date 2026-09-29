@@ -1,6 +1,7 @@
 "use client";
 import { useDroppable } from "@dnd-kit/core";
 import type React from "react";
+import type { DealStatus } from "@/constants/dealStatus";
 import { cn } from "@/lib/utils";
 
 // Pipedrive reveals a bottom action bar during a deal drag: Lost | Won | Move, each a dashed drop
@@ -19,6 +20,14 @@ export function zoneToStatus(zoneId: string): "won" | "lost" | null {
   if (zoneId === "deal-zone-won") return "won";
   if (zoneId === "deal-zone-lost") return "lost";
   return null;
+}
+
+export function zoneTransition(
+  zoneId: string,
+  currentStatus: DealStatus | undefined,
+): "won" | "lost" | null {
+  const target = zoneToStatus(zoneId);
+  return target === currentStatus ? null : target;
 }
 
 function Zone({ id, label, tone }: { id: string; label: string; tone: string }): React.ReactNode {

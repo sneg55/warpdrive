@@ -9,7 +9,7 @@ interface StageOpsProgress {
 
 export type ApplyStageOpsResult =
   | ({ ok: true } & StageOpsProgress)
-  | ({ ok: false; errorId: string } & StageOpsProgress);
+  | ({ ok: false; errorId: string; failedDeleteId?: string } & StageOpsProgress);
 
 export async function applyStageOps(
   pipelineId: string,
@@ -18,17 +18,18 @@ export async function applyStageOps(
 ): Promise<ApplyStageOpsResult> {
   const createdIds: string[] = [];
   const settledDeletes: string[] = [];
-  const failed = (errorId: string): ApplyStageOpsResult => ({
+  const failed = (errorId: string, failedDeleteId?: string): ApplyStageOpsResult => ({
     ok: false,
     errorId,
     createdIds,
     settledDeletes,
+    ...(failedDeleteId === undefined ? {} : { failedDeleteId }),
   });
   try {
-    for (const stageId of ops.deletes) {
-      const r = await deleteStageAction({ stageId }, csrf);
-      if (!r.ok) return failed(r.error.id);
-      settledDeletes.push(stageId);
+    for (const op of ops.deletes) {
+      const r = await deleteStageAction(op, csrf);
+      if (!r.ok) return failed(r.error.id, op.stageId);
+      settledDeletes.push(op.stageId);
     }
     for (const c of ops.creates) {
       const r = await createStageAction({ pipelineId, ...c }, csrf);

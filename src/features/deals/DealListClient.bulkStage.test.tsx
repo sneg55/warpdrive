@@ -53,6 +53,7 @@ vi.mock("./BoardFilterControl", () => ({ BoardFilterControl: () => null }));
 vi.mock("./BoardSortControl", () => ({ BoardSortControl: () => null }));
 vi.mock("./NewDealButton", () => ({ NewDealButton: () => null }));
 
+import { ERROR_IDS } from "@/constants/errorIds";
 import type { DealListProps } from "./DealList";
 import { DealListClient } from "./DealListClient";
 import { DEAL_LIST_QUERY_ROOT } from "./dealListQueryKey";
@@ -100,6 +101,23 @@ describe("DealListClient bulk stage wiring", () => {
     );
     expect(applied).toBe(true);
     expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: [DEAL_LIST_QUERY_ROOT] });
+    expect(refresh).toHaveBeenCalled();
+  });
+
+  it("reports a partial outcome when a selected deal was not moved", async () => {
+    bulkStageAction.mockResolvedValue({
+      ok: true,
+      rows: [
+        { dealId: "d1", outcome: "applied" },
+        { dealId: "d2", outcome: "not_found" },
+      ],
+    });
+    render(<DealListClient initial={initial} />);
+
+    const applied = await listProps?.onBulkStage(["d1", "d2"], "s2");
+
+    expect(applied).toBe(true);
+    expect(reportError).toHaveBeenCalledWith(ERROR_IDS.DEAL_BULK_STAGE_PARTIAL);
     expect(refresh).toHaveBeenCalled();
   });
 

@@ -2,7 +2,7 @@
 import { DndContext } from "@dnd-kit/core";
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
-import { DragDropZones, zoneToStatus } from "./DragDropZones";
+import { DragDropZones, zoneToStatus, zoneTransition } from "./DragDropZones";
 
 afterEach(cleanup);
 
@@ -37,5 +37,15 @@ describe("DragDropZones", () => {
     // Move is not a status transition; neither is a stage id.
     expect(zoneToStatus("deal-zone-move")).toBeNull();
     expect(zoneToStatus("aaaaaaaa-0000-0000-0000-000000000001")).toBeNull();
+  });
+
+  it("skips a drop onto the zone matching the card's current status", () => {
+    expect(zoneTransition("deal-zone-lost", "lost")).toBeNull();
+    expect(zoneTransition("deal-zone-won", "won")).toBeNull();
+    expect(zoneTransition("deal-zone-lost", "won")).toBe("lost");
+    expect(zoneTransition("deal-zone-won", "lost")).toBe("won");
+    expect(zoneTransition("deal-zone-won", "open")).toBe("won");
+    expect(zoneTransition("deal-zone-lost", undefined)).toBe("lost");
+    expect(zoneTransition("deal-zone-move", "open")).toBeNull();
   });
 });

@@ -56,6 +56,27 @@ describe("DealCard rot tint", () => {
     expect(card.className).toContain("bg-red-200");
   });
 
+  it("never rots a closed deal, however long it has sat in its last stage", () => {
+    for (const status of ["won", "lost"] as const) {
+      cleanup();
+      render(
+        <DealCard
+          card={{ ...baseCard, status, stageEnteredAt: new Date("2026-06-08T00:00:00Z") }}
+          ownerName="A.K."
+          personName={null}
+          orgName={null}
+          labels={[]}
+          rottingDays={6}
+          density="comfortable"
+          now={now}
+        />,
+      );
+      const card = screen.getByRole("button", { name: /Acme renewal/ });
+      expect(card.className, status).not.toMatch(/bg-red-\d/);
+      expect(screen.queryByRole("status", { name: /rotting/ }), status).toBeNull();
+    }
+  });
+
   it("does not tint a healthy card (age at or below the threshold)", () => {
     // age 4, R=6 -> level 0
     renderAt("2026-06-16T00:00:00Z");

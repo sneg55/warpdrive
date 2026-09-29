@@ -162,6 +162,47 @@ describe("filterToSql: functional", () => {
     });
   });
 
+  it("rotting flag never keeps a closed deal, however long it sat in its last stage", async () => {
+    await withTestDb(async (db) => {
+      await db.insert(settings).values({
+        id: true,
+        baseCurrency: "USD",
+        defaultVisibilityLevels: { deal: "all", person: "all", organization: "all" },
+      });
+      const u = await seedUser(db);
+      const p = await seedPipelineWithStages(db, ["A"]);
+      const stageId = p.stages[0]!.id;
+      await db.execute(sql`UPDATE stages SET rotting_days = 14 WHERE id = ${stageId}`);
+      for (const title of ["rotting", "closed"]) {
+        const r = await createDeal(
+          db,
+          createSession(u.id),
+          { title, pipelineId: p.pipeline.id, stageId },
+          new AbortController().signal,
+        );
+        if (r.ok === false) throw new Error("setup");
+        await db.execute(
+          sql`UPDATE deals SET stage_entered_at = now() - interval '30 days' WHERE id = ${r.value.id}`,
+        );
+        if (title === "closed") {
+          await db.execute(sql`UPDATE deals SET status = 'won' WHERE id = ${r.value.id}`);
+        }
+      }
+
+      const frag = filterToSql({ conditions: [], rotting: true });
+      const res = await db.execute(sql`
+        SELECT d.title FROM deals d
+        JOIN pipelines p ON p.id = d.pipeline_id
+        LEFT JOIN stages s ON s.id = d.stage_id
+        WHERE ${dealVisibilityClause(visSession(u.id))} AND ${frag}
+      `);
+      const titles = (res as unknown as { rows: Array<{ title: string }> }).rows.map(
+        (r) => r.title,
+      );
+      expect(titles).toEqual(["rotting"]);
+    });
+  });
+
   it("rotting flag keeps only deals past their stage's rotting_days threshold", async () => {
     await withTestDb(async (db) => {
       await db.insert(settings).values({

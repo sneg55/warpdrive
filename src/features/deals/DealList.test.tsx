@@ -111,6 +111,16 @@ describe("DealList", () => {
     expect(within(titleRow).getByText("Aug 1, 2026")).toBeInTheDocument();
   });
 
+  it("offers a hidden-by-default Status column that badges a closed deal", () => {
+    const statusCol = DEAL_LIST_COLUMNS.find((c) => c.key === "status");
+    expect(statusCol?.defaultVisible).not.toBe(true);
+    const lost: DealListRow = { ...row, status: "lost" };
+    render(<DealList {...props} rows={[lost]} visibleColumns={DEAL_LIST_COLUMNS} />);
+    expect(screen.getByRole("columnheader", { name: "Status" })).toBeInTheDocument();
+    const titleRow = screen.getByText("Acme renewal").closest("tr") as HTMLElement;
+    expect(within(titleRow).getByText("Lost")).toBeInTheDocument();
+  });
+
   it("still allows inline title edit via an explicit edit control", () => {
     render(<DealList {...props} />);
     const titleRow = screen.getByText("Acme renewal").closest("tr") as HTMLElement;

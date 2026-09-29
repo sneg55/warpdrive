@@ -6,6 +6,7 @@ import {
   DEAL_CONDITION_CONFIG,
   FILTER_FIELDS,
   FILTER_OPS,
+  hasStatusCondition,
   OPS_BY_FIELD,
   SORT_DIRS,
 } from "./filterFields";
@@ -75,5 +76,18 @@ describe("filterFields", () => {
   it("does not import zod", () => {
     const src = readFileSync(fileURLToPath(new URL("./filterFields.ts", import.meta.url)), "utf8");
     expect(src).not.toMatch(/from ["']zod["']/);
+  });
+});
+
+describe("hasStatusCondition", () => {
+  it("is true only when a condition targets the status field", () => {
+    expect(hasStatusCondition({ conditions: [{ field: "status" }] })).toBe(true);
+    expect(hasStatusCondition({ conditions: [{ field: "title" }, { field: "status" }] })).toBe(
+      true,
+    );
+    expect(hasStatusCondition({ conditions: [{ field: "title" }] })).toBe(false);
+    expect(hasStatusCondition({ conditions: [] })).toBe(false);
+    expect(hasStatusCondition(undefined)).toBe(false);
+    expect(hasStatusCondition(null)).toBe(false);
   });
 });

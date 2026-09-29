@@ -37,6 +37,7 @@ export const ERROR_IDS = {
   DEAL_MERGE_INPUT_INVALID: "E_DEAL_013", // mergeDeals action input failed Zod validation
   DEAL_BULK_INPUT_INVALID: "E_DEAL_015",
   DEAL_BULK_ARCHIVE_PARTIAL: "E_DEAL_016",
+  DEAL_BULK_STAGE_PARTIAL: "E_DEAL_017",
   // LEAD
   LEAD_NOT_FOUND: "E_LEAD_001", // lead not found or not visible (404-on-invisible)
   LEAD_ARCHIVE_FORBIDDEN: "E_LEAD_002", // archive denied: lead not visible/owned by actor
@@ -52,6 +53,7 @@ export const ERROR_IDS = {
   STAGE_NOT_FOUND: "E_STAGE_001", // stage not found (delete/update targeted a missing stage)
   STAGE_HAS_DEALS: "E_STAGE_002", // refuse to delete a stage that still holds deals (move them first)
   STAGE_LAST_ONE: "E_STAGE_003", // refuse to delete the pipeline's final stage (a pipeline needs one)
+  STAGE_MOVE_TARGET_INVALID: "E_STAGE_004", // delete's move destination is the stage itself or outside its pipeline
   // CF
   CF_KEY_EXISTS: "E_CF_001", // custom-field key already exists for target
   CF_DEF_NOT_FOUND: "E_CF_002", // custom-field def not found

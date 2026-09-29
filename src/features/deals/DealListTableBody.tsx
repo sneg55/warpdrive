@@ -7,6 +7,7 @@ import type { ColumnDef } from "@/components/data-table/columnModel";
 import { Avatar } from "@/components/ui/Avatar";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { formatCurrency } from "@/lib/formatCurrency";
+import { DealStatusBadge } from "./DealStatusBadge";
 import { DealTitleCell } from "./DealTitleCell";
 import { fmtDate, fmtDateOnly } from "./dealListFormat";
 import type { DealListRow } from "./dealListTypes";
@@ -96,6 +97,8 @@ export function DealListTableBody(props: DealListTableBodyProps): React.ReactNod
         return fmtDateOnly(row.expectedCloseDate);
       case "nextActivity":
         return fmtDate(row.nextActivityAt);
+      case "status":
+        return <DealStatusBadge status={row.status} />;
       default:
         return "";
     }

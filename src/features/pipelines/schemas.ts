@@ -24,6 +24,7 @@ export const stageReorderInput = z.object({
 
 export const stageDeleteInput = z.object({
   stageId: z.string().uuid(),
+  moveDealsToStageId: z.string().uuid().optional(),
 });
 
 export const pipelineRenameInput = z.object({

@@ -4,6 +4,8 @@ import type * as schema from "@/db/schema";
 import { pipelines } from "@/db/schema/pipelines";
 import { stages } from "@/db/schema/stages";
 import { protectedProcedure, router } from "@/server/trpc/trpc";
+import { canManagePipelines } from "./canManagePipelines";
+import { countDealsByStage, type StageDealCounts } from "./stageDealCounts";
 
 type Db = NodePgDatabase<typeof schema>;
 
@@ -44,6 +46,22 @@ export async function listVisiblePipelines(db: Db, session: ListSession, signal:
   }));
 }
 
+export interface CountsSession extends ListSession {
+  canManage: boolean;
+}
+
+export async function countDealsByStageForSession(
+  db: Db,
+  session: CountsSession,
+  pipelineId: string,
+  signal: AbortSignal,
+): Promise<StageDealCounts> {
+  if (!session.canManage) return {};
+  const visible = await listVisiblePipelines(db, session, signal);
+  if (!visible.some((p) => p.id === pipelineId)) return {};
+  return countDealsByStage(db, pipelineId, signal);
+}
+
 function actorToListSession(actor: { type: string; groupIds: ReadonlySet<string> }): ListSession {
   return {
     isAdmin: actor.type === "admin",
@@ -60,6 +78,16 @@ export const pipelineRouter = router({
     .query(({ ctx, input }) =>
       listVisiblePipelines(ctx.db, actorToListSession(ctx.actor), AbortSignal.timeout(5000)).then(
         (list) => list.find((p) => p.id === input) ?? null,
+      ),
+    ),
+  stageDealCounts: protectedProcedure
+    .input(String)
+    .query(({ ctx, input }) =>
+      countDealsByStageForSession(
+        ctx.db,
+        { ...actorToListSession(ctx.actor), canManage: canManagePipelines(ctx.actor) },
+        input,
+        AbortSignal.timeout(5000),
       ),
     ),
 });

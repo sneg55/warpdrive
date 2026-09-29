@@ -2,6 +2,7 @@
 import "@testing-library/jest-dom/vitest";
 import type * as DndCore from "@dnd-kit/core";
 import type * as DndSortable from "@dnd-kit/sortable";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type React from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -54,13 +55,20 @@ vi.mock("@dnd-kit/sortable", async (importOriginal) => {
 import { EditPipelineClient } from "./EditPipelineClient";
 
 const STAGES = [
-  { id: "s1", name: "Lead in", rottingDays: null },
-  { id: "s2", name: "Contacted", rottingDays: 7 },
-  { id: "s3", name: "Won prep", rottingDays: null },
+  { id: "s1", name: "Lead in", rottingDays: null, dealCount: 0, closedDealCount: 0 },
+  { id: "s2", name: "Contacted", rottingDays: 7, dealCount: 0, closedDealCount: 0 },
+  { id: "s3", name: "Won prep", rottingDays: null, dealCount: 0, closedDealCount: 0 },
 ];
 
+let queryClient = new QueryClient();
+
 function renderEditor(): void {
-  render(<EditPipelineClient pipelineId="p1" pipelineName="Sales" stages={STAGES} />);
+  queryClient = new QueryClient();
+  render(
+    <QueryClientProvider client={queryClient}>
+      <EditPipelineClient pipelineId="p1" pipelineName="Sales" stages={STAGES} />
+    </QueryClientProvider>,
+  );
 }
 
 function save(): void {
@@ -114,7 +122,7 @@ describe("EditPipelineClient retry after a mid-save failure", () => {
     );
   });
 
-  it("does not re-delete a stage that settled before the failure", async () => {
+  it("keeps the settled delete and puts only the failed stage back", async () => {
     deleteStageAction
       .mockResolvedValueOnce({ ok: true, value: undefined })
       .mockResolvedValueOnce({ ok: false, error: { id: "E_STAGE_002" } });
@@ -122,12 +130,20 @@ describe("EditPipelineClient retry after a mid-save failure", () => {
     fireEvent.click(screen.getByRole("button", { name: "Delete stage 2" }));
     fireEvent.click(screen.getByRole("button", { name: "Delete stage 2" }));
     save();
-    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent(/holds deals/));
+    await waitFor(() =>
+      expect(screen.getByRole("alert")).toHaveTextContent(/delete "Won prep".*holds deals/),
+    );
+    expect(screen.getByLabelText("Stage 2 name")).toHaveValue("Won prep");
+    expect(screen.queryByDisplayValue("Contacted")).not.toBeInTheDocument();
     save();
     await waitFor(() => expect(push).toHaveBeenCalledWith("/pipeline/p1"));
     const deleted = deleteStageAction.mock.calls.map(
       (c: unknown[]) => (c[0] as { stageId: string }).stageId,
     );
-    expect(deleted).toEqual(["s2", "s3", "s3"]);
+    expect(deleted).toEqual(["s2", "s3"]);
+    expect(reorderStagesAction).toHaveBeenLastCalledWith(
+      { pipelineId: "p1", orderedStageIds: ["s1", "s3"] },
+      "csrf-token",
+    );
   });
 });

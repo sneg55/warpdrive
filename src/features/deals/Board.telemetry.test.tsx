@@ -38,7 +38,7 @@ vi.mock("@dnd-kit/core", async (importOriginal) => {
 });
 vi.mock("./BoardStages", () => ({ BoardStages: () => null }));
 vi.mock("./BoardToolbar", () => ({ BoardToolbar: () => null }));
-vi.mock("./DragDropZones", () => ({ DragDropZones: () => null, zoneToStatus: () => null }));
+vi.mock("./DragDropZones", () => ({ DragDropZones: () => null, zoneTransition: () => null }));
 vi.mock("./useBoardRealtime", () => ({ useBoardRealtime: () => {} }));
 vi.mock("./useDealClose", () => ({ useDealClose: () => ({ close: vi.fn() }) }));
 vi.mock("./useDealMove", () => ({

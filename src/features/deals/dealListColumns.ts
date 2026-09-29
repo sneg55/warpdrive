@@ -13,4 +13,5 @@ export const DEAL_LIST_COLUMNS: readonly ColumnDef[] = [
   { key: "person", header: "Contact person", defaultVisible: true },
   { key: "expectedCloseDate", header: "Expected close date", defaultVisible: true },
   { key: "nextActivity", header: "Next activity", defaultVisible: true },
+  { key: "status", header: "Status" },
 ] as const;

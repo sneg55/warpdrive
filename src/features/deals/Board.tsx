@@ -27,7 +27,7 @@ import { boardEmptyKind } from "./boardEmptyKind";
 import type { BoardProps } from "./boardTypes";
 import { isBoardFiltered } from "./boardView";
 import { DealCard } from "./DealCard";
-import { DragDropZones, zoneToStatus } from "./DragDropZones";
+import { DragDropZones, zoneTransition } from "./DragDropZones";
 import { resolveNeighbors } from "./dragNeighbors";
 import { MoveDealDialog } from "./MoveDealDialog";
 import { NewDealButton } from "./NewDealButton";
@@ -183,7 +183,10 @@ export function Board(props: BoardProps): React.ReactNode {
         setMoveDealId(dealId);
         return;
       }
-      const status = zoneToStatus(toStageId);
+      const status = zoneTransition(
+        toStageId,
+        liveCards.find((card) => card.id === dealId)?.status,
+      );
       const zoneUpdatedAt = cardUpdatedAt[dealId];
       if (status !== null && zoneUpdatedAt !== undefined) {
         close({ dealId, status, expectedUpdatedAt: zoneUpdatedAt });

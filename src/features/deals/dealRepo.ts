@@ -2,7 +2,9 @@
 // All queries JOIN pipelines (alias p) so dealVisibilityClause can reference
 // p.visibility_group_id; none leak hidden deals into counts or totals.
 import { sql } from "drizzle-orm";
+import type { DealStatus } from "@/constants/dealStatus";
 import { filterToSql } from "@/features/saved-filters/filterAst";
+import { hasStatusCondition } from "@/features/saved-filters/filterFields";
 import type { FilterDefinition } from "@/features/saved-filters/schemas";
 import type { DbOrTx } from "@/server/realtime/channelVersions";
 import type { DealVisibilitySession } from "@/types/session";
@@ -43,6 +45,7 @@ export interface BoardCard {
   id: string;
   title: string;
   value: string | null;
+  status?: DealStatus;
   // Label keys (hot/warm/cold); resolved to name+color at the card boundary.
   // Optional like the other join-provided display fields so hand-built fixtures need not set it.
   labels?: string[];
@@ -89,10 +92,12 @@ export async function getBoardColumns(
   signal.throwIfAborted();
   const visClause = dealVisibilityClause(session);
   const filterClause = filter !== undefined ? filterToSql(filter, { timeZone }) : sql`true`;
+  const openGate = hasStatusCondition(filter) ? sql`` : sql`AND d.status = 'open'`;
   const result = await db.execute(sql`
     SELECT
       d.id,
       d.title,
+      d.status,
       d.value,
       d.labels,
       d.stage_id        AS "stageId",
@@ -129,7 +134,7 @@ export async function getBoardColumns(
       LIMIT 1
     ) na ON true
     WHERE d.pipeline_id = ${pipelineId}
-      AND d.status = 'open'
+      ${openGate}
       AND d.deleted_at IS NULL
       AND d.archived_at IS NULL
       AND p.is_archived = false
@@ -196,12 +201,10 @@ export async function listDeals(
   signal.throwIfAborted();
   const pipelineFilter =
     opts.pipelineId !== undefined ? sql`AND d.pipeline_id = ${opts.pipelineId}` : sql``;
-  // Default list shows active open deals; the Archive tab (archived:true) shows archived
-  // deals of ANY status (Pipedrive keeps won/lost status when archiving), so the status
-  // filter is dropped there, otherwise an archived won/lost deal would be visible nowhere.
   const archiveGate =
     opts.archived === true ? sql`d.archived_at IS NOT NULL` : sql`d.archived_at IS NULL`;
-  const statusGate = opts.archived === true ? sql`` : sql`AND d.status = 'open'`;
+  const statusGate =
+    opts.archived === true || hasStatusCondition(opts.filter) ? sql`` : sql`AND d.status = 'open'`;
   const visClause = dealVisibilityClause(session);
   const filterClause =
     opts.filter !== undefined ? filterToSql(opts.filter, { timeZone: opts.timeZone }) : sql`true`;
@@ -230,6 +233,7 @@ export async function listDeals(
       SELECT
         d.id,
         d.title,
+        d.status,
         d.value,
         d.labels,
         d.stage_id        AS "stageId",

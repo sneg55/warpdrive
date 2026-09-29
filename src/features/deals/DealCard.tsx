@@ -5,6 +5,7 @@ import { formatCurrency } from "@/lib/formatCurrency";
 import { cn } from "@/lib/utils";
 import type { ActivityState } from "./cardIndicators";
 import { activityState, activityTooltip, rottingState } from "./cardIndicators";
+import { DealStatusBadge } from "./DealStatusBadge";
 import type { BoardCard } from "./dealRepo";
 
 // String constants: no magic strings, no em dashes.
@@ -78,7 +79,8 @@ export function DealCard(props: DealCardProps): React.ReactNode {
   const activity = activityState(card.nextActivityAt, now);
   // Hover/aria copy for the next-action badge: names the soonest action and its timing.
   const activityTip = activityTooltip(card.nextActivityTitle ?? null, card.nextActivityAt, now);
-  const rot = rottingState(card.stageEnteredAt, rottingDays, now);
+  const closed = card.status === "won" || card.status === "lost";
+  const rot = rottingState(card.stageEnteredAt, closed ? null : rottingDays, now);
 
   // Pipedrive parity: the deal title leads (bold primary line); the gray description line reads
   // "org, person" (comfortable only), collapsing to whichever of the two is present.
@@ -103,8 +105,10 @@ export function DealCard(props: DealCardProps): React.ReactNode {
         rot.level > 0 && ROT_TINT[rot.level],
       )}
     >
-      {/* Primary line: the deal title leads (Pipedrive parity). */}
-      <div className="truncate text-sm font-medium leading-tight">{primary}</div>
+      <div className="flex items-center gap-2">
+        <div className="min-w-0 flex-1 truncate text-sm font-medium leading-tight">{primary}</div>
+        <DealStatusBadge status={card.status} />
+      </div>
 
       {/* Description line: "org, person" (comfortable only). */}
       {!compact && descriptionLine !== null && (

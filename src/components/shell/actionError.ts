@@ -48,6 +48,10 @@ const CONTENT: Record<string, ActionErrorContent> = {
     title: "Some deals weren't archived",
     body: "Deals you can't edit stayed in the list. The rest moved to the Archive tab.",
   },
+  [ERROR_IDS.DEAL_BULK_STAGE_PARTIAL]: {
+    title: "Some deals weren't moved",
+    body: "Won, lost, and deals you can't edit kept their stage. The rest moved.",
+  },
 };
 
 export function actionErrorContent(errorId?: string): ActionErrorContent {

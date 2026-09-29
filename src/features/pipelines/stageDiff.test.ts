@@ -14,7 +14,7 @@ describe("diffStages", () => {
         { id: "s1", name: "Qualified", rottingDays: 7 },
         { id: "s2", name: "Proposal", rottingDays: null },
       ],
-      deletedIds: [],
+      pendingDeletes: [],
     });
     expect(ops.creates).toEqual([]);
     expect(ops.updates).toEqual([]);
@@ -28,7 +28,7 @@ describe("diffStages", () => {
         { id: "s1", name: "Qualified (renamed)", rottingDays: 7 },
         { id: "s2", name: "Proposal", rottingDays: null },
       ],
-      deletedIds: [],
+      pendingDeletes: [],
     });
     expect(ops.updates).toEqual([{ stageId: "s1", name: "Qualified (renamed)", rottingDays: 7 }]);
     expect(ops.creates).toEqual([]);
@@ -41,7 +41,7 @@ describe("diffStages", () => {
         { id: "s1", name: "Qualified", rottingDays: null },
         { id: "s2", name: "Proposal", rottingDays: null },
       ],
-      deletedIds: [],
+      pendingDeletes: [],
     });
     expect(ops.updates).toEqual([{ stageId: "s1", name: "Qualified", rottingDays: null }]);
   });
@@ -54,7 +54,7 @@ describe("diffStages", () => {
         { id: "s2", name: "Proposal", rottingDays: null },
         { id: null, name: "Negotiation", rottingDays: 14 },
       ],
-      deletedIds: [],
+      pendingDeletes: [],
     });
     expect(ops.creates).toEqual([{ name: "Negotiation", rottingDays: 14 }]);
     expect(ops.updates).toEqual([]);
@@ -68,19 +68,19 @@ describe("diffStages", () => {
         { id: "s2", name: "Proposal", rottingDays: null },
         { id: "n1", name: "Negotiation", rottingDays: 14 },
       ],
-      deletedIds: [],
+      pendingDeletes: [],
     });
     expect(ops.updates).toEqual([{ stageId: "n1", name: "Negotiation", rottingDays: 14 }]);
     expect(ops.creates).toEqual([]);
   });
 
-  it("passes through deleted ids", () => {
+  it("passes through delete ops with their move destination", () => {
     const ops = diffStages({
       originalById: original,
       rows: [{ id: "s1", name: "Qualified", rottingDays: 7 }],
-      deletedIds: ["s2"],
+      pendingDeletes: [{ stageId: "s2", moveDealsToStageId: "s1" }],
     });
-    expect(ops.deletes).toEqual(["s2"]);
+    expect(ops.deletes).toEqual([{ stageId: "s2", moveDealsToStageId: "s1" }]);
   });
 
   // PIPELINES-07: a StrictMode double-invoked updater can record the same delete id twice, which
@@ -90,8 +90,8 @@ describe("diffStages", () => {
     const ops = diffStages({
       originalById: original,
       rows: [{ id: "s1", name: "Qualified", rottingDays: 7 }],
-      deletedIds: ["s2", "s2"],
+      pendingDeletes: [{ stageId: "s2", moveDealsToStageId: "s1" }, { stageId: "s2" }],
     });
-    expect(ops.deletes).toEqual(["s2"]);
+    expect(ops.deletes).toEqual([{ stageId: "s2", moveDealsToStageId: "s1" }]);
   });
 });

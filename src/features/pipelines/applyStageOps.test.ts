@@ -29,11 +29,15 @@ describe("applyStageOps partial progress", () => {
       {
         creates: [{ name: "New stage", rottingDays: null }],
         updates: [],
-        deletes: ["s2"],
+        deletes: [{ stageId: "s2", moveDealsToStageId: "s1" }],
       },
       "csrf",
     );
     expect(r).toEqual({ ok: true, createdIds: ["n1"], settledDeletes: ["s2"] });
+    expect(deleteStageAction).toHaveBeenCalledWith(
+      { stageId: "s2", moveDealsToStageId: "s1" },
+      "csrf",
+    );
   });
 
   it("keeps the created ids when an update fails after the creates", async () => {
@@ -61,7 +65,7 @@ describe("applyStageOps partial progress", () => {
       .mockResolvedValueOnce({ ok: false, error: { id: "E_STAGE_002" } });
     const r = await applyStageOps(
       "p1",
-      { creates: [], updates: [], deletes: ["s2", "s3"] },
+      { creates: [], updates: [], deletes: [{ stageId: "s2" }, { stageId: "s3" }] },
       "csrf",
     );
     expect(r).toEqual({
@@ -69,6 +73,7 @@ describe("applyStageOps partial progress", () => {
       errorId: "E_STAGE_002",
       createdIds: [],
       settledDeletes: ["s2"],
+      failedDeleteId: "s3",
     });
   });
 

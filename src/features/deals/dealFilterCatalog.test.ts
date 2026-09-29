@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { DEAL_STATUS_LABELS } from "@/constants/dealStatus";
 import { FILTER_OP_LABELS } from "@/constants/filterOps";
 import { OPS_BY_FIELD } from "@/features/saved-filters/filterFields";
 import { blankConditionRow, dealFilterFields, OP_LABELS } from "./dealFilterCatalog";
@@ -14,6 +15,7 @@ describe("dealFilterFields", () => {
       "value",
       "ownerId",
       "stageId",
+      "status",
       "expectedCloseDate",
       "nextActivityAt",
       "lastActivityAt",
@@ -30,8 +32,17 @@ describe("dealFilterFields", () => {
     expect(byField("lastActivityAt")?.input.kind).toBe("date");
   });
 
-  it("never offers status (the board query hardcodes status = 'open')", () => {
-    expect(dealFilterFields().map((f) => f.field)).not.toContain("status");
+  it("offers status as a select over the three deal statuses", () => {
+    const status = dealFilterFields().find((f) => f.field === "status");
+    expect(status?.label).toBe("Status");
+    expect(status?.input).toEqual({
+      kind: "select",
+      options: [
+        { value: "open", label: DEAL_STATUS_LABELS.open },
+        { value: "won", label: DEAL_STATUS_LABELS.won },
+        { value: "lost", label: DEAL_STATUS_LABELS.lost },
+      ],
+    });
   });
 
   it("takes each field's operators from the schema allow-list", () => {

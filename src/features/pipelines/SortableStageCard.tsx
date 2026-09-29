@@ -8,7 +8,7 @@ import type { StageRow } from "./stageDiff";
 
 interface SortableStageCardProps {
   sortId: string;
-  row: StageRow;
+  row: StageRow & { dealCount: number; closedDealCount: number };
   index: number;
   canDelete: boolean;
   onChange: (patch: Partial<StageRow>) => void;

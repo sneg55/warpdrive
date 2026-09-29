@@ -15,7 +15,7 @@ const TWO: FilterDefinition["conditions"] = [
 ];
 
 const ROTTING =
-  `s.rotting_days IS NOT NULL AND d.stage_entered_at IS NOT NULL ` +
+  `d.status = 'open' AND s.rotting_days IS NOT NULL AND d.stage_entered_at IS NOT NULL ` +
   `AND d.stage_entered_at <= now() - (s.rotting_days + 1) * interval '1 day'`;
 
 describe("filterToSql combinator", () => {
