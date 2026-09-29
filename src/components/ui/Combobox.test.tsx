@@ -43,6 +43,24 @@ describe("Combobox", () => {
     expect(onChange).toHaveBeenCalledWith("u2");
   });
 
+  it("hands the query to the caller and keeps every option when search is controlled", () => {
+    const onChange = vi.fn();
+    const onSearch = vi.fn();
+    render(
+      <Combobox
+        value=""
+        onChange={onChange}
+        options={options}
+        ariaLabel="Owner"
+        search={{ value: "", onChange: onSearch }}
+      />,
+    );
+    fireEvent.click(screen.getByLabelText("Owner"));
+    fireEvent.change(screen.getByPlaceholderText("Search..."), { target: { value: "Bob" } });
+    expect(onSearch).toHaveBeenCalledWith("Bob");
+    expect(screen.getAllByRole("option")).toHaveLength(2);
+  });
+
   it("shows the selected option's avatar in the trigger", () => {
     const onChange = vi.fn();
     render(<Combobox value="u2" onChange={onChange} options={options} ariaLabel="Owner" />);

@@ -29,6 +29,7 @@ interface ComboboxProps {
   // which a caller in a flex row has to be able to override.
   triggerClassName?: string;
   disabled?: boolean;
+  search?: { value: string; onChange: (query: string) => void };
 }
 
 interface ComboboxGroup {
@@ -65,6 +66,7 @@ export const Combobox = forwardRef<HTMLButtonElement, ComboboxProps>(function Co
     footer,
     triggerClassName,
     disabled = false,
+    search,
     ...triggerProps
   },
   ref,
@@ -98,9 +100,11 @@ export const Combobox = forwardRef<HTMLButtonElement, ComboboxProps>(function Co
         <ChevronsUpDown className="h-4 w-4 shrink-0 text-muted-foreground" />
       </PopoverTrigger>
       <PopoverContent className="p-0">
-        <Command filter={matchLabel}>
+        <Command filter={matchLabel} shouldFilter={search === undefined}>
           <CommandInput
             placeholder="Search..."
+            value={search?.value}
+            onValueChange={search?.onChange}
             className="w-full border-b px-2.5 py-2 text-sm outline-none"
           />
           <CommandList className="max-h-56 overflow-y-auto p-1">
