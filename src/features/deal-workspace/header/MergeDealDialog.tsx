@@ -88,17 +88,17 @@ export function MergeDealDialog({
     setPending(true);
     const r = await mergeDealsAction(
       {
-        targetDealId: dealId,
-        sourceDealId: picked.id,
-        expectedTargetUpdatedAt: expectedUpdatedAt,
-        expectedSourceUpdatedAt: new Date(picked.updatedAt).toISOString(),
+        targetDealId: picked.id,
+        sourceDealId: dealId,
+        expectedTargetUpdatedAt: new Date(picked.updatedAt).toISOString(),
+        expectedSourceUpdatedAt: expectedUpdatedAt,
       },
       readCsrfToken(),
     );
     setPending(false);
     if (r.ok) {
       onOpenChange(false);
-      router.refresh();
+      router.replace(`/deals/${r.deal.id}`);
     } else {
       reportError(r.error.id);
     }
@@ -110,8 +110,9 @@ export function MergeDealDialog({
         <DialogHeader>
           <DialogTitle>Merge deals</DialogTitle>
           <DialogDescription>
-            Pick a deal to merge into this one. Its activities, notes, emails, participants, and
-            followers move here, and the other deal is deleted. This cannot be undone.
+            Pick the deal to merge this deal into. Its activities, notes, emails, participants, and
+            followers move to that deal, this deal is deleted, and you land on the merged deal. This
+            cannot be undone.
           </DialogDescription>
         </DialogHeader>
         <Combobox
@@ -120,7 +121,7 @@ export function MergeDealDialog({
           options={options}
           search={{ value: query, onChange: setQuery }}
           ariaLabel="Deal to merge in"
-          placeholder="Select a deal"
+          placeholder="Merge into"
         />
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={pending}>

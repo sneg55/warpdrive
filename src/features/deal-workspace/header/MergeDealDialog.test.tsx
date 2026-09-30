@@ -11,11 +11,11 @@ beforeAll(() => {
 });
 
 const mergeDealsAction = vi.hoisted(() =>
-  vi.fn(() => Promise.resolve({ ok: true as const, deal: { id: "d1" } })),
+  vi.fn(() => Promise.resolve({ ok: true as const, deal: { id: "d2" } })),
 );
 vi.mock("@/features/deal-workspace/mergeDealsAction", () => ({ mergeDealsAction }));
-const refresh = vi.fn();
-vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh }) }));
+const replace = vi.fn();
+vi.mock("next/navigation", () => ({ useRouter: () => ({ replace }) }));
 vi.mock("@/utils/csrfCookie", () => ({ readCsrfToken: () => "csrf" }));
 const listInputs = vi.hoisted<unknown[]>(() => []);
 let searchRefreshesPick = false;
@@ -78,7 +78,7 @@ afterEach(() => {
   listInputs.length = 0;
   searchRefreshesPick = false;
   mergeDealsAction.mockClear();
-  refresh.mockClear();
+  replace.mockClear();
   reportError.mockClear();
 });
 
@@ -90,18 +90,24 @@ const props = {
   onOpenChange: vi.fn(),
 };
 
-it("confirming merges the picked source into this deal and refreshes", async () => {
+it("confirming merges this deal into the picked one and replaces the deleted deal's page with it", async () => {
   const user = userEvent.setup();
   render(<MergeDealDialog {...props} />);
+  expect(screen.getByText(/merge this deal into/i)).toBeInTheDocument();
   await user.click(screen.getByRole("button", { name: "pick-source" }));
   await user.click(screen.getByRole("button", { name: "Merge" }));
   await waitFor(() =>
     expect(mergeDealsAction).toHaveBeenCalledWith(
-      expect.objectContaining({ targetDealId: "d1", sourceDealId: "d2" }),
+      {
+        targetDealId: "d2",
+        sourceDealId: "d1",
+        expectedTargetUpdatedAt: "2026-07-01T00:00:00.000Z",
+        expectedSourceUpdatedAt: "2026-07-02T00:00:00.000Z",
+      },
       "csrf",
     ),
   );
-  await waitFor(() => expect(refresh).toHaveBeenCalled());
+  await waitFor(() => expect(replace).toHaveBeenCalledWith("/deals/d2"));
 });
 
 it("surfaces the error and does not refresh when the merge is denied", async () => {
@@ -114,7 +120,7 @@ it("surfaces the error and does not refresh when the merge is denied", async () 
   await user.click(screen.getByRole("button", { name: "pick-source" }));
   await user.click(screen.getByRole("button", { name: "Merge" }));
   await waitFor(() => expect(reportError).toHaveBeenCalledWith("E_PERM_001"));
-  expect(refresh).not.toHaveBeenCalled();
+  expect(replace).not.toHaveBeenCalled();
 });
 
 it("asks the server for deals whose title contains the typed text", async () => {
@@ -144,13 +150,13 @@ it("keeps the picked deal when a later search no longer returns it", async () =>
   await user.click(screen.getByRole("button", { name: "Merge" }));
   await waitFor(() =>
     expect(mergeDealsAction).toHaveBeenCalledWith(
-      expect.objectContaining({ sourceDealId: "d2" }),
+      expect.objectContaining({ targetDealId: "d2" }),
       "csrf",
     ),
   );
 });
 
-it("merges with the picked deal's freshest updatedAt when a later search returns it again", async () => {
+it("merges into the picked deal's freshest updatedAt when a later search returns it again", async () => {
   searchRefreshesPick = true;
   const user = userEvent.setup();
   render(<MergeDealDialog {...props} />);
@@ -161,8 +167,8 @@ it("merges with the picked deal's freshest updatedAt when a later search returns
   await waitFor(() =>
     expect(mergeDealsAction).toHaveBeenCalledWith(
       expect.objectContaining({
-        sourceDealId: "d2",
-        expectedSourceUpdatedAt: "2026-07-09T00:00:00.000Z",
+        targetDealId: "d2",
+        expectedTargetUpdatedAt: "2026-07-09T00:00:00.000Z",
       }),
       "csrf",
     ),
@@ -183,8 +189,8 @@ it("keeps the refreshed updatedAt after a later search drops the picked deal aga
   await waitFor(() =>
     expect(mergeDealsAction).toHaveBeenCalledWith(
       expect.objectContaining({
-        sourceDealId: "d2",
-        expectedSourceUpdatedAt: "2026-07-09T00:00:00.000Z",
+        targetDealId: "d2",
+        expectedTargetUpdatedAt: "2026-07-09T00:00:00.000Z",
       }),
       "csrf",
     ),
@@ -204,8 +210,8 @@ it("does not roll the pick back to an older row when an earlier page shows again
   await waitFor(() =>
     expect(mergeDealsAction).toHaveBeenCalledWith(
       expect.objectContaining({
-        sourceDealId: "d2",
-        expectedSourceUpdatedAt: "2026-07-09T00:00:00.000Z",
+        targetDealId: "d2",
+        expectedTargetUpdatedAt: "2026-07-09T00:00:00.000Z",
       }),
       "csrf",
     ),
