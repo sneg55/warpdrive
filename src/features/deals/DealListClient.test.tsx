@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 afterEach(() => {
   cleanup();
+  forgetBoardView();
   vi.clearAllMocks();
 });
 
@@ -30,7 +31,10 @@ vi.mock("@/lib/trpc-client", () => ({
   },
 }));
 vi.mock("@/utils/csrfCookie", () => ({ readCsrfToken: () => "csrf" }));
-vi.mock("@/features/identity/preferencesActions", () => ({ setColumnViewAction: vi.fn() }));
+vi.mock("@/features/identity/preferencesActions", () => ({
+  setColumnViewAction: vi.fn(),
+  setBoardViewAction: () => Promise.resolve({ ok: true }),
+}));
 
 vi.mock("./DealList", () => ({
   DealList: (p: { total: number; totalValue: string; rows: { id: string }[] }) => (
@@ -71,6 +75,7 @@ vi.mock("./BoardSortControl", () => ({
 vi.mock("./NewDealButton", () => ({ NewDealButton: () => null }));
 
 import type { CustomFieldDef } from "@/types/customFields";
+import { forgetBoardView } from "./boardViewMemory";
 import { DealListClient, resolveDealListFooter } from "./DealListClient";
 
 const rowU1 = {

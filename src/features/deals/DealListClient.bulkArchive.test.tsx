@@ -6,6 +6,7 @@ import { ERROR_IDS } from "@/constants/errorIds";
 
 afterEach(() => {
   cleanup();
+  forgetBoardView();
   vi.clearAllMocks();
 });
 
@@ -39,7 +40,10 @@ vi.mock("@/lib/trpc-client", () => ({
   },
 }));
 vi.mock("@/utils/csrfCookie", () => ({ readCsrfToken: () => "csrf" }));
-vi.mock("@/features/identity/preferencesActions", () => ({ setColumnViewAction: vi.fn() }));
+vi.mock("@/features/identity/preferencesActions", () => ({
+  setColumnViewAction: vi.fn(),
+  setBoardViewAction: () => Promise.resolve({ ok: true }),
+}));
 vi.mock("./archiveActions", () => ({
   archiveDealAction: vi.fn(),
   archiveDealsAction,
@@ -59,6 +63,7 @@ vi.mock("./BoardFilterControl", () => ({ BoardFilterControl: () => null }));
 vi.mock("./BoardSortControl", () => ({ BoardSortControl: () => null }));
 vi.mock("./NewDealButton", () => ({ NewDealButton: () => null }));
 
+import { forgetBoardView } from "./boardViewMemory";
 import type { DealListProps } from "./DealList";
 import { DealListClient } from "./DealListClient";
 import { DEAL_LIST_QUERY_ROOT } from "./dealListQueryKey";

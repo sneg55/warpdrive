@@ -38,6 +38,14 @@ describe("BoardFilterMenu trigger", () => {
     expect(trigger()).toHaveTextContent("Filter: Rotting deals");
   });
 
+  it("names the applied filter from its own record before the rows have loaded", () => {
+    render(
+      <BoardFilterMenu savedFilters={[]} selectedFilterId="f1" appliedFilterName="Rotting deals" />,
+    );
+
+    expect(trigger()).toHaveTextContent("Filter: Rotting deals");
+  });
+
   it("does not name a saved filter that an ad-hoc definition has overridden", () => {
     render(
       <BoardFilterMenu savedFilters={SAVED} selectedFilterId="f1" appliedDefinition={INLINE} />,

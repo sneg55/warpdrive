@@ -22,7 +22,10 @@ vi.mock("@/lib/trpc-client", () => ({
   },
 }));
 vi.mock("@/utils/csrfCookie", () => ({ readCsrfToken: () => "csrf" }));
-vi.mock("@/features/identity/preferencesActions", () => ({ setColumnViewAction: vi.fn() }));
+vi.mock("@/features/identity/preferencesActions", () => ({
+  setColumnViewAction: vi.fn(),
+  setBoardViewAction: () => Promise.resolve({ ok: true }),
+}));
 vi.mock("./DealList", () => ({ DealList: () => <div data-testid="deal-list" /> }));
 vi.mock("./BoardToolbar", () => ({
   BoardToolbar: (p: { filterSlot: React.ReactNode }) => <div>{p.filterSlot}</div>,
@@ -30,19 +33,28 @@ vi.mock("./BoardToolbar", () => ({
 // The saved-filter menu owns "Clear filter"; expose it so the list's inline definition can be
 // cleared from there, the way the board's toolbar does.
 vi.mock("./BoardFilterControl", () => ({
-  BoardFilterControl: (p: { onApplyDefinition?: (d: null) => void }) => (
-    <button type="button" onClick={() => p.onApplyDefinition?.(null)}>
-      menu-clear-filter
-    </button>
+  BoardFilterControl: (p: {
+    selectedFilterId: string | null;
+    onApplyDefinition?: (d: null) => void;
+  }) => (
+    <>
+      <span data-testid="selected-filter">{p.selectedFilterId ?? "none"}</span>
+      <button type="button" onClick={() => p.onApplyDefinition?.(null)}>
+        menu-clear-filter
+      </button>
+    </>
   ),
 }));
 vi.mock("./BoardSortControl", () => ({ BoardSortControl: () => null }));
 vi.mock("./NewDealButton", () => ({ NewDealButton: () => null }));
 
+import type { BoardViewState } from "./boardView";
+import { forgetBoardView } from "./boardViewMemory";
 import { DealListClient } from "./DealListClient";
 
 afterEach(() => {
   cleanup();
+  forgetBoardView();
   listQueryMock.mockReset();
 });
 
@@ -55,14 +67,101 @@ const initial = {
   totalValue: "1000000.00",
 };
 
-function renderClient(): void {
+function renderClient(over: Partial<typeof initial> & { initialView?: BoardViewState } = {}) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  render(
+  return render(
     <QueryClientProvider client={qc}>
-      <DealListClient initial={initial} />
+      <DealListClient initial={{ ...initial, ...over }} />
     </QueryClientProvider>,
   );
 }
+
+const ROTTING_VIEW: BoardViewState = {
+  ownerId: null,
+  sortKey: "nextActivity",
+  sortDir: "asc",
+  savedFilter: {
+    id: "f1",
+    name: "Rotting deals",
+    favorite: false,
+    isShared: true,
+    isOwn: false,
+    definition: { combinator: "and", conditions: [], rotting: true },
+  },
+  conditions: null,
+};
+
+function applyAcme(): void {
+  fireEvent.click(screen.getByRole("button", { name: "Filter" }));
+  fireEvent.click(screen.getByRole("button", { name: /add condition/i }));
+  fireEvent.change(screen.getByLabelText("Condition 1 value"), { target: { value: "acme" } });
+  fireEvent.click(screen.getByRole("button", { name: "Apply" }));
+}
+
+describe("DealListClient shares the persisted board view", () => {
+  it("seeds the saved filter from the stored view and trusts the SSR rows fetched for it", async () => {
+    listQueryMock.mockResolvedValue({ rows: [], total: 0, totalValue: "0" });
+    renderClient({ initialView: ROTTING_VIEW, total: 0 });
+
+    expect(screen.getByTestId("selected-filter")).toHaveTextContent("f1");
+    await new Promise((r) => setTimeout(r, 50));
+    expect(listQueryMock).not.toHaveBeenCalled();
+  });
+
+  it("refetches a stored date filter with the browser zone instead of trusting the server zone", async () => {
+    listQueryMock.mockResolvedValue({ rows: [], total: 0, totalValue: "0" });
+    renderClient({
+      total: 0,
+      initialView: {
+        ...ROTTING_VIEW,
+        savedFilter: null,
+        conditions: {
+          combinator: "and",
+          conditions: [{ field: "nextActivityAt", op: "eq", value: "today" }],
+        },
+      },
+    });
+
+    await waitFor(() =>
+      expect(listQueryMock).toHaveBeenCalledWith(
+        expect.objectContaining({ timeZone: expect.any(String) }),
+      ),
+    );
+  });
+
+  it("completes a first page that is shorter than its total", async () => {
+    listQueryMock.mockResolvedValue({ rows: [], total: 0, totalValue: "0" });
+    renderClient({ initialView: ROTTING_VIEW, rows: [], total: 80 });
+
+    await waitFor(() =>
+      expect(listQueryMock).toHaveBeenCalledWith(
+        expect.objectContaining({ definition: ROTTING_VIEW.savedFilter?.definition }),
+      ),
+    );
+  });
+
+  it("keeps an applied inline filter across a remount seeded from the unfiltered page", async () => {
+    listQueryMock.mockResolvedValue({ rows: [], total: 0, totalValue: "0" });
+    const first = renderClient();
+    applyAcme();
+    await waitFor(() => expect(screen.getByLabelText("Filter")).toHaveTextContent("1"));
+    first.unmount();
+    listQueryMock.mockClear();
+
+    renderClient();
+    expect(screen.getByLabelText("Filter")).toHaveTextContent("1");
+    await waitFor(() =>
+      expect(listQueryMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          definition: {
+            combinator: "and",
+            conditions: [{ field: "title", op: "contains", value: "acme" }],
+          },
+        }),
+      ),
+    );
+  });
+});
 
 describe("DealListClient inline filter", () => {
   it("fetches with the applied inline definition instead of serving stale unfiltered initialData", async () => {

@@ -14,6 +14,7 @@ import {
   EMPTY_REF_LABELS,
 } from "@/features/custom-fields/refLabelsContext";
 import type { CustomFieldSortKey } from "@/features/custom-fields/sortKey";
+import { hasDateCondition } from "@/features/saved-filters/filterFields";
 import type { FilterDefinition } from "@/features/saved-filters/schemas";
 import { trpc } from "@/lib/trpc-client";
 import type { CustomFieldDef } from "@/types/customFields";
@@ -22,6 +23,7 @@ import { BoardSortControl } from "./BoardSortControl";
 import { BoardToolbar } from "./BoardToolbar";
 import { distinctBoardOwners, matchesOwnerFilter } from "./boardFilter";
 import { DEFAULT_SORT_DIRECTION, DEFAULT_SORT_KEY, type SortDirection } from "./boardSort";
+import { type BoardViewState, boardViewDefinition, DEFAULT_BOARD_VIEW } from "./boardView";
 import { DealFilterBuilder } from "./DealFilterBuilder";
 import type { DealListProps } from "./DealList";
 import { DealList } from "./DealList";
@@ -31,7 +33,7 @@ import { DEAL_LIST_QUERY_ROOT } from "./dealListQueryKey";
 import { type DealListSortKey, sortRows } from "./dealListSort";
 import { fetchDealListRows } from "./fetchDealListRows";
 import { NewDealButton } from "./NewDealButton";
-import type { SavedFilterView } from "./savedFilterView";
+import { useBoardView } from "./useBoardView";
 import { useDealListActions } from "./useDealListActions";
 import { useDealListRefLabels } from "./useDealListRefLabels";
 
@@ -51,6 +53,8 @@ type InitialData = Omit<
   customFieldDefs?: CustomFieldDef[];
   refLabels?: CustomFieldRefLabels;
   canManagePipelines?: boolean;
+  initialView?: BoardViewState;
+  unfilteredTotal?: number;
 };
 
 interface DealListClientProps {
@@ -82,6 +86,10 @@ export function resolveDealListFooter(args: {
     : { total: args.serverTotal, totalValue: args.serverTotalValue, filtered: false };
 }
 
+function sameDefinition(a: FilterDefinition | undefined, b: FilterDefinition | undefined): boolean {
+  return JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
+}
+
 export function DealListClient({
   initial,
   variant = "list",
@@ -90,11 +98,14 @@ export function DealListClient({
   const currency = baseCurrency ?? DEFAULT_BASE_CURRENCY;
   const actions = useDealListActions();
   const utils = trpc.useUtils();
-  const [selectedOwnerId, setSelectedOwnerId] = useState<string | null>(null);
-  const [savedFilter, setSavedFilter] = useState<SavedFilterView | null>(null);
-  // Ad-hoc inline condition builder (additive to the saved-view menu). When active it takes
-  // precedence over the saved filter for the server read (the read path accepts one definition).
-  const [inlineDefinition, setInlineDefinition] = useState<FilterDefinition | null>(null);
+  const view = useBoardView(initial.initialView);
+  const { ownerId: selectedOwnerId, savedFilter, conditions: inlineDefinition } = view;
+  const {
+    setOwnerId: setSelectedOwnerId,
+    setSavedFilter,
+    setConditions: setInlineDefinition,
+  } = view;
+  const activeDefinition = inlineDefinition ?? savedFilter?.definition;
   const [sortKey, setSortKey] = useState<DealListSortKey>(DEFAULT_SORT_KEY);
   const [sortDirection, setSortDirection] = useState<SortDirection>(DEFAULT_SORT_DIRECTION);
   const catalog = useMemo<(ColumnDef & { sortField?: CustomFieldSortKey })[]>(
@@ -113,26 +124,20 @@ export function DealListClient({
   const columns = useColumns(catalog, initial.initialColumns);
   usePersistColumns("dealsList", columns.order);
 
-  // Live rows: seeded by the SSR page as initialData ONLY for the unfiltered key. A saved or inline
-  // filter narrows the read server-side, so those keys must actually fetch: seeding them with the
-  // SSR (unfiltered) rows would let staleTime serve stale, unfiltered data for a filtered view.
-  // keepPreviousData keeps the prior rows on screen while the filtered fetch runs (no flash of empty).
-  const isUnfiltered = savedFilter === null && inlineDefinition === null;
+  const isUnfiltered = activeDefinition === undefined;
+  const seededForThisView = sameDefinition(
+    activeDefinition,
+    boardViewDefinition(initial.initialView ?? DEFAULT_BOARD_VIEW),
+  );
   const listQuery = useQuery({
-    queryKey: [
-      DEAL_LIST_QUERY_ROOT,
-      pipelineId,
-      variant,
-      savedFilter?.id ?? "none",
-      inlineDefinition ?? "none",
-    ],
+    queryKey: [DEAL_LIST_QUERY_ROOT, pipelineId, variant, activeDefinition ?? "none"],
     queryFn: () =>
       fetchDealListRows(utils, {
         pipelineId,
         archived: variant === "archived",
-        definition: inlineDefinition ?? savedFilter?.definition,
+        definition: activeDefinition,
       }),
-    initialData: isUnfiltered
+    initialData: seededForThisView
       ? {
           rows: initial.rows,
           total: initial.total,
@@ -140,6 +145,8 @@ export function DealListClient({
           refLabels: initial.refLabels ?? EMPTY_REF_LABELS,
         }
       : undefined,
+    initialDataUpdatedAt:
+      hasDateCondition(activeDefinition) || initial.rows.length < initial.total ? 0 : undefined,
     placeholderData: keepPreviousData,
     staleTime: 5_000,
   });
@@ -182,7 +189,9 @@ export function DealListClient({
   const anyFilter = clientFiltered || savedFilter !== null || inlineDefinition !== null;
   // What this view held before any filter narrowed it: the SSR page reads deal.list with no
   // definition, and the live query only carries an unfiltered total while nothing is applied.
-  const unfilteredTotal = isUnfiltered ? (data?.total ?? initial.total) : initial.total;
+  const unfilteredTotal = isUnfiltered
+    ? (data?.total ?? initial.total)
+    : (initial.unfilteredTotal ?? initial.total);
   // A filter can only be to blame for an empty view if there was something for it to exclude.
   // Without this an empty pipeline plus any active filter read as "the pipeline still holds deals".
   const emptiedByFilter = anyFilter && unfilteredTotal > 0;
@@ -190,11 +199,7 @@ export function DealListClient({
     <NewDealButton pipelineId={pipelineId} pipelines={pipelines} baseCurrency={baseCurrency} />
   );
 
-  function clearFilters(): void {
-    setSelectedOwnerId(null);
-    setSavedFilter(null);
-    setInlineDefinition(null);
-  }
+  const clearFilters = view.clearFilters;
 
   return (
     <>
@@ -229,6 +234,7 @@ export function DealListClient({
               selectedOwnerId={selectedOwnerId}
               onSelectOwner={setSelectedOwnerId}
               selectedFilterId={savedFilter?.id ?? null}
+              appliedFilter={savedFilter}
               onSelectFilter={setSavedFilter}
               appliedDefinition={inlineDefinition}
               onApplyDefinition={setInlineDefinition}

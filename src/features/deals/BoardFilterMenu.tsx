@@ -24,6 +24,7 @@ import type { SavedFilterView as SavedFilter } from "./savedFilterView";
 interface BoardFilterMenuProps {
   savedFilters?: SavedFilter[];
   selectedFilterId?: string | null;
+  appliedFilterName?: string;
   // The ad-hoc definition applied to the board. It leaves selectedFilterId null too, so the
   // "All open deals" row is current only when both are empty.
   appliedDefinition?: FilterDefinition | null;
@@ -52,6 +53,7 @@ interface BoardFilterMenuProps {
 // rows plus actions, so it is the shadcn/Radix DropdownMenu primitive.
 export function BoardFilterMenu(props: BoardFilterMenuProps): React.ReactNode {
   const { savedFilters = [], selectedFilterId = null, appliedDefinition = null } = props;
+  const { appliedFilterName } = props;
   const { activeCount = 0, triggerLabel = "Filter", onSelectFilter, onClearConditions } = props;
   const { onToggleFavorite, onDeleteFilter, onCreateFilter } = props;
   const { ownerFiltered = false, onClearOwner } = props;
@@ -64,7 +66,7 @@ export function BoardFilterMenu(props: BoardFilterMenuProps): React.ReactNode {
   // so an ad-hoc definition overrides the selection and naming it then would be wrong.
   const appliedName =
     appliedDefinition === null
-      ? savedFilters.find((f) => f.id === selectedFilterId)?.name
+      ? (savedFilters.find((f) => f.id === selectedFilterId)?.name ?? appliedFilterName)
       : undefined;
   const triggerCopy = appliedName === undefined ? triggerLabel : `${triggerLabel}: ${appliedName}`;
   // A name is valid up to 120 chars and the trigger never wraps, so the visible copy is capped to

@@ -1,13 +1,11 @@
 import type { Metadata } from "next";
 import { cache } from "react";
 import { STRINGS } from "@/constants/strings";
-import { listDefs } from "@/features/custom-fields/defsRepo";
 import { DealListClient } from "@/features/deals/DealListClient";
-import { getPreferencesForActor } from "@/features/identity/preferencesForActor";
+import { loadDealListPageData } from "@/features/deals/dealListPageData";
 import { entityTitle } from "@/features/navigation/pageTitle";
 import { resolveVisiblePipeline } from "@/features/navigation/resolvePipeline";
 import { canManagePipelines } from "@/features/pipelines/canManagePipelines";
-import { readBaseCurrency } from "@/features/settings/readBaseCurrency";
 import { createContext } from "@/server/trpc/context";
 import { createCaller } from "@/server/trpc/root";
 
@@ -51,12 +49,8 @@ export default async function PipelineListPage({
   // A nonexistent (or hidden) pipeline 404s like the entity detail routes, not a 200 soft-404.
   const pipeline = resolveVisiblePipeline(pipelines, id);
 
-  const [list, prefs, customFieldDefs, baseCurrency] = await Promise.all([
-    createCaller(ctx).deal.list({ pipelineId: id, offset: 0, limit: 50 }),
-    getPreferencesForActor(ctx.db, ctx.actor.id),
-    listDefs(ctx.db, "deal", {}, AbortSignal.timeout(8000)),
-    readBaseCurrency(ctx.db, AbortSignal.timeout(8000)),
-  ]);
+  const { list, prefs, customFieldDefs, baseCurrency, initialView, unfilteredTotal } =
+    await loadDealListPageData({ ...ctx, actor: ctx.actor }, { pipelineId: id, archived: false });
   const stages = pipeline.stages.map((s) => ({ id: s.id, name: s.name }));
   const pipelineOptions = pipelines.map((p) => ({
     id: p.id,
@@ -80,6 +74,8 @@ export default async function PipelineListPage({
           refLabels: list.refLabels,
           baseCurrency,
           canManagePipelines: canManagePipelines(ctx.actor),
+          initialView,
+          unfilteredTotal,
         }}
       />
     </main>

@@ -97,6 +97,7 @@ export function BoardFilterControl(props: BoardFilterControlProps): React.ReactN
       <BoardFilterMenu
         savedFilters={saved}
         selectedFilterId={selectedFilterId}
+        appliedFilterName={appliedFilter?.name}
         appliedDefinition={appliedDefinition}
         activeCount={activeCount}
         triggerLabel={triggerLabel}

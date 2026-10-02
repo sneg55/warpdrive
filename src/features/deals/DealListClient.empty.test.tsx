@@ -22,7 +22,10 @@ vi.mock("@/lib/trpc-client", () => ({
   },
 }));
 vi.mock("@/utils/csrfCookie", () => ({ readCsrfToken: () => "csrf" }));
-vi.mock("@/features/identity/preferencesActions", () => ({ setColumnViewAction: vi.fn() }));
+vi.mock("@/features/identity/preferencesActions", () => ({
+  setColumnViewAction: vi.fn(),
+  setBoardViewAction: () => Promise.resolve({ ok: true }),
+}));
 vi.mock("./BoardToolbar", () => ({
   BoardToolbar: (p: { filterSlot: React.ReactNode }) => <div>{p.filterSlot}</div>,
 }));
@@ -31,11 +34,13 @@ vi.mock("./BoardSortControl", () => ({ BoardSortControl: () => null }));
 vi.mock("./NewDealButton", () => ({ NewDealButton: () => <button type="button">+ Deal</button> }));
 
 import { STRINGS } from "@/constants/strings";
+import { forgetBoardView } from "./boardViewMemory";
 import type { DealListRow } from "./DealList";
 import { DealListClient } from "./DealListClient";
 
 afterEach(() => {
   cleanup();
+  forgetBoardView();
   listQueryMock.mockReset();
 });
 
