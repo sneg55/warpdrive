@@ -1,6 +1,6 @@
 "use client";
 import type React from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useActionError } from "@/components/shell/ActionErrorProvider";
 import type { FilterDefinition } from "@/features/saved-filters/schemas";
 import {
@@ -24,6 +24,7 @@ interface BoardFilterControlProps {
   currentUserId?: string;
   onSelectOwner: (ownerId: string | null) => void;
   selectedFilterId: string | null;
+  appliedFilter?: SavedFilterView | null;
   // Reports the saved filter to apply server-side (or null to clear).
   onSelectFilter: (filter: SavedFilterView | null) => void;
   // The ad-hoc definition applied to the board, so the menu can say the board is filtered and
@@ -42,9 +43,18 @@ interface BoardFilterControlProps {
   onClearPreview?: () => void;
 }
 
+function sameSavedFilter(a: SavedFilterView, b: SavedFilterView): boolean {
+  return (
+    a.id === b.id &&
+    a.name === b.name &&
+    JSON.stringify(a.definition) === JSON.stringify(b.definition)
+  );
+}
+
 export function BoardFilterControl(props: BoardFilterControlProps): React.ReactNode {
   const { owners, stages, selectedOwnerId, currentUserId, onSelectOwner } = props;
-  const { selectedFilterId, onSelectFilter, onPreviewFilter, onClearPreview } = props;
+  const { selectedFilterId, appliedFilter, onSelectFilter } = props;
+  const { onPreviewFilter, onClearPreview } = props;
   const { appliedDefinition = null, onApplyDefinition, activeCount = 0, triggerLabel } = props;
   const utils = trpc.useUtils();
   const reportError = useActionError();
@@ -54,6 +64,15 @@ export function BoardFilterControl(props: BoardFilterControlProps): React.ReactN
   // The selected filter is what the board is showing, so the builder opens on it rather than on a
   // blank "match all" form that would misreport an "any condition" filter and overwrite it.
   const selectedFilter = saved.find((f) => f.id === selectedFilterId);
+  const rowsFresh = query.data !== undefined && !query.isFetching && !query.isStale;
+  useEffect(() => {
+    if (!rowsFresh || appliedFilter === undefined || appliedFilter === null) return;
+    if (selectedFilter === undefined) {
+      onSelectFilter(null);
+      return;
+    }
+    if (!sameSavedFilter(selectedFilter, appliedFilter)) onSelectFilter(selectedFilter);
+  }, [rowsFresh, appliedFilter, selectedFilter, onSelectFilter]);
 
   async function toggleFav(id: string): Promise<void> {
     const r = await toggleFavoriteAction(id, readCsrfToken());

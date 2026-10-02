@@ -79,6 +79,7 @@ export function Board(props: BoardProps): React.ReactNode {
       }),
     initialData: { cards },
     initialDataUpdatedAt: hasDateCondition(activeDefinition) ? 0 : undefined,
+    refetchOnMount: view.restored ? "always" : true,
     staleTime: 5_000,
   });
   const liveCards = boardQuery.data.cards;

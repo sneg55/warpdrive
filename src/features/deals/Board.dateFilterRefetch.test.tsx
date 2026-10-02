@@ -39,9 +39,12 @@ vi.mock("@/features/identity/preferencesActions", () => ({
 
 import { Board } from "./Board";
 import type { BoardViewState } from "./boardView";
+import { forgetBoardView, rememberBoardView } from "./boardViewMemory";
+import { BOARD_QUERY_KEY } from "./useDealMove";
 
 afterEach(() => {
   cleanup();
+  forgetBoardView();
   boardQuery.mockClear();
 });
 
@@ -66,8 +69,11 @@ const CARD: BoardCard = {
   updatedAt: new Date("2026-06-01T00:00:00Z"),
 };
 
-function renderBoard(conditions: BoardViewState["conditions"]) {
-  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+function freshClient(): QueryClient {
+  return new QueryClient({ defaultOptions: { queries: { retry: false } } });
+}
+
+function renderBoard(conditions: BoardViewState["conditions"], qc = freshClient()) {
   return render(
     <QueryClientProvider client={qc}>
       <Board
@@ -103,5 +109,29 @@ describe("board restored with a persisted filter", () => {
     renderBoard({ conditions: [{ field: "value", op: "gt", value: 50 }] });
     await new Promise((r) => setTimeout(r, 50));
     expect(boardQuery).not.toHaveBeenCalled();
+  });
+});
+
+describe("board remounted from the in-tab view memory", () => {
+  const VALUE_FILTER: BoardViewState["conditions"] = {
+    combinator: "and",
+    conditions: [{ field: "value", op: "gt", value: 50 }],
+  };
+
+  test("refetches on mount even when the pipeline's cards are already cached and fresh", async () => {
+    rememberBoardView({
+      ownerId: null,
+      sortKey: "title",
+      sortDir: "asc",
+      savedFilter: null,
+      conditions: VALUE_FILTER,
+    });
+    const qc = freshClient();
+    qc.setQueryData(BOARD_QUERY_KEY(PIPE), { cards: [CARD] });
+    renderBoard(null, qc);
+    await waitFor(() => expect(boardQuery).toHaveBeenCalled());
+    expect(boardQuery).toHaveBeenCalledWith(
+      expect.objectContaining({ pipelineId: PIPE, definition: VALUE_FILTER }),
+    );
   });
 });

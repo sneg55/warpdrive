@@ -18,13 +18,23 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: () => {} }),
   usePathname: () => "/pipeline",
 }));
+const savedFilterRows = vi.hoisted(() => [
+  {
+    id: "f1",
+    name: "Rotting deals",
+    favorite: false,
+    isShared: false,
+    isOwn: true,
+    definition: { conditions: [{ field: "value", op: "gt", value: 999_999 }] },
+  },
+]);
 vi.mock("@/lib/trpc-client", () => ({
   trpc: {
     useUtils: () => ({
       client: { deal: { board: { query: () => Promise.resolve({ cards: [] }) } } },
       deal: { savedFilters: { invalidate: vi.fn() } },
     }),
-    deal: { savedFilters: { useQuery: () => ({ data: [] }) } },
+    deal: { savedFilters: { useQuery: () => ({ data: savedFilterRows }) } },
     identity: { assignableUsers: { useQuery: () => ({ data: [] }) } },
     labels: {
       listByTarget: { useQuery: () => ({ data: [] }) },
@@ -38,8 +48,12 @@ vi.mock("@/features/identity/preferencesActions", () => ({
 
 import { Board } from "./Board";
 import type { BoardViewState } from "./boardView";
+import { forgetBoardView } from "./boardViewMemory";
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  forgetBoardView();
+});
 
 const PIPE = "11111111-1111-1111-1111-111111111111";
 const ANA = "22222222-2222-2222-2222-222222222222";

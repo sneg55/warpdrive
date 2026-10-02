@@ -63,6 +63,7 @@ export function BoardHeader(props: BoardHeaderProps): React.ReactNode {
           currentUserId={selfActorId}
           onSelectOwner={view.setOwnerId}
           selectedFilterId={view.savedFilter?.id ?? null}
+          appliedFilter={view.savedFilter}
           onSelectFilter={view.setSavedFilter}
           appliedDefinition={view.conditions}
           onApplyDefinition={view.setConditions}

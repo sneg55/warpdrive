@@ -11,11 +11,21 @@ beforeAll(() => {
 });
 
 const savedFiltersData = vi.fn<() => unknown[]>(() => []);
+const savedFiltersFetching = vi.fn<() => boolean>(() => false);
+const savedFiltersStale = vi.fn<() => boolean>(() => false);
 const invalidate = vi.fn();
 vi.mock("@/lib/trpc-client", () => ({
   trpc: {
     useUtils: () => ({ deal: { savedFilters: { invalidate } } }),
-    deal: { savedFilters: { useQuery: () => ({ data: savedFiltersData() }) } },
+    deal: {
+      savedFilters: {
+        useQuery: () => ({
+          data: savedFiltersData(),
+          isFetching: savedFiltersFetching(),
+          isStale: savedFiltersStale(),
+        }),
+      },
+    },
     labels: {
       listByTarget: { useQuery: () => ({ data: [] }) },
       appliedNames: { useQuery: () => ({ data: [] }) },
@@ -37,6 +47,8 @@ import { BoardFilterControl } from "./BoardFilterControl";
 afterEach(() => {
   cleanup();
   savedFiltersData.mockReturnValue([]);
+  savedFiltersFetching.mockReturnValue(false);
+  savedFiltersStale.mockReturnValue(false);
 });
 
 beforeEach(() => {
@@ -237,6 +249,60 @@ describe("BoardFilterControl delete", () => {
     await confirmDelete(user);
 
     await waitFor(() => expect(reportError).toHaveBeenCalledWith("E_PERM_001"));
+    expect(onSelectFilter).not.toHaveBeenCalled();
+  });
+});
+
+describe("BoardFilterControl reconciles the applied saved filter with the live rows", () => {
+  const applied = { ...savedRow(OR_DEFINITION), name: "Old name" };
+
+  it("re-selects the live row when the applied filter was edited elsewhere", async () => {
+    const live = savedRow(OR_DEFINITION);
+    savedFiltersData.mockReturnValue([live]);
+    const onSelectFilter = vi.fn();
+    renderControl("f1", { appliedFilter: applied, onSelectFilter });
+    await waitFor(() => expect(onSelectFilter).toHaveBeenCalledWith(live));
+  });
+
+  it("clears the applied filter when it no longer exists", async () => {
+    savedFiltersData.mockReturnValue([]);
+    const onSelectFilter = vi.fn();
+    renderControl("f1", { appliedFilter: applied, onSelectFilter });
+    await waitFor(() => expect(onSelectFilter).toHaveBeenCalledWith(null));
+  });
+
+  it("leaves an applied filter that matches its live row alone", async () => {
+    const live = savedRow(OR_DEFINITION);
+    savedFiltersData.mockReturnValue([live]);
+    const onSelectFilter = vi.fn();
+    renderControl("f1", { appliedFilter: { ...live }, onSelectFilter });
+    await new Promise((r) => setTimeout(r, 30));
+    expect(onSelectFilter).not.toHaveBeenCalled();
+  });
+
+  it("holds off while the rows are refetching, so a just-saved filter is not cleared", async () => {
+    savedFiltersData.mockReturnValue([]);
+    savedFiltersFetching.mockReturnValue(true);
+    const onSelectFilter = vi.fn();
+    renderControl("f1", { appliedFilter: applied, onSelectFilter });
+    await new Promise((r) => setTimeout(r, 30));
+    expect(onSelectFilter).not.toHaveBeenCalled();
+  });
+
+  it("does not trust rows a failed refresh left stale", async () => {
+    savedFiltersData.mockReturnValue([]);
+    savedFiltersStale.mockReturnValue(true);
+    const onSelectFilter = vi.fn();
+    renderControl("f1", { appliedFilter: applied, onSelectFilter });
+    await new Promise((r) => setTimeout(r, 30));
+    expect(onSelectFilter).not.toHaveBeenCalled();
+  });
+
+  it("waits for the rows before judging the applied filter", async () => {
+    savedFiltersData.mockReturnValue(undefined as unknown as unknown[]);
+    const onSelectFilter = vi.fn();
+    renderControl("f1", { appliedFilter: applied, onSelectFilter });
+    await new Promise((r) => setTimeout(r, 30));
     expect(onSelectFilter).not.toHaveBeenCalled();
   });
 });

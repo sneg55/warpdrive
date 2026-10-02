@@ -40,8 +40,12 @@ vi.mock("@/features/identity/preferencesActions", () => ({
 }));
 
 import { Board } from "./Board";
+import { forgetBoardView } from "./boardViewMemory";
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  forgetBoardView();
+});
 
 const PIPE = "11111111-1111-1111-1111-111111111111";
 

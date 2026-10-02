@@ -56,9 +56,11 @@ vi.mock("@/lib/trpc-client", () => ({
 }));
 
 import { Board } from "./Board";
+import { forgetBoardView } from "./boardViewMemory";
 
 afterEach(() => {
   cleanup();
+  forgetBoardView();
   vi.clearAllMocks();
 });
 

@@ -1,12 +1,14 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { FilterDefinition } from "@/features/saved-filters/schemas";
 import type { BoardSortKey } from "./boardSort";
 import { type BoardViewState, DEFAULT_BOARD_VIEW } from "./boardView";
+import { recallBoardView, rememberBoardView } from "./boardViewMemory";
 import type { SavedFilterView } from "./savedFilterView";
 import { useBoardViewPersist } from "./useBoardViewPersist";
 
 export interface BoardViewControls extends BoardViewState {
+  restored: boolean;
   setOwnerId: (ownerId: string | null) => void;
   setSortKey: (key: BoardSortKey) => void;
   toggleSortDirection: () => void;
@@ -16,10 +18,9 @@ export interface BoardViewControls extends BoardViewState {
   clearFilters: () => void;
 }
 
-// Owns the board toolbar's view state and keeps it in the user's preferences, so a reload restores
-// the same owner, filter and column order. Seeded from the server-read preference.
 export function useBoardView(initial: BoardViewState | undefined): BoardViewControls {
-  const seed = initial ?? DEFAULT_BOARD_VIEW;
+  const [restored] = useState(() => recallBoardView() !== null);
+  const [seed] = useState(() => recallBoardView() ?? initial ?? DEFAULT_BOARD_VIEW);
   const [ownerId, setOwnerId] = useState<string | null>(seed.ownerId);
   const [sortKey, setSortKey] = useState<BoardSortKey>(seed.sortKey);
   const [sortDir, setSortDir] = useState(seed.sortDir);
@@ -28,9 +29,13 @@ export function useBoardView(initial: BoardViewState | undefined): BoardViewCont
 
   const view: BoardViewState = { ownerId, sortKey, sortDir, savedFilter, conditions };
   useBoardViewPersist(view);
+  useEffect(() => {
+    rememberBoardView({ ownerId, sortKey, sortDir, savedFilter, conditions });
+  }, [ownerId, sortKey, sortDir, savedFilter, conditions]);
 
   return {
     ...view,
+    restored,
     setOwnerId,
     setSortKey,
     toggleSortDirection: () => setSortDir((d) => (d === "asc" ? "desc" : "asc")),

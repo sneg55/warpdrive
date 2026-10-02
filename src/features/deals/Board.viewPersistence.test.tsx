@@ -41,9 +41,11 @@ vi.mock("@/features/identity/preferencesActions", () => ({
 
 import { Board } from "./Board";
 import type { BoardViewState } from "./boardView";
+import { forgetBoardView } from "./boardViewMemory";
 
 afterEach(() => {
   cleanup();
+  forgetBoardView();
   setBoardView.mockClear();
 });
 
