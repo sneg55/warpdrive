@@ -19,7 +19,7 @@ describe("useGitHubStars", () => {
     const spy = stubFetch(
       async () => new Response(JSON.stringify({ stargazers_count: 1234 }), { status: 200 }),
     );
-    const { result } = renderHook(() => useGitHubStars(REPO));
+    const { result } = renderHook(() => useGitHubStars(REPO, null));
 
     await waitFor(() => expect(result.current).toBe(1234));
     expect(spy).toHaveBeenCalledWith(API, expect.objectContaining({ signal: expect.anything() }));
@@ -27,7 +27,7 @@ describe("useGitHubStars", () => {
 
   it("stays null when the API responds with an error status", async () => {
     const spy = stubFetch(async () => new Response("not found", { status: 404 }));
-    const { result } = renderHook(() => useGitHubStars(REPO));
+    const { result } = renderHook(() => useGitHubStars(REPO, null));
 
     await waitFor(() => expect(spy).toHaveBeenCalled());
     expect(result.current).toBeNull();
@@ -37,7 +37,7 @@ describe("useGitHubStars", () => {
     const spy = stubFetch(async () => {
       throw new Error("network down");
     });
-    const { result } = renderHook(() => useGitHubStars(REPO));
+    const { result } = renderHook(() => useGitHubStars(REPO, null));
 
     await waitFor(() => expect(spy).toHaveBeenCalled());
     expect(result.current).toBeNull();
@@ -45,7 +45,7 @@ describe("useGitHubStars", () => {
 
   it("stays null when the payload has no numeric star count", async () => {
     stubFetch(async () => new Response(JSON.stringify({ stargazers_count: "many" }), { status: 200 }));
-    const { result } = renderHook(() => useGitHubStars(REPO));
+    const { result } = renderHook(() => useGitHubStars(REPO, null));
 
     await waitFor(() => expect(globalThis.fetch).toHaveBeenCalled());
     expect(result.current).toBeNull();

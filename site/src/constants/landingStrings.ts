@@ -1,30 +1,36 @@
 // Landing page copy (the marketing surface at /). Same house rule as strings.ts: UI text
 // lives in constants, not components, so a future locale layer is a drop-in. No em dashes.
 // Positioning and feature details follow the public README (oss/overlay/README.md).
+import { LANDING_FAQ } from "./landingFaq";
+import { DOCS_URL, REPO_URL } from "./urls";
+
 export const LANDING_STRINGS = {
   nav: {
     logoAlt: "Warpdrive logo",
     features: "Features",
+    featuresHref: "/#features",
     tour: "Tour",
+    tourHref: "/#tour",
     compare: "Warpdrive vs Pipedrive",
+    compareHref: "/#compare",
     docs: "Docs",
-    docsHref: "https://docs.warpdrivecrm.com",
+    docsHref: DOCS_URL,
     github: "GitHub",
     githubStarsSuffix: "stars",
     skipToContent: "Skip to content",
   },
   hero: {
     badge: "Open source · Self-hosted · MIT licensed",
-    // H1 leads with the primary category query so search and AI answer engines can match and lift it.
     title: "The open-source, self-hosted Pipedrive alternative",
-    // Brand line kept as a prominent subhead under the H1 so the voice is not lost to the keyword H1.
     tagline: "Your pipeline. Your infrastructure.",
     subtitle:
-      "Warpdrive is an open-source, self-hosted Pipedrive alternative for business-development teams: pipeline management, a deal workspace, contacts, and two-way Gmail, running entirely on your own infrastructure.",
+      "Warpdrive is an open-source, self-hosted Pipedrive alternative for business-development teams: pipeline management, a deal workspace, contacts, two-way Gmail, and an MCP server for AI assistants, running entirely on your own infrastructure.",
     cta: "View on GitHub",
-    ctaHref: "https://github.com/sneg55/warpdrive",
+    ctaHref: REPO_URL,
     note: "No per-seat bill. Your customer data never leaves your infrastructure.",
     shotAlt: "Warpdrive pipeline board",
+    releasePrefix: "Latest release",
+    releaseTagHref: `${REPO_URL}/releases/tag/v`,
   },
   features: {
     heading: "Everything a BD team needs",
@@ -59,6 +65,16 @@ export const LANDING_STRINGS = {
         icon: "shield",
         title: "Permissions and stats",
         body: "Role-based visibility, teams, and funnel and activity performance stats.",
+      },
+      {
+        icon: "bot",
+        title: "AI assistants over MCP",
+        body: "Connect Claude, ChatGPT, or Cursor through an OAuth-protected MCP server that acts under your own permissions, with no delete or send tools.",
+      },
+      {
+        icon: "import",
+        title: "Migrate from Pipedrive",
+        body: "Import Pipedrive CSV exports of organizations, people, leads, deals, activities, and notes, with owners and links kept.",
       },
     ],
   },
@@ -107,7 +123,7 @@ export const LANDING_STRINGS = {
       },
     ],
     covered:
-      "Covered: kanban pipelines, deal workspace, contacts with custom fields, leads inbox with CSV import, two-way Gmail with tracking, permissions, saved filters, notifications, basic stats.",
+      "Covered: kanban pipelines, deal workspace, contacts with custom fields, leads inbox with CSV import, Pipedrive import, two-way Gmail with tracking, permissions, saved filters, notifications, basic stats, MCP server for AI assistants.",
     outOfScope:
       "Out of scope by design: products, invoicing, forecasts, workflow automation, web forms, marketplace, native mobile apps.",
     disclaimer: "Warpdrive is not affiliated with or endorsed by Pipedrive.",
@@ -137,44 +153,7 @@ export const LANDING_STRINGS = {
       "shadcn/ui",
     ],
   },
-  faq: {
-    heading: "Frequently asked questions",
-    sub: "Straight answers about what Warpdrive is, what it costs, and how to run it.",
-    items: [
-      {
-        q: "What is Warpdrive?",
-        a: "Warpdrive is an open-source, self-hosted CRM for business-development teams and a free alternative to Pipedrive. It covers pipeline management, a deal workspace, contacts and organizations, two-way Gmail, permissions, and stats, and it runs entirely on your own infrastructure under the MIT license.",
-      },
-      {
-        q: "Is Warpdrive free?",
-        a: "Yes. Warpdrive is MIT-licensed and free to run. There is no per-seat pricing and no vendor subscription: you pay only for the server you host it on.",
-      },
-      {
-        q: "How do I self-host Warpdrive?",
-        a: "Warpdrive ships as a single Docker Compose file. Copy .env.example to .env, set your domain and Google OAuth, then run docker compose up -d --build. That starts the app, WebSocket server, background worker, Postgres, and MinIO, with Caddy provisioning HTTPS for your domain automatically.",
-      },
-      {
-        q: "Does Warpdrive have two-way Gmail sync?",
-        a: "Yes. Warpdrive connects to Gmail over OAuth and links threads to deals and people in both directions. It supports open and click tracking, templates, scheduled send, and follow-up labels, using your own Google Workspace accounts and consent screen.",
-      },
-      {
-        q: "How is Warpdrive different from Pipedrive?",
-        a: "Warpdrive is open source (MIT), self-hosted, and free, and your customer data never leaves your infrastructure. Pipedrive is proprietary, vendor-hosted, and billed per seat. Warpdrive focuses on the core business-development loop and leaves products, invoicing, forecasts, and workflow automation deliberately out of scope.",
-      },
-      {
-        q: "What is Warpdrive built on?",
-        a: "Warpdrive is built on Next.js, React, and TypeScript, with Postgres and Drizzle, tRPC, Tailwind, and shadcn/ui. Realtime runs on a self-hosted WebSocket server with Postgres LISTEN/NOTIFY, and files are stored in MinIO or any S3-compatible store.",
-      },
-      {
-        q: "Who is Warpdrive for?",
-        a: "Warpdrive is built for business-development and sales teams that want to own their pipeline and their data, run on their own infrastructure, and avoid per-seat SaaS billing.",
-      },
-      {
-        q: "Is Warpdrive affiliated with Pipedrive?",
-        a: "No. Warpdrive is an independent open-source project and is not affiliated with or endorsed by Pipedrive. Pipedrive is used only as a point of comparison.",
-      },
-    ],
-  },
+  faq: LANDING_FAQ,
   shot: {
     enlargeLabel: "Enlarge screenshot",
   },
@@ -182,5 +161,12 @@ export const LANDING_STRINGS = {
     heading: "Run your pipeline on your own terms.",
     sub: "Spin it up on a spare box and import your first CSV the same afternoon.",
     bottom: "Open source · MIT licensed",
+    linksLabel: "More about Warpdrive",
+    links: [
+      { label: "Warpdrive vs Twenty", href: "/vs/twenty" },
+      { label: "Warpdrive vs EspoCRM", href: "/vs/espocrm" },
+      { label: "Migrate from Pipedrive", href: "/migrate-from-pipedrive" },
+      { label: "Documentation", href: DOCS_URL },
+    ],
   },
 } as const;

@@ -1,15 +1,16 @@
 import type { ReactNode } from "react";
 import { STRINGS } from "@/constants/strings";
+import type { ReleaseFacts } from "@/types/repoFacts";
 import pipelineShot from "./assets/pipeline.png";
 import { CTA_PRIMARY } from "./ctaClasses";
+import { ReleaseLine } from "./ReleaseLine";
 import { ShotFrame } from "./ShotFrame";
 
 const S = STRINGS.landing.hero;
 
-export function HeroSection(): ReactNode {
+export function HeroSection({ release }: { release: ReleaseFacts | null }): ReactNode {
   return (
     <section className="relative overflow-hidden">
-      {/* Faint engineering grid behind the hero, faded out by the mask. */}
       <div
         aria-hidden
         className="absolute inset-0 bg-[linear-gradient(to_right,hsl(var(--border))_1px,transparent_1px),linear-gradient(to_bottom,hsl(var(--border))_1px,transparent_1px)] bg-[size:56px_56px] [mask-image:radial-gradient(ellipse_70%_60%_at_50%_0%,black_20%,transparent_100%)]"
@@ -34,6 +35,7 @@ export function HeroSection(): ReactNode {
             </a>
           </div>
           <p className="landing-rise landing-rise-4 mt-4 text-sm text-muted-foreground">{S.note}</p>
+          <ReleaseLine release={release} />
         </div>
         <div className="landing-rise landing-rise-2">
           <ShotFrame src={pipelineShot} alt={S.shotAlt} priority />

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { metadata, SITE_URL } from "./siteMetadata";
+import { metadata, pageMetadata, SITE_URL } from "./siteMetadata";
+import { TWENTY_PAGE } from "./sitePages";
 
 describe("site metadata", () => {
   it("uses warpdrivecrm.com as the canonical origin", () => {
@@ -18,6 +19,21 @@ describe("site metadata", () => {
     expect(description).toMatch(/Pipedrive/i);
     expect(metadata.openGraph?.title).toBeTruthy();
     expect(metadata.twitter?.card).toBe("summary_large_image");
+  });
+
+  it("gives each subpage its own canonical URL, title, and description", () => {
+    const page = pageMetadata(TWENTY_PAGE);
+    expect(page.alternates?.canonical).toBe(`${SITE_URL}/vs/twenty`);
+    expect(page.title).toBe(TWENTY_PAGE.title);
+    expect(page.description).toBe(TWENTY_PAGE.description);
+    expect(page.openGraph?.url).toBe(`${SITE_URL}/vs/twenty`);
+  });
+
+  it("points subpages at the generated social card, since their own openGraph hides the inherited one", () => {
+    const page = pageMetadata(TWENTY_PAGE);
+    expect(page.openGraph?.images).toEqual([
+      { url: "/opengraph-image", width: 1200, height: 630, type: "image/png" },
+    ]);
   });
 
   it("defers the social image to the generated 1200x630 card, not an inline icon", () => {

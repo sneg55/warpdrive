@@ -1,4 +1,13 @@
-import { Briefcase, KanbanSquare, Mail, ShieldCheck, Users, Zap } from "lucide-react";
+import {
+  Bot,
+  Briefcase,
+  Import,
+  KanbanSquare,
+  Mail,
+  ShieldCheck,
+  Users,
+  Zap,
+} from "lucide-react";
 import type { ReactNode } from "react";
 import { STRINGS } from "@/constants/strings";
 import { Reveal } from "./Reveal";
@@ -12,6 +21,8 @@ const ICONS = {
   mail: Mail,
   zap: Zap,
   shield: ShieldCheck,
+  bot: Bot,
+  import: Import,
 } as const;
 
 export function FeaturesSection(): ReactNode {
@@ -25,7 +36,7 @@ export function FeaturesSection(): ReactNode {
           {S.sub}
         </p>
         <Reveal>
-          <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {S.items.map((item) => {
               const Icon = ICONS[item.icon];
               return (

@@ -1,13 +1,11 @@
-// JSON-LD structured data for the marketing site, emitted once in-page by <JsonLd>. This is the
-// machine-readable layer search engines and AI answer engines read: what Warpdrive is (a free,
-// open-source, self-hosted CRM), who publishes it, and the FAQ answers. Every value derives from
-// the same copy constants the page renders, so the schema can never drift from the visible text.
+import type { ReleaseFacts } from "@/types/repoFacts";
 import { LANDING_STRINGS } from "./landingStrings";
 import { SITE_URL } from "./siteMetadata";
 
-// The "View on GitHub" CTA already points at the repo; reuse it as the canonical off-site identity.
 const REPO_URL = LANDING_STRINGS.hero.ctaHref;
 const MIT_LICENSE_URL = "https://opensource.org/licenses/MIT";
+export const OPENALTERNATIVE_URL = "https://openalternative.co/warpdrive";
+const PROFILES = [REPO_URL, OPENALTERNATIVE_URL];
 
 interface OfferNode {
   "@type": "Offer";
@@ -31,6 +29,8 @@ interface SoftwareApplicationNode {
   featureList: string[];
   sameAs: string[];
   author: { "@id": string };
+  softwareVersion?: string;
+  dateModified?: string;
 }
 
 export const SOFTWARE_APPLICATION: SoftwareApplicationNode = {
@@ -47,7 +47,7 @@ export const SOFTWARE_APPLICATION: SoftwareApplicationNode = {
   isAccessibleForFree: true,
   offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
   featureList: LANDING_STRINGS.features.items.map((item) => item.title),
-  sameAs: [REPO_URL],
+  sameAs: PROFILES,
   author: { "@id": `${SITE_URL}/#org` },
 };
 
@@ -66,7 +66,7 @@ export const ORGANIZATION: OrganizationNode = {
   name: "Warpdrive",
   url: SITE_URL,
   logo: `${SITE_URL}/icon.png`,
-  sameAs: [REPO_URL],
+  sameAs: PROFILES,
 };
 
 interface QuestionNode {
@@ -91,7 +91,17 @@ export const FAQ_PAGE: FaqPageNode = {
   })),
 };
 
-export const STRUCTURED_DATA = {
-  "@context": "https://schema.org",
-  "@graph": [SOFTWARE_APPLICATION, ORGANIZATION, FAQ_PAGE],
-} as const;
+export function buildStructuredData(release: ReleaseFacts | null) {
+  const software: SoftwareApplicationNode =
+    release === null
+      ? SOFTWARE_APPLICATION
+      : {
+          ...SOFTWARE_APPLICATION,
+          softwareVersion: release.version,
+          dateModified: release.releasedOn,
+        };
+  return {
+    "@context": "https://schema.org",
+    "@graph": [software, ORGANIZATION, FAQ_PAGE],
+  } as const;
+}

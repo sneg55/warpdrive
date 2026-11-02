@@ -15,10 +15,8 @@ const compactStars = new Intl.NumberFormat("en", {
   maximumFractionDigits: 1,
 });
 
-// Client component: the star count is fetched in the browser (the site is a static export with no
-// server), so the nav owns that request rather than receiving a server-rendered prop.
-export function LandingNav(): ReactNode {
-  const githubStars = useGitHubStars(HERO.ctaHref);
+export function LandingNav({ initialStars = null }: { initialStars?: number | null }): ReactNode {
+  const githubStars = useGitHubStars(HERO.ctaHref, initialStars);
 
   return (
     <header className="sticky top-0 z-20 border-b bg-background/80 backdrop-blur">
@@ -39,26 +37,23 @@ export function LandingNav(): ReactNode {
         </Link>
         <nav className="flex items-center gap-6">
           <a
-            href="#features"
+            href={S.featuresHref}
             className="hidden rounded-sm text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 sm:inline"
           >
             {S.features}
           </a>
           <a
-            href="#tour"
+            href={S.tourHref}
             className="hidden rounded-sm text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 sm:inline"
           >
             {S.tour}
           </a>
           <a
-            href="#compare"
+            href={S.compareHref}
             className="hidden rounded-sm text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 sm:inline"
           >
             {S.compare}
           </a>
-          {/* Unlike the anchors above, this is an external destination and the footer has no
-              link columns, so this nav is the only route to the docs. It deliberately omits
-              `hidden sm:inline` so it stays reachable on a phone. */}
           <a
             href={S.docsHref}
             className="rounded-sm text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"

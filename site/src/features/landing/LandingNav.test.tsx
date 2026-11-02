@@ -49,6 +49,24 @@ describe("LandingNav", () => {
     expect(link.className).not.toMatch(/(^|\s)hidden(\s|$)/);
   });
 
+  it("points the section links at the home page so they work from any page", () => {
+    stubFetch(500, {});
+    render(<LandingNav />);
+    for (const name of [LANDING_STRINGS.nav.features, LANDING_STRINGS.nav.tour]) {
+      expect(screen.getByRole("link", { name })).toHaveAttribute(
+        "href",
+        expect.stringMatching(/^\/#/),
+      );
+    }
+  });
+
+  it("uses the build-time star count without asking GitHub from the browser", () => {
+    const spy = stubFetch(200, { stargazers_count: 9999 });
+    render(<LandingNav initialStars={74} />);
+    expect(screen.getByRole("link", { name: /^GitHub/ })).toHaveTextContent("74");
+    expect(spy).not.toHaveBeenCalled();
+  });
+
   it("shows no star badge when the star fetch fails", async () => {
     const spy = stubFetch(404, {});
     render(<LandingNav />);
