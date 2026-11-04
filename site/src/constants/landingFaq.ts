@@ -12,7 +12,7 @@ export const LANDING_FAQ = {
     },
     {
       q: "How do I self-host Warpdrive?",
-      a: "Warpdrive ships as a single Docker Compose file. Copy .env.example to .env, set your domain and Google OAuth, then run docker compose up -d --build. That starts the app, WebSocket server, background worker, Postgres, and MinIO, with Caddy provisioning HTTPS for your domain automatically.",
+      a: "Warpdrive ships as a single Docker Compose file. Copy .env.example to .env, set your domain and Google OAuth, then run docker compose up -d --build. That starts the app, WebSocket server, background worker, Postgres, and Garage, with Caddy provisioning HTTPS for your domain automatically.",
     },
     {
       q: "Can I import my data from Pipedrive?",
@@ -32,7 +32,7 @@ export const LANDING_FAQ = {
     },
     {
       q: "What is Warpdrive built on?",
-      a: "Warpdrive is built on Next.js, React, and TypeScript, with Postgres and Drizzle, tRPC, Tailwind, and shadcn/ui. Realtime runs on a self-hosted WebSocket server with Postgres LISTEN/NOTIFY, and files are stored in MinIO or any S3-compatible store.",
+      a: "Warpdrive is built on Next.js, React, and TypeScript, with Postgres and Drizzle, tRPC, Tailwind, and shadcn/ui. Realtime runs on a self-hosted WebSocket server with Postgres LISTEN/NOTIFY, and files are stored in Garage or any S3-compatible store.",
     },
     {
       q: "Who is Warpdrive for?",

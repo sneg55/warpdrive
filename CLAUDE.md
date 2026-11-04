@@ -13,7 +13,7 @@ Guidance for working in this codebase (with an AI coding assistant or by hand).
 - shadcn/ui + Tailwind; dnd-kit for the board; Zustand for board-local state
 - Self-hosted WebSocket server + Postgres LISTEN/NOTIFY for realtime
 - Gmail API via OAuth (Google Workspace); Google SSO for auth
-- pg-boss for background jobs; MinIO (S3-compatible) for file storage
+- pg-boss for background jobs; Garage (S3-compatible) for file storage
 - pnpm
 
 ## Conventions

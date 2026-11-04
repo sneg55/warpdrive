@@ -13,10 +13,11 @@ process.env.BASE_URL = process.env.BASE_URL?.startsWith("http")
   : "https://app.example.com";
 process.env.WS_TICKET_SECRET ??= "test-ws-ticket-secret-at-least-32-bytes-long!!";
 process.env.WS_PUBLIC_URL ??= "wss://app.example.com/ws";
-process.env.MINIO_ENDPOINT ??= "http://minio:9000";
-process.env.MINIO_ACCESS_KEY ??= "test-access";
-process.env.MINIO_SECRET_KEY ??= "test-secret";
-process.env.MINIO_BUCKET ??= "warpdrive";
+process.env.S3_ENDPOINT ??= "http://garage:3900";
+process.env.S3_ACCESS_KEY ??= "test-access";
+process.env.S3_SECRET_KEY ??= "test-secret";
+process.env.S3_BUCKET ??= "warpdrive";
+process.env.S3_REGION ??= "garage";
 process.env.TOKEN_ENCRYPTION_KEY ??= Buffer.alloc(32, 1).toString("base64");
 process.env.OAUTH_SIGNING_KEY ??= Buffer.alloc(32, 2).toString("base64");
 process.env.MCP_ENABLED ??= "true";

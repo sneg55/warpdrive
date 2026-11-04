@@ -1,10 +1,3 @@
-# Production single-box topology. `docker compose up -d --build` brings up the full stack behind
-# Caddy (auto-HTTPS). Postgres and MinIO stay on the internal network only (no host ports); the
-# public surface is Caddy on 80/443. For local dev, opt into docker-compose.dev.yml explicitly
-# (`-f docker-compose.yml -f docker-compose.dev.yml`); it is deliberately NOT named
-# docker-compose.override.yml so its host-port/no-TLS settings never auto-merge here. See
-# docs/deploy.md.
-
 # Shared build config: pass NEXT_PUBLIC_WS_URL as a build arg so Next inlines it into the client
 # bundle at build time (F29). A runtime-only env_file does NOT reach the client bundle.
 x-app-build: &app-build
@@ -13,6 +6,21 @@ x-app-build: &app-build
     NEXT_PUBLIC_WS_URL: ${NEXT_PUBLIC_WS_URL:-}
     # Optional version stamp for the update-check banner. Unset falls back to package.json, then "dev".
     APP_VERSION: ${APP_VERSION:-}
+
+configs:
+  garage_toml:
+    content: |
+      metadata_dir = "/var/lib/garage/meta"
+      data_dir = "/var/lib/garage/data"
+      db_engine = "sqlite"
+      metadata_fsync = true
+      data_fsync = true
+      replication_factor = 1
+      rpc_bind_addr = "[::]:3901"
+      rpc_public_addr = "127.0.0.1:3901"
+      [s3_api]
+      s3_region = "${S3_REGION:-garage}"
+      api_bind_addr = "[::]:3900"
 
 services:
   caddy:
@@ -57,38 +65,41 @@ services:
       timeout: 5s
       retries: 10
 
-  minio:
-    image: quay.io/minio/minio
+  garage:
+    image: dxflrs/garage:v2.5.0
     restart: unless-stopped
-    command: server /data --console-address ":9001"
+    command: ["/garage", "server", "--single-node", "--default-bucket"]
+    configs:
+      - source: garage_toml
+        target: /etc/garage.toml
     environment:
-      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
-      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
-      # Browser uploads/downloads hit MinIO cross-origin (app on APP_DOMAIN, storage on
-      # s3.APP_DOMAIN), so the S3 API must return CORS headers or the upload fetch rejects.
-      MINIO_API_CORS_ALLOW_ORIGIN: ${BASE_URL}
-    # Caddy reaches MinIO over the internal network (see Caddyfile s3.<domain> vhost); no host
-    # port publish needed. MINIO_ENDPOINT must be the public https://s3.<domain> URL.
-    volumes: [miniodata:/data]
+      GARAGE_RPC_SECRET: ${GARAGE_RPC_SECRET:?GARAGE_RPC_SECRET is required, generate one with openssl rand -hex 32}
+      GARAGE_DEFAULT_ACCESS_KEY: ${S3_ACCESS_KEY:-${MINIO_ACCESS_KEY:?S3_ACCESS_KEY is required}}
+      GARAGE_DEFAULT_SECRET_KEY: ${S3_SECRET_KEY:-${MINIO_SECRET_KEY:?S3_SECRET_KEY is required}}
+      GARAGE_DEFAULT_BUCKET: ${S3_BUCKET:-${MINIO_BUCKET:-warpdrive}}
+    volumes:
+      - garagemeta:/var/lib/garage/meta
+      - garagedata:/var/lib/garage/data
 
-  # One-shot: create the app bucket idempotently and keep it private. The app itself never
-  # creates the bucket, so on a fresh box uploads would fail without this step.
-  createbuckets:
-    image: quay.io/minio/mc
+  storagecors:
+    image: amazon/aws-cli:2.39.3
     depends_on:
-      minio:
+      garage:
         condition: service_started
-    env_file: .env
-    # $$VAR (not $VAR) so Compose passes the literal to the shell, which expands it from the
-    # container env (env_file), not from the host at parse time.
-    entrypoint: >
-      /bin/sh -c "
-      until mc alias set local http://minio:9000 $$MINIO_ACCESS_KEY $$MINIO_SECRET_KEY; do
-        echo 'waiting for minio'; sleep 2;
-      done;
-      mc mb --ignore-existing local/$$MINIO_BUCKET;
-      mc anonymous set none local/$$MINIO_BUCKET;
-      "
+    environment:
+      AWS_ENDPOINT_URL: http://garage:3900
+      AWS_ACCESS_KEY_ID: ${S3_ACCESS_KEY:-${MINIO_ACCESS_KEY:?S3_ACCESS_KEY is required}}
+      AWS_SECRET_ACCESS_KEY: ${S3_SECRET_KEY:-${MINIO_SECRET_KEY:?S3_SECRET_KEY is required}}
+      AWS_DEFAULT_REGION: ${S3_REGION:-garage}
+      BUCKET: ${S3_BUCKET:-${MINIO_BUCKET:-warpdrive}}
+      CORS_CONFIGURATION: '{"CORSRules":[{"AllowedOrigins":["${BASE_URL:?BASE_URL is required}"],"AllowedMethods":["GET","HEAD","POST"],"AllowedHeaders":["*"],"ExposeHeaders":["ETag"],"MaxAgeSeconds":3600}]}'
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - >-
+        for attempt in $$(seq 1 30); do
+        aws s3api put-bucket-cors --bucket "$$BUCKET" --cors-configuration "$$CORS_CONFIGURATION" && exit 0;
+        echo "waiting for garage ($$attempt/30)"; sleep 2;
+        done; exit 1
 
   # One-shot: apply forward-only Drizzle migrations, then exit. Gates the long-running tier.
   migrate:
@@ -104,6 +115,8 @@ services:
     restart: unless-stopped
     command: ["node_modules/.bin/next", "start"]
     env_file: .env
+    environment:
+      S3_REGION: ${S3_REGION:-garage}
     healthcheck:
       test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:3000/api/health || exit 1"]
       interval: 15s
@@ -113,7 +126,7 @@ services:
     depends_on:
       migrate:
         condition: service_completed_successfully
-      createbuckets:
+      storagecors:
         condition: service_completed_successfully
 
   ws:
@@ -140,12 +153,15 @@ services:
     restart: unless-stopped
     command: ["node", "dist/worker.mjs"]
     env_file: .env
+    environment:
+      S3_REGION: ${S3_REGION:-garage}
     depends_on:
       migrate:
         condition: service_completed_successfully
 
 volumes:
   pgdata:
-  miniodata:
+  garagemeta:
+  garagedata:
   caddydata:
   caddyconfig:

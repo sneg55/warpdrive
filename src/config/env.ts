@@ -7,6 +7,7 @@ const SECRET_FILE_VARS = [
   "GOOGLE_OAUTH_CLIENT_SECRET",
   "WS_TICKET_SECRET",
   "TOKEN_ENCRYPTION_KEY",
+  "S3_SECRET_KEY",
   "MINIO_SECRET_KEY",
   "DATABASE_URL",
   "OAUTH_SIGNING_KEY",
@@ -23,6 +24,24 @@ function resolveFileVars(raw: NodeJS.ProcessEnv): Record<string, string | undefi
   return out;
 }
 
+const LEGACY_STORAGE_NAMES = {
+  S3_ENDPOINT: "MINIO_ENDPOINT",
+  S3_ACCESS_KEY: "MINIO_ACCESS_KEY",
+  S3_SECRET_KEY: "MINIO_SECRET_KEY",
+  S3_BUCKET: "MINIO_BUCKET",
+} as const;
+
+function applyLegacyStorageNames(
+  vars: Record<string, string | undefined>,
+): Record<string, string | undefined> {
+  const out = { ...vars };
+  for (const [current, legacy] of Object.entries(LEGACY_STORAGE_NAMES)) {
+    const value = out[current];
+    if (value == null || value.length === 0) out[current] = out[legacy];
+  }
+  return out;
+}
+
 const boolFromString = z.enum(["true", "false"]).transform((v) => v === "true");
 
 const base = z.object({
@@ -34,13 +53,14 @@ const base = z.object({
   DATABASE_URL: z.string().min(1),
   WS_TICKET_SECRET: z.string().min(32),
   WS_PUBLIC_URL: z.string().min(1),
-  // Full URL, not a bare hostname: buildMinioClient does new URL(MINIO_ENDPOINT), and the
-  // browser POSTs uploads directly to the presigned host, so it must be publicly reachable
-  // (e.g. https://s3.example.com), never an internal-only compose alias like "minio".
-  MINIO_ENDPOINT: z.string().url(),
-  MINIO_ACCESS_KEY: z.string().min(1),
-  MINIO_SECRET_KEY: z.string().min(1),
-  MINIO_BUCKET: z.string().min(1).default("warpdrive"),
+  S3_ENDPOINT: z.string().url(),
+  S3_ACCESS_KEY: z.string().min(1),
+  S3_SECRET_KEY: z.string().min(1),
+  S3_BUCKET: z.string().min(1).default("warpdrive"),
+  S3_REGION: z
+    .string()
+    .optional()
+    .transform((v) => (v == null || v.length === 0 ? undefined : v)),
   MAX_FILE_BYTES: z.coerce.number().int().positive().default(26_214_400),
   TOKEN_ENCRYPTION_KEY: z
     .string()
@@ -109,7 +129,7 @@ export type Env = z.infer<typeof base>;
 
 // Pure, testable: validates a given source map without touching the global env.
 export function parseEnv(raw: NodeJS.ProcessEnv): Result<Env, string> {
-  const resolved = resolveFileVars(raw);
+  const resolved = applyLegacyStorageNames(resolveFileVars(raw));
   const parsed = schema.safeParse(resolved);
   if (!parsed.success) {
     return err(parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; "));

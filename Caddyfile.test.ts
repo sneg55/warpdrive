@@ -33,10 +33,6 @@ describe("Caddyfile app vhost", () => {
 describe("Caddyfile storage vhost", () => {
   const s3 = vhost("s3.{$APP_DOMAIN} {");
 
-  // MinIO serves user-uploaded bytes from a sibling origin of the app. Session cookies are
-  // host-only so a stored HTML object cannot read them, but it could still render as a
-  // convincing phishing page on a subdomain of the real product. Force it to download rather
-  // than render, and refuse to be framed.
   test("stops MIME sniffing on user-uploaded objects", () => {
     expect(s3).toMatch(/X-Content-Type-Options "nosniff"/);
   });
@@ -47,5 +43,9 @@ describe("Caddyfile storage vhost", () => {
 
   test("sets HSTS on the storage host too", () => {
     expect(s3).toMatch(/Strict-Transport-Security "max-age=31536000/);
+  });
+
+  test("proxies to the Garage S3 API port of the compose garage service", () => {
+    expect(s3).toMatch(/reverse_proxy garage:3900\s*$/);
   });
 });

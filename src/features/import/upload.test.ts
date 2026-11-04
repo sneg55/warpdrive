@@ -10,7 +10,7 @@ import { confirmImportUpload, requestImportUpload } from "./upload";
 // Minimal inline StorageClient fake: only the methods the upload path uses.
 function fakeStorage(over: Partial<StorageClient> = {}): StorageClient {
   return {
-    presignPost: () => Promise.resolve(ok({ url: "http://minio/put", fields: { key: "k" } })),
+    presignPost: () => Promise.resolve(ok({ url: "http://garage/put", fields: { key: "k" } })),
     headObject: () => Promise.resolve(ok({ size: 10, etag: "e", contentType: "text/csv" })),
     presignGet: () => Promise.resolve(ok("http://get")),
     copyObject: () => Promise.resolve(ok(undefined)),

@@ -35,8 +35,6 @@ const { updateUserProfileAction } = vi.hoisted(() => ({
 }));
 vi.mock("@/features/identity/profileActions", () => ({ updateUserProfileAction }));
 
-// Avatar upload has its own suite; stub it here so these tests don't pull the server-only
-// avatar actions (db/minio) into the client render.
 vi.mock("@/features/identity/avatar/AvatarUpload", () => ({
   AvatarUpload: () => null,
 }));

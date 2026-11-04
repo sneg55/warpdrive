@@ -8,10 +8,9 @@ services:
   postgres:
     ports: ["5433:5432"]
 
-  minio:
+  garage:
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "9000:3900"
 
   app:
     ports: ["3000:3000"]

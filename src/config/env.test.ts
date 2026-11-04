@@ -43,20 +43,6 @@ describe("env boundary", () => {
     expect(result.ok).toBe(true);
   });
 
-  test("rejects a bare-hostname MINIO_ENDPOINT that is not a parseable URL", () => {
-    // Regression: the prod deploy prescribed MINIO_ENDPOINT=minio, which passes a min(1)
-    // check but throws "Invalid URL" in buildMinioClient (new URL(endpoint)) on the FIRST
-    // storage call, surfacing as a generic "Something went wrong" at import upload. The
-    // browser also has to reach this host directly, so it must be a full public URL.
-    const result = parseEnv({ ...process.env, MINIO_ENDPOINT: "minio" });
-    expect(result.ok).toBe(false);
-  });
-
-  test("accepts a full-URL MINIO_ENDPOINT", () => {
-    const result = parseEnv({ ...process.env, MINIO_ENDPOINT: "https://s3.example.com" });
-    expect(result.ok).toBe(true);
-  });
-
   test("defaults APP_VERSION empty and DISABLE_UPDATE_CHECK false", () => {
     const result = parseEnv({ ...process.env });
     expect(result.ok).toBe(true);

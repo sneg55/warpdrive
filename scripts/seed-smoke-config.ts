@@ -1,13 +1,3 @@
-/**
- * scripts/seed-smoke-config.ts
- *
- * Constants and env-reading for the smoke seed script.
- * This file uses process.env directly: scripts/ are dev tooling that run
- * outside the Next.js app and cannot use src/config/env.ts without satisfying
- * every required env var (MINIO, WS keys, etc.). The ESLint override for
- * scripts/** permits this.
- */
-
 export const DATABASE_URL: string = (() => {
   const v = process.env.DATABASE_URL;
   if (v === undefined || v.length === 0) throw new Error("DATABASE_URL is not set");

@@ -6,7 +6,7 @@ const WARPDRIVE = {
   license: "MIT",
   focus: "Pipedrive-style business-development pipeline",
   selfHost:
-    "One Docker Compose file: app, WebSocket server, worker, Postgres, and MinIO, with Caddy for HTTPS",
+    "One Docker Compose file: app, WebSocket server, worker, Postgres, and Garage, with Caddy for HTTPS",
   hosted: "None, self-hosted only",
   email:
     "Two-way Gmail over the Gmail API, with open and click tracking, templates, and scheduled send",

@@ -12,7 +12,6 @@ export const fileEntityType = pgEnum("file_entity_type", [
 
 export const fileStatus = pgEnum("file_status", FILE_STATUS);
 
-// File metadata (objects live in MinIO/S3; s3_key locates them). data-model section 8.
 export const files = pgTable(
   "files",
   {

@@ -18,7 +18,7 @@ pnpm db:migrate
 pnpm dev
 ```
 
-For a full stack with Postgres and MinIO in containers, see the local development
+For a full stack with Postgres and Garage in containers, see the local development
 section of [Installation](./setup.md).
 
 ## Tests

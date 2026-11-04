@@ -1,13 +1,13 @@
 ---
 sidebar_position: 2
 title: Installation
-description: "Deploy Warpdrive on a single box with Docker Compose: prerequisites, environment variables, TLS, MinIO storage, Google OAuth, and the first admin login."
+description: "Deploy Warpdrive on a single box with Docker Compose: prerequisites, environment variables, TLS, Garage object storage, Google OAuth, and the first admin login."
 ---
 
 # Installation
 
 Warpdrive ships as a self-contained Docker Compose stack: the Next.js app, a
-WebSocket server, a background worker, Postgres, MinIO object storage, and a Caddy
+WebSocket server, a background worker, Postgres, Garage object storage, and a Caddy
 reverse proxy that terminates TLS with automatic Let's Encrypt certificates. One
 `docker compose up -d --build` brings up the whole thing.
 
@@ -18,7 +18,7 @@ reverse proxy that terminates TLS with automatic Let's Encrypt certificates. One
   required, not cosmetic: Google OAuth will not redirect to a bare IP address.
 - **A second `A`/`AAAA` record for an `s3.` subdomain** (for example
   `s3.crm.example.com`), also pointing at the box. The browser uploads files (CSV
-  imports, avatars, attachments) directly to MinIO through this hostname, so it needs
+  imports, avatars, attachments) directly to Garage through this hostname, so it needs
   its own DNS record and certificate. Skipping this breaks every upload.
 - Ports 80 and 443 open. Caddy needs port 80 for the ACME challenge.
 - A Google OAuth client (Workspace), covered below.
@@ -42,7 +42,7 @@ boot rather than misbehaving hours later.
 | `BASE_URL` | `https://crm.example.com` |
 | `NEXT_PUBLIC_WS_URL` | `wss://crm.example.com/_ws` |
 | `WS_PUBLIC_URL` | `ws://ws:8080`, the internal Compose address |
-| `MINIO_ENDPOINT` | `https://s3.crm.example.com` |
+| `S3_ENDPOINT` | `https://s3.crm.example.com` |
 | `DATABASE_URL` | `postgres://warpdrive:warpdrive@postgres:5432/warpdrive` |
 | `SEED_ADMIN_EMAIL` | the first admin's email address, required in production |
 | `ALLOW_FIRST_LOGIN_ADMIN` | `false` |
@@ -50,8 +50,8 @@ boot rather than misbehaving hours later.
 Three of these cause silent, confusing failures when set wrongly, so they are worth
 stating plainly:
 
-- **`MINIO_ENDPOINT` must be the public `https://s3.<domain>` URL**, not the internal
-  `minio` Compose alias. The browser POSTs presigned uploads directly to this address,
+- **`S3_ENDPOINT` must be the public `https://s3.<domain>` URL**, not the internal
+  `garage` Compose alias. The browser POSTs presigned uploads directly to this address,
   so an internal hostname is unreachable from where it actually gets used. Every
   upload fails if this is wrong.
 - **`NEXT_PUBLIC_WS_URL` must be set at build time.** `NEXT_PUBLIC_*` variables are
@@ -77,13 +77,23 @@ stating plainly:
 ```sh
 openssl rand -base64 32   # TOKEN_ENCRYPTION_KEY (32-byte base64 key)
 openssl rand -hex 32      # WS_TICKET_SECRET (>= 32 chars)
-openssl rand -hex 16      # MINIO_ACCESS_KEY / MINIO_SECRET_KEY
+openssl rand -hex 16      # S3_ACCESS_KEY / S3_SECRET_KEY
+openssl rand -hex 32      # GARAGE_RPC_SECRET (exactly 32 bytes, hex)
 ```
 
 `DATABASE_URL`, `TOKEN_ENCRYPTION_KEY`, `WS_TICKET_SECRET`,
-`GOOGLE_OAUTH_CLIENT_SECRET`, and `MINIO_SECRET_KEY` may each instead be supplied as
+`GOOGLE_OAUTH_CLIENT_SECRET`, and `S3_SECRET_KEY` may each instead be supplied as
 `<VAR>_FILE` pointing at a file path, for use with Docker secrets. The app reads the
 file contents at boot.
+
+Garage creates the `S3_BUCKET` bucket and an access key from `S3_ACCESS_KEY` and
+`S3_SECRET_KEY` on first start. Garage requires an access key of at least 8
+characters and a secret of at least 16. The Compose file signs storage requests for
+region `garage`, which is what the bundled Garage serves. When `S3_ENDPOINT` points
+at a different S3-compatible store, set `S3_REGION` to that store's region, or leave
+it empty outside Compose and the client discovers the bucket's region. Installs that
+still set the older `MINIO_*` names keep working: each `S3_*` variable falls back to
+its `MINIO_*` counterpart when unset.
 
 ## 2. Set up Google OAuth
 
@@ -111,7 +121,8 @@ docker compose up -d --build
 ```
 
 Startup order is handled for you. Postgres becomes healthy, a one-shot `migrate`
-service applies the schema and `createbuckets` provisions the MinIO bucket, then
+service applies the schema and `storagecors` sets the bucket's CORS rule for
+`BASE_URL`, then
 `app`, `ws`, and `worker` start. Caddy waits for the app to report healthy, then
 fetches a TLS certificate on the first request to `https://<APP_DOMAIN>`.
 
@@ -139,8 +150,8 @@ local run, merge the development overrides, which expose host ports and drop Cad
 docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
 ```
 
-The app is then at `http://localhost:3000`, the MinIO console at
-`http://localhost:9001`, and Postgres at `localhost:5433`. Set
+The app is then at `http://localhost:3000`, the Garage S3 API at
+`http://localhost:9000` (use it as `S3_ENDPOINT`), and Postgres at `localhost:5433`. Set
 `BASE_URL=http://localhost:3000` and `NEXT_PUBLIC_WS_URL=ws://localhost:8080` for this
 mode.
 

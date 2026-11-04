@@ -10,9 +10,9 @@ const base = {
   DATABASE_URL: "postgres://localhost/x",
   WS_TICKET_SECRET: "a".repeat(32),
   WS_PUBLIC_URL: "ws://ws:8080",
-  MINIO_ENDPOINT: "https://s3.example.com",
-  MINIO_ACCESS_KEY: "x",
-  MINIO_SECRET_KEY: "x",
+  S3_ENDPOINT: "https://s3.example.com",
+  S3_ACCESS_KEY: "x",
+  S3_SECRET_KEY: "x",
   TOKEN_ENCRYPTION_KEY: Buffer.alloc(32).toString("base64"),
 } as NodeJS.ProcessEnv;
 

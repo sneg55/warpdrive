@@ -16,11 +16,6 @@
 		-Server
 	}
 
-	# Bound what an unauthenticated request can make the app buffer. Sits ABOVE the 64mb
-	# serverActions limit on purpose: Next's own check stays the binding one for legitimate
-	# traffic (the CSV importer), and this only stops the absurd case (a multi-GB POST) from
-	# reaching the app at all. File uploads do NOT pass through here; they go direct to the
-	# storage vhost below via presigned POST, which MinIO bounds with its own policy.
 	request_body {
 		max_size 80MB
 	}
@@ -35,10 +30,6 @@
 	reverse_proxy app:3000
 }
 
-# Object storage on its own subdomain. The browser POSTs presigned uploads (CSV import, avatars,
-# email attachments) and GETs downloads directly to MinIO, so it must be publicly reachable at the
-# exact host MINIO_ENDPOINT signs with. Point MINIO_ENDPOINT=https://s3.{$APP_DOMAIN} and add an
-# s3.<domain> DNS record. MinIO returns CORS headers via MINIO_API_CORS_ALLOW_ORIGIN in compose.
 s3.{$APP_DOMAIN} {
 	tls {$ACME_EMAIL}
 
@@ -55,8 +46,5 @@ s3.{$APP_DOMAIN} {
 		-Server
 	}
 
-	# Deliberately no request_body cap: presigned uploads land here, and MAX_FILE_BYTES is
-	# deploy-configurable. MinIO enforces the real ceiling through the presigned POST policy's
-	# content-length-range, which the app pins per upload (see storage.presignPost).
-	reverse_proxy minio:9000
+	reverse_proxy garage:3900
 }

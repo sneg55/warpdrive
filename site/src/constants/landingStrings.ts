@@ -130,11 +130,11 @@ export const LANDING_STRINGS = {
   },
   selfHost: {
     heading: "One box. docker compose up.",
-    body: "The whole topology ships as a single Docker Compose file: app, WebSocket server, background worker, Postgres, and MinIO, with Caddy provisioning HTTPS for your domain automatically. Databases and storage stay on the internal network.",
+    body: "The whole topology ships as a single Docker Compose file: app, WebSocket server, background worker, Postgres, and Garage, with Caddy provisioning HTTPS for your domain automatically. Databases and storage stay on the internal network.",
     bullets: [
       "Google Workspace SSO and Gmail OAuth: your accounts, your consent screen",
       "Postgres LISTEN/NOTIFY realtime, no paid pub-sub",
-      "MinIO or any S3-compatible store for files",
+      "Garage or any S3-compatible store for files",
     ],
     terminalTitle: "terminal",
     code: [

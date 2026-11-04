@@ -54,16 +54,17 @@ export interface StorageClient {
   getObjectBytes(key: string, signal: AbortSignal): Promise<Result<Buffer, AppError>>;
 }
 
-function buildMinioClient(): Minio.Client {
-  const parsed = new URL(env.MINIO_ENDPOINT);
+function buildS3Client(): Minio.Client {
+  const parsed = new URL(env.S3_ENDPOINT);
   const useSSL = parsed.protocol === "https:";
   const port = parsed.port.length > 0 ? Number(parsed.port) : useSSL ? 443 : 80;
   return new Minio.Client({
     endPoint: parsed.hostname,
     port,
     useSSL,
-    accessKey: env.MINIO_ACCESS_KEY,
-    secretKey: env.MINIO_SECRET_KEY,
+    accessKey: env.S3_ACCESS_KEY,
+    secretKey: env.S3_SECRET_KEY,
+    region: env.S3_REGION,
   });
 }
 
@@ -82,7 +83,7 @@ function storageErr(
   });
 }
 
-class MinioStorageClient implements StorageClient {
+class S3StorageClient implements StorageClient {
   private readonly client: Minio.Client;
 
   constructor(client: Minio.Client) {
@@ -98,7 +99,7 @@ class MinioStorageClient implements StorageClient {
     signal.throwIfAborted();
     try {
       const policy = this.client.newPostPolicy();
-      policy.setBucket(env.MINIO_BUCKET);
+      policy.setBucket(env.S3_BUCKET);
       policy.setKey(objectKey);
       policy.setContentLengthRange(1, Math.min(maxBytes, env.MAX_FILE_BYTES));
       policy.setContentType(contentType);
@@ -114,7 +115,7 @@ class MinioStorageClient implements StorageClient {
   async headObject(key: string, signal: AbortSignal): Promise<Result<ObjectMetadata, AppError>> {
     signal.throwIfAborted();
     try {
-      const stat = await this.client.statObject(env.MINIO_BUCKET, key);
+      const stat = await this.client.statObject(env.S3_BUCKET, key);
       signal.throwIfAborted();
       const metaData = stat.metaData as Record<string, string | undefined>;
       return ok({
@@ -134,7 +135,7 @@ class MinioStorageClient implements StorageClient {
   ): Promise<Result<string, AppError>> {
     signal.throwIfAborted();
     try {
-      const url = await this.client.presignedGetObject(env.MINIO_BUCKET, key, PRESIGN_TTL_SECONDS, {
+      const url = await this.client.presignedGetObject(env.S3_BUCKET, key, PRESIGN_TTL_SECONDS, {
         "response-content-disposition": `attachment; filename="${displayFilename}"`,
       });
       signal.throwIfAborted();
@@ -153,9 +154,9 @@ class MinioStorageClient implements StorageClient {
     try {
       // CopyConditions left empty: an unconditional server-side copy within the bucket.
       await this.client.copyObject(
-        env.MINIO_BUCKET,
+        env.S3_BUCKET,
         destKey,
-        `/${env.MINIO_BUCKET}/${sourceKey}`,
+        `/${env.S3_BUCKET}/${sourceKey}`,
         new Minio.CopyConditions(),
       );
       signal.throwIfAborted();
@@ -168,7 +169,7 @@ class MinioStorageClient implements StorageClient {
   async deleteObject(key: string, signal: AbortSignal): Promise<Result<void, AppError>> {
     signal.throwIfAborted();
     try {
-      await this.client.removeObject(env.MINIO_BUCKET, key);
+      await this.client.removeObject(env.S3_BUCKET, key);
       signal.throwIfAborted();
       return ok(undefined);
     } catch (cause) {
@@ -179,7 +180,7 @@ class MinioStorageClient implements StorageClient {
   async getObjectBytes(key: string, signal: AbortSignal): Promise<Result<Buffer, AppError>> {
     signal.throwIfAborted();
     try {
-      const stream = await this.client.getObject(env.MINIO_BUCKET, key);
+      const stream = await this.client.getObject(env.S3_BUCKET, key);
       signal.throwIfAborted();
       const chunks: Buffer[] = [];
       await new Promise<void>((resolve, reject) => {
@@ -195,5 +196,5 @@ class MinioStorageClient implements StorageClient {
 }
 
 export function makeStorageClient(): StorageClient {
-  return new MinioStorageClient(buildMinioClient());
+  return new S3StorageClient(buildS3Client());
 }

@@ -50,9 +50,9 @@ RUN NODE_ENV=production \
     BASE_URL=http://localhost:3000 \
     WS_TICKET_SECRET=build_placeholder_ws_ticket_secret_0123456789 \
     WS_PUBLIC_URL=ws://localhost:8080 \
-    MINIO_ENDPOINT=http://localhost:9000 \
-    MINIO_ACCESS_KEY=build \
-    MINIO_SECRET_KEY=build \
+    S3_ENDPOINT=http://localhost:3900 \
+    S3_ACCESS_KEY=build \
+    S3_SECRET_KEY=build \
     TOKEN_ENCRYPTION_KEY=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA= \
     OAUTH_SIGNING_KEY=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA= \
     SEED_ADMIN_EMAIL=build@example.com \

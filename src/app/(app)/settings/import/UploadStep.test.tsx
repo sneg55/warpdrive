@@ -10,7 +10,7 @@ vi.mock("@/features/import/actions", () => ({
   requestImportUploadAction: vi.fn(() =>
     Promise.resolve({
       ok: true,
-      value: { batchId: "b1", post: { url: "http://minio", fields: {} } },
+      value: { batchId: "b1", post: { url: "http://garage", fields: {} } },
     }),
   ),
   confirmImportUploadAction: vi.fn(() => Promise.resolve({ ok: true, value: { batchId: "b1" } })),

@@ -22,7 +22,7 @@ just want to use it, start with the feature pages instead.
 | Board state | Zustand, scoped to the board |
 | Realtime | Self-hosted WebSocket server plus Postgres `LISTEN`/`NOTIFY` |
 | Background jobs | pg-boss |
-| Object storage | MinIO, S3-compatible |
+| Object storage | Garage, S3-compatible |
 | Email | Gmail API over OAuth |
 | Auth | Google SSO |
 | Package manager | pnpm |
@@ -38,9 +38,9 @@ A deployment runs five long-lived processes plus two one-shot ones:
 - **`ws`** is the WebSocket server for realtime updates.
 - **`worker`** runs background jobs: mailbox sync, CSV imports, scheduled sends.
 - **`postgres`** holds all relational data.
-- **`minio`** holds uploaded files.
+- **`garage`** holds uploaded files.
 - **`migrate`** applies schema migrations once, before the app starts.
-- **`createbuckets`** provisions the MinIO bucket once.
+- **`storagecors`** sets the bucket's CORS rule for `BASE_URL` once.
 
 In production a **Caddy** reverse proxy fronts all of it and terminates TLS.
 

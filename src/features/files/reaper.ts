@@ -20,15 +20,6 @@ export interface ReapOptions {
   signal: AbortSignal;
 }
 
-/**
- * Clear files rows stuck in status='uploading' past olderThanMs, plus their
- * MinIO objects. Crash-safe delete order: object FIRST, row SECOND. If the
- * process dies between the two, the worst case is a row whose object is already
- * gone, which the next run re-handles (deleteObject is idempotent); we never
- * leave an orphaned object with no row to find it. Per-item Result isolation:
- * one object's delete failure is a value, not a throw, so the row is left for
- * the next run and the rest of the batch proceeds.
- */
 export async function reapStaleUploads(
   db: Db,
   { storage, olderThanMs = DEFAULT_OLDER_THAN_MS, signal }: ReapOptions,

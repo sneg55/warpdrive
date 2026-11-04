@@ -17,8 +17,8 @@ uploads off the app process.
 
 Two consequences follow from that design:
 
-- **`MINIO_ENDPOINT` must be reachable from the browser.** In a single-box deployment
-  that is the public `https://s3.<domain>` hostname, not the internal `minio` alias.
+- **`S3_ENDPOINT` must be reachable from the browser.** In a single-box deployment
+  that is the public `https://s3.<domain>` hostname, not the internal `garage` alias.
   An internal address produces presigned URLs the browser cannot reach, and every
   upload fails. See [Installation](../setup.md).
 - The `s3.` subdomain needs its own DNS record and certificate.
@@ -29,7 +29,7 @@ Two consequences follow from that design:
 
 ## Storage and backups
 
-Files live in the `miniodata` volume. **A database backup alone does not include
+Files live in the `garagedata` and `garagemeta` volumes. **A database backup alone does not include
 them.** Back up both, or a restore returns records whose attachments are missing. See
 [Updating](../operations/updating.md).
 

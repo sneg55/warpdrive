@@ -116,7 +116,7 @@ goal is a focused, self-hosted CRM, not a feature-for-feature clone.
 
 Next.js (App Router) and React with TypeScript, Drizzle ORM on Postgres, tRPC with TanStack
 Query, Next server actions, shadcn/ui with Tailwind, dnd-kit for the board, Zustand for
-board-local state, a self-hosted WebSocket server backed by Postgres LISTEN/NOTIFY, MinIO
+board-local state, a self-hosted WebSocket server backed by Postgres LISTEN/NOTIFY, Garage
 (or any S3-compatible store) for files, and the Gmail API via Google OAuth. Package manager:
 pnpm.
 
@@ -127,8 +127,8 @@ Requires Node, pnpm, and Docker.
 ```bash
 pnpm install
 cp .env.example .env
-# bring up Postgres and MinIO with host ports and no TLS:
-docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d postgres minio
+# bring up Postgres and Garage with host ports and no TLS:
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d postgres garage storagecors
 pnpm db:migrate
 pnpm dev
 ```
@@ -140,14 +140,14 @@ using the dev-login route.
 ## Self-hosting
 
 The repo ships a single-box Docker topology (app, WebSocket server, background worker,
-Postgres, MinIO, and Caddy for automatic HTTPS):
+Postgres, Garage, and Caddy for automatic HTTPS):
 
 ```bash
 cp .env.example .env    # fill in domain, Google OAuth, storage, and secrets
 docker compose up -d --build
 ```
 
-Caddy provisions TLS for your domain automatically; Postgres and MinIO stay on the internal
+Caddy provisions TLS for your domain automatically; Postgres and Garage stay on the internal
 network. See [`docs/deploy.md`](docs/deploy.md) for the full guide, including Google OAuth
 setup, the `s3.` subdomain for file uploads, and every required environment variable.
 

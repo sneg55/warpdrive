@@ -27,7 +27,7 @@ have shipped to a public site.
 Always capture against a database created fresh for the purpose.
 :::
 
-1. Bring up local Postgres (port 5433) and MinIO:
+1. Bring up local Postgres (port 5433) and Garage:
 
    ```sh
    docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
