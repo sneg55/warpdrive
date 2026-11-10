@@ -135,11 +135,16 @@ export function LeftNav({
           >
             <span className="relative">
               <item.Icon />
-              {item.key === "inbox" ? inboxBadge : null}
+              {item.key === "inbox" && !expanded ? (
+                <span className="absolute -right-2 -top-2">{inboxBadge}</span>
+              ) : null}
             </span>
             <span className={cn("text-sm font-medium", expanded ? "" : "sr-only")}>
               {item.label}
             </span>
+            {item.key === "inbox" && expanded ? (
+              <span className="ml-auto">{inboxBadge}</span>
+            ) : null}
           </Link>
         );
         return expanded ? (
