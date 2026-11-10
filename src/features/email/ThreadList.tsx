@@ -2,11 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { BulkActionBar } from "@/components/data-table/BulkActionBar";
 import { useRowSelection } from "@/components/data-table/useRowSelection";
 import { ThreadRowsSkeleton } from "@/components/shell/skeletons";
-import { Checkbox } from "@/components/ui/Checkbox";
-import { Skeleton } from "@/components/ui/Skeleton";
 import { STRINGS } from "@/constants/strings";
 import { trpc } from "@/lib/trpc-client";
 import type { ActionResult } from "@/types/actionResult";
@@ -15,41 +12,30 @@ import type { InboxFilter, InboxThread } from "./emailReads";
 import { archiveThreadAction, unarchiveThreadAction } from "./folderActions";
 import { markThreadReadAction, markThreadUnreadAction } from "./readActions";
 import { ThreadListToolbar } from "./ThreadListToolbar";
-import { canArchiveInFolder, canSelectInFolder, type ThreadFolder, ThreadRow } from "./ThreadRow";
+import { type ThreadFolder, ThreadRow } from "./ThreadRow";
+import { ThreadSelectionControls } from "./ThreadSelectionControls";
 import { filterByAttributes, NO_ATTRIBUTE_FILTER } from "./threadAttributeFilter";
 import { BULK_ACTION_ERROR, runBulk } from "./threadBulkActions";
 import { useThreadFeed } from "./useThreadFeed";
 
 interface ThreadListProps {
-  // Which backed read feeds the list: Inbox (email.inbox.list), Sent, Archive, or "linked"
-  // (caller supplies `threads`; no internal query).
+  mailbox?: string;
   folder: ThreadFolder;
   activeThreadId?: string;
-  // Where selecting a thread navigates. Defaults to the standalone thread route;
-  // the two-pane inbox passes a `?thread=` href so the reader stays alongside.
   selectHref?: (threadId: string) => string;
-  // When provided, selecting a thread calls this instead of navigating (used by the deal Email tab
-  // to read a thread inline, A2, rather than leaving the deal for /inbox).
   onSelect?: (threadId: string) => void;
-  // When provided, render exactly these threads instead of fetching (used by "linked" views).
   threads?: InboxThread[];
-  // Set by callers that supply `threads` from their own query: true while that query is still
-  // pending, so an empty array is painted as loading rather than as an empty mailbox.
   threadsPending?: boolean;
-  // The active quick-filter (all/unmatched/needs_linking + the U5 quick-filters). Lifted to the
-  // caller (InboxListClient) so an active in-mail search can narrow by the SAME filter (codex
-  // review); it feeds both the inbox feed and the filter toolbar. Optional: callers that only render
-  // "linked" views leave it uncontrolled and ThreadList keeps its own local state.
   quickFilter?: InboxFilter;
   onQuickFilterChange?: (next: InboxFilter) => void;
 }
 
 export function ThreadList({
   folder,
+  mailbox,
   activeThreadId,
-  // Carry the folder into the reader URL so its prev/next nav walks the same folder (P3). "linked"
-  // views use onSelect (inline), never this href, so the folder is always a navigable one here.
-  selectHref = (id) => `/inbox/${id}?folder=${folder}`,
+  selectHref = (id) =>
+    `/inbox/${id}?folder=${folder}${mailbox === undefined ? "" : `&mailbox=${mailbox}`}`,
   onSelect,
   threads: providedThreads,
   threadsPending = false,
@@ -58,25 +44,17 @@ export function ThreadList({
 }: ThreadListProps): React.ReactNode {
   const router = useRouter();
   const utils = trpc.useUtils();
-  // Controlled when the caller lifts the quick-filter (InboxListClient), uncontrolled otherwise.
   const [localFilter, setLocalFilter] = useState<InboxFilter>("all");
   const filter = quickFilter ?? localFilter;
   const setFilter = onQuickFilterChange ?? setLocalFilter;
   const [attrFilter, setAttrFilter] = useState(NO_ATTRIBUTE_FILTER);
   const [bulkError, setBulkError] = useState<string | null>(null);
   const [bulkBusy, setBulkBusy] = useState(false);
-  const feed = useThreadFeed(folder, filter);
-  // Follow-up-status + label + quick-filters (IB1, P2) narrow the rendered list client-side over
-  // the attributes each thread already carries. They apply ONLY on the inbox: that is the only
-  // folder that shows the filter row and whose feed projects hasAttachment/unread. Applying a
-  // retained filter to Sent/Archive (whose rows default those fields to false) would wrongly hide
-  // every row after a folder switch (codex review).
+  const feed = useThreadFeed(folder, filter, mailbox);
   const sourceThreads = providedThreads ?? feed.threads;
   const threads =
     folder === "inbox" ? filterByAttributes(sourceThreads, attrFilter) : sourceThreads;
   const selection = useRowSelection();
-  // A pending feed has made no claim about the mailbox yet, so neither the "no threads" copy nor a
-  // conversation count may be painted until it resolves.
   const pending = providedThreads !== undefined ? threadsPending : feed.pending;
   const showSkeleton = pending && threads.length === 0;
 
@@ -89,13 +67,7 @@ export function ThreadList({
     void utils.email.inbox.unreadCount.invalidate();
   }
 
-  // Manual Refresh (A1, Pipedrive parity): re-pull the current folder's feed without a full
-  // navigation. Realtime already nudges these, but a user-driven refetch matches PD and covers the
-  // gap between poll cycles. Folder-aware so Sent/Archive refetch their own read (D2), not the inbox.
   function refreshFolder(): void {
-    // In-mail search overrides whichever folder tab is active (InboxListClient feeds email.search
-    // results to this list), so refresh must invalidate search regardless of the folder or the
-    // displayed results never update (codex P2). A no-op when no search query is mounted.
     void utils.email.search.invalidate();
     if (folder === "sent") {
       void utils.email.folders.sent.invalidate();
@@ -109,10 +81,6 @@ export function ThreadList({
     void utils.email.inbox.unreadCount.invalidate();
   }
 
-  // Owner flipped a thread's visibility: refresh whichever feed is showing so the lock and the
-  // projected visibility reflect the write (and a now-private thread stops appearing to others).
-  // Search is included because the list can be rendering email.search results (providedThreads),
-  // whose cache would otherwise keep the stale lock until the query re-runs (codex review).
   function afterVisibilityChange(): void {
     void utils.email.inbox.list.invalidate();
     void utils.email.folders.sent.invalidate();
@@ -170,59 +138,17 @@ export function ThreadList({
         onRefresh={refreshFolder}
       />
 
-      <div className="flex items-center justify-between border-b px-3 py-1.5 text-xs text-muted-foreground">
-        <div className="flex items-center gap-2">
-          {canSelectInFolder(folder) && (
-            <Checkbox
-              label="Select all threads"
-              checked={selection.allSelected(visibleIds)}
-              onCheckedChange={() => selection.toggleAll(visibleIds)}
-            />
-          )}
-          {showSkeleton ? (
-            <Skeleton className="h-3 w-24" />
-          ) : (
-            <span className="tabular-nums">
-              {threads.length} {threads.length === 1 ? "conversation" : "conversations"}
-            </span>
-          )}
-        </div>
-      </div>
-
-      {canSelectInFolder(folder) && selection.count > 0 && (
-        <div className="border-b px-3 py-2">
-          <BulkActionBar count={selection.count} onClear={selection.clear}>
-            <div role="toolbar" aria-label="Bulk actions" className="flex flex-wrap gap-2">
-              {canArchiveInFolder(folder) && (
-                <button
-                  type="button"
-                  disabled={bulkBusy}
-                  onClick={bulkArchive}
-                  className="rounded-md border px-3 py-1 text-sm transition-transform hover:bg-accent active:scale-[0.96] disabled:opacity-50"
-                >
-                  {folder === "archive" ? "Unarchive" : "Archive"}
-                </button>
-              )}
-              <button
-                type="button"
-                disabled={bulkBusy}
-                onClick={bulkMarkRead}
-                className="rounded-md border px-3 py-1 text-sm transition-transform hover:bg-accent active:scale-[0.96] disabled:opacity-50"
-              >
-                Mark read
-              </button>
-              <button
-                type="button"
-                disabled={bulkBusy}
-                onClick={bulkMarkUnread}
-                className="rounded-md border px-3 py-1 text-sm transition-transform hover:bg-accent active:scale-[0.96] disabled:opacity-50"
-              >
-                Mark unread
-              </button>
-            </div>
-          </BulkActionBar>
-        </div>
-      )}
+      <ThreadSelectionControls
+        folder={folder}
+        selection={selection}
+        visibleIds={visibleIds}
+        showSkeleton={showSkeleton}
+        count={threads.length}
+        bulkBusy={bulkBusy}
+        bulkArchive={bulkArchive}
+        bulkMarkRead={bulkMarkRead}
+        bulkMarkUnread={bulkMarkUnread}
+      />
 
       {bulkError !== null && (
         <p role="alert" className="border-b px-3 py-1.5 text-xs text-destructive">
@@ -249,8 +175,6 @@ export function ThreadList({
           />
         ))}
         {feed.hasMore && (
-          // Paging is per-page, not per-mailbox: the select-all checkbox above covers the rows
-          // currently loaded, matching the People and Orgs lists.
           <li className="p-2">
             <button
               type="button"

@@ -1,5 +1,3 @@
-// Real-DB tests: tracking_enabled column is written correctly when the Composer
-// sends trackOpens/trackLinks without a legacy trackingEnabled field.
 import { sql } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import { withTestDb } from "@/db/testing";
@@ -21,8 +19,6 @@ async function seedAccount(db: TestDb, ownerId: string): Promise<string> {
 }
 
 describe("sendEmail tracking_enabled column", () => {
-  // CRITICAL: the Composer now sends trackOpens/trackLinks and never trackingEnabled.
-  // tracking_enabled in email_messages must be true when either open or link tracking is on.
   it("persists tracking_enabled=true when trackOpens=true and trackLinks=false (no trackingEnabled)", async () => {
     await withTestDb(async (db) => {
       const owner = await seedUser(db, { email: "owner@gunsnation.com" });
@@ -33,6 +29,7 @@ describe("sendEmail tracking_enabled column", () => {
       fake.messages.set("g-trk-1", { id: "g-trk-1", threadId: "th-trk", labelIds: [] });
 
       const r = await sendEmail(db, {
+        signal: AbortSignal.timeout(8000),
         actorId: owner.id,
         actorType: "regular",
         actorGroupIds: new Set<string>(),
@@ -46,7 +43,6 @@ describe("sendEmail tracking_enabled column", () => {
           bodyHtml: "<p>hi</p>",
           trackOpens: true,
           trackLinks: false,
-          // trackingEnabled intentionally omitted (new Composer path)
         },
       });
       expect(r.ok).toBe(true);
@@ -71,6 +67,7 @@ describe("sendEmail tracking_enabled column", () => {
       fake.messages.set("g-trk-2", { id: "g-trk-2", threadId: "th-trk2", labelIds: [] });
 
       const r = await sendEmail(db, {
+        signal: AbortSignal.timeout(8000),
         actorId: owner.id,
         actorType: "regular",
         actorGroupIds: new Set<string>(),
@@ -84,7 +81,6 @@ describe("sendEmail tracking_enabled column", () => {
           bodyHtml: "<p>hi</p>",
           trackOpens: false,
           trackLinks: false,
-          // trackingEnabled intentionally omitted
         },
       });
       expect(r.ok).toBe(true);

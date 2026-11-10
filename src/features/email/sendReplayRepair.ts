@@ -17,22 +17,13 @@ interface ReplayRepairArgs {
   signal: AbortSignal;
 }
 
-// F17: a replay of an already-sent attempt used to return "sent" straight from the
-// email_send_attempts row. If Gmail accepted the send (attempt marked sent) but the local
-// copy / token backfill failed, or the process crashed after markSent, the CRM would
-// permanently diverge from Gmail: no email_messages/thread row, no tracking tokens.
-//
-// Instead, idempotently repair on replay: if the local copy is missing, re-store it
-// (storeOutboundCopy upserts on (account_id, gmail_message_id)) and backfill tokens. The
-// repair reads the STORED payload (the source of truth for what was actually sent), never
-// client input, and never re-sends to Gmail. Returns the gmail message id for the reply.
 export async function ensureLocalCopyForReplay(
   db: Db,
   args: ReplayRepairArgs,
 ): Promise<Result<{ messageId?: string }, AppError>> {
   const row = (
     await db.execute(sql`
-      SELECT s.gmail_message_id, s.idempotency_key, s.payload, a.user_id AS user_id
+      SELECT s.gmail_message_id, s.idempotency_key, s.payload, COALESCE(s.payload->>'actorId', a.user_id::text) AS user_id
       FROM email_send_attempts s
       JOIN email_accounts a ON a.id = s.account_id
       WHERE s.id=${args.attemptId}
@@ -45,25 +36,26 @@ export async function ensureLocalCopyForReplay(
         user_id: string;
       }
     | undefined;
-  // No gmail id means nothing reached Gmail; there is no accepted send to reconcile against.
   if (row === undefined || row.gmail_message_id === null) {
     return ok({ messageId: row?.gmail_message_id ?? undefined });
   }
   const gmailMessageId = row.gmail_message_id;
   args.signal.throwIfAborted();
 
-  // Already reconciled: the local copy exists. Skip the redundant Gmail fetch + upsert.
   const existing = (
     await db.execute(sql`
       SELECT id FROM email_messages
       WHERE account_id=${args.accountId} AND gmail_message_id=${gmailMessageId}
     `)
   ).rows[0] as { id: string } | undefined;
-  if (existing !== undefined) return ok({ messageId: gmailMessageId });
+  args.signal.throwIfAborted();
+  if (existing !== undefined) {
+    await db.execute(sql`UPDATE email_messages SET sent_by_user_id=${row.user_id}
+      WHERE id=${existing.id} AND sent_by_user_id IS NULL`);
+    args.signal.throwIfAborted();
+    return ok({ messageId: gmailMessageId });
+  }
 
-  // Repair from the stored payload. The payload carries the resolved trackOpens/trackLinks
-  // that were written at send time (never the raw client field). Derive resolvedTrackingEnabled
-  // from those flags; fall back to the legacy trackingEnabled field for old rows.
   const payload = row.payload;
   const resolvedTrackingEnabled =
     payload.trackOpens === true ||
@@ -78,10 +70,6 @@ export async function ensureLocalCopyForReplay(
     bodyHtml: payload.html,
   };
 
-  // Restore the composer's explicit deal/person link from the stored payload, mirroring
-  // performWorkerSendCrm (workerSendCrm.ts): the explicit id is re-verified for visibility
-  // downstream (canSeeLinkedPerson/canSeeLinkedDeal in sendStore.ts), never trusted blindly.
-  // A hydration failure must not lose the CRM copy, so fall back to an unlinked store.
   const owner = await hydrateOwner(db, row.user_id, args.signal);
   const link = owner.ok
     ? {
@@ -93,6 +81,7 @@ export async function ensureLocalCopyForReplay(
     : undefined;
 
   const stored = await storeOutboundCopy(db, {
+    sentByUserId: row.user_id,
     accountId: args.accountId,
     fromEmail: args.fromEmail,
     gmailMessageId,
@@ -101,8 +90,6 @@ export async function ensureLocalCopyForReplay(
     bodyHtml: payload.html,
     gmail: args.gmail,
     link,
-    // Restore the composer's privacy pick from the stored payload so a repaired thread keeps the
-    // author's chosen visibility instead of falling back to the default (matches linkDealId repair).
     visibility: payload.visibility ?? null,
     signal: args.signal,
   });

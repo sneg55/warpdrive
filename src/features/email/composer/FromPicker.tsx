@@ -1,17 +1,37 @@
-// FromPicker: the sender address as it appears in the composer's From row (ComposerHeader owns
-// the row itself). Single-mailbox today, so it renders as plain text, no
-// dropdown caret or button, to avoid implying a mailbox switcher that does not exist yet. When
-// multi-mailbox lands in a later phase, restore an interactive control with an onChange handler.
+import { Select } from "@/components/ui/Select";
 
 interface FromPickerProps {
   address: string;
+  accountId?: string;
+  mailboxes?: { id: string; emailAddress: string; displayName: string }[];
+  onChange?: (accountId: string) => void;
 }
 
-export function FromPicker({ address }: FromPickerProps): React.ReactNode {
+export function FromPicker({
+  address,
+  accountId,
+  mailboxes,
+  onChange,
+}: FromPickerProps): React.ReactNode {
   return (
     <>
       <span className="w-12 shrink-0 text-xs font-medium text-muted-foreground">From</span>
-      <span className="text-xs text-foreground">{address}</span>
+      {mailboxes !== undefined &&
+      mailboxes.length > 1 &&
+      accountId !== undefined &&
+      onChange !== undefined ? (
+        <Select
+          ariaLabel="From mailbox"
+          value={accountId}
+          onChange={onChange}
+          options={mailboxes.map((mailbox) => ({
+            value: mailbox.id,
+            label: `${mailbox.displayName} <${mailbox.emailAddress}>`,
+          }))}
+        />
+      ) : (
+        <span className="text-xs text-foreground">{address}</span>
+      )}
     </>
   );
 }

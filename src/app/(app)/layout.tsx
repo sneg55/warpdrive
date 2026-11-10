@@ -10,6 +10,7 @@ import { NAV_PREF_COOKIE } from "@/constants/cookies";
 import { db } from "@/db/client";
 import { FollowUpPromptProvider } from "@/features/activities/followUpAfterDone";
 import { CSRF_COOKIE } from "@/features/auth/csrf";
+import { InboxNavBadge } from "@/features/email/InboxNavBadge";
 import { InterfacePrefsProvider } from "@/features/identity/InterfacePrefsProvider";
 import { interfacePrefsFromUi } from "@/features/identity/interfacePrefs";
 import { getPreferencesForActor } from "@/features/identity/preferencesForActor";
@@ -64,7 +65,10 @@ export default async function AppLayout({ children }: { children: ReactNode }): 
               appearance={parseAppearance(prefs.ui.appearance)}
             />
             <div className="flex min-h-0 flex-1">
-              <LeftNav initialExpanded={navExpanded} />
+              <LeftNav
+                initialExpanded={navExpanded}
+                inboxBadge={<InboxNavBadge selfActorId={ctx.actor.id} />}
+              />
               <main className="min-w-0 flex-1 overflow-auto bg-muted/70 p-6">{children}</main>
             </div>
             <CommandPalette />

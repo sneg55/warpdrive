@@ -1,19 +1,17 @@
 import { sql } from "drizzle-orm";
 import { beforeEach, describe, expect, test } from "vitest";
 import type { WebSocket } from "ws";
+import { AppError, ERROR_IDS } from "@/constants/errorIds";
 import { deals, pipelines, sessions, stages, users } from "@/db/schema";
 import { sessionFixture } from "@/features/auth/session.test-helpers";
 import { connect, h, nextMessage, opened } from "./testHarness.test";
 import { mintTicket } from "./ticket";
 
-// Two distinct admin users per test; deals are seeded with real UUIDs so the
-// real authorizeDeal query (joined to pipeline) resolves correctly for admins.
 let adminIdA: string;
 let adminSessionA: string;
 let adminIdB: string;
 let adminSessionB: string;
 
-// Seed a pipeline + stage + deal; returns the deal UUID to use as channel id.
 async function seedDealChannel(db: typeof h.db, ownerId: string): Promise<string> {
   const [pipe] = await db.insert(pipelines).values({ name: "Presence pipeline" }).returning();
   const pipelineId = pipe!.id;
@@ -69,7 +67,7 @@ type PresenceMsg = { kind: string; channel: string; users: { userId: string; nam
 function nextPresence(ws: WebSocket, channel: string, ms = 4000): Promise<PresenceMsg> {
   return new Promise((resolve, reject) => {
     const timer = setTimeout(
-      () => reject(new Error(`timeout waiting for presence on ${channel}`)),
+      () => reject(new AppError(ERROR_IDS.DB_INVARIANT, `expected presence on ${channel}`)),
       ms,
     );
     const onMsg = (raw: Buffer): void => {
@@ -91,11 +89,9 @@ describe("ws server presence", () => {
 
     const wsA = await authedAdmin(adminIdA, adminSessionA);
     wsA.send(JSON.stringify({ kind: "subscribe", channel: ch }));
-    // A receives a presence frame with just themselves.
     const pA1 = await nextPresence(wsA, ch);
     expect(pA1.users).toEqual([{ userId: adminIdA, name: "Alice" }]);
 
-    // B subscribes: A should get a broadcast listing both users.
     const wsB = await authedAdmin(adminIdB, adminSessionB);
     const pAOnBJoin = nextPresence(wsA, ch);
     wsB.send(JSON.stringify({ kind: "subscribe", channel: ch }));
@@ -105,7 +101,6 @@ describe("ws server presence", () => {
     expect(pAfterBJoins.users).toHaveLength(2);
     expect(pAfterBJoins.users.map((u) => u.name).sort()).toEqual(["Alice", "Bob"]);
 
-    // B unsubscribes: A gets a frame with only themselves.
     const pAOnBLeave = nextPresence(wsA, ch);
     wsB.send(JSON.stringify({ kind: "unsubscribe", channel: ch }));
     await nextMessage(wsB, "unsubscribed");
@@ -120,15 +115,14 @@ describe("ws server presence", () => {
 
     const wsA = await authedAdmin(adminIdA, adminSessionA);
     wsA.send(JSON.stringify({ kind: "subscribe", channel: ch }));
-    await nextPresence(wsA, ch); // A alone
+    await nextPresence(wsA, ch);
 
     const wsB = await authedAdmin(adminIdB, adminSessionB);
     const pAOnBJoin = nextPresence(wsA, ch);
     wsB.send(JSON.stringify({ kind: "subscribe", channel: ch }));
     await nextMessage(wsB, "subscribed");
-    await pAOnBJoin; // both present
+    await pAOnBJoin;
 
-    // Close B's socket: A gets a frame with only themselves.
     const pAAfterClose = nextPresence(wsA, ch);
     wsB.close();
     const pAfterClose = await pAAfterClose;
@@ -140,12 +134,14 @@ describe("ws server presence", () => {
     const ch = `deal:${dealId}`;
 
     const wsA = await authedAdmin(adminIdA, adminSessionA);
+    const dealSubscribed = nextMessage(wsA, "subscribed");
+    const initialPresence = nextPresence(wsA, ch);
     wsA.send(JSON.stringify({ kind: "subscribe", channel: ch }));
-    await nextPresence(wsA, ch);
+    await Promise.all([dealSubscribed, initialPresence]);
 
-    // Also subscribe to own user channel to trigger a relay event and check seq.
+    const userSubscribed = nextMessage(wsA, "subscribed");
     wsA.send(JSON.stringify({ kind: "subscribe", channel: `user:${adminIdA}` }));
-    await nextMessage(wsA, "subscribed");
+    expect((await userSubscribed).channel).toBe(`user:${adminIdA}`);
 
     const eventP = nextMessage(wsA, "event");
     await h.db.execute(
@@ -159,7 +155,6 @@ describe("ws server presence", () => {
       })})`,
     );
     const event = await eventP;
-    // seq must be 0: presence frames must not have advanced nextSeq.
     expect((event.event as { seq: number }).seq).toBe(0);
   });
 });

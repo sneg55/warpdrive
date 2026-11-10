@@ -10,6 +10,11 @@ import {
 import { db } from "@/db/client";
 import { syncFailureDetail } from "./syncFailureDetail";
 import { pendingTicksVia, reEnqueueSync } from "./syncReEnqueue";
+import {
+  enqueuePendingBackfill,
+  enqueueTeamBackfill,
+  registerTeamBackfillWorker,
+} from "./teamBackfillJobs";
 import { jitterFor, runSendJob, runSyncJob } from "./worker";
 
 interface SyncJobData {
@@ -24,41 +29,33 @@ const RETRY_DELAY_SECONDS = Math.ceil(BACKOFF_START_MS / 1000);
 const SYNC_JOB_TIMEOUT_MS = 60_000;
 const SEND_JOB_TIMEOUT_MS = 30_000;
 
-// The sync failure the worker throws for pg-boss, and the one line that reports it. Both used to
-// carry the accountId alone, so a mailbox that had been failing every tick for hours left an
-// unexplained E_GMAIL_001 in the job record and NOTHING in the log. syncFailureDetail keeps the
-// Gmail status, which is the difference between a throttle and a permanently bad request, and
-// drops the response body, which holds the message.
 export function syncJobError(accountId: string, cause: AppError): AppError {
   const detail = syncFailureDetail(cause);
   console.error("[email.sync] failed", { accountId, ...detail });
   return new AppError(cause.id, "email sync job failed", { accountId, ...detail });
 }
 
-// Register the email work handlers and enqueue the first per-mailbox sync jobs. NOT
-// wired into startWorker here (that is Task 23); this only defines registration.
 export async function registerEmailJobs(boss: PgBoss): Promise<void> {
+  await registerTeamBackfillWorker(db, boss, new AbortController().signal);
   await boss.createQueue(PGBOSS_QUEUE_EMAIL_SYNC);
   await boss.createQueue(PGBOSS_QUEUE_EMAIL_SEND);
   const pendingTicks = pendingTicksVia(db);
 
-  // Sync handler. pg-boss v12 passes an ARRAY of jobs; we process one at a time.
   await boss.work(PGBOSS_QUEUE_EMAIL_SYNC, async ([job]: Job<SyncJobData>[]) => {
     if (job === undefined) return;
     const accountId = job.data.accountId;
     const signal = AbortSignal.timeout(SYNC_JOB_TIMEOUT_MS);
     const r = await runSyncJob(db, { accountId, signal });
-    // Keep the cadence going regardless of outcome, but never add a tick when one is already
-    // waiting. singletonKey does NOT dedup here: pg-boss only enforces it on a queue whose policy
-    // is short/singleton/stately/exclusive, and this queue is standard, so the bare re-enqueue
-    // piled up ~45 overlapping ticks per mailbox and the backlog fed itself.
     await reEnqueueSync(boss, accountId, pendingTicks);
-    // On failure THROW a sanitized AppError (id + accountId only, NO tokens) so pg-boss
-    // applies its retry/backoff. runSyncJob already stamped last_error_id.
     if (!r.ok) throw syncJobError(accountId, r.error);
+    await enqueuePendingBackfill(
+      db,
+      accountId,
+      (id, signal) => enqueueTeamBackfill(boss, id, signal),
+      signal,
+    );
   });
 
-  // Send handler. One outbox attempt per job; per-mailbox isolation is structural.
   await boss.work(PGBOSS_QUEUE_EMAIL_SEND, async ([job]: Job<SendJobData>[]) => {
     if (job === undefined) return;
     const { accountId, idempotencyKey } = job.data;
@@ -71,7 +68,6 @@ export async function registerEmailJobs(boss: PgBoss): Promise<void> {
     }
   });
 
-  // Enqueue the first sync job per connected mailbox, offset by jitter (no herd).
   const rows = (await db.execute(sql`SELECT id FROM email_accounts WHERE status <> 'disconnected'`))
     .rows as { id: string }[];
   for (const row of rows) {

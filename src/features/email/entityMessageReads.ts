@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import type { Db } from "@/db/client";
 import type { AuthUser } from "@/features/permissions/types";
 import { canSeeEmail } from "./emailVisibility";
+import { mailboxAccessPredicate } from "./mailboxAccess";
 
 // One linked email as the record timelines render it: everything a collapsed card shows and
 // nothing more. Bodies are deliberately absent, they load per message on expand (spec D4).
@@ -19,8 +20,6 @@ export interface EmailTimelineMessage {
   toEmails: string[];
   snippet: string | null;
   hasAttachment: boolean;
-  // Actor owns this message's mailbox. Per message, not per feed: a record can carry threads
-  // from more than one mailbox, so the compose affordances are decided row by row.
   canCompose: boolean;
 }
 
@@ -36,7 +35,8 @@ interface MessageRow {
   to_emails: unknown;
   snippet: string | null;
   has_attachment: boolean;
-  owner_user_id: string;
+  owner_user_id: string | null;
+  can_compose: boolean;
   account_id: string;
   visibility: string;
   deal_id: string | null;
@@ -71,6 +71,7 @@ async function listMessagesBy(
           SELECT 1 FROM email_message_attachments att WHERE att.message_id = m.id
         ) AS has_attachment,
         a.user_id AS owner_user_id,
+        COALESCE(${mailboxAccessPredicate(actor.id)}, false) AS can_compose,
         t.account_id, t.visibility, t.deal_id, t.person_id
       FROM email_messages m
         JOIN email_threads t ON t.id = m.thread_id
@@ -90,6 +91,7 @@ async function listMessagesBy(
     threadIds.map((id) => {
       const r = byThread.get(id);
       if (r === undefined) return Promise.resolve(false);
+      if (r.can_compose) return Promise.resolve(true);
       return canSeeEmail(
         db,
         actor,
@@ -121,7 +123,7 @@ async function listMessagesBy(
       toEmails: asStringArray(r.to_emails),
       snippet: r.snippet,
       hasAttachment: r.has_attachment,
-      canCompose: r.owner_user_id === actor.id,
+      canCompose: r.can_compose,
     }));
 }
 

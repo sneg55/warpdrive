@@ -1,27 +1,20 @@
-// Stable error-ID registry. Append-only: one ID per distinct cause; retired IDs
-// stay searchable (commented) and are never reused or renumbered.
 export const ERROR_IDS = {
-  // AUTH
   AUTH_LOGIN_REJECTED: "E_AUTH_001", // domain / email_verified / signature check failed
   AUTH_STATE_MISMATCH: "E_AUTH_002", // OAuth state/nonce/PKCE mismatch
   AUTH_SESSION_DEAD: "E_AUTH_003", // session revoked or expired
   AUTH_BOOTSTRAP_NO_SEED: "E_AUTH_004", // first-run with no SEED_ADMIN_EMAIL in prod
   AUTH_EMAIL_TAKEN: "E_AUTH_005", // inviteUser: email already belongs to an existing/placeholder user
   AUTH_INVITE_INPUT_INVALID: "E_AUTH_006", // inviteUserAction input failed Zod validation
-  // PERM
   PERM_DENIED: "E_PERM_001", // channel subscribe / action denied: not visible
   PERM_SELF_ESCALATION: "E_PERM_002", // non-admin tried to escalate via permission system
   PERM_GROUP_REQUIRED: "E_PERM_003", // group-level create with no resolvable group
   PERM_SIGNATURE_DENIED: "E_PERM_004", // signature not found or not owned by actor
   PERM_TEMPLATE_DENIED: "E_PERM_005", // template not found or not accessible (not owned, not shared)
-  // WS
   WS_TICKET_INVALID: "E_WS_001", // upgrade rejected: invalid/expired/replayed ticket
   WS_PAYLOAD_INVALID: "E_WS_002", // NOTIFY payload failed Zod, dropped
-  // DB
   DB_INVARIANT: "E_DB_001", // a DB invariant we believed impossible was violated
   DB_INSERT_FAILED: "E_DB_002", // insert returned no rows (should never happen)
   DB_WRITE_FAILED: "E_DB_003", // the write threw: Postgres unreachable, aborted, or rejected
-  // DEAL
   DEAL_NOT_FOUND: "E_DEAL_001", // deal not found or not visible (404-on-invisible)
   DEAL_PRECONDITION: "E_DEAL_002", // optimistic precondition failed (stale compare-and-swap on move)
   DEAL_STAGE_MISMATCH: "E_DEAL_003", // stage does not belong to that pipeline
@@ -38,7 +31,6 @@ export const ERROR_IDS = {
   DEAL_BULK_INPUT_INVALID: "E_DEAL_015",
   DEAL_BULK_ARCHIVE_PARTIAL: "E_DEAL_016",
   DEAL_BULK_STAGE_PARTIAL: "E_DEAL_017",
-  // LEAD
   LEAD_NOT_FOUND: "E_LEAD_001", // lead not found or not visible (404-on-invisible)
   LEAD_ARCHIVE_FORBIDDEN: "E_LEAD_002", // archive denied: lead not visible/owned by actor
   LEAD_ALREADY_CONVERTED: "E_LEAD_003", // convert called on a lead with a non-null converted_deal_id
@@ -47,14 +39,11 @@ export const ERROR_IDS = {
   LEAD_UPDATE_INPUT_INVALID: "E_LEAD_006", // updateLeadAction input failed Zod validation
   LEAD_PRECONDITION: "E_LEAD_007", // optimistic precondition failed (stale compare-and-swap on updateLead)
   LEAD_FILTER_INVALID: "E_LEAD_008", // leads list filter compiled with a field/op outside the allow-list
-  // PIPELINE
   PIPELINE_NOT_FOUND: "E_PIPELINE_001", // pipeline not found or restricted (404-on-invisible)
-  // STAGE
   STAGE_NOT_FOUND: "E_STAGE_001", // stage not found (delete/update targeted a missing stage)
   STAGE_HAS_DEALS: "E_STAGE_002", // refuse to delete a stage that still holds deals (move them first)
   STAGE_LAST_ONE: "E_STAGE_003", // refuse to delete the pipeline's final stage (a pipeline needs one)
   STAGE_MOVE_TARGET_INVALID: "E_STAGE_004", // delete's move destination is the stage itself or outside its pipeline
-  // CF
   CF_KEY_EXISTS: "E_CF_001", // custom-field key already exists for target
   CF_DEF_NOT_FOUND: "E_CF_002", // custom-field def not found
   CF_VALUE_INVALID: "E_CF_003", // custom-field value validation failed
@@ -62,7 +51,6 @@ export const ERROR_IDS = {
   CF_BUILTIN_LOCKED: "E_CF_005", // attempted to hide a locked (identity) built-in field
   CF_BUILTIN_UNKNOWN: "E_CF_006", // attempted to hide an unknown built-in field key
   CF_SORT_FIELD_INVALID: "E_CF_007", // list sort names an unknown, archived or unsortable custom field
-  // CONTACT
   CONTACT_NOT_FOUND: "E_CONTACT_001", // person/org not found OR not visible (404-shaped)
   CONTACT_ADDRESS_INVALID: "E_CONTACT_002", // structured address failed validation
   CONTACT_MERGE_FORBIDDEN: "E_CONTACT_003", // merge denied: lacks contact.merge on a visible record
@@ -73,13 +61,11 @@ export const ERROR_IDS = {
   CONTACT_FILTER_INVALID: "E_CONTACT_009", // contacts list filter compiled with a field/op outside the allow-list
   CONTACT_UPDATE_INPUT_INVALID: "E_CONTACT_008", // updatePersonAction/updateOrgAction input failed Zod validation
   CONTACT_CREATE_INPUT_INVALID: "E_CONTACT_010", // createPersonAction input failed Zod validation
-  // NOTE
   NOTE_NOT_FOUND: "E_NOTE_001", // note not found or soft-deleted
   COMMENT_NOT_FOUND: "E_COMMENT_001",
   COMMENT_FORBIDDEN: "E_COMMENT_002",
   COMMENT_ENTITY_UNSUPPORTED: "E_COMMENT_003",
   COMMENT_INPUT_INVALID: "E_COMMENT_004",
-  // IMPORT
   IMPORT_ROW_GONE: "E_IMPORT_001", // import row vanished before commit could claim it
   IMPORT_BATCH_NOT_FOUND: "E_IMPORT_002", // import batch not found or not owned (404-on-invisible)
   IMPORT_MAPPING_MISSING: "E_IMPORT_003", // validate/commit before a column mapping was set
@@ -90,11 +76,9 @@ export const ERROR_IDS = {
   IMPORT_MAPPING_ENTITY_INVALID: "E_IMPORT_008", // mapped column targets an entity this import cannot write
   IMPORT_LINKED_RECORD_UNAVAILABLE: "E_IMPORT_009",
   IMPORT_EXTERNAL_ID_UNMAPPED: "E_IMPORT_010",
-  // USER (reference)
   USER_NOT_FOUND: "E_USER_001", // referenced user not found or inactive
   USER_PROFILE_INVALID: "E_USER_002", // profile update input failed Zod validation
   USER_AVATAR_INVALID: "E_USER_003", // avatar upload input/object metadata failed validation
-  // ACTIVITY
   ACTIVITY_NOT_FOUND: "E_ACTIVITY_001", // activity not found or not visible (404-on-invisible)
   ACTIVITY_FORBIDDEN: "E_ACTIVITY_002", // visible but action flag missing (403-shape)
   ACTIVITY_TYPE_IN_USE: "E_ACTIVITY_003", // delete blocked: activity type is a system row or still referenced by an activity
@@ -102,12 +86,9 @@ export const ERROR_IDS = {
   ACTIVITY_UPDATE_INPUT_INVALID: "E_ACTIVITY_005", // edit action input failed Zod validation
   ACTIVITY_TYPE_INVALID: "E_ACTIVITY_006", // patched typeId is missing or archived (activity WAS found)
   ACTIVITY_END_BEFORE_START: "E_ACTIVITY_007", // multi-day endAt is earlier than the start (dueAt)
-  // LABEL
   LABEL_NOT_FOUND: "E_LABEL_001", // label not found (rename/recolor/delete targeted a missing label)
   LABEL_IN_USE: "E_LABEL_002", // delete blocked: label still applied to one or more records
-  // LOST_REASON
   LOST_REASON_NOT_FOUND: "E_LOSTREASON_001", // lost reason not found (rename/archive targeted a missing row)
-  // GMAIL
   GMAIL_API_EXHAUSTED: "E_GMAIL_001", // Gmail API call failed after retries (transient exhausted)
   GMAIL_GRANT_REVOKED: "E_GMAIL_002", // OAuth grant revoked/expired (invalid_grant): account disconnected
   GMAIL_SEND_REJECTED: "E_GMAIL_003", // Send rejected pre-acceptance (4xx validation): safe to retry
@@ -134,33 +115,24 @@ export const ERROR_IDS = {
   GMAIL_MAIL_LABEL_INPUT_INVALID: "E_GMAIL_024", // create-mail-label action input failed Zod validation (U6)
   GMAIL_MAIL_LABEL_UNKNOWN: "E_GMAIL_025", // thread-labels write referenced a key absent from the mail_labels catalog (integrity: would persist an invisible, unremovable label)
   GMAIL_MESSAGE_NOT_FOUND: "E_GMAIL_026", // single message not found OR its thread not visible (404-on-invisible, mailbox privacy)
-  // OAUTH
   OAUTH_INVALID_CLIENT: "E_OAUTH_001",
   OAUTH_INVALID_GRANT: "E_OAUTH_002",
   OAUTH_INVALID_PKCE: "E_OAUTH_003",
   OAUTH_CODE_EXPIRED: "E_OAUTH_004",
   OAUTH_TOKEN_REVOKED: "E_OAUTH_005",
   OAUTH_CONSENT_REQUIRED: "E_OAUTH_006",
-  // SYNC
   SYNC_CURSOR_EXPIRED: "E_SYNC_001", // History cursor expired (404): gap-recovery resync triggered
-  // JOBS
   JOBS_BOSS_MISSING: "E_JOBS_001", // producer ran in production with no pg-boss booted: jobs would be dropped
-  // FILE
   FILE_PRESIGN_INVALID: "E_FILE_001", // Presign/confirm input validation failed
   FILE_METADATA_MISMATCH: "E_FILE_002", // Object metadata mismatch on confirm (size/content-type)
-  // NOTIF
   NOTIF_UNKNOWN_TYPE: "E_NOTIF_001", // unknown/unsupported notification type
   NOTIF_TARGET_NOT_FOUND: "E_NOTIF_002", // mention/notification target user not found
   NOTIF_PRODUCE_FAILED: "E_NOTIF_003", // createNotification failed unexpectedly (DB/internal)
-  // SEARCH
   SEARCH_EMPTY_QUERY: "E_SEARCH_001", // empty/blank search query
-  // STATS
   STATS_PIPELINE_NOT_VISIBLE: "E_STATS_001", // requested pipeline not visible to user (restricted or archived)
   STATS_NO_PIPELINE: "E_STATS_002", // RETIRED (STATS-08): null pipelineId now aggregates "All pipelines" instead of erroring. Do not reuse E_STATS_002.
-  // GOAL
   GOAL_INVALID: "E_GOAL_001", // goal payload failed the Zod boundary (bad subject/action/metric mix)
   GOAL_NOT_FOUND: "E_GOAL_002", // goal id does not exist or is already deleted
-  // ENRICH
   ENRICH_NO_PROVIDER: "E_ENRICH_001", // no enrichment provider is both enabled and credentialled
   ENRICH_PROVIDER_AUTH: "E_ENRICH_002", // provider rejected the API key (401/403)
   ENRICH_THROTTLED: "E_ENRICH_003", // every enabled provider is rate limited or out of credits
@@ -183,15 +155,18 @@ export const ERROR_IDS = {
   ENRICH_APPLIED_PERSON_GONE: "E_ENRICH_020",
   ENRICH_PROSPECT_MISMATCH: "E_ENRICH_021",
 
-  // UI
   UI_CHART_CONTEXT_MISSING: "E_UI_001", // a chart part rendered outside its ChartContainer
   UI_STALE_BUILD: "E_UI_002", // server action posted from a page loaded before the running deploy
   UI_ACTION_UNCONFIRMED: "E_UI_003", // action rejected without returning a Result: answer was lost
+  PERM_TEAM_MAILBOX_ADMIN_REQUIRED: "E_PERM_006",
+  PERM_TEAM_MAILBOX_MEMBER_REQUIRED: "E_PERM_007",
+  GMAIL_TEAM_MAILBOX_PERSONAL_COLLISION: "E_GMAIL_027",
+  GMAIL_TEAM_MAILBOX_INPUT_INVALID: "E_GMAIL_028",
+  PERM_SEND_AUTHOR_REQUIRED: "E_PERM_008",
 } as const;
 
 export type ErrorId = (typeof ERROR_IDS)[keyof typeof ERROR_IDS];
 
-// The ONLY error thrown in app code. Operational failures are Result values, not throws.
 export class AppError extends Error {
   readonly id: ErrorId;
   readonly context?: Record<string, unknown>;

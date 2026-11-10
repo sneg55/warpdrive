@@ -4,23 +4,16 @@ import { toVisibleDeal } from "@/features/deals/dealAuth";
 import { canSee } from "@/features/permissions/canSee";
 import type { AuthUser } from "@/features/permissions/types";
 import { toVisiblePerson } from "./linking";
+import { canUseMailbox } from "./mailboxAccess";
 
 export interface ThreadVisibilityRow {
   accountId: string;
   visibility: string;
   dealId: string | null;
   personId: string | null;
-  // The mailbox owner's user id, when the caller has ALREADY joined email_accounts and can supply
-  // it. Purely an optimisation: it must be the same value this function would read from
-  // email_accounts.user_id for accountId, and it is only ever used to grant the owner their own
-  // mailbox. Callers that cannot prove that must omit it and let the lookup happen here.
-  ownerUserId?: string;
+  ownerUserId?: string | null;
 }
 
-// THE mailbox-privacy rule (data-model 675). NOTE: there is NO admin bypass here.
-// Mailboxes are more private than CRM records: even an admin cannot read a private
-// thread they do not own. Only the shared-thread path defers to canSee (which does
-// have an admin bypass for the LINKED deal/person, by design).
 export async function canSeeEmail(
   db: Db,
   actor: AuthUser,
@@ -29,23 +22,21 @@ export async function canSeeEmail(
 ): Promise<boolean> {
   signal.throwIfAborted();
 
-  // a. The mailbox owner sees their own mailbox at any visibility. List callers that already
-  // joined email_accounts pass ownerUserId, which avoids one lookup per row (listInbox over a
-  // large mailbox was issuing a query per thread here).
   let ownerUserId = thread.ownerUserId;
   if (ownerUserId === undefined) {
     const owner = (
       await db.execute(sql`SELECT user_id FROM email_accounts WHERE id=${thread.accountId}`)
-    ).rows[0] as { user_id: string } | undefined;
+    ).rows[0] as { user_id: string | null } | undefined;
     signal.throwIfAborted();
     ownerUserId = owner?.user_id;
   }
   if (ownerUserId !== undefined && ownerUserId === actor.id) return true;
 
-  // b. A private thread is visible ONLY to the owner. No admin bypass.
+  if (ownerUserId == null && (await canUseMailbox(db, thread.accountId, actor.id, signal)))
+    return true;
+
   if (thread.visibility === "private") return false;
 
-  // c. A shared thread is visible iff the actor can see the linked deal OR person.
   if (thread.dealId !== null && (await canSeeLinkedDeal(db, actor, thread.dealId, signal))) {
     return true;
   }
@@ -55,10 +46,6 @@ export async function canSeeEmail(
   return false;
 }
 
-// Pipeline-leak guard: load the deal JOINED to its pipeline and route through
-// toVisibleDeal(row, pipeline.visibilityGroupId) before canSee. Never spread a raw deal
-// row into canSee (a deal row carries no pipelineVisibilityGroupId, so the pipeline
-// restriction gate would fail open). Same pattern as linking.ts.
 export async function canSeeLinkedDeal(
   db: Db,
   actor: AuthUser,

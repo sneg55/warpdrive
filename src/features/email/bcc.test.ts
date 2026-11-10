@@ -43,6 +43,7 @@ describe("bcc", () => {
       fake.messages.set("g-bcc-1", { id: "g-bcc-1", threadId: "th-bcc", labelIds: [] });
 
       const r = await sendEmail(db, {
+        signal: AbortSignal.timeout(8000),
         actorId: owner.id,
         actorType: "regular",
         actorGroupIds: new Set<string>(),

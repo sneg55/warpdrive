@@ -1,7 +1,3 @@
-// Real-DB integration test for attachment send (Task 6.1 / Phase 6).
-// Uses storageFake for file bytes, gmailFake for send assertions.
-// Do NOT mock the database; all writes hit the real test Postgres.
-
 import { sql } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import { withTestDb } from "@/db/testing";
@@ -25,6 +21,7 @@ describe("sendEmail with attachments (Task 6.1)", () => {
       const storage = new FakeStorageClient();
 
       const r = await sendEmail(db, {
+        signal: AbortSignal.timeout(8000),
         actorId: owner.id,
         actorType: "regular",
         actorGroupIds: new Set<string>(),
@@ -82,6 +79,7 @@ describe("sendEmail with attachments (Task 6.1)", () => {
       fake.messages.set("g-one-attach", { id: "g-one-attach", threadId: "th-2", labelIds: [] });
 
       const r = await sendEmail(db, {
+        signal: AbortSignal.timeout(8000),
         actorId: owner.id,
         actorType: "regular",
         actorGroupIds: new Set<string>(),
@@ -141,6 +139,7 @@ describe("sendEmail with attachments (Task 6.1)", () => {
 
       const fake = new FakeGmailClient();
       const r = await sendEmail(db, {
+        signal: AbortSignal.timeout(8000),
         actorId: attacker.id,
         actorType: "regular",
         actorGroupIds: new Set<string>(),
@@ -159,8 +158,6 @@ describe("sendEmail with attachments (Task 6.1)", () => {
 
       expect(r.ok).toBe(false);
       if (!r.ok) {
-        // Attachment denial uses E_GMAIL_012 (not a generic perm error) so the error
-        // surface does not reveal whether the fileId exists to the caller.
         expect(r.error.id).toBe("E_GMAIL_012");
       }
       expect(fake.calls.filter((c) => c.method === "sendRaw").length).toBe(0);

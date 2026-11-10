@@ -3,9 +3,6 @@ import "@testing-library/jest-dom/vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 
-// The rail now lives in the persistent /inbox layout, so it derives its active state from the
-// router (usePathname + useSearchParams) rather than an activeFolder prop. That lets the highlight
-// track list -> reader -> compose without the rail remounting on navigation.
 let pathname = "/inbox";
 let searchParamsStr = "";
 vi.mock("next/navigation", () => ({
@@ -17,6 +14,7 @@ const unreadCount = vi.fn<() => number | undefined>(() => 0);
 vi.mock("@/lib/trpc-client", () => ({
   trpc: {
     email: {
+      mailboxes: { useQuery: () => ({ data: [] }) },
       inbox: { unreadCount: { useQuery: () => ({ data: unreadCount() }) } },
     },
   },
@@ -57,7 +55,6 @@ it("keeps Inbox active on the reader route (a thread is open)", () => {
   searchParamsStr = "";
   render(<InboxFolderRail newEmailEnabled={true} />);
   expect(screen.getByRole("link", { name: /Inbox/ })).toHaveAttribute("aria-current", "page");
-  // No stray folder claims the highlight on the reader route.
   expect(screen.getByRole("link", { name: /Sent/ })).not.toHaveAttribute("aria-current");
 });
 
@@ -99,8 +96,6 @@ it("re-derives the highlight on navigation without remounting the nav element", 
   const navBefore = screen.getByRole("navigation", { name: "Mail folders" });
   expect(screen.getByRole("link", { name: /Inbox/ })).toHaveAttribute("aria-current", "page");
 
-  // Simulate a client navigation into the reader: the persistent layout keeps the rail mounted,
-  // so the same nav node stays in the DOM while its highlight updates from the new pathname.
   pathname = "/inbox/thread-xyz";
   searchParamsStr = "";
   rerender(<InboxFolderRail newEmailEnabled={true} />);

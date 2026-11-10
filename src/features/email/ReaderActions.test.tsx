@@ -4,17 +4,12 @@ import { cleanup, fireEvent, render, screen, within } from "@testing-library/rea
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 beforeAll(() => {
-  // jsdom lacks layout/pointer-capture APIs; stub defensively so a real Composer mount
-  // elsewhere in the tree (or a future Radix-based ReaderActions control) does not crash.
   Element.prototype.scrollIntoView = vi.fn();
   Element.prototype.hasPointerCapture = vi.fn(() => false);
   Element.prototype.releasePointerCapture = vi.fn();
 });
 
-// Stub Composer so the test inspects the `prefill`/`threadId` props ReaderActions derives,
-// without pulling in the real composer tree (trpc, autosave, rich text editor, uploads).
-// A stub close button exercises the same onClose wiring the real Composer header uses.
-vi.mock("./composer/Composer", () => ({
+vi.mock("./Composer", () => ({
   Composer: (props: {
     threadId?: string;
     prefill?: unknown;
@@ -85,9 +80,7 @@ describe("ReaderActions", () => {
       <ReaderActions message={message} selfEmail="me@ex.com" accountId="acct-1" threadId="t1" />,
     );
     const footer = screen.getByTestId("reader-reply-footer");
-    // PD's reply affordance is a persistent bordered footer card, not a plain button row.
     expect(footer).toHaveClass("border", "rounded-md");
-    // The sender's avatar (initials from the from-address) sits at the footer's left, PD-style.
     expect(within(footer).getByRole("img", { name: "ann@acme.com" })).toBeInTheDocument();
   });
 
@@ -122,7 +115,6 @@ describe("ReaderActions", () => {
     const prefill = readPrefill();
     expect(prefill.to).toEqual([]);
     expect(prefill.subject).toMatch(/^Fwd:/);
-    // Forwarding forks a new thread on send rather than replying into the current one.
     expect(screen.getByTestId("composer-stub").dataset.threadId).toBe("");
   });
 

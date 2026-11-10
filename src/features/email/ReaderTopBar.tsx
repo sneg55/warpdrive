@@ -24,18 +24,10 @@ import { archiveThreadAction } from "./folderActions";
 import { invalidateRecordTimelines } from "./invalidateRecordTimelines";
 import type { NeighborFolder } from "./threadNeighbors";
 
-// The list appends ?folder= when opening a thread; default to inbox and ignore anything else so a
-// stray value never reaches the neighbors query (its input is the same three-value enum).
 function readFolder(raw: string | null): NeighborFolder {
   return raw === "sent" || raw === "archive" ? raw : "inbox";
 }
 
-// Reader navigation bar (Pipedrive parity D1): a Back link, previous/next thread navigation with an
-// N / total position (P3), and an Archive action. The full-page reader otherwise stranded the user
-// on browser-back / the nav rail. Archive mirrors the list's per-row action, then returns to the
-// inbox; a denied archive surfaces the error id instead of silently no-opping (F5-7).
-// canManage: the actor owns the mailbox (canCompose). Archive and Delete are owner-only mutations,
-// so a non-owner viewing a shared thread is not offered controls the backend would reject (F5-7).
 export function ReaderTopBar({
   threadId,
   canManage,
@@ -46,20 +38,20 @@ export function ReaderTopBar({
   const router = useRouter();
   const reportError = useActionError();
   const utils = trpc.useUtils();
-  const folder = readFolder(useSearchParams().get("folder"));
+  const params = useSearchParams();
+  const folder = readFolder(params.get("folder"));
+  const mailbox = params.get("mailbox");
+  const inboxHref = mailbox === null ? "/inbox" : `/inbox?mailbox=${encodeURIComponent(mailbox)}`;
+  const mailboxSuffix = mailbox === null ? "" : `&mailbox=${encodeURIComponent(mailbox)}`;
   const { data: neighbors } = trpc.email.thread.neighbors.useQuery({ threadId, folder });
   const [busy, setBusy] = useState(false);
 
-  // Archive/Delete both remove the thread from its list, then navigate to /inbox. The list feeds and
-  // counts are cached (30s staleTime), so invalidate them or the just-removed row remounts stale.
   function invalidateFeeds(): void {
     void utils.email.inbox.list.invalidate();
     void utils.email.inbox.unreadCount.invalidate();
     void utils.email.folders.sent.invalidate();
     void utils.email.folders.archive.invalidate();
     void utils.email.search.invalidate();
-    // The deal and person timelines read the linked messages separately; refresh them too so a Back
-    // to the record does not render the just-trashed email from cache.
     invalidateRecordTimelines(utils);
   }
 
@@ -69,7 +61,7 @@ export function ReaderTopBar({
     setBusy(false);
     if (res.ok) {
       invalidateFeeds();
-      router.push("/inbox");
+      router.push(inboxHref);
     } else reportError(res.error.id);
   }
 
@@ -77,36 +69,28 @@ export function ReaderTopBar({
     setBusy(true);
     const res = await trashThreadAction(readCsrfToken(), { threadId });
     setBusy(false);
-    // A trashed thread leaves every folder, so return to the inbox on success; a denied/failed
-    // trash surfaces the error id instead of silently no-opping (feedback-surface-mutation-failures).
     if (res.ok) {
       invalidateFeeds();
-      // Drop the reader's cached thread so a Back navigation re-fetches (getThread now 404s on a
-      // trashed thread) instead of re-rendering the deleted conversation from a 30s-stale cache; and
-      // REPLACE rather than push so the deleted reader route is not left in history at all.
       void utils.email.thread.get.invalidate();
-      router.replace("/inbox");
+      router.replace(inboxHref);
     } else reportError(res.error.id);
   }
 
   function goTo(id: string | null): void {
     if (id === null) return;
-    router.push(`/inbox/${id}?folder=${folder}`);
+    router.push(`/inbox/${id}?folder=${folder}${mailboxSuffix}`);
   }
 
   return (
     <div className="flex items-center gap-2 border-b border-border px-4 py-2">
       <Link
-        href="/inbox"
+        href={inboxHref}
         aria-label={STRINGS.inbox.backToInbox}
         className="flex items-center gap-1 rounded-md px-2 py-1 text-sm text-muted-foreground transition-transform hover:bg-accent active:scale-[0.96]"
       >
         <Chevron dir="left" />
         {STRINGS.inbox.back}
       </Link>
-
-      {/* Prev/next + position only for the mailbox owner: neighbors is null for a shared-thread
-          viewer (no owner-scoped folder to walk). */}
       {neighbors != null && (
         <div className="flex items-center gap-1">
           <button
@@ -132,9 +116,6 @@ export function ReaderTopBar({
           </button>
         </div>
       )}
-
-      {/* B3: PD groups the reader actions top-left, adjacent to Back + pager, rather than pushing
-          Archive/Delete to the far right. Archive + Delete share one action group. */}
       {canManage && (
         <div data-reader-actions-group className="flex items-center gap-1">
           <button

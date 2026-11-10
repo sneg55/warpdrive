@@ -19,9 +19,6 @@ async function seedAccount(db: TestDb, ownerId: string): Promise<string> {
   ).id;
 }
 
-// Regression: templates carried {{person.name}}-style merge tokens but applyMergeFields was never
-// wired into the send path, so recipients received the raw {{token}} text. A send now substitutes
-// tokens in the subject and body from the recipient's visible contact before delivery.
 describe("sendEmail merge fields", () => {
   it("substitutes {{merge}} tokens in subject and body from the recipient's contact", async () => {
     await withTestDb(async (db) => {
@@ -37,6 +34,7 @@ describe("sendEmail merge fields", () => {
       fake.messages.set("g-out-1", { id: "g-out-1", threadId: "th-1", labelIds: [], snippet: "p" });
 
       const r = await sendEmail(db, {
+        signal: AbortSignal.timeout(8000),
         actorId: owner.id,
         actorType: "regular",
         actorGroupIds: new Set<string>(),
@@ -78,6 +76,7 @@ describe("sendEmail merge fields", () => {
       fake.messages.set("g-out-3", { id: "g-out-3", threadId: "th-3", labelIds: [], snippet: "p" });
 
       const r = await sendEmail(db, {
+        signal: AbortSignal.timeout(8000),
         actorId: owner.id,
         actorType: "regular",
         actorGroupIds: new Set<string>(),
@@ -86,7 +85,6 @@ describe("sendEmail merge fields", () => {
         input: {
           accountId: acctId,
           idempotencyKey: "66666666-6666-6666-6666-666666666666",
-          // Sofia is the FIRST recipient; a second recipient must not see her merged into the body.
           to: ["you@corp.com", "second@elsewhere.com"],
           subject: "Hi {{person.first_name}}",
           bodyHtml: "<p>Hello {{person.name}}.</p>",
@@ -100,7 +98,6 @@ describe("sendEmail merge fields", () => {
           sql`SELECT subject, body_html FROM email_messages WHERE account_id=${acctId}`,
         )
       ).rows[0] as { subject: string; body_html: string | null };
-      // Person tokens blank out for a multi-recipient send instead of leaking Sofia's data.
       expect(msg.subject).toBe("Hi ");
       expect(msg.body_html).not.toContain("Sofia");
       expect(msg.body_html).not.toContain("{{");
@@ -117,6 +114,7 @@ describe("sendEmail merge fields", () => {
       fake.messages.set("g-out-2", { id: "g-out-2", threadId: "th-2", labelIds: [], snippet: "p" });
 
       const r = await sendEmail(db, {
+        signal: AbortSignal.timeout(8000),
         actorId: owner.id,
         actorType: "regular",
         actorGroupIds: new Set<string>(),

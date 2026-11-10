@@ -90,7 +90,9 @@ export function SettingsNav({
   };
   const companyItems = [
     ...COMPANY.items,
-    ...(isAdmin ? [ENRICHMENT_ITEM] : []),
+    ...(isAdmin
+      ? [ENRICHMENT_ITEM, { href: "/settings/team-mailboxes", label: "Team mailboxes", icon: Mail }]
+      : []),
     ...(canImport ? [importItem] : []),
   ];
   const sections = canManageCompany

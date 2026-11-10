@@ -3,6 +3,8 @@ import { INBOX_PAGE_SIZE } from "@/constants/inbox";
 import type { Db } from "@/db/client";
 import type { AuthUser } from "@/features/permissions/types";
 import { type InboxThread, toInboxThread } from "./emailReads";
+import { mailboxScopePredicate } from "./mailboxAccess";
+import { replyStatusProjection } from "./replyStatus";
 
 interface ThreadRow {
   id: string;
@@ -14,35 +16,19 @@ interface ThreadRow {
   owner_user_id?: string;
   follow_up_status: string | null;
   labels: string[];
-  // Correspondent (the OTHER party), projected the same way inboxList.ts does so Sent/Archive rows
-  // lead with the counterparty, never the mailbox owner's own address. Null when a thread genuinely
-  // has no other party. toInboxThread reads these into senderEmail/senderName.
   sender_email?: string | null;
   sender_name?: string | null;
-  // The column the folder orders by (archived_at, or the thread's latest outbound sent_at),
-  // projected under a common name so one cursor shape serves both folders.
   cursor_at?: string;
 }
 
-// Correspondent lateral joins + name preference, mirroring inboxList.ts's `co`/`lm` logic so the
-// folder reads cannot drift from the Inbox projection. `co` = the latest message NOT from the
-// mailbox owner (an inbound reply); `lm` = the latest message overall. Address prefers the
-// counterparty's From, then the latest message's first recipient (a thread the owner started, no
-// reply yet), then the latest sender as a last resort. Name prefers the linked contact, then the
-// counterparty's From name. Requires `email_accounts a` and `email_threads t` in scope, plus a
-// `LEFT JOIN persons p ON p.id = t.person_id`.
 const CORRESPONDENT_SELECT = sql`
   COALESCE(co.from_email, lm.to_emails->>0, lm.from_email) AS sender_email,
   COALESCE(NULLIF(p.name, ''), co.from_name) AS sender_name`;
 
-// Aggregate form for GROUP BY queries (Sent): the lateral values are constant per thread, so
-// wrapping them in MAX() keeps them out of the GROUP BY list without changing the value.
 const CORRESPONDENT_SELECT_AGG = sql`
   COALESCE(MAX(co.from_email), MAX(lm.to_emails->>0), MAX(lm.from_email)) AS sender_email,
   COALESCE(NULLIF(MAX(p.name), ''), MAX(co.from_name)) AS sender_name`;
 
-// The two lateral joins the correspondent projection reads from. Inner aliases are distinct from
-// any `m` alias the outer query may already use for its own message join.
 const CORRESPONDENT_JOINS = sql`
   LEFT JOIN persons p ON p.id = t.person_id
   LEFT JOIN LATERAL (
@@ -60,8 +46,6 @@ const CORRESPONDENT_JOINS = sql`
     LIMIT 1
   ) co ON true`;
 
-// Position in a folder's (ordered_at DESC, id DESC) ordering. `id` breaks ties so a page boundary
-// can neither skip nor repeat a thread when two share a timestamp.
 interface FolderCursor {
   at: string;
   id: string;
@@ -73,21 +57,16 @@ export interface FolderPage {
 }
 
 export interface FolderPageArgs {
+  mailbox?: string;
   limit?: number;
   cursor?: FolderCursor | null;
 }
 
-// Rows strictly after `cursor`. Both folders order by a NOT NULL timestamp, so there is no null
-// block to straddle (archived_at IS NOT NULL is in the WHERE; sent_at IS NOT NULL guards the MAX).
 function afterCursor(cursor: FolderCursor | null, column: SQL): SQL {
   if (cursor === null) return sql`true`;
   return sql`(${column} < ${cursor.at} OR (${column} = ${cursor.at} AND t.id < ${cursor.id}))`;
 }
 
-// Unlike the Inbox, these folders apply no post-query visibility filter (they are owner-scoped in
-// SQL), so a page is exactly `limit` rows. Fetch one extra row purely to learn whether another page
-// exists: without it a page that exactly fills the limit would advertise a next cursor and "Load
-// more" would fetch nothing.
 function toPage(rows: ThreadRow[], limit: number, actorId: string): FolderPage {
   const hasMore = rows.length > limit;
   const page = hasMore ? rows.slice(0, limit) : rows;
@@ -96,13 +75,9 @@ function toPage(rows: ThreadRow[], limit: number, actorId: string): FolderPage {
     hasMore && last !== undefined && last.cursor_at !== undefined
       ? { at: last.cursor_at, id: last.id }
       : null;
-  // Sent/Archive are owner-scoped in SQL, so the viewer owns every row here (isOwner true).
   return { threads: page.map((r) => toInboxThread(r, actorId)), nextCursor };
 }
 
-// Archived threads on the actor's OWN mailbox (D2). Archive is a per-owner local flag,
-// so this is owner-scoped only (no shared-thread widening): a shared thread is unarchived
-// from each viewer's Inbox independently is out of scope; archive belongs to the owner.
 export async function listArchivedThreads(
   db: Db,
   actor: AuthUser,
@@ -114,12 +89,12 @@ export async function listArchivedThreads(
   const cursor = args.cursor ?? null;
   const rows = (
     await db.execute(sql`
-      SELECT t.id, t.subject, t.last_message_at, t.person_id, t.deal_id, t.visibility,
-             a.user_id AS owner_user_id, t.follow_up_status, t.labels, t.archived_at AS cursor_at,
+      SELECT ${replyStatusProjection}, t.id, t.subject, t.last_message_at, t.person_id, t.deal_id, t.visibility,
+             ${actor.id}::uuid AS owner_user_id, t.follow_up_status, t.labels, t.archived_at AS cursor_at,
              ${CORRESPONDENT_SELECT}
       FROM email_threads t JOIN email_accounts a ON a.id = t.account_id
         ${CORRESPONDENT_JOINS}
-      WHERE t.archived_at IS NOT NULL AND t.trashed_at IS NULL AND a.user_id = ${actor.id}
+      WHERE t.archived_at IS NOT NULL AND t.trashed_at IS NULL AND ${mailboxScopePredicate(actor.id, args.mailbox)}
         AND ${afterCursor(cursor, sql`t.archived_at`)}
       ORDER BY t.archived_at DESC, t.id DESC
       LIMIT ${limit + 1}
@@ -129,8 +104,6 @@ export async function listArchivedThreads(
   return toPage(rows, limit, actor.id);
 }
 
-// Threads on the actor's mailbox with at least one outbound, sent message. Ordered by the
-// latest outbound sent_at DESC (Pipedrive's Sent is conversation-based, not per-message).
 export async function listSentThreads(
   db: Db,
   actor: AuthUser,
@@ -140,7 +113,6 @@ export async function listSentThreads(
   signal.throwIfAborted();
   const limit = args.limit ?? INBOX_PAGE_SIZE;
   const cursor = args.cursor ?? null;
-  // The cursor compares against the aggregate, so it belongs in HAVING, not WHERE.
   const having =
     cursor === null
       ? sql`true`
@@ -148,17 +120,17 @@ export async function listSentThreads(
              OR (MAX(m.sent_at) = ${cursor.at} AND t.id < ${cursor.id}))`;
   const rows = (
     await db.execute(sql`
-      SELECT t.id, t.subject, t.last_message_at, t.person_id, t.deal_id, t.visibility,
-             a.user_id AS owner_user_id, t.follow_up_status, t.labels, MAX(m.sent_at) AS cursor_at,
+      SELECT ${replyStatusProjection}, t.id, t.subject, t.last_message_at, t.person_id, t.deal_id, t.visibility,
+             ${actor.id}::uuid AS owner_user_id, t.follow_up_status, t.labels, MAX(m.sent_at) AS cursor_at,
              ${CORRESPONDENT_SELECT_AGG}
       FROM email_threads t
         JOIN email_accounts a ON a.id = t.account_id
         JOIN email_messages m ON m.thread_id = t.id
         ${CORRESPONDENT_JOINS}
-      WHERE a.user_id = ${actor.id} AND m.direction = 'outbound' AND m.sent_at IS NOT NULL
+      WHERE ${mailboxScopePredicate(actor.id, args.mailbox)} AND m.direction = 'outbound' AND m.sent_at IS NOT NULL
         AND t.trashed_at IS NULL
       GROUP BY t.id, t.subject, t.last_message_at, t.person_id, t.deal_id, t.visibility,
-        a.user_id, t.follow_up_status, t.labels
+        a.user_id, a.kind, a.overdue_after_hours, t.follow_up_status, t.labels
       HAVING ${having}
       ORDER BY cursor_at DESC, t.id DESC
       LIMIT ${limit + 1}
@@ -168,59 +140,4 @@ export async function listSentThreads(
   return toPage(rows, limit, actor.id);
 }
 
-export interface OutboxItem {
-  id: string;
-  subject: string | null;
-  to: string[];
-  status: string;
-  scheduledAt: string | null;
-  errorId: string | null;
-  createdAt: string;
-}
-
-interface OutboxRow {
-  id: string;
-  subject: string | null;
-  to_emails: unknown;
-  status: string;
-  scheduled_at: string | null;
-  error_id: string | null;
-  created_at: string;
-}
-
-// Unsent/scheduled send attempts on the actor's mailbox: still queued (pending/sending),
-// parked for review (needs_review), or scheduled for the future. Sent/failed-final rows
-// are excluded. subject/to come from the jsonb payload the send action stored.
-export async function listOutbox(
-  db: Db,
-  actor: AuthUser,
-  signal: AbortSignal,
-): Promise<OutboxItem[]> {
-  signal.throwIfAborted();
-  const rows = (
-    await db.execute(sql`
-      SELECT s.id,
-             s.payload ->> 'subject' AS subject,
-             COALESCE(s.payload -> 'to', '[]'::jsonb) AS to_emails,
-             s.status, s.scheduled_at, s.error_id, s.created_at
-      FROM email_send_attempts s JOIN email_accounts a ON a.id = s.account_id
-      WHERE a.user_id = ${actor.id}
-        AND (
-          s.status IN ('pending', 'sending', 'needs_review')
-          OR (s.scheduled_at IS NOT NULL AND s.scheduled_at > now())
-        )
-        AND s.status <> 'sent'
-      ORDER BY s.created_at DESC
-    `)
-  ).rows as unknown as OutboxRow[];
-  signal.throwIfAborted();
-  return rows.map((r) => ({
-    id: r.id,
-    subject: r.subject,
-    to: Array.isArray(r.to_emails) ? (r.to_emails as string[]) : [],
-    status: r.status,
-    scheduledAt: r.scheduled_at,
-    errorId: r.error_id,
-    createdAt: r.created_at,
-  }));
-}
+export { listOutbox, type OutboxItem } from "./outboxReads";

@@ -1,8 +1,3 @@
-// Security tests for attachment authorization in resolveAttachments (sendHelpers.ts).
-// Previously the actor was hardcoded as { type: "regular", groupIds: new Set() },
-// which denied admins and group members who should be allowed.
-// These tests prove the real actor type and groupIds flow through correctly.
-
 import { sql } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import { withTestDb } from "@/db/testing";
@@ -22,7 +17,6 @@ describe("resolveAttachments actor authz (Phase 6 security)", () => {
 
       const { randomUUID } = await import("node:crypto");
       const personId = randomUUID();
-      // owner-only visibility: a regular non-owner would be denied.
       await db.execute(sql`
         INSERT INTO persons (id, name, owner_id, visibility_level)
         VALUES (${personId}, 'Owned Person', ${owner.id}, 'owner')
@@ -48,6 +42,7 @@ describe("resolveAttachments actor authz (Phase 6 security)", () => {
       });
 
       const r = await sendEmail(db, {
+        signal: AbortSignal.timeout(8000),
         actorId: admin.id,
         actorType: "admin",
         actorGroupIds: new Set<string>(),
@@ -64,7 +59,6 @@ describe("resolveAttachments actor authz (Phase 6 security)", () => {
         },
       });
 
-      // Admin bypass must allow the send even though the entity is owner-only.
       expect(r.ok).toBe(true);
     });
   });
@@ -86,7 +80,6 @@ describe("resolveAttachments actor authz (Phase 6 security)", () => {
       const memberAcctId = await seedAccount(db, member.id, "member@gunsnation.com");
 
       const personId = randomUUID();
-      // group visibility: only members of groupId can see it.
       await db.execute(sql`
         INSERT INTO persons (id, name, owner_id, visibility_level, visibility_group_id)
         VALUES (${personId}, 'Group Person', ${owner.id}, 'group', ${groupId})
@@ -112,9 +105,9 @@ describe("resolveAttachments actor authz (Phase 6 security)", () => {
       });
 
       const r = await sendEmail(db, {
+        signal: AbortSignal.timeout(8000),
         actorId: member.id,
         actorType: "regular",
-        // Pass the real group membership so canSee grants access.
         actorGroupIds: new Set<string>([groupId]),
         gmail: fake,
         storage,
@@ -129,7 +122,6 @@ describe("resolveAttachments actor authz (Phase 6 security)", () => {
         },
       });
 
-      // Group member must be granted access.
       expect(r.ok).toBe(true);
     });
   });

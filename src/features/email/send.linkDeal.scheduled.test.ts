@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
+import { AppError, ERROR_IDS } from "@/constants/errorIds";
 import { withTestDb } from "@/db/testing";
 import { seedPipelineWithStages, seedUser } from "@/db/testing/factories";
 import { ok } from "@/types/result";
@@ -10,11 +11,6 @@ import { runSendJob } from "./worker";
 
 type TestDb = Parameters<Parameters<typeof withTestDb>[0]>[0];
 
-// P1 regression coverage: a SCHEDULED send is delivered later by the worker
-// (performWorkerSendCrm), which is a separate code path from the interactive send in
-// send.ts. send.linkDeal.test.ts covers the interactive path only; this file mirrors it
-// for the scheduled/worker path so an explicit composer-picked deal is not dropped when
-// the send is deferred.
 async function seedAccount(db: TestDb, ownerId: string, email: string): Promise<string> {
   return (
     (
@@ -25,8 +21,6 @@ async function seedAccount(db: TestDb, ownerId: string, email: string): Promise<
   ).id;
 }
 
-// A person (visible to all) plus their sole open deal, so recipient-based resolution
-// links both. Mirrors sendStore.test.ts's helper of the same name.
 async function seedPersonWithOpenDeal(
   db: TestDb,
   ownerId: string,
@@ -40,7 +34,8 @@ async function seedPersonWithOpenDeal(
   ).rows[0] as { id: string };
   const { pipeline, stages } = await seedPipelineWithStages(db, ["New"]);
   const stageId = stages[0]?.id;
-  if (stageId === undefined) throw new Error("seedPipelineWithStages: no stage seeded");
+  if (stageId === undefined)
+    throw new AppError(ERROR_IDS.DB_INVARIANT, "seedPipelineWithStages: no stage seeded");
   const deal = (
     await db.execute(sql`
       INSERT INTO deals (title, pipeline_id, stage_id, owner_id, visibility_level, person_id, status)
@@ -65,8 +60,6 @@ async function threadDealId(
   return row?.deal_id ?? null;
 }
 
-// Enqueue a scheduled send, back-date it so it is due, then drive delivery through the
-// worker send handler (the same handler the delayed pg-boss job fires).
 async function deliverScheduled(
   db: TestDb,
   args: { accountId: string; idempotencyKey: string; workerFake: FakeGmailClient },
@@ -94,7 +87,8 @@ describe("scheduled send deal linking (linkDealId via the worker path)", () => {
       const acctId = await seedAccount(db, owner.id, "owner-sched@gunsnation.com");
       const { pipeline, stages } = await seedPipelineWithStages(db, ["New"]);
       const stageId = stages[0]?.id;
-      if (stageId === undefined) throw new Error("seedPipelineWithStages: no stage seeded");
+      if (stageId === undefined)
+        throw new AppError(ERROR_IDS.DB_INVARIANT, "seedPipelineWithStages: no stage seeded");
       const deal = (
         await db.execute(sql`
           INSERT INTO deals (title, pipeline_id, stage_id, owner_id, visibility_level)
@@ -107,6 +101,7 @@ describe("scheduled send deal linking (linkDealId via the worker path)", () => {
       const future = new Date(Date.now() + 3_600_000);
       const setupFake = new FakeGmailClient();
       const scheduled = await sendEmail(db, {
+        signal: AbortSignal.timeout(8000),
         actorId: owner.id,
         actorType: "regular",
         actorGroupIds: new Set<string>(),
@@ -115,7 +110,6 @@ describe("scheduled send deal linking (linkDealId via the worker path)", () => {
         input: {
           accountId: acctId,
           idempotencyKey,
-          // Recipient does not match any contact/deal, so a link can only come from linkDealId.
           to: ["stranger@nowhere.com"],
           subject: "Hi later",
           bodyHtml: "<p>hi</p>",
@@ -157,6 +151,7 @@ describe("scheduled send deal linking (linkDealId via the worker path)", () => {
       const future = new Date(Date.now() + 3_600_000);
       const setupFake = new FakeGmailClient();
       const scheduled = await sendEmail(db, {
+        signal: AbortSignal.timeout(8000),
         actorId: owner.id,
         actorType: "regular",
         actorGroupIds: new Set<string>(),

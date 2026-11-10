@@ -1,5 +1,7 @@
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
+import { z } from "zod";
 import { STRINGS } from "@/constants/strings";
+import { listActorMailboxes } from "@/features/email/actorMailboxes";
 import { parseFolder } from "@/features/email/inboxFolders";
 import { createContext } from "@/server/trpc/context";
 import { InboxListClient } from "./InboxListClient";
@@ -18,6 +20,14 @@ export default async function InboxPage({
     redirect("/login");
   }
   const sp = await searchParams;
+  const rawMailbox = sp.mailbox;
+  const parsed = z.uuid().optional().safeParse(rawMailbox);
+  if (!parsed.success) notFound();
+  const mailbox = parsed.data;
+  if (mailbox !== undefined) {
+    const choices = await listActorMailboxes(ctx.db, ctx.actor.id, new AbortController().signal);
+    if (!choices.some((choice) => choice.id === mailbox && choice.kind === "team")) notFound();
+  }
   const folder = parseFolder(typeof sp.folder === "string" ? sp.folder : undefined);
-  return <InboxListClient selfActorId={ctx.actor.id} folder={folder} />;
+  return <InboxListClient selfActorId={ctx.actor.id} folder={folder} mailbox={mailbox} />;
 }

@@ -2,8 +2,10 @@ import { sql } from "drizzle-orm";
 import type { Db } from "@/db/client";
 import type { AuthUser } from "@/features/permissions/types";
 import { type InboxFilter, type InboxThread, toInboxThread } from "./emailReads";
-import { canSeeEmail } from "./emailVisibility";
 import { quickFilterPredicate } from "./inboxList";
+import { mailboxScopePredicate } from "./mailboxAccess";
+import { replyStatusProjection } from "./replyStatus";
+import { unreadPredicate } from "./unreadPredicate";
 
 interface SearchThreadRow {
   id: string;
@@ -20,17 +22,9 @@ interface SearchThreadRow {
   unread: boolean;
 }
 
-// In-mail search over the actor's visible threads: matches subject, any message's
-// body_text/snippet, or a message's from_email/from_name (case-insensitive substring).
-// from_name is searched too: the sender's display name lives there (from_email is the bare
-// address), so a name query must match it. Candidate set mirrors listInbox: the Inbox is personal,
-// so search is scoped to the actor's OWN mailbox (owner-only). canSeeEmail still re-checks each row.
 export async function searchInbox(
   db: Db,
-  // `filter` is the active quick-filter. Optional so existing callers default to no narrowing;
-  // the router validates and defaults it to "all". The linking tabs (all/unmatched/needs_linking)
-  // map to the always-true predicate, so they leave search results unnarrowed here.
-  args: { actor: AuthUser; q: string; filter?: InboxFilter },
+  args: { actor: AuthUser; q: string; filter?: InboxFilter; mailbox?: string },
   signal: AbortSignal,
 ): Promise<InboxThread[]> {
   signal.throwIfAborted();
@@ -38,23 +32,19 @@ export async function searchInbox(
   const filter: InboxFilter = args.filter ?? "all";
   const rows = (
     await db.execute(sql`
-      SELECT t.id, t.subject, t.last_message_at, t.person_id, t.deal_id, t.visibility,
-        t.account_id, a.user_id AS owner_user_id, t.follow_up_status, t.labels,
-        -- Same projection as listInbox, so the client Has-attachment / Unread-only quick-filters
-        -- narrow search results the same way they narrow the inbox (codex review).
+      SELECT ${replyStatusProjection}, t.id, t.subject, t.last_message_at, t.person_id, t.deal_id, t.visibility,
+        t.account_id, ${args.actor.id}::uuid AS owner_user_id, t.follow_up_status, t.labels,
         EXISTS (
           SELECT 1 FROM email_message_attachments att
             JOIN email_messages am ON am.id = att.message_id
           WHERE am.thread_id = t.id
         ) AS has_attachment,
-        (r.read_at IS NULL OR (t.last_message_at IS NOT NULL AND r.read_at < t.last_message_at)) AS unread
+        (${unreadPredicate}) AS unread
       FROM email_threads t
       JOIN email_accounts a ON a.id = t.account_id
-      LEFT JOIN email_thread_reads r ON r.thread_id = t.id AND r.user_id = ${args.actor.id}
+      LEFT JOIN email_thread_reads r ON a.kind='personal' AND r.thread_id = t.id AND r.user_id = ${args.actor.id}
       WHERE t.trashed_at IS NULL
-        AND a.user_id = ${args.actor.id}
-        -- Same quick-filter narrowing as listInbox (true for the linking tabs), so search results
-        -- honor the active quick-filter instead of showing rows it excludes (codex review).
+        AND ${mailboxScopePredicate(args.actor.id, args.mailbox)}
         AND ${quickFilterPredicate(filter)}
         AND (
           t.subject ILIKE ${like}
@@ -75,21 +65,5 @@ export async function searchInbox(
   ).rows as unknown as SearchThreadRow[];
   signal.throwIfAborted();
 
-  const out: InboxThread[] = [];
-  for (const t of rows) {
-    const visible = await canSeeEmail(
-      db,
-      args.actor,
-      {
-        accountId: t.account_id,
-        visibility: t.visibility,
-        dealId: t.deal_id,
-        personId: t.person_id,
-      },
-      signal,
-    );
-    if (!visible) continue;
-    out.push(toInboxThread(t, args.actor.id));
-  }
-  return out;
+  return rows.map((t) => toInboxThread(t, args.actor.id));
 }

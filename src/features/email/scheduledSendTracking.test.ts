@@ -1,7 +1,3 @@
-// Fix #2 real-DB tests: a scheduled send must apply the SAME body preparation as an
-// immediate send (append signature, mint tracking tokens, rewrite links) and persist the
-// prepared payload; the worker then sends the stored payload unchanged. Split out of
-// scheduledSend.test.ts to stay under the line cap.
 import { sql } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import { withTestDb } from "@/db/testing";
@@ -32,9 +28,6 @@ async function seedSignatureFor(db: SchedDb, userId: string, bodyHtml: string): 
   return r.id;
 }
 
-// The MIME body part is inner-base64 encoded (Content-Transfer-Encoding: base64). Decode
-// it back to the authored HTML so assertions run against the real body text (mirrors
-// signatureSend.test.ts). The header block precedes the first blank line.
 function decodeMimeBody(mimeText: string): string {
   const afterHeaders = mimeText
     .split(/\r?\n\r?\n/)
@@ -58,10 +51,9 @@ describe("scheduled send bakes tracking + signature into the stored payload (fix
         return ok({ id: "sent-due-1", threadId: "t1" });
       };
 
-      // scheduled_at in the PAST => due => runSend proceeds to an immediate send,
-      // but still prepares the body first.
       const past = new Date(Date.now() - 60_000);
       const r = await sendEmail(db, {
+        signal: AbortSignal.timeout(8000),
         actorId: user.id,
         actorType: "regular",
         actorGroupIds: new Set<string>(),
@@ -81,13 +73,10 @@ describe("scheduled send bakes tracking + signature into the stored payload (fix
       });
       expect(r.ok).toBe(true);
 
-      // (a) Gmail sendRaw called exactly once.
       const sendCalls = fake.calls.filter((c) => c.method === "sendRaw");
       expect(sendCalls.length).toBe(1);
       const body = decodeMimeBody(capturedMime);
-      // (b) the sent MIME body contains the appended signature.
       expect(body).toContain("Regards, Bob");
-      // (c) a tracked link is rewritten to a tracking URL; the original href is gone.
       expect(body).toContain("/t/click/");
       expect(body).not.toContain("https://example.com/x");
     });
@@ -102,6 +91,7 @@ describe("scheduled send bakes tracking + signature into the stored payload (fix
       const fake = new FakeGmailClient();
       const future = new Date(Date.now() + 3_600_000);
       const r = await sendEmail(db, {
+        signal: AbortSignal.timeout(8000),
         actorId: user.id,
         actorType: "regular",
         actorGroupIds: new Set<string>(),
@@ -122,10 +112,8 @@ describe("scheduled send bakes tracking + signature into the stored payload (fix
       expect(r.ok).toBe(true);
       if (r.ok) expect(r.value.status).toBe("scheduled");
 
-      // Gmail was NOT called for a future send.
       expect(fake.calls.filter((c) => c.method === "sendRaw").length).toBe(0);
 
-      // The persisted payload already carries the signature and the rewritten link.
       const row = (
         await db.execute(sql`SELECT payload FROM email_send_attempts WHERE account_id=${acctId}`)
       ).rows[0] as { payload: { html: string } };
@@ -148,10 +136,10 @@ describe("scheduled send bakes tracking + signature into the stored payload (fix
         return ok({ id: "sent-wrk-1", threadId: "t1" });
       };
 
-      // Enqueue as a FUTURE send: body is prepared + persisted, Gmail not called yet.
       const key = "cccccccc-cccc-cccc-cccc-cccccccccccc";
       const future = new Date(Date.now() + 3_600_000);
       await sendEmail(db, {
+        signal: AbortSignal.timeout(8000),
         actorId: user.id,
         actorType: "regular",
         actorGroupIds: new Set<string>(),
@@ -171,7 +159,6 @@ describe("scheduled send bakes tracking + signature into the stored payload (fix
       });
       expect(fake.calls.filter((c) => c.method === "sendRaw").length).toBe(0);
 
-      // Make the row due, then run the worker path.
       await db.execute(
         sql`UPDATE email_send_attempts SET scheduled_at = now() - interval '1 second' WHERE account_id=${acctId}`,
       );
@@ -186,7 +173,6 @@ describe("scheduled send bakes tracking + signature into the stored payload (fix
       expect(outcome.ok).toBe(true);
       if (outcome.ok) expect(outcome.value.status).toBe("sent");
 
-      // Gmail called exactly once, with the already-prepared payload.
       expect(fake.calls.filter((c) => c.method === "sendRaw").length).toBe(1);
       const body = decodeMimeBody(capturedMime);
       expect(body).toContain("Best, Dana");

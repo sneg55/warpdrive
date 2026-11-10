@@ -25,7 +25,6 @@ describe("scheduled_at column", () => {
       const idempotencyKey = "33333333-3333-3333-3333-333333333333";
       const msgId = "<test-sched-1@example.com>";
       const payload = JSON.stringify({ to: ["x@y.com"], subject: "S", html: "<p>hi</p>" });
-      // Pass all dynamic values as parameters; avoid inline literals mixed with params.
       await db.execute(
         sql`INSERT INTO email_send_attempts (idempotency_key, message_id_header, account_id, payload, status, scheduled_at) SELECT ${idempotencyKey}::uuid, ${msgId}, ${acctId}::uuid, ${payload}::jsonb, 'pending', ${future}`,
       );
@@ -51,6 +50,7 @@ describe("sendEmail with scheduledSendAt", () => {
       const fake = new FakeGmailClient();
       const future = new Date(Date.now() + 3_600_000);
       const r = await sendEmail(db, {
+        signal: AbortSignal.timeout(8000),
         actorId: user.id,
         actorType: "regular",
         actorGroupIds: new Set<string>(),
@@ -71,7 +71,6 @@ describe("sendEmail with scheduledSendAt", () => {
       if (r.ok) expect(r.value.status).toBe("scheduled");
       const sendCalls = fake.calls.filter((c) => c.method === "sendRaw");
       expect(sendCalls.length).toBe(0);
-      // Verify scheduled_at was persisted
       const row = (
         await db.execute(
           sql`SELECT scheduled_at FROM email_send_attempts WHERE account_id=${acct.id}`,

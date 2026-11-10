@@ -11,9 +11,6 @@ import { FOLDER_KEYS, FOLDER_LABELS, type FolderKey, parseFolder } from "./inbox
 
 const COMPOSE_PATH = "/inbox/compose";
 
-// The rail lives in the persistent /inbox layout, so it reads the active state straight from the
-// router (it never remounts on navigation). Compose highlights the New email action; a reader route
-// (/inbox/<threadId>) keeps Inbox lit; the list route reflects its ?folder= param.
 function deriveActive(
   pathname: string,
   params: URLSearchParams,
@@ -42,16 +39,16 @@ export function InboxFolderRail({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { folder: activeFolder, composeActive } = deriveActive(pathname, searchParams);
-  const unreadCount = trpc.email.inbox.unreadCount.useQuery().data ?? 0;
+  const mailbox = searchParams.get("mailbox");
+  const choices = trpc.email.mailboxes.useQuery().data ?? [];
+  const teams = choices.filter((choice) => choice.kind === "team");
+  const unreadCount = trpc.email.inbox.unreadCount.useQuery({ mailbox }).data ?? 0;
   return (
     <nav aria-label="Mail folders" className="flex w-60 shrink-0 flex-col gap-1 border-r p-3">
-      {/* A disabled Link has no real-world meaning (it would still be clickable), so the
-          no-mailbox state renders a genuinely inert disabled button instead of a navigable
-          link; only the enabled state navigates to the full-pane compose route. */}
       {newEmailEnabled ? (
         <Tip label="Compose a new email">
           <Link
-            href="/inbox/compose"
+            href={mailbox === null ? "/inbox/compose" : `/inbox/compose?mailbox=${mailbox}`}
             aria-current={composeActive ? "page" : undefined}
             className={cn(
               NEW_EMAIL_BUTTON_CLASSES,
@@ -78,7 +75,7 @@ export function InboxFolderRail({
         return (
           <Link
             key={key}
-            href={`/inbox?folder=${key}`}
+            href={`/inbox?folder=${key}${mailbox !== null && key !== "drafts" && key !== "outbox" ? `&mailbox=${mailbox}` : ""}`}
             aria-current={activeFolder === key ? "page" : undefined}
             className={cn(
               "flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-sm",
@@ -97,6 +94,32 @@ export function InboxFolderRail({
           </Link>
         );
       })}
+      {teams.length > 0 && (
+        <div className="mt-4 space-y-1">
+          <p className="px-2.5 text-xs font-medium text-muted-foreground">Team</p>
+          {teams.map((team) => (
+            <Link
+              key={team.id}
+              href={`/inbox?mailbox=${team.id}`}
+              aria-current={mailbox === team.id ? "page" : undefined}
+              className={cn(
+                "flex items-center rounded-md px-2.5 py-1.5 text-sm",
+                mailbox === team.id && "bg-accent font-medium",
+              )}
+            >
+              <span>{team.displayName}</span>
+              {team.unread > 0 && (
+                <span className="ml-auto rounded-full bg-primary px-1.5 text-xs text-primary-foreground">
+                  {team.unread}
+                </span>
+              )}
+            </Link>
+          ))}
+          <Link href="/inbox" className="block px-2.5 py-1.5 text-sm">
+            Personal inbox
+          </Link>
+        </div>
+      )}
     </nav>
   );
 }

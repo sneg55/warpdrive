@@ -129,7 +129,7 @@ export async function runEmailNotificationJob(
   const sendFn = deps.send ?? sendGmail;
   const mailboxRow: EmailAccountRow = {
     id: account.id,
-    userId: account.userId,
+    userId: notifRow.userId,
     emailAddress: account.emailAddress,
   };
   const sent = await sendFn(mailboxRow, message, signal);

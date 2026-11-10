@@ -4,26 +4,20 @@ import { Forward, Reply, ReplyAll } from "lucide-react";
 import { useState } from "react";
 import { Avatar } from "@/components/ui/Avatar";
 import { STRINGS } from "@/constants/strings";
-import { Composer } from "./composer/Composer";
+import { Composer } from "./Composer";
 import type { ComposerContext } from "./composer/composer.types";
 import { buildReplyPrefill, type ReplyMode, type ReplyPrefillSourceMessage } from "./replyPrefill";
 
 interface ReaderActionsProps {
   message: ReplyPrefillSourceMessage;
-  // Mailbox address the reply/forward is sent from; excluded from reply-all recipients.
   selfEmail: string;
   accountId: string;
   threadId: string;
   onSent?: () => void;
-  // Mode to open in. Omitted by the thread reader, which starts on the footer instead.
   initialMode?: ReplyMode;
   context?: ComposerContext;
 }
 
-// Reply / Reply all / Forward for the thread reader. Toggles which mode is active; the
-// active mode renders the shared Composer pre-filled via buildReplyPrefill (pure
-// recipient/subject/body derivation, unit-tested separately in replyPrefill.test.ts).
-// Forward omits threadId so sending forks a new thread instead of replying into this one.
 export function ReaderActions({
   message,
   selfEmail,
@@ -39,6 +33,7 @@ export function ReaderActions({
     return (
       <Composer
         accountId={accountId}
+        fromAddress={selfEmail}
         threadId={mode === "forward" ? undefined : threadId}
         prefill={buildReplyPrefill(mode, message, selfEmail)}
         context={context}
@@ -48,9 +43,6 @@ export function ReaderActions({
     );
   }
 
-  // Persistent bordered footer card (PD parity B10): the sender avatar sits on the left, then the
-  // reply / reply-all / forward affordances as glyph + label buttons. Boxed to match PD's reply
-  // footer, in the same constrained column as the message cards above it.
   return (
     <div
       data-testid="reader-reply-footer"

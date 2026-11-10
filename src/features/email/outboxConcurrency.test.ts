@@ -19,25 +19,32 @@ const payload = {
   trackingEnabled: false,
 };
 
-async function seedAccount(db: TestDb): Promise<string> {
+async function seedAccount(db: TestDb, signal: AbortSignal): Promise<string> {
+  signal.throwIfAborted();
   const u = (
     await db.execute(
       sql`INSERT INTO users (email, name, google_sub) VALUES ('o@gunsnation.com','O','sub-o') RETURNING id`,
     )
   ).rows[0] as { id: string };
+  signal.throwIfAborted();
   const acct = (
     await db.execute(
       sql`INSERT INTO email_accounts (user_id, email_address) VALUES (${u.id},'o@gunsnation.com') RETURNING id`,
     )
   ).rows[0] as { id: string };
+  signal.throwIfAborted();
   return acct.id;
 }
 
 describe("processSendAttempt concurrency", () => {
   it("worker B reconciles while worker A is mid-send: exactly one send, one final id", async () => {
     await withTestDb(async (db) => {
-      const acct = await seedAccount(db);
-      const e = await enqueueSend(db, { accountId: acct, idempotencyKey: KEY, payload });
+      const acct = await seedAccount(db, newSignal());
+      const e = await enqueueSend(
+        db,
+        { accountId: acct, idempotencyKey: KEY, payload },
+        AbortSignal.timeout(8000),
+      );
       const attemptId = e.ok ? e.value.attemptId : "";
       const header = (
         await db.execute(
@@ -110,8 +117,12 @@ describe("processSendAttempt concurrency", () => {
 
   it("markSent ignores a second, divergent gmail id (no silent overwrite)", async () => {
     await withTestDb(async (db) => {
-      const acct = await seedAccount(db);
-      const e = await enqueueSend(db, { accountId: acct, idempotencyKey: KEY, payload });
+      const acct = await seedAccount(db, newSignal());
+      const e = await enqueueSend(
+        db,
+        { accountId: acct, idempotencyKey: KEY, payload },
+        AbortSignal.timeout(8000),
+      );
       const attemptId = e.ok ? e.value.attemptId : "";
       const signal = newSignal();
 

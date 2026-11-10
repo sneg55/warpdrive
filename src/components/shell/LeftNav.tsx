@@ -22,8 +22,6 @@ import {
   SettingsIcon,
 } from "./NavIcons";
 
-// Icons live here (NAV_ITEMS is a plain constants module and must stay free of JSX), keyed by the
-// shared nav key so the rail and the number shortcuts can never drift out of order.
 const ICONS: Record<NavKey, typeof PipelineIcon> = {
   pipeline: PipelineIcon,
   leads: LeadsIcon,
@@ -33,24 +31,12 @@ const ICONS: Record<NavKey, typeof PipelineIcon> = {
   dashboard: DashboardIcon,
   settings: SettingsIcon,
 };
-
 const ITEMS = NAV_ITEMS.map((item) => ({
   ...item,
   label: STRINGS.nav[item.key],
   Icon: ICONS[item.key],
 }));
-
-// The collapsed/expanded rail preference lives in a COOKIE, not localStorage, so the server layout
-// can read it (NAV_PREF_COOKIE, from the shared non-client constants module) and render the correct
-// width at first paint. localStorage is invisible to the server, which forced the old "render
-// collapsed, correct on mount" jump that animated the rail open on every reload.
-// Below this viewport width the rail auto-collapses unless the user has explicitly chosen a state.
-// The nav is open by default on normal/large screens; small screens get the compact icon rail.
 const EXPAND_AT_MIN_WIDTH = 1024;
-
-// Cookie access is wrapped so an odd/absent environment never throws; the preference just does not
-// persist. Returns the explicit user choice ("1"/"0") or null when the user has not toggled the rail
-// (so we follow the responsive default). Client-only: called from the mount effect, never in render.
 function readPref(): boolean | null {
   try {
     for (const part of document.cookie.split(";")) {
@@ -64,38 +50,30 @@ function readPref(): boolean | null {
 }
 function writePref(expanded: boolean): void {
   try {
-    // path=/ so the server reads it on the next navigation; a year's max-age so it survives; lax is
-    // fine for a non-sensitive UI preference.
+    // biome-ignore lint/suspicious/noDocumentCookie: ""
     document.cookie = `${NAV_PREF_COOKIE}=${expanded ? "1" : "0"}; path=/; max-age=31536000; samesite=lax`;
   } catch {
-    // ignore: preference is best-effort
+    return;
   }
 }
-
 interface LeftNavProps {
-  // The persisted rail state, read from the cookie by the server layout so the first paint already
-  // has the right width. Absent (undefined) collapses by default, matching a first-ever visit.
   initialExpanded?: boolean;
+  inboxBadge?: React.ReactNode;
 }
-
-export function LeftNav({ initialExpanded = false }: LeftNavProps = {}): React.ReactNode {
+export function LeftNav({
+  initialExpanded = false,
+  inboxBadge,
+}: LeftNavProps = {}): React.ReactNode {
   const pathname = usePathname();
-  // First paint uses the server-provided persisted state (from the cookie) so there is no post-mount
-  // width jump to animate. The effect below still reconciles the explicit choice + responsive default.
   const [expanded, setExpanded] = useState(initialExpanded);
 
   useEffect(() => {
-    // An explicit user choice always wins and stays fixed regardless of viewport.
     const pref = readPref();
     if (pref !== null) {
-      // localStorage and matchMedia are client-only; reading either during render would break
-      // hydration. Runs once on mount.
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- hydration-safe mount read
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setExpanded(pref);
       return;
     }
-    // No stored choice: open by default, but follow the viewport (collapse when small), and keep
-    // following on resize until the user makes an explicit choice.
     if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
       setExpanded(true);
       return;
@@ -117,8 +95,6 @@ export function LeftNav({ initialExpanded = false }: LeftNavProps = {}): React.R
     });
   }
 
-  // Pipedrive binds the bracket keys to the nav rail. They set an explicit state rather than
-  // toggling, so a user who does not look at the screen still knows where the rail ended up.
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent): void => {
       if (e.metaKey || e.ctrlKey || e.altKey) return;
@@ -157,13 +133,15 @@ export function LeftNav({ initialExpanded = false }: LeftNavProps = {}): React.R
                 : "text-slate-400 hover:bg-slate-800 hover:text-white",
             )}
           >
-            <item.Icon />
+            <span className="relative">
+              <item.Icon />
+              {item.key === "inbox" ? inboxBadge : null}
+            </span>
             <span className={cn("text-sm font-medium", expanded ? "" : "sr-only")}>
               {item.label}
             </span>
           </Link>
         );
-        // Collapsed rail is icon-only, so surface the label as a hover tooltip; expanded shows it inline.
         return expanded ? (
           el
         ) : (
@@ -175,7 +153,6 @@ export function LeftNav({ initialExpanded = false }: LeftNavProps = {}): React.R
 
       <DocsLink expanded={expanded} />
 
-      {/* Collapse/expand toggle sits at the bottom of the rail. */}
       <button
         type="button"
         onClick={toggle}

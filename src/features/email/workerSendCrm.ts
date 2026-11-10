@@ -1,9 +1,3 @@
-// Post-send CRM copy + token backfill for the worker send path.
-// The interactive path (send.ts) has all context in scope and calls storeOutboundCopy
-// + backfillTokens directly. The worker path only has (accountId, idempotencyKey,
-// gmail, signal), so this helper loads what it needs from the DB and delegates.
-// Idempotent: storeOutboundCopy upserts on (account_id, gmail_message_id) and
-// backfillTokens only updates rows where message_id IS NULL, so calling twice is safe.
 import { sql } from "drizzle-orm";
 import { AppError } from "@/constants/errorIds";
 import type { Db } from "@/db/client";
@@ -30,31 +24,28 @@ interface AttemptCrmRow {
   user_id: string;
 }
 
-// Load the attempt row joined with the account email. Returns undefined when the
-// row is missing (should not happen after a successful processSendAttempt, but we
-// guard defensively rather than throwing).
 async function loadAttemptCrmRow(
   db: Db,
   accountId: string,
   idempotencyKey: string,
+  signal: AbortSignal,
 ): Promise<AttemptCrmRow | undefined> {
+  signal.throwIfAborted();
   const res = await db.execute(sql`
-    SELECT s.id, s.payload, a.email_address AS from_email, a.user_id AS user_id
+    SELECT s.id, s.payload, a.email_address AS from_email, COALESCE(s.payload->>'actorId', a.user_id::text) AS user_id
     FROM email_send_attempts s
     JOIN email_accounts a ON a.id = s.account_id
     WHERE s.account_id = ${accountId} AND s.idempotency_key = ${idempotencyKey}
   `);
+  signal.throwIfAborted();
   return res.rows[0] as AttemptCrmRow | undefined;
 }
 
-// Store the CRM copy and backfill tracking tokens for a worker-delivered send.
-// Mirrors the identical sequence in send.ts (runSend step g) but reconstructs the
-// needed context from the DB rather than from the in-scope runSend variables.
 export async function performWorkerSendCrm(
   db: Db,
   args: WorkerSendCrmArgs,
 ): Promise<Result<void, AppError>> {
-  const row = await loadAttemptCrmRow(db, args.accountId, args.idempotencyKey);
+  const row = await loadAttemptCrmRow(db, args.accountId, args.idempotencyKey, args.signal);
   if (row === undefined) {
     return err(
       new AppError("E_DB_002", "performWorkerSendCrm: attempt row not found", {
@@ -65,16 +56,11 @@ export async function performWorkerSendCrm(
   }
 
   const payload = row.payload;
-  // Derive resolvedTrackingEnabled from the resolved flags written at enqueue time.
-  // Fall back to legacy trackingEnabled for rows written before the split.
   const resolvedTrackingEnabled =
     payload.trackOpens === true ||
     payload.trackLinks === true ||
     (payload.trackingEnabled ?? false);
 
-  // Reconstruct the minimal SendEmailInput surface storeOutboundCopy needs.
-  // It only reads: accountId, to, cc, subject (for thread upsert), and bodyHtml.
-  // The idempotencyKey is not used inside storeOutboundCopy itself.
   const input: SendEmailInput = {
     accountId: args.accountId,
     idempotencyKey: args.idempotencyKey,
@@ -84,14 +70,6 @@ export async function performWorkerSendCrm(
     bodyHtml: payload.html,
   };
 
-  // Link a NEW thread the same way the interactive path does. A scheduled send DOES carry
-  // the composer's explicit link context (linkPersonId/linkDealId), persisted onto the
-  // payload at enqueue time (send.ts) since this worker path has no in-scope SendEmailInput
-  // to read from. When absent, we fall back to recipient-based auto-linking, scoped to the
-  // mailbox owner's visibility (hydrated the same way the sync path does). Either way the
-  // explicit id is re-verified for visibility downstream (canSeeLinkedPerson/canSeeLinkedDeal
-  // in sendStore.ts), never trusted blindly. A hydration failure must not lose the CRM copy,
-  // so fall back to an unlinked store.
   const owner = await hydrateOwner(db, row.user_id, args.signal);
   const link = owner.ok
     ? {
@@ -103,6 +81,7 @@ export async function performWorkerSendCrm(
     : undefined;
 
   const stored = await storeOutboundCopy(db, {
+    sentByUserId: row.user_id,
     accountId: args.accountId,
     fromEmail: row.from_email,
     gmailMessageId: args.gmailMessageId,
@@ -111,8 +90,6 @@ export async function performWorkerSendCrm(
     bodyHtml: payload.html,
     gmail: args.gmail,
     link,
-    // Restore the composer's privacy pick from the stored payload so a SCHEDULED private compose
-    // still lands a private thread when the worker delivers it (P1-shaped trap).
     visibility: payload.visibility ?? null,
     signal: args.signal,
   });

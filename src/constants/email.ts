@@ -1,5 +1,6 @@
 export const EMAIL_ACCOUNT_STATUS = ["connected", "disconnected", "error"] as const;
 export const EMAIL_MESSAGE_DIRECTION = ["inbound", "outbound"] as const;
+export const GMAIL_DRAFT_LABEL = "DRAFT";
 export const EMAIL_SEND_STATUS = ["pending", "sending", "sent", "failed", "needs_review"] as const;
 export const EMAIL_VISIBILITY = ["private", "shared"] as const;
 export const EMAIL_TRACKING_EVENT_TYPE = ["open", "click"] as const;

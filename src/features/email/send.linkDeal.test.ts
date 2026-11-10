@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
+import { AppError, ERROR_IDS } from "@/constants/errorIds";
 import { withTestDb } from "@/db/testing";
 import { seedPipelineWithStages, seedUser } from "@/db/testing/factories";
 import { ok } from "@/types/result";
@@ -19,11 +20,6 @@ async function seedAccount(db: TestDb, ownerId: string): Promise<string> {
   ).id;
 }
 
-// Task 6: the inbox compose's ComposeLinkSidebar lifts a picked/created deal id into Composer's
-// linkDealId prop, which useComposerSend.buildInput forwards as sendEmailInput.linkDealId.
-// Assert the plumbing lands on the DB row send.ts actually writes (email_threads.deal_id), and
-// that a plain compose (no sidebar pick) is unaffected. Split out of send.test.ts (file-size cap),
-// mirroring the existing send.merge.test.ts split.
 describe("sendEmail deal linking (linkDealId)", () => {
   it("links a NEW outbound thread to the deal passed via linkDealId", async () => {
     await withTestDb(async (db) => {
@@ -31,7 +27,8 @@ describe("sendEmail deal linking (linkDealId)", () => {
       const acctId = await seedAccount(db, owner.id);
       const { pipeline, stages } = await seedPipelineWithStages(db, ["New"]);
       const stageId = stages[0]?.id;
-      if (stageId === undefined) throw new Error("seedPipelineWithStages: no stage seeded");
+      if (stageId === undefined)
+        throw new AppError(ERROR_IDS.DB_INVARIANT, "seedPipelineWithStages: no stage seeded");
       const deal = (
         await db.execute(sql`
           INSERT INTO deals (title, pipeline_id, stage_id, owner_id, visibility_level)
@@ -50,6 +47,7 @@ describe("sendEmail deal linking (linkDealId)", () => {
       });
 
       const r = await sendEmail(db, {
+        signal: AbortSignal.timeout(8000),
         actorId: owner.id,
         actorType: "regular",
         actorGroupIds: new Set<string>(),
@@ -58,7 +56,6 @@ describe("sendEmail deal linking (linkDealId)", () => {
         input: {
           accountId: acctId,
           idempotencyKey: "77777777-7777-7777-7777-777777777777",
-          // Recipient does not match any contact/deal, so a link can only come from linkDealId.
           to: ["stranger@nowhere.com"],
           subject: "Hi",
           bodyHtml: "<p>hi</p>",
@@ -93,6 +90,7 @@ describe("sendEmail deal linking (linkDealId)", () => {
       });
 
       const r = await sendEmail(db, {
+        signal: AbortSignal.timeout(8000),
         actorId: owner.id,
         actorType: "regular",
         actorGroupIds: new Set<string>(),
@@ -101,8 +99,6 @@ describe("sendEmail deal linking (linkDealId)", () => {
         input: {
           accountId: acctId,
           idempotencyKey: "88888888-8888-8888-8888-888888888888",
-          // Same unmatched recipient, but no linkDealId this time: the recipient-based
-          // auto-link heuristic (unmatched -> unlinked) must behave exactly as before.
           to: ["stranger@nowhere.com"],
           subject: "Hi",
           bodyHtml: "<p>hi</p>",

@@ -3,9 +3,6 @@ import "@testing-library/jest-dom/vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 
-// InboxShell is the persistent two-pane frame (rail | content) that the /inbox layout wraps every
-// inbox route in. It renders the folder rail (a client component reading router hooks) beside the
-// route's own content, so the rail is present on the list, reader, and compose routes alike.
 let pathname = "/inbox";
 vi.mock("next/navigation", () => ({
   usePathname: () => pathname,
@@ -14,6 +11,7 @@ vi.mock("next/navigation", () => ({
 vi.mock("@/lib/trpc-client", () => ({
   trpc: {
     email: {
+      mailboxes: { useQuery: () => ({ data: [] }) },
       inbox: { unreadCount: { useQuery: () => ({ data: 0 }) } },
     },
   },
@@ -57,8 +55,6 @@ it("renders content in a constrained pane to the right of the rail, not full wid
   );
   const nav = screen.getByRole("navigation", { name: "Mail folders" });
   const contentPane = screen.getByTestId("reader-content").parentElement;
-  // Rail and content share one flex row; the content pane flexes (min-w-0 flex-1) so it sits beside
-  // the fixed-width rail instead of spanning the whole viewport.
   expect(contentPane).toHaveClass("min-w-0", "flex-1");
   expect(nav.parentElement).toBe(contentPane?.parentElement);
 });

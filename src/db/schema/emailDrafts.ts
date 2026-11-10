@@ -1,10 +1,8 @@
 import { foreignKey, jsonb, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { emailAccounts, emailThreads, emailVisibility } from "./email";
 
-// Autosave drafts (D1). Owned by the mailbox (account_id -> email_accounts). A reply
-// draft carries a thread_id; a new-message draft leaves it null. The composite FK pins a
-// reply draft to the SAME mailbox as the thread (mirrors email_messages), and is not
-// enforced when thread_id is null (Postgres skips composite FKs with any null column).
+import { users } from "./identity";
+
 export const emailDrafts = pgTable(
   "email_drafts",
   {
@@ -12,17 +10,13 @@ export const emailDrafts = pgTable(
     accountId: uuid("account_id")
       .notNull()
       .references(() => emailAccounts.id),
+    authorUserId: uuid("author_user_id").references(() => users.id),
     threadId: uuid("thread_id"),
     subject: text("subject"),
     bodyHtml: text("body_html"),
     toEmails: jsonb("to_emails").notNull().default("[]"),
     ccEmails: jsonb("cc_emails").notNull().default("[]"),
-    // Compose privacy in progress (C1). Defaults to "shared" (the composer's default) so a private
-    // selection survives autosave + resume instead of silently reverting to shared (codex P1).
     visibility: emailVisibility("visibility").notNull().default("shared"),
-    // CRM link context held while the message is still a draft; the sent thread carries the same
-    // link on email_threads. Untyped uuids with no FK, mirroring email_threads.deal_id/person_id;
-    // saveDraft checks the record exists so a bad id is a typed error, not an FK throw.
     linkDealId: uuid("link_deal_id"),
     linkPersonId: uuid("link_person_id"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

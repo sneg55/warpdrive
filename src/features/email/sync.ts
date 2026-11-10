@@ -1,17 +1,15 @@
 import { sql } from "drizzle-orm";
 import type { AppError } from "@/constants/errorIds";
 import type { Db } from "@/db/client";
-import type { AuthUser } from "@/features/permissions/types";
+
 import { ok, type Result } from "@/types/result";
 import { applyMessageIds } from "./applyMessages";
 import type { GmailClient } from "./gmailClient";
 import type { HistoryList } from "./gmailSchemas";
 import { recoverFrom404 } from "./resync";
-import { hydrateOwner } from "./syncCursor";
+
 import { markThreadTrashed, reconcileThreadTrash } from "./trashReconcile";
 
-// Collect the unique gmail message ids added in a history page (idempotent: a page
-// can redeliver, and the same id can appear across deltas).
 function addedMessageIds(page: HistoryList): string[] {
   const ids = new Set<string>();
   for (const h of page.history) {
@@ -22,15 +20,8 @@ function addedMessageIds(page: HistoryList): string[] {
   return [...ids];
 }
 
-// Label changes that can move a conversation out of (or back into) the mailbox's live view: TRASH
-// for delete/restore, SPAM for "report spam"/"not spam". Both arrive as label changes on an EXISTING
-// message, so neither shows up as messagesAdded.
 const HIDING_LABELS = ["TRASH", "SPAM"];
 
-// Gmail thread ids whose hidden state MAY have changed in this page: a message gained or lost TRASH
-// or SPAM. This is only a re-evaluation trigger, not the decision: Gmail applies both labels per
-// MESSAGE, so a single-message change in a multi-message conversation also fires here, yet the
-// conversation is still live. The whole-thread state is decided below via getThread (P4).
 function threadsWithTrashSignal(page: HistoryList): string[] {
   const ids = new Set<string>();
   const changed = (labelIds: string[]): boolean => HIDING_LABELS.some((l) => labelIds.includes(l));
@@ -45,12 +36,6 @@ function threadsWithTrashSignal(page: HistoryList): string[] {
   return [...ids];
 }
 
-// Reflect a Gmail-side TRASH change into trashed_at. For each signalled thread, re-fetch it and let
-// reconcileThreadTrash decide from the whole conversation's labels (all-TRASH -> trashed, else
-// cleared), so trashing one message of a multi-message thread never hides the live conversation and
-// a restore clears the flag. A getThread 404 means the thread was purged (permanently deleted) from
-// Gmail: mark it trashed and advance rather than wedging the cursor on a non-retryable error. Other
-// (transient) getThread failures abort the page so the next tick retries.
 async function applyTrashTransitions(
   db: Db,
   accountId: string,
@@ -74,15 +59,9 @@ async function applyTrashTransitions(
   return ok(undefined);
 }
 
-// Apply one history page: add new messages, then reflect Gmail-side trash state. The re-evaluation
-// set is every thread the page touched: a TRASH label change (labelsAdded/Removed=TRASH) OR a
-// message addition (which can trash a thread, e.g. a filtered auto-delete, or un-trash it, e.g. a
-// reply landing back in the inbox). Idempotent: a redelivered page yields the same count (ON
-// CONFLICT DO NOTHING) and re-derives the same trashed_at from the current thread state.
 async function applyHistoryPage(args: {
   db: Db;
   accountId: string;
-  owner: AuthUser;
   page: HistoryList;
   gmail: GmailClient;
   signal: AbortSignal;
@@ -92,7 +71,6 @@ async function applyHistoryPage(args: {
     {
       db: args.db,
       accountId: args.accountId,
-      owner: args.owner,
       gmail: args.gmail,
       signal: args.signal,
       touchedThreadIds: touched,
@@ -111,10 +89,6 @@ async function applyHistoryPage(args: {
   return applied;
 }
 
-// Drive an incremental sync from the OLD cursor through every nextPageToken page,
-// committing ONE checkpoint at the end. A mid-sync failure leaves the cursor at the
-// old position so the next run re-drives idempotently (at-least-once + idempotent =
-// exactly-once effect). A 404 (expired cursor) triggers recoverFrom404.
 export async function syncMailbox(
   db: Db,
   args: { accountId: string; gmail: GmailClient; signal: AbortSignal },
@@ -129,25 +103,17 @@ export async function syncMailbox(
   if (acct === undefined || acct.status === "disconnected") return ok({ applied: 0 });
   const startHistoryId = acct.last_history_id;
   if (startHistoryId === null) {
-    // First run after connect: the mailbox has no cursor yet. Seed it from the mailbox's
-    // current historyId so subsequent ticks poll deltas go-forward. Nothing else seeds this
-    // (there is no separate bootstrap step), so without it every tick no-ops on the null
-    // cursor and the mailbox never syncs. Historical backfill is intentionally out of scope:
-    // incremental polling starts from now. A profile-fetch failure leaves the cursor null so
-    // the next tick retries.
     const profile = await args.gmail.getProfile({ signal: args.signal });
     if (!profile.ok) return profile;
     await db.execute(sql`
       UPDATE email_accounts
-      SET last_history_id=${profile.value.historyId}, last_sync_at=now(), last_error_id=NULL
-      WHERE id=${args.accountId}
+      SET last_history_id=${profile.value.historyId}, last_sync_at=now(), last_error_id=NULL,
+          backfill_started_at=CASE WHEN kind='team' THEN COALESCE(backfill_started_at, now()) ELSE backfill_started_at END
+      WHERE id=${args.accountId} AND last_history_id IS NULL
     `);
     args.signal.throwIfAborted();
     return ok({ applied: 0 });
   }
-
-  const owner = await hydrateOwner(db, acct.user_id, args.signal);
-  if (!owner.ok) return owner;
 
   let pageToken: string | undefined;
   let newHistoryId = startHistoryId;
@@ -163,24 +129,22 @@ export async function syncMailbox(
           signal: args.signal,
         });
       }
-      return page; // cursor NOT advanced
+      return page;
     }
 
     const ap = await applyHistoryPage({
       db,
       accountId: args.accountId,
-      owner: owner.value,
       page: page.value,
       gmail: args.gmail,
       signal: args.signal,
     });
-    if (!ap.ok) return ap; // partial failure: cursor NOT advanced
+    if (!ap.ok) return ap;
     applied += ap.value;
     newHistoryId = page.value.historyId;
     pageToken = page.value.nextPageToken;
   } while (pageToken !== undefined);
 
-  // Single checkpoint AFTER the last page committed.
   await db.execute(sql`
     UPDATE email_accounts
     SET last_history_id=${newHistoryId}, last_sync_at=now(), last_error_id=NULL

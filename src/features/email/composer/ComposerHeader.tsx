@@ -7,14 +7,13 @@ import { cn } from "@/lib/utils";
 import { COMPOSER_STRINGS } from "./composer.constants";
 import { FromPicker } from "./FromPicker";
 
-// Email-tab compose header: the From row with the Settings cog (links to email settings) and Close
-// right-aligned on the same line. Automation is intentionally omitted (out of scope project-wide).
-// Without a fromAddress (inbox thread reply) the row carries the actions alone and no divider.
 export function ComposerHeader({
   fromAddress,
+  senderPicker,
   onClose,
 }: {
   fromAddress?: string;
+  senderPicker?: React.ReactNode;
   onClose?: () => void;
 }): React.ReactNode {
   return (
@@ -24,7 +23,7 @@ export function ComposerHeader({
         fromAddress !== undefined && "border-b border-border",
       )}
     >
-      {fromAddress !== undefined && <FromPicker address={fromAddress} />}
+      {senderPicker ?? (fromAddress !== undefined ? <FromPicker address={fromAddress} /> : null)}
       <div className="ml-auto flex items-center gap-1">
         <Tip label={COMPOSER_STRINGS.headerSettingsLabel}>
           <Link
@@ -35,8 +34,7 @@ export function ComposerHeader({
             <Settings aria-hidden="true" className="h-4 w-4" />
           </Link>
         </Tip>
-        {/* Close only renders where the host provides a handler (email-tab compose). In the inbox
-          thread-reply composer there is nothing to close, so we omit it rather than ship a no-op. */}
+
         {onClose !== undefined && (
           <Tip label={COMPOSER_STRINGS.headerCloseLabel}>
             <button

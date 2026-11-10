@@ -1,0 +1,14 @@
+export const EMAIL_ACCOUNT_KIND = ["personal", "team"] as const;
+export const EMAIL_BACKFILL_STATUS = ["running", "done", "failed"] as const;
+export const TEAM_MAILBOX_OVERDUE_HOURS = 24;
+export const TEAM_MAILBOX_BACKFILL_CHOICES = [30, 90, 180] as const;
+export const TEAM_MAILBOX_DEFAULT_BACKFILL = 90;
+export const TEAM_MAILBOX_INTENT_PREFIX = "team.";
+export const TEAM_MAILBOX_INTENT_MAX_AGE = 600;
+export const GMAIL_THREADS_URL = "https://gmail.googleapis.com/gmail/v1/users/me/threads";
+export const TEAM_MAILBOX_BACKFILL_QUEUE = "email.team.backfill";
+export const TEAM_MAILBOX_BACKFILL_JOB_TIMEOUT_MS = 300_000;
+export const MILLISECONDS_PER_DAY = 86_400_000;
+export const MILLISECONDS_PER_SECOND = 1000;
+export const MILLISECONDS_PER_HOUR = 3_600_000;
+export const TEAM_MAILBOX_CLOCK_REFRESH_MS = 60_000;

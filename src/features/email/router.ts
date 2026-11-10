@@ -2,32 +2,27 @@ import { z } from "zod";
 import { INBOX_PAGE_SIZE } from "@/constants/inbox";
 import { protectedProcedure, router } from "@/server/trpc/trpc";
 import { unwrap } from "@/server/unwrap";
+import { listActorMailboxes } from "./actorMailboxes";
 import { listDraftsForDeal, listDraftsForPerson } from "./draftEntityReads";
 import { listDrafts } from "./draftRepo";
 import * as emailReads from "./emailReads";
 import { listMessagesForContact, listMessagesForDeal } from "./entityMessageReads";
 import { listArchivedThreads, listOutbox, listSentThreads } from "./folderReads";
-import { buildMergeContext } from "./mergeContext";
+import { mergeContextProcedure } from "./mergeContextProcedure";
 import { getMessage } from "./messageReads";
 import { inboxUnreadCount } from "./readState";
 import { searchInbox } from "./searchInbox";
 import { getThreadNeighbors } from "./threadNeighbors";
 
-// Re-export the plain read functions so existing importers (and the test) keep working
-// from ./router while the implementations live in ./emailReads (200-line cap).
 export { getThread, listInbox } from "./emailReads";
 
 const SIG = (): AbortSignal => AbortSignal.timeout(15_000);
 
-// Validated at the boundary, then trusted. `cursor` is an opaque position the client only ever
-// echoes back from a previous page; it narrows the scan and cannot widen visibility.
 const inboxCursorSchema = z.object({
   lastMessageAt: z.string().nullable(),
   id: z.string().uuid(),
 });
 
-// The linking tabs (all/unmatched/needs_linking) plus the U5 quick-filters. Shared by inbox.list and
-// search so both narrow the same way (codex review); default "all" = no quick-filter narrowing.
 const inboxFilterSchema = z
   .enum([
     "all",
@@ -43,18 +38,20 @@ const inboxFilterSchema = z
   .default("all");
 
 const folderPageInput = z.object({
+  mailbox: z.uuid().optional(),
   limit: z.number().int().min(1).max(INBOX_PAGE_SIZE).optional(),
   cursor: z.object({ at: z.string(), id: z.string().uuid() }).nullish(),
 });
 
 export const emailRouter = router({
+  mailboxes: protectedProcedure.query(({ ctx }) => listActorMailboxes(ctx.db, ctx.actor.id, SIG())),
   inbox: router({
     list: protectedProcedure
       .input(
         z.object({
           filter: inboxFilterSchema,
+          mailbox: z.uuid().optional(),
           limit: z.number().int().min(1).max(INBOX_PAGE_SIZE).optional(),
-          // Named `cursor` so TanStack's useInfiniteQuery can inject it.
           cursor: inboxCursorSchema.nullish(),
         }),
       )
@@ -63,6 +60,7 @@ export const emailRouter = router({
           ctx.db,
           {
             actor: ctx.actor,
+            mailbox: input.mailbox,
             filter: input.filter,
             limit: input.limit,
             cursor: input.cursor ?? null,
@@ -70,9 +68,11 @@ export const emailRouter = router({
           SIG(),
         ),
       ),
-    unreadCount: protectedProcedure.query(({ ctx }) =>
-      inboxUnreadCount(ctx.db, { actor: ctx.actor }, SIG()),
-    ),
+    unreadCount: protectedProcedure
+      .input(z.object({ mailbox: z.uuid().nullable().optional() }).optional())
+      .query(({ ctx, input }) =>
+        inboxUnreadCount(ctx.db, { actor: ctx.actor, mailbox: input?.mailbox }, SIG()),
+      ),
   }),
   thread: router({
     get: protectedProcedure
@@ -86,8 +86,6 @@ export const emailRouter = router({
           ),
         ),
       ),
-    // Reader prev/next navigation (P3): position + neighbor ids over the owner's folder. Null for a
-    // non-owner (shared-thread viewer gets no nav) or a thread no longer in the folder.
     neighbors: protectedProcedure
       .input(
         z.object({
@@ -113,46 +111,23 @@ export const emailRouter = router({
         unwrap(emailReads.getTemplate(ctx.db, { id: input.id, actor: ctx.actor }, SIG())),
       ),
   }),
-  // Merge-field values for the composer: the same visibility-scoped resolution the send path
-  // runs, so an applied template or an inserted field shows what the recipient will read
-  // instead of a raw {{token}}.
-  mergeContext: protectedProcedure
-    .input(
-      z.object({
-        recipientEmail: z.string().default(""),
-        personId: z.string().uuid().nullish(),
-        dealId: z.string().uuid().nullish(),
-      }),
-    )
-    .query(({ ctx, input }) =>
-      buildMergeContext(
-        ctx.db,
-        {
-          owner: ctx.actor,
-          recipientEmail: input.recipientEmail,
-          explicitPersonId: input.personId ?? null,
-          explicitDealId: input.dealId ?? null,
-        },
-        SIG(),
-      ),
-    ),
+  mergeContext: mergeContextProcedure,
   signatures: router({
     list: protectedProcedure.query(({ ctx }) =>
       emailReads.listSignatures(ctx.db, { actor: ctx.actor }, SIG()),
     ),
   }),
   folders: router({
-    // Sent and Archive page the same way the Inbox does. Their cursor is (ordered_at, id); the
-    // client only ever echoes back a cursor it was given, and it narrows the scan, never widens
-    // visibility (both reads are owner-scoped in SQL).
     sent: protectedProcedure.input(folderPageInput).query(({ ctx, input }) =>
       listSentThreads(ctx.db, ctx.actor, SIG(), {
+        mailbox: input.mailbox,
         limit: input.limit,
         cursor: input.cursor ?? null,
       }),
     ),
     archive: protectedProcedure.input(folderPageInput).query(({ ctx, input }) =>
       listArchivedThreads(ctx.db, ctx.actor, SIG(), {
+        mailbox: input.mailbox,
         limit: input.limit,
         cursor: input.cursor ?? null,
       }),
@@ -161,8 +136,6 @@ export const emailRouter = router({
   }),
   drafts: router({
     list: protectedProcedure.query(({ ctx }) => listDrafts(ctx.db, ctx.actor, SIG())),
-    // Drafts a record's timeline shows. Owner-scoped in SQL: unlike the sent messages beside
-    // them, a draft is unsent text in one mailbox and is never shown to a colleague.
     listForDeal: protectedProcedure
       .input(z.object({ dealId: z.string().uuid() }))
       .query(({ ctx, input }) =>
@@ -174,8 +147,6 @@ export const emailRouter = router({
         listDraftsForPerson(ctx.db, { actor: ctx.actor, personId: input.personId }, SIG()),
       ),
   }),
-  // Message-level reads for the record timelines (deal + person), with the same visibility rules
-  // as the Inbox.
   listMessagesForDeal: protectedProcedure
     .input(z.object({ dealId: z.string().uuid() }))
     .query(({ ctx, input }) =>
@@ -187,8 +158,6 @@ export const emailRouter = router({
       listMessagesForContact(ctx.db, { actor: ctx.actor, personId: input.personId }, SIG()),
     ),
   message: router({
-    // Expand-on-demand body for one timeline card. allowRemote re-runs the sanitizer, so
-    // "show remote content" refetches this message alone rather than a whole thread.
     get: protectedProcedure
       .input(z.object({ messageId: z.string().uuid(), allowRemote: z.boolean().default(false) }))
       .query(({ ctx, input }) =>
@@ -201,11 +170,19 @@ export const emailRouter = router({
         ),
       ),
   }),
-  // In-mail search across subject/body/participants, gated by the same canSeeEmail
-  // visibility rule as the Inbox. Feeds InboxSearchBar via InboxListClient.
   search: protectedProcedure
-    .input(z.object({ q: z.string().min(1).max(200), filter: inboxFilterSchema }))
+    .input(
+      z.object({
+        q: z.string().min(1).max(200),
+        filter: inboxFilterSchema,
+        mailbox: z.uuid().optional(),
+      }),
+    )
     .query(({ ctx, input }) =>
-      searchInbox(ctx.db, { actor: ctx.actor, q: input.q, filter: input.filter }, SIG()),
+      searchInbox(
+        ctx.db,
+        { actor: ctx.actor, q: input.q, filter: input.filter, mailbox: input.mailbox },
+        SIG(),
+      ),
     ),
 });

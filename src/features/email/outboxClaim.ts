@@ -4,8 +4,6 @@ import { CLAIM_LEASE_SECONDS } from "@/constants/email";
 import type { Db } from "@/db/client";
 import type { AttemptRow } from "./outboxReconcile";
 
-// Attachment metadata persisted in the payload so processSendAttempt can rebuild
-// the MIME on replay without re-querying files or re-authorizing the actor.
 interface PayloadAttachment {
   fileId: string;
   s3Key: string;
@@ -14,38 +12,29 @@ interface PayloadAttachment {
 }
 
 export interface SendPayload {
+  actorId?: string;
   to: string[];
   cc?: string[];
   bcc?: string[];
   subject: string;
   html: string;
   text?: string;
-  // back-compat: old rows may have trackingEnabled; new rows use trackOpens/trackLinks
   trackingEnabled?: boolean;
   trackOpens?: boolean;
   trackLinks?: boolean;
-  // Phase 6: attachment metadata resolved at send time, stored for replay.
   attachments?: PayloadAttachment[];
-  // Explicit CRM link context from the composer (see SendEmailInput.linkPersonId/linkDealId).
-  // Persisted so a SCHEDULED send can restore it in the worker path (performWorkerSendCrm),
-  // which has no in-scope access to the original SendEmailInput. Re-verified for visibility
-  // downstream via canSeeLinkedPerson/canSeeLinkedDeal, never trusted blindly.
   linkPersonId?: string | null;
   linkDealId?: string | null;
-  // Compose privacy (C1). Persisted so the worker (performWorkerSendCrm) and replay-repair CRM-copy
-  // paths create a NEW thread with the visibility the author picked, instead of the DB default.
-  // Applied to new threads only; null/undefined => DB default. Old rows lack the field.
   visibility?: "private" | "shared" | null;
 }
 
-// Token-guarded claim: lease the attempt so a dead worker's claim can be reclaimed
-// after CLAIM_LEASE_SECONDS. Returns the claim token on success, null if not claimable.
 export async function claim(
   db: Db,
   attemptId: string,
   signal: AbortSignal,
 ): Promise<string | null> {
   const token = randomUUID();
+  signal.throwIfAborted();
   const res = await db.execute(sql`
     UPDATE email_send_attempts
     SET claim_token=${token}, claimed_at=now(), status='sending'
@@ -65,21 +54,21 @@ export async function loadAttempt(
   db: Db,
   accountId: string,
   idempotencyKey: string,
+  signal: AbortSignal,
 ): Promise<AttemptRow | undefined> {
+  signal.throwIfAborted();
   const res = await db.execute(sql`
     SELECT id, status, message_id_header, send_started_at, claim_token, gmail_message_id
     FROM email_send_attempts
     WHERE account_id=${accountId} AND idempotency_key=${idempotencyKey}
   `);
+  signal.throwIfAborted();
   return res.rows[0] as AttemptRow | undefined;
 }
 
 export interface SendInputs {
   from: string;
   payload: SendPayload;
-  // Gmail conversation this send replies into, plus the newest message already in it. Both null
-  // for a fresh compose. The worker turns them into the Gmail threadId and the RFC 5322
-  // In-Reply-To/References headers, without which a reply lands as a standalone message.
   gmailThreadId: string | null;
   parentGmailMessageId: string | null;
 }
@@ -88,7 +77,9 @@ export async function loadSendInputs(
   db: Db,
   attemptId: string,
   accountId: string,
+  signal: AbortSignal,
 ): Promise<SendInputs | undefined> {
+  signal.throwIfAborted();
   const res = await db.execute(sql`
     SELECT a.email_address AS from_email, s.payload, t.gmail_thread_id,
       (
@@ -102,6 +93,7 @@ export async function loadSendInputs(
     LEFT JOIN email_threads t ON t.id = s.thread_id AND t.account_id = s.account_id
     WHERE s.id=${attemptId} AND a.id=${accountId}
   `);
+  signal.throwIfAborted();
   const row = res.rows[0] as
     | {
         from_email: string;
@@ -119,17 +111,19 @@ export async function loadSendInputs(
   };
 }
 
-// Stamp send_started_at in a standalone committed UPDATE BEFORE any Gmail I/O, guarded
-// by the claim token and send_started_at IS NULL. 0 rows -> another worker raced us.
 export async function stamp(
   db: Db,
   attemptId: string,
   token: string,
   signal: AbortSignal,
 ): Promise<boolean> {
+  signal.throwIfAborted();
   const res = await db.execute(sql`
     UPDATE email_send_attempts SET send_started_at=now()
     WHERE id=${attemptId} AND claim_token=${token} AND send_started_at IS NULL
+      AND EXISTS (SELECT 1 FROM email_accounts a WHERE a.id=email_send_attempts.account_id AND
+        (a.kind='personal' OR EXISTS (SELECT 1 FROM email_account_members am
+          WHERE am.account_id=a.id AND am.user_id::text=email_send_attempts.payload->>'actorId')))
     RETURNING id
   `);
   signal.throwIfAborted();
