@@ -14,10 +14,14 @@ afterEach(() => {
   cleanup();
   vi.clearAllMocks();
   customFieldDefs.splice(0);
+  personOptions.data = [{ id: "pe1", name: "Jane Roe" }];
 });
 
-const { customFieldDefs } = vi.hoisted(() => ({
+const { customFieldDefs, personOptions } = vi.hoisted(() => ({
   customFieldDefs: [] as Array<Record<string, unknown>>,
+  personOptions: {
+    data: [{ id: "pe1", name: "Jane Roe" }] as Array<{ id: string; name: string }> | undefined,
+  },
 }));
 
 // tRPC hooks the modal reads. listUsers / listVisibilityGroups return empty so the manager-only
@@ -25,7 +29,7 @@ const { customFieldDefs } = vi.hoisted(() => ({
 vi.mock("@/lib/trpc-client", () => ({
   trpc: {
     contacts: {
-      personOptions: { useQuery: () => ({ data: [{ id: "pe1", name: "Jane Roe" }] }) },
+      personOptions: { useQuery: () => ({ data: personOptions.data }) },
       orgOptions: { useQuery: () => ({ data: [{ id: "or1", name: "Acme Inc" }] }) },
     },
     labels: { listByTarget: { useQuery: () => ({ data: [] }) } },
@@ -289,5 +293,58 @@ describe("AddDealModal", () => {
       expect.objectContaining({ name: "Test User", orgId: "onew" }),
       "csrf",
     );
+  });
+
+  function renderPrefilled(): void {
+    render(
+      <InterfacePrefsProvider value={INTERFACE_PREFS_DEFAULT}>
+        <QueryClientProvider client={new QueryClient()}>
+          <AddDealModal
+            pipelineId={PIPE}
+            pipelines={[{ id: PIPE, name: "Sales", stages: [{ id: STAGE_A, name: "Qualified" }] }]}
+            prefillTitle="Partnership"
+            prefillPerson={{ id: "pe1", name: "Jane Roe" }}
+            onClose={vi.fn()}
+            onCreated={vi.fn()}
+          />
+        </QueryClientProvider>
+      </InterfacePrefsProvider>,
+    );
+  }
+
+  async function expectSavedWithPrefilledPerson(): Promise<void> {
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() =>
+      expect(createDealAction).toHaveBeenCalledWith(
+        expect.objectContaining({ title: "Partnership", personId: "pe1" }),
+        expect.anything(),
+      ),
+    );
+    expect(createPersonAction).not.toHaveBeenCalled();
+  }
+
+  it("prefills an existing contact person and submits the deal with that person", async () => {
+    renderPrefilled();
+    expect(screen.getByLabelText("Contact person")).toHaveValue("Jane Roe");
+    expect(screen.getByLabelText("Deal title")).toHaveValue("Partnership");
+    await expectSavedWithPrefilledPerson();
+  });
+
+  it("keeps the prefilled person on blur when another person shares the name", async () => {
+    personOptions.data = [
+      { id: "pe0", name: "Jane Roe" },
+      { id: "pe1", name: "Jane Roe" },
+    ];
+    renderPrefilled();
+    fireEvent.blur(screen.getByLabelText("Contact person"));
+    await expectSavedWithPrefilledPerson();
+  });
+
+  it("keeps the prefilled person on blur before the person options load", async () => {
+    personOptions.data = undefined;
+    renderPrefilled();
+    fireEvent.blur(screen.getByLabelText("Contact person"));
+    expect(screen.queryByText("NEW")).toBeNull();
+    await expectSavedWithPrefilledPerson();
   });
 });

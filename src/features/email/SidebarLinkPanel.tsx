@@ -126,6 +126,11 @@ export function SidebarLinkPanel(props: SidebarLinkPanelProps): React.ReactNode 
           pipelineId={firstPipelineId}
           pipelines={pipelines}
           prefillTitle={subject ?? undefined}
+          prefillPerson={
+            personId !== null && personName !== null
+              ? { id: personId, name: personName }
+              : undefined
+          }
           onClose={() => setDealModalOpen(false)}
           onCreated={(id) => {
             setDealModalOpen(false);

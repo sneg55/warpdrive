@@ -66,7 +66,7 @@ const props = {
   selected: false,
   onToggleSelected: () => {},
   onOpen: () => {},
-  onArchiveDone: () => {},
+  onArchiveDone: () => Promise.resolve(),
 };
 
 it("reports the error id when archiving is denied (no silent no-op)", async () => {
@@ -78,6 +78,36 @@ it("reports the error id when archiving is denied (no silent no-op)", async () =
 
   await waitFor(() => expect(reportError).toHaveBeenCalledWith("E_PERM_001"));
   expect(onArchiveDone).not.toHaveBeenCalled();
+});
+
+it("shows a working state on the row until the list has refreshed after archiving", async () => {
+  let finishRefresh: () => void = () => {};
+  const refreshed = new Promise<void>((resolve) => {
+    finishRefresh = resolve;
+  });
+  const onArchiveDone = vi.fn(() => refreshed);
+  render(<ThreadRow {...props} onArchiveDone={onArchiveDone} />);
+
+  screen.getByRole("button", { name: "Archive" }).click();
+
+  const working = await screen.findByRole("button", { name: "Archiving" });
+  expect(working).toBeDisabled();
+  expect(working).toHaveAttribute("aria-busy", "true");
+  expect(screen.getByRole("listitem")).toHaveAttribute("aria-busy", "true");
+  await waitFor(() => expect(onArchiveDone).toHaveBeenCalled());
+  expect(screen.getByRole("button", { name: "Archiving" })).toBeDisabled();
+
+  finishRefresh();
+  await waitFor(() => expect(screen.getByRole("button", { name: "Archive" })).toBeEnabled());
+  expect(screen.getByRole("listitem")).not.toHaveAttribute("aria-busy", "true");
+});
+
+it("clears the working state when archiving is denied", async () => {
+  archiveMock.mockResolvedValueOnce({ ok: false, error: { id: "E_PERM_001" } } as never);
+  render(<ThreadRow {...props} />);
+  screen.getByRole("button", { name: "Archive" }).click();
+  await waitFor(() => expect(reportError).toHaveBeenCalled());
+  expect(screen.getByRole("button", { name: "Archive" })).toBeEnabled();
 });
 
 it("shows the sender display name when present (Pipedrive parity)", () => {

@@ -247,4 +247,26 @@ describe("EntityCombobox", () => {
     expect(screen.getByText("test organisation")).toBeInTheDocument();
     expect(screen.queryByText("test org")).toBeNull();
   });
+
+  it("re-commits the held selection on every Enter so a failed pick can be retried", () => {
+    const onPick = vi.fn();
+    renderCombobox({ onPick });
+    const input = screen.getByLabelText("Organization");
+    fireEvent.change(input, { target: { value: "Acme Inc" } });
+    fireEvent.keyDown(input, { key: "Enter" });
+    fireEvent.keyDown(input, { key: "Enter" });
+    expect(onPick).toHaveBeenCalledTimes(2);
+    expect(onPick).toHaveBeenLastCalledWith({ kind: "existing", id: "or1" });
+  });
+
+  it("commits the initial selection by id on Enter even when another option shares its name", () => {
+    const onPick = vi.fn();
+    renderCombobox({
+      onPick,
+      options: [{ id: "dup", name: "Acme Inc" }, ...ORGS],
+      initialValue: { id: "or1", name: "Acme Inc" },
+    });
+    fireEvent.keyDown(screen.getByLabelText("Organization"), { key: "Enter" });
+    expect(onPick).toHaveBeenCalledWith({ kind: "existing", id: "or1" });
+  });
 });

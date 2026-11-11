@@ -41,7 +41,7 @@ const props = {
   selected: false,
   onToggleSelected: () => {},
   onOpen: () => {},
-  onArchiveDone: () => {},
+  onArchiveDone: () => Promise.resolve(),
 };
 
 it("masks the email snippet from session replay", () => {

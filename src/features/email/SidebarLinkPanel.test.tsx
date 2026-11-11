@@ -46,8 +46,17 @@ vi.mock("@/features/contacts/QuickAddContact", () => ({
 
 // AddDealModal stubbed so its onCreated (new deal id) can be fired directly once opened.
 vi.mock("@/features/deals/AddDealModal", () => ({
-  AddDealModal: (props: { onCreated: (id: string) => void }) => (
-    <button type="button" data-testid="deal-modal-create" onClick={() => props.onCreated("nd1")}>
+  AddDealModal: (props: {
+    onCreated: (id: string) => void;
+    prefillPerson?: { id: string; name: string };
+  }) => (
+    <button
+      type="button"
+      data-testid="deal-modal-create"
+      data-prefill-person={props.prefillPerson?.id ?? ""}
+      data-prefill-person-name={props.prefillPerson?.name ?? ""}
+      onClick={() => props.onCreated("nd1")}
+    >
       create deal
     </button>
   ),
@@ -127,6 +136,20 @@ describe("SidebarLinkPanel", () => {
     await waitFor(() =>
       expect(linkThreadMock).toHaveBeenCalledWith("csrf", { threadId: "t1", dealId: "nd1" }),
     );
+  });
+
+  it("prefills the linked contact into the new deal", () => {
+    render(<SidebarLinkPanel {...baseProps} personId="p9" personName="Rokas Stuikys" />);
+    fireEvent.click(screen.getByRole("button", { name: STRINGS.inbox.addNewDeal }));
+    const modal = screen.getByTestId("deal-modal-create");
+    expect(modal).toHaveAttribute("data-prefill-person", "p9");
+    expect(modal).toHaveAttribute("data-prefill-person-name", "Rokas Stuikys");
+  });
+
+  it("leaves the deal contact empty when no contact is linked", () => {
+    render(<SidebarLinkPanel {...baseProps} />);
+    fireEvent.click(screen.getByRole("button", { name: STRINGS.inbox.addNewDeal }));
+    expect(screen.getByTestId("deal-modal-create")).toHaveAttribute("data-prefill-person", "");
   });
 
   // A failed link (expired CSRF, record restricted/deleted before click) must surface, not no-op

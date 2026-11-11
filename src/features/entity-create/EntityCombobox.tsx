@@ -24,6 +24,7 @@ export interface EntityComboboxProps {
   // Visually hide the label (kept for screen readers via the input's aria-label). Used where the
   // surrounding surface is labelless, e.g. the deal Summary's inline org row.
   hideLabel?: boolean;
+  initialValue?: Option;
 }
 
 // Custom autocomplete panel (kept, not migrated to ui/Combobox). The cmdk-based Combobox is a
@@ -43,10 +44,15 @@ const ROW = "block w-full px-2.5 py-1.5 text-left text-sm hover:bg-accent";
 export function EntityCombobox(props: EntityComboboxProps): React.ReactNode {
   const { label, options, createLabel, onSelectExisting, onCreateNew, onClear, placeholder } =
     props;
-  const { similarWarning, hideLabel, onPick, excludeIds, defaultOptions } = props;
-  const [query, setQuery] = useState("");
+  const { similarWarning, hideLabel, onPick, excludeIds, defaultOptions, initialValue } = props;
+  const [query, setQuery] = useState(initialValue?.name ?? "");
   const [open, setOpen] = useState(false);
-  const [chosen, setChosen] = useState<"existing" | "new" | null>(null);
+  const [chosen, setChosen] = useState<"existing" | "new" | null>(
+    initialValue === undefined ? null : "existing",
+  );
+  const [selected, setSelected] = useState<Option | undefined>(initialValue);
+  const keepsSelection = (text: string): boolean =>
+    selected !== undefined && text === selected.name.trim();
 
   const q = query.trim().toLowerCase();
   // In "review" mode (after committing a create) the menu offers the near-duplicates so the user can
@@ -84,6 +90,7 @@ export function EntityCombobox(props: EntityComboboxProps): React.ReactNode {
     setQuery(value);
     setOpen(true);
     setChosen(null);
+    setSelected(undefined);
     // Commit the typed value to the parent on every keystroke (not only on blur/selection), so a
     // submit that fires before the field blurs still sees the current choice. An exact existing
     // name selects that record; any other non-empty text is a pending create-new; empty clears.
@@ -100,6 +107,7 @@ export function EntityCombobox(props: EntityComboboxProps): React.ReactNode {
 
   function selectExisting(option: Option): void {
     setQuery(option.name);
+    setSelected(option);
     setChosen("existing");
     setOpen(false);
     onSelectExisting(option.id);
@@ -121,6 +129,10 @@ export function EntityCombobox(props: EntityComboboxProps): React.ReactNode {
   function commitFromKeyboard(): void {
     const text = query.trim();
     if (text === "") return;
+    if (selected !== undefined && keepsSelection(text)) {
+      selectExisting(selected);
+      return;
+    }
     const match = options.find((o) => o.name.trim().toLowerCase() === text.toLowerCase());
     if (match !== undefined) selectExisting(match);
     else createNew();
@@ -128,6 +140,7 @@ export function EntityCombobox(props: EntityComboboxProps): React.ReactNode {
 
   function reconcile(): void {
     const text = query.trim();
+    if (keepsSelection(text)) return;
     if (text === "") {
       setChosen(null);
       onClear();

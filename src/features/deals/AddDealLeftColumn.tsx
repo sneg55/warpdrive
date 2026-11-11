@@ -31,6 +31,7 @@ interface AddDealLeftColumnProps {
   // Optional: falls back to a plain title patch when a caller does not need the edit signal.
   onTitleChange?: (value: string) => void;
   people: Option[];
+  initialPerson?: Option;
   orgs: Option[];
   pipelines: PipelineOption[];
   stages: Option[]; // stages of the currently selected pipeline
@@ -49,6 +50,7 @@ export function AddDealLeftColumn(props: AddDealLeftColumnProps): React.ReactNod
     set,
     onTitleChange,
     people,
+    initialPerson,
     orgs,
     pipelines,
     stages,
@@ -66,6 +68,7 @@ export function AddDealLeftColumn(props: AddDealLeftColumnProps): React.ReactNod
         label="Contact person"
         options={people}
         placeholder="Search or add a person"
+        initialValue={initialPerson}
         createLabel={(q) => `Add '${q}' as new person`}
         similarWarning="Similar contact already exists."
         onSelectExisting={(id) => set({ personMode: "existing", personId: id })}

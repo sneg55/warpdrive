@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, Paperclip } from "lucide-react";
+import { ChevronDown, LoaderCircle, Paperclip } from "lucide-react";
 import { useState } from "react";
 import { useActionError } from "@/components/shell/ActionErrorProvider";
 import { Checkbox } from "@/components/ui/Checkbox";
@@ -30,34 +30,47 @@ export function canSelectInFolder(folder: ThreadFolder): boolean {
 function RowArchiveButton({
   folder,
   threadId,
+  busy,
+  setBusy,
   onDone,
 }: {
   folder: ThreadFolder;
   threadId: string;
-  onDone: () => void;
+  busy: boolean;
+  setBusy: (busy: boolean) => void;
+  onDone: () => Promise<unknown>;
 }): React.ReactNode {
-  const [busy, setBusy] = useState(false);
   const reportError = useActionError();
   if (!canArchiveInFolder(folder)) return null;
   const isArchive = folder === "archive";
+  const idleLabel = isArchive ? "Unarchive" : "Archive";
+  const busyLabel = isArchive ? "Unarchiving" : "Archiving";
 
   async function run(): Promise<void> {
     setBusy(true);
-    const action = isArchive ? unarchiveThreadAction : archiveThreadAction;
-    const res = await action(readCsrfToken(), { threadId });
-    setBusy(false);
-    if (res.ok) onDone();
-    else reportError(res.error.id);
+    try {
+      const action = isArchive ? unarchiveThreadAction : archiveThreadAction;
+      const res = await action(readCsrfToken(), { threadId });
+      if (res.ok) await onDone();
+      else reportError(res.error.id);
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
     <button
       type="button"
       disabled={busy}
+      aria-busy={busy}
+      aria-label={busy ? busyLabel : idleLabel}
       onClick={() => void run()}
-      className={`${ROW_ACTION_BUTTON} self-start`}
+      className={`${ROW_ACTION_BUTTON} inline-flex items-center gap-1 self-start`}
     >
-      {isArchive ? "Unarchive" : "Archive"}
+      {busy && (
+        <LoaderCircle aria-hidden="true" className="h-3 w-3 animate-spin motion-reduce:hidden" />
+      )}
+      {busy ? `${busyLabel}…` : idleLabel}
     </button>
   );
 }
@@ -69,7 +82,7 @@ interface ThreadRowProps {
   selected: boolean;
   onToggleSelected: (threadId: string) => void;
   onOpen: (threadId: string) => void;
-  onArchiveDone: () => void;
+  onArchiveDone: () => Promise<unknown>;
   onVisibilityChanged?: () => void;
 }
 
@@ -85,9 +98,15 @@ export function ThreadRow({
 }: ThreadRowProps): React.ReactNode {
   const subject = thread.subject ?? "(no subject)";
   const weight = thread.unread ? "font-semibold" : "font-normal";
+  const [archiving, setArchiving] = useState(false);
   return (
     <li
-      className={`group flex items-center gap-2 pr-2 [content-visibility:auto] [contain-intrinsic-size:auto_52px] ${active ? "bg-accent" : "hover:bg-muted/50"}`}
+      aria-busy={archiving || undefined}
+      className={cn(
+        "group flex items-center gap-2 pr-2 transition-opacity [content-visibility:auto] [contain-intrinsic-size:auto_52px]",
+        active ? "bg-accent" : "hover:bg-muted/50",
+        archiving && "opacity-60",
+      )}
     >
       {canSelectInFolder(folder) && (
         <div className="flex items-center px-2 py-2.5">
@@ -158,8 +177,19 @@ export function ThreadRow({
           <ChevronDown data-privacy-caret="true" aria-hidden="true" className="-ml-1 h-3 w-3" />
         </div>
       )}
-      <div className="shrink-0 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
-        <RowArchiveButton folder={folder} threadId={thread.id} onDone={onArchiveDone} />
+      <div
+        className={cn(
+          "shrink-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100",
+          archiving ? "opacity-100" : "opacity-0",
+        )}
+      >
+        <RowArchiveButton
+          folder={folder}
+          threadId={thread.id}
+          busy={archiving}
+          setBusy={setArchiving}
+          onDone={onArchiveDone}
+        />
       </div>
 
       <span className="w-16 shrink-0 text-right text-sm text-muted-foreground tabular-nums">

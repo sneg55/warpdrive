@@ -58,9 +58,11 @@ export function ThreadList({
   const pending = providedThreads !== undefined ? threadsPending : feed.pending;
   const showSkeleton = pending && threads.length === 0;
 
-  function afterArchive(): void {
-    void utils.email.inbox.list.invalidate();
-    void utils.email.folders.archive.invalidate();
+  function afterArchive(): Promise<unknown> {
+    return Promise.all([
+      utils.email.inbox.list.invalidate(),
+      utils.email.folders.archive.invalidate(),
+    ]);
   }
 
   function afterReadChange(): void {
@@ -108,7 +110,10 @@ export function ThreadList({
 
   function bulkArchive(): void {
     const op = folder === "archive" ? unarchiveThreadAction : archiveThreadAction;
-    void applyBulk((threadId) => op(readCsrfToken(), { threadId }), afterArchive);
+    void applyBulk(
+      (threadId) => op(readCsrfToken(), { threadId }),
+      () => void afterArchive(),
+    );
   }
 
   function bulkMarkRead(): void {

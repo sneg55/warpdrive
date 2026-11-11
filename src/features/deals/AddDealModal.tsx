@@ -39,6 +39,7 @@ export interface AddDealModalProps {
   stageId?: string;
   // Optional initial title (inbox sidebar seeds this from the thread subject). Locks title autofill.
   prefillTitle?: string;
+  prefillPerson?: Option;
   onClose: () => void;
   // Receives the new deal's id and (validated, post-trim) title so a caller can auto-link and
   // display it without a second fetch (inbox sidebar, compose-time link sidebar); existing
@@ -63,7 +64,14 @@ function dealDetailsPath(
 }
 
 export function AddDealModal(props: AddDealModalProps): React.ReactNode {
-  const { pipelineId, pipelines, baseCurrency = "USD", stageId, prefillTitle } = props;
+  const {
+    pipelineId,
+    pipelines,
+    baseCurrency = "USD",
+    stageId,
+    prefillTitle,
+    prefillPerson,
+  } = props;
   const { onClose, onCreated, suppressDetailNav = false } = props;
   const router = useRouter();
   const { autoPrefixLeadDealTitles, openDetailsAfterCreate } = useInterfacePrefs();
@@ -71,7 +79,11 @@ export function AddDealModal(props: AddDealModalProps): React.ReactNode {
   const hasPrefillTitle = prefillTitle !== undefined && prefillTitle.trim() !== "";
   const [state, setState] = useState<AddDealState>(() => {
     const base = initialAddDealState(pipelineId, stageId ?? firstStage);
-    return hasPrefillTitle ? { ...base, title: prefillTitle } : base;
+    const withPerson =
+      prefillPerson === undefined
+        ? base
+        : { ...base, personMode: "existing" as const, personId: prefillPerson.id };
+    return hasPrefillTitle ? { ...withPerson, title: prefillTitle } : withPerson;
   });
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -236,6 +248,7 @@ export function AddDealModal(props: AddDealModalProps): React.ReactNode {
       leftColumn={
         <AddDealLeftColumn
           state={state}
+          initialPerson={prefillPerson}
           set={set}
           onTitleChange={(v) => {
             setTitleEdited(true);
