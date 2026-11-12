@@ -42,6 +42,7 @@ export function MessageBodyFrame(props: {
   html: string;
   allowRemote: boolean;
   onShowRemote: () => void;
+  title?: string;
 }): React.ReactNode {
   // null until the frame has loaded and reported its content height; min-height keeps a
   // short (or not-yet-loaded) body from collapsing.
@@ -67,7 +68,7 @@ export function MessageBodyFrame(props: {
         </Button>
       )}
       <iframe
-        title="email body"
+        title={props.title ?? "email body"}
         className={`${BLOCK_CLASS} block overflow-hidden rounded-md border border-border`}
         sandbox={IFRAME_SANDBOX}
         srcDoc={srcDoc}

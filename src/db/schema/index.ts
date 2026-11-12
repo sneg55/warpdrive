@@ -24,6 +24,7 @@ export * from "./identity";
 export * from "./importBatches";
 export * from "./importExternalIds";
 export * from "./importRows";
+export * from "./intercom";
 export * from "./labels";
 export * from "./leads";
 export * from "./lostReasons";

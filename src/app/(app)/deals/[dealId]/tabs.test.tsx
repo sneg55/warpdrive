@@ -17,6 +17,7 @@ const noteState = vi.hoisted(() => ({
 }));
 vi.mock("@/lib/trpc-client", () => ({
   trpc: {
+    intercom: { list: { useQuery: () => ({ data: undefined }) } },
     // ActivityCard (rendered in the Focus/History feeds) reads useUtils for its optimistic mark-done.
     useUtils: () => ({
       activities: { listForEntity: { setData: () => {}, invalidate: () => {} } },

@@ -9,6 +9,7 @@ import { enrichmentRouter } from "@/features/enrichment/router";
 import { filesRouter } from "@/features/files/router";
 import { goalsRouter } from "@/features/goals/router";
 import { importRouter } from "@/features/import/router";
+import { intercomRouter } from "@/features/intercom/router";
 import { labelsRouter } from "@/features/labels/router";
 import { leadRouter } from "@/features/leads/leadRouter";
 import { notificationsRouter } from "@/features/notifications/router";
@@ -32,6 +33,7 @@ export const appRouter = router({
   collaboration: collaborationRouter,
   activities: activitiesRouter,
   import: importRouter,
+  intercom: intercomRouter,
   labels: labelsRouter,
   mailLabels: mailLabelsRouter,
   lead: leadRouter,

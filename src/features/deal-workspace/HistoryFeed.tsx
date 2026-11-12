@@ -1,9 +1,10 @@
-import { Mail } from "lucide-react";
+import { Mail, MessagesSquare } from "lucide-react";
 import type React from "react";
 import type { DraftSummary } from "@/features/email/draftRepo";
 import { EmailDraftCard } from "@/features/email/EmailDraftCard";
 import type { EmailCardScope } from "@/features/email/EmailTimelineCard";
 import { EmailTimelineCard } from "@/features/email/EmailTimelineCard";
+import { SupportConversationCard } from "@/features/intercom/SupportConversationCard";
 import { ActivityCard } from "./history/ActivityCard";
 import { AttributionLine } from "./history/AttributionLine";
 import { CreatedCard } from "./history/CreatedCard";
@@ -28,6 +29,24 @@ function EventRow({
   );
 }
 
+function IconRailBadge({
+  rail,
+  children,
+}: {
+  rail: string;
+  children: React.ReactNode;
+}): React.ReactNode {
+  return (
+    <span
+      aria-hidden="true"
+      data-rail={rail}
+      className="absolute -left-[2.15rem] top-1 flex h-5 w-5 items-center justify-center rounded-full border border-border bg-card text-muted-foreground"
+    >
+      {children}
+    </span>
+  );
+}
+
 // Rail marker per kind: notes an amber dot, emails an envelope, everything else a neutral dot.
 // Activities do NOT get their type glyph on the rail: ActivityCard already shows the type icon next
 // to the subject, and duplicating it on the rail made a task activity (whose glyph is a checkmark)
@@ -35,13 +54,16 @@ function EventRow({
 function RailMarker({ item }: { item: HistoryItem }): React.ReactNode {
   if (item.kind === "email" || item.kind === "emailDraft") {
     return (
-      <span
-        aria-hidden="true"
-        data-rail="email"
-        className="absolute -left-[2.15rem] top-1 flex h-5 w-5 items-center justify-center rounded-full border border-border bg-card text-muted-foreground"
-      >
+      <IconRailBadge rail="email">
         <Mail className="h-3 w-3" />
-      </span>
+      </IconRailBadge>
+    );
+  }
+  if (item.kind === "supportConversation") {
+    return (
+      <IconRailBadge rail="support">
+        <MessagesSquare className="h-3 w-3" />
+      </IconRailBadge>
     );
   }
   return (
@@ -128,6 +150,9 @@ export function HistoryFeed({
               onResume={onResumeDraft}
               onChanged={onDraftChanged ?? ((): void => {})}
             />
+          )}
+          {item.kind === "supportConversation" && (
+            <SupportConversationCard conversation={item.conversation} scope={item.scope} />
           )}
           {item.kind === "email" && emailScope !== undefined && (
             <EmailTimelineCard

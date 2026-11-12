@@ -12,12 +12,14 @@ import {
   buildHistoryTimeline,
   mergeDraftItems,
   mergeEmailItems,
+  mergeSupportItems,
   partitionFocusHistory,
 } from "@/features/deal-workspace/historyTimeline";
 import { PinnedNotesSection } from "@/features/deal-workspace/PinnedNotesSection";
 import { SectionHeading } from "@/features/deal-workspace/SectionHeading";
 import type { DraftSummary } from "@/features/email/draftRepo";
 import { emailTabStatusLabel } from "@/features/email/emailTabStatus";
+import { useSupportConversations } from "@/features/intercom/useSupportConversations";
 import { trpc } from "@/lib/trpc-client";
 
 // Stable empty array: a new [] on every render would churn useMemo dependencies below.
@@ -53,8 +55,9 @@ export function bucketByType(history: HistoryItem[]): Record<Tab, HistoryItem[]>
     activities: history.filter((i) => i.kind === "activity"),
     notes: history.filter((i) => i.kind === "note"),
     changelog: history.filter((i) => i.kind === "event"),
-    // Drafts sit under Email with the sent messages: same conversation, one still unsent.
-    email: history.filter((i) => i.kind === "email" || i.kind === "emailDraft"),
+    email: history.filter(
+      (i) => i.kind === "email" || i.kind === "emailDraft" || i.kind === "supportConversation",
+    ),
     files: [],
   };
 }
@@ -101,19 +104,23 @@ export function WorkspaceTabs({
   const draftQuery = trpc.email.drafts.listForDeal.useQuery({ dealId: deal.id });
   const drafts = draftQuery.data ?? EMPTY;
   const utils = trpc.useUtils();
+  const supportScope = useMemo(() => ({ kind: "deal" as const, dealId: deal.id }), [deal.id]);
+  const support = useSupportConversations(supportScope);
 
-  // Focus vs History split (Wave 3, Task 17): Focus is the open/actionable
-  // activities; History is everything else, filtered by the existing per-type tabs.
   const allItems = useMemo(
     () =>
-      mergeDraftItems(
-        mergeEmailItems(
-          buildHistoryTimeline(activities, resolvedChangelog, notes, createdAnchor),
-          emails,
+      mergeSupportItems(
+        mergeDraftItems(
+          mergeEmailItems(
+            buildHistoryTimeline(activities, resolvedChangelog, notes, createdAnchor),
+            emails,
+          ),
+          drafts,
         ),
-        drafts,
+        support,
+        supportScope,
       ),
-    [activities, resolvedChangelog, notes, createdAnchor, emails, drafts],
+    [activities, resolvedChangelog, notes, createdAnchor, emails, drafts, support, supportScope],
   );
   const { pinned, focus, history } = useMemo(() => partitionFocusHistory(allItems), [allItems]);
   const historyByType = useMemo(() => bucketByType(history), [history]);

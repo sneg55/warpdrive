@@ -12,6 +12,7 @@ import {
   PGBOSS_QUEUE_EMAIL_SEND,
   PGBOSS_QUEUE_EMAIL_SYNC,
   PGBOSS_QUEUE_FILE_REAPER,
+  PGBOSS_QUEUE_INTERCOM_SYNC,
   PGBOSS_QUEUE_RELEASE_CHECK,
 } from "@/constants/jobNames";
 import { makeTestDb } from "@/test/db";
@@ -110,6 +111,9 @@ describe("registerAllJobs", () => {
       // queue is created and scheduled alongside the reaper.
       expect(queueNames).toContain(PGBOSS_QUEUE_RELEASE_CHECK);
       expect(fakeBoss.schedules.some((s) => s.name === PGBOSS_QUEUE_RELEASE_CHECK)).toBe(true);
+
+      expect(queueNames).not.toContain(PGBOSS_QUEUE_INTERCOM_SYNC);
+      expect(fakeBoss.schedules.some((s) => s.name === PGBOSS_QUEUE_INTERCOM_SYNC)).toBe(false);
     } finally {
       testDbHolder.db = null;
       await h.close();

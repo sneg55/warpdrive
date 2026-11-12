@@ -53,6 +53,7 @@ const { personOptionsQuery, invalidatePersonOptions } = vi.hoisted(() => ({
 vi.mock("@/lib/trpc-client", () => ({
   trpc: {
     useUtils: () => ({
+      intercom: { list: { invalidate: vi.fn() } },
       deal: { participants: { invalidate: vi.fn() } },
       contacts: {
         personOptions: { invalidate: invalidatePersonOptions },

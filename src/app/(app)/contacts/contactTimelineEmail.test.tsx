@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 const listQuery = vi.fn();
 vi.mock("@/lib/trpc-client", () => ({
   trpc: {
+    intercom: { list: { useQuery: () => ({ data: undefined }) } },
     contacts: { contactTimeline: { useQuery: () => ({ data: { items: [] } }) } },
     email: { listMessagesForContact: { useQuery: (...a: unknown[]) => listQuery(...a) } },
     files: { listForEntity: { useQuery: () => ({ data: [] }) } },

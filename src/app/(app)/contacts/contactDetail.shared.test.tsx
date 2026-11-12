@@ -66,6 +66,7 @@ const invalidate = vi.fn();
 const invalidateActivityStats = vi.fn();
 vi.mock("@/lib/trpc-client", () => ({
   trpc: {
+    intercom: { list: { useQuery: () => ({ data: undefined }) } },
     contacts: {
       contactTimeline: { useQuery: () => ({ data: { items: queryItems } }) },
     },

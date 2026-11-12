@@ -14,6 +14,8 @@ import { InboxNavBadge } from "@/features/email/InboxNavBadge";
 import { InterfacePrefsProvider } from "@/features/identity/InterfacePrefsProvider";
 import { interfacePrefsFromUi } from "@/features/identity/interfacePrefs";
 import { getPreferencesForActor } from "@/features/identity/preferencesForActor";
+import { IntercomEnabledProvider } from "@/features/intercom/IntercomEnabledProvider";
+import { isIntercomEnabled } from "@/features/intercom/settings";
 import { IdentifyUser } from "@/features/observability/IdentifyUser";
 import { VersionBanner } from "@/features/release/ui/VersionBanner";
 import { CommandPalette } from "@/features/search/ui/CommandPalette";
@@ -53,28 +55,30 @@ export default async function AppLayout({ children }: { children: ReactNode }): 
         }}
       />
       <InterfacePrefsProvider value={interfacePrefsFromUi(prefs.ui)}>
-        <FollowUpPromptProvider>
-          <div data-density={prefs.density} className="flex h-screen flex-col">
-            <CsrfRefresher hasCsrf={hasCsrf} />
-            {ctx.actor.type === "admin" && <VersionBanner />}
-            <ReconnectBanner />
-            <TopBar
-              userId={ctx.actor.id}
-              userName={ctx.actor.name}
-              avatarUrl={ctx.actor.avatarUrl}
-              appearance={parseAppearance(prefs.ui.appearance)}
-            />
-            <div className="flex min-h-0 flex-1">
-              <LeftNav
-                initialExpanded={navExpanded}
-                inboxBadge={<InboxNavBadge selfActorId={ctx.actor.id} />}
+        <IntercomEnabledProvider enabled={isIntercomEnabled()}>
+          <FollowUpPromptProvider>
+            <div data-density={prefs.density} className="flex h-screen flex-col">
+              <CsrfRefresher hasCsrf={hasCsrf} />
+              {ctx.actor.type === "admin" && <VersionBanner />}
+              <ReconnectBanner />
+              <TopBar
+                userId={ctx.actor.id}
+                userName={ctx.actor.name}
+                avatarUrl={ctx.actor.avatarUrl}
+                appearance={parseAppearance(prefs.ui.appearance)}
               />
-              <main className="min-w-0 flex-1 overflow-auto bg-muted/70 p-6">{children}</main>
+              <div className="flex min-h-0 flex-1">
+                <LeftNav
+                  initialExpanded={navExpanded}
+                  inboxBadge={<InboxNavBadge selfActorId={ctx.actor.id} />}
+                />
+                <main className="min-w-0 flex-1 overflow-auto bg-muted/70 p-6">{children}</main>
+              </div>
+              <CommandPalette />
+              <GlobalShortcuts />
             </div>
-            <CommandPalette />
-            <GlobalShortcuts />
-          </div>
-        </FollowUpPromptProvider>
+          </FollowUpPromptProvider>
+        </IntercomEnabledProvider>
       </InterfacePrefsProvider>
     </ActionErrorProvider>
   );

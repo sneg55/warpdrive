@@ -5,6 +5,7 @@ import { registerReminderWorker } from "@/features/activities/reminders";
 import { registerEmailJobs } from "@/features/email/workerJobs";
 import { registerReaperJob } from "@/features/files/reaper";
 import { registerImportWorkers } from "@/features/import/registerImportWorkers";
+import { registerIntercomSyncJob } from "@/features/intercom/job";
 import { registerEmailNotificationWorker } from "@/features/notifications/email/job";
 import { registerReleaseCheckJob } from "@/features/release/job";
 import { setBoss } from "@/jobs/boss";
@@ -21,6 +22,7 @@ export async function registerAllJobs(boss: PgBossType): Promise<void> {
   await registerReminderWorker(boss);
   // Update-check cron (OSS self-hosters). No-op when DISABLE_UPDATE_CHECK is set.
   await registerReleaseCheckJob(boss);
+  await registerIntercomSyncJob(boss);
 }
 
 // Compose `worker` service. Boots pg-boss, publishes the singleton so producers

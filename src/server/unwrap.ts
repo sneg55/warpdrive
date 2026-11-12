@@ -14,6 +14,7 @@ const NOT_FOUND_IDS = new Set<string>([
   ERROR_IDS.IMPORT_BATCH_NOT_FOUND,
   ERROR_IDS.GMAIL_THREAD_NOT_FOUND,
   ERROR_IDS.GMAIL_MESSAGE_NOT_FOUND,
+  ERROR_IDS.INTERCOM_CONVERSATION_DENIED,
 ]);
 
 // 403: record is visible but the actor lacks permission for the action.

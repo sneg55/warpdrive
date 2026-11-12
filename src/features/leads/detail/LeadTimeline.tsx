@@ -64,6 +64,7 @@ export function LeadTimeline({
   const { pinned, focus, history } = useMemo(() => partitionFocusHistory(items), [items]);
   const activities = history.filter((i) => i.kind === "activity");
   const notes = history.filter((i) => i.kind === "note");
+  const support = history.filter((i) => i.kind === "supportConversation");
 
   return (
     <div className="space-y-6">
@@ -99,7 +100,12 @@ export function LeadTimeline({
                   onNoteChanged={onNoteChanged}
                 />
               )}
-              {tab === "email" && <EmailList emails={emails} />}
+              {tab === "email" && (
+                <div className="space-y-4">
+                  {support.length > 0 && <HistoryFeed items={support} emptyLabel="" />}
+                  {(emails.length > 0 || support.length === 0) && <EmailList emails={emails} />}
+                </div>
+              )}
             </div>
           </Tabs>
         )}

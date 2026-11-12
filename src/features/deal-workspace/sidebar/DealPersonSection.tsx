@@ -83,6 +83,7 @@ export function DealPersonSection({
       utils.deal.participants.invalidate({ dealId }),
       utils.contacts.dealsForPerson.invalidate(),
       utils.contacts.personOptions.invalidate(),
+      utils.intercom.list.invalidate(),
     ]);
     router.refresh();
   }

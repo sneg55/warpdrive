@@ -24,6 +24,8 @@ export const EMAIL_NOTIFICATION_QUEUE = "notification.email";
 // cron-scheduled (see RELEASE_CHECK_CRON) plus one immediate run on worker boot. No payload.
 export const PGBOSS_QUEUE_RELEASE_CHECK = "release.check";
 
+export const PGBOSS_QUEUE_INTERCOM_SYNC = "intercom.sync";
+
 // Import overhaul: four background phases, each its own queue (payload { batchId }),
 // deduped by singletonKey = batchId.
 export const PGBOSS_QUEUE_IMPORT_PREPARE = "import.prepare";

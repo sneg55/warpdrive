@@ -49,6 +49,7 @@ vi.mock("@/features/email/composer/RichTextBody", () => ({
 
 vi.mock("@/lib/trpc-client", () => ({
   trpc: {
+    intercom: { list: { useQuery: () => ({ data: undefined }) } },
     enrichment: { status: { useQuery: () => ({ data: { ready: false, providers: [] } }) } },
     customFields: {
       hiddenBuiltins: {

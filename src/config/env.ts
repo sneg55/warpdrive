@@ -11,6 +11,7 @@ const SECRET_FILE_VARS = [
   "MINIO_SECRET_KEY",
   "DATABASE_URL",
   "OAUTH_SIGNING_KEY",
+  "INTERCOM_ACCESS_TOKEN",
 ] as const;
 
 function resolveFileVars(raw: NodeJS.ProcessEnv): Record<string, string | undefined> {
@@ -92,6 +93,8 @@ const base = z.object({
   // Kill switch for the GitHub update-check banner. A hosted/managed deployment sets this true;
   // OSS self-hosters leave it false to get the banner.
   DISABLE_UPDATE_CHECK: boolFromString.default(false),
+  INTERCOM_ACCESS_TOKEN: z.string().default(""),
+  INTERCOM_REGION: z.enum(["us", "eu", "au"]).default("us"),
 });
 
 // Production guardrails for the first-run bootstrap (ops spec E6).

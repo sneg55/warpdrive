@@ -44,6 +44,7 @@ const { invalidateParticipants } = vi.hoisted(() => ({ invalidateParticipants: v
 vi.mock("@/lib/trpc-client", () => ({
   trpc: {
     useUtils: () => ({
+      intercom: { list: { invalidate: vi.fn() } },
       deal: { participants: { invalidate: invalidateParticipants } },
       contacts: {
         dealsForPerson: { invalidate: vi.fn() },

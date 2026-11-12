@@ -11,6 +11,7 @@ import { FieldRow } from "@/features/deal-workspace/sidebar/FieldRow";
 import { PersonSection } from "@/features/deal-workspace/sidebar/PersonSection";
 import { RecordOrganizationSection } from "@/features/deal-workspace/sidebar/RecordOrganizationSection";
 import { sectionHeaderActions } from "@/features/deal-workspace/sidebar/sectionActions";
+import { useRefreshSupportConversations } from "@/features/intercom/useRefreshSupportConversations";
 import type { CustomFieldDef } from "@/types/customFields";
 import { err, ok } from "@/types/result";
 import { readCsrfToken } from "@/utils/csrfCookie";
@@ -55,6 +56,7 @@ export function LeadSidebar({
   const router = useRouter();
   const [personBulkEditing, setPersonBulkEditing] = useState(false);
   const [organizationBulkEditing, setOrganizationBulkEditing] = useState(false);
+  const refreshSupport = useRefreshSupportConversations();
   const channelName =
     lead.sourceChannel !== null && isSourceChannelKey(lead.sourceChannel)
       ? SOURCE_CHANNELS[lead.sourceChannel].name
@@ -128,6 +130,7 @@ export function LeadSidebar({
           hidden={hiddenPersonFields}
           customFieldDefs={personCustomFieldDefs}
           currency={baseCurrency}
+          onSaved={refreshSupport}
           showLabels
         />
       )}

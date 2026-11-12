@@ -31,7 +31,10 @@ export function useParticipants(
   const participants = participantsQ.data ?? [];
 
   async function refresh(): Promise<void> {
-    await utils.deal.participants.invalidate({ dealId });
+    await Promise.all([
+      utils.deal.participants.invalidate({ dealId }),
+      utils.intercom.list.invalidate(),
+    ]);
     router.refresh();
   }
 

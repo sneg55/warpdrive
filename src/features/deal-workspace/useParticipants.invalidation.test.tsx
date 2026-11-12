@@ -14,6 +14,7 @@ const { invalidatePersonOptions, invalidatePeopleForOrg, invalidateParticipants 
 vi.mock("@/lib/trpc-client", () => ({
   trpc: {
     useUtils: () => ({
+      intercom: { list: { invalidate: vi.fn() } },
       deal: { participants: { invalidate: invalidateParticipants } },
       contacts: {
         personOptions: { invalidate: invalidatePersonOptions },

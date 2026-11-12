@@ -7,12 +7,16 @@ import type { CustomFieldDef } from "@/types/customFields";
 import type { LeadDetail } from "../leadRepo";
 import { LeadSidebar } from "./LeadSidebar";
 
+const invalidateSupport = vi.hoisted(() => vi.fn(() => Promise.resolve()));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 vi.mock("@/lib/trpc-client", () => ({
   trpc: {
     labels: { listByTarget: { useQuery: () => ({ data: [] }) } },
     enrichment: { status: { useQuery: () => ({ data: { ready: false, providers: [] } }) } },
-    useUtils: () => ({ contacts: { contactTimeline: { invalidate: () => Promise.resolve() } } }),
+    useUtils: () => ({
+      contacts: { contactTimeline: { invalidate: () => Promise.resolve() } },
+      intercom: { list: { invalidate: invalidateSupport } },
+    }),
   },
 }));
 const updateLeadAction = vi.hoisted(() =>
@@ -252,4 +256,12 @@ it("saves an inline lead custom field through updateLeadAction", async () => {
       "csrf",
     ),
   );
+});
+
+it("refreshes the lead's support conversations after the linked person is edited", async () => {
+  render(<LeadSidebar lead={baseLead} owners={[]} person={basePerson} org={null} />);
+  fireEvent.click(screen.getByRole("button", { name: "Edit First name" }));
+  fireEvent.change(screen.getByLabelText("editor-firstName"), { target: { value: "Janet" } });
+  fireEvent.click(screen.getByRole("button", { name: "Save" }));
+  await vi.waitFor(() => expect(invalidateSupport).toHaveBeenCalled());
 });

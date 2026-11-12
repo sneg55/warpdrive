@@ -1,13 +1,19 @@
 "use client";
 import type React from "react";
+import { useMemo } from "react";
 import type { Organization, Person } from "@/db/schema";
 import { SharedComposeBar } from "@/features/compose/SharedComposeBar";
+import { mergeSupportItems } from "@/features/deal-workspace/historyTimeline";
+import { useSupportConversations } from "@/features/intercom/useSupportConversations";
 import { LeadHeader } from "@/features/leads/detail/LeadHeader";
 import { LeadSidebar } from "@/features/leads/detail/LeadSidebar";
 import { LeadTimeline } from "@/features/leads/detail/LeadTimeline";
 import type { LeadDetail } from "@/features/leads/leadRepo";
+import type { LeadTimelineResult } from "@/features/leads/leadTimeline";
 import { trpc } from "@/lib/trpc-client";
 import type { CustomFieldDef } from "@/types/customFields";
+
+const EMPTY_TIMELINE: LeadTimelineResult = { items: [], emails: [] };
 
 export interface LeadWorkspaceClientProps {
   lead: LeadDetail;
@@ -37,7 +43,13 @@ export function LeadWorkspaceClient({
   baseCurrency = "USD",
 }: LeadWorkspaceClientProps): React.ReactNode {
   const timelineQ = trpc.lead.leadTimeline.useQuery({ leadId: lead.id });
-  const timeline = timelineQ.data ?? { items: [], emails: [] };
+  const timeline = timelineQ.data ?? EMPTY_TIMELINE;
+  const supportScope = useMemo(() => ({ kind: "lead" as const, leadId: lead.id }), [lead.id]);
+  const support = useSupportConversations(supportScope);
+  const items = useMemo(
+    () => mergeSupportItems(timeline.items, support, supportScope),
+    [timeline.items, support, supportScope],
+  );
   // Assignable users for the sidebar's Owner picker (LeadSummaryEditPanel); the write path
   // (updateLead) is the real authority (deal.changeOwner), this read is deliberately ungated.
   const ownersQ = trpc.identity.assignableUsers.useQuery();
@@ -76,7 +88,7 @@ export function LeadWorkspaceClient({
             onNoteCreated={() => void timelineQ.refetch()}
           />
           <LeadTimeline
-            items={timeline.items}
+            items={items}
             emails={timeline.emails}
             onNoteChanged={() => void timelineQ.refetch()}
           />

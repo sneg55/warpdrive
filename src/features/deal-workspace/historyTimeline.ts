@@ -1,9 +1,11 @@
 import { CHANGE_FIELD_STAGE_ID } from "@/constants/changeLogFields";
 import { type CommentableEntityType, isCommentableEntityType } from "@/constants/comments";
+import { INTERCOM_HISTORY_ID_PREFIX } from "@/constants/intercom";
 import type { CalendarActivity } from "@/features/activities/calendar";
 import type { ChangeLogEntry } from "@/features/collaboration/changeLog";
 import type { DraftSummary } from "@/features/email/draftRepo";
 import type { EmailTimelineMessage } from "@/features/email/entityMessageReads";
+import type { SupportConversationSummary, SupportScope } from "@/features/intercom/supportTypes";
 import { formatChangeLabel, formatValue } from "./changeLabel";
 
 export { formatChangeLabel } from "./changeLabel";
@@ -33,7 +35,14 @@ export type HistoryItem =
   | { kind: "email"; id: string; at: Date; message: EmailTimelineMessage }
   // An unsent draft linked to this record. Author-only (the read is owner-scoped), and ordered by
   // its last edit since it has no sent time.
-  | { kind: "emailDraft"; id: string; at: Date; draft: DraftSummary };
+  | { kind: "emailDraft"; id: string; at: Date; draft: DraftSummary }
+  | {
+      kind: "supportConversation";
+      id: string;
+      at: Date;
+      conversation: SupportConversationSummary;
+      scope: SupportScope;
+    };
 
 export interface NoteItem {
   id: string;
@@ -159,4 +168,20 @@ export function mergeDraftItems(items: HistoryItem[], drafts: DraftSummary[]): H
     draft: d,
   }));
   return [...items, ...draftItems].sort((a, b) => b.at.getTime() - a.at.getTime());
+}
+
+export function mergeSupportItems(
+  items: HistoryItem[],
+  conversations: SupportConversationSummary[],
+  scope: SupportScope,
+): HistoryItem[] {
+  if (conversations.length === 0) return items;
+  const supportItems: HistoryItem[] = conversations.map((c) => ({
+    kind: "supportConversation",
+    id: `${INTERCOM_HISTORY_ID_PREFIX}${c.id}`,
+    at: new Date(c.lastPartAt),
+    conversation: c,
+    scope,
+  }));
+  return [...items, ...supportItems].sort((a, b) => b.at.getTime() - a.at.getTime());
 }

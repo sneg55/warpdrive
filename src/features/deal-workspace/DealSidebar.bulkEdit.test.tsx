@@ -27,6 +27,7 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh }) }));
 vi.mock("@/lib/trpc-client", () => ({
   trpc: {
     useUtils: () => ({
+      intercom: { list: { invalidate: vi.fn() } },
       deal: { participants: { invalidate: vi.fn() } },
       contacts: {
         dealsForPerson: { invalidate: vi.fn() },

@@ -10,7 +10,7 @@
 // anchors it constructs itself, so no sender markup can survive as live HTML.
 import { linkifyEscapedText } from "@/features/collaboration/linkify";
 
-function escapeHtml(s: string): string {
+export function escapeHtml(s: string): string {
   return s.replace(/[&<>"']/g, (c) => {
     switch (c) {
       case "&":

@@ -10,6 +10,7 @@ import { WorkspaceTabs } from "./tabs";
 // read, which the timeline tests there deliberately leave empty.
 vi.mock("@/lib/trpc-client", () => ({
   trpc: {
+    intercom: { list: { useQuery: () => ({ data: undefined }) } },
     useUtils: () => ({
       activities: { listForEntity: { setData: () => {}, invalidate: () => {} } },
       email: {

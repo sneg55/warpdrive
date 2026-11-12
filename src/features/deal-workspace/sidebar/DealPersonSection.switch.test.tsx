@@ -37,8 +37,10 @@ const {
   invalidateParticipants,
   invalidateDealsForPerson,
   invalidatePersonOptions,
+  invalidateSupport,
   personOptionsQuery,
 } = vi.hoisted(() => ({
+  invalidateSupport: vi.fn(),
   invalidateParticipants: vi.fn(),
   invalidateDealsForPerson: vi.fn(),
   invalidatePersonOptions: vi.fn(),
@@ -54,6 +56,7 @@ vi.mock("@/lib/trpc-client", () => ({
   trpc: {
     useUtils: () => ({
       deal: { participants: { invalidate: invalidateParticipants } },
+      intercom: { list: { invalidate: invalidateSupport } },
       contacts: {
         dealsForPerson: { invalidate: invalidateDealsForPerson },
         personOptions: { invalidate: invalidatePersonOptions },
@@ -195,6 +198,15 @@ it("refreshes the participants read after an inline edit to the linked person", 
   fireEvent.click(screen.getByRole("button", { name: "Save" }));
 
   await waitFor(() => expect(invalidateParticipants).toHaveBeenCalledWith({ dealId: "d1" }));
+});
+
+it("refreshes the deal's support conversations when the linked person changes", async () => {
+  renderSection();
+  fireEvent.click(screen.getByRole("button", { name: "Edit First name" }));
+  fireEvent.change(screen.getByLabelText("editor-firstName"), { target: { value: "Pete" } });
+  fireEvent.click(screen.getByRole("button", { name: "Save" }));
+
+  await waitFor(() => expect(invalidateSupport).toHaveBeenCalled());
 });
 
 it("keeps the dialog open and reports the error when the switch is rejected", async () => {

@@ -8,6 +8,7 @@ import { STRINGS } from "@/constants/strings";
 import type { PersonDetail } from "@/features/contacts/personsRepo";
 import { CollapsibleSection } from "@/features/deal-workspace/CollapsibleSection";
 import { PersonSection } from "@/features/deal-workspace/sidebar/PersonSection";
+import { useRefreshSupportConversations } from "@/features/intercom/useRefreshSupportConversations";
 import { trpc } from "@/lib/trpc-client";
 import type { CustomFieldDef } from "@/types/customFields";
 import { ContactOverviewSection } from "../../ContactOverviewSection";
@@ -36,6 +37,7 @@ export function PersonSidebar({
   const router = useRouter();
   const [personBulkEditing, setPersonBulkEditing] = useState(false);
   const deals = trpc.contacts.dealsForPerson.useQuery({ personId: person.id }).data ?? [];
+  const refreshSupport = useRefreshSupportConversations();
 
   return (
     <aside className="space-y-2 min-w-0 lg:order-first">
@@ -54,6 +56,7 @@ export function PersonSidebar({
         hidden={hiddenBuiltins}
         customFieldDefs={defs}
         currency={baseCurrency}
+        onSaved={refreshSupport}
       />
 
       {orgName !== null && person.orgId !== null && (

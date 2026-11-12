@@ -40,6 +40,7 @@ describe("error IDs", () => {
       "LOSTREASON",
       "ENRICH",
       "UI",
+      "INTERCOM",
     ];
     for (const id of Object.values(ERROR_IDS)) {
       const m = /^E_([A-Z]+)_(\d{3})$/.exec(id);
@@ -66,6 +67,15 @@ describe("error IDs", () => {
   test("PERM_SIGNATURE_DENIED exists and differs from PERM_DENIED", () => {
     expect(ERROR_IDS.PERM_SIGNATURE_DENIED).toBeDefined();
     expect(ERROR_IDS.PERM_SIGNATURE_DENIED).not.toBe(ERROR_IDS.PERM_DENIED);
+  });
+
+  test("the Intercom integration has its own ids", () => {
+    expect(ERROR_IDS.INTERCOM_HTTP_FAILED).toBe("E_INTERCOM_001");
+    expect(ERROR_IDS.INTERCOM_RATE_LIMITED).toBe("E_INTERCOM_002");
+    expect(ERROR_IDS.INTERCOM_NETWORK_FAILED).toBe("E_INTERCOM_003");
+    expect(ERROR_IDS.INTERCOM_PARSE_FAILED).toBe("E_INTERCOM_004");
+    expect(ERROR_IDS.INTERCOM_NOT_FOUND).toBe("E_INTERCOM_005");
+    expect(ERROR_IDS.INTERCOM_CONVERSATION_DENIED).toBe("E_INTERCOM_006");
   });
 
   test("PERM_TEMPLATE_DENIED exists and differs from PERM_DENIED", () => {

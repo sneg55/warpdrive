@@ -8,12 +8,17 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CollapsibleSection } from "@/features/deal-workspace/CollapsibleSection";
 import { HistoryFeed } from "@/features/deal-workspace/HistoryFeed";
 import { countHistoryTabs } from "@/features/deal-workspace/historyTabCounts";
-import { mergeEmailItems, partitionFocusHistory } from "@/features/deal-workspace/historyTimeline";
+import {
+  mergeEmailItems,
+  mergeSupportItems,
+  partitionFocusHistory,
+} from "@/features/deal-workspace/historyTimeline";
 import { PinnedNotesSection } from "@/features/deal-workspace/PinnedNotesSection";
 import { SectionHeading } from "@/features/deal-workspace/SectionHeading";
 import { FieldRow } from "@/features/deal-workspace/sidebar/FieldRow";
 import { emailTabStatusLabel } from "@/features/email/emailTabStatus";
 import { FileAttachments } from "@/features/files/FileAttachments";
+import { useSupportConversations } from "@/features/intercom/useSupportConversations";
 import { trpc } from "@/lib/trpc-client";
 import { ContactHistoryTabs } from "./ContactHistoryTabs";
 
@@ -93,7 +98,12 @@ export function ContactTimelinePanel({
   );
   const rawItems =
     trpc.contacts.contactTimeline.useQuery({ entityType, entityId }).data?.items ?? [];
-  const items = mergeEmailItems(rawItems, emailQuery.data ?? []);
+  const supportScope =
+    entityType === "person" ? ({ kind: "person", personId: entityId } as const) : null;
+  const support = useSupportConversations(supportScope);
+  const withEmail = mergeEmailItems(rawItems, emailQuery.data ?? []);
+  const items =
+    supportScope === null ? withEmail : mergeSupportItems(withEmail, support, supportScope);
   const { pinned, focus, history } = partitionFocusHistory(items);
   const historyByType = bucketByType(history);
 
