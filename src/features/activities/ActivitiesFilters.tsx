@@ -61,12 +61,14 @@ export function ActivitiesFilters({
           ariaLabel="From"
           value={filter.from}
           onChange={(v) => patch({ from: v })}
+          onPresetRange={patch}
           placeholder="From"
         />
         <DatePicker
           ariaLabel="To"
           value={filter.to}
           onChange={(v) => patch({ to: v })}
+          onPresetRange={patch}
           placeholder="To"
         />
         <ActivityScopeChips filter={filter} pipelineName={pipelineName} onChange={onChange} />

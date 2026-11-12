@@ -2,6 +2,9 @@
 import "@testing-library/jest-dom/vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { formatMdy } from "@/components/ui/dateFormat";
+import { resolveRangePreset } from "@/components/ui/rangePresets";
+import { RANGE_PRESET_LABELS } from "@/constants/rangePresets";
 import { SETTINGS_STRINGS } from "@/constants/settingsStrings";
 import type { Goal } from "@/db/schema/goals";
 import { GoalForm } from "./GoalForm";
@@ -64,5 +67,29 @@ describe("GoalForm", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(message);
     expect(screen.queryByText(SETTINGS_STRINGS.goalInvalid)).toBeNull();
     expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it("sets the goal's start and end from a range preset", () => {
+    render(
+      <GoalForm
+        users={[]}
+        teams={[]}
+        pipelines={[]}
+        activityTypes={[]}
+        initial={goal}
+        submitLabel="Save"
+        onSubmit={() => Promise.resolve({ ok: true })}
+        onDone={() => {}}
+      />,
+    );
+    fireEvent.click(screen.getByLabelText(SETTINGS_STRINGS.goalStartsOn));
+    fireEvent.click(screen.getByRole("button", { name: RANGE_PRESET_LABELS.next_month }));
+    const range = resolveRangePreset("next_month", new Date());
+    expect(screen.getByLabelText(SETTINGS_STRINGS.goalStartsOn)).toHaveTextContent(
+      formatMdy(range.from),
+    );
+    expect(screen.getByLabelText(SETTINGS_STRINGS.goalEndsOn)).toHaveTextContent(
+      formatMdy(range.to),
+    );
   });
 });

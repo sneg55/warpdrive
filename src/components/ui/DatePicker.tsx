@@ -7,6 +7,8 @@ import { Button, buttonVariants } from "./Button";
 import { type DayAccessory, dayAccessoryButton } from "./DayAccessoryButton";
 import { formatMdy, parseYmd, toYmd } from "./dateFormat";
 import { Popover, PopoverContent, PopoverTrigger } from "./Popover";
+import { RangePresetRail } from "./RangePresetRail";
+import type { YmdRange } from "./rangePresets";
 
 // react-day-picker is a mid-weight calendar lib that only renders inside the popover, i.e. after
 // the user opens it. Code-split it so every route that merely mounts a DatePicker (deal page,
@@ -50,6 +52,7 @@ interface DatePickerProps {
   dayAccessory?: (localYmd: string) => DayAccessory | null;
   onMonthChange?: (month: Date) => void;
   onOpenChange?: (open: boolean) => void;
+  onPresetRange?: (range: YmdRange) => void;
 }
 
 // Popover + react-day-picker calendar. Value/onChange use local YYYY-MM-DD so
@@ -67,6 +70,7 @@ export function DatePicker({
   dayAccessory,
   onMonthChange,
   onOpenChange,
+  onPresetRange,
 }: DatePickerProps): React.ReactNode {
   const [open, setOpenState] = useState(defaultOpen);
   const setOpen = (next: boolean): void => {
@@ -100,34 +104,46 @@ export function DatePicker({
         )}
       </PopoverTrigger>
       <PopoverContent>
-        <DayPicker
-          mode="single"
-          selected={selected}
-          defaultMonth={selected}
-          onSelect={(day) => {
-            if (day !== undefined) {
-              onChange(toYmd(day));
-              setOpen(false);
-            }
-          }}
-          captionLayout="dropdown"
-          startMonth={startMonth}
-          endMonth={endMonth}
-          onMonthChange={onMonthChange}
-          components={components}
-        />
-        <div className="flex justify-end border-t pt-1.5">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => {
-              onChange(null);
-              setOpen(false);
-            }}
-            className="h-8 text-xs text-muted-foreground hover:text-foreground"
-          >
-            Clear
-          </Button>
+        <div className="flex gap-2">
+          {onPresetRange !== undefined && (
+            <RangePresetRail
+              onPick={(range) => {
+                onPresetRange(range);
+                setOpen(false);
+              }}
+            />
+          )}
+          <div>
+            <DayPicker
+              mode="single"
+              selected={selected}
+              defaultMonth={selected}
+              onSelect={(day) => {
+                if (day !== undefined) {
+                  onChange(toYmd(day));
+                  setOpen(false);
+                }
+              }}
+              captionLayout="dropdown"
+              startMonth={startMonth}
+              endMonth={endMonth}
+              onMonthChange={onMonthChange}
+              components={components}
+            />
+            <div className="flex justify-end border-t pt-1.5">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  onChange(null);
+                  setOpen(false);
+                }}
+                className="h-8 text-xs text-muted-foreground hover:text-foreground"
+              >
+                Clear
+              </Button>
+            </div>
+          </div>
         </div>
       </PopoverContent>
     </Popover>

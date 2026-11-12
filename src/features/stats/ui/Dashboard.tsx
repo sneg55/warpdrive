@@ -3,6 +3,7 @@
 import type React from "react";
 import { useState } from "react";
 import { DatePicker } from "@/components/ui/DatePicker";
+import type { YmdRange } from "@/components/ui/rangePresets";
 import { Select } from "@/components/ui/Select";
 import { STRINGS } from "@/constants/strings";
 import { browserTimeZone } from "@/lib/browserTimeZone";
@@ -53,6 +54,10 @@ export function Dashboard({
   const initial = currentYearRange();
   const [from, setFrom] = useState(initial.from);
   const [to, setTo] = useState(initial.to);
+  const setRange = (range: YmdRange): void => {
+    setFrom(range.from);
+    setTo(range.to);
+  };
   // Default to "All pipelines" (STATS-08). The user can rescope to a specific
   // pipeline and back to all without reloading.
   const [selectedPipelineId, setSelectedPipelineId] = useState<string>(ALL_PIPELINES);
@@ -139,12 +144,14 @@ export function Dashboard({
             ariaLabel={STRINGS.dashboard.rangeStartLabel}
             value={from}
             onChange={(v) => setFrom(v ?? initial.from)}
+            onPresetRange={setRange}
           />
           <span aria-hidden="true">{STRINGS.dashboard.rangeSeparator}</span>
           <DatePicker
             ariaLabel={STRINGS.dashboard.rangeEndLabel}
             value={to}
             onChange={(v) => setTo(v ?? initial.to)}
+            onPresetRange={setRange}
           />
         </div>
         <Select

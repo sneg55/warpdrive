@@ -15,6 +15,8 @@ export const INBOX_STRINGS = {
   filterUnmatched: "Unmatched",
   filterNeedsLinking: "Needs linking",
   noThreads: "No threads found.",
+  inboxZeroTitle: "Inbox zero",
+  inboxZeroBody: "Every conversation is handled. New mail will show up here as it arrives.",
   // Inbox pages 50 threads at a time (INBOX_PAGE_SIZE), matching the People/Orgs lists.
   loadMore: "Load more",
   loadingMore: "Loading...",

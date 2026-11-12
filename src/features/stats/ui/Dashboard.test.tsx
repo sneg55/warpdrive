@@ -49,6 +49,8 @@ vi.mock("@/lib/trpc-client", () => ({
   },
 }));
 
+import { resolveRangePreset } from "@/components/ui/rangePresets";
+import { RANGE_PRESET_LABELS } from "@/constants/rangePresets";
 import { Dashboard } from "./Dashboard";
 
 describe("Dashboard heading", () => {
@@ -84,6 +86,15 @@ describe("Dashboard date range", () => {
     fireEvent.click((await screen.findAllByText("15"))[0]!);
     expect(useQuery).toHaveBeenLastCalledWith(
       expect.objectContaining({ from: expect.stringMatching(/-15$/) }),
+    );
+  });
+
+  it("sets both ends of the range from a preset in either picker", () => {
+    render(<Dashboard today="2026-03-01" canViewOthers currency="USD" />);
+    fireEvent.click(screen.getByLabelText("Range end"));
+    fireEvent.click(screen.getByRole("button", { name: RANGE_PRESET_LABELS.last_month }));
+    expect(useQuery).toHaveBeenLastCalledWith(
+      expect.objectContaining(resolveRangePreset("last_month", new Date())),
     );
   });
 });

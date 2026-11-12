@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/Button";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { Input } from "@/components/ui/Input";
+import type { YmdRange } from "@/components/ui/rangePresets";
 import { Select } from "@/components/ui/Select";
 import {
   ACTIVITY_ACTIONS,
@@ -77,6 +78,10 @@ export function GoalForm({
     initial?.startsOn ?? new Date().toISOString().slice(0, 10),
   );
   const [endsOn, setEndsOn] = useState<string | null>(initial?.endsOn ?? null);
+  const setPeriod = (range: YmdRange): void => {
+    setStartsOn(range.from);
+    setEndsOn(range.to);
+  };
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -214,11 +219,13 @@ export function GoalForm({
         ariaLabel={S.goalStartsOn}
         value={startsOn}
         onChange={(v) => setStartsOn(v ?? startsOn)}
+        onPresetRange={setPeriod}
       />
       <DatePicker
         ariaLabel={S.goalEndsOn}
         value={endsOn}
         onChange={setEndsOn}
+        onPresetRange={setPeriod}
         placeholder={S.goalNoEnd}
       />
       <Button type="submit" disabled={isPending || target.trim() === ""}>

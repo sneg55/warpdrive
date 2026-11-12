@@ -10,6 +10,7 @@ export interface ThreadFeed {
   loadMore: () => void;
   loadingMore: boolean;
   pending: boolean;
+  failed: boolean;
 }
 
 export function useThreadFeed(
@@ -37,5 +38,6 @@ export function useThreadFeed(
     loadMore: () => void q.fetchNextPage(),
     loadingMore: q.isFetchingNextPage,
     pending: q.isPending,
+    failed: q.isError,
   };
 }

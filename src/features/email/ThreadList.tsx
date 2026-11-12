@@ -4,12 +4,15 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useRowSelection } from "@/components/data-table/useRowSelection";
 import { ThreadRowsSkeleton } from "@/components/shell/skeletons";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { STRINGS } from "@/constants/strings";
 import { trpc } from "@/lib/trpc-client";
 import type { ActionResult } from "@/types/actionResult";
 import { readCsrfToken } from "@/utils/csrfCookie";
 import type { InboxFilter, InboxThread } from "./emailReads";
 import { archiveThreadAction, unarchiveThreadAction } from "./folderActions";
+import { InboxZeroIllustration } from "./InboxZeroIllustration";
+import { isInboxZero } from "./inboxZero";
 import { markThreadReadAction, markThreadUnreadAction } from "./readActions";
 import { ThreadListToolbar } from "./ThreadListToolbar";
 import { type ThreadFolder, ThreadRow } from "./ThreadRow";
@@ -28,6 +31,7 @@ interface ThreadListProps {
   threadsPending?: boolean;
   quickFilter?: InboxFilter;
   onQuickFilterChange?: (next: InboxFilter) => void;
+  mailboxConnected?: boolean;
 }
 
 export function ThreadList({
@@ -41,6 +45,7 @@ export function ThreadList({
   threadsPending = false,
   quickFilter,
   onQuickFilterChange,
+  mailboxConnected = false,
 }: ThreadListProps): React.ReactNode {
   const router = useRouter();
   const utils = trpc.useUtils();
@@ -57,6 +62,16 @@ export function ThreadList({
   const selection = useRowSelection();
   const pending = providedThreads !== undefined ? threadsPending : feed.pending;
   const showSkeleton = pending && threads.length === 0;
+  const inboxZero = isInboxZero({
+    folder,
+    quickFilter: filter,
+    attrFilter,
+    searching: providedThreads !== undefined,
+    mailboxConnected,
+    pending,
+    failed: providedThreads === undefined && feed.failed,
+    threadCount: threads.length,
+  });
 
   function afterArchive(): Promise<unknown> {
     return Promise.all([
@@ -163,7 +178,16 @@ export function ThreadList({
 
       <ul className="flex-1 divide-y overflow-y-auto">
         {showSkeleton && <ThreadRowsSkeleton />}
-        {!pending && threads.length === 0 && (
+        {inboxZero && (
+          <li>
+            <EmptyState
+              illustration={<InboxZeroIllustration />}
+              title={STRINGS.inbox.inboxZeroTitle}
+              body={STRINGS.inbox.inboxZeroBody}
+            />
+          </li>
+        )}
+        {!inboxZero && !pending && threads.length === 0 && (
           <li className="p-4 text-sm text-muted-foreground">{STRINGS.inbox.noThreads}</li>
         )}
         {threads.map((thread) => (

@@ -8,11 +8,13 @@ export function EmptyState({
   title,
   body,
   action,
+  illustration,
   className,
 }: {
   title: string;
   body: string;
   action?: React.ReactNode;
+  illustration?: React.ReactNode;
   className?: string;
 }): React.ReactNode {
   return (
@@ -23,6 +25,7 @@ export function EmptyState({
         className,
       )}
     >
+      {illustration}
       <p className="text-base font-semibold text-foreground">{title}</p>
       <p className="max-w-md text-sm text-muted-foreground">{body}</p>
       {action}

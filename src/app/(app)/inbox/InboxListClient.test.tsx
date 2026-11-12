@@ -21,15 +21,19 @@ vi.mock("@/features/email/InboxSearchBar", () => ({
 // ThreadList stub: surfaces the quickFilter it receives and lets the test flip it, so we can assert
 // InboxListClient feeds the active quick-filter into the search query input.
 const threadListQuickFilters: (InboxFilter | undefined)[] = [];
+const threadListConnected: (boolean | undefined)[] = [];
 vi.mock("@/features/email/ThreadList", () => ({
   ThreadList: ({
     quickFilter,
     onQuickFilterChange,
+    mailboxConnected,
   }: {
     quickFilter?: InboxFilter;
     onQuickFilterChange?: (next: InboxFilter) => void;
+    mailboxConnected?: boolean;
   }) => {
     threadListQuickFilters.push(quickFilter);
+    threadListConnected.push(mailboxConnected);
     return (
       <button type="button" onClick={() => onQuickFilterChange?.("shared")}>
         set-shared
@@ -59,11 +63,12 @@ afterEach(() => {
   cleanup();
   searchCalls.length = 0;
   threadListQuickFilters.length = 0;
+  threadListConnected.length = 0;
 });
 
 describe("InboxListClient search + quick filter", () => {
   it("feeds the active quick-filter into the search query and re-issues when it changes", () => {
-    render(<InboxListClient selfActorId="u1" folder="inbox" />);
+    render(<InboxListClient selfActorId="u1" folder="inbox" mailboxConnected={false} />);
 
     // Activate search: the query now runs with the default quick-filter.
     fireEvent.click(screen.getByRole("button", { name: "run-search" }));
@@ -75,8 +80,13 @@ describe("InboxListClient search + quick filter", () => {
   });
 
   it("passes the active quick-filter down to ThreadList", () => {
-    render(<InboxListClient selfActorId="u1" folder="inbox" />);
+    render(<InboxListClient selfActorId="u1" folder="inbox" mailboxConnected={false} />);
     fireEvent.click(screen.getByRole("button", { name: "set-shared" }));
     expect(threadListQuickFilters.at(-1)).toBe("shared");
+  });
+
+  it("tells ThreadList whether the viewed mailbox is connected", () => {
+    render(<InboxListClient selfActorId="u1" folder="inbox" mailboxConnected />);
+    expect(threadListConnected.at(-1)).toBe(true);
   });
 });

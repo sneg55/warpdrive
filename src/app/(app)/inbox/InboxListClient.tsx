@@ -16,12 +16,14 @@ interface InboxListClientProps {
   mailbox?: string;
   selfActorId: string;
   folder: FolderKey;
+  mailboxConnected: boolean;
 }
 
 export function InboxListClient({
   selfActorId,
   folder,
   mailbox,
+  mailboxConnected,
 }: InboxListClientProps): React.ReactNode {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
@@ -47,6 +49,7 @@ export function InboxListClient({
             mailbox={mailbox}
             quickFilter={quickFilter}
             onQuickFilterChange={setQuickFilter}
+            mailboxConnected={mailboxConnected}
             threads={isSearching ? (searchResults.data ?? []) : undefined}
             threadsPending={
               isSearching && searchResults.data === undefined && searchResults.error === null

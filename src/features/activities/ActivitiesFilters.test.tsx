@@ -1,7 +1,9 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import { resolveRangePreset } from "@/components/ui/rangePresets";
+import { RANGE_PRESET_LABELS } from "@/constants/rangePresets";
 import { ActivitiesFilters } from "./ActivitiesFilters";
 import type { ActivityListFilter } from "./schemas";
 
@@ -122,5 +124,21 @@ describe("ActivitiesFilters", () => {
     fireEvent.click(screen.getByLabelText("To"));
     fireEvent.click(screen.getByText("15"));
     expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({ to: expect.any(String) }));
+  });
+
+  it("fills both From and To from a range preset", () => {
+    const onChange = vi.fn();
+    render(
+      <ActivitiesFilters filter={baseFilter} onChange={onChange} owners={owners} types={types} />,
+    );
+    fireEvent.click(screen.getByLabelText("From"));
+    fireEvent.click(
+      within(screen.getByRole("dialog")).getByRole("button", {
+        name: RANGE_PRESET_LABELS.last_week,
+      }),
+    );
+    expect(onChange).toHaveBeenLastCalledWith(
+      expect.objectContaining(resolveRangePreset("last_week", new Date())),
+    );
   });
 });
