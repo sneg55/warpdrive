@@ -1,6 +1,7 @@
 import { type SQL, sql } from "drizzle-orm";
 import { type DatePresetKey, isCalendarDate, isDatePreset } from "@/constants/dateFilterPresets";
 import { AppError, ERROR_IDS } from "@/constants/errorIds";
+import { localDayStart, resolveTimeZone } from "@/lib/localDayRange";
 import { requireValue } from "./filterAstSql";
 
 type DateColumnKind = "date" | "timestamptz";
@@ -9,19 +10,8 @@ const DATE_COLUMN_KIND: Record<string, DateColumnKind> = {
   expectedCloseDate: "date",
   nextActivityAt: "timestamptz",
   lastActivityAt: "timestamptz",
+  wonTime: "timestamptz",
 };
-
-const FALLBACK_ZONE = "UTC";
-
-export function resolveTimeZone(timeZone: string | null | undefined): string {
-  if (timeZone === null || timeZone === undefined || timeZone === "") return FALLBACK_ZONE;
-  try {
-    new Intl.DateTimeFormat("en-US", { timeZone });
-    return timeZone;
-  } catch {
-    return FALLBACK_ZONE;
-  }
-}
 
 interface DayRange {
   start: SQL;
@@ -77,10 +67,6 @@ function localDayRange(op: string, raw: string | number | string[], zone: string
   return { start: sql`${value}::date`, end: sql`${value}::date + 1` };
 }
 
-function asInstant(day: SQL, zone: string): SQL {
-  return sql`((${day})::timestamp AT TIME ZONE ${zone})`;
-}
-
 function columnRange(field: string, op: string, raw: string | number | string[], zone: string) {
   const kind = DATE_COLUMN_KIND[field];
   if (kind === undefined) {
@@ -88,7 +74,7 @@ function columnRange(field: string, op: string, raw: string | number | string[],
   }
   const local = localDayRange(op, raw, zone);
   if (kind === "date") return local;
-  return { start: asInstant(local.start, zone), end: asInstant(local.end, zone) };
+  return { start: localDayStart(local.start, zone), end: localDayStart(local.end, zone) };
 }
 
 export function dateCondition(

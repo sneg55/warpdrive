@@ -21,7 +21,7 @@ await Promise.all(
       bundle: true,
       platform: "node",
       format: "esm",
-      target: "node22",
+      target: "node24",
       packages: "external",
       logLevel: "info",
     }),

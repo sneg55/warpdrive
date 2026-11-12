@@ -52,6 +52,7 @@ const COLUMN_SQL: Record<string, SQL> = {
   expectedCloseDate: sql`d.expected_close_date`,
   nextActivityAt: sql`d.next_activity_at`,
   lastActivityAt: sql`d.last_activity_at`,
+  wonTime: sql`d.won_time`,
   title: sql`d.title`,
   // Organization name of the linked org. The deal board/list reads LEFT JOIN organizations o,
   // so o.name is in scope wherever this filter is applied (deals only).

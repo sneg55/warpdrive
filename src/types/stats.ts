@@ -96,4 +96,5 @@ export interface DashboardFilters {
   owners: OwnerIdFilter;
   from: string;
   to: string;
+  timeZone: string;
 }

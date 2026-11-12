@@ -147,7 +147,7 @@ describe("filterCondition with a valueless operator", () => {
 
 describe("filterCondition on a date field", () => {
   it("accepts a relative preset key as the value", () => {
-    for (const field of ["nextActivityAt", "lastActivityAt", "expectedCloseDate"]) {
+    for (const field of ["nextActivityAt", "lastActivityAt", "expectedCloseDate", "wonTime"]) {
       expect(filterCondition.safeParse({ field, op: "eq", value: "this_week" }).success).toBe(true);
     }
   });

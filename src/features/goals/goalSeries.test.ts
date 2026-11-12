@@ -11,6 +11,8 @@ import {
 import { makeTestDb, type TestDb } from "@/test/db";
 import { goalSeries } from "./goalSeries";
 
+const ALL_SCOPE = { kind: "all" } as const;
+
 let h: TestDb;
 beforeAll(async () => {
   h = await makeTestDb();
@@ -64,7 +66,15 @@ describe("goalSeries", () => {
     }
     const goal = await seedGoal({ pipelineId: pipeline.id });
 
-    const series = await goalSeries(h.db, toActor(user), goal, PERIOD, "2026-03-05", SIG());
+    const series = await goalSeries(
+      h.db,
+      toActor(user),
+      goal,
+      PERIOD,
+      "2026-03-05",
+      ALL_SCOPE,
+      SIG(),
+    );
 
     expect(series.map((p) => p.day)).toEqual([
       "2026-03-01",
@@ -80,7 +90,15 @@ describe("goalSeries", () => {
     const user = await seedUser(h, { isAdmin: true });
     const goal = await seedGoal({});
 
-    const series = await goalSeries(h.db, toActor(user), goal, PERIOD, "2026-05-01", SIG());
+    const series = await goalSeries(
+      h.db,
+      toActor(user),
+      goal,
+      PERIOD,
+      "2026-05-01",
+      ALL_SCOPE,
+      SIG(),
+    );
 
     expect(series).toHaveLength(31);
     expect(series.at(-1)?.day).toBe("2026-03-31");
@@ -138,7 +156,15 @@ describe("goalSeries", () => {
       target: "10",
     });
 
-    const series = await goalSeries(h.db, toActor(user), goal, PERIOD, "2026-03-04", SIG());
+    const series = await goalSeries(
+      h.db,
+      toActor(user),
+      goal,
+      PERIOD,
+      "2026-03-04",
+      ALL_SCOPE,
+      SIG(),
+    );
 
     expect(series.map((p) => Number(p.actual))).toEqual([0, 1, 2, 2]);
   });

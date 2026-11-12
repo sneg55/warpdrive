@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gte, isNull, lte, type SQL, sql } from "drizzle-orm";
+import { and, asc, desc, eq, isNull, type SQL, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import type { VisibilityLevel } from "@/constants/visibility";
 import type { Db } from "@/db/client";
@@ -10,7 +10,9 @@ import { persons } from "@/db/schema/persons";
 import { pipelines } from "@/db/schema/pipelines";
 import { canSee } from "@/features/permissions/canSee";
 import type { PermSetUser } from "@/features/permissions/effective";
+import { FALLBACK_ZONE } from "@/lib/localDayRange";
 import { assertNever } from "@/types/result";
+import { activityFilterPredicates } from "./activityFilterPredicates";
 import { buildActivityVisibility } from "./activityVisibility";
 import { linkedParentVisible } from "./parentLinkVisibility";
 import type { ActivityListFilter, ActivitySort, ActivitySortField } from "./schemas";
@@ -122,31 +124,13 @@ function activitySortColumn(field: ActivitySortField): SQL {
   }
 }
 
-// Visible activities enriched with deal/org/contact detail + priority for the Activities table.
-// Parent visibility columns are pulled in the same joined query (soft-deleted parents are excluded
-// by the join predicate), and parentless-activity participants are fetched in one batched query, so
-// visibility resolves in memory (buildActivityVisibility) with no per-row round-trips. This mirrors
-// the audited resolver's dominant-parent precedence, so list and calendar never disagree.
-// Build the WHERE predicate list from the list filter, always anchored on the not-deleted guard.
-// ownerId narrows by assigneeId: Pipedrive's Activities "Owner" filter is really the assigned
-// user, not activities.ownerId (which just tracks who created the row).
-function activityFilterPredicates(filter: ActivityListFilter): SQL[] {
-  const preds: SQL[] = [isNull(activities.deletedAt)];
-  if (filter.ownerId !== null) preds.push(eq(activities.assigneeId, filter.ownerId));
-  if (filter.done === "open") preds.push(eq(activities.done, false));
-  else if (filter.done === "done") preds.push(eq(activities.done, true));
-  if (filter.from !== null) preds.push(gte(activities.dueAt, new Date(`${filter.from}T00:00:00`)));
-  if (filter.to !== null) preds.push(lte(activities.dueAt, new Date(`${filter.to}T23:59:59`)));
-  if (filter.typeKey !== null) preds.push(eq(activityTypes.key, filter.typeKey));
-  return preds;
-}
-
 export async function listActivityRows(
   db: Db,
   actor: PermSetUser,
   filter: ActivityListFilter,
   signal: AbortSignal,
   sort?: ActivitySort,
+  timeZone: string = FALLBACK_ZONE,
 ): Promise<ActivityTableRow[]> {
   signal.throwIfAborted();
   // No explicit sort: due date ascending (Postgres default places NULLs last on ASC), id as a
@@ -211,7 +195,7 @@ export async function listActivityRows(
     )
     .leftJoin(assigneeUser, eq(assigneeUser.id, activities.assigneeId))
     .leftJoin(ownerUser, eq(ownerUser.id, activities.ownerId))
-    .where(and(...activityFilterPredicates(filter)))
+    .where(and(...activityFilterPredicates(filter, timeZone)))
     // Stable server ORDER BY so this pagination-free list is deterministic across calls: the
     // requested (or default due-date) column, then id as a tiebreaker for equal sort keys.
     .orderBy(direction(orderColumn), asc(activities.id));

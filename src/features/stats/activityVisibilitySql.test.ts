@@ -21,6 +21,7 @@ const BASE: DashboardFilters = {
   owners: EVERYONE,
   from: "2025-01-01",
   to: "2025-12-31",
+  timeZone: "UTC",
 };
 
 const DONE_AT = new Date("2025-03-01T00:00:00Z");

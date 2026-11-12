@@ -78,6 +78,7 @@ export const emailMessages = pgTable(
   },
   (t) => [
     unique("uq_msg_acct_gmail").on(t.accountId, t.gmailMessageId),
+    index("email_messages_thread_idx").on(t.threadId),
     foreignKey({
       columns: [t.threadId, t.accountId],
       foreignColumns: [emailThreads.id, emailThreads.accountId],

@@ -6,6 +6,7 @@ import type { Db } from "@/db/client";
 import { dealVisibilityClause } from "@/features/deals/visibility";
 import type { PermSetUser } from "@/features/permissions/effective";
 import { ownerFilterClause } from "@/features/stats/ownerIds";
+import { withinLocalDays } from "@/lib/localDayRange";
 import type { DashboardFilters, WonTrendPoint } from "@/types/stats";
 import { monthsInRange, windowStart } from "./monthBuckets";
 
@@ -45,7 +46,7 @@ export async function wonTrend(
 
   const result = await db.execute(sql`
     SELECT
-      to_char(date_trunc('month', d.won_time), 'YYYY-MM') AS "month",
+      to_char(date_trunc('month', d.won_time AT TIME ZONE ${filters.timeZone}), 'YYYY-MM') AS "month",
       count(*)::int AS "count",
       coalesce(sum(d.value), 0)::numeric(14,2)::text AS "value"
     FROM deals d
@@ -54,8 +55,7 @@ export async function wonTrend(
       AND d.archived_at IS NULL
       AND p.is_archived = false
       AND d.status = 'won'
-      AND d.won_time >= ${start}::date
-      AND d.won_time < ${filters.to}::date + INTERVAL '1 day'
+      AND ${withinLocalDays(sql`d.won_time`, start, filters.to, filters.timeZone)}
       ${pipelineClause}
       ${ownerClause}
       AND ${visClause}

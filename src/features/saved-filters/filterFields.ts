@@ -13,6 +13,7 @@ export const FILTER_FIELDS = [
   "expectedCloseDate",
   "nextActivityAt",
   "lastActivityAt",
+  "wonTime",
   "title",
   "orgName",
   "labels",
@@ -34,6 +35,7 @@ export const OPS_BY_FIELD: Record<(typeof FILTER_FIELDS)[number], readonly strin
   expectedCloseDate: ORDERED_OPS,
   nextActivityAt: ORDERED_OPS,
   lastActivityAt: ORDERED_OPS,
+  wonTime: ORDERED_OPS,
   status: EXACT_OPS,
   stageId: EXACT_OPS,
   ownerId: EXACT_OPS,
@@ -49,7 +51,7 @@ export function hasDateCondition(
   return def.conditions.some((c) => (DATE_FIELDS as readonly string[]).includes(c.field));
 }
 
-const DATE_FIELDS = ["expectedCloseDate", "nextActivityAt", "lastActivityAt"] as const;
+const DATE_FIELDS = ["expectedCloseDate", "nextActivityAt", "lastActivityAt", "wonTime"] as const;
 
 export function hasStatusCondition(
   def: { conditions: readonly { field: string }[] } | null | undefined,

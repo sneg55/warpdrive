@@ -16,6 +16,7 @@ const FIELD_KIND: Record<string, FieldKind> = {
   expectedCloseDate: "scalar",
   nextActivityAt: "scalar",
   lastActivityAt: "scalar",
+  wonTime: "scalar",
   title: "text",
   orgName: "text",
   labels: "array",

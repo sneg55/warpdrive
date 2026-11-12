@@ -1,0 +1,2 @@
+CREATE INDEX IF NOT EXISTS "email_messages_thread_idx" ON "email_messages" USING btree ("thread_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "email_message_attachments_message_idx" ON "email_message_attachments" USING btree ("message_id");

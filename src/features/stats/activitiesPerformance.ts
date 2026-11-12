@@ -4,10 +4,11 @@
 // so they are reported as `undated` rather than silently dropped from every count.
 // Visibility follows the activity's DOMINANT parent (deal > person > org > parentless), not
 // the deal alone: an activity on a private person is as invisible as one on a private deal.
-import { sql } from "drizzle-orm";
+import { type SQL, sql } from "drizzle-orm";
 import type { Db } from "@/db/client";
 import type { PermSetUser } from "@/features/permissions/effective";
 import { ownerFilterClause } from "@/features/stats/ownerIds";
+import { withinLocalDays } from "@/lib/localDayRange";
 import type { ActivityCounters, DashboardFilters } from "@/types/stats";
 import { activityVisibilityPredicate } from "./activityVisibilitySql";
 
@@ -27,20 +28,14 @@ export async function activitiesPerformance(
         )`
       : sql``;
 
-  const from = sql`${filters.from}::date`;
-  const toExclusive = sql`${filters.to}::date + INTERVAL '1 day'`;
+  const within = (column: SQL) =>
+    withinLocalDays(column, filters.from, filters.to, filters.timeZone);
 
   const result = await db.execute(sql`
     SELECT
-      count(*) filter (
-        where a.done = true AND a.done_at >= ${from} AND a.done_at < ${toExclusive}
-      )::int AS completed,
-      count(*) filter (
-        where a.created_at >= ${from} AND a.created_at < ${toExclusive}
-      )::int AS added,
-      count(*) filter (
-        where a.done = false AND a.due_at >= ${from} AND a.due_at < ${toExclusive}
-      )::int AS scheduled,
+      count(*) filter (where a.done = true AND ${within(sql`a.done_at`)})::int AS completed,
+      count(*) filter (where ${within(sql`a.created_at`)})::int AS added,
+      count(*) filter (where a.done = false AND ${within(sql`a.due_at`)})::int AS scheduled,
       count(*) filter (where a.done = false AND a.due_at IS NULL)::int AS undated
     FROM activities a
     WHERE a.deleted_at IS NULL

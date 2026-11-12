@@ -16,6 +16,7 @@ const BASE: DashboardFilters = {
   owners: EVERYONE,
   from: "2000-01-01",
   to: "2100-12-31",
+  timeZone: "UTC",
 };
 
 type Db = Parameters<Parameters<typeof withTestDb>[0]>[0];

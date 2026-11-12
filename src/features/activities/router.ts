@@ -4,6 +4,9 @@ import { z } from "zod";
 import { DEFAULT_DAILY_ACTIVITY_TARGET } from "@/constants/activityLoad";
 import { activityTypes } from "@/db/schema";
 import { getPreferencesForActor } from "@/features/identity/preferencesForActor";
+import { viewerTimeZone } from "@/features/identity/viewerTimeZone";
+import { FALLBACK_ZONE } from "@/lib/localDayRange";
+import { timeZoneInput } from "@/schemas/timeZoneInput";
 import { protectedProcedure, router } from "@/server/trpc/trpc";
 import { listActivityRows } from "./activityRows";
 import { getBusyWindows } from "./availability";
@@ -13,16 +16,20 @@ import { listActivitiesForEntity } from "./forEntity";
 import { getActivityForEdit } from "./getForEdit";
 import { activityListFilter, activitySortInput } from "./schemas";
 
-// listRows' input: the list filter (every field defaulted, so an empty call still resolves to
-// the default "open" view) plus an optional sort (still separate from the filter's own shape,
-// since ActivityListFilter is also the exact type listActivityRows and its tests expect).
-const listRowsInput = activityListFilter.extend({ sort: activitySortInput.optional() });
+const listRowsInput = activityListFilter.extend({
+  sort: activitySortInput.optional(),
+  timeZone: timeZoneInput,
+});
 
 export const activitiesRouter = router({
-  // All visible activities enriched for the Activities table (deal/contact/org/priority).
-  listRows: protectedProcedure.input(listRowsInput).query(({ ctx, input }) => {
-    const { sort, ...filter } = input;
-    return listActivityRows(ctx.db, ctx.actor, filter, AbortSignal.timeout(10_000), sort);
+  listRows: protectedProcedure.input(listRowsInput).query(async ({ ctx, input }) => {
+    const { sort, timeZone, ...filter } = input;
+    const signal = AbortSignal.timeout(10_000);
+    const zone =
+      filter.dateBasis === "done"
+        ? await viewerTimeZone(ctx.db, ctx.actor.id, timeZone, signal)
+        : FALLBACK_ZONE;
+    return listActivityRows(ctx.db, ctx.actor, filter, signal, sort, zone);
   }),
 
   // Activity type catalog for the create modal (call/meeting/task/deadline/email/lunch).

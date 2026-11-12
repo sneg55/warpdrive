@@ -17,7 +17,9 @@ function paceTone(pace: number | null): string {
 
 function GoalRow({ row, currency }: { row: GoalWithProgress; currency: string }): React.ReactNode {
   const { goal, progress, series } = row;
-  const label = goalLabel(goal);
+  const owner =
+    goal.assigneeKind === "company" ? STRINGS.dashboard.goalOwnerCompany : row.assigneeName;
+  const label = owner === null ? goalLabel(goal) : `${owner}: ${goalLabel(goal)}`;
   const isValue = goal.metric === "value";
   const fmt = (v: string) => (isValue ? money(v, currency) : goalNumberText(v, goal.metric));
 

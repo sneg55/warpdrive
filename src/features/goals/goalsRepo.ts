@@ -1,38 +1,86 @@
-// Goal storage. Reads are scoped so a user without stats.viewOthers sees only the goals that
-// are actually about them: their own, their teams', and company-wide ones.
-import { and, desc, eq, isNull, or, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, or, type SQL, sql } from "drizzle-orm";
 import { AppError, ERROR_IDS } from "@/constants/errorIds";
 import type { Db } from "@/db/client";
 import { teams, users } from "@/db/schema";
 import { type Goal, goals } from "@/db/schema/goals";
-import { can } from "@/features/permissions/can";
 import type { PermSetUser } from "@/features/permissions/effective";
+import { ownerScope } from "@/features/stats/ownerScope";
+import { assertNever } from "@/types/result";
+import type { OwnerScope } from "@/types/stats";
 import type { GoalInput } from "./schemas";
+
+function goalsAbout(userId: string): SQL | undefined {
+  return or(
+    eq(goals.assigneeKind, "company"),
+    and(eq(goals.assigneeKind, "user"), eq(goals.assigneeId, userId)),
+    and(
+      eq(goals.assigneeKind, "team"),
+      sql`${goals.assigneeId} IN (
+        SELECT tm.team_id FROM team_members tm WHERE tm.user_id = ${userId}::uuid
+      )`,
+    ),
+  );
+}
+
+function goalsInScope(actor: PermSetUser, scope: OwnerScope): SQL | undefined {
+  const effective = ownerScope(actor, scope);
+  switch (effective.kind) {
+    case "all":
+      return undefined;
+    case "me":
+      return goalsAbout(actor.id);
+    case "user":
+      return goalsAbout(effective.userId);
+    case "team":
+      return or(
+        eq(goals.assigneeKind, "company"),
+        and(eq(goals.assigneeKind, "team"), eq(goals.assigneeId, effective.teamId)),
+      );
+    default:
+      return assertNever(effective);
+  }
+}
 
 export async function listVisibleGoals(
   db: Db,
   actor: PermSetUser,
+  scope: OwnerScope,
   signal: AbortSignal,
 ): Promise<Goal[]> {
   signal.throwIfAborted();
-
-  const mine = or(
-    eq(goals.assigneeKind, "company"),
-    and(eq(goals.assigneeKind, "user"), eq(goals.assigneeId, actor.id)),
-    and(
-      eq(goals.assigneeKind, "team"),
-      sql`${goals.assigneeId} IN (
-        SELECT tm.team_id FROM team_members tm WHERE tm.user_id = ${actor.id}::uuid
-      )`,
-    ),
-  );
-  const scope = can(actor, "stats.viewOthers") ? undefined : mine;
-
   return db
     .select()
     .from(goals)
-    .where(and(isNull(goals.deletedAt), scope))
+    .where(and(isNull(goals.deletedAt), goalsInScope(actor, scope)))
     .orderBy(desc(goals.startsOn), desc(goals.createdAt));
+}
+
+function assigneeIds(rows: Goal[], kind: Goal["assigneeKind"]): string[] {
+  return [
+    ...new Set(
+      rows.flatMap((g) => (g.assigneeKind === kind && g.assigneeId !== null ? [g.assigneeId] : [])),
+    ),
+  ];
+}
+
+export async function goalAssigneeNames(
+  db: Db,
+  rows: Goal[],
+  signal: AbortSignal,
+): Promise<Map<string, string>> {
+  signal.throwIfAborted();
+  const userIds = assigneeIds(rows, "user");
+  const teamIds = assigneeIds(rows, "team");
+  const [userRows, teamRows] = await Promise.all([
+    userIds.length > 0
+      ? db.select({ id: users.id, name: users.name }).from(users).where(inArray(users.id, userIds))
+      : [],
+    teamIds.length > 0
+      ? db.select({ id: teams.id, name: teams.name }).from(teams).where(inArray(teams.id, teamIds))
+      : [],
+  ]);
+  signal.throwIfAborted();
+  return new Map([...userRows, ...teamRows].map((r) => [r.id, r.name]));
 }
 
 // assignee_id points at users or teams depending on assignee_kind, so it can carry no foreign

@@ -16,6 +16,7 @@ const BASE: DashboardFilters = {
   owners: EVERYONE,
   from: "2026-01-01",
   to: "2026-04-30",
+  timeZone: "UTC",
 };
 
 async function seedWon(

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { ACTIVITY_DATE_BASES, DEFAULT_ACTIVITY_DATE_BASIS } from "@/constants/activityDateBasis";
 import { ACTIVITY_PRIORITY_KEYS } from "@/constants/activityPriorities";
 
 export const activityCreateInput = z
@@ -80,16 +81,13 @@ export const activitySortInput = z.object({
 });
 export type ActivitySort = z.infer<typeof activitySortInput>;
 
-// Activities-table list filter (activities.listRows). ownerId narrows by the assigned user
-// (Pipedrive's Activities "Owner" filter is really the assignee, not activities.ownerId); done
-// narrows open/done/all; from/to are inclusive local-day bounds on dueAt; typeKey narrows to one
-// activity type. Every field defaults so an empty call still resolves ("open", unfiltered
-// otherwise), matching the current default Activities-table view.
 export const activityListFilter = z.object({
   ownerId: z.string().uuid().nullable().default(null),
   done: z.enum(["all", "open", "done"]).default("open"),
   from: z.string().date().nullable().default(null),
   to: z.string().date().nullable().default(null),
+  dateBasis: z.enum(ACTIVITY_DATE_BASES).default(DEFAULT_ACTIVITY_DATE_BASIS),
+  pipelineId: z.string().uuid().nullable().default(null),
   typeKey: z.string().nullable().default(null),
 });
 export type ActivityListFilter = z.infer<typeof activityListFilter>;

@@ -26,6 +26,8 @@ const baseFilter: ActivityListFilter = {
   done: "open",
   from: null,
   to: null,
+  dateBasis: "due",
+  pipelineId: null,
   typeKey: null,
 };
 const owners = [{ value: "u1", label: "Ann", avatarName: "Ann" }];

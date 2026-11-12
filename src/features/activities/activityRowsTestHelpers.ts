@@ -28,6 +28,8 @@ export const noFilter: ActivityListFilter = {
   done: "all",
   from: null,
   to: null,
+  dateBasis: "due",
+  pipelineId: null,
   typeKey: null,
 };
 

@@ -4,6 +4,7 @@ import { Combobox, type ComboboxOption } from "@/components/ui/Combobox";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { Select } from "@/components/ui/Select";
 import { ActivityPresetChips } from "./ActivityPresetChips";
+import { ActivityScopeChips } from "./ActivityScopeChips";
 import { ActivityTypeTab } from "./ActivityTypeTab";
 import { ALL_OWNERS_OPTION, DONE_FILTER_OPTIONS } from "./activityFilterOptions";
 import type { ActivityListFilter } from "./schemas";
@@ -18,18 +19,15 @@ interface ActivitiesFiltersProps {
   onChange: (f: ActivityListFilter) => void;
   owners: ComboboxOption[];
   types: ActivityTypeOption[];
+  pipelineName?: string | null;
 }
 
-// Activities-list filter toolbar (Pipedrive parity): owner, completed state, a custom date
-// range, and the activity-type tab strip. Extracted from ActivitiesTable to keep it under the
-// project's file-size budget. Every change here re-derives the full ActivityListFilter and hands
-// it to onChange, so the table (which owns the state and feeds it straight to listRows) re-queries
-// server-side; there is no client-side re-filtering here or in the table.
 export function ActivitiesFilters({
   filter,
   onChange,
   owners,
   types,
+  pipelineName = null,
 }: ActivitiesFiltersProps): React.ReactNode {
   function patch(next: Partial<ActivityListFilter>): void {
     onChange({ ...filter, ...next });
@@ -71,6 +69,7 @@ export function ActivitiesFilters({
           onChange={(v) => patch({ to: v })}
           placeholder="To"
         />
+        <ActivityScopeChips filter={filter} pipelineName={pipelineName} onChange={onChange} />
       </div>
       <div className="flex flex-wrap items-center gap-1 border-b pb-2">
         <ActivityTypeTab active={filter.typeKey} value={null} label="All" onSelect={selectType} />

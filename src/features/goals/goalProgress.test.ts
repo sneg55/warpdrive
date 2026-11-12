@@ -11,6 +11,8 @@ import {
 import { makeTestDb, type TestDb } from "@/test/db";
 import { goalProgress } from "./goalProgress";
 
+const ALL_SCOPE = { kind: "all" } as const;
+
 let h: TestDb;
 beforeAll(async () => {
   h = await makeTestDb();
@@ -67,6 +69,7 @@ describe("goalProgress", () => {
       toActor(user),
       goal,
       "2026-03-15",
+      ALL_SCOPE,
       new AbortController().signal,
     );
     expect(p?.periodStart).toBe("2026-03-01");
@@ -105,6 +108,7 @@ describe("goalProgress", () => {
       toActor(alice),
       goal,
       "2026-03-15",
+      ALL_SCOPE,
       new AbortController().signal,
     );
     expect(Number(p?.actual)).toBe(100);
@@ -151,6 +155,7 @@ describe("goalProgress", () => {
       toActor(lead),
       goal,
       "2026-03-15",
+      ALL_SCOPE,
       new AbortController().signal,
     );
     expect(Number(p?.actual)).toBe(100);
@@ -205,6 +210,7 @@ describe("goalProgress", () => {
       toActor(user),
       goal,
       "2026-03-15",
+      ALL_SCOPE,
       new AbortController().signal,
     );
     expect(p?.actual).toBe("1");
@@ -218,6 +224,7 @@ describe("goalProgress", () => {
       toActor(user),
       goal,
       "2026-05-01",
+      ALL_SCOPE,
       new AbortController().signal,
     );
     expect(p).toBeNull();
@@ -246,6 +253,7 @@ describe("goalProgress", () => {
       toActor(user),
       goal,
       "2026-03-05",
+      ALL_SCOPE,
       new AbortController().signal,
     );
     expect(p?.pace ?? 0).toBeGreaterThan(1);
@@ -274,6 +282,7 @@ describe("goalProgress", () => {
       toActor(alice),
       goal,
       "2026-03-15",
+      ALL_SCOPE,
       new AbortController().signal,
     );
     expect(Number(p?.actual)).toBe(0);

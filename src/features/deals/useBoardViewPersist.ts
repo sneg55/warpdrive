@@ -15,7 +15,7 @@ function persist(pref: BoardViewPref): void {
   void setBoardViewAction(pref, readCsrfToken()).catch(() => {});
 }
 
-export function useBoardViewPersist(view: BoardViewState): void {
+export function useBoardViewPersist(view: BoardViewState, skip = false): void {
   const { ownerId, sortKey, sortDir, savedFilter, conditions } = view;
   const mounted = useRef(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -26,6 +26,7 @@ export function useBoardViewPersist(view: BoardViewState): void {
       mounted.current = true;
       return;
     }
+    if (skip) return;
     const payload = toBoardViewPref({ ownerId, sortKey, sortDir, savedFilter, conditions });
     pending.current = payload;
     if (timer.current !== null) clearTimeout(timer.current);
@@ -33,7 +34,7 @@ export function useBoardViewPersist(view: BoardViewState): void {
       pending.current = null;
       persist(payload);
     }, BOARD_VIEW_PERSIST_DEBOUNCE_MS);
-  }, [ownerId, sortKey, sortDir, savedFilter, conditions]);
+  }, [ownerId, sortKey, sortDir, savedFilter, conditions, skip]);
 
   useEffect(() => {
     return () => {

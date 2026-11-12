@@ -222,7 +222,7 @@ describe("listActivityRows", () => {
       const openRows = await listActivityRows(
         db,
         actor(ann.id),
-        { ownerId: null, done: "open", from: null, to: null, typeKey: null },
+        { ...noFilter, done: "open" },
         sig(),
       );
       const a = openRows.find((r) => r.subject === "A");
@@ -236,7 +236,7 @@ describe("listActivityRows", () => {
       const doneRows = await listActivityRows(
         db,
         actor(ann.id),
-        { ownerId: null, done: "done", from: null, to: null, typeKey: null },
+        { ...noFilter, done: "done" },
         sig(),
       );
       expect(doneRows.map((r) => r.subject)).toContain("B");

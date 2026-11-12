@@ -31,6 +31,7 @@ function countGoal(target: string, actual: string): GoalWithProgress {
   };
   return {
     goal,
+    assigneeName: null,
     series: seriesTo("2026-08-24", actual),
     progress: {
       goalId: goal.id,
@@ -90,5 +91,23 @@ describe("GoalsWidget", () => {
     );
     expect(container.querySelector('[data-slot="chart"]')).toHaveAttribute("aria-hidden", "true");
     expect(screen.getByText("111 / 200")).toBeInTheDocument();
+  });
+
+  it("marks a company-wide goal as the company's, whoever is picked", () => {
+    render(<GoalsWidget data={[countGoal("200.00", "124")]} currency="USD" canManage={false} />);
+    expect(
+      screen.getByText(`${STRINGS.dashboard.goalOwnerCompany}: Activities completed, monthly`),
+    ).toBeInTheDocument();
+  });
+
+  it("names the person or team a goal belongs to", () => {
+    const base = countGoal("200.00", "61");
+    const row = {
+      ...base,
+      goal: { ...base.goal, assigneeKind: "user" as const, assigneeId: "u1" },
+      assigneeName: "Martin Contino",
+    };
+    render(<GoalsWidget data={[row]} currency="USD" canManage={false} />);
+    expect(screen.getByText("Martin Contino: Activities completed, monthly")).toBeInTheDocument();
   });
 });

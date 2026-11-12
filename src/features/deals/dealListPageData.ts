@@ -12,7 +12,7 @@ const COUNT_ONLY = 1;
 
 export async function loadDealListPageData(
   ctx: AppContext & { actor: NonNullable<AppContext["actor"]> },
-  args: { pipelineId: string; archived: boolean },
+  args: { pipelineId: string; archived: boolean; viewOverride?: BoardViewState | null },
 ): Promise<{
   list: Awaited<ReturnType<ReturnType<typeof createCaller>["deal"]["list"]>>;
   prefs: Awaited<ReturnType<typeof getPreferencesForActor>>;
@@ -23,9 +23,15 @@ export async function loadDealListPageData(
 }> {
   const caller = createCaller(ctx);
   const prefsPromise = getPreferencesForActor(ctx.db, ctx.actor.id);
-  const viewPromise = prefsPromise.then((p) =>
-    resolveInitialBoardView(p.ui, async () => (await caller.deal.savedFilters()).map(rowToView)),
-  );
+  const override = args.viewOverride ?? null;
+  const viewPromise =
+    override !== null
+      ? Promise.resolve(override)
+      : prefsPromise.then((p) =>
+          resolveInitialBoardView(p.ui, async () =>
+            (await caller.deal.savedFilters()).map(rowToView),
+          ),
+        );
   void viewPromise.catch(() => {});
   const listPromise = viewPromise.then((view) =>
     caller.deal.list({

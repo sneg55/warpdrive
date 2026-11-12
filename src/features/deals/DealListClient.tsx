@@ -54,6 +54,7 @@ type InitialData = Omit<
   refLabels?: CustomFieldRefLabels;
   canManagePipelines?: boolean;
   initialView?: BoardViewState;
+  fromDrillDown?: boolean;
   unfilteredTotal?: number;
 };
 
@@ -98,7 +99,7 @@ export function DealListClient({
   const currency = baseCurrency ?? DEFAULT_BASE_CURRENCY;
   const actions = useDealListActions();
   const utils = trpc.useUtils();
-  const view = useBoardView(initial.initialView);
+  const view = useBoardView(initial.initialView, { fromDrillDown: initial.fromDrillDown });
   const { ownerId: selectedOwnerId, savedFilter, conditions: inlineDefinition } = view;
   const {
     setOwnerId: setSelectedOwnerId,

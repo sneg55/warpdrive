@@ -9,6 +9,7 @@ import type { Db } from "@/db/client";
 import { dealVisibilityClause } from "@/features/deals/visibility";
 import type { PermSetUser } from "@/features/permissions/effective";
 import { ownerFilterClause } from "@/features/stats/ownerIds";
+import { withinLocalDays } from "@/lib/localDayRange";
 import type { DashboardFilters, StageConversionRow } from "@/types/stats";
 
 function toSession(actor: PermSetUser) {
@@ -51,8 +52,7 @@ export async function stageConversion(
         AND d.archived_at IS NULL
         AND p.is_archived = false
         AND d.pipeline_id = ${filters.pipelineId}
-        AND d.created_at >= ${filters.from}::date
-        AND d.created_at < ${filters.to}::date + INTERVAL '1 day'
+        AND ${withinLocalDays(sql`d.created_at`, filters.from, filters.to, filters.timeZone)}
         ${ownerClause}
         AND ${visClause}
     ),

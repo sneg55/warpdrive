@@ -15,6 +15,10 @@ const useQuery = vi.fn((...args: unknown[]) => {
   void args;
   return { isLoading: true, isError: false, data: undefined };
 });
+const goalsQuery = vi.fn((...args: unknown[]) => {
+  void args;
+  return { data: [] };
+});
 vi.mock("@/lib/trpc-client", () => ({
   trpc: {
     stats: {
@@ -31,7 +35,7 @@ vi.mock("@/lib/trpc-client", () => ({
         }),
       },
     },
-    goals: { list: { useQuery: () => ({ data: [] }) } },
+    goals: { list: { useQuery: (input: unknown) => goalsQuery(input) } },
     pipeline: {
       list: {
         useQuery: () => ({
@@ -52,6 +56,15 @@ describe("Dashboard heading", () => {
     render(<Dashboard today="2026-03-01" canViewOthers currency="USD" />);
     expect(screen.getByRole("heading", { name: "Performance" })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Dashboard" })).not.toBeInTheDocument();
+  });
+});
+
+describe("Dashboard timezone", () => {
+  it("sends the browser zone so the server can count the viewer's local days", () => {
+    render(<Dashboard today="2026-03-01" canViewOthers currency="USD" />);
+    expect(useQuery).toHaveBeenLastCalledWith(
+      expect.objectContaining({ timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone }),
+    );
   });
 });
 
@@ -120,6 +133,18 @@ describe("Dashboard owner scope", () => {
     expect(useQuery).toHaveBeenLastCalledWith(
       expect.objectContaining({ ownerScope: { kind: "user", userId: "u2" } }),
     );
+  });
+
+  it("scopes the goals to the person picked, not only the stats", () => {
+    goalsQuery.mockClear();
+    render(<Dashboard today="2026-03-01" canViewOthers currency="USD" />);
+    expect(goalsQuery).toHaveBeenLastCalledWith({ on: "2026-03-01", ownerScope: { kind: "me" } });
+    fireEvent.click(screen.getByLabelText("Owner"));
+    fireEvent.click(screen.getByText("Fox Mulder"));
+    expect(goalsQuery).toHaveBeenLastCalledWith({
+      on: "2026-03-01",
+      ownerScope: { kind: "user", userId: "u2" },
+    });
   });
 
   it("rescopes to one team", () => {

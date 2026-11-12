@@ -18,30 +18,56 @@ export interface BoardViewControls extends BoardViewState {
   clearFilters: () => void;
 }
 
-export function useBoardView(initial: BoardViewState | undefined): BoardViewControls {
-  const [restored] = useState(() => recallBoardView() !== null);
-  const [seed] = useState(() => recallBoardView() ?? initial ?? DEFAULT_BOARD_VIEW);
+export interface BoardViewOptions {
+  fromDrillDown?: boolean;
+}
+
+function initialSeed(initial: BoardViewState | undefined, fromDrillDown: boolean): BoardViewState {
+  const remembered = fromDrillDown ? null : recallBoardView();
+  return remembered ?? initial ?? DEFAULT_BOARD_VIEW;
+}
+
+export function useBoardView(
+  initial: BoardViewState | undefined,
+  options: BoardViewOptions = {},
+): BoardViewControls {
+  const fromDrillDown = options.fromDrillDown === true;
+  const [restored] = useState(() => !fromDrillDown && recallBoardView() !== null);
+  const [seed] = useState(() => initialSeed(initial, fromDrillDown));
   const [ownerId, setOwnerId] = useState<string | null>(seed.ownerId);
   const [sortKey, setSortKey] = useState<BoardSortKey>(seed.sortKey);
   const [sortDir, setSortDir] = useState(seed.sortDir);
   const [savedFilter, setSavedFilter] = useState<SavedFilterView | null>(seed.savedFilter);
   const [conditions, setConditions] = useState<FilterDefinition | null>(seed.conditions);
+  const [edited, setEdited] = useState(false);
 
   const view: BoardViewState = { ownerId, sortKey, sortDir, savedFilter, conditions };
-  useBoardViewPersist(view);
+  const untouchedDrillDown = fromDrillDown && !edited;
+  function edit<T>(set: (value: T) => void): (value: T) => void {
+    return (value) => {
+      setEdited(true);
+      set(value);
+    };
+  }
+  useBoardViewPersist(view, untouchedDrillDown);
   useEffect(() => {
+    if (untouchedDrillDown) return;
     rememberBoardView({ ownerId, sortKey, sortDir, savedFilter, conditions });
-  }, [ownerId, sortKey, sortDir, savedFilter, conditions]);
+  }, [ownerId, sortKey, sortDir, savedFilter, conditions, untouchedDrillDown]);
 
   return {
     ...view,
     restored,
-    setOwnerId,
-    setSortKey,
-    toggleSortDirection: () => setSortDir((d) => (d === "asc" ? "desc" : "asc")),
-    setSavedFilter,
-    setConditions,
+    setOwnerId: edit(setOwnerId),
+    setSortKey: edit(setSortKey),
+    toggleSortDirection: () => {
+      setEdited(true);
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    },
+    setSavedFilter: edit(setSavedFilter),
+    setConditions: edit(setConditions),
     clearFilters: () => {
+      setEdited(true);
       setOwnerId(null);
       setSavedFilter(null);
       setConditions(null);

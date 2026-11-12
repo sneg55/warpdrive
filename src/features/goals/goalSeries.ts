@@ -4,6 +4,7 @@ import type { Goal } from "@/db/schema/goals";
 import { dealVisibilityClause } from "@/features/deals/visibility";
 import type { PermSetUser } from "@/features/permissions/effective";
 import { activityVisibilityPredicate } from "@/features/stats/activityVisibilitySql";
+import type { OwnerScope } from "@/types/stats";
 import { type GoalPeriod, periodDays } from "./goalPeriod";
 import {
   activityEvent,
@@ -11,6 +12,7 @@ import {
   assigneeClause,
   dealEvent,
   goalSession,
+  ownerScopeClause,
   pipelineClause,
 } from "./goalSql";
 
@@ -31,6 +33,7 @@ async function dealDays(
   goal: Goal,
   from: string,
   through: string,
+  scope: OwnerScope,
   signal: AbortSignal,
 ): Promise<DayTotal[]> {
   const { at, state } = dealEvent(goal);
@@ -47,6 +50,7 @@ async function dealDays(
       AND ${at} < ${through}::date + INTERVAL '1 day'
       ${pipelineClause(goal, sql`d.pipeline_id`)}
       ${assigneeClause(goal, sql`d.owner_id`)}
+      ${ownerScopeClause(scope, actor.id, sql`d.owner_id`)}
       AND ${dealVisibilityClause(goalSession(actor))}
     GROUP BY 1
   `);
@@ -60,6 +64,7 @@ async function activityDays(
   goal: Goal,
   from: string,
   through: string,
+  scope: OwnerScope,
   signal: AbortSignal,
 ): Promise<DayTotal[]> {
   const { at, state } = activityEvent(goal);
@@ -78,6 +83,7 @@ async function activityDays(
       ${activityTypeClause(goal)}
       ${dealPipelineClause}
       ${assigneeClause(goal, sql`a.assignee_id`)}
+      ${ownerScopeClause(scope, actor.id, sql`a.assignee_id`)}
       AND ${activityVisibilityPredicate(actor, "a")}
     GROUP BY 1
   `);
@@ -106,6 +112,7 @@ export async function goalSeries(
   goal: Goal,
   period: GoalPeriod,
   on: string,
+  scope: OwnerScope,
   signal: AbortSignal,
 ): Promise<GoalSeriesPoint[]> {
   signal.throwIfAborted();
@@ -115,7 +122,7 @@ export async function goalSeries(
 
   const rows =
     goal.subject === "deal"
-      ? await dealDays(db, actor, goal, period.start, through, signal)
-      : await activityDays(db, actor, goal, period.start, through, signal);
+      ? await dealDays(db, actor, goal, period.start, through, scope, signal)
+      : await activityDays(db, actor, goal, period.start, through, scope, signal);
   return accumulate(days, new Map(rows.map((r) => [r.day, r])), goal.metric);
 }

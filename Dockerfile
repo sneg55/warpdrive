@@ -6,7 +6,7 @@
 # files via __dirname-relative reads, so they must stay in a real node_modules, not a bundle.
 # See docs/superpowers/specs/2026-07-07-docker-single-box-deploy-design.md.
 
-FROM node:22-alpine AS base
+FROM node:24-alpine AS base
 RUN corepack enable
 WORKDIR /app
 

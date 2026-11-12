@@ -5,11 +5,12 @@
 // windowed count.
 // Always applies dealVisibilityPredicate via dealVisibilityClause (requires
 // FROM deals d JOIN pipelines p ON p.id = d.pipeline_id).
-import { sql } from "drizzle-orm";
+import { type SQL, sql } from "drizzle-orm";
 import type { Db } from "@/db/client";
 import { dealVisibilityClause } from "@/features/deals/visibility";
 import type { PermSetUser } from "@/features/permissions/effective";
 import { ownerFilterClause } from "@/features/stats/ownerIds";
+import { withinLocalDays } from "@/lib/localDayRange";
 import type { DashboardFilters, DealCounters, MoneyBucket } from "@/types/stats";
 
 // Build a DealVisibilitySession from a PermSetUser (same shape, different names).
@@ -48,11 +49,11 @@ export async function dealPerformance(
   const pipelineClause =
     filters.pipelineId !== null ? sql`AND d.pipeline_id = ${filters.pipelineId}` : sql``;
 
-  const from = sql`${filters.from}::date`;
-  const toExclusive = sql`${filters.to}::date + INTERVAL '1 day'`;
-  const addedIn = sql`d.created_at >= ${from} AND d.created_at < ${toExclusive}`;
-  const wonIn = sql`d.status = 'won' AND d.won_time >= ${from} AND d.won_time < ${toExclusive}`;
-  const lostIn = sql`d.status = 'lost' AND d.lost_time >= ${from} AND d.lost_time < ${toExclusive}`;
+  const within = (column: SQL) =>
+    withinLocalDays(column, filters.from, filters.to, filters.timeZone);
+  const addedIn = within(sql`d.created_at`);
+  const wonIn = sql`d.status = 'won' AND ${within(sql`d.won_time`)}`;
+  const lostIn = sql`d.status = 'lost' AND ${within(sql`d.lost_time`)}`;
   const isOpen = sql`d.status = 'open'`;
 
   const result = await db.execute(sql`

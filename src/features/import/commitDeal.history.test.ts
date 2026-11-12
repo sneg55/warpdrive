@@ -100,6 +100,7 @@ it("counts an imported won deal with a creation date in the sales cycle", async 
         owners: EVERYONE,
         from: "2026-01-01",
         to: "2026-12-31",
+        timeZone: "UTC",
       },
       signal,
     );

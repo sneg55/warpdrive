@@ -227,6 +227,12 @@ describe("Scoreboard", () => {
     open: { count: 9, value: "0.00" },
   };
   const activities = { completed: 12, added: 20, scheduled: 4, undated: 0 };
+  const drillDown = {
+    owner: { kind: "me" as const },
+    pipelineId: null,
+    from: "2026-01-01",
+    to: "2026-12-31",
+  };
 
   it("shows the headline numbers a manager reads first", () => {
     render(
@@ -241,6 +247,7 @@ describe("Scoreboard", () => {
         activities={activities}
         winRate={0.75}
         currency="USD"
+        drillDown={drillDown}
       />,
     );
     expect(screen.getByText("75%")).toBeInTheDocument();
@@ -257,6 +264,7 @@ describe("Scoreboard", () => {
         activities={activities}
         winRate={null}
         currency="USD"
+        drillDown={drillDown}
       />,
     );
     expect(screen.getAllByText(STRINGS.dashboard.noValue).length).toBeGreaterThanOrEqual(3);
@@ -277,6 +285,7 @@ describe("Scoreboard", () => {
         activities={activities}
         winRate={0.5}
         currency="USD"
+        drillDown={drillDown}
       />,
     );
     expect(screen.getByText(STRINGS.dashboard.underADay)).toBeInTheDocument();

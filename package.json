@@ -1,9 +1,12 @@
 {
   "name": "warpdrive",
-  "version": "2.2.0",
+  "version": "2.3.0",
   "description": "An open-source, self-hosted CRM for a company business-development team.",
   "main": "index.js",
   "packageManager": "pnpm@9.15.9",
+  "engines": {
+    "node": ">=24 <25"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",

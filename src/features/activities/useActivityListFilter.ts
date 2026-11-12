@@ -1,5 +1,6 @@
 "use client";
 import { type Dispatch, type SetStateAction, useState } from "react";
+import { DEFAULT_ACTIVITY_DATE_BASIS } from "@/constants/activityDateBasis";
 import { type PresetRange, presetRange } from "./activityDatePresets";
 import type { ActivityListFilter } from "./schemas";
 import { useLocalNow } from "./useLocalNow";
@@ -13,12 +14,23 @@ export interface ActivityListFilterState {
 }
 
 function defaultFilter(currentUserId: string, range: PresetRange): ActivityListFilter {
-  return { ownerId: currentUserId, done: "open", from: range.from, to: range.to, typeKey: null };
+  return {
+    ownerId: currentUserId,
+    done: "open",
+    from: range.from,
+    to: range.to,
+    dateBasis: DEFAULT_ACTIVITY_DATE_BASIS,
+    pipelineId: null,
+    typeKey: null,
+  };
 }
 
-export function useActivityListFilter(currentUserId: string): ActivityListFilterState {
+export function useActivityListFilter(
+  currentUserId: string,
+  seed: ActivityListFilter | null = null,
+): ActivityListFilterState {
   const localNow = useLocalNow();
-  const [chosen, setChosen] = useState<ActivityListFilter | null>(null);
+  const [chosen, setChosen] = useState<ActivityListFilter | null>(seed);
   if (chosen !== null) return { filter: chosen, setFilter: setChosen, ready: true };
   if (localNow === null) {
     return {

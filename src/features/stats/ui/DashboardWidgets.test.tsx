@@ -73,4 +73,16 @@ describe("Performance page widgets", () => {
     render(<Dashboard today="2026-03-01" canViewOthers currency="USD" />);
     expect(screen.getByText(STRINGS.dashboard.funnelBasisMe)).toBeInTheDocument();
   });
+
+  it("links the activities tile with the resolved owner scope and the dashboard range", () => {
+    render(<Dashboard today="2026-03-01" canViewOthers currency="USD" />);
+    const link = screen.getByRole("link", { name: new RegExp(STRINGS.dashboard.scoreActivities) });
+    const url = new URL(link.getAttribute("href") ?? "", "http://x");
+    const year = new Date().getFullYear();
+    expect(url.pathname).toBe("/activities/list");
+    expect(url.searchParams.get("owner")).toBe("me");
+    expect(url.searchParams.get("from")).toBe(`${year}-01-01`);
+    expect(url.searchParams.get("to")).toBe(`${year}-12-31`);
+    expect(url.searchParams.get("pipeline")).toBeNull();
+  });
 });

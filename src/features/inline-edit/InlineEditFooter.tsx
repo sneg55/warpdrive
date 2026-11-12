@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/Button";
 interface InlineEditFooterProps {
   onCancel: () => void;
   onSave: () => void;
-  // PD dirty-gates Save: disabled (muted green) until the draft differs from the value.
   saveDisabled: boolean;
   pending?: boolean;
 }
@@ -38,7 +37,7 @@ export function InlineEditFooter({
         onClick={onSave}
         disabled={disabled}
         aria-disabled={disabled}
-        className="h-6 rounded bg-save px-2 text-xs text-white disabled:bg-save-muted disabled:opacity-100"
+        className="h-6 rounded bg-save px-2 text-xs text-white"
       >
         Save
       </Button>

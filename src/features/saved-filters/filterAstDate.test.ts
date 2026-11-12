@@ -24,6 +24,12 @@ describe("filterToSql: date fields compile to a half-open day range in the viewe
     expect(q.params).toEqual(["2026-09-02", NY, "2026-09-02", NY]);
   });
 
+  it("the won date compiles against won_time as a timestamptz in the zone", () => {
+    const q = emit({ field: "wonTime", op: "gte", value: "2026-09-02" }, NY);
+    expect(q.sql).toBe(`d.won_time >= (($1::date)::timestamp AT TIME ZONE $2)`);
+    expect(emit({ field: "wonTime", op: "isEmpty" }).sql).toBe(`d.won_time IS NULL`);
+  });
+
   it("an absolute date on a date column compares as a plain date", () => {
     const q = emit({ field: "expectedCloseDate", op: "eq", value: "2026-09-30" }, NY);
     expect(q.sql).toBe(

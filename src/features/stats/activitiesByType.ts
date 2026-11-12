@@ -7,6 +7,7 @@ import { sql } from "drizzle-orm";
 import type { Db } from "@/db/client";
 import type { PermSetUser } from "@/features/permissions/effective";
 import { ownerFilterClause } from "@/features/stats/ownerIds";
+import { withinLocalDays } from "@/lib/localDayRange";
 import type { ActivityTypeCount, DashboardFilters } from "@/types/stats";
 import { activityVisibilityPredicate } from "./activityVisibilitySql";
 
@@ -39,8 +40,7 @@ export async function activitiesByType(
       ON a.type_id = t.id
       AND a.deleted_at IS NULL
       AND a.done = true
-      AND a.done_at >= ${filters.from}::date
-      AND a.done_at < ${filters.to}::date + INTERVAL '1 day'
+      AND ${withinLocalDays(sql`a.done_at`, filters.from, filters.to, filters.timeZone)}
       AND ${activityVisibilityPredicate(actor, "a")}
       ${ownerClause}
       ${pipelineClause}

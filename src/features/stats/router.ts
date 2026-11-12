@@ -6,6 +6,7 @@
 import { AppError, ERROR_IDS } from "@/constants/errorIds";
 import { listTeams } from "@/features/identity/teams.service";
 import { listAssignableUsers } from "@/features/identity/users.service";
+import { viewerTimeZone } from "@/features/identity/viewerTimeZone";
 import { can } from "@/features/permissions/can";
 import { activitiesByType } from "@/features/stats/activitiesByType";
 import { activitiesPerformance } from "@/features/stats/activitiesPerformance";
@@ -31,10 +32,14 @@ export const statsRouter = router({
     // Trust boundary: the client cannot widen its own owner scope.
     const effectiveOwnerScope = ownerScope(ctx.actor, input.ownerScope);
     const signal = SIG();
-    const owners = await resolveOwnerIds(ctx.db, ctx.actor, effectiveOwnerScope, signal);
-
     const requested = input.pipelineId;
-    if (requested !== null && !(await isPipelineVisible(ctx.db, ctx.actor, requested, signal))) {
+    const [owners, visible, timeZone, stagePipelineIds] = await Promise.all([
+      resolveOwnerIds(ctx.db, ctx.actor, effectiveOwnerScope, signal),
+      requested === null ? true : isPipelineVisible(ctx.db, ctx.actor, requested, signal),
+      viewerTimeZone(ctx.db, ctx.actor.id, input.timeZone, signal),
+      requested !== null ? [requested] : visiblePipelineIds(ctx.db, ctx.actor, signal),
+    ]);
+    if (!visible) {
       throw new AppError(
         ERROR_IDS.STATS_PIPELINE_NOT_VISIBLE,
         "requested pipeline not visible to user (restricted or archived)",
@@ -47,12 +52,8 @@ export const statsRouter = router({
       owners,
       from: input.from,
       to: input.to,
+      timeZone,
     };
-
-    // Stage-based queries are inherently per pipeline: either the one selected, or every
-    // visible one merged by stage position for the "All pipelines" view.
-    const stagePipelineIds =
-      requested !== null ? [requested] : await visiblePipelineIds(ctx.db, ctx.actor, signal);
 
     const [dp, ap, wds, abt, lrb, trend, perPipelineFunnel, perPipelineSums] = await Promise.all([
       dealPerformance(ctx.db, ctx.actor, filters, signal),

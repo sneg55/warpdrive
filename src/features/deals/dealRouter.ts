@@ -2,11 +2,12 @@ import { z } from "zod";
 import type { Db } from "@/db/client";
 import { attachRefLabels } from "@/features/custom-fields/refLabels";
 import { listParticipants } from "@/features/deal-workspace/participantsList";
-import { getPreferences } from "@/features/identity/preferencesRepo";
+import { viewerTimeZone } from "@/features/identity/viewerTimeZone";
 import { hasDateCondition } from "@/features/saved-filters/filterFields";
 import { parseSavedFilterDefinition } from "@/features/saved-filters/parseDefinition";
 import { listSavedFilterViews } from "@/features/saved-filters/savedFilterList";
 import { type FilterDefinition, filterDefinition } from "@/features/saved-filters/schemas";
+import { timeZoneInput } from "@/schemas/timeZoneInput";
 import { protectedProcedure, router } from "@/server/trpc/trpc";
 import type { DealVisibilitySession } from "@/types/session";
 import { getBoardColumns, getStageSums, listDeals } from "./dealRepo";
@@ -30,17 +31,15 @@ export function actorToSession(actor: {
   };
 }
 
-const timeZoneInput = z.string().max(64).optional();
-
-async function viewerTimeZone(
+function filterTimeZone(
   db: Db,
   userId: string,
   definition: FilterDefinition | undefined,
   requestZone: string | undefined,
   signal: AbortSignal,
 ): Promise<string | null> {
-  if (!hasDateCondition(definition)) return null;
-  return (await getPreferences(db, userId, signal)).timezone ?? requestZone ?? null;
+  if (!hasDateCondition(definition)) return Promise.resolve(null);
+  return viewerTimeZone(db, userId, requestZone, signal);
 }
 
 export const dealRouter = router({
@@ -60,7 +59,7 @@ export const dealRouter = router({
         input.pipelineId,
         signal,
         input.definition,
-        await viewerTimeZone(ctx.db, ctx.actor.id, input.definition, input.timeZone, signal),
+        await filterTimeZone(ctx.db, ctx.actor.id, input.definition, input.timeZone, signal),
       );
     }),
   stageSums: protectedProcedure
@@ -97,7 +96,7 @@ export const dealRouter = router({
           limit: input.limit,
           archived: input.archived,
           filter: input.definition,
-          timeZone: await viewerTimeZone(
+          timeZone: await filterTimeZone(
             ctx.db,
             ctx.actor.id,
             input.definition,

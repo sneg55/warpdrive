@@ -1,6 +1,8 @@
 import { type SQL, sql } from "drizzle-orm";
 import type { Goal } from "@/db/schema/goals";
 import type { PermSetUser } from "@/features/permissions/effective";
+import { assertNever } from "@/types/result";
+import type { OwnerScope } from "@/types/stats";
 
 export function goalSession(actor: PermSetUser) {
   return {
@@ -19,6 +21,23 @@ export function assigneeClause(goal: Goal, column: SQL): SQL {
   return sql`AND ${column} IN (
     SELECT tm.user_id FROM team_members tm WHERE tm.team_id = ${goal.assigneeId}::uuid
   )`;
+}
+
+export function ownerScopeClause(scope: OwnerScope, actorId: string, column: SQL): SQL {
+  switch (scope.kind) {
+    case "all":
+      return sql``;
+    case "me":
+      return sql`AND ${column} = ${actorId}::uuid`;
+    case "user":
+      return sql`AND ${column} = ${scope.userId}::uuid`;
+    case "team":
+      return sql`AND ${column} IN (
+        SELECT tm.user_id FROM team_members tm WHERE tm.team_id = ${scope.teamId}::uuid
+      )`;
+    default:
+      return assertNever(scope);
+  }
 }
 
 export function dealEvent(goal: Goal): { at: SQL; state: SQL } {

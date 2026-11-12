@@ -60,7 +60,16 @@ function localYmd(d: Date): string {
   ).padStart(2, "0")}`;
 }
 const TODAY = localYmd(new Date());
-const DEFAULT_FILTER = { ownerId: "me", done: "open", from: TODAY, to: TODAY, typeKey: null };
+const DEFAULT_FILTER = {
+  ownerId: "me",
+  done: "open",
+  from: TODAY,
+  to: TODAY,
+  dateBasis: "due",
+  pipelineId: null,
+  typeKey: null,
+  timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+};
 
 function row(overrides: Record<string, unknown>) {
   return {

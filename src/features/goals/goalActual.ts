@@ -10,6 +10,7 @@ import type { Goal } from "@/db/schema/goals";
 import { dealVisibilityClause } from "@/features/deals/visibility";
 import type { PermSetUser } from "@/features/permissions/effective";
 import { activityVisibilityPredicate } from "@/features/stats/activityVisibilitySql";
+import type { OwnerScope } from "@/types/stats";
 import type { GoalPeriod } from "./goalPeriod";
 import {
   activityEvent,
@@ -17,6 +18,7 @@ import {
   assigneeClause,
   dealEvent,
   goalSession,
+  ownerScopeClause,
   pipelineClause,
 } from "./goalSql";
 
@@ -30,6 +32,7 @@ async function dealTotals(
   actor: PermSetUser,
   goal: Goal,
   period: GoalPeriod,
+  scope: OwnerScope,
   signal: AbortSignal,
 ): Promise<Totals> {
   const from = sql`${period.start}::date`;
@@ -48,6 +51,7 @@ async function dealTotals(
       AND ${windowClause}
       ${pipelineClause(goal, sql`d.pipeline_id`)}
       ${assigneeClause(goal, sql`d.owner_id`)}
+      ${ownerScopeClause(scope, actor.id, sql`d.owner_id`)}
       AND ${dealVisibilityClause(goalSession(actor))}
   `);
   signal.throwIfAborted();
@@ -60,6 +64,7 @@ async function activityTotals(
   actor: PermSetUser,
   goal: Goal,
   period: GoalPeriod,
+  scope: OwnerScope,
   signal: AbortSignal,
 ): Promise<Totals> {
   const from = sql`${period.start}::date`;
@@ -81,6 +86,7 @@ async function activityTotals(
       ${activityTypeClause(goal)}
       ${dealPipelineClause}
       ${assigneeClause(goal, sql`a.assignee_id`)}
+      ${ownerScopeClause(scope, actor.id, sql`a.assignee_id`)}
       AND ${activityVisibilityPredicate(actor, "a")}
   `);
   signal.throwIfAborted();
@@ -94,12 +100,13 @@ export async function goalActual(
   actor: PermSetUser,
   goal: Goal,
   period: GoalPeriod,
+  scope: OwnerScope,
   signal: AbortSignal,
 ): Promise<string> {
   signal.throwIfAborted();
   const totals =
     goal.subject === "deal"
-      ? await dealTotals(db, actor, goal, period, signal)
-      : await activityTotals(db, actor, goal, period, signal);
+      ? await dealTotals(db, actor, goal, period, scope, signal)
+      : await activityTotals(db, actor, goal, period, scope, signal);
   return goal.metric === "value" ? totals.value : String(totals.count);
 }

@@ -19,8 +19,15 @@ describe("dealFilterFields", () => {
       "expectedCloseDate",
       "nextActivityAt",
       "lastActivityAt",
+      "wonTime",
       "labels",
     ]);
+  });
+
+  it("offers the won date as a date field", () => {
+    const won = dealFilterFields().find((f) => f.field === "wonTime");
+    expect(won?.label).toBe("Won date");
+    expect(won?.input.kind).toBe("date");
   });
 
   it("offers the activity dates as date fields with Pipedrive's labels", () => {

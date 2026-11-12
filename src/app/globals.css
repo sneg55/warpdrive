@@ -56,7 +56,6 @@
   --color-action: var(--action);
   --color-action-foreground: var(--action-foreground);
   --color-save: var(--save);
-  --color-save-muted: var(--save-muted);
   --color-disabled: hsl(var(--disabled));
   --color-disabled-foreground: hsl(var(--disabled-foreground));
 
@@ -160,7 +159,6 @@
     --action-foreground: #ffffff;
     /* The inline-edit footer hardcodes white ink on these two, so both stay dark in night too. */
     --save: #047857;
-    --save-muted: #475569;
     --attention: #fde68a;
     --attention-foreground: #78350f;
     /* Neutral on purpose: a booked activity needs no attention, so the badge should read as
@@ -212,7 +210,6 @@
     --action: #10b981;
     --action-foreground: #0b0f14;
     --save: #047857;
-    --save-muted: #475569;
     --attention: #78350f;
     --attention-foreground: #fde68a;
     /* Inverted like attention: a dark ground would vanish into the night board. This is the same

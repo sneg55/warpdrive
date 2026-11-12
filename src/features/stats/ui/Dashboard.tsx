@@ -5,6 +5,7 @@ import { useState } from "react";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { Select } from "@/components/ui/Select";
 import { STRINGS } from "@/constants/strings";
+import { browserTimeZone } from "@/lib/browserTimeZone";
 import { trpc } from "@/lib/trpc-client";
 import type { OwnerScope } from "@/types/stats";
 import { ActivityTypesWidget, LostReasonsWidget } from "./Breakdowns";
@@ -68,13 +69,14 @@ export function Dashboard({
   const pipelineId = selectedPipelineId === ALL_PIPELINES ? null : selectedPipelineId;
 
   const ownerOptionsQ = trpc.stats.ownerOptions.useQuery(undefined, { enabled: canViewOthers });
-  const goalsQ = trpc.goals.list.useQuery({ on: today });
+  const goalsQ = trpc.goals.list.useQuery({ on: today, ownerScope });
 
   const data = trpc.stats.dashboard.useQuery({
     pipelineId,
     ownerScope,
     from,
     to,
+    timeZone: browserTimeZone(),
   });
 
   // Resolved only once loading/error have cleared, so the toolbar (title, owner
@@ -101,6 +103,7 @@ export function Dashboard({
           activities={result.activities}
           winRate={result.winRate}
           currency={currency}
+          drillDown={{ owner: result.effectiveOwnerScope, pipelineId, from, to }}
         />
         <GoalsWidget data={goalsQ.data ?? []} currency={currency} canManage={canManageGoals} />
         {/* Full width above the grid: a time series is the one panel a reader scans left to

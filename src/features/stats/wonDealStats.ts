@@ -7,6 +7,7 @@ import type { Db } from "@/db/client";
 import { dealVisibilityClause } from "@/features/deals/visibility";
 import type { PermSetUser } from "@/features/permissions/effective";
 import { ownerFilterClause } from "@/features/stats/ownerIds";
+import { withinLocalDays } from "@/lib/localDayRange";
 import type { DashboardFilters, WonDealStats } from "@/types/stats";
 
 function toSession(actor: PermSetUser) {
@@ -57,8 +58,7 @@ export async function wonDealStats(
       AND d.archived_at IS NULL
       AND p.is_archived = false
       AND d.status = 'won'
-      AND d.won_time >= ${filters.from}::date
-      AND d.won_time < ${filters.to}::date + INTERVAL '1 day'
+      AND ${withinLocalDays(sql`d.won_time`, filters.from, filters.to, filters.timeZone)}
       ${pipelineClause}
       ${ownerClause}
       AND ${visClause}

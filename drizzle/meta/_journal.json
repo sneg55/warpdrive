@@ -547,6 +547,13 @@
       "when": 1794255219393,
       "tag": "0077_violet_wallow",
       "breakpoints": true
+    },
+    {
+      "idx": 78,
+      "version": "7",
+      "when": 1794430583794,
+      "tag": "0078_email_lookup_indexes",
+      "breakpoints": true
     }
   ]
 }

@@ -101,6 +101,10 @@ export function GoalForm({
   function submit(e: React.FormEvent<HTMLFormElement>): void {
     e.preventDefault();
     setError(null);
+    if (assigneeKind !== "company" && assigneeId === ANY) {
+      setError(assigneeKind === "user" ? S.goalPickPerson : S.goalPickTeam);
+      return;
+    }
     startTransition(async () => {
       const r = await onSubmit({
         subject,

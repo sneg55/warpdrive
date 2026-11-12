@@ -8,6 +8,7 @@ import type { Db } from "@/db/client";
 import { dealVisibilityClause } from "@/features/deals/visibility";
 import type { PermSetUser } from "@/features/permissions/effective";
 import { ownerFilterClause } from "@/features/stats/ownerIds";
+import { withinLocalDays } from "@/lib/localDayRange";
 import type { DashboardFilters, LostReasonCount } from "@/types/stats";
 
 function toSession(actor: PermSetUser) {
@@ -47,8 +48,7 @@ export async function lostReasonBreakdown(
       AND d.archived_at IS NULL
       AND p.is_archived = false
       AND d.status = 'lost'
-      AND d.lost_time >= ${filters.from}::date
-      AND d.lost_time < ${filters.to}::date + INTERVAL '1 day'
+      AND ${withinLocalDays(sql`d.lost_time`, filters.from, filters.to, filters.timeZone)}
       ${pipelineClause}
       ${ownerClause}
       AND ${visClause}

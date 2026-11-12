@@ -10,6 +10,7 @@ import { useRowSelection } from "@/components/data-table/useRowSelection";
 import { useActionError } from "@/components/shell/ActionErrorProvider";
 import { useRecordPreview } from "@/features/navigation/recordPreviewStore";
 import { useRowCursor } from "@/features/shortcuts/useRowCursor";
+import { browserTimeZone } from "@/lib/browserTimeZone";
 import { trpc } from "@/lib/trpc-client";
 import { readCsrfToken } from "@/utils/csrfCookie";
 import { ActivitiesFilters } from "./ActivitiesFilters";
@@ -22,7 +23,7 @@ import { completeActivityAction } from "./actions";
 import type { ActivityTableRow } from "./activityRows";
 import { activityRowTarget } from "./activityRowTarget";
 import { followUpLinksOf, useFollowUpAfterDone } from "./followUpAfterDone";
-import type { ActivitySortField } from "./schemas";
+import type { ActivityListFilter, ActivitySortField } from "./schemas";
 import { toEditableActivity } from "./toEditableActivity";
 import { useActivityBulkActions } from "./useActivityBulkActions";
 import { useActivityListFilter } from "./useActivityListFilter";
@@ -36,8 +37,18 @@ const DEFAULT_SORT: ColumnSort<ActivitySortField> = { field: "dueAtIso", dir: "a
 // so neither has to be kept in sync by hand when a column is added.
 const ACTIVITY_TABLE_COLUMN_COUNT = 12;
 
-export function ActivitiesTable({ currentUserId }: { currentUserId: string }): React.ReactNode {
-  const { filter, setFilter, ready } = useActivityListFilter(currentUserId);
+interface ActivitiesTableProps {
+  currentUserId: string;
+  initialFilter?: ActivityListFilter | null;
+  pipelineName?: string | null;
+}
+
+export function ActivitiesTable({
+  currentUserId,
+  initialFilter = null,
+  pipelineName = null,
+}: ActivitiesTableProps): React.ReactNode {
+  const { filter, setFilter, ready } = useActivityListFilter(currentUserId, initialFilter);
   const [modalOpen, setModalOpen] = useState(false);
   const [selected, setSelected] = useState<ActivityTableRow | null>(null);
   const selection = useRowSelection();
@@ -47,7 +58,7 @@ export function ActivitiesTable({ currentUserId }: { currentUserId: string }): R
   const setPreview = useRecordPreview((s) => s.setPreview);
   const reportError = useActionError();
   const rowsQ = trpc.activities.listRows.useQuery(
-    { ...filter, sort: effective },
+    { ...filter, sort: effective, timeZone: browserTimeZone() },
     { enabled: ready },
   );
   const typesQ = trpc.activities.listTypes.useQuery();
@@ -171,7 +182,13 @@ export function ActivitiesTable({ currentUserId }: { currentUserId: string }): R
       </div>
 
       <div className="mb-3">
-        <ActivitiesFilters filter={filter} onChange={setFilter} owners={owners} types={types} />
+        <ActivitiesFilters
+          filter={filter}
+          onChange={setFilter}
+          owners={owners}
+          types={types}
+          pipelineName={pipelineName}
+        />
       </div>
 
       {selection.count > 0 && (

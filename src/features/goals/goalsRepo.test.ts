@@ -46,7 +46,12 @@ describe("listVisibleGoals", () => {
     const companyGoal = await seedGoal({ assigneeKind: "company" });
     const bobsGoal = await seedGoal({ assigneeKind: "user", assigneeId: bob.id });
 
-    const rows = await listVisibleGoals(h.db, toActor(alice), new AbortController().signal);
+    const rows = await listVisibleGoals(
+      h.db,
+      toActor(alice),
+      { kind: "me" },
+      new AbortController().signal,
+    );
     const ids = new Set(rows.map((r) => r.id));
     expect(ids.has(own.id)).toBe(true);
     expect(ids.has(teamGoal.id)).toBe(true);
@@ -64,7 +69,12 @@ describe("listVisibleGoals", () => {
     if (team === undefined) throw new Error("no team");
     const teamGoal = await seedGoal({ assigneeKind: "team", assigneeId: team.id });
 
-    const rows = await listVisibleGoals(h.db, toActor(alice), new AbortController().signal);
+    const rows = await listVisibleGoals(
+      h.db,
+      toActor(alice),
+      { kind: "me" },
+      new AbortController().signal,
+    );
     expect(rows.some((r) => r.id === teamGoal.id)).toBe(false);
   });
 
@@ -73,7 +83,12 @@ describe("listVisibleGoals", () => {
     const someone = await seedUser(h);
     const theirs = await seedGoal({ assigneeKind: "user", assigneeId: someone.id });
 
-    const rows = await listVisibleGoals(h.db, toActor(admin), new AbortController().signal);
+    const rows = await listVisibleGoals(
+      h.db,
+      toActor(admin),
+      { kind: "all" },
+      new AbortController().signal,
+    );
     expect(rows.some((r) => r.id === theirs.id)).toBe(true);
   });
 
@@ -82,7 +97,12 @@ describe("listVisibleGoals", () => {
     const g = await seedGoal({ assigneeKind: "company" });
     expect(await deleteGoal(h.db, g.id, new AbortController().signal)).toBe(true);
 
-    const rows = await listVisibleGoals(h.db, toActor(admin), new AbortController().signal);
+    const rows = await listVisibleGoals(
+      h.db,
+      toActor(admin),
+      { kind: "all" },
+      new AbortController().signal,
+    );
     expect(rows.some((r) => r.id === g.id)).toBe(false);
   });
 

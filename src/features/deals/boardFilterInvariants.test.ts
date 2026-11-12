@@ -52,6 +52,7 @@ function representativeCondition(field: AstField, seed: SeedRefs): Condition {
     expectedCloseDate: { field: "expectedCloseDate", op: "gte", value: SEED_CLOSE_DATE },
     nextActivityAt: { field: "nextActivityAt", op: "isEmpty" },
     lastActivityAt: { field: "lastActivityAt", op: "isEmpty" },
+    wonTime: { field: "wonTime", op: "isEmpty" },
     labels: { field: "labels", op: "eq", value: SEED_LABEL },
   };
   const cond = byField[field];

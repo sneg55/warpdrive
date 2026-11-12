@@ -34,6 +34,8 @@ export const SETTINGS_STRINGS = {
   goalsEmpty: "No goals yet.",
   goalInvalid:
     "That combination is not a goal we can measure. Check the event and how it is counted.",
+  goalPickPerson: "Pick the person this goal is for.",
+  goalPickTeam: "Pick the team this goal is for.",
   goalSaveFailed: "Could not save the goal.",
   users: "Users",
   usersDescription: "Invite users, review access, and keep active seats current.",

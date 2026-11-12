@@ -90,6 +90,12 @@ export function dealFilterFields(sources: DealFilterCatalogSources = {}): DealFi
       input: { kind: "date" },
     },
     {
+      field: "wonTime",
+      label: "Won date",
+      ops: OPS_BY_FIELD.wonTime,
+      input: { kind: "date" },
+    },
+    {
       field: "labels",
       label: "Label",
       ops: OPS_BY_FIELD.labels,

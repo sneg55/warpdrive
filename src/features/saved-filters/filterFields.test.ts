@@ -25,6 +25,7 @@ describe("filterFields", () => {
     expect(OPS_BY_FIELD.expectedCloseDate).toBe(ORDERED_OPS);
     expect(OPS_BY_FIELD.nextActivityAt).toBe(ORDERED_OPS);
     expect(OPS_BY_FIELD.lastActivityAt).toBe(ORDERED_OPS);
+    expect(OPS_BY_FIELD.wonTime).toBe(ORDERED_OPS);
     expect(OPS_BY_FIELD.status).toBe(EXACT_OPS);
     expect(OPS_BY_FIELD.stageId).toBe(EXACT_OPS);
     expect(OPS_BY_FIELD.ownerId).toBe(EXACT_OPS);
@@ -53,6 +54,7 @@ describe("filterFields", () => {
       "expectedCloseDate",
       "nextActivityAt",
       "lastActivityAt",
+      "wonTime",
     ]);
   });
 

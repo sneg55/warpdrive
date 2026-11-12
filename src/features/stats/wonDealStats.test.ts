@@ -18,6 +18,7 @@ const BASE: DashboardFilters = {
   owners: EVERYONE,
   from: "2025-01-01",
   to: "2025-12-31",
+  timeZone: "UTC",
 };
 
 describe("wonDealStats", () => {

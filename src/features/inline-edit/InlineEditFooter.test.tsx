@@ -36,4 +36,12 @@ describe("InlineEditFooter (PD ActionFooter)", () => {
     expect(screen.getByRole("button", { name: "Cancel" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Save" })).toBeDisabled();
   });
+
+  it("paints a disabled Save with the neutral disabled pair so its label stays readable", () => {
+    render(<InlineEditFooter onCancel={vi.fn()} onSave={vi.fn()} saveDisabled={true} />);
+    const save = screen.getByRole("button", { name: "Save" });
+    expect(save.className).not.toContain("save-muted");
+    expect(save.className).toContain("disabled:bg-disabled");
+    expect(save.className).toContain("disabled:text-disabled-foreground");
+  });
 });
