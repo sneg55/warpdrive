@@ -15,9 +15,9 @@ existing permissions and visibility rules. Connecting an assistant never grants 
 access than you already have.
 
 :::important
-**The server has no delete tools for CRM records.** There is no way to delete,
-remove, archive, or destroy a deal, contact, lead, or activity through MCP. The one
-exception is the assistant's own unsent email drafts, which it can revise and
+**The server has no delete tools for CRM records.** There is no way to delete or
+destroy a deal, contact, lead, or activity through MCP. Leads can be archived, which
+is reversible. The one deletion is the assistant's own unsent email drafts, which it can revise and
 delete, since unsent text in the actor's own mailbox is not a record anyone else
 can see.
 :::
@@ -48,7 +48,16 @@ deployments can instead point `OAUTH_SIGNING_KEY_FILE` at a file holding the key
 Make sure `BASE_URL` is the public HTTPS origin your clients reach Warpdrive at. When
 `MCP_ENABLED=false`, the MCP and OAuth endpoints return HTTP 404.
 
+`OAUTH_REGISTRATION` controls dynamic client registration. It defaults to `open`, which
+lets a client register itself with no admin step. Once the clients you need are
+connected, set it to `disabled`: existing connections keep working, and the
+registration endpoint is closed and no longer advertised.
+
 ## Connecting a client
+
+Under **Settings**, then **Connected apps**, the **Connect an AI client** card shows
+the server URL with a copy button and the Claude Desktop steps below. The card is
+hidden when `MCP_ENABLED` is off.
 
 The remote MCP endpoint is:
 
@@ -93,6 +102,8 @@ with OAuth can use the same endpoint.
 
 - `create_deal`, `update_deal`, `move_deal_stage`
 - `create_lead`, `update_lead`, `convert_lead_to_deal`
+- `archive_lead`, which archives a lead out of the inbox, or restores it with
+  `archived: false`
 - `create_person`, `update_person`
 - `create_organization`, `update_organization`
 - `create_activity`, `update_activity`, `complete_activity`
@@ -102,6 +113,7 @@ with OAuth can use the same endpoint.
 The draft tools write into the actor's own connected mailbox and can link a draft to
 a deal or person, so an assistant can prepare outreach where it belongs. **There is
 no send tool**: drafts are written for review, and sending stays a human action.
+`archive_lead` checks lead visibility the same way the other lead writes do.
 
 ## Permissions and safety
 
@@ -114,7 +126,7 @@ change made in the UI.
 :::tip
 Review the assistant's write requests before approving them in your client. The server
 has no delete tools for CRM records and no send tool, so the worst an approved write
-can do is create or change a record, never remove one or email anyone.
+can do is create, change, or archive a lead, never delete a record or email anyone.
 :::
 
 ## Revoking a connection

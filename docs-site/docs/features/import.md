@@ -14,12 +14,15 @@ description: "Import deals, leads, people, and organizations into Warpdrive from
 
 Import is a stepper:
 
-1. **Upload** a CSV, by drag and drop or file picker, and choose its **Source**:
+1. **Upload** a CSV of up to 25 MB, by drag and drop or file picker, and choose its **Source**:
    **CSV file** for any spreadsheet, or **Pipedrive export** for a file exported from
    Pipedrive.
 2. **Map** its columns onto Warpdrive fields, including any
    [custom fields](../administration/data-fields.md). Columns whose header matches a
-   field name are mapped for you; check them and change any that are wrong.
+   field name are mapped for you; check them and change any that are wrong. Leads
+   can map to lead custom fields as well. For every target except activities, the
+   **Add unmapped columns as a note** option writes the columns you left unmapped
+   into a note on the imported record.
 3. **Preview** the parsed result.
 4. **Commit** the import.
 
@@ -51,9 +54,14 @@ Because it is a background job, a large import continues if you navigate away.
 
 ## Deduplication and linking
 
-Rows are matched against existing records rather than blindly inserted. Person and
-organization links are resolved find-or-create, so importing leads for a company that
-already exists attaches them to that company instead of creating a second one.
+When you import people or organizations, the mapping step asks what to do when a
+matching contact already exists: **Skip the row** or **Update the existing contact**.
+This choice appears only for those two targets. Leads have no matching key and are
+always created.
+
+Person and organization links are resolved find-or-create, so importing leads for a
+company that already exists attaches them to that company instead of creating a
+second one.
 
 ## Errors
 

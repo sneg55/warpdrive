@@ -6,8 +6,9 @@ description: "Connect a Gmail mailbox to Warpdrive over OAuth, understand what t
 
 # Email sync
 
-Each user connects their own Gmail mailbox. There is no shared or company-wide
-mailbox connection.
+Each user connects their own Gmail mailbox. Admins can additionally connect shared
+team mailboxes at `/settings/team-mailboxes`; see
+[Team mailboxes](../features/team-mailboxes.md).
 
 `/settings/email-sync` manages the connection; `/settings/email` holds the
 message-level preferences such as your signature.
@@ -17,6 +18,13 @@ message-level preferences such as your signature.
 ## Connecting a mailbox
 
 Start the connection from `/settings/email-sync` and complete Google's consent screen.
+
+### Account requirements
+
+Connecting needs a Google Workspace account on the domain the deployment is configured
+for (`GOOGLE_WORKSPACE_DOMAIN`). A personal Gmail account, or an account on another
+domain, is rejected. A personal connection must also be the same address you signed in
+with.
 
 ### Required scopes
 
@@ -63,10 +71,16 @@ happens when access is revoked or the password changes. Reconnect from
 `/settings/email-sync`. Transient failures do not cause this, so a mailbox that
 disconnects repeatedly points at revoked access rather than a flaky network.
 
+**The status shows "Not syncing" in amber.** The mailbox is connected, but its last
+successful sync is more than 15 minutes old, or its last sync ended in an error. Check
+that the worker is running first (see above). If the worker is healthy, reconnect the
+mailbox.
+
 **Nothing appears after connecting.** Expected if no new mail has arrived. Sync does
-not backfill.
+not backfill. This applies to personal mailboxes only.
 
 ## Related
 
 - [Email](../features/email.md), for using the mailbox once connected.
+- [Team mailboxes](../features/team-mailboxes.md), for shared mailboxes.
 - [Installation](../setup.md), for OAuth client setup.

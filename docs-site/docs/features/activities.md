@@ -14,12 +14,20 @@ Activities are the scheduled work attached to records: calls, meetings, and task
 
 ![The activities list](/img/screenshots/activities/list.png)
 
+The list opens on your own open activities due today, not on every owner. Widen the
+owner and date filters to see more. The from and to date pickers have a rail of
+presets: This week, Last week, This month, Last month, Next month, This quarter, and
+This year. Weeks run Monday to Sunday.
+
+Tiles on the [dashboard](./dashboard.md) open this list with their scope applied, and
+an **Applied scope** row of chips shows what is filtering the list, each removable.
+
 The list is the better view for triage, since it sorts and filters. The calendar is
 the better view for scheduling, since it shows conflicts.
 
 Clicking a row, or a chip on the calendar, opens the record the activity belongs to
-as a slide-over drawer: the deal if it has one, otherwise the person, then the
-organization. Only an activity linked to nothing opens its own editor. Each row
+as a slide-over drawer: the deal if it has one, otherwise the lead, then the person,
+then the organization. Only an activity linked to nothing opens its own editor. Each row
 carries two distinct controls: a round toggle marks the activity done, and the plain
 checkbox selects the row. The list can also be walked with `j`/`k` and opened with
 Enter, see [Keyboard shortcuts](./keyboard-shortcuts.md).
@@ -39,7 +47,8 @@ An activity can be created from the activities views, or directly on a deal, per
 or organization, which links it to that record.
 
 An activity has a type, a subject, an optional due date and time, a duration, a
-priority, and an assignee. Activity types are configurable, see
+priority, and an assignee. Activity cards on deals, leads, and the calendar are
+labelled with the assignee, not the person who created them. Activity types are configurable, see
 [Company settings](../administration/company-settings.md).
 
 Activities without a due date are valid. They appear as undated rather than being
@@ -55,6 +64,10 @@ only: a full day never blocks a save.
 Activities are marked done from the list, the calendar, or the record they belong to.
 An incomplete activity past its due date is styled as overdue. An activity can be
 deleted from its card's overflow menu on the record.
+
+Marking an activity done can prompt you to schedule a follow-up. This is off by
+default; turn on the follow-up setting under Interface in your profile settings
+(`/settings/profile`).
 
 A deal's next activity is surfaced on its board card, which is what makes the board
 usable as a work queue rather than only a status display.

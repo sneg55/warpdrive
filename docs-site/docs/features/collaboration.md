@@ -13,7 +13,13 @@ can be pinned to hold it at the top, which is the usual way to keep account cont
 visible.
 
 Notes can carry comments, so a discussion stays attached to the note rather than
-becoming a series of separate notes.
+becoming a series of separate notes. Only the comment's author or an admin can edit or
+delete it. Notes on leads do not take comments.
+
+Replying to a comment notifies the note's author and earlier commenters. See
+[Notifications](./notifications.md).
+
+URLs and email addresses in notes and comments render as clickable links.
 
 ## Mentions
 
@@ -31,8 +37,9 @@ owning it or changing who can see it.
 
 ## Presence
 
-When several people have the same record open, presence indicators show who else is
-there, so two people do not unknowingly edit the same deal at once.
+Presence indicators show who else is viewing, on the pipeline board header and on the
+deal header, so two people do not unknowingly edit the same deal at once. Other record
+pages do not show presence.
 
 Presence is realtime and depends on the WebSocket connection. If indicators never
 appear for anyone, check `NEXT_PUBLIC_WS_URL` as described in

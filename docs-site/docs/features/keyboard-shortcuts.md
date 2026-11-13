@@ -16,6 +16,7 @@ menu or dialog is open, bare keys do nothing.
 | `1` to `7` | Jump to a primary nav item, in rail order: Pipeline, Leads, Contacts, Activities, Inbox, Performance, Settings |
 | `[` / `]` | Expand / collapse the nav rail |
 | `/` | Open search |
+| `Cmd`+`K` / `Ctrl`+`K` | Open search, also while typing in a field |
 
 ## Quick add
 

@@ -70,6 +70,25 @@ A run succeeds if any provider answered, and a provider skipped for a cooldown i
 still named in the dialog footer, so a thin result never silently reads as the
 whole picture.
 
+## Finding people at an organization
+
+**Find people** searches a provider for people who work at an organization. It is in the
+Organization section menu on the deal sidebar and in the People section menu on the
+organization page, and it shows only once at least one provider is connected. The
+organization needs a domain: without one, the dialog asks you to add a website first.
+
+1. Pick the provider under **Search with**. The default is the first connected provider
+   in priority order.
+2. Optionally filter by a job title the title contains and by seniority, then
+   **Search**. Searching costs nothing, and **Load more** fetches further pages.
+3. Select the people you want, up to 100. People already in Warpdrive are flagged
+   **Already in Warpdrive** with a link to open them.
+4. Choose **Reveal**. Revealing contact details spends provider credits. It runs in
+   batches of 5, with a **Stop** button: people revealed before you stop are kept.
+5. Review what came back. Unchecked people are not created.
+
+A provider whose plan does not include people search says so, and you can pick another.
+
 ## Visibility
 
 The lookup sent to a provider is bounded by what you can see. A hidden

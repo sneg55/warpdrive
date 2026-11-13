@@ -6,6 +6,7 @@ import {
   INTERCOM_MAX_PAGES_PER_RUN,
   INTERCOM_MAX_STALLED_RUNS,
   INTERCOM_SEARCH_PER_PAGE,
+  INTERCOM_SYNC_PAGE_BUDGET_MS,
 } from "@/constants/intercom";
 import type * as schema from "@/db/schema";
 import { uniqueBy } from "./batch";
@@ -26,6 +27,7 @@ export interface SyncDeps {
   nowMs: () => number;
   perPage?: number;
   maxPages?: number;
+  pageBudgetMs?: number;
 }
 
 export interface SyncReport {
@@ -119,7 +121,11 @@ export async function runIntercomSync(deps: SyncDeps, signal: AbortSignal): Prom
   let finished = false;
   let searchFailed = false;
 
-  while (!finished && report.pages < (deps.maxPages ?? INTERCOM_MAX_PAGES_PER_RUN)) {
+  const pageDeadline = deps.nowMs() + (deps.pageBudgetMs ?? INTERCOM_SYNC_PAGE_BUDGET_MS);
+  const withinBudget = (): boolean =>
+    report.pages < (deps.maxPages ?? INTERCOM_MAX_PAGES_PER_RUN) && deps.nowMs() < pageDeadline;
+
+  while (!finished && withinBudget()) {
     const page = await deps.client.searchConversations(
       {
         updatedAfter: ctx.updatedAfter,

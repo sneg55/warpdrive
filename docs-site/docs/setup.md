@@ -43,6 +43,7 @@ boot rather than misbehaving hours later.
 | `NEXT_PUBLIC_WS_URL` | `wss://crm.example.com/_ws` |
 | `WS_PUBLIC_URL` | `ws://ws:8080`, the internal Compose address |
 | `S3_ENDPOINT` | `https://s3.crm.example.com` |
+| `GARAGE_RPC_SECRET` | 32 bytes of hex, required by the Compose file (see below) |
 | `DATABASE_URL` | `postgres://warpdrive:warpdrive@postgres:5432/warpdrive` |
 | `SEED_ADMIN_EMAIL` | the first admin's email address, required in production |
 | `ALLOW_FIRST_LOGIN_ADMIN` | `false` |
@@ -70,6 +71,8 @@ stating plainly:
 | `MAX_FILE_BYTES` | Upload size ceiling. Defaults to `26214400` (25 MiB). |
 | `GOOGLE_WORKSPACE_DOMAIN` | Restricts sign-in to a single Workspace domain. |
 | `APP_VERSION` | Version shown as "current" by the update banner. |
+| `MCP_ENABLED` | Defaults to `true`. Turns on the MCP server and its OAuth endpoints, and requires `OAUTH_SIGNING_KEY`. Set `false` to opt out. |
+| `OAUTH_SIGNING_KEY` | Base64 of exactly 32 bytes. Signs MCP access tokens. Required while `MCP_ENABLED` is `true`. |
 | `DISABLE_UPDATE_CHECK` | Set `true` to disable the update banner and its GitHub poll. |
 
 ### Generate the secrets
@@ -79,12 +82,17 @@ openssl rand -base64 32   # TOKEN_ENCRYPTION_KEY (32-byte base64 key)
 openssl rand -hex 32      # WS_TICKET_SECRET (>= 32 chars)
 openssl rand -hex 16      # S3_ACCESS_KEY / S3_SECRET_KEY
 openssl rand -hex 32      # GARAGE_RPC_SECRET (exactly 32 bytes, hex)
+openssl rand -base64 32   # OAUTH_SIGNING_KEY (32-byte base64 key)
 ```
 
+The app refuses to start with `MCP_ENABLED` on (the default) and no valid
+`OAUTH_SIGNING_KEY`, so a fresh install needs this key. If you do not want the MCP
+server, set `MCP_ENABLED=false` instead and skip it. See [MCP server](./features/mcp.md).
+
 `DATABASE_URL`, `TOKEN_ENCRYPTION_KEY`, `WS_TICKET_SECRET`,
-`GOOGLE_OAUTH_CLIENT_SECRET`, and `S3_SECRET_KEY` may each instead be supplied as
-`<VAR>_FILE` pointing at a file path, for use with Docker secrets. The app reads the
-file contents at boot.
+`GOOGLE_OAUTH_CLIENT_SECRET`, `S3_SECRET_KEY`, `OAUTH_SIGNING_KEY`, and
+`INTERCOM_ACCESS_TOKEN` may each instead be supplied as `<VAR>_FILE` pointing at a file
+path, for use with Docker secrets. The app reads the file contents at boot.
 
 Garage creates the `S3_BUCKET` bucket and an access key from `S3_ACCESS_KEY` and
 `S3_SECRET_KEY` on first start. Garage requires an access key of at least 8
@@ -94,6 +102,19 @@ at a different S3-compatible store, set `S3_REGION` to that store's region, or l
 it empty outside Compose and the client discovers the bucket's region. Installs that
 still set the older `MINIO_*` names keep working: each `S3_*` variable falls back to
 its `MINIO_*` counterpart when unset.
+
+### Optional integrations
+
+| Variable | Meaning |
+| --- | --- |
+| `OAUTH_REGISTRATION` | `open` (default) or `disabled`. Open lets an MCP client register itself. Set `disabled` once your clients are connected: existing grants keep working. See [MCP server](./features/mcp.md). |
+| `INTERCOM_ACCESS_TOKEN` | Intercom access token. Empty by default, which leaves Intercom off. See [Intercom](./features/intercom.md). |
+| `INTERCOM_REGION` | Intercom data region: `us`, `eu`, or `au`. Defaults to `us`. |
+| `POSTHOG_KEY` | PostHog project ingestion token. Leaving it or `POSTHOG_HOST` empty disables all telemetry. |
+| `POSTHOG_HOST` | PostHog host URL. |
+| `DISABLE_TELEMETRY` | Set `true` to turn telemetry off even when the PostHog values are set. Defaults to `false`. |
+| `TELEMETRY_CONSOLE_FORWARDING` | Set `true` to also forward browser `console.warn` and `console.error` messages. Off by default. |
+| `APP_COMMIT` | Git SHA of the running build, attached to telemetry events. Empty by default. |
 
 ## 2. Set up Google OAuth
 

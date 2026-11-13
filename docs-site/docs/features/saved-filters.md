@@ -26,6 +26,12 @@ Operators include the comparisons plus `contains`, `does not contain`,
 mean them: "Value is not 5" also returns deals with no value at all, rather than
 silently dropping them the way raw SQL comparison would.
 
+Deal filters also offer **Status** (Open, Won, or Lost), **Next activity date**,
+**Last activity date**, and **Won date**. The two activity dates and the other date
+fields accept relative periods such as Today, Yesterday, Next 7 days, or Last 30 days
+as well as a fixed date. A relative period is stored as the period, not the day it
+resolved to, so a saved filter stays live and moves forward with the calendar.
+
 Conditions combine as **match all** or **match any**.
 
 ## Saving a filter

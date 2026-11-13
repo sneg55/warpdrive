@@ -6,8 +6,8 @@ description: "Attaching files to Warpdrive records: presigned direct uploads to 
 
 # Files
 
-Files can be attached to deals, people, and organizations, and are listed on the
-record with their size and uploader.
+Files can be attached to deals, people, organizations, activities, and email
+messages, and are listed on the record with their size and uploader.
 
 ## How uploads work
 

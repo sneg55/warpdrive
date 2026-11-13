@@ -76,7 +76,9 @@ once. Until the copy finishes, new uploads work but older files fail to download
 
 ## The update banner
 
-Administrators see an in-app banner when a newer release is published on GitHub.
+Releases are tagged on the public GitHub repository, `sneg55/warpdrive`. The worker
+checks the latest GitHub release every 6 hours, and the banner appears for
+administrators when that release is newer than the version the app is running.
 
 | Variable | Effect |
 | --- | --- |

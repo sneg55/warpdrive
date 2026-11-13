@@ -46,6 +46,12 @@ The reverse is refused: an address reused by a **different** Google account is
 rejected, unless the existing record is an unclaimed invitation. This is what stops a
 recycled address from inheriting a departed colleague's records.
 
+### Changing a permission set
+
+Each row on `/settings/users` has a **Change permission set** control in its actions
+menu. Pick another set and it applies immediately. The control is hidden when the user
+is an administrator and you are not one. See [Permission sets](./permission-sets.md).
+
 ### Deactivating
 
 Deactivating a user revokes all of their sessions in the same transaction, so access

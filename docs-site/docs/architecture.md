@@ -24,6 +24,7 @@ just want to use it, start with the feature pages instead.
 | Background jobs | pg-boss |
 | Object storage | Garage, S3-compatible |
 | Email | Gmail API over OAuth |
+| Support history | Intercom API, optional |
 | Auth | Google SSO |
 | Package manager | pnpm |
 

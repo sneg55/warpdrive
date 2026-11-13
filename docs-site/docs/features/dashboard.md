@@ -13,9 +13,11 @@ goals under it, and charts below.
 
 ## Metrics
 
-The scoreboard covers deals added, won, lost, and open, activities completed, added,
-and scheduled, win rate, average and median won deal size, and sales cycle length.
-Below it sit activities completed by type and lost reasons by count and value.
+The scoreboard is five tiles: Deals won, Win rate, Average won deal, Median sales
+cycle, and Activities completed. The counts of deals added, lost, and open live in the
+Deal performance widget below it, alongside the activity counters, activities
+completed by type, per-stage value sums, a won-deals-by-month trend, and lost reasons
+by count and value.
 
 Each counter windows on the column that records its event: "Won" over a range means
 deals **won** in that range, not deals created in it that happen to be won now, and
@@ -23,6 +25,24 @@ a completed activity counts by when it was completed, so finishing overdue backl
 moves the number. Open deals are a snapshot, not windowed. Activities with no due
 date get their own count instead of vanishing, and a metric with no data renders a
 dash rather than a zero.
+
+## Owner, pipeline, and dates
+
+The owner picker next to the title offers **Me**, **Everyone**, any team, and any
+user. Anything wider than **Me** needs the `stats.viewOthers` permission; without it
+the picker stays on Me. A pipeline picker defaults to All pipelines.
+
+The two date pickers each carry a list of range presets: This week, Last week, This
+month, Last month, Next month, This quarter, and This year. Weeks run Monday to
+Sunday.
+
+### Drill-downs
+
+On the scoreboard, **Deals won** opens the list of the won deals behind
+the number, and **Activities completed** opens the list of the completed activities.
+The links follow the picked owner, pipeline, and date range. Neither links when a team
+is picked, and Deals won does not link on All pipelines. Days are counted in your
+browser's timezone.
 
 ## The funnel
 
@@ -36,12 +56,15 @@ reached the far stage.
 ## Quota goals
 
 A goal names what is measured (for example deals won, by value or by count), who it
-applies to, and an interval, and carries a target. The Performance page shows each
+applies to (the whole company, a team, or one person), and an interval, and carries a
+target. The Performance page shows each
 goal's progress for the current period as attainment plus **pace**: half the target
 booked a fifth of the way through the month reads as ahead, not as 50%.
 
 Periods anchor on the goal's start date rather than the calendar, so a quarterly
 goal starting in February runs February to April.
+
+Goals follow the owner picked on the page, and each goal is labelled with its owner.
 
 Goals are managed on `/settings/goals`, behind the `goals.manage` permission.
 Reading them needs no permission.

@@ -14,8 +14,15 @@ indicator.
 ## What generates one
 
 - Being **@mentioned** in a note or comment.
+- A **reply to a comment thread** on a note. Recipients are the note's author and
+  everyone who commented earlier, except you. Someone mentioned in the comment gets the
+  mention notification only, not a second reply notification.
 - Activity on a record you **follow**.
 - Assignment of a record or activity to you.
+- An **activity reminder** for an activity assigned to you.
+- A deal you follow or own being **won or lost**.
+- An **open** or a **link click** on an email you sent, when tracking is on. See
+  [Email](./email.md#open-and-link-tracking).
 - **Inbound email arriving on a deal** you own or follow. The notification points at
   the deal's timeline, not the mailbox thread, and is suppressed for anyone who can
   no longer see the deal.

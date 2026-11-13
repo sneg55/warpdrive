@@ -21,6 +21,8 @@ const sidebars: SidebarsConfig = {
         "features/contacts",
         "features/activities",
         "features/email",
+        "features/team-mailboxes",
+        "features/intercom",
         "features/enrichment",
         "features/import",
         "features/dashboard",

@@ -29,7 +29,19 @@ as a full page by its own URL.
 ![An organization detail page](/img/screenshots/contacts/org-detail.png)
 
 An organization's page shows its people, its deals, and its own activity and email
-history.
+history. Its sidebar has a **Find people** action that searches for people at the
+organization through your connected providers; see [Enrichment](./enrichment.md).
+
+## List columns
+
+Custom fields can be shown as columns in both the People and the Organizations lists.
+
+## Merging
+
+Duplicates can be merged. On a detail page, the actions menu has **Merge**: pick the
+record to merge with and which of the two survives. In the People and Organizations
+lists, select exactly two records and choose **Merge duplicates**, then pick the
+survivor.
 
 ## Linking
 
@@ -59,7 +71,8 @@ See [Enrichment](./enrichment.md).
 
 ## Email
 
-Threads linked to a person appear on their detail page. Linking is recorded on the
+Threads linked to a person appear on their detail page, alongside any Intercom support
+conversations when Intercom is configured (see [Intercom](./intercom.md)). Linking is recorded on the
 thread, matching inbound mail on the sender and outbound mail on the recipient. See
 [Email](./email.md).
 

@@ -21,14 +21,22 @@ function addConversation(fake: IntercomFake, id: string, updatedAt: number, cont
   });
 }
 
-function run(db: TestDb, fake: IntercomFake, opts: { nowMs?: number; maxPages?: number } = {}) {
+interface RunOpts {
+  nowMs?: number | (() => number);
+  maxPages?: number;
+  pageBudgetMs?: number;
+}
+
+function run(db: TestDb, fake: IntercomFake, opts: RunOpts = {}) {
+  const clock = opts.nowMs;
   return runIntercomSync(
     {
       db,
       client: fake.client,
-      nowMs: () => opts.nowMs ?? NOW_S * 1000,
+      nowMs: typeof clock === "function" ? clock : () => clock ?? NOW_S * 1000,
       perPage: 2,
       maxPages: opts.maxPages,
+      pageBudgetMs: opts.pageBudgetMs,
     },
     SIG(),
   );
@@ -52,6 +60,23 @@ describe("runIntercomSync continuation", () => {
       await run(db, fake, { maxPages: 1 });
       await run(db, fake, { maxPages: 1 });
       await run(db, fake, { maxPages: 1 });
+      expect(await storedIds(db)).toEqual(["c1", "c2", "c3", "c4", "c5"]);
+    });
+  });
+
+  it("stops starting pages once the run's time budget is spent, and resumes next run", async () => {
+    await withTestDb(async (db) => {
+      const fake = makeIntercomFake();
+      fake.contacts.set("k1", { id: "k1", email: "pat@example.com" });
+      for (const id of ["c1", "c2", "c3", "c4", "c5"])
+        addConversation(fake, id, NOW_S - 50, ["k1"]);
+      const budget = 1_000;
+      const searches = () => fake.requests.filter((r) => r === "/conversations/search").length;
+      const clock = () => NOW_S * 1000 + (searches() > 0 ? budget + 1 : 0);
+      await run(db, fake, { nowMs: clock, pageBudgetMs: budget });
+      expect(searches()).toBe(1);
+      expect(await storedIds(db)).toEqual(["c1", "c2"]);
+      await run(db, fake);
       expect(await storedIds(db)).toEqual(["c1", "c2", "c3", "c4", "c5"]);
     });
   });

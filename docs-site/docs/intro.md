@@ -23,13 +23,19 @@ vendor holding your customer data.
   participants, and the email thread history.
 - **Contacts.** People and organizations, linked to each other and to deals.
 - **Leads.** A separate inbox for unqualified prospects, convertible into deals.
+  Custom fields work on leads too, and can be shown as columns in the list views.
 - **Email.** Two-way Gmail over OAuth: send from inside the CRM, and see replies on
-  the record they belong to.
+  the record they belong to. The inbox shows an inbox-zero state once it is cleared.
+- **Team mailboxes.** Connect shared Gmail mailboxes for a team. See
+  [Team mailboxes](./features/team-mailboxes.md).
+- **Intercom.** Optionally show Intercom support conversations in the history of
+  people, deals, and leads. See [Intercom](./features/intercom.md).
 - **Activities.** Calls, meetings, and tasks, in a list and on a calendar.
 - **Enrichment.** Fill empty fields on people and organizations from Apollo,
   RocketReach, and GetProspect, behind an explicit review step.
 - **Performance.** Sales metrics, a stage funnel built from real stage history, and
-  quota goals with pace.
+  quota goals with pace, viewable for yourself, a team, or anyone through an owner
+  picker.
 - **AI access.** An OAuth-protected MCP server so assistants can read and update the
   CRM under each user's own permissions.
 - **Administration.** Users, teams, permission sets, and visibility groups.

@@ -42,6 +42,14 @@ such as call, meeting, and task.
 `/settings/company/pipelines` lists pipelines. Stages are edited from the pipeline
 itself, at `/pipeline/[id]/edit`. See [Pipeline](../features/pipeline.md).
 
+On the stage editor you can reorder stages by dragging them. Deleting a stage that
+holds deals asks where those deals should go: the dialog shows the deal count and a
+**Move deals to** picker listing the other stages, and the deals are moved when you
+confirm.
+
+To create a pipeline, open the pipeline dropdown on the board and choose **Add new
+pipeline**. The item appears for administrators and holders of `pipeline.manage`.
+
 Pipelines can be restricted to a visibility group, which is the strongest access
 control available: a user who cannot see the pipeline cannot see any of its deals,
 even ones they own. See [Visibility groups](./visibility-groups.md).

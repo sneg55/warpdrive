@@ -1,12 +1,12 @@
 ---
 sidebar_position: 5
 title: Data fields
-description: "Add custom fields to Warpdrive deals, people, and organizations, and hide built-in fields you do not use."
+description: "Add custom fields to Warpdrive deals, leads, people, organizations, and activities, and hide built-in fields you do not use."
 ---
 
 # Data fields
 
-`/settings/fields` manages the fields available on deals, people, and organizations.
+`/settings/fields` manages the fields available on deals, leads, people, organizations, and activities.
 
 ![Data fields settings](/img/screenshots/data-fields/list.png)
 
@@ -17,6 +17,9 @@ allows adding one without a schema migration or a restart.
 
 A custom field appears on the record's detail page alongside the built-in fields, and
 is available in filters and in [CSV import](../features/import.md) column mapping.
+
+Custom fields can also be shown as columns in the leads, people, organizations, and
+deals lists. They are off by default: turn them on from the list's column controls.
 
 ## Hiding built-in fields
 

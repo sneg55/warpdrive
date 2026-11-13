@@ -21,6 +21,8 @@ organization that merely shares the domain.
 
 Selecting a result opens that record.
 
+Press `/` or Cmd+K (Ctrl+K on Windows and Linux) to open search from the keyboard.
+
 ## Visibility
 
 Search returns only records you can see. It is not a way around

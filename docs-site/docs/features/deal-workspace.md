@@ -21,9 +21,19 @@ highlighted. Clicking a stage moves the deal there, the same operation as draggi
 card on the board.
 
 Marking the deal **Won** or **Lost** closes it. Closing removes it from the board and
-the list, since both show only open deals. Marking it lost asks for a reason and an
+the list, which show only open deals unless a Status filter is set. Marking it lost asks for a reason and an
 optional comment, and both are kept on the status change in the deal's history, not
 only in the header chip.
+
+## Actions menu
+
+The ellipsis menu in the header holds the deal-level actions: **Copy link**,
+**Duplicate**, **Convert to a lead**, **Merge**, **Archive**, and **Delete deal**.
+Delete is shown only if you hold the delete permission for the deal. Convert, Merge, and
+Delete ask for confirmation first.
+
+**Merge** folds the current deal into the one you pick, and you land on the picked deal
+afterwards. The picker searches the deals in this pipeline by title.
 
 ## Summary and inline editing
 
@@ -39,7 +49,12 @@ Custom fields appear here alongside the built-in ones. See
 [Data fields](../administration/data-fields.md) for adding them.
 
 The organization and person sections carry a **Fill the gaps** button that fills
-their empty fields from connected data providers. See [Enrichment](./enrichment.md).
+their empty fields from connected data providers. The organization section also has a
+**Find people** action in its menu, which searches for people at that organization. See
+[Enrichment](./enrichment.md).
+
+The person section's menu can switch the deal to a different person or unlink the
+person.
 
 ## Activities
 
@@ -55,6 +70,12 @@ keep one at the top.
 
 Notes support @mentions. Mentioning a colleague notifies them and gives them a
 pointer back to this deal. See [Collaboration](./collaboration.md).
+
+URLs and email addresses in a note render as clickable links.
+
+Each note can take comment replies. A comment's author or an administrator can edit or
+delete it. Replying notifies the note's author and anyone who commented earlier on that
+note. Notes on leads do not take comments.
 
 ## Files
 
@@ -75,6 +96,9 @@ and Unlink; mailbox triage (archive, delete, labels) stays in the Inbox, one cli
 away. Your own unsent drafts for this deal are shown beside the sent messages, with
 Continue and Discard.
 
+Intercom support conversations for the deal's people also appear in this timeline and
+under the Email tab when Intercom is configured. See [Intercom](./intercom.md).
+
 Linking happens at the **thread** level. An inbound message is matched on the sender
 address; an outbound one is matched on the recipient. See [Email](./email.md) for the
 full model, including what does and does not appear here.
@@ -87,8 +111,13 @@ the team here on the deal, not in their mailbox view.
 
 ## Participants
 
-Participants are the people attached to the deal beyond its primary contact. They are
-who the email tab offers as recipients.
+Participants are the people attached to the deal. The deal's own contact counts as the
+primary participant: it is listed first, labelled **Deal contact**, and cannot be
+removed from the participants dialog (use the person section to switch or unlink it).
+Participants are who the email tab offers as recipients.
+
+The participants dialog can also create a new person, who is added under the deal's
+organization and linked as a participant.
 
 ## Followers
 
