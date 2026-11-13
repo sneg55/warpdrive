@@ -151,6 +151,10 @@ Caddy provisions TLS for your domain automatically; Postgres and Garage stay on 
 network. See [`docs/deploy.md`](docs/deploy.md) for the full guide, including Google OAuth
 setup, the `s3.` subdomain for file uploads, and every required environment variable.
 
+## One-Click Deploy
+
+[![Deploy on RepoCloud](https://d16t0pc4846x52.cloudfront.net/deploylobe.svg)](https://repocloud.io/details/Warpdrive/)
+
 ## Tests
 
 ```bash
