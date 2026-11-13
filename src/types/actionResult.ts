@@ -4,6 +4,8 @@ import type { Result } from "./result";
 export interface ClientError {
   id: string;
   message?: never;
+  detail?: string;
+  resetAtMs?: number;
 }
 
 export type ActionResult<Ok> = Result<Ok, ClientError>;

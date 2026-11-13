@@ -9,6 +9,7 @@ vi.mock("next/navigation", () => ({
 }));
 vi.mock("@/lib/trpc-client", () => ({
   trpc: {
+    xDms: { accounts: { useQuery: () => ({ data: [] }) } },
     email: {
       inbox: { unreadCount: { useQuery: () => ({ data: 0 }) } },
       mailboxes: {

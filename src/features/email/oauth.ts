@@ -29,7 +29,12 @@ export interface GoogleIdentity {
   hd: string | null;
 }
 
-export function buildAuthUrl(args: { userId: string; state: string; team?: boolean }): string {
+export function buildAuthUrl(args: {
+  userId: string;
+  state: string;
+  team?: boolean;
+  loginHint?: string;
+}): string {
   const p = new URLSearchParams({
     client_id: env.GOOGLE_OAUTH_CLIENT_ID,
     redirect_uri: `${env.BASE_URL}/api/gmail/oauth/callback`,
@@ -40,6 +45,7 @@ export function buildAuthUrl(args: { userId: string; state: string; team?: boole
     scope: SCOPES.join(" "),
     state: args.state,
   });
+  if (args.loginHint !== undefined) p.set("login_hint", args.loginHint);
   return `https://accounts.google.com/o/oauth2/v2/auth?${p.toString()}`;
 }
 

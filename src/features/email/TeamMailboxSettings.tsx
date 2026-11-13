@@ -6,10 +6,9 @@ import {
   TEAM_MAILBOX_BACKFILL_CHOICES,
   TEAM_MAILBOX_DEFAULT_BACKFILL,
 } from "@/constants/teamMailbox";
-import { readCsrfToken } from "@/utils/csrfCookie";
 import { TeamMailboxSettingsCard } from "./TeamMailboxSettingsCard";
-import { connectTeamMailboxStart } from "./teamMailboxActions";
 import type { TeamMailboxSettings as MailboxSettings } from "./teamMailboxAdmin";
+import { redirectToTeamMailboxConsent } from "./teamMailboxConsentRedirect";
 
 export function TeamMailboxSettings({
   mailboxes,
@@ -24,12 +23,7 @@ export function TeamMailboxSettings({
   async function connect(): Promise<void> {
     setPending(true);
     try {
-      const result = await connectTeamMailboxStart(
-        { backfillDays: Number(backfill) },
-        readCsrfToken(),
-      );
-      if (result.ok) window.location.assign(result.value.url);
-      else setError(result.error.id);
+      setError(await redirectToTeamMailboxConsent({ backfillDays: Number(backfill) }));
     } finally {
       setPending(false);
     }

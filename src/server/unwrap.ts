@@ -15,6 +15,7 @@ const NOT_FOUND_IDS = new Set<string>([
   ERROR_IDS.GMAIL_THREAD_NOT_FOUND,
   ERROR_IDS.GMAIL_MESSAGE_NOT_FOUND,
   ERROR_IDS.INTERCOM_CONVERSATION_DENIED,
+  ERROR_IDS.X_ACCOUNT_NOT_FOUND,
 ]);
 
 // 403: record is visible but the actor lacks permission for the action.
@@ -43,6 +44,7 @@ const BAD_REQUEST_IDS = new Set<string>([
   ERROR_IDS.FILE_METADATA_MISMATCH,
   ERROR_IDS.ENRICH_ORG_NO_DOMAIN,
   ERROR_IDS.ENRICH_NO_SEARCH_PROVIDER,
+  ERROR_IDS.X_INPUT_INVALID,
 ]);
 
 // Convert a repo Result into a value or a TRPCError. Sets are checked in order so a

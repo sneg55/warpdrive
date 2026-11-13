@@ -5,10 +5,12 @@ import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { MultiCombobox } from "@/components/ui/MultiCombobox";
+import { TEAM_MAILBOX_DEFAULT_BACKFILL } from "@/constants/teamMailbox";
 import { readCsrfToken } from "@/utils/csrfCookie";
 import { disconnectMailboxAction } from "./actions";
 import { setTeamMailboxMembersAction, updateTeamMailboxAction } from "./teamMailboxActions";
 import type { TeamMailboxSettings } from "./teamMailboxAdmin";
+import { redirectToTeamMailboxConsent } from "./teamMailboxConsentRedirect";
 
 export function TeamMailboxSettingsCard({
   mailbox,
@@ -46,6 +48,21 @@ export function TeamMailboxSettingsCard({
       setPending(false);
     }
   }
+  async function reconnect(): Promise<void> {
+    setPending(true);
+    setError(null);
+    try {
+      setError(
+        await redirectToTeamMailboxConsent({
+          backfillDays: TEAM_MAILBOX_DEFAULT_BACKFILL,
+          loginHint: mailbox.email_address,
+        }),
+      );
+    } finally {
+      setPending(false);
+    }
+  }
+  const disconnected = mailbox.status === "disconnected";
   async function disconnect(): Promise<void> {
     setPending(true);
     try {
@@ -65,6 +82,12 @@ export function TeamMailboxSettingsCard({
           {mailbox.status}, {mailbox.member_ids.length} members
         </p>
       </div>
+      {disconnected && (
+        <p className="text-sm text-destructive">
+          Google disconnected this mailbox, so sync and sending are stopped. Reconnect it by signing
+          in as {mailbox.email_address}.
+        </p>
+      )}
       <p className="text-sm">
         Import: {mailbox.backfill_status ?? "pending"}
         {mailbox.backfill_error_id !== null ? ` (${mailbox.backfill_error_id})` : ""}
@@ -102,13 +125,15 @@ export function TeamMailboxSettingsCard({
         <Button disabled={pending} onClick={() => void save()}>
           Save mailbox
         </Button>
-        <Button
-          variant="outline"
-          disabled={pending || mailbox.status === "disconnected"}
-          onClick={() => setConfirm(true)}
-        >
-          Disconnect
-        </Button>
+        {disconnected ? (
+          <Button variant="outline" disabled={pending} onClick={() => void reconnect()}>
+            Reconnect
+          </Button>
+        ) : (
+          <Button variant="outline" disabled={pending} onClick={() => setConfirm(true)}>
+            Disconnect
+          </Button>
+        )}
       </div>
       <ConfirmDialog
         open={confirm}

@@ -16,6 +16,10 @@ const event = z.discriminatedUnion("type", [
     data: z.object({ threadId: z.string(), accountId: z.string() }),
   }),
   envelope.extend({
+    type: z.literal("x_conversation_updated"),
+    data: z.object({ conversationId: z.string(), accountId: z.string() }),
+  }),
+  envelope.extend({
     type: z.literal("deal_moved"),
     data: z.object({
       dealId: z.string(),

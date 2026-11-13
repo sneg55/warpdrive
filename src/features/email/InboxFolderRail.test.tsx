@@ -11,8 +11,12 @@ vi.mock("next/navigation", () => ({
 }));
 
 const unreadCount = vi.fn<() => number | undefined>(() => 0);
+const xAccounts = vi.fn<
+  () => { id: string; displayName: string; username: string; unread: number }[]
+>(() => []);
 vi.mock("@/lib/trpc-client", () => ({
   trpc: {
+    xDms: { accounts: { useQuery: () => ({ data: xAccounts() }) } },
     email: {
       mailboxes: { useQuery: () => ({ data: [] }) },
       inbox: { unreadCount: { useQuery: () => ({ data: unreadCount() }) } },
@@ -25,6 +29,7 @@ import { InboxFolderRail } from "./InboxFolderRail";
 afterEach(() => {
   cleanup();
   unreadCount.mockReturnValue(0);
+  xAccounts.mockReturnValue([]);
   pathname = "/inbox";
   searchParamsStr = "";
 });
@@ -102,4 +107,27 @@ it("re-derives the highlight on navigation without remounting the nav element", 
   const navAfter = screen.getByRole("navigation", { name: "Mail folders" });
   expect(navAfter).toBe(navBefore);
   expect(screen.getByRole("link", { name: /Inbox/ })).toHaveAttribute("aria-current", "page");
+});
+
+it("rail lists X accounts with unread", () => {
+  xAccounts.mockReturnValue([
+    { id: "x1", displayName: "Brand X", username: "brand", unread: 4 },
+    { id: "x2", displayName: "Support X", username: "support", unread: 0 },
+  ]);
+  pathname = "/inbox/x/x1";
+  render(<InboxFolderRail newEmailEnabled={false} />);
+  expect(screen.getByText("Team")).toBeInTheDocument();
+  const brand = screen.getByRole("link", { name: /Brand X/ });
+  expect(brand).toHaveAttribute("href", "/inbox/x/x1");
+  expect(brand).toHaveAttribute("aria-current", "page");
+  expect(brand).toHaveTextContent("4");
+  const support = screen.getByRole("link", { name: /Support X/ });
+  expect(support).toHaveAttribute("href", "/inbox/x/x2");
+  expect(support).not.toHaveTextContent("0");
+  expect(screen.getByRole("link", { name: /Inbox/ })).not.toHaveAttribute("aria-current");
+});
+
+it("hides the Team section when there are no team mailboxes and no X accounts", () => {
+  render(<InboxFolderRail newEmailEnabled={false} />);
+  expect(screen.queryByText("Team")).toBeNull();
 });

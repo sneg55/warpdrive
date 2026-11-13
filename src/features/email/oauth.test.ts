@@ -196,3 +196,21 @@ describe("OAuth identity binding", () => {
     });
   });
 });
+
+describe("team mailbox reconnect", () => {
+  it("preselects the mailbox's Google account when a login hint is given", () => {
+    const params = new URLSearchParams(
+      buildAuthUrl({ userId: "u1", state: "s1", team: true, loginHint: "sales@example.com" }).split(
+        "?",
+      )[1],
+    );
+    expect(params.get("login_hint")).toBe("sales@example.com");
+  });
+
+  it("omits the login hint for a fresh connect", () => {
+    const params = new URLSearchParams(
+      buildAuthUrl({ userId: "u1", state: "s1", team: true }).split("?")[1],
+    );
+    expect(params.has("login_hint")).toBe(false);
+  });
+});

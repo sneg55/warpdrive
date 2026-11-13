@@ -23,6 +23,7 @@ export function useInboxRealtime({
     (frame: WsFrame) => {
       if (frame.kind === "reconnect") {
         void utils.email.invalidate();
+        void utils.xDms.invalidate();
         if (openThreadId !== undefined) {
           void utils.email.thread.get.invalidate({ threadId: openThreadId });
         }
@@ -30,6 +31,7 @@ export function useInboxRealtime({
       }
       if (frame.kind === "resync") {
         void utils.email.invalidate();
+        void utils.xDms.invalidate();
         return;
       }
       if (frame.kind !== "event" || frame.event === undefined) return;
@@ -40,6 +42,12 @@ export function useInboxRealtime({
         if (openThreadId !== undefined && data.threadId === openThreadId) {
           void utils.email.thread.get.invalidate({ threadId: openThreadId });
         }
+      }
+      if (event.type === "x_conversation_updated") {
+        void utils.xDms.list.invalidate();
+        void utils.xDms.conversation.invalidate();
+        void utils.xDms.unreadCount.invalidate();
+        void utils.xDms.accounts.invalidate();
       }
       if (event.type === "email_tracking") {
         if (openThreadId !== undefined) {

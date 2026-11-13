@@ -110,6 +110,8 @@ its `MINIO_*` counterpart when unset.
 | `OAUTH_REGISTRATION` | `open` (default) or `disabled`. Open lets an MCP client register itself. Set `disabled` once your clients are connected: existing grants keep working. See [MCP server](./features/mcp.md). |
 | `INTERCOM_ACCESS_TOKEN` | Intercom access token. Empty by default, which leaves Intercom off. See [Intercom](./features/intercom.md). |
 | `INTERCOM_REGION` | Intercom data region: `us`, `eu`, or `au`. Defaults to `us`. |
+| `X_CLIENT_ID` | OAuth 2.0 client ID of your X developer app. Empty by default. X direct messages turn on only when both this and `X_CLIENT_SECRET` are set. See [X direct messages](./features/x-dms.md). |
+| `X_CLIENT_SECRET` | OAuth 2.0 client secret of the same X app. |
 | `POSTHOG_KEY` | PostHog project ingestion token. Leaving it or `POSTHOG_HOST` empty disables all telemetry. |
 | `POSTHOG_HOST` | PostHog host URL. |
 | `DISABLE_TELEMETRY` | Set `true` to turn telemetry off even when the PostHog values are set. Defaults to `false`. |

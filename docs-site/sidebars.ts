@@ -23,6 +23,7 @@ const sidebars: SidebarsConfig = {
         "features/email",
         "features/team-mailboxes",
         "features/intercom",
+        "features/x-dms",
         "features/enrichment",
         "features/import",
         "features/dashboard",

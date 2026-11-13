@@ -19,6 +19,7 @@ import { versionRouter } from "@/features/release/router";
 import { savedFiltersRouter } from "@/features/saved-filters/router";
 import { searchRouter } from "@/features/search/router";
 import { statsRouter } from "@/features/stats/router";
+import { xDmsRouter } from "@/features/x-dms/router";
 import { identityRouter } from "./routers/identity";
 import { realtimeRouter } from "./routers/realtime";
 import { router } from "./trpc";
@@ -47,6 +48,7 @@ export const appRouter = router({
   search: searchRouter,
   stats: statsRouter,
   version: versionRouter,
+  xDms: xDmsRouter,
 });
 
 export type AppRouter = typeof appRouter;

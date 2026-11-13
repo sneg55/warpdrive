@@ -4,10 +4,20 @@ import { expect, it, vi } from "vitest";
 import { InboxNavBadge } from "./InboxNavBadge";
 import { TeamReplyChip } from "./TeamReplyChip";
 
-const state = vi.hoisted(() => ({ count: 3 }));
+const state = vi.hoisted(() => ({ count: 3, xEnabled: false, xCount: 0 }));
 vi.mock("./useInboxRealtime", () => ({ useInboxRealtime: vi.fn() }));
 vi.mock("@/lib/trpc-client", () => ({
-  trpc: { email: { inbox: { unreadCount: { useQuery: () => ({ data: state.count }) } } } },
+  trpc: {
+    email: { inbox: { unreadCount: { useQuery: () => ({ data: state.count }) } } },
+    xDms: {
+      enabled: { useQuery: () => ({ data: state.xEnabled }) },
+      unreadCount: {
+        useQuery: (_input: unknown, opts: { enabled: boolean }) => ({
+          data: opts.enabled ? state.xCount : undefined,
+        }),
+      },
+    },
+  },
 }));
 it("renders reply labels and the exact overdue boundary", () => {
   const now = new Date("2026-01-02T00:00:00Z").getTime();
@@ -32,8 +42,16 @@ it("renders reply labels and the exact overdue boundary", () => {
 });
 it("hides the aggregate nav badge at zero", () => {
   const view = render(<InboxNavBadge selfActorId="actor" />);
-  expect(screen.getByLabelText("3 unread emails").textContent).toBe("3");
+  expect(screen.getByLabelText("3 unread").textContent).toBe("3");
   state.count = 0;
   view.rerender(<InboxNavBadge selfActorId="actor" />);
   expect(view.container.textContent).toBe("");
+});
+
+it("adds unread X conversations to the nav badge when X DMs are enabled", () => {
+  state.count = 2;
+  state.xEnabled = true;
+  state.xCount = 5;
+  render(<InboxNavBadge selfActorId="actor" />);
+  expect(screen.getByRole("status", { name: "7 unread" }).textContent).toBe("7");
 });

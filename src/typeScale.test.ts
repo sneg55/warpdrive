@@ -37,6 +37,8 @@ const NOT_PAGE_TITLES = new Set([
   "app/oauth/authorize/consent.tsx",
   "app/(app)/inbox/InboxListClient.tsx",
   "features/email/ThreadPane.tsx",
+  "features/x-dms/ui/XConversationList.tsx",
+  "features/x-dms/ui/XConversationPane.tsx",
 ]);
 
 describe("type scale", () => {

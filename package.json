@@ -1,6 +1,6 @@
 {
   "name": "warpdrive",
-  "version": "2.5.1",
+  "version": "2.6.0",
   "description": "An open-source, self-hosted CRM for a company business-development team.",
   "main": "index.js",
   "packageManager": "pnpm@9.15.9",
@@ -61,6 +61,7 @@
     "@trpc/client": "^11.18.0",
     "@trpc/react-query": "^11.18.0",
     "@trpc/server": "^11.18.0",
+    "@xdevplatform/chat-xdk-server": "0.7.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",

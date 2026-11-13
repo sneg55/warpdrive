@@ -41,6 +41,7 @@ describe("error IDs", () => {
       "ENRICH",
       "UI",
       "INTERCOM",
+      "X",
     ];
     for (const id of Object.values(ERROR_IDS)) {
       const m = /^E_([A-Z]+)_(\d{3})$/.exec(id);

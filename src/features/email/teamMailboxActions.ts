@@ -16,6 +16,7 @@ import { setTeamMailboxMembers } from "./teamMailboxMembers";
 const membersSchema = z.object({ accountId: z.uuid(), userIds: z.array(z.uuid()) });
 const connectSchema = z.object({
   backfillDays: z.union([z.literal(30), z.literal(90), z.literal(180)]),
+  loginHint: z.email().optional(),
 });
 const settingsSchema = z.object({
   accountId: z.uuid(),
@@ -59,7 +60,14 @@ export async function connectTeamMailboxStart(
     path: "/",
     maxAge: TEAM_MAILBOX_INTENT_MAX_AGE,
   });
-  return ok({ url: buildAuthUrl({ userId: ctx.session.userId, state: state.value, team: true }) });
+  return ok({
+    url: buildAuthUrl({
+      userId: ctx.session.userId,
+      state: state.value,
+      team: true,
+      loginHint: input.data.loginHint,
+    }),
+  });
 }
 
 export async function updateTeamMailboxAction(

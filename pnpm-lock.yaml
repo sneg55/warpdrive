@@ -95,6 +95,9 @@ importers:
       '@trpc/server':
         specifier: ^11.18.0
         version: 11.18.0(typescript@6.0.3)
+      '@xdevplatform/chat-xdk-server':
+        specifier: 0.7.3
+        version: 0.7.3
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -2559,6 +2562,15 @@ packages:
 
   '@vitest/utils@4.1.9':
     resolution: {integrity: sha512-A51o8ymO5PpqlWNnBP9ZHPXDIpuMtTLlGSjN7la4US+LJzoUMyhwjA5QXlm39JexgwHKW4Xjs8Z2d3dLCXOeuA==}
+
+  '@xdevplatform/chat-xdk-server@0.7.3':
+    resolution: {integrity: sha512-BjRyJbE/Z6TYvWIXwzI2KLsZFT58ByFazLtPUNjlSfn8uhNf9+I5M0dLmrH6faa4lg12Ui+VXAGV5oyUm5+/Qg==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      juicebox-sdk: ^0.3.0
+    peerDependenciesMeta:
+      juicebox-sdk:
+        optional: true
 
   abort-controller@3.0.0:
     resolution: {integrity: sha512-h8lQ8tacZYnR3vNQTgibj+tODHI5/+l06Au2Pcriv/Gmet0eaj4TwWH41sO9wnHDiQsEj19q0drzdWdeAHtweg==}
@@ -7543,6 +7555,8 @@ snapshots:
       '@vitest/pretty-format': 4.1.9
       convert-source-map: 2.0.0
       tinyrainbow: 3.1.0
+
+  '@xdevplatform/chat-xdk-server@0.7.3': {}
 
   abort-controller@3.0.0:
     dependencies:

@@ -12,6 +12,7 @@ const SECRET_FILE_VARS = [
   "DATABASE_URL",
   "OAUTH_SIGNING_KEY",
   "INTERCOM_ACCESS_TOKEN",
+  "X_CLIENT_SECRET",
 ] as const;
 
 function resolveFileVars(raw: NodeJS.ProcessEnv): Record<string, string | undefined> {
@@ -95,6 +96,8 @@ const base = z.object({
   DISABLE_UPDATE_CHECK: boolFromString.default(false),
   INTERCOM_ACCESS_TOKEN: z.string().default(""),
   INTERCOM_REGION: z.enum(["us", "eu", "au"]).default("us"),
+  X_CLIENT_ID: z.string().default(""),
+  X_CLIENT_SECRET: z.string().default(""),
 });
 
 // Production guardrails for the first-run bootstrap (ops spec E6).
