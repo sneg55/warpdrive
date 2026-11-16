@@ -10,12 +10,14 @@ export function XConversationClient({
   accountId,
   conversationId,
   view,
+  isAdmin,
   initialData,
 }: {
   selfActorId: string;
   accountId: string;
   conversationId: string;
   view: XListView;
+  isAdmin: boolean;
   initialData: XConversationDetail;
 }): React.ReactNode {
   useInboxRealtime({ selfActorId });
@@ -25,6 +27,7 @@ export function XConversationClient({
         conversationId={conversationId}
         accountId={accountId}
         view={view}
+        isAdmin={isAdmin}
         initialData={initialData}
       />
     </main>

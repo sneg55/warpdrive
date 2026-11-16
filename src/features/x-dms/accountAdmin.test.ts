@@ -2,7 +2,13 @@ import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import { AppError, ERROR_IDS } from "@/constants/errorIds";
 import type { Db } from "@/db/client";
-import { xAccountMembers, xAccounts, xConversations, xMessages } from "@/db/schema/xDms";
+import {
+  xAccountChatKeys,
+  xAccountMembers,
+  xAccounts,
+  xConversations,
+  xMessages,
+} from "@/db/schema/xDms";
 import { withTestDb } from "@/db/testing";
 import { seedUser } from "@/db/testing/factories";
 import { encryptToken } from "@/features/email/crypto";
@@ -143,6 +149,25 @@ describe("x account admin", () => {
       expect(await db.select().from(xAccounts)).toHaveLength(0);
       expect(await db.select().from(xConversations)).toHaveLength(0);
       expect(await db.select().from(xMessages)).toHaveLength(0);
+    });
+  });
+
+  it("disconnect deletes stored chat keys", async () => {
+    await withTestDb(async (db) => {
+      const admin = await seedUser(db, { isAdmin: true });
+      const accountId = await seedAccount(db);
+      await db.insert(xAccountChatKeys).values([
+        { accountId, keyVersion: "v1", keysEnc: Buffer.from("a"), unlockedAt: new Date() },
+        { accountId, keyVersion: "v2", keysEnc: Buffer.from("b"), unlockedAt: new Date() },
+      ]);
+      const r = await disconnectXAccount(
+        db,
+        makeXFake().client,
+        { actorId: admin.id, accountId },
+        sig(),
+      );
+      expect(r).toEqual(ok(undefined));
+      expect(await db.select().from(xAccountChatKeys)).toHaveLength(0);
     });
   });
 

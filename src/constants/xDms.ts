@@ -20,3 +20,7 @@ export const X_SNIPPET_LENGTH = 140;
 export const X_LIST_PAGE_SIZE = 50;
 export const X_READ_TIMEOUT_MS = 15_000;
 export const X_DM_TEXT_MAX = 10000;
+export const X_BACKFILL_RUN_TIMEOUT_MS = 4 * 60 * 1000;
+export const X_UNLOCK_TIMEOUT_MS = 30_000;
+export const X_BACKFILL_MAX_CONVERSATIONS_PER_RUN = 15;
+export const X_BACKFILL_RESUME_DELAY_SECONDS = 900;

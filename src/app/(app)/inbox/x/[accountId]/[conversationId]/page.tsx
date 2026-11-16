@@ -44,6 +44,7 @@ export default async function XConversationPage({
       accountId={accountId}
       conversationId={conversationId}
       view={parseXListView((await searchParams).view)}
+      isAdmin={ctx.actor.type === "admin"}
       initialData={detail}
     />
   );

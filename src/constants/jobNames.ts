@@ -26,6 +26,7 @@ export const PGBOSS_QUEUE_RELEASE_CHECK = "release.check";
 
 export const PGBOSS_QUEUE_INTERCOM_SYNC = "intercom.sync";
 export const PGBOSS_QUEUE_X_SYNC = "x.sync";
+export const PGBOSS_QUEUE_X_CHAT_BACKFILL = "x-chat-backfill";
 
 // Import overhaul: four background phases, each its own queue (payload { batchId }),
 // deduped by singletonKey = batchId.

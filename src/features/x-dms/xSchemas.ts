@@ -23,7 +23,12 @@ export const meResponseSchema = z.object({ data: userSchema });
 
 const includesSchema = z.object({ users: z.array(userSchema).default([]) }).optional();
 
-const metaSchema = z.object({ next_token: z.string().nullish() }).passthrough();
+const metaSchema = z
+  .object({
+    next_token: z.string().nullish(),
+    conversation_key_events: z.array(z.string()).optional(),
+  })
+  .passthrough();
 
 export const conversationsResponseSchema = z.object({
   data: z
@@ -60,6 +65,26 @@ export const eventsResponseSchema = z.object({
 
 export const sendResponseSchema = z.object({
   data: z.object({ dm_conversation_id: z.string(), dm_event_id: z.string() }),
+});
+
+const publicKeySchema = z.object({
+  public_key_version: z.union([z.number(), z.string()]).transform(String),
+  public_key: z.string(),
+  signing_public_key: z.string(),
+  identity_public_key_signature: z.string().nullish(),
+  juicebox_config: z.unknown().optional(),
+});
+
+export const publicKeysResponseSchema = z.object({
+  data: z.union([publicKeySchema, z.array(publicKeySchema)]),
+});
+
+export const addKeysResponseSchema = z.object({
+  data: z.object({ conversation_id: z.string(), sequence_id: z.string() }),
+});
+
+export const chatSendResponseSchema = z.object({
+  data: z.object({ encoded_message_event: z.string() }),
 });
 
 export const problemSchema = z.object({ detail: z.string().optional() }).passthrough();

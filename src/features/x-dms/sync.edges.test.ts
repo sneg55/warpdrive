@@ -40,6 +40,17 @@ const inbound = (daysAgo: number, senderId: string = FIXTURE_THEM) =>
   eventFrom(f.plaintextMessage, { at: NOW_MS - daysAgo * DAY_MS, senderId });
 
 describe("runXSync edges", () => {
+  it("a page carrying a key change marks the conversation encrypted", async () => {
+    await withTestDb(async (db) => {
+      const fake = makeXFake();
+      const accountId = await seedAccount(db);
+      const change = eventFrom(f.keyChange, { at: NOW_MS - 2 * DAY_MS, senderId: FIXTURE_ME });
+      putConversation(fake, { events: [inbound(1), change] });
+      await runXSync(deps(db, fake), accountId, sig());
+      expect((await conversationRow(db, accountId))?.encrypted).toBe(true);
+    });
+  });
+
   it("a conversation needing keys is marked encrypted and keeps earlier messages", async () => {
     await withTestDb(async (db) => {
       const fake = makeXFake();

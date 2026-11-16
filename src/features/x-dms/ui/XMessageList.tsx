@@ -3,10 +3,12 @@ import { cn } from "@/lib/utils";
 import type { XMessageRow } from "../reads";
 import { X_DM_STRINGS, X_INBOX_URL } from "../strings";
 
-function UnreadableBody(): React.ReactNode {
+function UnreadableBody({ encrypted }: { encrypted: boolean }): React.ReactNode {
   return (
     <>
-      <p className="italic">{X_DM_STRINGS.unreadable}</p>
+      <p className="italic">
+        {encrypted ? X_DM_STRINGS.unreadableEncrypted : X_DM_STRINGS.unreadable}
+      </p>
       <a
         href={X_INBOX_URL}
         target="_blank"
@@ -26,7 +28,13 @@ function bubbleTone(message: XMessageRow): string {
     : "bg-muted text-foreground";
 }
 
-function XMessageBubble({ message }: { message: XMessageRow }): React.ReactNode {
+function XMessageBubble({
+  message,
+  encrypted,
+}: {
+  message: XMessageRow;
+  encrypted: boolean;
+}): React.ReactNode {
   const outbound = message.direction === "outbound";
   return (
     <li
@@ -41,7 +49,7 @@ function XMessageBubble({ message }: { message: XMessageRow }): React.ReactNode 
           bubbleTone(message),
         )}
       >
-        {message.unreadable && <UnreadableBody />}
+        {message.unreadable && <UnreadableBody encrypted={encrypted} />}
         {message.text !== "" && <p>{message.text}</p>}
         {message.hasMedia && <p className="italic opacity-80">{X_DM_STRINGS.attachment}</p>}
       </div>
@@ -53,12 +61,18 @@ function XMessageBubble({ message }: { message: XMessageRow }): React.ReactNode 
   );
 }
 
-export function XMessageList({ messages }: { messages: XMessageRow[] }): React.ReactNode {
+export function XMessageList({
+  messages,
+  encrypted = false,
+}: {
+  messages: XMessageRow[];
+  encrypted?: boolean;
+}): React.ReactNode {
   if (messages.length === 0) return null;
   return (
     <ol aria-label={X_DM_STRINGS.messages} className="flex flex-col gap-3">
       {messages.map((m) => (
-        <XMessageBubble key={m.id} message={m} />
+        <XMessageBubble key={m.id} message={m} encrypted={encrypted} />
       ))}
     </ol>
   );

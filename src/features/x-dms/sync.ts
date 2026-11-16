@@ -4,9 +4,11 @@ import { X_FIRST_RUN_DAYS, X_SYNC_ACCOUNT_TIMEOUT_MS } from "@/constants/xDms";
 import type { Db } from "@/db/client";
 import { xAccounts } from "@/db/schema/xDms";
 import { err, ok, type Result } from "@/types/result";
-import { applyConversation } from "./applyEvents";
-import { parseChatEvents } from "./eventParser";
-import { type FetchContext, fetchNewEvents, listChangedConversations } from "./fetchChanges";
+import { backfillPending } from "./backfill";
+import { enqueueXChatBackfill } from "./enqueue";
+import { type FetchContext, listChangedConversations } from "./fetchChanges";
+import { type RunContext, syncConversation } from "./syncConversation";
+import { openRunKeys } from "./syncKeys";
 import type { XClient } from "./types";
 
 const DAY_MS = 86_400_000;
@@ -47,38 +49,30 @@ async function syncAccount(
     accountXUserId: account.xUserId,
     signal,
   };
-  const firstRun = account.conversationsSyncedAt === null;
   const windowFloorMs = deps.nowMs() - X_FIRST_RUN_DAYS * DAY_MS;
   const changed = await listChangedConversations(ctx, windowFloorMs);
   if (!changed.ok) return changed;
+  const keys =
+    changed.value.length === 0
+      ? null
+      : await openRunKeys(deps, { id: accountId, xUserId: account.xUserId }, signal);
+  const run: RunContext = {
+    deps,
+    ctx,
+    keys,
+    firstRun: account.conversationsSyncedAt === null,
+    windowFloorMs,
+  };
   const counts: SyncCounts = { conversations: 0, messages: 0 };
-  for (const item of changed.value) {
-    const events = await fetchNewEvents(ctx, {
-      conversationId: item.conversation.id,
-      storedNewestEventId: item.storedNewestEventId,
-      floorMs: item.isNew ? windowFloorMs : null,
-    });
-    if (!events.ok) return events;
-    const parsed = await parseChatEvents(events.value);
-    signal.throwIfAborted();
-    if (parsed.failedEventIds.length > 0)
-      console.warn(`x sync: ${parsed.failedEventIds.length} events did not parse`, { accountId });
-    const applied = await applyConversation(
-      deps.db,
-      {
-        accountId,
-        accountXUserId: account.xUserId,
-        changed: item,
-        events: events.value,
-        parsed,
-        firstRun,
-        now: new Date(deps.nowMs()),
-      },
-      signal,
-    );
-    if (!applied.ok) return applied;
-    counts.conversations += 1;
-    counts.messages += applied.value.messages;
+  try {
+    for (const item of changed.value) {
+      const applied = await syncConversation(run, item);
+      if (!applied.ok) return applied;
+      counts.conversations += 1;
+      counts.messages += applied.value.messages;
+    }
+  } finally {
+    keys?.keyring?.dispose();
   }
   const done = await deps.db
     .update(xAccounts)
@@ -86,7 +80,24 @@ async function syncAccount(
     .where(eq(xAccounts.id, accountId))
     .returning({ id: xAccounts.id });
   signal.throwIfAborted();
-  return done.length === 0 ? err(notFound(accountId)) : ok(counts);
+  if (done.length === 0) return err(notFound(accountId));
+  await enqueueBackfillIfPending(deps, accountId, windowFloorMs, signal);
+  return ok(counts);
+}
+
+async function enqueueBackfillIfPending(
+  deps: SyncDeps,
+  accountId: string,
+  windowFloorMs: number,
+  signal: AbortSignal,
+): Promise<void> {
+  try {
+    if (await backfillPending(deps.db, { accountId, windowFloorMs, nowMs: deps.nowMs() }, signal))
+      await enqueueXChatBackfill(accountId, signal);
+  } catch (e) {
+    if (signal.aborted) throw e;
+    console.error("x sync: backfill enqueue failed", { accountId });
+  }
 }
 
 export function runXSync(

@@ -1,4 +1,5 @@
 export const X_INBOX_URL = "https://x.com/messages";
+export const X_SETTINGS_URL = "/settings/team-mailboxes";
 
 export const X_DM_STRINGS = {
   encryptedMarker: "Encrypted",
@@ -22,6 +23,9 @@ export const X_DM_STRINGS = {
     "Sent, but Warpdrive could not record it yet. It will appear after the next sync.",
   staleBuild: "Warpdrive was updated while this page was open. Reload the page, then send again.",
   unreadable: "Message could not be read",
+  unreadableEncrypted: "This message was encrypted with an earlier key and can't be read",
+  encryptedUnlockHint: "An admin can unlock encrypted messages in Settings.",
+  openSettings: "Open Settings",
   sendUnconfirmed: "We could not confirm the send. Check the conversation before trying again.",
   errorId: (id: string): string => `Error ID: ${id}`,
   replyLabel: "Reply",
@@ -43,4 +47,28 @@ export const X_DM_STRINGS = {
   xMark: "𝕏",
   messages: "Messages",
   conversation: "Conversation",
+  keysLocked: "Encrypted messages: locked",
+  keysStale: "Encrypted messages: need unlocking again",
+  keysUnlocked: (name: string | null, date: string): string =>
+    name === null
+      ? `Encrypted messages: unlocked, ${date}`
+      : `Encrypted messages: unlocked by ${name}, ${date}`,
+  unlock: "Unlock",
+  unlockAgain: "Unlock again",
+  unlocking: "Unlocking",
+  removeKeys: "Remove keys",
+  removeKeysTitle: "Remove encrypted message keys?",
+  removeKeysBody:
+    "Encrypted messages that arrive from now on will not be readable and replies will stop until an admin unlocks again. Messages already shown stay visible.",
+  unlockTitle: "Unlock encrypted messages",
+  unlockNote: "Each wrong passcode uses up one of a limited number of attempts at X.",
+  passcodeLabel: "Passcode",
+  cancel: "Cancel",
+  unlockFailed: "Could not unlock. Try again.",
+  removeKeysFailed: "Could not remove the keys. Try again.",
+  wrongPasscode: (n: number): string =>
+    `Wrong passcode. X allows ${n} more ${n === 1 ? "attempt" : "attempts"}.`,
+  wrongPasscodeNoCount: "Wrong passcode.",
+  noAttemptsLeft:
+    "No attempts left. The keys are gone at X; set up encrypted messages again in the X app.",
 } as const;

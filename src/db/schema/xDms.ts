@@ -37,6 +37,9 @@ export const xAccounts = pgTable("x_accounts", {
   lastSyncAt: timestamp("last_sync_at", { withTimezone: true }),
   lastErrorId: text("last_error_id"),
   conversationsSyncedAt: timestamp("conversations_synced_at", { withTimezone: true }),
+  chatLatestKeyVersion: text("chat_latest_key_version"),
+  chatKeysBrokenAt: timestamp("chat_keys_broken_at", { withTimezone: true }),
+  chatBackfillStartedAt: timestamp("chat_backfill_started_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
@@ -52,6 +55,22 @@ export const xAccountMembers = pgTable(
       .references(() => users.id, { onDelete: "cascade" }),
   },
   (t) => [primaryKey({ columns: [t.accountId, t.userId] })],
+);
+
+export const xAccountChatKeys = pgTable(
+  "x_account_chat_keys",
+  {
+    accountId: uuid("account_id")
+      .notNull()
+      .references(() => xAccounts.id, { onDelete: "cascade" }),
+    keyVersion: text("key_version").notNull(),
+    keysEnc: bytea("keys_enc").notNull(),
+    unlockedAt: timestamp("unlocked_at", { withTimezone: true }).notNull(),
+    unlockedByUserId: uuid("unlocked_by_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+  },
+  (t) => [primaryKey({ columns: [t.accountId, t.keyVersion] })],
 );
 
 export const xConversations = pgTable(
@@ -77,6 +96,7 @@ export const xConversations = pgTable(
     archivedAt: timestamp("archived_at", { withTimezone: true }),
     xUnread: boolean("x_unread").notNull().default(false),
     isTrusted: boolean("is_trusted"),
+    backfilledKeyVersion: text("backfilled_key_version"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },

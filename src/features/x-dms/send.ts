@@ -4,20 +4,18 @@ import { X_DM_TEXT_MAX } from "@/constants/xDms";
 import type { Db } from "@/db/client";
 import { err, ok, type Result } from "@/types/result";
 import { isXMember, xAccountNotFound } from "./access";
+import { loadChatKeyState } from "./chatKeyState";
 import { publishXConversationUpdated } from "./events";
+import { deliverEncrypted } from "./sendEncrypted";
+import {
+  deliveryOutcome,
+  ENCRYPTED_CONVERSATION,
+  inputInvalid,
+  type SendTarget,
+} from "./sendOutcome";
 import { snowflakeToDate } from "./snowflake";
 import { withAccessToken } from "./tokens";
 import type { XClient } from "./types";
-
-interface SendTarget {
-  accountId: string;
-  accountXUserId: string;
-  participantXUserId: string;
-  encrypted: boolean;
-}
-
-const inputInvalid = (reason: string): AppError =>
-  new AppError(ERROR_IDS.X_INPUT_INVALID, "invalid x reply", { reason });
 
 async function loadTarget(
   db: Db,
@@ -25,18 +23,25 @@ async function loadTarget(
   signal: AbortSignal,
 ): Promise<SendTarget | null> {
   signal.throwIfAborted();
-  const rows =
-    await db.execute(sql`SELECT c.account_id, a.x_user_id, c.participant_x_user_id, c.encrypted
+  const rows = await db.execute(sql`SELECT c.account_id, a.x_user_id, c.x_conversation_id,
+      c.participant_x_user_id, c.encrypted
     FROM x_conversations c JOIN x_accounts a ON a.id = c.account_id
     WHERE c.id = ${conversationId}::uuid`);
   signal.throwIfAborted();
   const row = rows.rows[0] as
-    | { account_id: string; x_user_id: string; participant_x_user_id: string; encrypted: boolean }
+    | {
+        account_id: string;
+        x_user_id: string;
+        x_conversation_id: string;
+        participant_x_user_id: string;
+        encrypted: boolean;
+      }
     | undefined;
   if (!row) return null;
   return {
     accountId: row.account_id,
     accountXUserId: row.x_user_id,
+    xConversationId: row.x_conversation_id,
     participantXUserId: row.participant_x_user_id,
     encrypted: row.encrypted,
   };
@@ -74,17 +79,6 @@ async function storeOutbound(
   return id;
 }
 
-const isUncertainDelivery = (e: AppError): boolean =>
-  e.id === ERROR_IDS.X_PARSE_FAILED ||
-  (e.id === ERROR_IDS.X_HTTP_FAILED &&
-    (e.context?.status === null || e.context?.transient === true));
-
-const unconfirmed = (e: AppError): AppError =>
-  new AppError(ERROR_IDS.X_SEND_UNCONFIRMED, "x may have delivered the reply", {
-    causeId: e.id,
-    status: e.context?.status ?? null,
-  });
-
 async function deliver(
   deps: { db: Db; client: XClient },
   target: SendTarget,
@@ -101,7 +95,7 @@ async function deliver(
         { participantId: target.participantXUserId, text },
         signal,
       );
-      return !r.ok && isUncertainDelivery(r.error) ? err(unconfirmed(r.error)) : r;
+      return deliveryOutcome(r);
     },
     signal,
   );
@@ -122,8 +116,14 @@ export async function sendXReply(
     signal,
   );
   if (!member) return err(xAccountNotFound());
-  if (target.encrypted) return err(inputInvalid("encrypted conversation"));
-  const sent = await deliver(deps, target, text, signal);
+  if (
+    target.encrypted &&
+    (await loadChatKeyState(deps.db, target.accountId, signal)) !== "unlocked"
+  )
+    return err(inputInvalid(ENCRYPTED_CONVERSATION));
+  const sent = target.encrypted
+    ? await deliverEncrypted(deps, target, text, signal)
+    : await deliver(deps, target, text, signal);
   if (!sent.ok) return sent;
   try {
     const messageId = await storeOutbound(

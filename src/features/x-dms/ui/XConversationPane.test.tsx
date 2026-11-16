@@ -69,6 +69,7 @@ const conversation: XConversationDetail["conversation"] = {
   unread: true,
   replyStatus: null,
   xUnread: false,
+  canReply: true,
 };
 
 const messages: XConversationDetail["messages"] = [
@@ -106,14 +107,14 @@ it("encrypted pane hides unreadable rows and keeps readable ones above the panel
   const readable = messages[0];
   if (readable === undefined) throw new Error("fixture missing");
   state.detail = {
-    conversation: { ...conversation, encrypted: true },
+    conversation: { ...conversation, encrypted: true, canReply: false },
     messages: [
       readable,
       { ...unreadable, id: "u1", direction: "inbound", sentAt: "2026-11-13T09:40:00.000Z" },
       { ...unreadable, id: "u2", direction: "outbound", sentAt: "2026-11-13T09:50:00.000Z" },
     ],
   };
-  render(<XConversationPane conversationId="c1" accountId="a1" view="inbox" />);
+  render(<XConversationPane conversationId="c1" accountId="a1" view="inbox" isAdmin={false} />);
   expect(screen.getAllByRole("listitem")).toHaveLength(1);
   expect(screen.getByText("Stored before the flip")).toBeInTheDocument();
   expect(screen.queryByText("Message could not be read")).toBeNull();
@@ -122,8 +123,11 @@ it("encrypted pane hides unreadable rows and keeps readable ones above the panel
 });
 
 it("encrypted pane shows the panel, stored messages and no composer", () => {
-  state.detail = { conversation: { ...conversation, encrypted: true, xUnread: true }, messages };
-  render(<XConversationPane conversationId="c1" accountId="a1" view="inbox" />);
+  state.detail = {
+    conversation: { ...conversation, encrypted: true, canReply: false, xUnread: true },
+    messages,
+  };
+  render(<XConversationPane conversationId="c1" accountId="a1" view="inbox" isAdmin={false} />);
   expect(screen.getByText("End-to-end encrypted")).toBeInTheDocument();
   expect(
     screen.getByText(
@@ -140,7 +144,7 @@ it("encrypted pane shows the panel, stored messages and no composer", () => {
 });
 
 it("shows messages with the sender's first name and the composer for a readable conversation", () => {
-  render(<XConversationPane conversationId="c1" accountId="a1" view="inbox" />);
+  render(<XConversationPane conversationId="c1" accountId="a1" view="inbox" isAdmin={false} />);
   expect(screen.getByText("Our answer")).toBeInTheDocument();
   expect(screen.getByText("[attachment]")).toBeInTheDocument();
   expect(screen.getByText(/Sam/)).toBeInTheDocument();
@@ -158,7 +162,7 @@ it("shows each unreadable message as a bubble on its side with a link to X", () 
       { ...unreadable, id: "u2", direction: "outbound", sentAt: "2026-11-13T09:10:00.000Z" },
     ],
   };
-  render(<XConversationPane conversationId="c1" accountId="a1" view="inbox" />);
+  render(<XConversationPane conversationId="c1" accountId="a1" view="inbox" isAdmin={false} />);
   const bubbles = screen.getAllByText("Message could not be read").map((el) => el.closest("li"));
   expect(bubbles.map((li) => li?.className.includes("self-end"))).toEqual([false, true]);
   const links = screen.getAllByRole("link", { name: "Open in X" });
@@ -171,16 +175,16 @@ it("shows each unreadable message as a bubble on its side with a link to X", () 
 
 it("marks the conversation read once when it opens", () => {
   const { rerender } = render(
-    <XConversationPane conversationId="c1" accountId="a1" view="inbox" />,
+    <XConversationPane conversationId="c1" accountId="a1" view="inbox" isAdmin={false} />,
   );
-  rerender(<XConversationPane conversationId="c1" accountId="a1" view="inbox" />);
+  rerender(<XConversationPane conversationId="c1" accountId="a1" view="inbox" isAdmin={false} />);
   expect(state.markRead).toHaveBeenCalledTimes(1);
   expect(state.markRead).toHaveBeenCalledWith({ conversationId: "c1" });
 });
 
 it("archives and returns to the list, and reports a failed mark unread with its id", async () => {
   const user = userEvent.setup();
-  render(<XConversationPane conversationId="c1" accountId="a1" view="inbox" />);
+  render(<XConversationPane conversationId="c1" accountId="a1" view="inbox" isAdmin={false} />);
   await user.click(screen.getByRole("button", { name: "Archive" }));
   expect(state.archive).toHaveBeenCalledWith({ conversationId: "c1" });
   expect(state.push).toHaveBeenCalledWith("/inbox/x/a1");
@@ -191,8 +195,65 @@ it("archives and returns to the list, and reports a failed mark unread with its 
 
 it("offers Unarchive in the archived view", async () => {
   const user = userEvent.setup();
-  render(<XConversationPane conversationId="c1" accountId="a1" view="archived" />);
+  render(<XConversationPane conversationId="c1" accountId="a1" view="archived" isAdmin={false} />);
   await user.click(screen.getByRole("button", { name: "Unarchive" }));
   expect(state.unarchive).toHaveBeenCalledWith({ conversationId: "c1" });
   expect(state.push).toHaveBeenCalledWith("/inbox/x/a1?view=archived");
+});
+
+const unreadable = { text: "", hasMedia: false, unreadable: true, sentByFirstName: null };
+
+function unlockedEncrypted(): XConversationDetail {
+  return {
+    conversation: { ...conversation, encrypted: true, canReply: true },
+    messages: [
+      ...messages,
+      { ...unreadable, id: "u1", direction: "inbound", sentAt: "2026-11-13T09:40:00.000Z" },
+    ],
+  };
+}
+
+it("unlocked encrypted conversation shows messages, the composer and no panel", () => {
+  state.detail = unlockedEncrypted();
+  render(<XConversationPane conversationId="c1" accountId="a1" view="inbox" isAdmin={false} />);
+  expect(screen.getByText("Stored before the flip")).toBeInTheDocument();
+  expect(screen.getByTestId("composer")).toBeInTheDocument();
+  expect(screen.queryByText("End-to-end encrypted")).toBeNull();
+});
+
+it("unreadable bubbles use the earlier-key copy in an encrypted conversation and the old copy in a plain one", () => {
+  state.detail = unlockedEncrypted();
+  const { unmount } = render(
+    <XConversationPane conversationId="c1" accountId="a1" view="inbox" isAdmin={false} />,
+  );
+  expect(
+    screen.getByText("This message was encrypted with an earlier key and can't be read"),
+  ).toBeInTheDocument();
+  expect(screen.queryByText("Message could not be read")).toBeNull();
+  unmount();
+  state.detail = {
+    conversation,
+    messages: [
+      { ...unreadable, id: "u2", direction: "inbound", sentAt: "2026-11-13T09:40:00.000Z" },
+    ],
+  };
+  render(<XConversationPane conversationId="c1" accountId="a1" view="inbox" isAdmin={false} />);
+  expect(screen.getByText("Message could not be read")).toBeInTheDocument();
+});
+
+it("the locked panel tells everyone an admin can unlock, and links to Settings for admins only", () => {
+  state.detail = { conversation: { ...conversation, encrypted: true, canReply: false }, messages };
+  const { unmount } = render(
+    <XConversationPane conversationId="c1" accountId="a1" view="inbox" isAdmin={false} />,
+  );
+  expect(
+    screen.getByText("An admin can unlock encrypted messages in Settings."),
+  ).toBeInTheDocument();
+  expect(screen.queryByRole("link", { name: "Open Settings" })).toBeNull();
+  unmount();
+  render(<XConversationPane conversationId="c1" accountId="a1" view="inbox" isAdmin />);
+  expect(screen.getByRole("link", { name: "Open Settings" })).toHaveAttribute(
+    "href",
+    "/settings/team-mailboxes",
+  );
 });

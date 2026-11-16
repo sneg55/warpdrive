@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { xAccountMembers, xAccounts } from "@/db/schema/xDms";
+import { xAccountChatKeys, xAccountMembers, xAccounts } from "@/db/schema/xDms";
 import { withTestDb } from "@/db/testing";
 import { seedUser } from "@/db/testing/factories";
 import { listXAccountsForAdmin } from "./accountAdmin";
@@ -39,8 +39,35 @@ describe("listXAccountsForAdmin", () => {
         lastSyncAt,
         lastErrorId: "E_X_010",
         overdueAfterHours: 12,
+        chatKeyState: "locked",
+        chatKeysUnlockedAt: null,
+        chatKeysUnlockedByName: null,
       });
       expect(r.value[1]?.memberIds).toEqual([]);
+    });
+  });
+
+  it("reports unlocked keys with who unlocked them and when", async () => {
+    await withTestDb(async (db) => {
+      const admin = await seedUser(db, { isAdmin: true });
+      const unlockedAt = new Date("2026-11-10T10:00:00Z");
+      const [a] = await db
+        .insert(xAccounts)
+        .values({ xUserId: "x-3", username: "keyed", displayName: "Keyed" })
+        .returning({ id: xAccounts.id });
+      if (!a) throw new Error("seed failed");
+      await db.insert(xAccountChatKeys).values({
+        accountId: a.id,
+        keyVersion: "1",
+        keysEnc: Buffer.from("x"),
+        unlockedAt,
+        unlockedByUserId: admin.id,
+      });
+      const r = await listXAccountsForAdmin(db, admin.id, sig());
+      if (!r.ok) throw new Error("expected ok");
+      expect(r.value[0]?.chatKeyState).toBe("unlocked");
+      expect(r.value[0]?.chatKeysUnlockedAt).toEqual(unlockedAt);
+      expect(r.value[0]?.chatKeysUnlockedByName).toBe(admin.name);
     });
   });
 

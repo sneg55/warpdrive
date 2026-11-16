@@ -1,5 +1,6 @@
 "use client";
 
+import { Lock } from "lucide-react";
 import Link from "next/link";
 import { Avatar } from "@/components/ui/Avatar";
 import { TeamReplyChip } from "@/features/email/TeamReplyChip";
@@ -28,7 +29,14 @@ function Snippet({ row }: { row: Row }): React.ReactNode {
       : row.snippet === ""
         ? X_DM_STRINGS.attachment
         : row.snippet;
-  return <span className="min-w-0 flex-1 truncate text-sm text-muted-foreground">{text}</span>;
+  return (
+    <span className="flex min-w-0 flex-1 items-center gap-1.5 text-sm text-muted-foreground">
+      {row.encrypted && (
+        <Lock aria-label={X_DM_STRINGS.encryptedMarker} className="h-3 w-3 shrink-0" />
+      )}
+      <span className="truncate">{text}</span>
+    </span>
+  );
 }
 
 export function XConversationRow({

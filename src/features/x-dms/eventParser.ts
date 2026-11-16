@@ -1,5 +1,6 @@
 import { createChat, type Event, type ServerChat } from "@xdevplatform/chat-xdk-server";
-import type { XRawEvent } from "./types";
+import { type ChatKeyring, type DecodeOutcome, decodeWith, liveChats } from "./keyedParser";
+import type { XRawEvent, XSigningKey } from "./types";
 
 export interface ParsedChatMessage {
   eventId: string;
@@ -14,6 +15,15 @@ export interface ParsedChatEvents {
   needsKeys: boolean;
   needsKeyEventIds: string[];
   failedEventIds: string[];
+  nonMessageEventIds: string[];
+  encrypted: boolean;
+}
+
+export interface KeyedParseOptions {
+  keyring: ChatKeyring;
+  keyEvents: string[];
+  contextEvents?: string[];
+  signingKeys: XSigningKey[];
 }
 
 const MISSING_CONVERSATION_KEY = "but no matching key found";
@@ -45,25 +55,58 @@ function toMessage(raw: XRawEvent, event: Event): ParsedChatMessage | null {
   return { eventId: raw.id, senderId: raw.senderId, text, hasMedia, sentAt: raw.createdAt };
 }
 
-export async function parseChatEvents(raw: XRawEvent[]): Promise<ParsedChatEvents> {
-  if (raw.length === 0)
-    return { messages: [], needsKeys: false, needsKeyEventIds: [], failedEventIds: [] };
-  const sdk = await keylessChat();
-  const result = sdk.decryptEvents({ events: raw.map((e) => e.encodedEvent), signingKeys: [] });
-  const messages: ParsedChatMessage[] = [];
-  const needsKeyEventIds: string[] = [];
-  const failedEventIds: string[] = [];
-  let next = 0;
+function merge(outcomes: DecodeOutcome[]): DecodeOutcome {
+  const decoded = outcomes.find((o) => "event" in o);
+  if (decoded !== undefined) return decoded;
+  const errors = outcomes.flatMap((o) => ("error" in o ? [o.error] : []));
+  return { error: errors.find((e) => !isMissingConversationKey(e)) ?? errors[0] ?? "" };
+}
+
+async function decodeAll(raw: XRawEvent[], opts?: KeyedParseOptions): Promise<DecodeOutcome[]> {
+  const encoded = raw.map((e) => e.encodedEvent);
+  const chats = opts === undefined ? [] : liveChats(opts.keyring);
+  const perChat =
+    opts === undefined || chats.length === 0
+      ? [decodeWith(await keylessChat(), [], encoded, [])]
+      : chats.map((c) =>
+          decodeWith(
+            c,
+            [...opts.keyEvents, ...(opts.contextEvents ?? [])],
+            encoded,
+            opts.signingKeys,
+          ),
+        );
+  return raw.map((_, i) => merge(perChat.flatMap((p) => p[i] ?? [])));
+}
+
+export async function parseChatEvents(
+  raw: XRawEvent[],
+  opts?: KeyedParseOptions,
+): Promise<ParsedChatEvents> {
+  const parsed: ParsedChatEvents = {
+    messages: [],
+    needsKeys: false,
+    needsKeyEventIds: [],
+    failedEventIds: [],
+    nonMessageEventIds: [],
+    encrypted: (opts?.keyEvents.length ?? 0) > 0,
+  };
+  if (raw.length === 0) return parsed;
+  const outcomes = await decodeAll(raw, opts);
   raw.forEach((r, i) => {
-    const error = result.errors[String(i)];
-    if (error !== undefined) {
-      if (isMissingConversationKey(error)) needsKeyEventIds.push(r.id);
-      else failedEventIds.push(r.id);
+    const o = outcomes[i];
+    if (o === undefined) return;
+    if ("error" in o) {
+      if (isMissingConversationKey(o.error)) parsed.needsKeyEventIds.push(r.id);
+      else parsed.failedEventIds.push(r.id);
       return;
     }
-    const decoded = result.events[next++];
-    const message = decoded === undefined ? null : toMessage(r, decoded.event);
-    if (message !== null) messages.push(message);
+    if (o.event.type === "keyChange") parsed.encrypted = true;
+    const message = toMessage(r, o.event);
+    if (message === null) parsed.nonMessageEventIds.push(r.id);
+    else parsed.messages.push(message);
   });
-  return { messages, needsKeys: needsKeyEventIds.length > 0, needsKeyEventIds, failedEventIds };
+  parsed.needsKeys = parsed.needsKeyEventIds.length > 0;
+  if (parsed.needsKeys) parsed.encrypted = true;
+  return parsed;
 }

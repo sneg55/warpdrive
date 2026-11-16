@@ -1,0 +1,1 @@
+ALTER TABLE "x_accounts" ADD COLUMN "chat_backfill_started_at" timestamp with time zone;

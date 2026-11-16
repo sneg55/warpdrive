@@ -92,3 +92,18 @@ it("links into the archived view and marks unread rows", () => {
   expect(screen.getByRole("link")).toHaveAttribute("href", "/inbox/x/a1/c1?view=archived");
   expect(screen.getByText("Unread")).toBeInTheDocument();
 });
+
+it("an unlocked encrypted row shows the snippet and a lock icon", () => {
+  render(
+    <ul>
+      <XConversationRow
+        accountId="a1"
+        view="inbox"
+        conversation={{ ...base, encrypted: true, snippet: "decrypted hello" }}
+      />
+    </ul>,
+  );
+  expect(screen.getByText("decrypted hello")).toBeInTheDocument();
+  expect(screen.getByLabelText("Encrypted")).toBeInTheDocument();
+  expect(screen.queryByText("Encrypted")).toBeNull();
+});

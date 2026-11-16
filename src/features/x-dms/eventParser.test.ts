@@ -43,6 +43,8 @@ describe("parseChatEvents", () => {
       needsKeys: true,
       needsKeyEventIds: [f.encryptedMessage.id],
       failedEventIds: [],
+      nonMessageEventIds: [f.keyChange.id],
+      encrypted: true,
     });
   });
 
@@ -61,7 +63,14 @@ describe("parseChatEvents", () => {
       ["message", "reaction"],
     ]);
     const r = await parseChatEvents([f.plaintextReaction]);
-    expect(r).toEqual({ messages: [], needsKeys: false, needsKeyEventIds: [], failedEventIds: [] });
+    expect(r).toEqual({
+      messages: [],
+      needsKeys: false,
+      needsKeyEventIds: [],
+      failedEventIds: [],
+      nonMessageEventIds: [f.plaintextReaction.id],
+      encrypted: false,
+    });
   });
 
   it("keeps each message tied to its own raw event when an earlier event fails", async () => {
@@ -85,6 +94,8 @@ describe("parseChatEvents", () => {
       needsKeys: false,
       needsKeyEventIds: [],
       failedEventIds: [],
+      nonMessageEventIds: [],
+      encrypted: false,
     });
   });
 

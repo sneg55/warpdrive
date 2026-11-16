@@ -1,7 +1,8 @@
 import { Lock } from "lucide-react";
-import { X_DM_STRINGS, X_INBOX_URL } from "../strings";
+import Link from "next/link";
+import { X_DM_STRINGS, X_INBOX_URL, X_SETTINGS_URL } from "../strings";
 
-export function XEncryptedPanel(): React.ReactNode {
+export function XEncryptedPanel({ isAdmin }: { isAdmin: boolean }): React.ReactNode {
   return (
     <section
       aria-label={X_DM_STRINGS.encryptedHeading}
@@ -12,14 +13,25 @@ export function XEncryptedPanel(): React.ReactNode {
         {X_DM_STRINGS.encryptedHeading}
       </h2>
       <p className="mt-1 text-pretty text-foreground">{X_DM_STRINGS.encryptedBody}</p>
-      <a
-        href={X_INBOX_URL}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="mt-3 inline-flex items-center rounded-md border bg-card px-2.5 py-1.5 text-sm font-semibold hover:bg-accent"
-      >
-        {X_DM_STRINGS.openInX}
-      </a>
+      <p className="mt-1 text-pretty text-foreground">{X_DM_STRINGS.encryptedUnlockHint}</p>
+      <div className="mt-3 flex items-center gap-2">
+        {isAdmin && (
+          <Link
+            href={X_SETTINGS_URL}
+            className="inline-flex items-center rounded-md border bg-card px-2.5 py-1.5 text-sm font-semibold hover:bg-accent"
+          >
+            {X_DM_STRINGS.openSettings}
+          </Link>
+        )}
+        <a
+          href={X_INBOX_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center rounded-md border bg-card px-2.5 py-1.5 text-sm font-semibold hover:bg-accent"
+        >
+          {X_DM_STRINGS.openInX}
+        </a>
+      </div>
     </section>
   );
 }

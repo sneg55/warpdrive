@@ -20,6 +20,7 @@ interface XConversationPaneProps {
   conversationId: string;
   accountId: string;
   view: XListView;
+  isAdmin: boolean;
   initialData?: XConversationDetail;
 }
 
@@ -50,6 +51,7 @@ export function XConversationPane({
   conversationId,
   accountId,
   view,
+  isAdmin,
   initialData,
 }: XConversationPaneProps): React.ReactNode {
   const listHref = xListHref(accountId, view);
@@ -68,9 +70,10 @@ export function XConversationPane({
     return <div className="p-4 text-sm text-muted-foreground">{X_DM_STRINGS.loading}</div>;
 
   const { conversation } = data;
-  const messages = conversation.encrypted
-    ? data.messages.filter((m) => !m.unreadable)
-    : data.messages;
+  const messages =
+    conversation.encrypted && !conversation.canReply
+      ? data.messages.filter((m) => !m.unreadable)
+      : data.messages;
   const name = participantLabel(conversation);
   const folderAction = view === "archived" ? actions.unarchive : actions.archive;
   const busy = actions.archive.isPending || actions.unarchive.isPending;
@@ -118,14 +121,14 @@ export function XConversationPane({
       </header>
       <div className="min-h-0 flex-1 overflow-y-auto">
         <div className="mx-auto flex w-full max-w-[640px] flex-col gap-3 p-4">
-          <XMessageList messages={messages} />
-          {conversation.encrypted ? (
-            <XEncryptedPanel />
-          ) : (
+          <XMessageList messages={messages} encrypted={conversation.encrypted} />
+          {conversation.canReply ? (
             <XReplyComposer
               conversationId={conversationId}
               participantName={conversation.participantName ?? ""}
             />
+          ) : (
+            <XEncryptedPanel isAdmin={isAdmin} />
           )}
         </div>
       </div>

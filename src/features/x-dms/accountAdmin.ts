@@ -1,10 +1,13 @@
 import { asc, eq, sql } from "drizzle-orm";
 import { AppError, ERROR_IDS } from "@/constants/errorIds";
 import type { Db } from "@/db/client";
-import { xAccountMembers, xAccounts } from "@/db/schema/xDms";
+import { users } from "@/db/schema/identity";
+import { xAccountChatKeys, xAccountMembers, xAccounts } from "@/db/schema/xDms";
 import { decryptToken } from "@/features/email/crypto";
 import { assertTeamMailboxAdmin } from "@/features/email/teamMailboxConnect";
 import { err, ok, type Result } from "@/types/result";
+import type { XChatKeyState } from "@/types/xChat";
+import { chatKeyState } from "./chatKeyState";
 import type { XClient } from "./types";
 
 export interface XAccountSettings {
@@ -16,6 +19,9 @@ export interface XAccountSettings {
   lastSyncAt: Date | null;
   lastErrorId: string | null;
   overdueAfterHours: number;
+  chatKeyState: XChatKeyState;
+  chatKeysUnlockedAt: Date | null;
+  chatKeysUnlockedByName: string | null;
 }
 
 const notFound = (): AppError =>
@@ -123,6 +129,8 @@ export async function listXAccountsForAdmin(
       lastSyncAt: xAccounts.lastSyncAt,
       lastErrorId: xAccounts.lastErrorId,
       overdueAfterHours: xAccounts.overdueAfterHours,
+      chatLatestKeyVersion: xAccounts.chatLatestKeyVersion,
+      chatKeysBrokenAt: xAccounts.chatKeysBrokenAt,
     })
     .from(xAccounts)
     .orderBy(asc(xAccounts.displayName), asc(xAccounts.id));
@@ -131,10 +139,34 @@ export async function listXAccountsForAdmin(
     .select({ accountId: xAccountMembers.accountId, userId: xAccountMembers.userId })
     .from(xAccountMembers);
   signal.throwIfAborted();
+  const keys = await db
+    .select({
+      accountId: xAccountChatKeys.accountId,
+      keyVersion: xAccountChatKeys.keyVersion,
+      unlockedAt: xAccountChatKeys.unlockedAt,
+      unlockedByName: users.name,
+    })
+    .from(xAccountChatKeys)
+    .leftJoin(users, eq(users.id, xAccountChatKeys.unlockedByUserId));
+  signal.throwIfAborted();
   return ok(
-    accounts.map((account) => ({
-      ...account,
-      memberIds: members.filter((m) => m.accountId === account.id).map((m) => m.userId),
-    })),
+    accounts.map(({ chatLatestKeyVersion, chatKeysBrokenAt, ...account }) => {
+      const mine = keys.filter((k) => k.accountId === account.id);
+      const latest = mine.reduce<(typeof mine)[number] | null>(
+        (best, k) => (best === null || k.unlockedAt > best.unlockedAt ? k : best),
+        null,
+      );
+      return {
+        ...account,
+        memberIds: members.filter((m) => m.accountId === account.id).map((m) => m.userId),
+        chatKeyState: chatKeyState({
+          keyVersions: mine.map((k) => k.keyVersion),
+          latestKeyVersion: chatLatestKeyVersion,
+          brokenAt: chatKeysBrokenAt,
+        }),
+        chatKeysUnlockedAt: latest?.unlockedAt ?? null,
+        chatKeysUnlockedByName: latest?.unlockedByName ?? null,
+      };
+    }),
   );
 }

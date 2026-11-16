@@ -58,7 +58,7 @@ function securityHeaders(directives: string[]): { key: string; value: string }[]
 }
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: ["pg", "pg-boss"],
+  serverExternalPackages: ["pg", "pg-boss", "@xdevplatform/chat-xdk-server", "juicebox-sdk"],
   // HSTS is set by Caddy, not here: it terminates TLS and so is the layer that knows the
   // response actually went out over HTTPS. See Caddyfile.
   headers() {

@@ -22,16 +22,35 @@ export interface ChangedConversation {
   participantId: string;
   participant: XUser | null;
   storedNewestEventId: string | null;
+  storedEncrypted: boolean;
   isNew: boolean;
+}
+
+interface StoredConversation {
+  newest: string | null;
+  encrypted: boolean;
+}
+
+export interface FetchedEvents {
+  events: XRawEvent[];
+  keyEvents: string[];
+  contextEvents: string[];
 }
 
 const isNewer = (id: string, than: string | null): boolean =>
   than === null || BigInt(id) > BigInt(than);
 
-async function storedNewest(ctx: FetchContext, ids: string[]): Promise<Map<string, string | null>> {
+async function storedConversations(
+  ctx: FetchContext,
+  ids: string[],
+): Promise<Map<string, StoredConversation>> {
   if (ids.length === 0) return new Map();
   const rows = await ctx.db
-    .select({ id: xConversations.xConversationId, newest: xConversations.newestEventId })
+    .select({
+      id: xConversations.xConversationId,
+      newest: xConversations.newestEventId,
+      encrypted: xConversations.encrypted,
+    })
     .from(xConversations)
     .where(
       and(
@@ -40,20 +59,20 @@ async function storedNewest(ctx: FetchContext, ids: string[]): Promise<Map<strin
       ),
     );
   ctx.signal.throwIfAborted();
-  return new Map(rows.map((r) => [r.id, r.newest]));
+  return new Map(rows.map((r) => [r.id, { newest: r.newest, encrypted: r.encrypted }]));
 }
 
 function changedItem(
   ctx: FetchContext,
   c: XChatConversation,
-  stored: Map<string, string | null>,
+  stored: Map<string, StoredConversation>,
   users: XUser[],
   floorMs: number,
 ): ChangedConversation | null {
   if (c.newestEventId === null) return null;
   const isNew = !stored.has(c.id);
   if (isNew && snowflakeToDate(c.newestEventId).getTime() < floorMs) return null;
-  const storedNewestEventId = stored.get(c.id) ?? null;
+  const storedNewestEventId = stored.get(c.id)?.newest ?? null;
   if (!isNew && !isNewer(c.newestEventId, storedNewestEventId)) return null;
   const participantId = c.participantIds.find((id) => id !== ctx.accountXUserId);
   if (c.type !== "direct" || participantId === undefined) return null;
@@ -63,6 +82,7 @@ function changedItem(
     participantId,
     participant: users.find((u) => u.id === participantId) ?? null,
     storedNewestEventId,
+    storedEncrypted: stored.get(c.id)?.encrypted ?? false,
     isNew,
   };
 }
@@ -93,7 +113,7 @@ export async function listChangedConversations(
       ctx.signal,
     );
     if (!page.ok) return page;
-    const stored = await storedNewest(
+    const stored = await storedConversations(
       ctx,
       page.value.items.map((c) => c.id),
     );
@@ -106,11 +126,35 @@ export async function listChangedConversations(
   }
 }
 
+interface EventsRequest {
+  conversationId: string;
+  storedNewestEventId: string | null;
+  floorMs: number | null;
+}
+
+const isWanted = (e: XRawEvent, a: EventsRequest): boolean =>
+  isNewer(e.id, a.storedNewestEventId) &&
+  (a.floorMs === null || e.createdAt.getTime() >= a.floorMs);
+
+function takeNewEvents(items: XRawEvent[], a: EventsRequest, into: FetchedEvents): boolean {
+  let more = true;
+  for (const e of items) {
+    more = more && isWanted(e, a);
+    if (more) into.events.push(e);
+    else into.contextEvents.push(e.encodedEvent);
+  }
+  return more;
+}
+
+function addKeyEvents(into: FetchedEvents, keyEvents: string[]): void {
+  for (const k of keyEvents) if (!into.keyEvents.includes(k)) into.keyEvents.push(k);
+}
+
 export async function fetchNewEvents(
   ctx: FetchContext,
-  a: { conversationId: string; storedNewestEventId: string | null; floorMs: number | null },
-): Promise<Result<XRawEvent[], AppError>> {
-  const events: XRawEvent[] = [];
+  a: EventsRequest,
+): Promise<Result<FetchedEvents, AppError>> {
+  const fetched: FetchedEvents = { events: [], keyEvents: [], contextEvents: [] };
   let paginationToken: string | undefined;
   let maxResults = X_FIRST_PAGE_SIZE;
   for (;;) {
@@ -127,12 +171,9 @@ export async function fetchNewEvents(
       ctx.signal,
     );
     if (!page.ok) return page;
-    for (const e of page.value.items) {
-      if (!isNewer(e.id, a.storedNewestEventId)) return ok(events);
-      if (a.floorMs !== null && e.createdAt.getTime() < a.floorMs) return ok(events);
-      events.push(e);
-    }
-    if (page.value.nextToken === null) return ok(events);
+    addKeyEvents(fetched, page.value.keyEvents);
+    const more = takeNewEvents(page.value.items, a, fetched);
+    if (!more || page.value.nextToken === null) return ok(fetched);
     paginationToken = page.value.nextToken;
     maxResults = X_EVENTS_PAGE_SIZE;
   }

@@ -12,6 +12,7 @@ import {
   setXAccountMembersAction,
   updateXAccountAction,
 } from "../actions";
+import { XChatKeysRow } from "./XChatKeysRow";
 import { XConnectButton } from "./XConnectButton";
 
 const STATUS_LABEL: Record<XAccountSettings["status"], string> = {
@@ -90,6 +91,7 @@ export function XAccountCard({
       {!needsReconnect && account.lastErrorId !== null && (
         <p className="text-sm">Last error: {account.lastErrorId}</p>
       )}
+      <XChatKeysRow account={account} />
       <div className="grid gap-4 sm:grid-cols-2">
         <label htmlFor={`${account.id}-name`} className="space-y-1 text-sm">
           Display name

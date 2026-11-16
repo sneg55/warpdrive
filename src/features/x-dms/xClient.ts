@@ -11,7 +11,9 @@ import type {
   XTokens,
   XUser,
 } from "./types";
+import { makeChatMethods } from "./xClient.chat";
 import { basicAuth, bearer, type XRequestSpec, xRequest } from "./xHttp";
+import { hyphenId, type Parser, parseBody } from "./xParse";
 import {
   conversationsResponseSchema,
   eventsResponseSchema,
@@ -25,12 +27,6 @@ interface XClientDeps extends XHttpConfig {
   settings: XDmSettings;
 }
 
-interface Parser<T> {
-  safeParse(v: unknown): { success: true; data: T } | { success: false };
-}
-
-const hyphenId = (id: string): string => id.replaceAll(":", "-");
-
 function toUser(u: UserWire): XUser {
   return {
     id: u.id,
@@ -38,14 +34,6 @@ function toUser(u: UserWire): XUser {
     name: u.name,
     profileImageUrl: u.profile_image_url ?? null,
   };
-}
-
-function parseBody<T>(schema: Parser<T>, body: unknown, path: string): Result<T, AppError> {
-  const parsed = schema.safeParse(body);
-  if (parsed.success) return ok(parsed.data);
-  return err(
-    new AppError(ERROR_IDS.X_PARSE_FAILED, "x response did not match the schema", { path }),
-  );
 }
 
 function remapId(e: AppError, from: ErrorId, to: ErrorId): AppError {
@@ -176,7 +164,10 @@ export function makeXClient(deps: XClientDeps): XClient {
         isTrusted: e.is_trusted ?? null,
         encodedEvent: e.encoded_event,
       }));
-      return ok(page(items, r.value.includes?.users, r.value.meta.next_token));
+      return ok({
+        ...page(items, r.value.includes?.users, r.value.meta.next_token),
+        keyEvents: r.value.meta.conversation_key_events ?? [],
+      });
     },
     async sendDm(accessToken, a, s) {
       const r = await call(
@@ -199,6 +190,7 @@ export function makeXClient(deps: XClientDeps): XClient {
         conversationId: hyphenId(r.value.data.dm_conversation_id),
       });
     },
+    ...makeChatMethods(deps),
   };
 }
 

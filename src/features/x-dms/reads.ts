@@ -36,7 +36,11 @@ export interface XMessageRow {
 }
 
 export interface XConversationDetail {
-  conversation: XConversationRow & { accountId: string; xUnread: boolean | null };
+  conversation: XConversationRow & {
+    accountId: string;
+    xUnread: boolean | null;
+    canReply: boolean;
+  };
   messages: XMessageRow[];
 }
 
@@ -109,7 +113,12 @@ export async function getXConversation(
     ORDER BY x.sent_at, x.id`);
   signal.throwIfAborted();
   return ok({
-    conversation: { ...toConversationRow(row), accountId: row.account_id, xUnread: row.x_unread },
+    conversation: {
+      ...toConversationRow(row),
+      accountId: row.account_id,
+      xUnread: row.x_unread,
+      canReply: !row.encrypted || row.keys_unlocked,
+    },
     messages: (
       messages.rows as {
         id: string;

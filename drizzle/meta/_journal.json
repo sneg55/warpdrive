@@ -568,6 +568,20 @@
       "when": 1794594805889,
       "tag": "0080_x_dms",
       "breakpoints": true
+    },
+    {
+      "idx": 81,
+      "version": "7",
+      "when": 1794842173064,
+      "tag": "0081_x_chat_keys",
+      "breakpoints": true
+    },
+    {
+      "idx": 82,
+      "version": "7",
+      "when": 1794855195195,
+      "tag": "0082_x_chat_backfill_started",
+      "breakpoints": true
     }
   ]
 }

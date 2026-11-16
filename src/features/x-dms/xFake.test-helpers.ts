@@ -1,12 +1,25 @@
 import { AppError, ERROR_IDS } from "@/constants/errorIds";
 import { X_SNOWFLAKE_EPOCH_MS } from "@/constants/xDms";
 import { err, ok, type Result } from "@/types/result";
-import type { XChatConversation, XClient, XPage, XRawEvent, XTokens, XUser } from "./types";
+import type {
+  XChatConversation,
+  XClient,
+  XEventsPage,
+  XPage,
+  XPublicKey,
+  XRawEvent,
+  XTokens,
+  XUser,
+} from "./types";
 
 export interface XFake {
   client: XClient;
   conversations: XChatConversation[];
   events: Map<string, XRawEvent[]>;
+  keyEvents: Map<string, string[]>;
+  laterPageKeyEvents: Map<string, string[]>;
+  publicKeys: Map<string, XPublicKey[]>;
+  publicKeyCalls: string[];
   users: Map<string, XUser>;
   sent: Array<{ participantId: string; text: string }>;
   requests: Array<{ path: string; maxResults?: number }>;
@@ -39,6 +52,10 @@ export function makeXFake(): XFake {
   const fake: XFake = {
     conversations: [],
     events: new Map(),
+    keyEvents: new Map(),
+    laterPageKeyEvents: new Map(),
+    publicKeys: new Map(),
+    publicKeyCalls: [],
     users: new Map(),
     sent: [],
     requests: [],
@@ -97,9 +114,17 @@ export function makeXFake(): XFake {
           path: `/2/chat/conversations/${a.conversationId}/events`,
           maxResults: a.maxResults,
         });
-        const failed = gate<XPage<XRawEvent>>("listEvents");
+        const failed = gate<XEventsPage>("listEvents");
         if (failed) return failed;
-        return ok(paged(fake.events.get(a.conversationId) ?? [], a, []));
+        return ok({
+          ...paged(fake.events.get(a.conversationId) ?? [], a, []),
+          keyEvents:
+            (a.paginationToken === undefined
+              ? undefined
+              : fake.laterPageKeyEvents.get(a.conversationId)) ??
+            fake.keyEvents.get(a.conversationId) ??
+            [],
+        });
       }),
     sendDm: (_t, a) =>
       later(() => {
@@ -111,6 +136,23 @@ export function makeXFake(): XFake {
           conversationId: `fake-conversation-${a.participantId}`,
         });
       }),
+    getPublicKeys: (_t, userId) =>
+      later(() => {
+        fake.publicKeyCalls.push(userId);
+        return gate<XPublicKey[]>("getPublicKeys") ?? ok(fake.publicKeys.get(userId) ?? []);
+      }),
+    addConversationKeys: (_t, id) =>
+      later(
+        () =>
+          gate<{ conversationId: string; sequenceId: string }>("addConversationKeys") ??
+          ok({ conversationId: id, sequenceId: "1" }),
+      ),
+    sendChatMessage: () =>
+      later(
+        () =>
+          gate<{ eventId: string }>("sendChatMessage") ??
+          ok({ eventId: fakeSendEventId(fake.sendAtMs ?? Date.now(), fake.sent.length + 1) }),
+      ),
   };
   return fake;
 }

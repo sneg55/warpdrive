@@ -6,6 +6,7 @@ export interface ClientError {
   message?: never;
   detail?: string;
   resetAtMs?: number;
+  guessesRemaining?: number;
 }
 
 export type ActionResult<Ok> = Result<Ok, ClientError>;

@@ -23,6 +23,7 @@ export interface ConversationSqlRow {
   participant_avatar_url: string | null;
   encrypted: boolean;
   x_unread: boolean;
+  keys_unlocked: boolean;
   snippet: string | null;
   last_message_at: string;
   sort_key: string;
@@ -41,9 +42,19 @@ export const shownMessage = (alias: SQL): SQL => sql`(${alias}.text <> '' OR ${a
 export const xUnreadPredicate = sql`(c.last_inbound_at IS NOT NULL
   AND (c.team_read_at IS NULL OR c.team_read_at < c.last_inbound_at))`;
 
+export const keysUnlockedPredicate = sql`(
+  a.chat_keys_broken_at IS NULL
+  AND EXISTS (SELECT 1 FROM x_account_chat_keys k WHERE k.account_id = a.id)
+  AND (a.chat_latest_key_version IS NULL OR EXISTS (
+    SELECT 1 FROM x_account_chat_keys k
+    WHERE k.account_id = a.id AND k.key_version = a.chat_latest_key_version
+  ))
+)`;
+
 export const conversationColumns = sql`c.id, c.account_id, c.participant_username, c.participant_name,
   c.participant_avatar_url, c.encrypted, c.x_unread,
-  CASE WHEN c.encrypted THEN NULL ELSE (
+  ${keysUnlockedPredicate} AS keys_unlocked,
+  CASE WHEN c.encrypted AND NOT ${keysUnlockedPredicate} THEN NULL ELSE (
     SELECT left(s.text, ${X_SNIPPET_LENGTH}) FROM x_messages s
     WHERE s.conversation_id = c.id AND ${shownMessage(sql`s`)}
     ORDER BY s.sent_at DESC, s.id DESC LIMIT 1
