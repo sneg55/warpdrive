@@ -1,4 +1,4 @@
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import type { AppError } from "@/constants/errorIds";
 import { X_CONVERSATIONS_PAGE_SIZE, X_EVENTS_PAGE_SIZE, X_FIRST_PAGE_SIZE } from "@/constants/xDms";
 import type { Db } from "@/db/client";
@@ -6,7 +6,7 @@ import { xConversations } from "@/db/schema/xDms";
 import { ok, type Result } from "@/types/result";
 import { snowflakeToDate } from "./snowflake";
 import { withAccessToken } from "./tokens";
-import type { XChatConversation, XClient, XPage, XRawEvent, XUser } from "./types";
+import type { XChatConversation, XClient, XRawEvent, XUser } from "./types";
 
 export interface FetchContext {
   db: Db;
@@ -43,70 +43,34 @@ async function storedNewest(ctx: FetchContext, ids: string[]): Promise<Map<strin
   return new Map(rows.map((r) => [r.id, r.newest]));
 }
 
-async function syncedWatermark(ctx: FetchContext): Promise<string | null> {
-  const [row] = await ctx.db
-    .select({ max: sql<string | null>`max(${xConversations.newestEventId}::numeric)::text` })
-    .from(xConversations)
-    .where(eq(xConversations.accountId, ctx.accountId));
-  ctx.signal.throwIfAborted();
-  return row?.max ?? null;
-}
-
-interface ScanBounds {
-  floorMs: number;
-  watermark: string | null;
-}
-
-type Scan =
-  | { kind: "stop" }
-  | { kind: "skip" }
-  | { kind: "unchanged" }
-  | { kind: "changed"; item: ChangedConversation };
-
-function scan(
+function changedItem(
   ctx: FetchContext,
   c: XChatConversation,
   stored: Map<string, string | null>,
   users: XUser[],
-  bounds: ScanBounds,
-): Scan {
-  if (c.newestEventId === null) return { kind: "unchanged" };
+  floorMs: number,
+): ChangedConversation | null {
+  if (c.newestEventId === null) return null;
   const isNew = !stored.has(c.id);
-  if (isNew && snowflakeToDate(c.newestEventId).getTime() < bounds.floorMs) return { kind: "stop" };
+  if (isNew && snowflakeToDate(c.newestEventId).getTime() < floorMs) return null;
   const storedNewestEventId = stored.get(c.id) ?? null;
-  if (!isNew && !isNewer(c.newestEventId, storedNewestEventId)) return { kind: "stop" };
+  if (!isNew && !isNewer(c.newestEventId, storedNewestEventId)) return null;
   const participantId = c.participantIds.find((id) => id !== ctx.accountXUserId);
-  if (c.type !== "direct" || participantId === undefined)
-    return isNewer(c.newestEventId, bounds.watermark) ? { kind: "skip" } : { kind: "unchanged" };
-  const participant = users.find((u) => u.id === participantId) ?? null;
+  if (c.type !== "direct" || participantId === undefined) return null;
   return {
-    kind: "changed",
-    item: {
-      conversation: c,
-      newestEventId: c.newestEventId,
-      participantId,
-      participant,
-      storedNewestEventId,
-      isNew,
-    },
+    conversation: c,
+    newestEventId: c.newestEventId,
+    participantId,
+    participant: users.find((u) => u.id === participantId) ?? null,
+    storedNewestEventId,
+    isNew,
   };
 }
 
-function scanPage(
-  ctx: FetchContext,
-  page: XPage<XChatConversation>,
-  stored: Map<string, string | null>,
-  bounds: ScanBounds,
-  changed: ChangedConversation[],
-): boolean {
-  let everyItemChanged = true;
-  for (const c of page.items) {
-    const s = scan(ctx, c, stored, page.users, bounds);
-    if (s.kind === "stop") return false;
-    if (s.kind === "unchanged") everyItemChanged = false;
-    if (s.kind === "changed") changed.push(s.item);
-  }
-  return everyItemChanged;
+function byNewestEventId(a: ChangedConversation, b: ChangedConversation): number {
+  const x = BigInt(a.newestEventId);
+  const y = BigInt(b.newestEventId);
+  return x < y ? -1 : x > y ? 1 : 0;
 }
 
 export async function listChangedConversations(
@@ -114,15 +78,18 @@ export async function listChangedConversations(
   windowFloorMs: number,
 ): Promise<Result<ChangedConversation[], AppError>> {
   const changed: ChangedConversation[] = [];
-  const bounds: ScanBounds = { floorMs: windowFloorMs, watermark: await syncedWatermark(ctx) };
   let paginationToken: string | undefined;
-  let maxResults = X_FIRST_PAGE_SIZE;
   for (;;) {
     const page = await withAccessToken(
       ctx.db,
       ctx.client,
       ctx.accountId,
-      (token) => ctx.client.listConversations(token, { maxResults, paginationToken }, ctx.signal),
+      (token) =>
+        ctx.client.listConversations(
+          token,
+          { maxResults: X_CONVERSATIONS_PAGE_SIZE, paginationToken },
+          ctx.signal,
+        ),
       ctx.signal,
     );
     if (!page.ok) return page;
@@ -130,10 +97,12 @@ export async function listChangedConversations(
       ctx,
       page.value.items.map((c) => c.id),
     );
-    const morePages = scanPage(ctx, page.value, stored, bounds, changed);
-    if (page.value.nextToken === null || !morePages) return ok(changed);
+    for (const c of page.value.items) {
+      const item = changedItem(ctx, c, stored, page.value.users, windowFloorMs);
+      if (item !== null) changed.push(item);
+    }
+    if (page.value.nextToken === null) return ok(changed.sort(byNewestEventId));
     paginationToken = page.value.nextToken;
-    maxResults = X_CONVERSATIONS_PAGE_SIZE;
   }
 }
 

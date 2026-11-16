@@ -59,16 +59,43 @@ describe("deploy workflow", () => {
   });
 
   it("checks lint and types in the gate, since a pull request never reaches the build job", () => {
-    const test = job("test");
-    expect(test).toMatch(/run: pnpm lint/);
-    expect(test).toMatch(/run: pnpm typecheck/);
-    expect(test).toMatch(/run: pnpm test:unit/);
+    const checks = job("checks");
+    expect(checks).toMatch(/command: pnpm lint\b/);
+    expect(checks).toMatch(/command: pnpm typecheck\b/);
+    expect(checks).toMatch(/command: pnpm test:unit$/m);
+    expect(checks).toMatch(/run: \$\{\{ matrix\.command \}\}/);
   });
 
   it("runs the OSS publish guard, which nothing ran and which sat red because of it", () => {
-    // The guard decides what may leave for the public mirror. Vitest does not cover it (it is a
-    // shell suite), so until it was in the gate a broken one was invisible.
-    expect(job("test")).toMatch(/run: pnpm test:oss/);
+    expect(job("checks")).toMatch(/pnpm test:oss$/m);
+  });
+
+  it("runs the checks side by side, so the gate takes as long as its slowest check and not their sum", () => {
+    expect(job("checks")).toMatch(/^ {6}matrix:$/m);
+  });
+
+  it("lints on two eslint workers, since three or more come within 3 GiB of the runner's 12 GiB memory limit", () => {
+    expect(job("checks")).toMatch(/command: pnpm lint --concurrency 2$/m);
+  });
+
+  it("lets every check finish when one fails, so a single run reports all the failures", () => {
+    expect(job("checks")).toMatch(/fail-fast: false/);
+  });
+
+  it("fails the test job when a check fails, since a job skipped by a failed need reads as a pass", () => {
+    const test = job("test");
+    expect(test).toMatch(/needs: checks/);
+    expect(test).toMatch(/if: .*!cancelled\(\)/);
+    expect(test).toMatch(/needs\.checks\.result/);
+  });
+
+  it("keeps the gate off tags, whose commit was already gated on main", () => {
+    expect(job("checks")).toMatch(/if: .*!startsWith\(github\.ref, 'refs\/tags\/'\)/);
+    expect(job("test")).toMatch(/if: .*!startsWith\(github\.ref, 'refs\/tags\/'\)/);
+  });
+
+  it("builds only behind the test job, so an image for a commit still proves the gate passed", () => {
+    expect(job("build")).toMatch(/needs: test/);
   });
 
   it("fails the deploy when the app does not come up healthy", () => {

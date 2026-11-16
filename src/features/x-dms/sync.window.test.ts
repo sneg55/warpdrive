@@ -43,12 +43,12 @@ describe("runXSync window", () => {
       fake.requests.length = 0;
       const r = await runXSync(deps(db, fake), accountId, sig());
       expect(r).toEqual({ ok: true, value: { conversations: 0, messages: 0 } });
-      expect(fake.requests).toEqual([{ path: "/2/chat/conversations", maxResults: 5 }]);
+      expect(fake.requests).toEqual([{ path: "/2/chat/conversations", maxResults: 100 }]);
       expect(await conversationRow(db, accountId)).toBeUndefined();
     });
   });
 
-  it("a later run stops at an unstored conversation older than the window", async () => {
+  it("a later run skips an unstored conversation older than the window", async () => {
     await withTestDb(async (db) => {
       const fake = makeXFake();
       const accountId = await seedAccount(db);

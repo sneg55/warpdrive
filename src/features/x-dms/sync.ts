@@ -52,7 +52,7 @@ async function syncAccount(
   const changed = await listChangedConversations(ctx, windowFloorMs);
   if (!changed.ok) return changed;
   const counts: SyncCounts = { conversations: 0, messages: 0 };
-  for (const item of [...changed.value].reverse()) {
+  for (const item of changed.value) {
     const events = await fetchNewEvents(ctx, {
       conversationId: item.conversation.id,
       storedNewestEventId: item.storedNewestEventId,

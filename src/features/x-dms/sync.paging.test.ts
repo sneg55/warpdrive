@@ -42,11 +42,16 @@ function put(fake: XFake, i: number, daysAgo: number, type: "direct" | "group" =
   });
 }
 
+function listInOrder(fake: XFake, order: number[]) {
+  const all = fake.conversations;
+  fake.conversations = order.flatMap((i) => all.filter((x) => x.id === conversationOf(i)));
+}
+
 const listRequests = (fake: XFake) =>
   fake.requests.filter((r) => r.path === "/2/chat/conversations").map((r) => r.maxResults);
 
 describe("runXSync list paging", () => {
-  it("pages into a second page of 100 and stops at the first unchanged conversation", async () => {
+  it("a later run fetches events only for the changed conversations", async () => {
     await withTestDb(async (db) => {
       const fake = makeXFake();
       const accountId = await seedAccount(db);
@@ -56,22 +61,23 @@ describe("runXSync list paging", () => {
       for (let i = 1; i <= 6; i++) addEvents(fake, [eventIn(i, i / 10)], conversationOf(i));
       const r = await runXSync(deps(db, fake), accountId, sig());
       expect(r).toEqual({ ok: true, value: { conversations: 6, messages: 6 } });
-      expect(listRequests(fake)).toEqual([5, 100]);
+      expect(listRequests(fake)).toEqual([100]);
       expect(eventRequests(fake)).toHaveLength(6);
     });
   });
 
-  it("a first page of old group conversations stops without a second request", async () => {
+  it("old group conversations are skipped without event requests", async () => {
     await withTestDb(async (db) => {
       const fake = makeXFake();
       const accountId = await seedAccount(db);
       for (let i = 1; i <= 6; i++) put(fake, i, 40 + i, "group");
       await runXSync(deps(db, fake), accountId, sig());
-      expect(listRequests(fake)).toEqual([5]);
+      expect(listRequests(fake)).toEqual([100]);
+      expect(eventRequests(fake)).toHaveLength(0);
     });
   });
 
-  it("groups older than the newest synced activity count as unchanged for paging", async () => {
+  it("a run imports the changed direct conversation and skips the groups", async () => {
     await withTestDb(async (db) => {
       const fake = makeXFake();
       const accountId = await seedAccount(db);
@@ -83,7 +89,58 @@ describe("runXSync list paging", () => {
       addEvents(fake, [eventIn(0, 0.1)], conversationOf(0));
       const r = await runXSync(deps(db, fake), accountId, sig());
       expect(r).toEqual({ ok: true, value: { conversations: 1, messages: 1 } });
-      expect(listRequests(fake)).toEqual([5]);
+      expect(listRequests(fake)).toEqual([100]);
+      expect(eventRequests(fake)).toHaveLength(1);
+    });
+  });
+});
+
+describe("runXSync with a conversation list not sorted by activity", () => {
+  it("a first run imports recent conversations listed after ones older than the window", async () => {
+    await withTestDb(async (db) => {
+      const fake = makeXFake();
+      const accountId = await seedAccount(db);
+      put(fake, 1, 3);
+      put(fake, 2, 40);
+      put(fake, 3, 2);
+      listInOrder(fake, [2, 1, 3]);
+      const r = await runXSync(deps(db, fake), accountId, sig());
+      expect(r).toEqual({ ok: true, value: { conversations: 2, messages: 2 } });
+      expect(await conversationRow(db, accountId, conversationOf(1))).toBeDefined();
+      expect(await conversationRow(db, accountId, conversationOf(3))).toBeDefined();
+      expect(await conversationRow(db, accountId, conversationOf(2))).toBeUndefined();
+    });
+  });
+
+  it("a later run picks up a new message listed after unchanged and old conversations", async () => {
+    await withTestDb(async (db) => {
+      const fake = makeXFake();
+      const accountId = await seedAccount(db);
+      put(fake, 1, 3);
+      put(fake, 2, 40);
+      put(fake, 3, 2);
+      await runXSync(deps(db, fake), accountId, sig());
+      addEvents(fake, [eventIn(3, 0.1)], conversationOf(3));
+      put(fake, 4, 1);
+      listInOrder(fake, [1, 2, 3, 4]);
+      const r = await runXSync(deps(db, fake), accountId, sig());
+      expect(r).toEqual({ ok: true, value: { conversations: 2, messages: 2 } });
+      expect(await conversationRow(db, accountId, conversationOf(4))).toBeDefined();
+    });
+  });
+
+  it("reads every page of the list in pages of 100", async () => {
+    await withTestDb(async (db) => {
+      const fake = makeXFake();
+      const accountId = await seedAccount(db);
+      for (let i = 1; i <= 150; i++) put(fake, i, i <= 149 ? 40 : 1);
+      listInOrder(
+        fake,
+        Array.from({ length: 150 }, (_, k) => k + 1),
+      );
+      const r = await runXSync(deps(db, fake), accountId, sig());
+      expect(r).toEqual({ ok: true, value: { conversations: 1, messages: 1 } });
+      expect(listRequests(fake)).toEqual([100, 100]);
     });
   });
 });

@@ -74,7 +74,7 @@ describe("runXSync", () => {
     });
   });
 
-  it("idle run makes one list request of 5 and no event requests", async () => {
+  it("idle run makes one list request of 100 and no event requests", async () => {
     await withTestDb(async (db) => {
       const fake = makeXFake();
       const accountId = await seedAccount(db);
@@ -83,7 +83,7 @@ describe("runXSync", () => {
       fake.requests.length = 0;
       const r = await runXSync(deps(db, fake), accountId, sig());
       expect(r).toEqual({ ok: true, value: { conversations: 0, messages: 0 } });
-      expect(fake.requests).toEqual([{ path: "/2/chat/conversations", maxResults: 5 }]);
+      expect(fake.requests).toEqual([{ path: "/2/chat/conversations", maxResults: 100 }]);
     });
   });
 
