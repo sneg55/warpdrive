@@ -9,6 +9,7 @@ vi.mock("@/lib/trpc-client", () => ({
   trpc: {
     contacts: {
       listPeople: { useQuery: () => ({ data: { rows: [], total: 0 } }) },
+      searchRecipients: { useQuery: () => ({ data: [] }) },
     },
   },
 }));

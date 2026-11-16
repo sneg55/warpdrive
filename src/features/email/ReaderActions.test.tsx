@@ -107,7 +107,7 @@ describe("ReaderActions", () => {
     expect(screen.getByTestId("composer-stub").dataset.threadId).toBe("t1");
   });
 
-  it("clicking Forward opens the composer with a blank thread id and a Fwd: subject", () => {
+  it("clicking Forward opens the composer on the same thread with a Fwd: subject", () => {
     render(
       <ReaderActions message={message} selfEmail="me@ex.com" accountId="acct-1" threadId="t1" />,
     );
@@ -115,7 +115,7 @@ describe("ReaderActions", () => {
     const prefill = readPrefill();
     expect(prefill.to).toEqual([]);
     expect(prefill.subject).toMatch(/^Fwd:/);
-    expect(screen.getByTestId("composer-stub").dataset.threadId).toBe("");
+    expect(screen.getByTestId("composer-stub").dataset.threadId).toBe("t1");
   });
 
   it("closing the composer returns to the three action buttons; a new mode can then be picked", () => {

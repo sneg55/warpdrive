@@ -1,11 +1,21 @@
 "use client";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import {
+  RECIPIENT_SEARCH_DEBOUNCE_MS,
+  RECIPIENT_SEARCH_MAX_EXCLUDE,
+  RECIPIENT_SEARCH_MAX_QUERY,
+} from "@/constants/email";
 import { isValidEmail } from "@/lib/isValidEmail";
 import { trpc } from "@/lib/trpc-client";
 
-// Must match contacts router max (src/features/contacts/router.ts listPeople max:500).
-// Fetch the full allowed page so all contacts are available for autocomplete.
-const CONTACTS_AUTOCOMPLETE_LIMIT = 500;
+function useDebounced(value: string, ms: number): string {
+  const [settled, setSettled] = useState(value);
+  useEffect(() => {
+    const t = setTimeout(() => setSettled(value), ms);
+    return () => clearTimeout(t);
+  }, [value, ms]);
+  return settled;
+}
 
 interface RecipientFieldProps {
   label: string;
@@ -28,21 +38,15 @@ export function RecipientField({ label, values, onChange }: RecipientFieldProps)
   // same tick, and a stale closure would re-commit the half-typed search text.
   const queryRef = useRef("");
 
-  const { data } = trpc.contacts.listPeople.useQuery({
-    offset: 0,
-    limit: CONTACTS_AUTOCOMPLETE_LIMIT,
-  });
-  const people = data?.rows ?? [];
-
+  const typed = query.trim().slice(0, RECIPIENT_SEARCH_MAX_QUERY);
+  const search = useDebounced(typed, RECIPIENT_SEARCH_DEBOUNCE_MS);
+  const { data } = trpc.contacts.searchRecipients.useQuery(
+    { query: search, exclude: values.slice(0, RECIPIENT_SEARCH_MAX_EXCLUDE) },
+    { enabled: search.length > 0 },
+  );
   const suggestions =
-    query.length > 0
-      ? people.filter(
-          (p) =>
-            p.primaryEmail != null &&
-            (p.name.toLowerCase().includes(query.toLowerCase()) ||
-              p.primaryEmail.toLowerCase().includes(query.toLowerCase())) &&
-            !values.includes(p.primaryEmail),
-        )
+    typed.length > 0 && search === typed
+      ? (data ?? []).filter((o) => !values.includes(o.email))
       : [];
 
   function addEmail(email: string): void {
@@ -121,19 +125,19 @@ export function RecipientField({ label, values, onChange }: RecipientFieldProps)
       />
       {open && suggestions.length > 0 && (
         <div className="absolute left-0 top-full z-10 mt-1 w-full rounded border border-border bg-background shadow-md">
-          {suggestions.map((p) => (
-            <div key={p.id}>
+          {suggestions.map((o) => (
+            <div key={`${o.personId}:${o.email}`}>
               <button
                 type="button"
                 className="w-full text-left px-3 py-1.5 text-sm hover:bg-accent"
                 onMouseDown={(e) => {
-                  e.preventDefault(); // keep focus on the input so onBlur doesn't fire first
-                  if (p.primaryEmail != null) addEmail(p.primaryEmail);
+                  e.preventDefault();
+                  addEmail(o.email);
                 }}
               >
-                {p.name}
-                {p.primaryEmail != null && p.primaryEmail !== p.name && (
-                  <span className="ml-1 text-xs text-muted-foreground">{p.primaryEmail}</span>
+                {o.name}
+                {o.email !== o.name && (
+                  <span className="ml-1 text-xs text-muted-foreground">{o.email}</span>
                 )}
               </button>
             </div>

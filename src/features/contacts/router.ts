@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { RECIPIENT_SEARCH_MAX_EXCLUDE, RECIPIENT_SEARCH_MAX_QUERY } from "@/constants/email";
 import { attachRefLabels } from "@/features/custom-fields/refLabels";
 import { dealsForOrg, dealsForPerson } from "@/features/deal-workspace/participants";
 import { protectedProcedure, router } from "@/server/trpc/trpc";
@@ -16,6 +17,7 @@ import { listRelatedOrgs } from "./orgRelations";
 import { getOrg, listOrgs } from "./orgsRepo";
 import { listPeopleForOrg, listPersonOptions } from "./personOptionsRepo";
 import { getPerson } from "./personsRepo";
+import { searchRecipients } from "./recipientSearch";
 import { orgSortInput, personSortInput } from "./schemas";
 
 export const contactsRouter = router({
@@ -50,6 +52,23 @@ export const contactsRouter = router({
   personOptions: protectedProcedure.query(({ ctx }) =>
     listPersonOptions(ctx.db, toContactActor(ctx.actor), AbortSignal.timeout(10_000)),
   ),
+
+  searchRecipients: protectedProcedure
+    .input(
+      z.object({
+        query: z.string().trim().min(1).max(RECIPIENT_SEARCH_MAX_QUERY),
+        exclude: z.array(z.string().max(320)).max(RECIPIENT_SEARCH_MAX_EXCLUDE).default([]),
+      }),
+    )
+    .query(({ ctx, input }) =>
+      searchRecipients(
+        ctx.db,
+        toContactActor(ctx.actor),
+        input.query,
+        AbortSignal.timeout(10_000),
+        input.exclude,
+      ),
+    ),
 
   orgOptions: protectedProcedure.query(({ ctx }) =>
     listOrgOptions(ctx.db, toContactActor(ctx.actor), AbortSignal.timeout(10_000)),

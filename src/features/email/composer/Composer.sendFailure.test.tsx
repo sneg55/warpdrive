@@ -16,7 +16,10 @@ vi.mock("@/lib/trpc-client", () => ({
       mergeContext: { useQuery: () => ({ data: {}, isPending: false }) },
       signatures: { list: { useQuery: () => ({ data: [] }) } },
     },
-    contacts: { listPeople: { useQuery: () => ({ data: { rows: [], total: 0 } }) } },
+    contacts: {
+      listPeople: { useQuery: () => ({ data: { rows: [], total: 0 } }) },
+      searchRecipients: { useQuery: () => ({ data: [] }) },
+    },
     activities: { listTypes: { useQuery: () => ({ data: [] }) } },
   },
 }));

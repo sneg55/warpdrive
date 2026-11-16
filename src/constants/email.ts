@@ -25,3 +25,8 @@ export const RECONCILE_WINDOW_MS = 600_000;
 export const BACKOFF_START_MS = 2_000;
 // In-mail search input debounce (InboxSearchBar): batches keystrokes into one query.
 export const INBOX_SEARCH_DEBOUNCE_MS = 250;
+export const RECIPIENT_SEARCH_LIMIT = 10;
+export const RECIPIENT_SEARCH_SCAN = 200;
+export const RECIPIENT_SEARCH_DEBOUNCE_MS = 200;
+export const RECIPIENT_SEARCH_MAX_QUERY = 100;
+export const RECIPIENT_SEARCH_MAX_EXCLUDE = 200;

@@ -6,19 +6,27 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 afterEach(cleanup);
 
+const OPTIONS = [
+  { personId: "p1", name: "Alice", email: "alice@x.com" },
+  { personId: "p2", name: "Bob", email: "bob@x.com" },
+  { personId: "p2", name: "Bob", email: "bob.home@x.com" },
+];
+const searched: string[] = [];
+const excluded: string[][] = [];
+
 vi.mock("@/lib/trpc-client", () => ({
   trpc: {
     contacts: {
-      listPeople: {
-        useQuery: () => ({
-          data: {
-            rows: [
-              { id: "p1", name: "Alice", primaryEmail: "alice@x.com", emails: [] },
-              { id: "p2", name: "Bob", primaryEmail: "bob@x.com", emails: [] },
-            ],
-            total: 2,
-          },
-        }),
+      searchRecipients: {
+        useQuery: (input: { query: string; exclude: string[] }, opts: { enabled: boolean }) => {
+          if (!opts.enabled) return { data: undefined };
+          searched.push(input.query);
+          excluded.push(input.exclude);
+          const q = input.query.toLowerCase();
+          return {
+            data: OPTIONS.filter((o) => o.name.toLowerCase().includes(q) || o.email.includes(q)),
+          };
+        },
       },
     },
   },
@@ -29,6 +37,32 @@ import { useState } from "react";
 import { RecipientField } from "./RecipientField";
 
 describe("RecipientField", () => {
+  it("asks the server for matches to the typed text and lists every address of a person", async () => {
+    render(<RecipientField label="To" values={[]} onChange={vi.fn()} />);
+    fireEvent.change(screen.getByRole("combobox"), { target: { value: "bob" } });
+    await waitFor(() => expect(screen.getByText("bob.home@x.com")).toBeInTheDocument());
+    expect(screen.getByText("bob@x.com")).toBeInTheDocument();
+    expect(searched).toContain("bob");
+  });
+
+  it("hides the previous text's suggestions as soon as the text changes", async () => {
+    render(<RecipientField label="To" values={[]} onChange={vi.fn()} />);
+    const input = screen.getByRole("combobox");
+    fireEvent.change(input, { target: { value: "ali" } });
+    await waitFor(() => expect(screen.getByText("Alice")).toBeInTheDocument());
+    fireEvent.change(input, { target: { value: "bob" } });
+    expect(screen.queryByText("Alice")).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText("bob.home@x.com")).toBeInTheDocument());
+  });
+
+  it("does not suggest an address that is already a recipient", async () => {
+    render(<RecipientField label="To" values={["bob@x.com"]} onChange={vi.fn()} />);
+    fireEvent.change(screen.getByRole("combobox"), { target: { value: "bob" } });
+    await waitFor(() => expect(screen.getByText("bob.home@x.com")).toBeInTheDocument());
+    expect(screen.queryAllByText("bob@x.com")).toHaveLength(1);
+    expect(excluded.at(-1)).toEqual(["bob@x.com"]);
+  });
+
   it("shows suggestions when typing in the input", async () => {
     render(<RecipientField label="To" values={[]} onChange={vi.fn()} />);
     const input = screen.getByRole("combobox");
