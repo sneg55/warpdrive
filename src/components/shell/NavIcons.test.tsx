@@ -7,7 +7,6 @@ import {
   ActivitiesIcon,
   ContactsIcon,
   DashboardIcon,
-  DealsIcon,
   InboxIcon,
   LeadsIcon,
   PipelineIcon,
@@ -18,7 +17,6 @@ afterEach(cleanup);
 
 const ICONS = [
   ["PipelineIcon", PipelineIcon],
-  ["DealsIcon", DealsIcon],
   ["LeadsIcon", LeadsIcon],
   ["ContactsIcon", ContactsIcon],
   ["ActivitiesIcon", ActivitiesIcon],

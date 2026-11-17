@@ -15,6 +15,8 @@ import {
   PGBOSS_QUEUE_INTERCOM_SYNC,
   PGBOSS_QUEUE_RELEASE_CHECK,
 } from "@/constants/jobNames";
+import { emailAccounts } from "@/db/schema";
+import { seedUser } from "@/db/testing/factories";
 import { makeTestDb } from "@/test/db";
 import { registerAllJobs } from "./worker";
 
@@ -55,16 +57,22 @@ interface ScheduleRecord {
   name: string;
   cron: string;
 }
+interface SendRecord {
+  name: string;
+  data: unknown;
+}
 
 function makeFakeBoss() {
   const queues: QueueRecord[] = [];
   const workers: WorkRecord[] = [];
   const schedules: ScheduleRecord[] = [];
+  const sends: SendRecord[] = [];
 
   return {
     queues,
     workers,
     schedules,
+    sends,
     createQueue(name: string): Promise<void> {
       queues.push({ name });
       return Promise.resolve();
@@ -74,11 +82,8 @@ function makeFakeBoss() {
       workers.push({ name });
       return Promise.resolve();
     },
-    send(name: string, data: unknown, opts?: unknown): Promise<void> {
-      void name;
-      void data;
-      void opts;
-      // no-op: empty DB means no connected accounts, so this is never called
+    send(name: string, data: unknown): Promise<void> {
+      sends.push({ name, data });
       return Promise.resolve();
     },
     schedule(name: string, cron: string): Promise<void> {
@@ -114,6 +119,36 @@ describe("registerAllJobs", () => {
 
       expect(queueNames).not.toContain(PGBOSS_QUEUE_INTERCOM_SYNC);
       expect(fakeBoss.schedules.some((s) => s.name === PGBOSS_QUEUE_INTERCOM_SYNC)).toBe(false);
+    } finally {
+      testDbHolder.db = null;
+      await h.close();
+    }
+  });
+
+  it("enqueues a sync tick for every mailbox that is not disconnected, errored ones included", async () => {
+    const h = await makeTestDb();
+    testDbHolder.db = h;
+
+    try {
+      const erroredOwner = await seedUser(h.db);
+      const disconnectedOwner = await seedUser(h.db);
+      const [errored] = await h.db
+        .insert(emailAccounts)
+        .values({ userId: erroredOwner.id, emailAddress: "errored@example.com", status: "error" })
+        .returning();
+      await h.db.insert(emailAccounts).values({
+        userId: disconnectedOwner.id,
+        emailAddress: "off@example.com",
+        status: "disconnected",
+      });
+      const fakeBoss = makeFakeBoss();
+
+      await registerAllJobs(fakeBoss as unknown as Parameters<typeof registerAllJobs>[0]);
+
+      const syncSends = fakeBoss.sends.filter((s) => s.name === PGBOSS_QUEUE_EMAIL_SYNC);
+      expect(syncSends).toEqual([
+        { name: PGBOSS_QUEUE_EMAIL_SYNC, data: { accountId: errored?.id } },
+      ]);
     } finally {
       testDbHolder.db = null;
       await h.close();

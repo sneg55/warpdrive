@@ -1,7 +1,5 @@
 import { createHash, randomBytes } from "node:crypto";
 import { env } from "@/config/env";
-import { err, ok, type Result } from "@/types/result";
-import { idTokenClaimsSchema } from "./schemas";
 
 const GOOGLE_AUTH_ENDPOINT = "https://accounts.google.com/o/oauth2/v2/auth";
 
@@ -28,44 +26,4 @@ export function generatePkce(): { verifier: string; challenge: string } {
   const verifier = randomBytes(32).toString("base64url");
   const challenge = createHash("sha256").update(verifier).digest("base64url");
   return { verifier, challenge };
-}
-
-interface VerifyArgs {
-  nonce: string;
-  signal: AbortSignal;
-}
-
-interface VerifiedIdentity {
-  email: string;
-  sub: string;
-  name: string;
-  avatarUrl: string | null;
-}
-
-// Validates the DECODED claim set (signature/iss re-checked by jose in the route).
-// Domain membership uses the hd claim exactly, NOT an email-suffix match (ops spec E6).
-export function verifyIdTokenClaims(
-  raw: unknown,
-  args: VerifyArgs,
-): Result<VerifiedIdentity, "rejected"> {
-  args.signal.throwIfAborted();
-  const parsed = idTokenClaimsSchema.safeParse(raw);
-  if (!parsed.success) return err("rejected");
-  const c = parsed.data;
-
-  if (c.email_verified !== true) return err("rejected");
-  if (c.aud !== env.GOOGLE_OAUTH_CLIENT_ID) return err("rejected");
-  if (c.iss !== "https://accounts.google.com" && c.iss !== "accounts.google.com") {
-    return err("rejected");
-  }
-  if (c.nonce !== args.nonce) return err("rejected");
-  if (c.hd === undefined) return err("rejected");
-  if (c.hd.toLowerCase() !== env.GOOGLE_WORKSPACE_DOMAIN.toLowerCase()) return err("rejected");
-
-  return ok({
-    email: c.email.trim().toLowerCase(),
-    sub: c.sub,
-    name: c.name,
-    avatarUrl: c.picture ?? null,
-  });
 }

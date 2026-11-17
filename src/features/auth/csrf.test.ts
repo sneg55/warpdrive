@@ -26,16 +26,30 @@ describe("csrf double-submit + origin", () => {
     });
     expect(r.ok).toBe(false);
   });
-  test("rejects cross-site origin", () => {
+  test("rejects a foreign origin as an origin mismatch", () => {
     const t = mintCsrfToken();
     const r = validateCsrf({
       cookieToken: t,
       headerToken: t,
       origin: "https://evil.example",
       host,
+      secFetchSite: "same-origin",
+    });
+    expect(r).toEqual({ ok: false, error: "origin mismatch" });
+  });
+  test.each([
+    ["matching origin", origin],
+    ["absent origin", null],
+  ])("rejects Sec-Fetch-Site cross-site with a %s", (_label, requestOrigin) => {
+    const t = mintCsrfToken();
+    const r = validateCsrf({
+      cookieToken: t,
+      headerToken: t,
+      origin: requestOrigin,
+      host,
       secFetchSite: "cross-site",
     });
-    expect(r.ok).toBe(false);
+    expect(r).toEqual({ ok: false, error: "cross-site request rejected" });
   });
   test("rejects missing token", () => {
     const r = validateCsrf({

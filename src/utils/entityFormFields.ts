@@ -22,9 +22,3 @@ export function parseMoneyValue(raw: string): MoneyParse {
   }
   return { ok: true, value: Math.round(n * 100) / 100 };
 }
-
-// Coerce a single label value: keep any non-blank catalog name, null out blanks. Labels are
-// user-managed now, so there is no fixed key set to validate against here.
-export function resolveLabelKey(raw: string | null | undefined): string | null {
-  return orNull(raw);
-}

@@ -3,7 +3,8 @@ import { deals } from "@/db/schema/deals";
 import { withTestDb } from "@/db/testing";
 import { setupDeal } from "@/features/deals/dealUpdate.test-helpers";
 import { createLabel, listLabels } from "./labelsRepo";
-import { labelsForEntities, setEntityLabels, syncEntityLabelNames } from "./labelsRepo.entities";
+import { setEntityLabels, syncEntityLabelNames } from "./labelsRepo.entities";
+import { labelsForEntities } from "./labelsRepo.entities.test-helpers";
 
 async function makeLabel(db: Parameters<typeof createLabel>[0], name: string, color: string) {
   const r = await createLabel(

@@ -82,12 +82,7 @@ vi.mock("@/lib/trpc-client", () => ({
   },
 }));
 
-import {
-  ContactTimelinePanel,
-  CustomFieldsPanel,
-  ListPanel,
-  TabStrip,
-} from "./contactDetail.shared";
+import { ContactTimelinePanel, ListPanel, TabStrip } from "./contactDetail.shared";
 
 describe("ContactTimelinePanel", () => {
   afterEach(() => {
@@ -202,33 +197,6 @@ describe("ContactTimelinePanel", () => {
 
 // Wave 4, Task 5: the person/org detail header shows who owns the record via the shared
 // OwnerBadge (avatar + name), sourced from the joined ownerName the repos now return.
-
-// CO-2: the Custom fields block must be a CollapsibleSection like the other sidebar sections
-// (collapse toggle + consistent heading), not a bespoke bordered <section> with a bare <h2>.
-describe("CustomFieldsPanel", () => {
-  const defs = [{ id: "cf1", key: "vip", name: "VIP tier" }];
-
-  it("renders inside a collapsible section matching the other sidebar sections", () => {
-    render(
-      <CustomFieldsPanel
-        defs={defs}
-        values={{ vip: "Gold" }}
-        renderValue={(_def, value) => String(value)}
-      />,
-    );
-    const toggle = screen.getByRole("button", { name: /custom fields/i });
-    expect(toggle).toHaveAttribute("aria-expanded", "true");
-    expect(screen.getByText("VIP tier")).toBeInTheDocument();
-    expect(screen.getByText("Gold")).toBeInTheDocument();
-  });
-
-  it("renders nothing when there are no custom-field defs", () => {
-    const { container } = render(
-      <CustomFieldsPanel defs={[]} values={{}} renderValue={() => null} />,
-    );
-    expect(container).toBeEmptyDOMElement();
-  });
-});
 
 describe("contact detail theme tokens", () => {
   it("colours the tab strip and the empty line from tokens, not a fixed gray", () => {

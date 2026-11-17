@@ -107,6 +107,34 @@ describe("leadConditionInput valueless operators", () => {
   });
 });
 
+describe("leadConditionInput with a list of label values", () => {
+  it("accepts a list on eq and neq and rejects one on a scalar field", () => {
+    for (const op of ["eq", "neq"]) {
+      expect(
+        leadConditionInput.safeParse({
+          combinator: "or",
+          conditions: [{ field: "labels", op, value: ["hot", "warm"] }],
+        }).success,
+      ).toBe(true);
+    }
+    expect(
+      leadConditionInput.safeParse({
+        combinator: "or",
+        conditions: [{ field: "title", op: "eq", value: ["a", "b"] }],
+      }).success,
+    ).toBe(false);
+  });
+
+  it("rejects an empty list", () => {
+    expect(
+      leadConditionInput.safeParse({
+        combinator: "or",
+        conditions: [{ field: "labels", op: "eq", value: [] }],
+      }).success,
+    ).toBe(false);
+  });
+});
+
 describe("leadCreateInput labels", () => {
   it("accepts valid label keys", () => {
     const r = leadCreateInput.parse({ title: "A", labels: ["hot", "warm"] });

@@ -1,36 +1,9 @@
-import { and, asc, eq, inArray, sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import type { LabelTarget } from "@/constants/labelColors";
 import type { Db } from "@/db/client";
-import { type Label, labels } from "@/db/schema/system";
+import { labels } from "@/db/schema/system";
 import type { DbOrTx } from "@/server/realtime/channelVersions";
 import { labelJoin } from "./labelJoins";
-
-// Batch-read the catalog labels applied to a set of entities of one target, keyed by entity id and
-// ordered by the label's catalog order. Entities with no labels are absent from the map (callers
-// default to []).
-export async function labelsForEntities(
-  db: Db,
-  target: LabelTarget,
-  entityIds: string[],
-  signal: AbortSignal,
-): Promise<Map<string, Label[]>> {
-  signal.throwIfAborted();
-  const out = new Map<string, Label[]>();
-  if (entityIds.length === 0) return out;
-  const j = labelJoin(target);
-  const rows = await db
-    .select({ entityId: j.entityCol, label: labels })
-    .from(j.table)
-    .innerJoin(labels, eq(j.labelCol, labels.id))
-    .where(inArray(j.entityCol, entityIds))
-    .orderBy(asc(labels.order));
-  for (const row of rows) {
-    const list = out.get(row.entityId as string) ?? [];
-    list.push(row.label);
-    out.set(row.entityId as string, list);
-  }
-  return out;
-}
 
 // Replace an entity's applied labels with exactly `labelIds`, transactionally: delete the links no
 // longer present, insert the newly-added ones. A no-op set clears all links. Accepts a Db or an

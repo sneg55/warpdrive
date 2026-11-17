@@ -7,7 +7,7 @@ import { seedUser, toActor } from "@/features/stats/statsTestHelpers";
 import { makeTestDb, type TestDb } from "@/test/db";
 import { applyEnrichment } from "./applyService";
 import { mappingsFingerprint } from "./mappingsFingerprint";
-import { listMappings, seedDefaultMappings } from "./mappingsRepo";
+import { listMappings } from "./mappingsRepo";
 import type { ProviderOutcome } from "./providers/types";
 import type { Selection } from "./types";
 
@@ -19,7 +19,6 @@ const SIG = (): AbortSignal => AbortSignal.timeout(20_000);
 beforeAll(async () => {
   h = await makeTestDb();
   admin = await seedUser(h, { isAdmin: true });
-  await seedDefaultMappings(h.db, SIG());
 });
 afterAll(async () => {
   await h.close();

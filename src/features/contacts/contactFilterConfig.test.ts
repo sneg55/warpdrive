@@ -56,14 +56,6 @@ describe("contactFilterConfig", () => {
     expect(ORG_FILTER_CONFIG.opsByField.labels).toBe(ARRAY_OPS);
   });
 
-  it("offers the tier 2 operators on text and ordered fields", () => {
-    for (const op of ["startsWith", "notContains", "isEmpty", "isNotEmpty"]) {
-      expect(PERSON_FILTER_CONFIG.opsByField.name).toContain(op);
-    }
-    expect(ORG_FILTER_CONFIG.opsByField.employeeCount).toContain("isEmpty");
-    expect(ORG_FILTER_CONFIG.opsByField.employeeCount).not.toContain("startsWith");
-  });
-
   it("does not import zod, drizzle, or the db schema", () => {
     const src = readFileSync(
       fileURLToPath(new URL("./contactFilterConfig.ts", import.meta.url)),

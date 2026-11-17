@@ -7,7 +7,7 @@ import { seedUser, toActor } from "@/features/stats/statsTestHelpers";
 import { makeTestDb, type TestDb } from "@/test/db";
 import { applyEnrichment } from "./applyService";
 import { mappingsFingerprint } from "./mappingsFingerprint";
-import { listMappings, seedDefaultMappings, upsertMapping } from "./mappingsRepo";
+import { listMappings, upsertMapping } from "./mappingsRepo";
 import type { ProviderOutcome } from "./providers/types";
 import type { Selection } from "./types";
 
@@ -21,7 +21,6 @@ beforeAll(async () => {
   h = await makeTestDb();
   admin = await seedUser(h, { isAdmin: true });
   stranger = await seedUser(h);
-  await seedDefaultMappings(h.db, SIG());
 });
 afterAll(async () => {
   await h.close();

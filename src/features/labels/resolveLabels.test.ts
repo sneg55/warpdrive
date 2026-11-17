@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { LABEL_COLOR_CLASSES, LABEL_COLOR_HEX } from "@/constants/labelColors";
-import { resolveLabelChips, resolveLabelColors } from "./resolveLabels";
+import { buildLabelColorIndex, resolveLabelChips, resolveLabelColorsWith } from "./resolveLabels";
 
 const catalog = [
   { name: "Hot", color: "red" as const },
@@ -35,15 +35,15 @@ describe("resolveLabelChips", () => {
   });
 });
 
-describe("resolveLabelColors", () => {
+describe("resolveLabelColorsWith", () => {
   it("resolves applied names to the catalog color's hex (for solid inline chips)", () => {
-    expect(resolveLabelColors(catalog, ["Hot"])).toEqual([
+    expect(resolveLabelColorsWith(buildLabelColorIndex(catalog), ["Hot"])).toEqual([
       { name: "Hot", color: LABEL_COLOR_HEX.red },
     ]);
   });
 
   it("matches case-insensitively and falls back to gray hex for unknown names", () => {
-    expect(resolveLabelColors(catalog, ["hot", "Ghost"])).toEqual([
+    expect(resolveLabelColorsWith(buildLabelColorIndex(catalog), ["hot", "Ghost"])).toEqual([
       { name: "hot", color: LABEL_COLOR_HEX.red },
       { name: "Ghost", color: LABEL_COLOR_HEX.gray },
     ]);

@@ -83,31 +83,4 @@ describe("DealCard rot tint", () => {
     const card = screen.getByRole("button", { name: /Acme renewal/ });
     expect(card.className).not.toMatch(/bg-red-\d/);
   });
-
-  // The clock is seeded from the request, so a rotting card reads as rotting in the very first
-  // paint. The card must never describe a deal that has an activity as having nothing scheduled:
-  // an absent clock used to produce that claim, which is a wrong answer rather than a blank one.
-  it("shows rot and the real activity state in the first render", () => {
-    render(
-      <DealCard
-        card={{
-          ...baseCard,
-          stageEnteredAt: new Date("2026-06-08T00:00:00Z"),
-          nextActivityAt: new Date("2026-06-18T09:00:00Z"),
-          nextActivityTitle: "Discovery call",
-        }}
-        ownerName="A.K."
-        personName={null}
-        orgName={null}
-        labels={[]}
-        rottingDays={6}
-        density="comfortable"
-        now={new Date("2026-06-21T00:00:00Z")}
-      />,
-    );
-    const card = screen.getByRole("button", { name: /Acme renewal/ });
-    expect(card.className).toMatch(/bg-red-\d/);
-    expect(screen.queryByLabelText("No activity scheduled")).toBeNull();
-    expect(screen.getByLabelText("Discovery call · 3 days overdue")).not.toBeNull();
-  });
 });

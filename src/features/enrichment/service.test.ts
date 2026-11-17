@@ -5,7 +5,6 @@ import { toContactActor } from "@/features/contacts/actorAdapters";
 import { encryptToken } from "@/features/email/crypto";
 import { seedUser, toActor } from "@/features/stats/statsTestHelpers";
 import { makeTestDb, type TestDb } from "@/test/db";
-import { seedDefaultMappings } from "./mappingsRepo";
 import type { EnrichmentProvider, ProviderId, ProviderOutcome } from "./providers/types";
 import { runEnrichment } from "./service";
 
@@ -18,7 +17,6 @@ const NOW = new Date("2026-08-24T12:00:00.000Z");
 beforeAll(async () => {
   h = await makeTestDb();
   admin = await seedUser(h, { isAdmin: true });
-  await seedDefaultMappings(h.db, SIG());
 });
 afterAll(async () => {
   await h.close();

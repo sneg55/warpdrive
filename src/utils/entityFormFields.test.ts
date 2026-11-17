@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { orNull, parseMoneyValue, resolveLabelKey } from "./entityFormFields";
+import { orNull, parseMoneyValue } from "./entityFormFields";
 
 describe("orNull", () => {
   it("collapses blank and whitespace to null, trims otherwise", () => {
@@ -25,14 +25,5 @@ describe("parseMoneyValue", () => {
   it("rejects negative or non-numeric input", () => {
     expect(parseMoneyValue("-5").ok).toBe(false);
     expect(parseMoneyValue("abc").ok).toBe(false);
-  });
-});
-
-describe("resolveLabelKey", () => {
-  it("keeps any non-blank catalog label name and nulls blanks (labels are user-managed now)", () => {
-    expect(resolveLabelKey("Hot")).toBe("Hot");
-    expect(resolveLabelKey("Enterprise")).toBe("Enterprise");
-    expect(resolveLabelKey("   ")).toBeNull();
-    expect(resolveLabelKey(null)).toBeNull();
   });
 });

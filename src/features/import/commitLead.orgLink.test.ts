@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import { expect, it } from "vitest";
-import { leads, organizations } from "@/db/schema";
+import { leads, notes, organizations } from "@/db/schema";
 import { withTestDb } from "@/db/testing";
 import { seedUser } from "@/db/testing/factories";
 import { createOrg } from "@/features/contacts/orgsRepo";
@@ -85,6 +85,7 @@ it("fails the row (invalid) when the organization name matches multiple visible 
     const row = await seedValidRow(db, user.id, {
       primary: { title: "http://www.miamidade.gov/transit/" },
       organization: { name: "County of Miami-Dade" },
+      note: { body: "should not survive" },
     });
 
     const r = await commitRow(db, actor, row.id, "lead", "skip", signal);
@@ -96,6 +97,9 @@ it("fails the row (invalid) when the organization name matches multiple visible 
       .from(leads)
       .where(eq(leads.title, "http://www.miamidade.gov/transit/"));
     expect(created).toHaveLength(0);
+    expect(await db.select().from(notes).where(eq(notes.body, "should not survive"))).toHaveLength(
+      0,
+    );
   });
 });
 

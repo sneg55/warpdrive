@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { xAccountChatKeys, xAccountMembers, xAccounts } from "@/db/schema/xDms";
 import { withTestDb } from "@/db/testing";
 import { seedUser } from "@/db/testing/factories";
-import { listXAccountsForAdmin } from "./accountAdmin";
+import { listXAccountsForAdmin, setXAccountMembers } from "./accountAdmin";
 
 const sig = () => new AbortController().signal;
 
@@ -68,6 +68,31 @@ describe("listXAccountsForAdmin", () => {
       expect(r.value[0]?.chatKeyState).toBe("unlocked");
       expect(r.value[0]?.chatKeysUnlockedAt).toEqual(unlockedAt);
       expect(r.value[0]?.chatKeysUnlockedByName).toBe(admin.name);
+    });
+  });
+
+  it("leaves deactivated members out so saving the shown list succeeds", async () => {
+    await withTestDb(async (db) => {
+      const admin = await seedUser(db, { isAdmin: true });
+      const departed = await seedUser(db, { isActive: false });
+      const [a] = await db
+        .insert(xAccounts)
+        .values({ xUserId: "x-4", username: "team", displayName: "Team" })
+        .returning({ id: xAccounts.id });
+      if (!a) throw new Error("seed failed");
+      await db.insert(xAccountMembers).values([
+        { accountId: a.id, userId: admin.id },
+        { accountId: a.id, userId: departed.id },
+      ]);
+      const r = await listXAccountsForAdmin(db, admin.id, sig());
+      if (!r.ok) throw new Error("expected ok");
+      expect(r.value[0]?.memberIds).toEqual([admin.id]);
+      const saved = await setXAccountMembers(
+        db,
+        { actorId: admin.id, accountId: a.id, userIds: r.value[0]?.memberIds ?? [] },
+        sig(),
+      );
+      expect(saved.ok).toBe(true);
     });
   });
 

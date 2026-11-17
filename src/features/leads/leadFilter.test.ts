@@ -2,12 +2,7 @@ import type { SQL } from "drizzle-orm";
 import { PgDialect } from "drizzle-orm/pg-core";
 import { describe, expect, it } from "vitest";
 import { AppError } from "@/constants/errorIds";
-import {
-  compileLeadFilter,
-  LEAD_FILTER_CONFIG,
-  type LeadFilterOp,
-  leadFilterSchema,
-} from "./leadFilter";
+import { compileLeadFilter, LEAD_FILTER_CONFIG, type LeadFilterOp } from "./leadFilter";
 
 const dialect = new PgDialect();
 function render(frag: SQL | null): { sql: string; params: unknown[] } {
@@ -162,80 +157,9 @@ describe("compileLeadFilter operator depth (tier 2)", () => {
   });
 });
 
-describe("leadFilterSchema on valueless operators", () => {
-  it("accepts an isEmpty condition with no value and with an empty-string value", () => {
-    expect(
-      leadFilterSchema.safeParse({
-        combinator: "and",
-        conditions: [{ field: "title", op: "isEmpty" }],
-      }).success,
-    ).toBe(true);
-    expect(
-      leadFilterSchema.safeParse({
-        combinator: "and",
-        conditions: [{ field: "title", op: "isNotEmpty", value: "" }],
-      }).success,
-    ).toBe(true);
-  });
-
-  // value is numeric, so a valueless op must not be dragged through the numeric parse.
-  it("skips the numeric-value check for a valueless op on the numeric field", () => {
-    expect(
-      leadFilterSchema.safeParse({
-        combinator: "and",
-        conditions: [{ field: "value", op: "isEmpty" }],
-      }).success,
-    ).toBe(true);
-  });
-
-  it("still requires a value for a value-taking op", () => {
-    expect(
-      leadFilterSchema.safeParse({
-        combinator: "and",
-        conditions: [{ field: "title", op: "contains" }],
-      }).success,
-    ).toBe(false);
-  });
-
-  it("rejects startsWith on an identity column that only takes eq/neq", () => {
-    expect(
-      leadFilterSchema.safeParse({
-        combinator: "and",
-        conditions: [{ field: "ownerId", op: "startsWith", value: "x" }],
-      }).success,
-    ).toBe(false);
-  });
-});
-
 // "is any of": a labels condition may carry several names at once, bound as one array parameter.
-describe("leadFilterSchema and compileLeadFilter with a list of label values", () => {
+describe("compileLeadFilter with a list of label values", () => {
   const MEMBERSHIP = `EXISTS (SELECT 1 FROM unnest("leads"."labels") AS t(v) WHERE lower(t.v) = ANY(SELECT lower(x) FROM unnest($1::text[]) AS x))`;
-
-  it("accepts a list on eq and neq and rejects one on a scalar field", () => {
-    for (const op of ["eq", "neq"]) {
-      expect(
-        leadFilterSchema.safeParse({
-          combinator: "or",
-          conditions: [{ field: "labels", op, value: ["hot", "warm"] }],
-        }).success,
-      ).toBe(true);
-    }
-    expect(
-      leadFilterSchema.safeParse({
-        combinator: "or",
-        conditions: [{ field: "title", op: "eq", value: ["a", "b"] }],
-      }).success,
-    ).toBe(false);
-  });
-
-  it("rejects an empty list", () => {
-    expect(
-      leadFilterSchema.safeParse({
-        combinator: "or",
-        conditions: [{ field: "labels", op: "eq", value: [] }],
-      }).success,
-    ).toBe(false);
-  });
 
   it("compiles eq and neq over a list with the names in one bound array", () => {
     const eq = render(

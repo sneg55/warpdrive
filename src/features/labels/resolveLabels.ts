@@ -51,10 +51,3 @@ export function resolveLabelColorsWith(
 export function resolveLabelChips(catalog: CatalogEntry[], applied: string[]): ResolvedLabel[] {
   return resolveLabelChipsWith(buildLabelColorIndex(catalog), applied);
 }
-
-export function resolveLabelColors(
-  catalog: CatalogEntry[],
-  applied: string[],
-): Array<{ name: string; color: string }> {
-  return resolveLabelColorsWith(buildLabelColorIndex(catalog), applied);
-}

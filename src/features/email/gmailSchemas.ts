@@ -94,17 +94,3 @@ export const tokenResponseSchema = z.object({
   refresh_token: z.string().optional(),
   scope: z.string().optional(),
 });
-
-// Pub/Sub push: base64 JSON { emailAddress, historyId } inside message.data.
-// The transform decodes and re-parses so callers get a flat, typed object.
-export const pushPayloadSchema = z
-  .object({ message: z.object({ data: z.string() }), subscription: z.string() })
-  .transform(
-    (env) => JSON.parse(Buffer.from(env.message.data, "base64").toString("utf8")) as unknown,
-  )
-  .pipe(
-    z.object({
-      emailAddress: z.string().email(),
-      historyId: z.union([z.string(), z.number()]).transform(String),
-    }),
-  );

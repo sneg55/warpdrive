@@ -1,4 +1,4 @@
-import { asc, eq, sql } from "drizzle-orm";
+import { and, asc, eq, sql } from "drizzle-orm";
 import { AppError, ERROR_IDS } from "@/constants/errorIds";
 import type { Db } from "@/db/client";
 import { users } from "@/db/schema/identity";
@@ -137,7 +137,8 @@ export async function listXAccountsForAdmin(
   signal.throwIfAborted();
   const members = await db
     .select({ accountId: xAccountMembers.accountId, userId: xAccountMembers.userId })
-    .from(xAccountMembers);
+    .from(xAccountMembers)
+    .innerJoin(users, and(eq(users.id, xAccountMembers.userId), eq(users.isActive, true)));
   signal.throwIfAborted();
   const keys = await db
     .select({

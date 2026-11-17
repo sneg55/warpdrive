@@ -15,26 +15,6 @@ function getClient(): PostHog | null {
   return client;
 }
 
-export function captureServer(
-  actorId: string | null,
-  name: string,
-  props: Record<string, unknown>,
-  signal?: AbortSignal,
-): void {
-  if (signal?.aborted === true) return;
-  const c = getClient();
-  if (c === null) return;
-  try {
-    c.capture({
-      distinctId: actorId ?? "anonymous",
-      event: name,
-      properties: scrubProperties(props),
-    });
-  } catch (e) {
-    console.warn("[telemetry] server capture failed", e);
-  }
-}
-
 export function captureServerError(
   actorId: string | null,
   error: unknown,

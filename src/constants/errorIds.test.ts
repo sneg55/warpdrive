@@ -1,9 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { AppError, ERROR_IDS, type ErrorId } from "./errorIds";
 
-// RED: items 6, distinct error IDs for signature-ownership and template-visibility
-// These must differ from PERM_DENIED (E_PERM_001) so each denial has its own stable ID.
-
 describe("error IDs", () => {
   test("every id matches E_<DOMAIN>_<NNN> with a known domain", () => {
     // Phase 1-2: AUTH, PERM, DEAL, PIPELINE, CONTACT, DB, WS. Phase 3 adds CF, NOTE,
@@ -64,12 +61,6 @@ describe("error IDs", () => {
     expect(id).toBeTypeOf("string");
   });
 
-  // Item 6: signature-ownership and template-visibility must have their own IDs
-  test("PERM_SIGNATURE_DENIED exists and differs from PERM_DENIED", () => {
-    expect(ERROR_IDS.PERM_SIGNATURE_DENIED).toBeDefined();
-    expect(ERROR_IDS.PERM_SIGNATURE_DENIED).not.toBe(ERROR_IDS.PERM_DENIED);
-  });
-
   test("the Intercom integration has its own ids", () => {
     expect(ERROR_IDS.INTERCOM_HTTP_FAILED).toBe("E_INTERCOM_001");
     expect(ERROR_IDS.INTERCOM_RATE_LIMITED).toBe("E_INTERCOM_002");
@@ -77,10 +68,5 @@ describe("error IDs", () => {
     expect(ERROR_IDS.INTERCOM_PARSE_FAILED).toBe("E_INTERCOM_004");
     expect(ERROR_IDS.INTERCOM_NOT_FOUND).toBe("E_INTERCOM_005");
     expect(ERROR_IDS.INTERCOM_CONVERSATION_DENIED).toBe("E_INTERCOM_006");
-  });
-
-  test("PERM_TEMPLATE_DENIED exists and differs from PERM_DENIED", () => {
-    expect(ERROR_IDS.PERM_TEMPLATE_DENIED).toBeDefined();
-    expect(ERROR_IDS.PERM_TEMPLATE_DENIED).not.toBe(ERROR_IDS.PERM_DENIED);
   });
 });

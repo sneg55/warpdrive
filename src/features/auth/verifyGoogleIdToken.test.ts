@@ -136,4 +136,23 @@ describe("verifyGoogleIdToken", () => {
 
     expect(result.ok).toBe(false);
   });
+
+  test.each([
+    ["email_verified is false", { email_verified: false }],
+    ["hd is missing", { hd: undefined }],
+    ["hd is a look-alike suffix domain", { hd: "evil-example.com" }],
+  ])("REJECTS a correctly signed token when %s", async (_label, overrides) => {
+    const { privateKey, publicKey } = await generateKeyPair("RS256");
+    const token = await makeSignedToken(privateKey, overrides);
+
+    const result = await verifyGoogleIdToken(token, {
+      getKey: getKeyFor(await jwkFor(publicKey)),
+      clientId: "test-client-id",
+      nonce: "testnonce",
+      workspaceDomain: "example.com",
+      signal: AbortSignal.timeout(5000),
+    });
+
+    expect(result).toEqual({ ok: false, error: "rejected" });
+  });
 });

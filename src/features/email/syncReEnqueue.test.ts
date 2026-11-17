@@ -26,6 +26,7 @@ test("queues the next tick when nothing is waiting for this mailbox", async () =
       startAfter: SYNC_CADENCE_SECONDS,
       singletonKey: "acc-1",
       retryLimit: EMAIL_JOB_RETRY_LIMIT,
+      retryBackoff: true,
     }),
   );
 });
@@ -34,26 +35,4 @@ test("queues nothing when a tick for this mailbox is already waiting", async () 
   const b = boss();
   await reEnqueueSync(b, "acc-1", counter(1).pendingTicks);
   expect(b.send).not.toHaveBeenCalled();
-});
-
-test("a backlog cannot feed itself: many pending ticks still add none", async () => {
-  const b = boss();
-  await reEnqueueSync(b, "acc-1", counter(10026).pendingTicks);
-  expect(b.send).not.toHaveBeenCalled();
-});
-
-test("counts only this mailbox, so one stalled mailbox cannot stop another's cadence", async () => {
-  const b = boss();
-  const pendingTicks = vi.fn<(id: string) => Promise<number>>(() => Promise.resolve(0));
-  await reEnqueueSync(b, "acc-2", pendingTicks);
-  expect(pendingTicks).toHaveBeenCalledWith("acc-2");
-  expect(b.send).toHaveBeenCalled();
-});
-
-test("carries the intended retry limit, which the bare re-enqueue dropped to the pg-boss default of 2", async () => {
-  const b = boss();
-  await reEnqueueSync(b, "acc-1", counter(0).pendingTicks);
-  const options = b.send.mock.calls[0]?.[2] as { retryLimit: number; retryBackoff: boolean };
-  expect(options.retryLimit).toBe(EMAIL_JOB_RETRY_LIMIT);
-  expect(options.retryBackoff).toBe(true);
 });

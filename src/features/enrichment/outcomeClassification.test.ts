@@ -18,6 +18,16 @@ describe("noAnswerError", () => {
     expect(error.id).toBe(ERROR_IDS.ENRICH_ALL_FAILED);
   });
 
+  it("reports a real failure when an unsupported lookup is mixed with a broken provider", () => {
+    const error = noAnswerError(summary({ apollo: "unsupported", getprospect: "auth" }));
+    expect(error.id).toBe(ERROR_IDS.ENRICH_ALL_FAILED);
+  });
+
+  it("reports a real failure rather than throttling when a cooldown is mixed with a broken provider", () => {
+    const error = noAnswerError(summary({ apollo: "throttled", getprospect: "auth" }));
+    expect(error.id).toBe(ERROR_IDS.ENRICH_ALL_FAILED);
+  });
+
   it("keeps an unreadable key ahead of a plan limit", () => {
     const error = noAnswerError(summary({ apollo: "not_entitled", rocketreach: "key_unreadable" }));
     expect(error.id).toBe(ERROR_IDS.ENRICH_KEY_UNREADABLE);

@@ -5,7 +5,6 @@ import * as schema from "@/db/schema";
 import { seedUser } from "@/db/testing/factories";
 import type { ContactActor } from "@/features/contacts/personsRepo";
 import { makeTestDb, type TestDb } from "@/test/db";
-import { seedDefaultMappings } from "./mappingsRepo";
 import { applyProspects, type ProspectApplyItem } from "./prospectApply";
 import {
   actorOf,
@@ -24,7 +23,6 @@ let admin: UserRow;
 beforeAll(async () => {
   h = await makeTestDb();
   admin = await seedUser(h.db, { isAdmin: true });
-  await seedDefaultMappings(h.db, SIG());
 });
 afterAll(async () => {
   await h.close();

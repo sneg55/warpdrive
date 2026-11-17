@@ -75,10 +75,28 @@ describe("sendEmail deal linking (linkDealId)", () => {
     });
   });
 
-  it("omitting linkDealId leaves recipient-based auto-linking unchanged", async () => {
+  it("omitting linkDealId links the thread to the recipient's sole open deal", async () => {
     await withTestDb(async (db) => {
       const owner = await seedUser(db, { email: "owner@gunsnation.com" });
       const acctId = await seedAccount(db, owner.id);
+      const { pipeline, stages } = await seedPipelineWithStages(db, ["New"]);
+      const stageId = stages[0]?.id;
+      if (stageId === undefined)
+        throw new AppError(ERROR_IDS.DB_INVARIANT, "seedPipelineWithStages: no stage seeded");
+      const person = (
+        await db.execute(sql`
+          INSERT INTO persons (name, primary_email, owner_id, visibility_level)
+          VALUES ('Stranger', 'stranger@nowhere.com', ${owner.id}, 'all')
+          RETURNING id
+        `)
+      ).rows[0] as { id: string };
+      const deal = (
+        await db.execute(sql`
+          INSERT INTO deals (title, pipeline_id, stage_id, owner_id, visibility_level, person_id)
+          VALUES ('Recipient deal', ${pipeline.id}, ${stageId}, ${owner.id}, 'all', ${person.id})
+          RETURNING id
+        `)
+      ).rows[0] as { id: string };
 
       const fake = new FakeGmailClient();
       fake.sendImpl = () => ok({ id: "g-out-link2", threadId: "th-link2" });
@@ -109,11 +127,12 @@ describe("sendEmail deal linking (linkDealId)", () => {
 
       const thread = (
         await db.execute(sql`
-          SELECT deal_id FROM email_threads
+          SELECT deal_id, person_id FROM email_threads
           WHERE account_id=${acctId} AND gmail_thread_id='th-link2'
         `)
-      ).rows[0] as { deal_id: string | null } | undefined;
-      expect(thread?.deal_id).toBeNull();
+      ).rows[0] as { deal_id: string | null; person_id: string | null } | undefined;
+      expect(thread?.deal_id).toBe(deal.id);
+      expect(thread?.person_id).toBe(person.id);
     });
   });
 });

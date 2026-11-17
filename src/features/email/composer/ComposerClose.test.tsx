@@ -52,7 +52,11 @@ describe("Composer: close control", () => {
         onClose={onClose}
       />,
     );
+    const subject = screen.getByPlaceholderText("Subject");
+    fireEvent.change(subject, { target: { value: "Quarterly review" } });
+    expect(subject).toHaveValue("Quarterly review");
     fireEvent.click(screen.getByRole("button", { name: /close/i }));
     expect(onClose).toHaveBeenCalled();
+    expect(subject).toHaveValue("");
   });
 });

@@ -5,7 +5,7 @@ import { withTestDb } from "@/db/testing";
 import { seedUser } from "@/db/testing/factories";
 import { buildAppContext } from "@/features/mcp/actorContext";
 import { hydrateActor } from "@/server/hydrateActor";
-import { buildMcpServer, listToolNames } from "./server";
+import { buildMcpServer } from "./server";
 
 const EXPECTED_TOOLS = [
   "search",
@@ -45,26 +45,7 @@ const EXPECTED_TOOLS = [
   "delete_email_draft",
 ] as const;
 
-test("MCP server exposes the complete tool set without destructive tools", async () => {
-  await withTestDb(async (db) => {
-    const user = await seedUser(db, { isAdmin: true });
-    const actor = await hydrateActor(db, user.id, AbortSignal.timeout(5_000));
-    expect(actor).not.toBeNull();
-    if (actor === null) return;
-
-    const server = buildMcpServer(() => buildAppContext(db, actor), db);
-    const names = listToolNames(server);
-
-    expect(names).toEqual(expect.arrayContaining([...EXPECTED_TOOLS]));
-    expect(names).toHaveLength(EXPECTED_TOOLS.length);
-    // No destructive tool on a CRM record. Unsent email drafts are the one exception: they are the
-    // actor's own owner-scoped text, not a record anyone else can see.
-    const records = names.filter((name) => !name.endsWith("_email_draft"));
-    expect(records.some((name) => /delete|remove|destroy/i.test(name))).toBe(false);
-  });
-});
-
-test("tools/list serves every registered tool over the wire (each input schema is JSON-Schema representable)", async () => {
+test("tools/list serves the complete tool set over the wire, JSON-Schema representable, without destructive tools", async () => {
   await withTestDb(async (db) => {
     const user = await seedUser(db, { isAdmin: true });
     const actor = await hydrateActor(db, user.id, AbortSignal.timeout(5_000));
@@ -78,7 +59,10 @@ test("tools/list serves every registered tool over the wire (each input schema i
     await client.connect(clientTransport);
     try {
       const listed = await client.listTools();
-      expect(listed.tools.map((t) => t.name).sort()).toEqual([...EXPECTED_TOOLS].sort());
+      const names = listed.tools.map((t) => t.name).sort();
+      expect(names).toEqual([...EXPECTED_TOOLS].sort());
+      const records = names.filter((name) => !name.endsWith("_email_draft"));
+      expect(records.some((name) => /delete|remove|destroy/i.test(name))).toBe(false);
     } finally {
       await client.close();
       await server.close();

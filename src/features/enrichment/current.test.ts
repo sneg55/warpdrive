@@ -3,7 +3,7 @@ import * as schema from "@/db/schema";
 import { seedUser } from "@/features/stats/statsTestHelpers";
 import { makeTestDb, type TestDb } from "@/test/db";
 import { readOrgCurrent, readPersonCurrent } from "./current";
-import { listMappings, seedDefaultMappings } from "./mappingsRepo";
+import { listMappings } from "./mappingsRepo";
 import type { ResolvedMapping } from "./types";
 
 let h: TestDb;
@@ -18,7 +18,6 @@ type ContactPoint = { label: string; value: string; primary?: boolean };
 beforeAll(async () => {
   h = await makeTestDb();
   admin = await seedUser(h, { isAdmin: true });
-  await seedDefaultMappings(h.db, SIG());
   personMappings = await listMappings(h.db, "person", SIG());
 });
 afterAll(async () => {

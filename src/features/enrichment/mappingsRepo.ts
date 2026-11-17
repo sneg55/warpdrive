@@ -9,13 +9,7 @@ import { enrichmentFieldMappings, enrichmentSettings } from "@/db/schema/enrichm
 import { listHiddenBuiltins } from "@/features/custom-fields/hiddenBuiltinsRepo";
 import { ADDRESS_PREFIX, ENTITY_FIELDS } from "@/features/import/importFields";
 import { err, ok, type Result } from "@/types/result";
-import {
-  canonicalField,
-  DEFAULT_BUILTIN_MAPPINGS,
-  type EnrichEntity,
-  isCanonicalKey,
-  valueTypeOf,
-} from "./canonical";
+import { canonicalField, type EnrichEntity, isCanonicalKey, valueTypeOf } from "./canonical";
 import { DEFAULT_CACHE_TTL_DAYS } from "./providersRepo";
 import { builtinAcceptsCanonical, targetAcceptsType } from "./targetTypes";
 import type { ResolvedMapping } from "./types";
@@ -280,21 +274,4 @@ export async function clearMapping(
         eq(enrichmentFieldMappings.canonicalKey, canonicalKey),
       ),
     );
-}
-
-// Seeded once so an install enriches organizations out of the box. Built-ins only: a custom field
-// has to exist before it can be a target, and we do not invent one.
-export async function seedDefaultMappings(db: Db, signal: AbortSignal): Promise<void> {
-  signal.throwIfAborted();
-  const rows: (typeof enrichmentFieldMappings.$inferInsert)[] = Object.entries(
-    DEFAULT_BUILTIN_MAPPINGS,
-  ).map(([canonicalKey, targetKey]) => ({
-    entity: canonicalKey.startsWith("org.") ? "organization" : "person",
-    canonicalKey,
-    targetKind: "builtin",
-    targetKey,
-    targetFieldDefId: null,
-  }));
-  if (rows.length === 0) return;
-  await db.insert(enrichmentFieldMappings).values(rows).onConflictDoNothing();
 }

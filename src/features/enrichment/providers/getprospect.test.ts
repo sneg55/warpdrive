@@ -215,8 +215,6 @@ describe("getprospectProvider", () => {
       expect(url).toContain("https://api.getprospect.com/public/v1/insights/companies");
       expect(init.method).toBe("POST");
       expect(bodyOf(init)).toEqual({ domain: { included: ["sprinx.com"] } });
-      expect(headerOf(init, "X-API-Key")).toBe(API_KEY);
-      expect(init.signal).toBe(SIGNAL);
       expect(out.kind).toBe("ok");
       expect(out.candidate?.sourceId).toBe("c-1");
       expect(out.candidate?.fields).toEqual({

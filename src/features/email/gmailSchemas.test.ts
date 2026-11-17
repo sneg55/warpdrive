@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { gmailMessageSchema, historyListSchema, pushPayloadSchema } from "./gmailSchemas";
+import { gmailMessageSchema, historyListSchema } from "./gmailSchemas";
 
 describe("gmail response schemas", () => {
   it("parses a history.list page with nextPageToken", () => {
@@ -16,13 +16,5 @@ describe("gmail response schemas", () => {
   });
   it("rejects a message payload missing the id", () => {
     expect(() => gmailMessageSchema.parse({ threadId: "t1" })).toThrow();
-  });
-  it("decodes a Pub/Sub push envelope (drop-in adapter)", () => {
-    const data = Buffer.from(
-      JSON.stringify({ emailAddress: "a@x.com", historyId: "500" }),
-    ).toString("base64");
-    const parsed = pushPayloadSchema.parse({ message: { data }, subscription: "s" });
-    expect(parsed.emailAddress).toBe("a@x.com");
-    expect(parsed.historyId).toBe("500");
   });
 });

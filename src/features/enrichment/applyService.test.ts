@@ -6,7 +6,7 @@ import { seedUser, toActor } from "@/features/stats/statsTestHelpers";
 import { makeTestDb, type TestDb } from "@/test/db";
 import { applyEnrichment } from "./applyService";
 import { mappingsFingerprint } from "./mappingsFingerprint";
-import { listMappings, seedDefaultMappings, setCacheTtlDays } from "./mappingsRepo";
+import { listMappings, setCacheTtlDays } from "./mappingsRepo";
 import type { ProviderOutcome } from "./providers/types";
 import type { Selection } from "./types";
 
@@ -20,7 +20,6 @@ const daysAgo = (days: number): Date => new Date(Date.now() - days * DAY_MS);
 beforeAll(async () => {
   h = await makeTestDb();
   admin = await seedUser(h, { isAdmin: true });
-  await seedDefaultMappings(h.db, SIG());
 });
 afterAll(async () => {
   await h.close();
@@ -169,16 +168,17 @@ describe("applyEnrichment", () => {
 
   it("rejects a value the ordinary edit schema would reject, rather than writing it", async () => {
     const org = await seedOrg();
-    const run = await seedRun("organization", org.id, [APOLLO({ "org.domain": "x" })]);
+    const oversized = "d".repeat(5000);
+    const run = await seedRun("organization", org.id, [APOLLO({ "org.domain": oversized })]);
 
-    // Far past the column's max length: the enrichment action must not be a way around the
-    // validation the edit form applies.
     const result = await apply(run.id, org.updatedAt, [
-      { canonicalKey: "org.domain", value: "d".repeat(5000) },
+      { canonicalKey: "org.domain", value: oversized },
     ]);
 
     expect(result.ok).toBe(false);
     expect(result.ok === false && result.error.id).toBe("E_ENRICH_007");
+    expect(result.ok === false && result.error.message).toBe("planned patch failed validation");
+    expect((await readOrg(org.id))?.domain).toBe(org.domain);
   });
 
   it("stamps the run as applied", async () => {

@@ -20,8 +20,7 @@ import {
 } from "@/constants/filterOps";
 import { leads } from "@/db/schema/leads";
 import { labelMembershipSql } from "@/features/labels/labelMembershipSql";
-import { buildFilterSchema } from "@/schemas/filterCondition";
-import { LEAD_ARRAY_FIELDS, LEAD_CONDITION_CONFIG } from "./leadFilterFields";
+import { LEAD_ARRAY_FIELDS } from "./leadFilterFields";
 // Per-operator SQL branches (null-safe neq, prefix/negated ILIKE, emptiness) live next door.
 import {
   emptinessCondition,
@@ -73,7 +72,6 @@ function arrayCondition(
   throw new AppError(ERROR_IDS.LEAD_FILTER_INVALID, "Invalid op for a leads array field", { op });
 }
 
-export const leadFilterSchema = buildFilterSchema(LEAD_CONDITION_CONFIG);
 // value is absent for the valueless ops (isEmpty / isNotEmpty), which compile to a NULL test.
 export type LeadFilterDefinition = {
   combinator: "and" | "or";

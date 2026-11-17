@@ -40,10 +40,6 @@ const SEGMENT_ALPHA: Record<StageSegmentState, number> = {
   current: 0.85,
 };
 
-// The fill + weight for one stage segment, tinted in that stage's order-hue. Keeps the
-// deal-page chevrons (StageSelector, StageChevrons) in the pipeline's color language
-// instead of a uniform success-green / muted-gray. Text stays dark (text-foreground)
-// on the light-to-medium tints, matching the board headers, so contrast holds for any hue.
 export function stageSegmentStyle(
   order: number,
   state: StageSegmentState,

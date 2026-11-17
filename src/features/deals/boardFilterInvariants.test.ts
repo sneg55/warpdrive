@@ -20,7 +20,7 @@ import {
   OPS_BY_FIELD,
 } from "@/features/saved-filters/schemas";
 import { distinctBoardOwners, matchesOwnerFilter } from "./boardFilter";
-import { OFFERED_BOARD_FILTER_FIELDS } from "./boardFilterFields";
+import { dealFilterFields } from "./dealFilterCatalog";
 import { getBoardColumns } from "./dealRepo";
 
 type AstField = (typeof FILTER_FIELDS)[number];
@@ -37,10 +37,6 @@ interface SeedRefs {
   stageId: string;
 }
 
-// A representative condition, per offered field, known to match the seed below. Only the fields the
-// board actually offers have an entry; a lookup miss throws, which is the regression guard: adding
-// a field to OFFERED_BOARD_FILTER_FIELDS without seed coverage fails this test, forcing the author
-// to prove the new option returns results against seeded data before offering it.
 function representativeCondition(field: AstField, seed: SeedRefs): Condition {
   const byField: Partial<Record<AstField, Condition>> = {
     title: { field: "title", op: "contains", value: "Alpha" },
@@ -68,14 +64,14 @@ describe("board filter builder invariants (finder #4)", () => {
   it("offers only fields the schema allows, each with at least one operator", () => {
     // Guards empty operator dropdowns: an offered field with no valid operator would render an
     // op picker with nothing to choose.
-    for (const f of OFFERED_BOARD_FILTER_FIELDS) {
-      expect(FILTER_FIELDS).toContain(f.value);
-      expect(OPS_BY_FIELD[f.value].length).toBeGreaterThan(0);
+    for (const f of dealFilterFields()) {
+      expect(FILTER_FIELDS).toContain(f.field);
+      expect(OPS_BY_FIELD[f.field].length).toBeGreaterThan(0);
     }
   });
 
   it("offers status now that a status condition replaces the board's open gate", () => {
-    expect(OFFERED_BOARD_FILTER_FIELDS.map((f) => f.value)).toContain("status");
+    expect(dealFilterFields().map((f) => f.field)).toContain("status");
   });
 
   it("never offers an owner value option with zero matching cards", () => {
@@ -136,8 +132,8 @@ describe("board filter builder invariants (finder #4)", () => {
         if (r.ok === false) throw new Error("seed failed");
       }
 
-      for (const f of OFFERED_BOARD_FILTER_FIELDS) {
-        const cond = representativeCondition(f.value, { ownerId: u.id, stageId: p.stages[0]!.id });
+      for (const f of dealFilterFields()) {
+        const cond = representativeCondition(f.field, { ownerId: u.id, stageId: p.stages[0]!.id });
         const res = await getBoardColumns(
           db,
           visSession(u.id),
@@ -147,7 +143,7 @@ describe("board filter builder invariants (finder #4)", () => {
         );
         expect(
           res.cards.length,
-          `offered field "${f.value}" returned 0 cards for representative value ${JSON.stringify(cond.value)}`,
+          `offered field "${f.field}" returned 0 cards for representative value ${JSON.stringify(cond.value)}`,
         ).toBeGreaterThan(0);
       }
     });

@@ -7,7 +7,7 @@ import { seedUser, toActor } from "@/features/stats/statsTestHelpers";
 import { makeTestDb, type TestDb } from "@/test/db";
 import { applyEnrichment } from "./applyService";
 import { mappingsFingerprint } from "./mappingsFingerprint";
-import { listMappings, seedDefaultMappings } from "./mappingsRepo";
+import { listMappings } from "./mappingsRepo";
 import type { ProviderOutcome } from "./providers/types";
 import type { Selection } from "./types";
 
@@ -19,7 +19,6 @@ const SIG = (): AbortSignal => AbortSignal.timeout(20_000);
 beforeAll(async () => {
   h = await makeTestDb();
   admin = await seedUser(h, { isAdmin: true });
-  await seedDefaultMappings(h.db, SIG());
 });
 afterAll(async () => {
   await h.close();
@@ -282,15 +281,5 @@ describe("applyEnrichment organization linking", () => {
       .from(schema.persons)
       .where(eq(schema.persons.id, person.id));
     expect(after?.orgId).toBeNull();
-  });
-
-  // An apply that names no field is a client bug, not a no-op: letting it through stamped the run
-  // as applied while nothing was written. See applyService.auth.test.ts.
-  it("rejects an empty selection", async () => {
-    const org = await seedOrg();
-    const run = await seedRun("organization", org.id, [APOLLO({ "org.industry": "Energy" })]);
-
-    const result = await apply(run.id, org.updatedAt, []);
-    expect(result.ok).toBe(false);
   });
 });

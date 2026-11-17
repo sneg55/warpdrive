@@ -47,7 +47,7 @@ export async function listTeamMailboxSettings(
   const rows =
     await db.execute(sql`SELECT a.id, a.email_address, COALESCE(a.display_name, a.email_address) AS display_name,
     a.status, a.overdue_after_hours, a.backfill_status, a.backfill_error_id, a.backfill_days,
-    ARRAY(SELECT am.user_id FROM email_account_members am WHERE am.account_id=a.id) AS member_ids
+    ARRAY(SELECT am.user_id FROM email_account_members am JOIN users u ON u.id=am.user_id AND u.is_active WHERE am.account_id=a.id) AS member_ids
     FROM email_accounts a WHERE a.kind='team' ORDER BY a.display_name, a.id`);
   signal.throwIfAborted();
   return ok(rows.rows as unknown as TeamMailboxSettings[]);

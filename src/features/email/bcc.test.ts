@@ -20,17 +20,16 @@ async function seedAccount(db: TestDb, ownerId: string): Promise<string> {
 
 describe("bcc", () => {
   it("sendEmailInput accepts bcc array", () => {
-    expect(() =>
-      sendEmailInput.parse({
-        accountId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
-        idempotencyKey: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
-        to: ["r@x.com"],
-        subject: "Hi",
-        bodyHtml: "<p>hi</p>",
-        trackingEnabled: false,
-        bcc: ["bcc@x.com"],
-      }),
-    ).not.toThrow();
+    const parsed = sendEmailInput.parse({
+      accountId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      idempotencyKey: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+      to: ["r@x.com"],
+      subject: "Hi",
+      bodyHtml: "<p>hi</p>",
+      trackingEnabled: false,
+      bcc: ["bcc@x.com"],
+    });
+    expect(parsed.bcc).toEqual(["bcc@x.com"]);
   });
 
   it("bcc recipient appears in sent MIME headers", async () => {

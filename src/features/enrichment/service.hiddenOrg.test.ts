@@ -5,7 +5,6 @@ import { toContactActor } from "@/features/contacts/actorAdapters";
 import { encryptToken } from "@/features/email/crypto";
 import { seedUser, toActor } from "@/features/stats/statsTestHelpers";
 import { makeTestDb, type TestDb } from "@/test/db";
-import { seedDefaultMappings } from "./mappingsRepo";
 import type { EnrichmentProvider, ProviderId } from "./providers/types";
 import { runEnrichment } from "./service";
 
@@ -21,7 +20,6 @@ beforeAll(async () => {
   h = await makeTestDb();
   admin = await seedUser(h, { isAdmin: true });
   owner = await seedUser(h);
-  await seedDefaultMappings(h.db, SIG());
   await h.db.insert(schema.enrichmentProviders).values({
     provider: "apollo",
     enabled: true,

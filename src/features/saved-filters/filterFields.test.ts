@@ -2,14 +2,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { ARRAY_OPS, EXACT_OPS, FILTER_OP_KEYS, ORDERED_OPS, TEXT_OPS } from "@/constants/filterOps";
-import {
-  DEAL_CONDITION_CONFIG,
-  FILTER_FIELDS,
-  FILTER_OPS,
-  hasStatusCondition,
-  OPS_BY_FIELD,
-  SORT_DIRS,
-} from "./filterFields";
+import { DEAL_CONDITION_CONFIG, hasStatusCondition, OPS_BY_FIELD, SORT_DIRS } from "./filterFields";
 
 // The deal filter builder (a client component) imports OPS_BY_FIELD to populate its operator
 // dropdown. These constants live in a zod-free module so importing them does not drag zod
@@ -32,16 +25,6 @@ describe("filterFields", () => {
     expect(OPS_BY_FIELD.labels).toBe(ARRAY_OPS);
   });
 
-  it("offers the Tier 2 operators on the fields whose column type can run them", () => {
-    expect(OPS_BY_FIELD.title).toEqual(
-      expect.arrayContaining(["startsWith", "notContains", "isEmpty", "isNotEmpty"]),
-    );
-    expect(OPS_BY_FIELD.value).toEqual(expect.arrayContaining(["isEmpty", "isNotEmpty"]));
-    expect(OPS_BY_FIELD.labels).toEqual(expect.arrayContaining(["isEmpty", "isNotEmpty"]));
-    // Identity columns are NOT NULL, so an empty check there can never match.
-    expect(OPS_BY_FIELD.ownerId).not.toContain("isEmpty");
-  });
-
   // A new text condition should default to substring match, matching the contacts and leads
   // builders (contactFilterConfig.ts, leadFilter.ts), so "contains" has to sort first.
   it("puts contains first on text fields so it is the default op", () => {
@@ -58,12 +41,7 @@ describe("filterFields", () => {
     ]);
   });
 
-  it("covers exactly the declared filter fields", () => {
-    expect(Object.keys(OPS_BY_FIELD).sort()).toEqual([...FILTER_FIELDS].sort());
-  });
-
-  it("exposes the shared operator vocabulary and the sort vocabulary", () => {
-    expect(FILTER_OPS).toBe(FILTER_OP_KEYS);
+  it("exposes the sort vocabulary", () => {
     expect(SORT_DIRS).toEqual(["asc", "desc"]);
   });
 

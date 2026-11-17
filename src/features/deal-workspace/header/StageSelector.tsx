@@ -25,8 +25,6 @@ interface StageSelectorProps {
   chips: StageChipView[];
 }
 
-// Chevron shape reused from StageChevrons: flat left edge, pointed right, with a matching left
-// notch on all but the first segment so neighbours interlock.
 const NOTCH = "0.75rem";
 const FIRST_CLIP =
   "polygon(0 0, calc(100% - 0.75rem) 0, 100% 50%, calc(100% - 0.75rem) 100%, 0 100%)";

@@ -4,7 +4,6 @@ import {
   ChartColumn,
   Inbox,
   Kanban,
-  List,
   Settings,
   Sprout,
   Users,
@@ -24,10 +23,6 @@ export function DocsIcon({ className }: IconProps): React.ReactNode {
 
 export function PipelineIcon({ className }: IconProps): React.ReactNode {
   return <Kanban aria-hidden="true" className={className ?? NAV_ICON_CLASS} />;
-}
-
-export function DealsIcon({ className }: IconProps): React.ReactNode {
-  return <List aria-hidden="true" className={className ?? NAV_ICON_CLASS} />;
 }
 
 // Sprout, not a funnel: the board's Filter control is lucide's funnel, and two

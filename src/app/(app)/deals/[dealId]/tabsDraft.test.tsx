@@ -1,7 +1,6 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
 import { cleanup, render, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 const messagesQuery = vi.fn(() => ({ data: [] }));
@@ -27,16 +26,8 @@ vi.mock("@/lib/trpc-client", () => ({
   },
 }));
 vi.mock("@/features/email/EmailDraftCard", () => ({
-  EmailDraftCard: ({
-    draft,
-    onResume,
-  }: {
-    draft: { id: string; subject: string | null };
-    onResume: (d: unknown) => void;
-  }) => (
-    <button type="button" data-testid="draft-card" onClick={() => onResume(draft)}>
-      {draft.subject}
-    </button>
+  EmailDraftCard: ({ draft }: { draft: { subject: string | null } }) => (
+    <div data-testid="draft-card">{draft.subject}</div>
   ),
 }));
 
@@ -80,27 +71,6 @@ describe("deal workspace drafts", () => {
     );
 
     expect(screen.getByTestId("draft-card")).toHaveTextContent("Unsent outreach");
-  });
-
-  it("hands a resumed draft up to the workspace, which owns the composer", async () => {
-    draftsQuery.mockReturnValue({ data: [draft] });
-    const onResumeDraft = vi.fn();
-
-    render(
-      <WorkspaceTabs
-        deal={deal}
-        tab="email"
-        onTab={() => {}}
-        activities={[]}
-        stages={[]}
-        createdActorName="Jenny"
-        onResumeDraft={onResumeDraft}
-      />,
-    );
-
-    await userEvent.click(screen.getByTestId("draft-card"));
-
-    expect(onResumeDraft).toHaveBeenCalledWith(expect.objectContaining({ id: "draft-1" }));
   });
 
   it("keeps the Email tab empty state when there are neither emails nor drafts", () => {

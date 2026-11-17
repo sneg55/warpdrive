@@ -43,7 +43,3 @@ export function groupByDay(
   }
   return map;
 }
-
-export function overdueItems(activities: CalendarActivity[]): CalendarActivity[] {
-  return activities.filter((a) => a.overdue === true);
-}

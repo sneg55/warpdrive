@@ -11,7 +11,7 @@ import {
   FIXTURE_THEM,
 } from "./eventFixtures.test-helpers";
 import { runXSync } from "./sync";
-import { refreshChatKeyVersion } from "./syncKeys";
+import { openRunKeys } from "./syncKeys";
 import {
   keyedAccount,
   ROTATED_KEY_VERSION,
@@ -164,7 +164,7 @@ describe("runXSync public key requests", () => {
   });
 });
 
-describe("refreshChatKeyVersion", () => {
+describe("openRunKeys chat key version", () => {
   it("stores the newest numeric version and leaves it on an empty list", async () => {
     await withTestDb(async (db) => {
       const fake = makeXFake();
@@ -172,10 +172,13 @@ describe("refreshChatKeyVersion", () => {
       const account = { id: accountId, xUserId: FIXTURE_ME };
       fake.client.getPublicKeys = () =>
         Promise.resolve(ok([...f.keyed.publicKeys.me, publicKey("x")]));
-      expect(await refreshChatKeyVersion(deps(db, fake), account, sig())).toEqual(ok(undefined));
+      const first = await openRunKeys(deps(db, fake), account, sig());
+      first?.keyring?.dispose();
+      expect(first).not.toBeNull();
       expect((await accountRow(db, accountId))?.chatLatestKeyVersion).toBe(ROTATED_KEY_VERSION);
       fake.client.getPublicKeys = () => Promise.resolve(ok([]));
-      await refreshChatKeyVersion(deps(db, fake), account, sig());
+      const second = await openRunKeys(deps(db, fake), account, sig());
+      second?.keyring?.dispose();
       expect((await accountRow(db, accountId))?.chatLatestKeyVersion).toBe(ROTATED_KEY_VERSION);
     });
   });

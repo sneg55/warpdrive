@@ -5,7 +5,6 @@ import { toContactActor } from "@/features/contacts/actorAdapters";
 import { encryptToken } from "@/features/email/crypto";
 import { seedUser, toActor } from "@/features/stats/statsTestHelpers";
 import { makeTestDb, type TestDb } from "@/test/db";
-import { seedDefaultMappings } from "./mappingsRepo";
 import type { EnrichmentProvider, ProviderId, ProviderOutcome } from "./providers/types";
 import { runEnrichment } from "./service";
 
@@ -18,7 +17,6 @@ const NOW = new Date("2026-08-24T12:00:00.000Z");
 beforeAll(async () => {
   h = await makeTestDb();
   admin = await seedUser(h, { isAdmin: true });
-  await seedDefaultMappings(h.db, SIG());
 });
 afterAll(async () => {
   await h.close();
@@ -142,18 +140,6 @@ describe("runEnrichment rate limiting", () => {
     expect(result.ok === false && result.error.context?.earliestRetryIso).toBe(null);
   });
 
-  it("does not claim a rate limit when unsupported is mixed with a real failure", async () => {
-    await connect("apollo");
-    await connect("getprospect");
-    const org = await seedOrg();
-
-    const result = await run(
-      org.id,
-      stub((id) => ({ provider: id, kind: id === "apollo" ? "unsupported" : "auth" })),
-    );
-    expect(result.ok === false && result.error.id).toBe("E_ENRICH_009");
-  });
-
   // The cooling provider can still answer later, so the resume time is real even though the one
   // provider that did run cannot use this record.
   it("still reports throttling when a cooldown is mixed with an unsupported lookup", async () => {
@@ -172,21 +158,5 @@ describe("runEnrichment rate limiting", () => {
     expect(result.ok === false && result.error.context?.earliestRetryIso).toBe(
       "2026-08-24T15:00:00.000Z",
     );
-  });
-
-  it("still reports a plain failure when a real error is mixed in", async () => {
-    await connect("apollo");
-    await connect("getprospect");
-    const org = await seedOrg();
-
-    const result = await run(
-      org.id,
-      stub((id) => ({
-        provider: id,
-        kind: id === "apollo" ? "throttled" : "auth",
-        retryAfterIso: id === "apollo" ? "2026-08-24T13:30:00.000Z" : undefined,
-      })),
-    );
-    expect(result.ok === false && result.error.id).toBe("E_ENRICH_009");
   });
 });

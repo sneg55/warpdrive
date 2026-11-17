@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import { type AppError, ERROR_IDS } from "@/constants/errorIds";
 import { xAccounts } from "@/db/schema/xDms";
-import { ok, type Result } from "@/types/result";
+import type { Result } from "@/types/result";
 import { loadChatKeys, NUMERIC_VERSION, newestKey, newestKeyUnsigned } from "./chatKeys";
 import type { KeyedParseOptions } from "./eventParser";
 import type { ChangedConversation } from "./fetchChanges";
@@ -55,15 +55,6 @@ async function refreshAccountPublicKeys(
     signal.throwIfAborted();
   }
   return keys;
-}
-
-export async function refreshChatKeyVersion(
-  deps: SyncDeps,
-  account: Account,
-  signal: AbortSignal,
-): Promise<Result<void, AppError>> {
-  const r = await refreshAccountPublicKeys(deps, account, signal);
-  return r.ok ? ok(undefined) : r;
 }
 
 async function openKeyring(

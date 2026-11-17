@@ -2,7 +2,6 @@
 import "@testing-library/jest-dom/vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { accentForOrder, tint } from "./boardStageHeader";
 import { StageChevron } from "./StageChevron";
 
 afterEach(cleanup);
@@ -23,14 +22,14 @@ const stages = [
 ];
 
 describe("StageChevron (Add deal stage picker)", () => {
-  it("tints each segment in its stage's pipeline hue, not the old primary/muted tokens", () => {
+  it("tints each segment in the hue of its stage's order, the first two as literal rgb values", () => {
     render(<StageChevron stages={stages} selectedId="s0" onSelect={vi.fn()} />);
-    for (const [i, s] of stages.entries()) {
-      const seg = screen.getByRole("radio", { name: s.name });
-      expect(rgbPrefix(seg.style.backgroundColor)).toBe(rgbPrefix(tint(accentForOrder(i), 1)));
-      expect(seg.className).not.toContain("bg-primary");
-      expect(seg.className).not.toContain("bg-muted");
-    }
+    const fills = stages.map((s) =>
+      rgbPrefix(screen.getByRole("radio", { name: s.name }).style.backgroundColor),
+    );
+    expect(fills[0]).toBe("rgba(148, 163, 184");
+    expect(fills[1]).toBe("rgba(96, 165, 250");
+    expect(fills[2]).not.toBe(fills[1]);
   });
 
   it("emphasizes the selected stage with a deeper fill + bold; others stay light", () => {

@@ -29,17 +29,17 @@ async function seedAttempt(db: TestDb): Promise<{ attemptId: string }> {
 
 describe("trackingSplit", () => {
   it("sendEmailInput accepts trackOpens and trackLinks", () => {
-    expect(() =>
-      sendEmailInput.parse({
-        accountId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
-        idempotencyKey: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
-        to: ["r@x.com"],
-        subject: "Hi",
-        bodyHtml: "<p>hi</p>",
-        trackOpens: true,
-        trackLinks: false,
-      }),
-    ).not.toThrow();
+    const parsed = sendEmailInput.parse({
+      accountId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      idempotencyKey: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+      to: ["r@x.com"],
+      subject: "Hi",
+      bodyHtml: "<p>hi</p>",
+      trackOpens: true,
+      trackLinks: false,
+    });
+    expect(parsed.trackOpens).toBe(true);
+    expect(parsed.trackLinks).toBe(false);
   });
 
   it("trackOpens=true trackLinks=false yields open token only", async () => {
@@ -75,15 +75,14 @@ describe("trackingSplit", () => {
   });
 
   it("sendEmailInput back-compat: trackingEnabled alone still works", () => {
-    expect(() =>
-      sendEmailInput.parse({
-        accountId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
-        idempotencyKey: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
-        to: ["r@x.com"],
-        subject: "Hi",
-        bodyHtml: "<p>hi</p>",
-        trackingEnabled: true,
-      }),
-    ).not.toThrow();
+    const parsed = sendEmailInput.parse({
+      accountId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      idempotencyKey: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+      to: ["r@x.com"],
+      subject: "Hi",
+      bodyHtml: "<p>hi</p>",
+      trackingEnabled: true,
+    });
+    expect(parsed.trackingEnabled).toBe(true);
   });
 });

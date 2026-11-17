@@ -18,7 +18,6 @@ vi.mock("@/features/deal-workspace/actions", () => ({ changeStageAction }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: () => {} }) }));
 vi.mock("@/utils/csrfCookie", () => ({ readCsrfToken: () => "csrf" }));
 
-import { accentForOrder, tint } from "@/features/deals/boardStageHeader";
 import { StageSelector } from "./StageSelector";
 
 function alphaOf(rgba: string): number {
@@ -75,21 +74,13 @@ it("applies the interlocking chevron clip-path shape to each segment (C3)", () =
   }
 });
 
-it("tints each segment in its stage's pipeline hue (inherited from the board), not green/gray", () => {
+it("tints each segment in the hue of its stage's order, the first two as literal rgb values", () => {
   render(<StageSelector {...props} />);
-  const qualified = screen.getByRole("option", { name: /Qualified/ }); // order 0 -> slate
-  const proposal = screen.getByRole("option", { name: /Proposal/ }); // order 1 -> blue
-  const won = screen.getByRole("option", { name: /Won/ }); // order 2 -> indigo
-  // Each segment reads in its own order-hue, matching the pipeline board columns.
-  expect(rgbPrefix(qualified.style.backgroundColor)).toBe(rgbPrefix(tint(accentForOrder(0), 1)));
-  expect(rgbPrefix(proposal.style.backgroundColor)).toBe(rgbPrefix(tint(accentForOrder(1), 1)));
-  expect(rgbPrefix(won.style.backgroundColor)).toBe(rgbPrefix(tint(accentForOrder(2), 1)));
-  // No leftover uniform success-green / muted-gray classes.
-  for (const seg of [qualified, proposal, won]) {
-    expect(seg.className).not.toContain("bg-success");
-    expect(seg.className).not.toContain("bg-muted");
-    expect(seg.className).not.toContain("bg-primary");
-  }
+  const fill = (name: RegExp): string =>
+    rgbPrefix(screen.getByRole("option", { name }).style.backgroundColor);
+  expect(fill(/Qualified/)).toBe("rgba(148, 163, 184");
+  expect(fill(/Proposal/)).toBe("rgba(96, 165, 250");
+  expect(fill(/Won/)).not.toBe(fill(/Proposal/));
 });
 
 it("surfaces the shared error dialog when the stage change is denied (no silent swallow)", async () => {

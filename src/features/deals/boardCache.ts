@@ -26,8 +26,3 @@ export function applyMove(
 export function removeCard(data: BoardData, dealId: string): BoardData {
   return { cards: data.cards.filter((c) => c.id !== dealId) };
 }
-
-export function upsertCard(data: BoardData, card: BoardCard): BoardData {
-  const without = data.cards.filter((c) => c.id !== card.id);
-  return { cards: sorted([...without, card]) };
-}

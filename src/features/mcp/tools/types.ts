@@ -13,11 +13,9 @@ export type GetCtx = () => ToolCtx;
 type Invoke = (input: unknown, signal: AbortSignal) => Promise<CallToolResult>;
 
 export class ToolRegistry {
-  readonly names = new Set<string>();
   private readonly handlers = new Map<string, Invoke>();
 
   add(name: string, handler: Invoke): void {
-    this.names.add(name);
     this.handlers.set(name, handler);
   }
 

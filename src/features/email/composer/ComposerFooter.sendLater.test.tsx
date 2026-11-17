@@ -111,32 +111,6 @@ describe("ComposerFooter Send later (Phase 7)", () => {
     expect(screen.queryByTestId("scheduled-at-picker")).not.toBeInTheDocument();
   });
 
-  it("does not call onSendLater for a past time (validation)", async () => {
-    const onSendLater = vi.fn();
-    render(
-      <ComposerFooter
-        canSend={true}
-        sending={false}
-        onSend={vi.fn()}
-        onDiscard={vi.fn()}
-        trackOpens={false}
-        onTrackOpensChange={vi.fn()}
-        trackLinks={false}
-        onTrackLinksChange={vi.fn()}
-        onSendLater={onSendLater}
-      />,
-    );
-    fireEvent.click(screen.getByRole("button", { name: /send later/i }));
-    const picker = await screen.findByTestId("scheduled-at-picker");
-    const past = new Date(Date.now() - 60_000);
-    const pad = (n: number) => String(n).padStart(2, "0");
-    const local = `${past.getFullYear()}-${pad(past.getMonth() + 1)}-${pad(past.getDate())}T${pad(past.getHours())}:${pad(past.getMinutes())}`;
-    fireEvent.change(picker, { target: { value: local } });
-    const confirmBtn = screen.getByRole("button", { name: /^schedule$/i });
-    fireEvent.click(confirmBtn);
-    expect(onSendLater).not.toHaveBeenCalled();
-  });
-
   it("shows an inline error for a past/now time instead of an error banner", async () => {
     const onSendLater = vi.fn();
     render(

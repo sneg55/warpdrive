@@ -5,7 +5,6 @@
 import type React from "react";
 import { bucketByType } from "@/app/(app)/deals/[dealId]/tabs";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CollapsibleSection } from "@/features/deal-workspace/CollapsibleSection";
 import { HistoryFeed } from "@/features/deal-workspace/HistoryFeed";
 import { countHistoryTabs } from "@/features/deal-workspace/historyTabCounts";
 import {
@@ -15,7 +14,6 @@ import {
 } from "@/features/deal-workspace/historyTimeline";
 import { PinnedNotesSection } from "@/features/deal-workspace/PinnedNotesSection";
 import { SectionHeading } from "@/features/deal-workspace/SectionHeading";
-import { FieldRow } from "@/features/deal-workspace/sidebar/FieldRow";
 import { emailTabStatusLabel } from "@/features/email/emailTabStatus";
 import { FileAttachments } from "@/features/files/FileAttachments";
 import { useSupportConversations } from "@/features/intercom/useSupportConversations";
@@ -176,35 +174,4 @@ export function FilesPanel({
   entityId: string;
 }): React.ReactNode {
   return <FileAttachments entityType={entityType} entityId={entityId} />;
-}
-
-export function CustomFieldsPanel<T extends { id: string; key: string; name: string }>({
-  defs,
-  values,
-  renderValue,
-}: {
-  defs: T[];
-  values: Record<string, unknown>;
-  renderValue: (def: T, value: unknown) => React.ReactNode;
-}): React.ReactNode {
-  if (defs.length === 0) return null;
-  // CO-2: render as a CollapsibleSection (collapse toggle + shared 16px/600 heading) using the
-  // shared FieldRow so labels/values align with every other sidebar section instead of the old
-  // bespoke bordered <section> with a 14px/500 heading and hard-coded gray tokens.
-  return (
-    <CollapsibleSection title="Custom fields">
-      {defs.map((def) => {
-        const value = values[def.key];
-        return (
-          <FieldRow
-            key={def.id}
-            label={def.name}
-            empty={value === null || value === undefined || value === ""}
-          >
-            {renderValue(def, value)}
-          </FieldRow>
-        );
-      })}
-    </CollapsibleSection>
-  );
 }

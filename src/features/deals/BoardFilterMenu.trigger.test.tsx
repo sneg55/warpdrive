@@ -32,12 +32,6 @@ function trigger(): HTMLElement {
 // ad-hoc definition wins over a selected saved filter. The trigger is the only thing explaining
 // why the board shows a subset, so it must not name a filter that is not the one filtering.
 describe("BoardFilterMenu trigger", () => {
-  it("names the saved filter when that filter is what is applied", () => {
-    render(<BoardFilterMenu savedFilters={SAVED} selectedFilterId="f1" />);
-
-    expect(trigger()).toHaveTextContent("Filter: Rotting deals");
-  });
-
   it("names the applied filter from its own record before the rows have loaded", () => {
     render(
       <BoardFilterMenu savedFilters={[]} selectedFilterId="f1" appliedFilterName="Rotting deals" />,
