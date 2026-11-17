@@ -21,6 +21,29 @@ describe("localDayRange", () => {
     expect(q.params).toEqual(["2026-03-01", NY, "2026-03-31", NY]);
   });
 
+  it.each([
+    ["Africa/Asmera", "Africa/Nairobi"],
+    ["America/Buenos_Aires", "America/Argentina/Buenos_Aires"],
+    ["America/Catamarca", "America/Argentina/Catamarca"],
+    ["America/Cordoba", "America/Argentina/Cordoba"],
+    ["America/Godthab", "America/Nuuk"],
+    ["America/Indianapolis", "America/Indiana/Indianapolis"],
+    ["America/Jujuy", "America/Argentina/Jujuy"],
+    ["America/Louisville", "America/Kentucky/Louisville"],
+    ["America/Mendoza", "America/Argentina/Mendoza"],
+    ["Asia/Calcutta", "Asia/Kolkata"],
+    ["Asia/Katmandu", "Asia/Kathmandu"],
+    ["Asia/Rangoon", "Asia/Yangon"],
+    ["Asia/Saigon", "Asia/Ho_Chi_Minh"],
+    ["Atlantic/Faeroe", "Atlantic/Faroe"],
+    ["Europe/Kiev", "Europe/Kyiv"],
+    ["Pacific/Enderbury", "Pacific/Kanton"],
+    ["Pacific/Ponape", "Pacific/Guadalcanal"],
+    ["Pacific/Truk", "Pacific/Port_Moresby"],
+  ])("maps the browser's legacy zone %s to %s, which Postgres knows without tzdata-legacy", (legacy, primary) => {
+    expect(resolveTimeZone(legacy)).toBe(primary);
+  });
+
   it("falls back to UTC for a missing or unknown zone", () => {
     expect(resolveTimeZone(undefined)).toBe("UTC");
     expect(resolveTimeZone(null)).toBe("UTC");

@@ -1,4 +1,5 @@
 import { type SQL, sql } from "drizzle-orm";
+import { LEGACY_TIME_ZONE_PRIMARY } from "@/constants/legacyTimeZones";
 
 export const FALLBACK_ZONE = "UTC";
 
@@ -6,7 +7,7 @@ export function resolveTimeZone(timeZone: string | null | undefined): string {
   if (timeZone === null || timeZone === undefined || timeZone === "") return FALLBACK_ZONE;
   try {
     new Intl.DateTimeFormat("en-US", { timeZone });
-    return timeZone;
+    return LEGACY_TIME_ZONE_PRIMARY[timeZone] ?? timeZone;
   } catch {
     return FALLBACK_ZONE;
   }
