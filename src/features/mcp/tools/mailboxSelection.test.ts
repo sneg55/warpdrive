@@ -6,53 +6,10 @@ import { expect, test } from "vitest";
 import { withTestDb } from "@/db/testing";
 import { seedUser } from "@/db/testing/factories";
 import { buildAppContext } from "@/features/mcp/actorContext";
-import { hydrateActor } from "@/server/hydrateActor";
 import { buildMcpServer } from "../server";
+import { actorOf, payload, seedPersonal, seedTeam } from "./mailboxTools.test-helpers";
 import { registerReadTools } from "./reads";
 import { registerWriteTools } from "./writes";
-
-type TestDb = Parameters<Parameters<typeof withTestDb>[0]>[0];
-
-async function seedPersonal(db: TestDb, userId: string, email: string): Promise<string> {
-  const row = (
-    await db.execute(
-      sql`INSERT INTO email_accounts (user_id, email_address) VALUES (${userId}, ${email}) RETURNING id`,
-    )
-  ).rows[0] as { id: string };
-  return row.id;
-}
-
-async function seedTeam(
-  db: TestDb,
-  email: string,
-  memberIds: string[],
-  provider: "gmail" | "agentic_inbox" = "gmail",
-): Promise<string> {
-  const row = (
-    await db.execute(
-      sql`INSERT INTO email_accounts (kind, email_address, display_name, status)
-        VALUES ('team', ${email}, 'Media', ${provider === "gmail" ? "connected" : "disconnected"}) RETURNING id`,
-    )
-  ).rows[0] as { id: string };
-  if (provider === "agentic_inbox") {
-    await db.execute(sql`UPDATE email_accounts SET provider='agentic_inbox' WHERE id=${row.id}`);
-  }
-  for (const id of memberIds) {
-    await db.execute(sql`INSERT INTO email_account_members VALUES (${row.id}, ${id})`);
-  }
-  return row.id;
-}
-
-function payload(result: { content: Array<{ type: string; text?: string }> }): unknown {
-  const first = result.content[0];
-  return first?.type === "text" ? JSON.parse(first.text ?? "null") : null;
-}
-
-async function actorOf(db: TestDb, userId: string) {
-  const actor = await hydrateActor(db, userId, AbortSignal.timeout(5_000));
-  if (actor === null) throw new Error("actor missing");
-  return actor;
-}
 
 const draftInput = { to: ["poc@example.com"], subject: "Pitch", body: "hi" };
 

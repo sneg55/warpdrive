@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import { PgDialect } from "drizzle-orm/pg-core";
 import { describe, expect, it } from "vitest";
+import { LEGACY_TIME_ZONE_PRIMARY } from "@/constants/legacyTimeZones";
 import { localDayStart, resolveTimeZone, withinLocalDays } from "./localDayRange";
 
 const dialect = new PgDialect();
@@ -42,6 +43,39 @@ describe("localDayRange", () => {
     ["Pacific/Truk", "Pacific/Port_Moresby"],
   ])("maps the browser's legacy zone %s to %s, which Postgres knows without tzdata-legacy", (legacy, primary) => {
     expect(resolveTimeZone(legacy)).toBe(primary);
+  });
+
+  it.each([
+    ["US/Eastern", "America/New_York"],
+    ["US/Pacific", "America/Los_Angeles"],
+    ["GB", "Europe/London"],
+    ["Asia/Ujung_Pandang", "Asia/Makassar"],
+    ["Europe/Zaporozhye", "Europe/Kyiv"],
+    ["Canada/Pacific", "America/Vancouver"],
+    ["Zulu", "Etc/UTC"],
+    ["america/buenos_aires", "America/Argentina/Buenos_Aires"],
+    ["ASIA/CALCUTTA", "Asia/Kolkata"],
+  ])("maps the tz backward link %s to %s whatever its case", (legacy, primary) => {
+    expect(resolveTimeZone(legacy)).toBe(primary);
+  });
+
+  it("leaves every zone that is not a legacy link exactly as given", () => {
+    const legacy = new Set(Object.keys(LEGACY_TIME_ZONE_PRIMARY));
+    const canonical = [
+      ...Intl.supportedValuesOf("timeZone").filter((zone) => !legacy.has(zone)),
+      "UTC",
+      "Etc/UTC",
+      "Etc/GMT+3",
+      "Africa/Asmara",
+      "Europe/Amsterdam",
+    ];
+    expect(canonical.filter((zone) => resolveTimeZone(zone) !== zone)).toEqual([]);
+  });
+
+  it("maps every legacy link to a zone that is not itself a legacy link", () => {
+    const targets = Object.values(LEGACY_TIME_ZONE_PRIMARY);
+    expect(targets.filter((zone) => zone in LEGACY_TIME_ZONE_PRIMARY)).toEqual([]);
+    expect(targets.filter((zone) => resolveTimeZone(zone) !== zone)).toEqual([]);
   });
 
   it("falls back to UTC for a missing or unknown zone", () => {

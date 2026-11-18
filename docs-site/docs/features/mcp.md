@@ -96,7 +96,13 @@ with OAuth can use the same endpoint.
 - `list_pipelines`, `get_pipeline`
 - `pipeline_summary`
 - `list_emails`, `get_email`
+- `list_mailboxes`, `list_mailbox_threads`, `search_emails`, `get_email_thread`
 - `list_email_drafts`
+
+`list_mailboxes` returns the actor's personal mailbox and every team mailbox they belong to.
+`list_mailbox_threads` pages through one mailbox's inbox, sent or archive folder, and
+`search_emails` searches one mailbox, so an assistant can read mail that is not linked to
+any deal or person. Both take a mailbox address and default to the personal mailbox.
 
 **Write**
 
@@ -110,7 +116,8 @@ with OAuth can use the same endpoint.
 - `add_note`
 - `create_email_draft`, `update_email_draft`, `delete_email_draft`
 
-The draft tools write into the actor's own connected mailbox and can link a draft to
+The draft tools write into the actor's personal mailbox, or into a team mailbox named by
+address, and can link a draft to
 a deal or person, so an assistant can prepare outreach where it belongs. **There is
 no send tool**: drafts are written for review, and sending stays a human action.
 `archive_lead` checks lead visibility the same way the other lead writes do.

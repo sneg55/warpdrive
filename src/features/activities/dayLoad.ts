@@ -1,13 +1,13 @@
 import { and, eq, gte, isNotNull, isNull, lte, sql } from "drizzle-orm";
 import type { Db } from "@/db/client";
 import { activities } from "@/db/schema";
-import { resolveTimeZone } from "@/lib/localDayRange";
+import { sqlTimeZone } from "@/lib/sqlTimeZone";
 
 export interface DayLoadQuery {
   userId: string;
   from: Date;
   to: Date;
-  timeZone: string;
+  timeZone: string | undefined;
 }
 
 export async function getDayLoad(
@@ -16,7 +16,7 @@ export async function getDayLoad(
   signal: AbortSignal,
 ): Promise<Record<string, number>> {
   signal.throwIfAborted();
-  const zone = resolveTimeZone(query.timeZone);
+  const zone = await sqlTimeZone(db, query.timeZone, signal);
   const dueDayInZone = sql<string>`to_char(${activities.dueAt} AT TIME ZONE ${zone}::text, 'YYYY-MM-DD')`;
   const rows = await db
     .select({ day: dueDayInZone, count: sql<number>`count(*)::int` })

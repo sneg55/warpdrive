@@ -111,7 +111,7 @@ export const activitiesRouter = router({
         userId: z.string().uuid().nullable().default(null),
         from: z.string().datetime(),
         to: z.string().datetime(),
-        timeZone: z.string().min(1).default("UTC"),
+        timeZone: timeZoneInput,
       }),
     )
     .query(async ({ ctx, input }) => {

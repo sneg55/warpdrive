@@ -4,11 +4,13 @@ import type { Db } from "@/db/client";
 import { activities, deals, userPreferences } from "@/db/schema";
 import { withTestDb } from "@/db/testing";
 import { seedPipelineWithStages, seedUser } from "@/db/testing/factories";
+import { withLoggedTestDb } from "@/db/testing/queryLog";
 import { callTypeId } from "@/features/activities/activityRowsTestHelpers";
 import type { HydratedActor } from "@/server/hydrateActor";
 import { createCaller } from "@/server/trpc/root";
 
 const NY = "America/New_York";
+const LEGACY_NY = "US/Eastern";
 const MARCH = { from: "2026-03-01", to: "2026-03-31" };
 const BEFORE_LOCAL_MARCH = new Date("2026-03-01T02:00:00Z");
 const LAST_LOCAL_EVENING = new Date("2026-04-01T02:00:00Z");
@@ -137,15 +139,47 @@ describe("dashboard day windows follow the viewer's timezone", () => {
   it("keeps UTC days when no zone is known", async () => {
     await withTestDb(async (db) => {
       const { caller, pipelineId } = await seedEdges(db);
-      const out = await caller.stats.dashboard({
-        ownerScope: { kind: "me" },
-        pipelineId,
-        ...MARCH,
-      });
-      expect(out.dealPerformance.won).toEqual({ count: 1, value: "100.00" });
-      expect(out.dealPerformance.lost.count).toBe(0);
-      expect(out.activities.completed).toBe(1);
-      expect(out.wonTrend).toEqual([{ month: "2026-03", count: 1, value: "100.00" }]);
+      await expectUtcMarch(caller, pipelineId);
+    });
+  });
+
+  it("sends Postgres the primary name for a legacy browser zone", async () => {
+    await withLoggedTestDb(async (db, queryParams) => {
+      const { caller, pipelineId } = await seedEdges(db);
+      await expectNewYorkMarch(caller, pipelineId, LEGACY_NY);
+      expect(queryParams.flat()).toContain(NY);
+      expect(queryParams.flat()).not.toContain(LEGACY_NY);
+    });
+  });
+
+  it("sends Postgres the primary name for a legacy saved zone", async () => {
+    await withLoggedTestDb(async (db, queryParams) => {
+      const { caller, userId, pipelineId } = await seedEdges(db);
+      await db.insert(userPreferences).values({ userId, timezone: LEGACY_NY });
+      queryParams.length = 0;
+      await expectNewYorkMarch(caller, pipelineId, "UTC");
+      expect(queryParams.flat()).toContain(NY);
+      expect(queryParams.flat()).not.toContain(LEGACY_NY);
+    });
+  });
+
+  it("keeps UTC days for a zone the browser knows but Postgres does not", async () => {
+    await withTestDb(async (db) => {
+      const { caller, pipelineId } = await seedEdges(db);
+      await expectUtcMarch(caller, pipelineId, "Canada/East-Saskatchewan");
     });
   });
 });
+
+async function expectUtcMarch(caller: Caller, pipelineId: string, timeZone?: string) {
+  const out = await caller.stats.dashboard({
+    ownerScope: { kind: "me" },
+    pipelineId,
+    ...MARCH,
+    timeZone,
+  });
+  expect(out.dealPerformance.won).toEqual({ count: 1, value: "100.00" });
+  expect(out.dealPerformance.lost.count).toBe(0);
+  expect(out.activities.completed).toBe(1);
+  expect(out.wonTrend).toEqual([{ month: "2026-03", count: 1, value: "100.00" }]);
+}

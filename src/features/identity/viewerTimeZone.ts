@@ -1,5 +1,5 @@
 import type { Db } from "@/db/client";
-import { resolveTimeZone } from "@/lib/localDayRange";
+import { sqlTimeZone } from "@/lib/sqlTimeZone";
 import { getPreferences } from "./preferencesRepo";
 
 export async function viewerTimeZone(
@@ -9,5 +9,5 @@ export async function viewerTimeZone(
   signal: AbortSignal,
 ): Promise<string> {
   const saved = (await getPreferences(db, userId, signal)).timezone;
-  return resolveTimeZone(saved ?? requestZone);
+  return sqlTimeZone(db, saved ?? requestZone, signal);
 }

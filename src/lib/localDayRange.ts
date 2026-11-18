@@ -3,11 +3,15 @@ import { LEGACY_TIME_ZONE_PRIMARY } from "@/constants/legacyTimeZones";
 
 export const FALLBACK_ZONE = "UTC";
 
+const PRIMARY_BY_LOWERCASE_LINK: ReadonlyMap<string, string> = new Map(
+  Object.entries(LEGACY_TIME_ZONE_PRIMARY).map(([link, primary]) => [link.toLowerCase(), primary]),
+);
+
 export function resolveTimeZone(timeZone: string | null | undefined): string {
   if (timeZone === null || timeZone === undefined || timeZone === "") return FALLBACK_ZONE;
   try {
     new Intl.DateTimeFormat("en-US", { timeZone });
-    return LEGACY_TIME_ZONE_PRIMARY[timeZone] ?? timeZone;
+    return PRIMARY_BY_LOWERCASE_LINK.get(timeZone.toLowerCase()) ?? timeZone;
   } catch {
     return FALLBACK_ZONE;
   }

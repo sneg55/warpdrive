@@ -6,3 +6,6 @@ export const INBOX_PAGE_SIZE = 50;
 // unmatched/needs_linking filter are applied after the query, so a chunk can yield fewer visible
 // threads than it holds and the scan repeats. Larger = fewer round trips but more wasted rows.
 export const INBOX_SCAN_CHUNK = 100;
+
+export const MAILBOX_FOLDERS = ["inbox", "sent", "archive"] as const;
+export type MailboxFolder = (typeof MAILBOX_FOLDERS)[number];
