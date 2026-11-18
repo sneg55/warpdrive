@@ -4,6 +4,7 @@ import { seedUser } from "@/db/testing/factories";
 import { ok } from "@/types/result";
 import { FakeStorageClient } from "../files/storageFake";
 import { FakeGmailClient } from "./gmailFake";
+import { gmailProvider } from "./provider/gmailProvider";
 import { sendEmail } from "./send";
 import { seedAccount, threadVisibility } from "./send.visibility.test-helpers";
 
@@ -31,7 +32,7 @@ it("INTERACTIVE send: a private compose creates a private thread", async () => {
       actorId: owner.id,
       actorType: "regular",
       actorGroupIds: new Set<string>(),
-      gmail: fake,
+      provider: gmailProvider(fake),
       storage: new FakeStorageClient(),
       input: {
         accountId: acctId,
@@ -74,7 +75,7 @@ it("omitting visibility falls back to the column default (shared not forced), un
       actorId: owner.id,
       actorType: "regular",
       actorGroupIds: new Set<string>(),
-      gmail: fake,
+      provider: gmailProvider(fake),
       storage: new FakeStorageClient(),
       input: {
         accountId: acctId,

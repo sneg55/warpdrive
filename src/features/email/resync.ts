@@ -5,6 +5,7 @@ import type { Db } from "@/db/client";
 import { ok, type Result } from "@/types/result";
 import { applyMessageIds } from "./applyMessages";
 import type { GmailClient } from "./gmailClient";
+import { gmailProvider } from "./provider/gmailProvider";
 
 import { reconcileThreadTrash } from "./trashReconcile";
 
@@ -78,7 +79,7 @@ export async function recoverFrom404(
   }
 
   const ap = await applyMessageIds(
-    { db, accountId: args.accountId, gmail: args.gmail, signal: args.signal },
+    { db, accountId: args.accountId, provider: gmailProvider(args.gmail), signal: args.signal },
     [...ids],
   );
   if (!ap.ok) return ap;

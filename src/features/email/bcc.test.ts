@@ -5,6 +5,7 @@ import { seedUser } from "@/db/testing/factories";
 import { ok } from "@/types/result";
 import { FakeStorageClient } from "../files/storageFake";
 import { FakeGmailClient } from "./gmailFake";
+import { gmailProvider } from "./provider/gmailProvider";
 import { sendEmail, sendEmailInput } from "./send";
 
 type TestDb = Parameters<Parameters<typeof withTestDb>[0]>[0];
@@ -46,7 +47,7 @@ describe("bcc", () => {
         actorId: owner.id,
         actorType: "regular",
         actorGroupIds: new Set<string>(),
-        gmail: fake,
+        provider: gmailProvider(fake),
         storage: new FakeStorageClient(),
         input: {
           accountId: acctId,

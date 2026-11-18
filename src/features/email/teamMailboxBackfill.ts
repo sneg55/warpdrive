@@ -1,22 +1,25 @@
 import { sql } from "drizzle-orm";
+import { EMAIL_PROVIDER_KIND } from "@/constants/email";
 import type { AppError } from "@/constants/errorIds";
 import { MILLISECONDS_PER_DAY, MILLISECONDS_PER_SECOND } from "@/constants/teamMailbox";
 import type { Db } from "@/db/client";
 import { ok, type Result } from "@/types/result";
+import { backfillAgenticMailbox } from "./agenticBackfill";
 import { applyMessageIds } from "./applyMessages";
+import { recordBackfillFailure } from "./backfillFailure";
 import type { ListBackfillThreads } from "./gmailBackfill";
-import type { GmailClient } from "./gmailClient";
+import type { MailProvider } from "./provider/types";
 
 export async function runTeamBackfillPage(
   db: Db,
   args: {
     accountId: string;
-    gmail: GmailClient;
+    provider: MailProvider;
     listThreads: ListBackfillThreads;
     signal: AbortSignal;
   },
 ): Promise<Result<{ done: boolean }, AppError>> {
-  const { accountId, gmail, signal } = args;
+  const { accountId, provider, signal } = args;
   signal.throwIfAborted();
   const rows =
     await db.execute(sql`SELECT backfill_days, backfill_status, backfill_page_token, last_history_id
@@ -33,6 +36,15 @@ export async function runTeamBackfillPage(
     | undefined;
   if (account === undefined || account.backfill_days === null || account.backfill_status === "done")
     return ok({ done: true });
+  if (provider.kind === EMAIL_PROVIDER_KIND.agenticInbox)
+    return backfillAgenticMailbox(db, {
+      accountId,
+      provider,
+      client: provider.agentic,
+      sinceDays: account.backfill_days,
+      signal,
+    });
+  const gmail = provider.gmail;
   if (account.last_history_id === null) {
     const profile = await gmail.getProfile({ signal });
     if (!profile.ok) return recordBackfillFailure(db, accountId, profile, signal);
@@ -67,7 +79,7 @@ export async function runTeamBackfillPage(
       )
       .map((message) => message.id);
     const applied = await applyMessageIds(
-      { db, accountId, gmail, signal, importedAt: startedAt },
+      { db, accountId, provider, signal, importedAt: startedAt },
       ids,
     );
     if (!applied.ok) return recordBackfillFailure(db, accountId, applied, signal);
@@ -78,17 +90,4 @@ export async function runTeamBackfillPage(
   );
   signal.throwIfAborted();
   return ok({ done });
-}
-
-export async function recordBackfillFailure(
-  db: Db,
-  accountId: string,
-  failure: { ok: false; error: AppError },
-  signal: AbortSignal,
-): Promise<{ ok: false; error: AppError }> {
-  await db.execute(
-    sql`UPDATE email_accounts SET backfill_status='failed', backfill_error_id=${failure.error.id} WHERE id=${accountId}`,
-  );
-  signal.throwIfAborted();
-  return failure;
 }

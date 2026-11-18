@@ -55,6 +55,26 @@ describe("cancel outbox", () => {
     });
   });
 
+  it("lists a waiting_for_limit attempt with its next attempt time and cancels it", async () => {
+    await withTestDb(async (db) => {
+      const owner = await seedUser(db, { email: "o@gunsnation.com" });
+      const acctId = await seedAccount(db, owner.id);
+      const id = await seedAttempt(db, acctId, { status: "waiting_for_limit" });
+      await db.execute(sql`UPDATE email_send_attempts
+        SET next_attempt_at='2026-11-17T15:30:00Z', error_id='E_AINBOX_004' WHERE id=${id}`);
+      const listed = await listOutbox(db, actorOf(owner.id), SIG());
+      expect(listed.map((i) => [i.id, i.status, i.errorId])).toEqual([
+        [id, "waiting_for_limit", "E_AINBOX_004"],
+      ]);
+      expect(new Date(listed[0]?.nextAttemptAt ?? 0).toISOString()).toBe(
+        "2026-11-17T15:30:00.000Z",
+      );
+      const res = await cancelOutbox(db, { actor: actorOf(owner.id), attemptId: id }, SIG());
+      expect(res.ok).toBe(true);
+      expect(await listOutbox(db, actorOf(owner.id), SIG())).toHaveLength(0);
+    });
+  });
+
   it("refuses a claimed attempt with E_GMAIL_017", async () => {
     await withTestDb(async (db) => {
       const owner = await seedUser(db, { email: "o@gunsnation.com" });

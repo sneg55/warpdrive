@@ -6,6 +6,7 @@ import { ok } from "@/types/result";
 import { listSentThreads } from "./folderReads";
 import { FakeGmailClient } from "./gmailFake";
 import { listInbox } from "./inboxList";
+import { gmailProvider } from "./provider/gmailProvider";
 import { syncMailbox } from "./sync";
 import { seedTeamMailbox, teamActor } from "./teamMailbox.test-helpers";
 import { runTeamBackfillPage } from "./teamMailboxBackfill";
@@ -56,7 +57,7 @@ it.each(["import", "sync"])("ignores unsent Gmail drafts during %s", async (path
   if (path === "import") {
     const result = await runTeamBackfillPage(ctx.db, {
       accountId,
-      gmail,
+      provider: gmailProvider(gmail),
       signal,
       listThreads: ({ signal }) => {
         signal.throwIfAborted();

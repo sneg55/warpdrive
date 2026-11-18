@@ -4,6 +4,7 @@ import { withTestDb } from "@/db/testing";
 import { FakeStorageClient } from "../files/storageFake";
 import { FakeGmailClient } from "./gmailFake";
 import { enqueueSend, processSendAttempt } from "./outbox";
+import { gmailProvider } from "./provider/gmailProvider";
 
 type TestDb = Parameters<Parameters<typeof withTestDb>[0]>[0];
 const newSignal = (): AbortSignal => new AbortController().signal;
@@ -51,7 +52,7 @@ it("sends once and a replay of a sent row does not re-send", async () => {
     const r1 = await processSendAttempt(db, {
       accountId: acct,
       idempotencyKey: KEY,
-      gmail: fake,
+      provider: gmailProvider(fake),
       storage: new FakeStorageClient(),
       signal: newSignal(),
     });
@@ -63,7 +64,7 @@ it("sends once and a replay of a sent row does not re-send", async () => {
     const r2 = await processSendAttempt(db, {
       accountId: acct,
       idempotencyKey: KEY,
-      gmail: fake,
+      provider: gmailProvider(fake),
       storage: new FakeStorageClient(),
       signal: newSignal(),
     });
@@ -101,7 +102,7 @@ it("crash-after-accept: a stamped row reconciles via search and never blind re-s
     const r = await processSendAttempt(db, {
       accountId: acct,
       idempotencyKey: KEY,
-      gmail: fake,
+      provider: gmailProvider(fake),
       storage: new FakeStorageClient(),
       signal: newSignal(),
     });
@@ -140,7 +141,7 @@ it("moves to needs_review when reconcile finds nothing and the window is exhaust
     const r = await processSendAttempt(db, {
       accountId: acct,
       idempotencyKey: KEY,
-      gmail: fake,
+      provider: gmailProvider(fake),
       storage: new FakeStorageClient(),
       signal: newSignal(),
       windowMs: 1, // tiny window: the deadline is already in the past

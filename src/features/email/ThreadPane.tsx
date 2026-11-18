@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { EMAIL_PROVIDER_KIND } from "@/constants/email";
 import { STRINGS } from "@/constants/strings";
 import { type RouterOutputs, trpc } from "@/lib/trpc-client";
 import { readCsrfToken } from "@/utils/csrfCookie";
@@ -98,7 +99,11 @@ export function ThreadPane({
 
   return (
     <div className="flex flex-col h-full">
-      <ReaderTopBar threadId={inboxThread.id} canManage={canCompose} />
+      <ReaderTopBar
+        threadId={inboxThread.id}
+        canManage={canCompose}
+        canTrash={data.provider !== EMAIL_PROVIDER_KIND.agenticInbox}
+      />
       <header className="px-4 py-3 border-b border-border">
         <div className="flex items-center justify-between gap-2">
           <h1 className="text-base font-semibold text-foreground text-balance">

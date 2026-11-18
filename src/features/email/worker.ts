@@ -1,15 +1,15 @@
 import { sql } from "drizzle-orm";
-import { SYNC_JITTER_MODULO_SECONDS } from "@/constants/email";
+import { EMAIL_PROVIDER_KIND, SYNC_JITTER_MODULO_SECONDS } from "@/constants/email";
 import type { AppError } from "@/constants/errorIds";
 import type { Db } from "@/db/client";
 import { db as prodDb } from "@/db/client";
 import { makeStorageClient } from "@/features/files/storage";
 import { err, ok, type Result } from "@/types/result";
-import { createGmailClient, type GmailClient } from "./gmailClient";
-import { makeRefresh } from "./gmailRefresh";
+import { syncAgenticMailbox } from "./agenticSync";
 import { processSendAttempt } from "./outbox";
+import { resolveProvider } from "./provider/resolveProvider";
+import type { MailProvider } from "./provider/types";
 import { syncMailbox } from "./sync";
-import { ensureAccessToken } from "./tokens";
 import { performWorkerSendCrm } from "./workerSendCrm";
 
 // Deterministic per-mailbox jitter (seconds) to spread sync starts and avoid a
@@ -25,26 +25,16 @@ export function jitterFor(accountId: string): number {
   return hash % SYNC_JITTER_MODULO_SECONDS;
 }
 
-// Resolve a fresh Gmail client for an account (default dep). Injectable so tests pass a
-// fake transport with no real OAuth. Never logs tokens.
 export interface SyncDeps {
-  resolveClient: (accountId: string, signal: AbortSignal) => Promise<Result<GmailClient, AppError>>;
+  resolveClient: (
+    accountId: string,
+    signal: AbortSignal,
+  ) => Promise<Result<MailProvider, AppError>>;
 }
 
-async function defaultResolveClient(
-  accountId: string,
-  signal: AbortSignal,
-): Promise<Result<GmailClient, AppError>> {
-  signal.throwIfAborted();
-  const token = await ensureAccessToken(prodDb, {
-    accountId,
-    deps: { refresh: makeRefresh(signal) },
-  });
-  if (!token.ok) return token;
-  return ok(createGmailClient(token.value.token));
-}
-
-const defaultSyncDeps: SyncDeps = { resolveClient: defaultResolveClient };
+const defaultSyncDeps: SyncDeps = {
+  resolveClient: (accountId, signal) => resolveProvider(prodDb, accountId, signal),
+};
 
 // Per-job sync handler. Resolves a client, runs syncMailbox, and on ANY error stamps
 // last_error_id and RETURNS the err (never throws raw, never logs tokens). The pg-boss
@@ -55,14 +45,18 @@ export async function runSyncJob(
   deps: SyncDeps = defaultSyncDeps,
 ): Promise<Result<{ applied: number }, AppError>> {
   args.signal.throwIfAborted();
-  const client = await deps.resolveClient(args.accountId, args.signal);
-  if (!client.ok) return stampError(db, args.accountId, client.error, args.signal);
-
-  const synced = await syncMailbox(db, {
-    accountId: args.accountId,
-    gmail: client.value,
-    signal: args.signal,
-  });
+  const provider = await deps.resolveClient(args.accountId, args.signal);
+  if (!provider.ok) return stampError(db, args.accountId, provider.error, args.signal);
+  const p = provider.value;
+  const synced =
+    p.kind === EMAIL_PROVIDER_KIND.agenticInbox
+      ? await syncAgenticMailbox(db, {
+          accountId: args.accountId,
+          provider: p,
+          client: p.agentic,
+          signal: args.signal,
+        })
+      : await syncMailbox(db, { accountId: args.accountId, gmail: p.gmail, signal: args.signal });
   if (!synced.ok) return stampError(db, args.accountId, synced.error, args.signal);
   return ok(synced.value);
 }
@@ -78,13 +72,13 @@ export async function runSendJob(
   deps: SyncDeps = defaultSyncDeps,
 ): Promise<Result<{ status: string }, AppError>> {
   args.signal.throwIfAborted();
-  const client = await deps.resolveClient(args.accountId, args.signal);
-  if (!client.ok) return client;
+  const provider = await deps.resolveClient(args.accountId, args.signal);
+  if (!provider.ok) return provider;
 
   const outcome = await processSendAttempt(db, {
     accountId: args.accountId,
     idempotencyKey: args.idempotencyKey,
-    gmail: client.value,
+    provider: provider.value,
     storage: makeStorageClient(),
     signal: args.signal,
   });
@@ -99,7 +93,7 @@ export async function runSendJob(
       accountId: args.accountId,
       idempotencyKey: args.idempotencyKey,
       gmailMessageId: outcome.value.gmailMessageId,
-      gmail: client.value,
+      provider: provider.value,
       signal: args.signal,
     });
     if (!crm.ok) return crm;

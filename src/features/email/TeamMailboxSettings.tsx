@@ -6,6 +6,7 @@ import {
   TEAM_MAILBOX_BACKFILL_CHOICES,
   TEAM_MAILBOX_DEFAULT_BACKFILL,
 } from "@/constants/teamMailbox";
+import { AgenticConnectDialog } from "./AgenticConnectDialog";
 import { TeamMailboxSettingsCard } from "./TeamMailboxSettingsCard";
 import type { TeamMailboxSettings as MailboxSettings } from "./teamMailboxAdmin";
 import { redirectToTeamMailboxConsent } from "./teamMailboxConsentRedirect";
@@ -13,13 +14,16 @@ import { redirectToTeamMailboxConsent } from "./teamMailboxConsentRedirect";
 export function TeamMailboxSettings({
   mailboxes,
   users,
+  agenticEnabled = false,
 }: {
   mailboxes: MailboxSettings[];
   users: { id: string; name: string }[];
+  agenticEnabled?: boolean;
 }): React.ReactNode {
   const [backfill, setBackfill] = useState(String(TEAM_MAILBOX_DEFAULT_BACKFILL));
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [agenticOpen, setAgenticOpen] = useState(false);
   async function connect(): Promise<void> {
     setPending(true);
     try {
@@ -43,6 +47,11 @@ export function TeamMailboxSettings({
         <Button disabled={pending} onClick={() => void connect()}>
           Connect team mailbox
         </Button>
+        {agenticEnabled && (
+          <Button variant="outline" onClick={() => setAgenticOpen(true)}>
+            Connect agentic inbox
+          </Button>
+        )}
       </div>
       <p className="text-sm text-muted-foreground">
         Imported conversations start read. Unanswered conversations keep their original reply
@@ -50,8 +59,20 @@ export function TeamMailboxSettings({
       </p>
       {error !== null && <p role="alert">{error}</p>}
       {mailboxes.map((mailbox) => (
-        <TeamMailboxSettingsCard key={mailbox.id} mailbox={mailbox} users={users} />
+        <TeamMailboxSettingsCard
+          key={mailbox.id}
+          mailbox={mailbox}
+          users={users}
+          agenticEnabled={agenticEnabled}
+        />
       ))}
+      {agenticEnabled && (
+        <AgenticConnectDialog
+          open={agenticOpen}
+          onOpenChange={setAgenticOpen}
+          reconnectTarget={null}
+        />
+      )}
     </div>
   );
 }

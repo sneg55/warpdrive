@@ -27,8 +27,10 @@ it("shows import status and design-system controls and saves team settings", asy
           overdue_after_hours: 24,
           backfill_status: "failed",
           backfill_error_id: "E_GMAIL_001",
+          last_error_id: null,
           backfill_days: 90,
           member_ids: ["member"],
+          provider: "gmail",
         },
       ]}
     />,

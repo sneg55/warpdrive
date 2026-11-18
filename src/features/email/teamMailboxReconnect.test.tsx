@@ -24,8 +24,10 @@ const mailbox = {
   overdue_after_hours: 24,
   backfill_status: "failed",
   backfill_error_id: "E_GMAIL_002",
+  last_error_id: null,
   backfill_days: 90,
   member_ids: [],
+  provider: "gmail" as const,
 };
 
 it("offers a reconnect for a disconnected team mailbox, signed in as that mailbox", async () => {

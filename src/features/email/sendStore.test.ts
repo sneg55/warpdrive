@@ -5,6 +5,7 @@ import { withTestDb } from "@/db/testing";
 import { seedUser } from "@/db/testing/factories";
 import type { AuthUser } from "@/features/permissions/types";
 import { FakeGmailClient } from "./gmailFake";
+import { gmailProvider } from "./provider/gmailProvider";
 import type { SendEmailInput } from "./send";
 import { storeOutboundCopy } from "./sendStore";
 
@@ -91,7 +92,7 @@ describe("storeOutboundCopy thread linking", () => {
         input: inputTo("buyer@corp.com"),
         resolvedTrackingEnabled: false,
         bodyHtml: "<p>hi</p>",
-        gmail: new FakeGmailClient(),
+        provider: gmailProvider(new FakeGmailClient()),
         link: {
           owner: actorOf(owner.id),
           recipients: ["buyer@corp.com"],
@@ -122,7 +123,7 @@ describe("storeOutboundCopy thread linking", () => {
         input: inputTo("buyer@corp.com"),
         resolvedTrackingEnabled: false,
         bodyHtml: "<p>hi</p>",
-        gmail: new FakeGmailClient(),
+        provider: gmailProvider(new FakeGmailClient()),
         link: {
           owner: actorOf(owner.id),
           recipients: ["buyer@corp.com"],
@@ -153,7 +154,7 @@ describe("storeOutboundCopy thread linking", () => {
         input: inputTo("buyer@corp.com"),
         resolvedTrackingEnabled: false,
         bodyHtml: "<p>hi</p>",
-        gmail: new FakeGmailClient(),
+        provider: gmailProvider(new FakeGmailClient()),
         link: {
           owner: actorOf(owner.id),
           recipients: ["buyer@corp.com"],
@@ -183,7 +184,7 @@ describe("storeOutboundCopy thread linking", () => {
         input: inputTo("buyer@corp.com"),
         resolvedTrackingEnabled: false,
         bodyHtml: "<p>hi</p>",
-        gmail: new FakeGmailClient(),
+        provider: gmailProvider(new FakeGmailClient()),
         signal: SIG(),
       });
       expect(r.ok).toBe(true);
@@ -213,7 +214,7 @@ describe("storeOutboundCopy thread linking", () => {
         input: inputTo("buyer@corp.com"),
         resolvedTrackingEnabled: false,
         bodyHtml: "<p>hi</p>",
-        gmail: new FakeGmailClient(),
+        provider: gmailProvider(new FakeGmailClient()),
         link: {
           owner: actorOf(owner.id),
           recipients: ["buyer@corp.com"],

@@ -6,6 +6,7 @@ import { makeTestDb } from "@/test/db";
 import { applyMessageIds } from "./applyMessages";
 import { FakeGmailClient } from "./gmailFake";
 import { listInbox } from "./inboxList";
+import { gmailProvider } from "./provider/gmailProvider";
 import { ensureLocalCopyForReplay } from "./sendReplayRepair";
 import { seedTeamMailbox, teamActor } from "./teamMailbox.test-helpers";
 
@@ -35,7 +36,11 @@ it("repairs sync-first attribution from the recorded send actor without replacin
       ],
     },
   });
-  expect(await applyMessageIds({ db: ctx.db, accountId, gmail, signal }, ["sent"])).toEqual({
+  expect(
+    await applyMessageIds({ db: ctx.db, accountId, provider: gmailProvider(gmail), signal }, [
+      "sent",
+    ]),
+  ).toEqual({
     ok: true,
     value: 1,
   });
@@ -55,7 +60,7 @@ it("repairs sync-first attribution from the recorded send actor without replacin
   await ctx.db.execute(sql`INSERT INTO email_send_attempts
     (id, account_id, idempotency_key, message_id_header, payload, status, gmail_message_id)
     VALUES (${attemptId}, ${accountId}, ${randomUUID()}, ${`${attemptId}@example.com`}, ${JSON.stringify(payload)}::jsonb, 'sent', 'sent')`);
-  const args = { attemptId, accountId, fromEmail, gmail, signal };
+  const args = { attemptId, accountId, fromEmail, provider: gmailProvider(gmail), signal };
   gmail.calls.length = 0;
   expect(await ensureLocalCopyForReplay(ctx.db, args)).toEqual({
     ok: true,

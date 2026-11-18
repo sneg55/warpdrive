@@ -9,6 +9,7 @@ import type { AuthUser } from "@/features/permissions/types";
 import { applyMessageIds } from "./applyMessages";
 import { FakeGmailClient } from "./gmailFake";
 import type { GmailMessage } from "./gmailSchemas";
+import { gmailProvider } from "./provider/gmailProvider";
 
 type TestDb = Parameters<Parameters<typeof withTestDb>[0]>[0];
 const signal = new AbortController().signal;
@@ -57,13 +58,19 @@ describe("applyMessageIds thread ordering", () => {
       fake.messages.set("m1", msg("m1", "t1", "Tue, 01 Jul 2025 10:00:00 +0000"));
       fake.messages.set("m2", msg("m2", "t1", "Tue, 01 Jul 2025 15:00:00 +0000"));
 
-      await applyMessageIds({ db, accountId: acctId, owner, gmail: fake, signal }, ["m1"]);
+      await applyMessageIds(
+        { db, accountId: acctId, owner, provider: gmailProvider(fake), signal },
+        ["m1"],
+      );
       const before = (
         await db.execute(sql`SELECT last_message_at FROM email_threads WHERE account_id=${acctId}`)
       ).rows[0] as { last_message_at: string };
 
       // A reply arrives on the SAME thread with a later Date.
-      await applyMessageIds({ db, accountId: acctId, owner, gmail: fake, signal }, ["m2"]);
+      await applyMessageIds(
+        { db, accountId: acctId, owner, provider: gmailProvider(fake), signal },
+        ["m2"],
+      );
       const after = (
         await db.execute(sql`SELECT last_message_at FROM email_threads WHERE account_id=${acctId}`)
       ).rows[0] as { last_message_at: string };

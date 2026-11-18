@@ -51,4 +51,25 @@ describe("sendFailureMessage", () => {
     const messages = ids.map((id) => sendFailureMessage(id));
     expect(new Set(messages).size).toBe(ids.length);
   });
+
+  test("too many recipients for an agentic mailbox names the 50-recipient cap", () => {
+    expect(sendFailureMessage(ERROR_IDS.AINBOX_TOO_MANY_RECIPIENTS)).toBe(
+      "This mailbox can send to at most 50 recipients per message.",
+    );
+  });
+
+  test("a send the provider refused names the refusal, not a blind retry", () => {
+    expect(sendFailureMessage(ERROR_IDS.AINBOX_SEND_REJECTED)).toMatch(/refused/i);
+    expect(sendFailureMessage(ERROR_IDS.GMAIL_SEND_REJECTED)).toMatch(/refused/i);
+  });
+
+  test("a rejected agentic access token asks for a reconnect", () => {
+    expect(sendFailureMessage(ERROR_IDS.AINBOX_AUTH_FAILED)).toMatch(/reconnect/i);
+  });
+
+  test("a send that may have gone out asks to check Sent before retrying", () => {
+    expect(sendFailureMessage("E_GMAIL_029")).toBe(
+      "This email may have been sent. Check Sent before trying again.",
+    );
+  });
 });

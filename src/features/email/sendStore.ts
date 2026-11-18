@@ -4,8 +4,8 @@ import type { Db } from "@/db/client";
 import type { AuthUser } from "@/features/permissions/types";
 import { err, ok, type Result } from "@/types/result";
 import { canSeeLinkedDeal, canSeeLinkedPerson } from "./emailVisibility";
-import type { GmailClient } from "./gmailClient";
 import { resolveOutboundLink } from "./linking";
+import type { MailProvider } from "./provider/types";
 import type { SendEmailInput } from "./send";
 import { publishTeamThreadUpdated } from "./teamMailboxEvents";
 
@@ -24,7 +24,7 @@ export interface StoreOutboundArgs {
   input: SendEmailInput;
   resolvedTrackingEnabled: boolean;
   bodyHtml: string;
-  gmail: GmailClient;
+  provider: MailProvider;
   link?: OutboundLinkContext;
   visibility?: "private" | "shared" | null;
   signal: AbortSignal;
@@ -34,11 +34,14 @@ export async function storeOutboundCopy(
   db: Db,
   args: StoreOutboundArgs,
 ): Promise<Result<{ messageId: string }, AppError>> {
-  const fetched = await args.gmail.getMessage({ id: args.gmailMessageId, signal: args.signal });
+  const fetched = await args.provider.sentCopy({
+    providerMessageId: args.gmailMessageId,
+    signal: args.signal,
+  });
   args.signal.throwIfAborted();
   if (!fetched.ok) return fetched;
   const gmailThreadId = fetched.value.threadId;
-  const snippet = fetched.value.snippet ?? null;
+  const snippet = fetched.value.snippet;
 
   return db.transaction(async (tx) => {
     const thread = await upsertThread(tx, {

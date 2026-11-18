@@ -118,3 +118,14 @@ it("says nothing to telemetry when the send succeeds", async () => {
   await buildSendHandlers(makeDeps()).handleSend();
   expect(captureMock).not.toHaveBeenCalled();
 });
+
+it("a send the server marked failed keeps the draft and shows that failure's copy", async () => {
+  sendMock.mockResolvedValue({ ok: false, error: { id: ERROR_IDS.AINBOX_SEND_REJECTED } });
+  const deps = makeDeps();
+  await buildSendHandlers(deps).handleSend();
+  expect(deps.resetDraft).not.toHaveBeenCalled();
+  expect(deps.onSent).not.toHaveBeenCalled();
+  expect(deps.setError).toHaveBeenLastCalledWith(
+    sendFailureMessage(ERROR_IDS.AINBOX_SEND_REJECTED),
+  );
+});

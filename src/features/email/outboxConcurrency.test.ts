@@ -6,6 +6,7 @@ import { FakeStorageClient } from "../files/storageFake";
 import { FakeGmailClient } from "./gmailFake";
 import { enqueueSend, processSendAttempt } from "./outbox";
 import { markSent } from "./outboxReconcile";
+import { gmailProvider } from "./provider/gmailProvider";
 
 type TestDb = Parameters<Parameters<typeof withTestDb>[0]>[0];
 const newSignal = (): AbortSignal => new AbortController().signal;
@@ -76,7 +77,7 @@ describe("processSendAttempt concurrency", () => {
       const aPromise = processSendAttempt(db, {
         accountId: acct,
         idempotencyKey: KEY,
-        gmail: fakeA,
+        provider: gmailProvider(fakeA),
         storage: new FakeStorageClient(),
         signal: newSignal(),
       });
@@ -90,7 +91,7 @@ describe("processSendAttempt concurrency", () => {
       const rB = await processSendAttempt(db, {
         accountId: acct,
         idempotencyKey: KEY,
-        gmail: fakeB,
+        provider: gmailProvider(fakeB),
         storage: new FakeStorageClient(),
         signal: newSignal(),
       });

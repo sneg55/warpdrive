@@ -4,6 +4,7 @@ import { seedUser } from "@/db/testing/factories";
 import { makeTestDb } from "@/test/db";
 import { ok } from "@/types/result";
 import { FakeGmailClient } from "./gmailFake";
+import { gmailProvider } from "./provider/gmailProvider";
 import { syncMailbox } from "./sync";
 import { seedTeamMailbox } from "./teamMailbox.test-helpers";
 import { runTeamBackfillPage } from "./teamMailboxBackfill";
@@ -72,7 +73,7 @@ it.each([
   }
   const result = await runTeamBackfillPage(ctx.db, {
     accountId,
-    gmail,
+    provider: gmailProvider(gmail),
     signal,
     listThreads: ({ signal }) => {
       signal.throwIfAborted();

@@ -6,6 +6,7 @@ import { seedPipelineWithStages, seedUser } from "@/db/testing/factories";
 import { ok } from "@/types/result";
 import { FakeStorageClient } from "../files/storageFake";
 import { FakeGmailClient } from "./gmailFake";
+import { gmailProvider } from "./provider/gmailProvider";
 import { sendEmail } from "./send";
 import { runSendJob } from "./worker";
 
@@ -74,7 +75,7 @@ async function deliverScheduled(
       idempotencyKey: args.idempotencyKey,
       signal: AbortSignal.timeout(8000),
     },
-    { resolveClient: () => Promise.resolve(ok(args.workerFake)) },
+    { resolveClient: () => Promise.resolve(ok(gmailProvider(args.workerFake))) },
   );
   expect(jobResult.ok).toBe(true);
   if (jobResult.ok) expect(jobResult.value.status).toBe("sent");
@@ -105,7 +106,7 @@ describe("scheduled send deal linking (linkDealId via the worker path)", () => {
         actorId: owner.id,
         actorType: "regular",
         actorGroupIds: new Set<string>(),
-        gmail: setupFake,
+        provider: gmailProvider(setupFake),
         storage: new FakeStorageClient(),
         input: {
           accountId: acctId,
@@ -155,7 +156,7 @@ describe("scheduled send deal linking (linkDealId via the worker path)", () => {
         actorId: owner.id,
         actorType: "regular",
         actorGroupIds: new Set<string>(),
-        gmail: setupFake,
+        provider: gmailProvider(setupFake),
         storage: new FakeStorageClient(),
         input: {
           accountId: acctId,

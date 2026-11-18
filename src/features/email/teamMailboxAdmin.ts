@@ -33,8 +33,10 @@ export interface TeamMailboxSettings {
   overdue_after_hours: number;
   backfill_status: string | null;
   backfill_error_id: string | null;
+  last_error_id: string | null;
   backfill_days: number;
   member_ids: string[];
+  provider: "gmail" | "agentic_inbox";
 }
 
 export async function listTeamMailboxSettings(
@@ -46,7 +48,7 @@ export async function listTeamMailboxSettings(
   if (!allowed.ok) return allowed;
   const rows =
     await db.execute(sql`SELECT a.id, a.email_address, COALESCE(a.display_name, a.email_address) AS display_name,
-    a.status, a.overdue_after_hours, a.backfill_status, a.backfill_error_id, a.backfill_days,
+    a.status, a.overdue_after_hours, a.backfill_status, a.backfill_error_id, a.last_error_id, a.backfill_days, a.provider,
     ARRAY(SELECT am.user_id FROM email_account_members am JOIN users u ON u.id=am.user_id AND u.is_active WHERE am.account_id=a.id) AS member_ids
     FROM email_accounts a WHERE a.kind='team' ORDER BY a.display_name, a.id`);
   signal.throwIfAborted();

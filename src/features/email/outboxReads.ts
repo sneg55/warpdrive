@@ -9,6 +9,7 @@ export interface OutboxItem {
   to: string[];
   status: string;
   scheduledAt: string | null;
+  nextAttemptAt: string | null;
   errorId: string | null;
   createdAt: string;
 }
@@ -19,6 +20,7 @@ interface OutboxRow {
   to_emails: unknown;
   status: string;
   scheduled_at: string | null;
+  next_attempt_at: string | null;
   error_id: string | null;
   created_at: string;
 }
@@ -34,11 +36,11 @@ export async function listOutbox(
       SELECT s.id,
              s.payload ->> 'subject' AS subject,
              COALESCE(s.payload -> 'to', '[]'::jsonb) AS to_emails,
-             s.status, s.scheduled_at, s.error_id, s.created_at
+             s.status, s.scheduled_at, s.next_attempt_at, s.error_id, s.created_at
       FROM email_send_attempts s JOIN email_accounts a ON a.id = s.account_id
       WHERE ${outboxAuthorPredicate(actor.id)}
         AND (
-          s.status IN ('pending', 'sending', 'needs_review')
+          s.status IN ('pending', 'sending', 'needs_review', 'waiting_for_limit')
           OR (s.scheduled_at IS NOT NULL AND s.scheduled_at > now())
         )
         AND s.status <> 'sent'
@@ -52,6 +54,7 @@ export async function listOutbox(
     to: Array.isArray(r.to_emails) ? (r.to_emails as string[]) : [],
     status: r.status,
     scheduledAt: r.scheduled_at,
+    nextAttemptAt: r.next_attempt_at,
     errorId: r.error_id,
     createdAt: r.created_at,
   }));

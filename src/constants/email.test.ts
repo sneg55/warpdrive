@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   CLAIM_LEASE_SECONDS,
+  EMAIL_PROVIDER,
   EMAIL_SEND_STATUS,
   EMAIL_VISIBILITY,
   SYNC_CADENCE_SECONDS,
@@ -9,7 +10,17 @@ import { ERROR_IDS } from "./errorIds";
 
 describe("email constants", () => {
   it("declares the send-status state machine values", () => {
-    expect(EMAIL_SEND_STATUS).toEqual(["pending", "sending", "sent", "failed", "needs_review"]);
+    expect(EMAIL_SEND_STATUS).toEqual([
+      "pending",
+      "sending",
+      "sent",
+      "failed",
+      "needs_review",
+      "waiting_for_limit",
+    ]);
+  });
+  it("declares the provider values", () => {
+    expect(EMAIL_PROVIDER).toEqual(["gmail", "agentic_inbox"]);
   });
   it("declares the two visibility values", () => {
     expect(EMAIL_VISIBILITY).toEqual(["private", "shared"]);

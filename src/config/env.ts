@@ -46,6 +46,8 @@ function applyLegacyStorageNames(
 
 const boolFromString = z.enum(["true", "false"]).transform((v) => v === "true");
 
+const flagFromString = z.string().transform((v) => v === "true" || v === "1");
+
 const base = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   GOOGLE_OAUTH_CLIENT_ID: z.string().min(1),
@@ -94,6 +96,7 @@ const base = z.object({
   // Kill switch for the GitHub update-check banner. A hosted/managed deployment sets this true;
   // OSS self-hosters leave it false to get the banner.
   DISABLE_UPDATE_CHECK: boolFromString.default(false),
+  AGENTIC_INBOX_ENABLED: flagFromString.default(false),
   INTERCOM_ACCESS_TOKEN: z.string().default(""),
   INTERCOM_REGION: z.enum(["us", "eu", "au"]).default("us"),
   X_CLIENT_ID: z.string().default(""),

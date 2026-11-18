@@ -3,12 +3,12 @@ import { AppError, ERROR_IDS } from "@/constants/errorIds";
 import type { DbOrTx } from "@/server/realtime/channelVersions";
 import { resolveLink } from "./linking";
 import type { MailboxVisibility } from "./mailboxVisibility";
-import type { ParsedGmailMessage } from "./mimeParse";
+import type { ParsedMessage } from "./mimeParse";
 
 export async function upsertAppliedThread(
   tx: DbOrTx,
   args: { accountId: string; visible: MailboxVisibility; importedAt?: Date; signal: AbortSignal },
-  parsed: ParsedGmailMessage,
+  parsed: ParsedMessage,
 ): Promise<{ id: string; dealId: string | null }> {
   args.signal.throwIfAborted();
   const existing = await tx.execute(

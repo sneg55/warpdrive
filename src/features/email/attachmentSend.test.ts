@@ -6,6 +6,7 @@ import { ok } from "@/types/result";
 import { FakeStorageClient } from "../files/storageFake";
 import { seedAccount, seedReadyFile } from "./attachmentSend.helpers";
 import { FakeGmailClient } from "./gmailFake";
+import { gmailProvider } from "./provider/gmailProvider";
 import { sendEmail } from "./send";
 
 describe("sendEmail with attachments (Task 6.1)", () => {
@@ -25,7 +26,7 @@ describe("sendEmail with attachments (Task 6.1)", () => {
         actorId: owner.id,
         actorType: "regular",
         actorGroupIds: new Set<string>(),
-        gmail: fake,
+        provider: gmailProvider(fake),
         storage,
         input: {
           accountId: acctId,
@@ -83,7 +84,7 @@ describe("sendEmail with attachments (Task 6.1)", () => {
         actorId: owner.id,
         actorType: "regular",
         actorGroupIds: new Set<string>(),
-        gmail: fake,
+        provider: gmailProvider(fake),
         storage,
         input: {
           accountId: acctId,
@@ -143,7 +144,7 @@ describe("sendEmail with attachments (Task 6.1)", () => {
         actorId: attacker.id,
         actorType: "regular",
         actorGroupIds: new Set<string>(),
-        gmail: fake,
+        provider: gmailProvider(fake),
         storage,
         input: {
           accountId: attackerAcctId,

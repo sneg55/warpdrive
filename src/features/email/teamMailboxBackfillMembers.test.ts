@@ -7,6 +7,7 @@ import * as bossProvider from "@/jobs/requireBoss";
 import { makeTestDb } from "@/test/db";
 import { ok } from "@/types/result";
 import { FakeGmailClient } from "./gmailFake";
+import { gmailProvider } from "./provider/gmailProvider";
 import { enqueuePendingBackfill } from "./teamBackfillJobs";
 import { seedTeamMailbox } from "./teamMailbox.test-helpers";
 import { runTeamBackfillPage } from "./teamMailboxBackfill";
@@ -60,7 +61,7 @@ it("defers a queued import until members exist, then resolves historical CRM lin
     messages: [{ id: "history", labelIds: ["INBOX"] }],
   });
   const listThreads = vi.fn(() => Promise.resolve(ok({ threads: [{ id: "history" }] })));
-  const args = { accountId, gmail, listThreads, signal };
+  const args = { accountId, provider: gmailProvider(gmail), listThreads, signal };
   expect((await runTeamBackfillPage(ctx.db, args)).ok).toBe(true);
   expect(listThreads).not.toHaveBeenCalled();
   expect(

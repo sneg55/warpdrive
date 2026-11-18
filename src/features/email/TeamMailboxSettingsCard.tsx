@@ -2,11 +2,15 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { MultiCombobox } from "@/components/ui/MultiCombobox";
+import { EMAIL_PROVIDER_KIND } from "@/constants/email";
 import { TEAM_MAILBOX_DEFAULT_BACKFILL } from "@/constants/teamMailbox";
 import { readCsrfToken } from "@/utils/csrfCookie";
+import { AgenticConnectDialog } from "./AgenticConnectDialog";
+import { AgenticMailboxNotice } from "./AgenticMailboxNotice";
 import { disconnectMailboxAction } from "./actions";
 import { setTeamMailboxMembersAction, updateTeamMailboxAction } from "./teamMailboxActions";
 import type { TeamMailboxSettings } from "./teamMailboxAdmin";
@@ -15,9 +19,11 @@ import { redirectToTeamMailboxConsent } from "./teamMailboxConsentRedirect";
 export function TeamMailboxSettingsCard({
   mailbox,
   users,
+  agenticEnabled,
 }: {
   mailbox: TeamMailboxSettings;
   users: { id: string; name: string }[];
+  agenticEnabled: boolean;
 }): React.ReactNode {
   const router = useRouter();
   const [name, setName] = useState(mailbox.display_name);
@@ -25,6 +31,7 @@ export function TeamMailboxSettingsCard({
   const [members, setMembers] = useState(mailbox.member_ids);
   const [pending, setPending] = useState(false);
   const [confirm, setConfirm] = useState(false);
+  const [agenticDialog, setAgenticDialog] = useState(false);
   const [error, setError] = useState<string | null>(null);
   async function save(): Promise<void> {
     setPending(true);
@@ -63,6 +70,7 @@ export function TeamMailboxSettingsCard({
     }
   }
   const disconnected = mailbox.status === "disconnected";
+  const agentic = mailbox.provider === EMAIL_PROVIDER_KIND.agenticInbox;
   async function disconnect(): Promise<void> {
     setPending(true);
     try {
@@ -81,8 +89,16 @@ export function TeamMailboxSettingsCard({
         <p className="text-sm text-muted-foreground">
           {mailbox.status}, {mailbox.member_ids.length} members
         </p>
+        {agentic && <Badge variant="secondary">Agentic inbox</Badge>}
       </div>
-      {disconnected && (
+      {agentic && (
+        <AgenticMailboxNotice
+          disconnected={disconnected}
+          lastErrorId={mailbox.last_error_id}
+          agenticEnabled={agenticEnabled}
+        />
+      )}
+      {disconnected && !agentic && (
         <p className="text-sm text-destructive">
           Google disconnected this mailbox, so sync and sending are stopped. Reconnect it by signing
           in as {mailbox.email_address}.
@@ -125,7 +141,20 @@ export function TeamMailboxSettingsCard({
         <Button disabled={pending} onClick={() => void save()}>
           Save mailbox
         </Button>
-        {disconnected ? (
+        {agentic ? (
+          <>
+            {agenticEnabled && (
+              <Button variant="outline" disabled={pending} onClick={() => setAgenticDialog(true)}>
+                Reconnect
+              </Button>
+            )}
+            {!disconnected && (
+              <Button variant="outline" disabled={pending} onClick={() => setConfirm(true)}>
+                Disconnect
+              </Button>
+            )}
+          </>
+        ) : disconnected ? (
           <Button variant="outline" disabled={pending} onClick={() => void reconnect()}>
             Reconnect
           </Button>
@@ -135,6 +164,13 @@ export function TeamMailboxSettingsCard({
           </Button>
         )}
       </div>
+      {agentic && (
+        <AgenticConnectDialog
+          open={agenticDialog}
+          onOpenChange={setAgenticDialog}
+          reconnectTarget={{ accountId: mailbox.id, address: mailbox.email_address }}
+        />
+      )}
       <ConfirmDialog
         open={confirm}
         onOpenChange={setConfirm}

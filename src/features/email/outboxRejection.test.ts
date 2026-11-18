@@ -6,6 +6,7 @@ import { err, ok } from "@/types/result";
 import { FakeStorageClient } from "../files/storageFake";
 import { FakeGmailClient } from "./gmailFake";
 import { enqueueSend, processSendAttempt } from "./outbox";
+import { gmailProvider } from "./provider/gmailProvider";
 
 type TestDb = Parameters<Parameters<typeof withTestDb>[0]>[0];
 const newSignal = (): AbortSignal => new AbortController().signal;
@@ -54,7 +55,7 @@ it("marks failed with E_GMAIL_003 on a pre-acceptance 4xx rejection", async () =
     const r = await processSendAttempt(db, {
       accountId: acct,
       idempotencyKey: KEY,
-      gmail: fake,
+      provider: gmailProvider(fake),
       storage: new FakeStorageClient(),
       signal: newSignal(),
     });
@@ -83,7 +84,7 @@ it("retries a definite 4xx pre-acceptance rejection instead of reconciling", asy
     const r1 = await processSendAttempt(db, {
       accountId: acct,
       idempotencyKey: KEY,
-      gmail: fake,
+      provider: gmailProvider(fake),
       storage: new FakeStorageClient(),
       signal: newSignal(),
     });
@@ -94,7 +95,7 @@ it("retries a definite 4xx pre-acceptance rejection instead of reconciling", asy
     const r2 = await processSendAttempt(db, {
       accountId: acct,
       idempotencyKey: KEY,
-      gmail: fake,
+      provider: gmailProvider(fake),
       storage: new FakeStorageClient(),
       signal: newSignal(),
     });
@@ -117,7 +118,7 @@ it("does NOT re-send after an ambiguous 5xx failure (reconciles instead)", async
     const r1 = await processSendAttempt(db, {
       accountId: acct,
       idempotencyKey: KEY,
-      gmail: fake,
+      provider: gmailProvider(fake),
       storage: new FakeStorageClient(),
       signal: newSignal(),
     });
@@ -127,7 +128,7 @@ it("does NOT re-send after an ambiguous 5xx failure (reconciles instead)", async
     await processSendAttempt(db, {
       accountId: acct,
       idempotencyKey: KEY,
-      gmail: fake,
+      provider: gmailProvider(fake),
       storage: new FakeStorageClient(),
       signal: newSignal(),
     });

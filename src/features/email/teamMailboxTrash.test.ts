@@ -5,6 +5,7 @@ import { seedUser } from "@/db/testing/factories";
 import type { AuthUser } from "@/features/permissions/types";
 import { makeTestDb } from "@/test/db";
 import { trashThreadAction } from "./actions";
+import { seedAgenticMailbox } from "./agentic.test-helpers";
 import { encryptToken } from "./crypto";
 import { FakeGmailClient } from "./gmailFake";
 import { seedTeamMailbox, teamActor } from "./teamMailbox.test-helpers";
@@ -89,4 +90,29 @@ it("authorizes the reader trash action before refreshing tokens or calling Gmail
   http.mockClear();
   expect((await trashThreadAction("csrf", { threadId })).ok).toBe(false);
   expect(http).not.toHaveBeenCalled();
+});
+
+it("trash on an agentic thread returns E_AINBOX_012", async () => {
+  const signal = AbortSignal.timeout(8000);
+  const member = await seedUser(ctx.db);
+  const accountId = await seedAgenticMailbox(
+    ctx.db,
+    { address: "media@example.com", baseUrl: "https://inbox.example", memberIds: [member.id] },
+    signal,
+  );
+  const thread = (
+    await ctx.db.execute(sql`INSERT INTO email_threads (account_id, gmail_thread_id, subject, last_message_at)
+      VALUES (${accountId}, 'agentic-thread', 'Hello', now()) RETURNING id`)
+  ).rows[0] as { id: string };
+  const http = vi.fn();
+  vi.stubGlobal("fetch", http);
+  actor = teamActor(member.id);
+
+  const r = await trashThreadAction("csrf", { threadId: thread.id });
+  expect(r.ok ? null : r.error.id).toBe("E_AINBOX_012");
+  expect(http).not.toHaveBeenCalled();
+  expect(
+    (await ctx.db.execute(sql`SELECT trashed_at FROM email_threads WHERE id=${thread.id}`)).rows[0]
+      ?.trashed_at,
+  ).toBeNull();
 });

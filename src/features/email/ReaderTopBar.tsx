@@ -31,9 +31,11 @@ function readFolder(raw: string | null): NeighborFolder {
 export function ReaderTopBar({
   threadId,
   canManage,
+  canTrash = true,
 }: {
   threadId: string;
   canManage: boolean;
+  canTrash?: boolean;
 }): React.ReactNode {
   const router = useRouter();
   const reportError = useActionError();
@@ -127,31 +129,33 @@ export function ReaderTopBar({
             {STRINGS.inbox.archive}
           </button>
 
-          <AlertDialog>
-            <AlertDialogTrigger
-              disabled={busy}
-              className="rounded-md border border-border px-3 py-1 text-sm text-destructive transition-transform hover:bg-destructive/10 active:scale-[0.96] disabled:opacity-50"
-            >
-              {STRINGS.inbox.delete}
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>{STRINGS.inbox.deleteConfirmTitle}</AlertDialogTitle>
-                <AlertDialogDescription>{STRINGS.inbox.deleteConfirmBody}</AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel className="rounded-md border border-border px-3 py-1.5 text-sm transition-transform hover:bg-accent active:scale-[0.96]">
-                  {STRINGS.inbox.deleteCancel}
-                </AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={() => void del()}
-                  className="rounded-md bg-destructive px-3 py-1.5 text-sm font-medium text-destructive-foreground transition-transform hover:bg-destructive/90 active:scale-[0.96]"
-                >
-                  {STRINGS.inbox.deleteConfirmAction}
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+          {canTrash && (
+            <AlertDialog>
+              <AlertDialogTrigger
+                disabled={busy}
+                className="rounded-md border border-border px-3 py-1 text-sm text-destructive transition-transform hover:bg-destructive/10 active:scale-[0.96] disabled:opacity-50"
+              >
+                {STRINGS.inbox.delete}
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>{STRINGS.inbox.deleteConfirmTitle}</AlertDialogTitle>
+                  <AlertDialogDescription>{STRINGS.inbox.deleteConfirmBody}</AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel className="rounded-md border border-border px-3 py-1.5 text-sm transition-transform hover:bg-accent active:scale-[0.96]">
+                    {STRINGS.inbox.deleteCancel}
+                  </AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => void del()}
+                    className="rounded-md bg-destructive px-3 py-1.5 text-sm font-medium text-destructive-foreground transition-transform hover:bg-destructive/90 active:scale-[0.96]"
+                  >
+                    {STRINGS.inbox.deleteConfirmAction}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
         </div>
       )}
     </div>

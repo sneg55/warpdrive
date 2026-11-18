@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import type { Db } from "@/db/client";
 import { mailboxAccessPredicate } from "./mailboxAccess";
+import type { ProviderKind } from "./provider/types";
 import { unreadPredicate } from "./unreadPredicate";
 
 export interface ActorMailbox {
@@ -8,6 +9,7 @@ export interface ActorMailbox {
   emailAddress: string;
   displayName: string;
   kind: "personal" | "team";
+  provider: ProviderKind;
   status: string;
   unread: number;
 }
@@ -20,7 +22,7 @@ export async function listActorMailboxes(
   signal.throwIfAborted();
   const rows =
     await db.execute(sql`SELECT a.id, a.email_address AS "emailAddress", COALESCE(a.display_name, a.email_address) AS "displayName",
-    a.kind, a.status, count(t.id) FILTER (WHERE t.archived_at IS NULL AND t.trashed_at IS NULL AND (${unreadPredicate}))::int AS unread
+    a.kind, a.provider, a.status, count(t.id) FILTER (WHERE t.archived_at IS NULL AND t.trashed_at IS NULL AND (${unreadPredicate}))::int AS unread
     FROM email_accounts a LEFT JOIN email_threads t ON t.account_id=a.id
     LEFT JOIN email_thread_reads r ON a.kind='personal' AND r.thread_id=t.id AND r.user_id=${actorId}
     WHERE ${mailboxAccessPredicate(actorId)} GROUP BY a.id ORDER BY a.kind, a.display_name, a.id`);

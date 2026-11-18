@@ -2,8 +2,8 @@ import { sql } from "drizzle-orm";
 import type { AppError } from "@/constants/errorIds";
 import type { Db } from "@/db/client";
 import { ok, type Result } from "@/types/result";
-import type { GmailClient } from "./gmailClient";
 import type { SendPayload } from "./outboxClaim";
+import type { MailProvider } from "./provider/types";
 import type { SendEmailInput } from "./send";
 import { storeOutboundCopy } from "./sendStore";
 import { hydrateOwner } from "./syncCursor";
@@ -13,7 +13,7 @@ interface ReplayRepairArgs {
   attemptId: string;
   accountId: string;
   fromEmail: string;
-  gmail: GmailClient;
+  provider: MailProvider;
   signal: AbortSignal;
 }
 
@@ -88,7 +88,7 @@ export async function ensureLocalCopyForReplay(
     input,
     resolvedTrackingEnabled,
     bodyHtml: payload.html,
-    gmail: args.gmail,
+    provider: args.provider,
     link,
     visibility: payload.visibility ?? null,
     signal: args.signal,

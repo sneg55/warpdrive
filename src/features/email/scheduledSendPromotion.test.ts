@@ -5,6 +5,7 @@ import { seedUser } from "@/db/testing/factories";
 import { ok } from "@/types/result";
 import { FakeStorageClient } from "../files/storageFake";
 import { FakeGmailClient } from "./gmailFake";
+import { gmailProvider } from "./provider/gmailProvider";
 import { sendEmail } from "./send";
 import { runSendJob } from "./worker";
 
@@ -57,7 +58,7 @@ describe("scheduled-send promotion: end-to-end (findings #1 and #2)", () => {
         actorId: user.id,
         actorType: "regular",
         actorGroupIds: new Set<string>(),
-        gmail: setupFake,
+        provider: gmailProvider(setupFake),
         storage: new FakeStorageClient(),
         input: {
           accountId: acctId,
@@ -89,7 +90,7 @@ describe("scheduled-send promotion: end-to-end (findings #1 and #2)", () => {
       const jobResult = await runSendJob(
         db,
         { accountId: acctId, idempotencyKey, signal: AbortSignal.timeout(8000) },
-        { resolveClient: () => Promise.resolve(ok(workerFake)) },
+        { resolveClient: () => Promise.resolve(ok(gmailProvider(workerFake))) },
       );
       expect(jobResult.ok).toBe(true);
       if (jobResult.ok) expect(jobResult.value.status).toBe("sent");
@@ -143,7 +144,7 @@ describe("scheduled-send promotion: end-to-end (findings #1 and #2)", () => {
         actorId: user.id,
         actorType: "regular",
         actorGroupIds: new Set<string>(),
-        gmail: setupFake,
+        provider: gmailProvider(setupFake),
         storage: new FakeStorageClient(),
         input: {
           accountId: acctId,
@@ -161,7 +162,7 @@ describe("scheduled-send promotion: end-to-end (findings #1 and #2)", () => {
       const jobResult = await runSendJob(
         db,
         { accountId: acctId, idempotencyKey, signal: AbortSignal.timeout(8000) },
-        { resolveClient: () => Promise.resolve(ok(workerFake)) },
+        { resolveClient: () => Promise.resolve(ok(gmailProvider(workerFake))) },
       );
       expect(jobResult.ok).toBe(false);
       expect(workerFake.calls.filter((c) => c.method === "sendRaw").length).toBe(0);

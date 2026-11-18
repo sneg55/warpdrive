@@ -4,6 +4,7 @@ import type { withTestDb } from "@/db/testing";
 import { ok } from "@/types/result";
 import type { FakeGmailClient } from "./gmailFake";
 import type { SendPayload } from "./outboxClaim";
+import { gmailProvider } from "./provider/gmailProvider";
 import { runSendJob } from "./worker";
 
 type TestDb = Parameters<Parameters<typeof withTestDb>[0]>[0];
@@ -57,7 +58,7 @@ export async function deliverScheduled(
       idempotencyKey: args.idempotencyKey,
       signal,
     },
-    { resolveClient: () => Promise.resolve(ok(args.workerFake)) },
+    { resolveClient: () => Promise.resolve(ok(gmailProvider(args.workerFake))) },
   );
   signal.throwIfAborted();
   expect(jobResult.ok).toBe(true);

@@ -1,7 +1,8 @@
+import type { EMAIL_MESSAGE_DIRECTION } from "@/constants/email";
 import { extractAttachments, type ParsedAttachment } from "./attachmentParse";
 import type { GmailMessage } from "./gmailSchemas";
 
-export interface ParsedGmailMessage {
+export interface ParsedMessage {
   gmailMessageId: string;
   threadId: string;
   fromEmail: string;
@@ -17,6 +18,7 @@ export interface ParsedGmailMessage {
   sentAt: Date | null;
   participants: string[];
   attachments: ParsedAttachment[];
+  direction?: (typeof EMAIL_MESSAGE_DIRECTION)[number];
 }
 
 type GmailPart = NonNullable<GmailMessage["payload"]>;
@@ -25,7 +27,7 @@ type GmailPart = NonNullable<GmailMessage["payload"]>;
 // name and bare address. The address is what we match contacts on and fall back to for display;
 // the name is what the list/reader shows. Bodies of the header are trimmed; a quoted name is
 // unquoted. No angle brackets means the whole value is the address (name null).
-function parseAddress(raw: string): { name: string | null; email: string } {
+export function parseAddress(raw: string): { name: string | null; email: string } {
   const value = raw.trim();
   const open = value.lastIndexOf("<");
   const close = value.lastIndexOf(">");
@@ -64,7 +66,7 @@ function splitAddressList(value: string): string[] {
 
 // Split an address-list header ("a@x.com, b@y.com") into trimmed, non-empty BARE addresses,
 // dropping any display names so participant matching compares plain addresses.
-function splitAddresses(value: string | undefined): string[] {
+export function splitAddresses(value: string | undefined): string[] {
   if (value === undefined) return [];
   return splitAddressList(value)
     .map((a) => parseAddress(a).email)
@@ -114,7 +116,7 @@ function collectBodies(part: GmailPart, acc: Bodies): void {
 // Decode a Gmail message into the structured shape the sync layer stores. Guards
 // every optional/indexed field (noUncheckedIndexedAccess). Bodies are stored raw;
 // sanitization happens at render time, not here.
-export function parseGmailMessage(msg: GmailMessage): ParsedGmailMessage {
+export function parseGmailMessage(msg: GmailMessage): ParsedMessage {
   const payload = msg.payload;
   const headers = payload?.headers;
 

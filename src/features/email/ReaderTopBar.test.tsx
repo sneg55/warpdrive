@@ -55,6 +55,7 @@ vi.mock("./actions", () => ({
 }));
 vi.mock("@/utils/csrfCookie", () => ({ readCsrfToken: () => "csrf" }));
 
+import { STRINGS } from "@/constants/strings";
 import { ReaderTopBar } from "./ReaderTopBar";
 
 afterEach(() => {
@@ -174,4 +175,15 @@ it("hides Archive and Delete for a non-owner (canManage false)", () => {
   render(<ReaderTopBar threadId="t1" canManage={false} />);
   expect(screen.queryByRole("button", { name: "Archive" })).toBeNull();
   expect(screen.queryByRole("button", { name: "Delete" })).toBeNull();
+});
+
+it("hides the trash action when the mailbox cannot trash", () => {
+  render(<ReaderTopBar threadId="t1" canManage canTrash={false} />);
+  expect(screen.getByRole("button", { name: "Archive" })).toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: STRINGS.inbox.delete })).not.toBeInTheDocument();
+});
+
+it("shows the trash action by default", () => {
+  render(<ReaderTopBar threadId="t1" canManage />);
+  expect(screen.getByRole("button", { name: STRINGS.inbox.delete })).toBeInTheDocument();
 });

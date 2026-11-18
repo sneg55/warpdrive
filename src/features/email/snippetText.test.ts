@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { decodeEmailSnippet } from "./snippetText";
+import { EMAIL_SNIPPET_MAX_CHARS } from "@/constants/email";
+import { bodySnippet, decodeEmailSnippet } from "./snippetText";
 
 describe("decodeEmailSnippet", () => {
   it("decodes the numeric apostrophe Gmail escapes into snippets", () => {
@@ -34,5 +35,24 @@ describe("decodeEmailSnippet", () => {
 
   it("passes null through", () => {
     expect(decodeEmailSnippet(null)).toBe(null);
+  });
+});
+
+describe("bodySnippet", () => {
+  it("strips tags, collapses whitespace and decodes entities", () => {
+    expect(bodySnippet("<p>Hi&nbsp;there</p>\n<div>Bye &amp; thanks</div>")).toBe(
+      "Hi there Bye & thanks",
+    );
+  });
+
+  it("returns null for an empty or missing body", () => {
+    expect(bodySnippet(null)).toBeNull();
+    expect(bodySnippet("<br>  ")).toBeNull();
+  });
+
+  it("caps the snippet length", () => {
+    expect(bodySnippet("x".repeat(EMAIL_SNIPPET_MAX_CHARS + 50))).toHaveLength(
+      EMAIL_SNIPPET_MAX_CHARS,
+    );
   });
 });

@@ -107,6 +107,7 @@ export const emailSendAttempts = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     sentAt: timestamp("sent_at", { withTimezone: true }),
     scheduledAt: timestamp("scheduled_at", { withTimezone: true }),
+    nextAttemptAt: timestamp("next_attempt_at", { withTimezone: true }),
   },
   (t) => [
     unique("uq_attempt_acct_key").on(t.accountId, t.idempotencyKey),

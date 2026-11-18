@@ -6,6 +6,7 @@ import { ok } from "@/types/result";
 import { FakeStorageClient } from "../files/storageFake";
 import { seedAccount, seedReadyFile } from "./attachmentSend.helpers";
 import { FakeGmailClient } from "./gmailFake";
+import { gmailProvider } from "./provider/gmailProvider";
 import { sendEmail } from "./send";
 
 describe("resolveAttachments actor authz (Phase 6 security)", () => {
@@ -46,7 +47,7 @@ describe("resolveAttachments actor authz (Phase 6 security)", () => {
         actorId: admin.id,
         actorType: "admin",
         actorGroupIds: new Set<string>(),
-        gmail: fake,
+        provider: gmailProvider(fake),
         storage,
         input: {
           accountId: adminAcctId,
@@ -109,7 +110,7 @@ describe("resolveAttachments actor authz (Phase 6 security)", () => {
         actorId: member.id,
         actorType: "regular",
         actorGroupIds: new Set<string>([groupId]),
-        gmail: fake,
+        provider: gmailProvider(fake),
         storage,
         input: {
           accountId: memberAcctId,

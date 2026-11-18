@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { AppError } from "@/constants/errorIds";
 import { withTestDb } from "@/db/testing";
 import { err, ok } from "@/types/result";
+import { seedAgenticMailbox } from "./agentic.test-helpers";
 import { FakeGmailClient } from "./gmailFake";
 import { sweepAllMailboxes } from "./spamSweepAll";
 
@@ -60,6 +61,29 @@ describe("sweepAllMailboxes", () => {
       expect(r).toHaveLength(2);
       expect(r.filter((x) => x.ok === false).map((x) => x.email)).toEqual(["a@gunsnation.com"]);
       expect(r.filter((x) => x.ok === true).map((x) => x.email)).toEqual(["b@gunsnation.com"]);
+    });
+  });
+  it("the spam sweep skips agentic accounts", async () => {
+    await withTestDb(async (db) => {
+      await seedAccount(db, "a@gunsnation.com", "connected");
+      await seedAgenticMailbox(
+        db,
+        { address: "media@gunsnation.com", baseUrl: "https://inbox.example", memberIds: [] },
+        newSignal(),
+      );
+      const resolved: string[] = [];
+      const r = await sweepAllMailboxes(
+        db,
+        {
+          resolveClient: (accountId: string) => {
+            resolved.push(accountId);
+            return okClient();
+          },
+        },
+        newSignal(),
+      );
+      expect(r.map((x) => x.email)).toEqual(["a@gunsnation.com"]);
+      expect(resolved).toHaveLength(1);
     });
   });
 });

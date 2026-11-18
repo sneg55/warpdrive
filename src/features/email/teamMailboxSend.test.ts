@@ -6,6 +6,7 @@ import { makeTestDb } from "@/test/db";
 import { FakeStorageClient } from "../files/storageFake";
 import { FakeGmailClient } from "./gmailFake";
 import { processSendAttempt } from "./outbox";
+import { gmailProvider } from "./provider/gmailProvider";
 import { sendEmail } from "./send";
 import { seedTeamMailbox } from "./teamMailbox.test-helpers";
 
@@ -27,7 +28,7 @@ it("attributes team sends to the actor and rejects queued sends after removal", 
     actorId: user.id,
     actorType: "regular" as const,
     actorGroupIds: new Set<string>(),
-    gmail,
+    provider: gmailProvider(gmail),
     storage,
     signal,
     input: {
@@ -74,7 +75,7 @@ it("attributes team sends to the actor and rejects queued sends after removal", 
   const removed = await processSendAttempt(ctx.db, {
     accountId,
     idempotencyKey: key,
-    gmail,
+    provider: gmailProvider(gmail),
     storage,
     signal,
   });

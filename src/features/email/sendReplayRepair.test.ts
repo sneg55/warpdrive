@@ -4,6 +4,7 @@ import { withTestDb } from "@/db/testing";
 import { seedPipelineWithStages, seedUser } from "@/db/testing/factories";
 import { FakeGmailClient } from "./gmailFake";
 import type { SendPayload } from "./outboxClaim";
+import { gmailProvider } from "./provider/gmailProvider";
 import { ensureLocalCopyForReplay } from "./sendReplayRepair";
 
 type TestDb = Parameters<Parameters<typeof withTestDb>[0]>[0];
@@ -102,7 +103,7 @@ describe("ensureLocalCopyForReplay", () => {
         attemptId,
         accountId: acctId,
         fromEmail: "owner-replay@gunsnation.com",
-        gmail: fake,
+        provider: gmailProvider(fake),
         signal: AbortSignal.timeout(8000),
       });
       expect(result.ok).toBe(true);
@@ -142,7 +143,7 @@ describe("ensureLocalCopyForReplay", () => {
         attemptId,
         accountId: acctId,
         fromEmail: "owner-replay2@gunsnation.com",
-        gmail: fake,
+        provider: gmailProvider(fake),
         signal: AbortSignal.timeout(8000),
       });
       expect(result.ok).toBe(true);

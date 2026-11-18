@@ -4,6 +4,7 @@ import { withTestDb } from "@/db/testing";
 import { FakeStorageClient } from "../files/storageFake";
 import { FakeGmailClient } from "./gmailFake";
 import { enqueueSend, processSendAttempt } from "./outbox";
+import { gmailProvider } from "./provider/gmailProvider";
 
 type TestDb = Parameters<Parameters<typeof withTestDb>[0]>[0];
 const newSignal = (): AbortSignal => new AbortController().signal;
@@ -99,7 +100,7 @@ it("sends a reply into the Gmail thread it answers, with RFC 5322 threading head
     const r = await processSendAttempt(db, {
       accountId: acct,
       idempotencyKey: KEY,
-      gmail: fake,
+      provider: gmailProvider(fake),
       storage: new FakeStorageClient(),
       signal: newSignal(),
     });
@@ -129,7 +130,7 @@ it("sends a fresh compose with no thread id and no threading headers", async () 
     await processSendAttempt(db, {
       accountId: acct,
       idempotencyKey: KEY,
-      gmail: fake,
+      provider: gmailProvider(fake),
       storage: new FakeStorageClient(),
       signal: newSignal(),
     });

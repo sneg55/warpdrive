@@ -3,9 +3,9 @@ import { z } from "zod";
 import { AppError, ERROR_IDS } from "@/constants/errorIds";
 import type { Db } from "@/db/client";
 import { deleteDraft, patchDraft, saveDraft } from "@/features/email/draftRepo";
-import { getActorMailbox } from "@/features/email/mailboxOwnership";
 import { plainTextToParagraphHtml } from "@/features/email/plainText";
 import { toAuthUser } from "@/features/mcp/actorContext";
+import { resolveDraftMailbox } from "./draftMailbox";
 import {
   type GetCtx,
   getToolActor,
@@ -25,6 +25,7 @@ const createDraftInput = z.object({
   body: z.string().max(100_000).default(""),
   dealId: z.string().uuid().optional(),
   personId: z.string().uuid().optional(),
+  mailbox: z.string().email().optional(),
 });
 
 // Every field optional: a patch leaves what it does not name alone, so an agent revising one
@@ -50,29 +51,20 @@ export function registerEmailWriteTools(
   registerTool(server, registry, {
     name: "create_email_draft",
     description:
-      "Create an unsent email draft in the actor's mailbox, optionally linked to a deal and a person. The draft appears in the Drafts folder and on the linked record's Email tab for review before sending.",
+      "Create an unsent email draft in the actor's personal mailbox, or in any mailbox listed by list_mailboxes when mailbox is given, optionally linked to a deal and a person. The draft appears in the Drafts folder and on the linked record's Email tab for review before sending.",
     inputSchema: createDraftInput,
     run: async (input, signal) => {
       const actor = getToolActor(getCtx);
       if (!actor.ok) return toolError(actor.error);
-      const mailbox = await getActorMailbox(db, actor.value.id, signal);
-      // No mailbox means nowhere to put the draft. Say so rather than inventing an account.
-      if (mailbox === null) {
-        return toolError(
-          new AppError(
-            ERROR_IDS.GMAIL_GRANT_REVOKED,
-            "no Gmail mailbox is connected for this user",
-            {},
-          ),
-        );
-      }
+      const mailbox = await resolveDraftMailbox(db, actor.value.id, input.mailbox, signal);
+      if (!mailbox.ok) return toolError(mailbox.error);
       return resultToTool(
         await saveDraft(
           db,
           {
             actor: toAuthUser(actor.value),
             draft: {
-              accountId: mailbox.id,
+              accountId: mailbox.value.id,
               subject: input.subject,
               bodyHtml: plainTextToParagraphHtml(input.body),
               toEmails: input.to,

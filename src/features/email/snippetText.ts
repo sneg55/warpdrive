@@ -1,3 +1,5 @@
+import { EMAIL_SNIPPET_MAX_CHARS } from "@/constants/email";
+
 const NAMED_ENTITIES = new Map<string, string>([
   ["amp", "&"],
   ["lt", "<"],
@@ -24,4 +26,16 @@ export function decodeEmailSnippet(snippet: string | null): string | null {
     if (ref.startsWith("#")) return fromCodePoint(ref) ?? match;
     return NAMED_ENTITIES.get(ref.toLowerCase()) ?? match;
   });
+}
+
+export function bodySnippet(body: string | null): string | null {
+  if (body === null) return null;
+  const text = body
+    .replace(/<(br|\/p|\/div|\/li)[^>]*>/gi, " ")
+    .replace(/<[^>]*>/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  const decoded = (decodeEmailSnippet(text) ?? "").trim();
+  if (decoded === "") return null;
+  return decoded.slice(0, EMAIL_SNIPPET_MAX_CHARS);
 }

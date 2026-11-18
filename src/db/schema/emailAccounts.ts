@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import {
+  bigint,
   check,
   customType,
   integer,
@@ -11,7 +12,7 @@ import {
   timestamp,
   uuid,
 } from "drizzle-orm/pg-core";
-import { EMAIL_ACCOUNT_STATUS } from "@/constants/email";
+import { EMAIL_ACCOUNT_STATUS, EMAIL_PROVIDER } from "@/constants/email";
 import {
   EMAIL_ACCOUNT_KIND,
   EMAIL_BACKFILL_STATUS,
@@ -23,6 +24,7 @@ const bytea = customType<{ data: Buffer; driverData: Buffer }>({ dataType: () =>
 export const emailAccountKind = pgEnum("email_account_kind", EMAIL_ACCOUNT_KIND);
 export const emailBackfillStatus = pgEnum("email_backfill_status", EMAIL_BACKFILL_STATUS);
 export const emailAccountStatus = pgEnum("email_account_status", EMAIL_ACCOUNT_STATUS);
+export const emailProvider = pgEnum("email_provider", EMAIL_PROVIDER);
 
 export const emailAccounts = pgTable(
   "email_accounts",
@@ -48,11 +50,27 @@ export const emailAccounts = pgTable(
     status: emailAccountStatus("status").notNull().default("connected"),
     lastSyncAt: timestamp("last_sync_at", { withTimezone: true }),
     lastErrorId: text("last_error_id"),
+    provider: emailProvider("provider").notNull().default("gmail"),
+    providerBaseUrl: text("provider_base_url"),
+    providerCredentialsEnc: bytea("provider_credentials_enc"),
+    providerCursor: bigint("provider_cursor", { mode: "number" }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
     check("email_account_owner_kind", sql`(${t.kind} = 'personal') = (${t.userId} IS NOT NULL)`),
+    check(
+      "email_account_agentic_team_only",
+      sql`${t.provider} <> 'agentic_inbox' OR ${t.kind} = 'team'`,
+    ),
+    check(
+      "email_account_agentic_connected_requires_credentials",
+      sql`${t.provider} <> 'agentic_inbox' OR ${t.status} = 'disconnected' OR (${t.providerBaseUrl} IS NOT NULL AND ${t.providerCredentialsEnc} IS NOT NULL)`,
+    ),
+    check(
+      "email_account_gmail_no_provider_fields",
+      sql`${t.provider} <> 'gmail' OR (${t.providerBaseUrl} IS NULL AND ${t.providerCredentialsEnc} IS NULL)`,
+    ),
   ],
 );
 

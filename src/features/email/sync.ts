@@ -6,6 +6,7 @@ import { ok, type Result } from "@/types/result";
 import { applyMessageIds } from "./applyMessages";
 import type { GmailClient } from "./gmailClient";
 import type { HistoryList } from "./gmailSchemas";
+import { gmailProvider } from "./provider/gmailProvider";
 import { recoverFrom404 } from "./resync";
 
 import { markThreadTrashed, reconcileThreadTrash } from "./trashReconcile";
@@ -71,7 +72,7 @@ async function applyHistoryPage(args: {
     {
       db: args.db,
       accountId: args.accountId,
-      gmail: args.gmail,
+      provider: gmailProvider(args.gmail),
       signal: args.signal,
       touchedThreadIds: touched,
     },

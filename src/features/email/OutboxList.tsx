@@ -6,20 +6,26 @@ import { ROW_ACTION_BUTTON } from "@/constants/formStyles";
 import { trpc } from "@/lib/trpc-client";
 import { readCsrfToken } from "@/utils/csrfCookie";
 import { cancelOutboxAction } from "./folderActions";
+import type { OutboxItem } from "./outboxReads";
 
-function statusLabel(status: string, scheduledAt: string | null): string {
-  if (scheduledAt !== null) return `Scheduled ${new Date(scheduledAt).toLocaleString()}`;
+const QUIET_ERROR_STATUSES: readonly string[] = ["waiting_for_limit", "sending"];
+
+const formatTime = (iso: string): string => new Date(iso).toLocaleString();
+
+function statusLabel(item: OutboxItem): string {
+  const { status, scheduledAt, nextAttemptAt } = item;
+  if (status === "waiting_for_limit" && nextAttemptAt !== null) {
+    return `Waiting for sending limit, sends at ${formatTime(nextAttemptAt)}`;
+  }
+  if (scheduledAt !== null) return `Scheduled ${formatTime(scheduledAt)}`;
   if (status === "needs_review") return "Needs review";
   if (status === "sending") return "Sending";
   return "Queued to send";
 }
 
-// A pending or future-scheduled row is cancelable (unsent + unclaimed). A row a worker has
-// picked up ("sending") or parked ("needs_review") is NOT: the server refuses those, so the
-// button must not appear even when a future scheduledAt is set.
 function isCancelable(status: string, scheduledAt: string | null): boolean {
   if (status === "sending" || status === "needs_review") return false;
-  return status === "pending" || scheduledAt !== null;
+  return status === "pending" || status === "waiting_for_limit" || scheduledAt !== null;
 }
 
 export function OutboxList(): React.ReactNode {
@@ -46,10 +52,10 @@ export function OutboxList(): React.ReactNode {
           <div className="min-w-0">
             <p className="truncate text-sm font-medium">{it.subject ?? "(no subject)"}</p>
             <p className="truncate text-xs text-muted-foreground">{it.to.join(", ")}</p>
-            <p className="text-xs text-muted-foreground tabular-nums">
-              {statusLabel(it.status, it.scheduledAt)}
-            </p>
-            {it.errorId !== null && <p className="text-xs text-destructive">{it.errorId}</p>}
+            <p className="text-xs text-muted-foreground tabular-nums">{statusLabel(it)}</p>
+            {it.errorId !== null && !QUIET_ERROR_STATUSES.includes(it.status) && (
+              <p className="text-xs text-destructive">{it.errorId}</p>
+            )}
           </div>
           {isCancelable(it.status, it.scheduledAt) ? (
             <button

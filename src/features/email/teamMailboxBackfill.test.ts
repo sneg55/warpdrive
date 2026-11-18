@@ -5,6 +5,7 @@ import { makeTestDb } from "@/test/db";
 import { ok } from "@/types/result";
 import { applyMessageIds } from "./applyMessages";
 import { FakeGmailClient } from "./gmailFake";
+import { gmailProvider } from "./provider/gmailProvider";
 import { inboxUnreadCount } from "./readState";
 import { enqueuePendingBackfill } from "./teamBackfillJobs";
 import { seedTeamMailbox, teamActor } from "./teamMailbox.test-helpers";
@@ -56,7 +57,14 @@ it("seeds the live cursor before import, resumes persisted pages and imports rea
       nextPageToken: args.pageToken === undefined ? "next" : undefined,
     });
   };
-  expect(await runTeamBackfillPage(ctx.db, { accountId, gmail, listThreads, signal })).toEqual({
+  expect(
+    await runTeamBackfillPage(ctx.db, {
+      accountId,
+      provider: gmailProvider(gmail),
+      listThreads,
+      signal,
+    }),
+  ).toEqual({
     ok: true,
     value: { done: false },
   });
@@ -67,13 +75,22 @@ it("seeds the live cursor before import, resumes persisted pages and imports rea
       )
     ).rows[0]?.backfill_page_token,
   ).toBe("next");
-  expect(await runTeamBackfillPage(ctx.db, { accountId, gmail, listThreads, signal })).toEqual({
+  expect(
+    await runTeamBackfillPage(ctx.db, {
+      accountId,
+      provider: gmailProvider(gmail),
+      listThreads,
+      signal,
+    }),
+  ).toEqual({
     ok: true,
     value: { done: true },
   });
   expect(tokens).toEqual([undefined, "next"]);
   expect(await inboxUnreadCount(ctx.db, { actor: teamActor(user.id) }, signal)).toBe(0);
-  await applyMessageIds({ db: ctx.db, accountId, gmail, signal }, ["historic"]);
+  await applyMessageIds({ db: ctx.db, accountId, provider: gmailProvider(gmail), signal }, [
+    "historic",
+  ]);
   expect(
     (await ctx.db.execute(sql`SELECT id FROM email_messages WHERE account_id=${accountId}`)).rows,
   ).toHaveLength(1);

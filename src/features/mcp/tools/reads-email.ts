@@ -1,8 +1,16 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { AppError, ERROR_IDS } from "@/constants/errorIds";
+import { listActorMailboxes } from "@/features/email/actorMailboxes";
 import { createCaller } from "@/server/trpc/root";
-import { type GetCtx, registerTool, type ToolRegistry, toolError, toolResult } from "./types";
+import {
+  type GetCtx,
+  getToolActor,
+  registerTool,
+  type ToolRegistry,
+  toolError,
+  toolResult,
+} from "./types";
 
 // Both ids optional so the tool can be called for either record. Enforced in the handler rather
 // than with .refine(), which would make this a ZodEffects and registerTool needs a plain object.
@@ -63,6 +71,26 @@ export function registerEmailReadTools(
         return toolResult(await caller().email.drafts.listForPerson({ personId: input.personId }));
       }
       return toolResult(await caller().email.drafts.list());
+    },
+  });
+
+  registerTool(server, registry, {
+    name: "list_mailboxes",
+    description:
+      "List the mailboxes the actor can draft into: their personal mailbox and any team mailboxes they belong to. Pass an address as mailbox to create_email_draft.",
+    inputSchema: z.object({}),
+    run: async (_input, signal) => {
+      const actor = getToolActor(getCtx);
+      if (!actor.ok) return toolError(actor.error);
+      const rows = await listActorMailboxes(getCtx().db, actor.value.id, signal);
+      return toolResult({
+        mailboxes: rows.map((m) => ({
+          address: m.emailAddress,
+          displayName: m.displayName,
+          kind: m.kind,
+          provider: m.provider,
+        })),
+      });
     },
   });
 }

@@ -8,6 +8,7 @@ import type { AuthUser } from "@/features/permissions/types";
 import { ok } from "@/types/result";
 import { resolveAttachmentDownload } from "./attachmentDownload";
 import { FakeGmailClient } from "./gmailFake";
+import { gmailProvider } from "./provider/gmailProvider";
 
 type TestDb = Parameters<Parameters<typeof withTestDb>[0]>[0];
 const SIG = (): AbortSignal => AbortSignal.timeout(8000);
@@ -68,7 +69,7 @@ describe("resolveAttachmentDownload", () => {
 
       const r = await resolveAttachmentDownload(
         db,
-        { resolveClient: () => Promise.resolve(ok(fake)) },
+        { resolveClient: () => Promise.resolve(ok(gmailProvider(fake))) },
         { actor: actorOf(owner.id), attachmentId },
         SIG(),
       );
@@ -96,7 +97,7 @@ describe("resolveAttachmentDownload", () => {
 
       const r = await resolveAttachmentDownload(
         db,
-        { resolveClient: () => Promise.resolve(ok(fake)) },
+        { resolveClient: () => Promise.resolve(ok(gmailProvider(fake))) },
         { actor: actorOf(stranger.id), attachmentId },
         SIG(),
       );
@@ -114,7 +115,7 @@ describe("resolveAttachmentDownload", () => {
 
       const r = await resolveAttachmentDownload(
         db,
-        { resolveClient: () => Promise.resolve(ok(fake)) },
+        { resolveClient: () => Promise.resolve(ok(gmailProvider(fake))) },
         { actor: actorOf(owner.id), attachmentId: "00000000-0000-0000-0000-000000000000" },
         SIG(),
       );
@@ -131,7 +132,7 @@ describe("resolveAttachmentDownload", () => {
 
       const r = await resolveAttachmentDownload(
         db,
-        { resolveClient: () => Promise.resolve(ok(fake)) },
+        { resolveClient: () => Promise.resolve(ok(gmailProvider(fake))) },
         { actor: actorOf(owner.id), attachmentId: "not-a-uuid" },
         SIG(),
       );

@@ -11,8 +11,10 @@ vi.mock("@/components/shell/ActionErrorProvider", () => ({
 afterEach(() => {
   cleanup();
   reportError.mockClear();
+  extraRows.length = 0;
 });
 
+const extraRows: Record<string, unknown>[] = [];
 const cancelMock = vi.fn(() => Promise.resolve({ ok: true, value: { id: "a1" } }));
 vi.mock("./folderActions", () => ({
   cancelOutboxAction: (...args: unknown[]) => cancelMock(...(args as [])),
@@ -53,6 +55,7 @@ vi.mock("@/lib/trpc-client", () => ({
                 errorId: null,
                 createdAt: "",
               },
+              ...extraRows,
             ],
           }),
         },
@@ -79,4 +82,60 @@ it("reports the error id when cancel is denied (no silent no-op)", async () => {
   render(<OutboxList />);
   screen.getByRole("button", { name: /Cancel/ }).click();
   await waitFor(() => expect(reportError).toHaveBeenCalledWith("E_PERM_001"));
+});
+
+it('OutboxList shows "Waiting for sending limit, sends at"', () => {
+  const nextAttemptAt = "2026-11-17T15:30:00.000Z";
+  extraRows.push({
+    id: "a4",
+    subject: "Over the limit",
+    to: ["d@y.com"],
+    status: "waiting_for_limit",
+    scheduledAt: null,
+    nextAttemptAt,
+    errorId: "E_AINBOX_004",
+    createdAt: "",
+  });
+  render(<OutboxList />);
+  expect(
+    screen.getByText(
+      `Waiting for sending limit, sends at ${new Date(nextAttemptAt).toLocaleString()}`,
+    ),
+  ).toBeInTheDocument();
+  expect(screen.getAllByRole("button", { name: /Cancel/ })).toHaveLength(2);
+  expect(screen.queryByText("E_AINBOX_004")).not.toBeInTheDocument();
+});
+
+it("a waiting row that was scheduled reads as waiting, not scheduled", () => {
+  extraRows.push({
+    id: "a5",
+    subject: "Scheduled then limited",
+    to: ["e@y.com"],
+    status: "waiting_for_limit",
+    scheduledAt: "2026-11-17T09:00:00.000Z",
+    nextAttemptAt: "2026-11-17T15:30:00.000Z",
+    errorId: "E_AINBOX_004",
+    createdAt: "",
+  });
+  render(<OutboxList />);
+  expect(screen.getByText(/^Waiting for sending limit, sends at /)).toBeInTheDocument();
+  expect(
+    screen.queryByText(`Scheduled ${new Date("2026-11-17T09:00:00.000Z").toLocaleString()}`),
+  ).not.toBeInTheDocument();
+});
+
+it("a sending row with a scheduled re-send hides its error id", () => {
+  extraRows.push({
+    id: "a6",
+    subject: "Re-send scheduled",
+    to: ["f@y.com"],
+    status: "sending",
+    scheduledAt: null,
+    nextAttemptAt: null,
+    errorId: "E_AINBOX_010",
+    createdAt: "",
+  });
+  render(<OutboxList />);
+  expect(screen.getByText("Re-send scheduled")).toBeInTheDocument();
+  expect(screen.queryByText("E_AINBOX_010")).not.toBeInTheDocument();
 });

@@ -12,11 +12,8 @@
 import type { NextRequest } from "next/server";
 import { db } from "@/db/client";
 import { resolveAttachmentDownload } from "@/features/email/attachmentDownload";
-import { createGmailClient } from "@/features/email/gmailClient";
-import { makeRefresh } from "@/features/email/gmailRefresh";
-import { ensureAccessToken } from "@/features/email/tokens";
+import { resolveProvider } from "@/features/email/provider/resolveProvider";
 import { createContext } from "@/server/trpc/context";
-import { ok } from "@/types/result";
 
 export async function GET(
   _req: NextRequest,
@@ -27,11 +24,7 @@ export async function GET(
   if (actor === null) return new Response("Unauthorized", { status: 401 });
 
   const signal = AbortSignal.timeout(30_000);
-  const resolveClient = async (accountId: string, s: AbortSignal) => {
-    const token = await ensureAccessToken(db, { accountId, deps: { refresh: makeRefresh(s) } });
-    if (!token.ok) return token;
-    return ok(createGmailClient(token.value.token));
-  };
+  const resolveClient = (accountId: string, s: AbortSignal) => resolveProvider(db, accountId, s);
 
   const r = await resolveAttachmentDownload(db, { resolveClient }, { actor, attachmentId }, signal);
   if (!r.ok) return new Response("Not found", { status: 404 });

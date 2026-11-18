@@ -5,6 +5,7 @@ import { seedUser } from "@/db/testing/factories";
 import { ok } from "@/types/result";
 import { FakeStorageClient } from "../files/storageFake";
 import { FakeGmailClient } from "./gmailFake";
+import { gmailProvider } from "./provider/gmailProvider";
 import { sendEmail } from "./send";
 import { seedAccount, ToggleGetMessageFake } from "./send.test-helpers";
 
@@ -30,7 +31,7 @@ it("is idempotent: a replay of an already-sent attempt does not re-send", async 
       actorId: owner.id,
       actorType: "regular",
       actorGroupIds: new Set<string>(),
-      gmail: fake,
+      provider: gmailProvider(fake),
       storage: new FakeStorageClient(),
       input,
     });
@@ -42,7 +43,7 @@ it("is idempotent: a replay of an already-sent attempt does not re-send", async 
       actorId: owner.id,
       actorType: "regular",
       actorGroupIds: new Set<string>(),
-      gmail: fake,
+      provider: gmailProvider(fake),
       storage: new FakeStorageClient(),
       input,
     });
@@ -78,7 +79,7 @@ it("replay repairs a missing local copy after a post-accept failure", async () =
       actorId: owner.id,
       actorType: "regular",
       actorGroupIds: new Set<string>(),
-      gmail: fake,
+      provider: gmailProvider(fake),
       storage: new FakeStorageClient(),
       input,
     });
@@ -95,7 +96,7 @@ it("replay repairs a missing local copy after a post-accept failure", async () =
       actorId: owner.id,
       actorType: "regular",
       actorGroupIds: new Set<string>(),
-      gmail: fake,
+      provider: gmailProvider(fake),
       storage: new FakeStorageClient(),
       input,
     });

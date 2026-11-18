@@ -5,6 +5,7 @@ import { makeTestDb } from "@/test/db";
 import { applyMessageIds } from "./applyMessages";
 import { FakeGmailClient } from "./gmailFake";
 import type { GmailMessage } from "./gmailSchemas";
+import { gmailProvider } from "./provider/gmailProvider";
 import { syncMailbox } from "./sync";
 import { seedTeamMailbox, teamActor } from "./teamMailbox.test-helpers";
 
@@ -49,7 +50,13 @@ it("classifies team sends, restores only newly delivered inbound and syncs witho
     "received",
     teamMessage("received", threadId, "customer@external.com", "2026-01-03T00:00:00Z"),
   );
-  const args = { db: ctx.db, accountId, owner: teamActor(member.id), gmail, signal };
+  const args = {
+    db: ctx.db,
+    accountId,
+    owner: teamActor(member.id),
+    provider: gmailProvider(gmail),
+    signal,
+  };
   await applyMessageIds(args, ["sent"]);
   expect(
     (
@@ -86,7 +93,7 @@ it("unarchives post-anchor inbound inserted by import and preserves historical a
   const { accountId, threadId } = await seedTeamMailbox(ctx.db, [], signal);
   const importedAt = new Date("2026-01-02T00:00:00Z");
   const gmail = new FakeGmailClient();
-  const args = { db: ctx.db, accountId, gmail, signal };
+  const args = { db: ctx.db, accountId, provider: gmailProvider(gmail), signal };
   for (const [id, date] of [
     ["old", "2026-01-01T00:00:00Z"],
     ["new", "2026-01-03T00:00:00Z"],

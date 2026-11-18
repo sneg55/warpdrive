@@ -5,6 +5,7 @@ import { seedUser } from "@/db/testing/factories";
 import { makeTestDb } from "@/test/db";
 import { err, ok } from "@/types/result";
 import { FakeGmailClient } from "./gmailFake";
+import { gmailProvider } from "./provider/gmailProvider";
 import { seedTeamMailbox } from "./teamMailbox.test-helpers";
 import { runTeamBackfillPage } from "./teamMailboxBackfill";
 
@@ -26,7 +27,7 @@ it("records cursor initialization failures for the settings page", async () => {
     Promise.resolve(err(new AppError(ERROR_IDS.GMAIL_API_EXHAUSTED, "profile unavailable", {})));
   const result = await runTeamBackfillPage(ctx.db, {
     accountId,
-    gmail,
+    provider: gmailProvider(gmail),
     signal,
     listThreads: () => Promise.resolve(ok({ threads: [] })),
   });

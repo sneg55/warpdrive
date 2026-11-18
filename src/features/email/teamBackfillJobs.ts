@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
 import type { Job, PgBoss } from "pg-boss";
-import { BACKOFF_START_MS } from "@/constants/email";
+import { BACKOFF_START_MS, EMAIL_PROVIDER_KIND } from "@/constants/email";
 import { AppError } from "@/constants/errorIds";
 import { EMAIL_JOB_RETRY_LIMIT } from "@/constants/jobNames";
 import {
@@ -10,10 +10,15 @@ import {
 } from "@/constants/teamMailbox";
 import type { Db } from "@/db/client";
 import { requireBoss } from "@/jobs/requireBoss";
-import { createBackfillThreadLister } from "./gmailBackfill";
+import { ok, type Result } from "@/types/result";
+import { recordBackfillFailure } from "./backfillFailure";
+import { createBackfillThreadLister, type ListBackfillThreads } from "./gmailBackfill";
 import { createGmailClient } from "./gmailClient";
 import { makeRefresh } from "./gmailRefresh";
-import { recordBackfillFailure, runTeamBackfillPage } from "./teamMailboxBackfill";
+import { gmailProvider } from "./provider/gmailProvider";
+import { resolveProvider } from "./provider/resolveProvider";
+import type { MailProvider } from "./provider/types";
+import { runTeamBackfillPage } from "./teamMailboxBackfill";
 import { ensureAccessToken } from "./tokens";
 
 export async function enqueuePendingBackfill(
@@ -26,7 +31,7 @@ export async function enqueuePendingBackfill(
   const rows =
     await db.execute(sql`SELECT 1 FROM email_accounts WHERE id=${accountId} AND kind='team'
     AND EXISTS (SELECT 1 FROM email_account_members WHERE account_id=${accountId})
-    AND status<>'disconnected' AND last_history_id IS NOT NULL AND backfill_days IS NOT NULL AND backfill_status IS DISTINCT FROM 'done'`);
+    AND status<>'disconnected' AND (last_history_id IS NOT NULL OR provider_cursor IS NOT NULL) AND backfill_days IS NOT NULL AND backfill_status IS DISTINCT FROM 'done'`);
   signal.throwIfAborted();
   if (rows.rows.length > 0) await enqueue(accountId, signal);
 }
@@ -49,6 +54,30 @@ export async function enqueueTeamBackfill(
   signal.throwIfAborted();
 }
 
+const noBackfillThreads: ListBackfillThreads = () => Promise.resolve(ok({ threads: [] }));
+
+export async function backfillSource(
+  db: Db,
+  accountId: string,
+  signal: AbortSignal,
+): Promise<Result<{ provider: MailProvider; listThreads: ListBackfillThreads }, AppError>> {
+  const row = (await db.execute(sql`SELECT provider FROM email_accounts WHERE id=${accountId}`))
+    .rows[0] as { provider: string } | undefined;
+  signal.throwIfAborted();
+  if (row?.provider === EMAIL_PROVIDER_KIND.agenticInbox) {
+    const provider = await resolveProvider(db, accountId, signal);
+    return provider.ok
+      ? ok({ provider: provider.value, listThreads: noBackfillThreads })
+      : provider;
+  }
+  const token = await ensureAccessToken(db, { accountId, deps: { refresh: makeRefresh(signal) } });
+  if (!token.ok) return token;
+  return ok({
+    provider: gmailProvider(createGmailClient(token.value.token)),
+    listThreads: createBackfillThreadLister(token.value.token),
+  });
+}
+
 export async function registerTeamBackfillWorker(
   db: Db,
   boss: PgBoss,
@@ -59,21 +88,17 @@ export async function registerTeamBackfillWorker(
   await boss.work(TEAM_MAILBOX_BACKFILL_QUEUE, async ([job]: Job<{ accountId: string }>[]) => {
     if (job === undefined) return;
     const signal = AbortSignal.timeout(TEAM_MAILBOX_BACKFILL_JOB_TIMEOUT_MS);
-    const token = await ensureAccessToken(db, {
-      accountId: job.data.accountId,
-      deps: { refresh: makeRefresh(signal) },
-    });
+    const source = await backfillSource(db, job.data.accountId, signal);
     signal.throwIfAborted();
-    if (!token.ok) {
-      await recordBackfillFailure(db, job.data.accountId, token, signal);
-      throw new AppError(token.error.id, "history import token unavailable", {});
+    if (!source.ok) {
+      await recordBackfillFailure(db, job.data.accountId, source, signal);
+      throw new AppError(source.error.id, "history import mailbox access unavailable", {});
     }
-    const gmail = createGmailClient(token.value.token);
-    const listThreads = createBackfillThreadLister(token.value.token);
+    const { provider, listThreads } = source.value;
     for (;;) {
       const result = await runTeamBackfillPage(db, {
         accountId: job.data.accountId,
-        gmail,
+        provider,
         listThreads,
         signal,
       });

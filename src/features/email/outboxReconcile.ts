@@ -2,7 +2,19 @@ import { sql } from "drizzle-orm";
 import { AppError } from "@/constants/errorIds";
 import type { Db } from "@/db/client";
 import { err, ok, type Result } from "@/types/result";
-import type { GmailClient } from "./gmailClient";
+import type { MailProvider } from "./provider/types";
+
+async function findPriorSend(
+  provider: MailProvider,
+  messageIdHeader: string,
+  signal: AbortSignal,
+): Promise<Result<string | null, AppError>> {
+  if (provider.gmail === null) return ok(null);
+  const found = await provider.gmail.searchByRfc822({ messageIdHeader, signal });
+  signal.throwIfAborted();
+  if (!found.ok) return found;
+  return ok(found.value.messages[0]?.id ?? null);
+}
 
 export interface AttemptRow {
   id: string;
@@ -14,7 +26,10 @@ export interface AttemptRow {
   gmail_message_id: string | null;
 }
 
-export type SendOutcome = { status: "sent" | "failed" | "needs_review"; gmailMessageId?: string };
+export type SendOutcome = {
+  status: "sent" | "sending" | "failed" | "needs_review" | "waiting_for_limit";
+  gmailMessageId?: string;
+};
 
 // Flip the row to sent and record the gmail message id. Idempotent and overwrite-safe:
 // the WHERE clause adopts an id only when none is set yet, OR when it equals the id
@@ -47,23 +62,19 @@ export async function reconcile(
   db: Db,
   args: {
     attempt: AttemptRow;
-    gmail: GmailClient;
+    provider: MailProvider;
     signal: AbortSignal;
     now: number;
     windowMs: number;
   },
 ): Promise<Result<SendOutcome, AppError>> {
-  const found = await args.gmail.searchByRfc822({
-    messageIdHeader: args.attempt.message_id_header,
-    signal: args.signal,
-  });
-  args.signal.throwIfAborted();
+  const found = await findPriorSend(args.provider, args.attempt.message_id_header, args.signal);
   if (!found.ok) return found;
 
-  const hit = found.value.messages[0];
-  if (hit !== undefined) {
-    await markSent(db, args.attempt.id, hit.id, args.signal);
-    return ok({ status: "sent", gmailMessageId: hit.id });
+  const hitId = found.value;
+  if (hitId !== null) {
+    await markSent(db, args.attempt.id, hitId, args.signal);
+    return ok({ status: "sent", gmailMessageId: hitId });
   }
 
   // Not found. The send_started_at timestamp anchors the reconcile deadline. Raw SQL

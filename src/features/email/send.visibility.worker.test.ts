@@ -4,6 +4,7 @@ import { seedUser } from "@/db/testing/factories";
 import { ok } from "@/types/result";
 import { FakeStorageClient } from "../files/storageFake";
 import { FakeGmailClient } from "./gmailFake";
+import { gmailProvider } from "./provider/gmailProvider";
 import { sendEmail } from "./send";
 import {
   deliverScheduled,
@@ -30,7 +31,7 @@ it("SCHEDULED/worker send: a private compose creates a private thread when deliv
       actorId: owner.id,
       actorType: "regular",
       actorGroupIds: new Set<string>(),
-      gmail: new FakeGmailClient(),
+      provider: gmailProvider(new FakeGmailClient()),
       storage: new FakeStorageClient(),
       input: {
         accountId: acctId,
@@ -106,7 +107,7 @@ it("REPLAY-REPAIR: a private compose recorded in the stored payload repairs a pr
       attemptId,
       accountId: acctId,
       fromEmail: "owner-vis3@gunsnation.com",
-      gmail: fake,
+      provider: gmailProvider(fake),
       signal: AbortSignal.timeout(8000),
     });
     expect(result.ok).toBe(true);

@@ -1,34 +1,37 @@
-import { sql } from "drizzle-orm";
 import { RECONCILE_WINDOW_MS } from "@/constants/email";
 import { AppError } from "@/constants/errorIds";
 import type { Db } from "@/db/client";
 import type { StorageClient } from "@/features/files/storage";
 import { err, ok, type Result } from "@/types/result";
-import type { GmailClient } from "./gmailClient";
-import { buildMime, type MimeAttachment, toRawBase64 } from "./mime";
+import type { MimeAttachment } from "./mime";
 import { assertAttemptSender } from "./outboxAccess";
 import { claim, loadAttempt, loadSendInputs, type SendPayload, stamp } from "./outboxClaim";
-import { markSent, reconcile, type SendOutcome } from "./outboxReconcile";
-import { type ReplyThreadHeaders, replyThreadHeaders } from "./replyHeaders";
+import {
+  applySendOutcome,
+  type OutcomeRun,
+  outcomeFromSendError,
+  requeueWaiting,
+} from "./outboxOutcome";
+import { type AttemptRow, reconcile, type SendOutcome } from "./outboxReconcile";
+import type { MailProvider, ProviderSendOutcome } from "./provider/types";
+import type { ReplyThreadHeaders } from "./replyHeaders";
+import { checkRecipientLimit } from "./sendInput";
 
 export { enqueueSend } from "./outboxEnqueue";
 
 async function loadReplyThreadHeaders(
-  gmail: GmailClient,
+  provider: MailProvider,
   parentGmailMessageId: string | null,
   gmailThreadId: string | null,
   signal: AbortSignal,
 ): Promise<ReplyThreadHeaders> {
   if (gmailThreadId === null || parentGmailMessageId === null) return {};
-  const parent = await gmail.getMessage({ id: parentGmailMessageId, signal });
-  signal.throwIfAborted();
-  if (!parent.ok) return {};
-  return replyThreadHeaders(parent.value);
+  return provider.replyHeaders({ parentProviderMessageId: parentGmailMessageId, signal });
 }
 
-function isDefiniteRejection(error: AppError): boolean {
-  const status = error.context?.status;
-  return typeof status === "number" && status >= 400 && status < 500;
+interface SendRun extends OutcomeRun {
+  provider: MailProvider;
+  storage: StorageClient;
 }
 
 export async function processSendAttempt(
@@ -36,7 +39,7 @@ export async function processSendAttempt(
   args: {
     accountId: string;
     idempotencyKey: string;
-    gmail: GmailClient;
+    provider: MailProvider;
     storage: StorageClient;
     signal: AbortSignal;
     now?: number;
@@ -44,8 +47,11 @@ export async function processSendAttempt(
   },
 ): Promise<Result<SendOutcome, AppError>> {
   args.signal.throwIfAborted();
-  const now = args.now ?? Date.now();
-  const windowMs = args.windowMs ?? RECONCILE_WINDOW_MS;
+  const run: SendRun = {
+    ...args,
+    now: args.now ?? Date.now(),
+    windowMs: args.windowMs ?? RECONCILE_WINDOW_MS,
+  };
 
   const existing = await loadAttempt(db, args.accountId, args.idempotencyKey, args.signal);
   if (existing === undefined) {
@@ -54,90 +60,105 @@ export async function processSendAttempt(
   if (existing.status === "sent") {
     return ok({ status: "sent", gmailMessageId: existing.gmail_message_id ?? undefined });
   }
-
-  if (existing.send_started_at !== null) {
-    return reconcile(db, {
-      attempt: existing,
-      gmail: args.gmail,
-      signal: args.signal,
-      now,
-      windowMs,
-    });
-  }
+  if (args.provider.idempotentSend && existing.status === "failed") return ok({ status: "failed" });
+  if (existing.send_started_at !== null) return settleStarted(db, existing, run);
 
   const access = await assertAttemptSender(db, existing.id, args.signal);
   if (!access.ok) return access;
   const token = await claim(db, existing.id, args.signal);
-  if (token === null)
+  if (token === null) {
+    if (existing.status === "waiting_for_limit") return requeueWaiting(db, existing.id, run);
     return err(new AppError("E_GMAIL_008", "attempt not claimable", { id: existing.id }));
+  }
 
   const claimed = await loadAttempt(db, args.accountId, args.idempotencyKey, args.signal);
   if (claimed !== undefined && claimed.send_started_at !== null) {
+    return settleStarted(db, claimed, run);
+  }
+  return deliver(db, existing, run, token);
+}
+
+async function settleStarted(
+  db: Db,
+  attempt: AttemptRow,
+  run: SendRun,
+): Promise<Result<SendOutcome, AppError>> {
+  if (!run.provider.idempotentSend) {
     return reconcile(db, {
-      attempt: claimed,
-      gmail: args.gmail,
-      signal: args.signal,
-      now,
-      windowMs,
+      attempt,
+      provider: run.provider,
+      signal: run.signal,
+      now: run.now,
+      windowMs: run.windowMs,
     });
   }
+  if (attempt.status === "needs_review" || attempt.status === "failed") {
+    return ok({ status: attempt.status });
+  }
+  const access = await assertAttemptSender(db, attempt.id, run.signal);
+  if (!access.ok) return access;
+  return deliver(db, attempt, run, null);
+}
 
-  const inputs = await loadSendInputs(db, existing.id, args.accountId, args.signal);
-  if (inputs === undefined) return err(new AppError("E_DB_002", "send inputs not found", args));
-  args.signal.throwIfAborted();
+async function deliver(
+  db: Db,
+  attempt: AttemptRow,
+  run: SendRun,
+  claimToken: string | null,
+): Promise<Result<SendOutcome, AppError>> {
+  const resendStartedAt = claimToken === null ? attempt.send_started_at : null;
+  const settle = (outcome: ProviderSendOutcome) =>
+    applySendOutcome(db, {
+      attemptId: attempt.id,
+      outcome,
+      resendStartedAt,
+      idempotentSend: run.provider.idempotentSend,
+      run,
+    });
+
+  const inputs = await loadSendInputs(db, attempt.id, run.accountId, run.signal);
+  if (inputs === undefined)
+    return err(new AppError("E_DB_002", "send inputs not found", { id: attempt.id }));
+  run.signal.throwIfAborted();
   const { from, payload, gmailThreadId, parentGmailMessageId } = inputs;
 
+  const limit = checkRecipientLimit(run.provider.kind, payload);
+  if (!limit.ok) return settle({ kind: "rejected", error: limit.error });
+
   const threading = await loadReplyThreadHeaders(
-    args.gmail,
+    run.provider,
     parentGmailMessageId,
     gmailThreadId,
-    args.signal,
+    run.signal,
   );
 
-  const stamped = await stamp(db, existing.id, token, args.signal);
-  if (!stamped) return err(new AppError("E_GMAIL_008", "stamp race lost", { id: existing.id }));
-
-  const attResult = await fetchAttachmentBytes(payload, args.storage, args.signal);
-  if (!attResult.ok) return attResult;
-
-  const mime = buildMime({
-    from,
-    to: payload.to,
-    cc: payload.cc,
-    bcc: payload.bcc,
-    subject: payload.subject,
-    html: payload.html,
-    text: payload.text,
-    messageId: existing.message_id_header,
-    inReplyTo: threading.inReplyTo,
-    references: threading.references,
-    attachments: attResult.value.length > 0 ? attResult.value : undefined,
-  });
-  const sent = await args.gmail.sendRaw({
-    rawBase64: toRawBase64(mime),
-    threadId: gmailThreadId ?? undefined,
-    signal: args.signal,
-  });
-  args.signal.throwIfAborted();
-
-  if (!sent.ok) {
-    if (isDefiniteRejection(sent.error)) {
-      await db.execute(sql`
-        UPDATE email_send_attempts
-        SET status='failed', error_id=${sent.error.id}, send_started_at=NULL, claim_token=NULL
-        WHERE id=${existing.id}
-      `);
-    } else {
-      await db.execute(sql`
-        UPDATE email_send_attempts SET status='failed', error_id=${sent.error.id} WHERE id=${existing.id}
-      `);
-    }
-    args.signal.throwIfAborted();
-    return ok({ status: "failed" });
+  if (claimToken !== null && !(await stamp(db, attempt.id, claimToken, run.signal))) {
+    return err(new AppError("E_GMAIL_008", "stamp race lost", { id: attempt.id }));
   }
 
-  await markSent(db, existing.id, sent.value.id, args.signal);
-  return ok({ status: "sent", gmailMessageId: sent.value.id });
+  const attResult = await fetchAttachmentBytes(payload, run.storage, run.signal);
+  if (!attResult.ok) return attResult;
+
+  const sent = await run.provider.send({
+    message: {
+      from,
+      to: payload.to,
+      cc: payload.cc ?? [],
+      bcc: payload.bcc ?? [],
+      subject: payload.subject,
+      html: payload.html,
+      text: payload.text ?? null,
+      messageIdHeader: attempt.message_id_header,
+      inReplyTo: threading.inReplyTo,
+      references: threading.references,
+      providerThreadId: gmailThreadId,
+      attachments: attResult.value,
+      attemptId: attempt.id,
+    },
+    signal: run.signal,
+  });
+  run.signal.throwIfAborted();
+  return settle(sent.ok ? sent.value : outcomeFromSendError(sent.error));
 }
 
 async function fetchAttachmentBytes(

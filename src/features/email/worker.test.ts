@@ -5,7 +5,10 @@ import { AppError } from "@/constants/errorIds";
 import { withTestDb } from "@/db/testing";
 import { seedUser } from "@/db/testing/factories";
 import { err, ok } from "@/types/result";
+import { fakeAgenticProvider, seedAgenticMailbox } from "./agentic.test-helpers";
 import { FakeGmailClient } from "./gmailFake";
+import { startFakeAgenticServer } from "./provider/agenticFakeServer";
+import { gmailProvider } from "./provider/gmailProvider";
 import { jitterFor, runSyncJob } from "./worker";
 
 type TestDb = Parameters<Parameters<typeof withTestDb>[0]>[0];
@@ -71,7 +74,7 @@ describe("runSyncJob", () => {
         db,
         { accountId, signal: SIG() },
         {
-          resolveClient: () => Promise.resolve(ok(fake)),
+          resolveClient: () => Promise.resolve(ok(gmailProvider(fake))),
         },
       );
       expect(r.ok).toBe(true);
@@ -82,5 +85,41 @@ describe("runSyncJob", () => {
       ).rows[0] as { last_error_id: string | null };
       expect(row.last_error_id).toBeNull();
     });
+  });
+});
+
+describe("runSyncJob for an agentic mailbox", () => {
+  it("syncs through the agentic feed and stamps a feed error", async () => {
+    const fake = await startFakeAgenticServer({ mailbox: "media@example.com" });
+    try {
+      await withTestDb(async (db) => {
+        const member = await seedUser(db);
+        const accountId = await seedAgenticMailbox(
+          db,
+          { address: fake.mailbox, baseUrl: fake.url, memberIds: [member.id] },
+          SIG(),
+        );
+        const deps = {
+          resolveClient: () => Promise.resolve(ok(fakeAgenticProvider(fake).provider)),
+        };
+        expect(await runSyncJob(db, { accountId, signal: SIG() }, deps)).toEqual(
+          ok({ applied: 0 }),
+        );
+        fake.seedEmail({ id: "in-1", sender: "jane@acme.com" });
+        expect(await runSyncJob(db, { accountId, signal: SIG() }, deps)).toEqual(
+          ok({ applied: 1 }),
+        );
+
+        fake.setAuthMode("redirect");
+        const failed = await runSyncJob(db, { accountId, signal: SIG() }, deps);
+        expect(failed.ok ? null : failed.error.id).toBe("E_AINBOX_001");
+        const row = (
+          await db.execute(sql`SELECT last_error_id FROM email_accounts WHERE id=${accountId}`)
+        ).rows[0] as { last_error_id: string | null };
+        expect(row.last_error_id).toBe("E_AINBOX_001");
+      });
+    } finally {
+      await fake.close();
+    }
   });
 });

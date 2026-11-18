@@ -38,6 +38,7 @@ export interface ThreadView {
   accountId: string;
   canCompose: boolean;
   ownerEmail: string;
+  provider: "gmail" | "agentic_inbox";
   personName: string | null;
   dealTitle: string | null;
 }
@@ -113,9 +114,11 @@ export async function getThread(
 
   const acctRow = (
     await db.execute(
-      sql`SELECT user_id, email_address FROM email_accounts WHERE id=${t.account_id}`,
+      sql`SELECT user_id, email_address, provider FROM email_accounts WHERE id=${t.account_id}`,
     )
-  ).rows[0] as { user_id: string; email_address: string } | undefined;
+  ).rows[0] as
+    | { user_id: string; email_address: string; provider: ThreadView["provider"] }
+    | undefined;
   signal.throwIfAborted();
   const canCompose = await canUseMailbox(db, t.account_id, args.actor.id, signal);
 
@@ -157,6 +160,7 @@ export async function getThread(
     accountId: t.account_id,
     canCompose,
     ownerEmail: acctRow?.email_address ?? "",
+    provider: acctRow?.provider ?? "gmail",
     personName,
     dealTitle,
   });

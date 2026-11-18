@@ -5,6 +5,7 @@ import { seedUser } from "@/db/testing/factories";
 import { ok } from "@/types/result";
 import { FakeStorageClient } from "../files/storageFake";
 import { FakeGmailClient } from "./gmailFake";
+import { gmailProvider } from "./provider/gmailProvider";
 import { sendEmail } from "./send";
 import { seedAccount } from "./send.test-helpers";
 
@@ -19,7 +20,7 @@ it("rejects sending from a mailbox the actor does not own (E_PERM)", async () =>
       actorId: other.id,
       actorType: "regular",
       actorGroupIds: new Set<string>(),
-      gmail: new FakeGmailClient(),
+      provider: gmailProvider(new FakeGmailClient()),
       storage: new FakeStorageClient(),
       input: {
         accountId: acctId,
@@ -43,7 +44,7 @@ it("rejects an unknown mailbox identically (no existence leak)", async () => {
       actorId: actor.id,
       actorType: "regular",
       actorGroupIds: new Set<string>(),
-      gmail: new FakeGmailClient(),
+      provider: gmailProvider(new FakeGmailClient()),
       storage: new FakeStorageClient(),
       input: {
         accountId: "00000000-0000-0000-0000-0000000000aa",
@@ -78,7 +79,7 @@ it("sends, stores the outbound copy, and backfills tracking tokens", async () =>
       actorId: owner.id,
       actorType: "regular",
       actorGroupIds: new Set<string>(),
-      gmail: fake,
+      provider: gmailProvider(fake),
       storage: new FakeStorageClient(),
       input: {
         accountId: acctId,

@@ -6,10 +6,13 @@ import { emailMessageAttachments, emailMessages, emailThreads } from "@/db/schem
 import type { AuthUser } from "@/features/permissions/types";
 import { err, ok, type Result } from "@/types/result";
 import { canSeeEmail } from "./emailVisibility";
-import type { GmailClient } from "./gmailClient";
+import type { MailProvider } from "./provider/types";
 
 export interface AttachmentDownloadDeps {
-  resolveClient: (accountId: string, signal: AbortSignal) => Promise<Result<GmailClient, AppError>>;
+  resolveClient: (
+    accountId: string,
+    signal: AbortSignal,
+  ) => Promise<Result<MailProvider, AppError>>;
 }
 
 export interface AttachmentDownload {
@@ -78,10 +81,10 @@ export async function resolveAttachmentDownload(
   );
   if (!visible) return err(denied());
 
-  const client = await deps.resolveClient(row.accountId, signal);
-  if (!client.ok) return client;
+  const provider = await deps.resolveClient(row.accountId, signal);
+  if (!provider.ok) return provider;
 
-  const data = await client.value.getAttachment({
+  const data = await provider.value.getAttachment({
     messageId: row.gmailMessageId,
     attachmentId: row.gmailAttachmentId,
     signal,

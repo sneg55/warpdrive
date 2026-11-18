@@ -4,6 +4,7 @@ import { withTestDb } from "@/db/testing";
 import { seedUser } from "@/db/testing/factories";
 import { FakeStorageClient } from "../files/storageFake";
 import { FakeGmailClient } from "./gmailFake";
+import { gmailProvider } from "./provider/gmailProvider";
 import { sendEmail } from "./send";
 
 type Db = Parameters<Parameters<typeof withTestDb>[0]>[0];
@@ -47,7 +48,7 @@ describe("sendEmail with signatureId", () => {
         actorId: user.id,
         actorType: "regular",
         actorGroupIds: new Set<string>(),
-        gmail,
+        provider: gmailProvider(gmail),
         storage: new FakeStorageClient(),
         input: {
           accountId,
@@ -99,7 +100,7 @@ describe("sendEmail with signatureId", () => {
         actorId: user.id,
         actorType: "regular",
         actorGroupIds: new Set<string>(),
-        gmail: new FakeGmailClient(),
+        provider: gmailProvider(new FakeGmailClient()),
         storage: new FakeStorageClient(),
         input: {
           accountId,
@@ -135,7 +136,7 @@ describe("sendEmail with signatureId", () => {
         actorId: user.id,
         actorType: "regular",
         actorGroupIds: new Set<string>(),
-        gmail,
+        provider: gmailProvider(gmail),
         storage: new FakeStorageClient(),
         input: {
           accountId,
@@ -174,7 +175,7 @@ describe("sendEmail with signatureId", () => {
         actorId: user.id,
         actorType: "regular",
         actorGroupIds: new Set<string>(),
-        gmail: new FakeGmailClient(),
+        provider: gmailProvider(new FakeGmailClient()),
         storage: new FakeStorageClient(),
         input: {
           accountId,

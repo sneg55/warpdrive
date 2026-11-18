@@ -40,6 +40,7 @@ const EXPECTED_TOOLS = [
   "list_emails",
   "get_email",
   "list_email_drafts",
+  "list_mailboxes",
   "create_email_draft",
   "update_email_draft",
   "delete_email_draft",

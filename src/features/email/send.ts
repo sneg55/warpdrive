@@ -2,17 +2,17 @@ import { AppError, ERROR_IDS } from "@/constants/errorIds";
 import type { Db } from "@/db/client";
 import type { StorageClient } from "@/features/files/storage";
 import { err, ok, type Result } from "@/types/result";
-import type { GmailClient } from "./gmailClient";
-import { assertMailboxOwner } from "./mailboxOwnership";
 import { applyMergeFields } from "./merge";
 import { buildMergeContext } from "./mergeContext";
 import { enqueueSend, processSendAttempt } from "./outbox";
+import type { MailProvider } from "./provider/types";
 import { sanitizeAuthorHtml } from "./sanitizeHtml";
 import { applyTrackingAndSignature, resolveAttachments } from "./sendHelpers";
 import { ensureLocalCopyForReplay } from "./sendReplayRepair";
 import { enqueueScheduledSendJob, isFutureScheduledSend } from "./sendScheduling";
+import { disableUnsentTokens, senderAddress } from "./sendSteps";
 import { storeOutboundCopy } from "./sendStore";
-import { backfillTokens, disableTokens } from "./tracking";
+import { backfillTokens } from "./tracking";
 
 export type { SendEmailInput } from "./sendInput";
 
@@ -25,7 +25,7 @@ export interface SendEmailArgs {
   actorId: string;
   actorType: "admin" | "regular";
   actorGroupIds: ReadonlySet<string>;
-  gmail: GmailClient;
+  provider: MailProvider;
   storage: StorageClient;
   input: SendEmailInput;
   signal: AbortSignal;
@@ -55,9 +55,9 @@ async function runSend(
 ): Promise<Result<{ status: string; messageId?: string }, AppError>> {
   const { input } = args;
 
-  const acct = await assertMailboxOwner(db, input.accountId, args.actorId, signal);
-  if (!acct.ok) return acct;
-  const emailAddress = acct.value.emailAddress;
+  const sender = await senderAddress(db, input, args.actorId, signal);
+  if (!sender.ok) return sender;
+  const emailAddress = sender.value;
 
   const actor = {
     id: args.actorId,
@@ -119,7 +119,7 @@ async function runSend(
       attemptId,
       accountId: input.accountId,
       fromEmail: emailAddress,
-      gmail: args.gmail,
+      provider: args.provider,
       signal,
     });
     if (!repaired.ok) return repaired;
@@ -152,7 +152,7 @@ async function runSend(
   const outcome = await processSendAttempt(db, {
     accountId: input.accountId,
     idempotencyKey: input.idempotencyKey,
-    gmail: args.gmail,
+    provider: args.provider,
     storage: args.storage,
     signal,
   });
@@ -168,7 +168,7 @@ async function runSend(
       resolvedTrackingEnabled: resolvedTrackOpens || resolvedTrackLinks,
       bodyHtml: bodyForCopy,
       visibility: input.visibility,
-      gmail: args.gmail,
+      provider: args.provider,
       link: {
         owner: actor,
         recipients: [...input.to, ...(input.cc ?? []), ...(input.bcc ?? [])],
@@ -186,6 +186,6 @@ async function runSend(
     return ok({ status: "sent", messageId: outcome.value.gmailMessageId });
   }
 
-  await disableTokens(db, attemptId, signal);
+  await disableUnsentTokens(db, attemptId, outcome.value.status, signal);
   return ok({ status: outcome.value.status, messageId: outcome.value.gmailMessageId });
 }

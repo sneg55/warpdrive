@@ -7,6 +7,7 @@ import type { AuthUser } from "@/features/permissions/types";
 import { applyMessageIds } from "./applyMessages";
 import { FakeGmailClient } from "./gmailFake";
 import type { GmailMessage } from "./gmailSchemas";
+import { gmailProvider } from "./provider/gmailProvider";
 
 type TestDb = Parameters<Parameters<typeof withTestDb>[0]>[0];
 const signal = new AbortController().signal;
@@ -61,7 +62,10 @@ describe("applyMessageIds attachment persistence", () => {
       const fake = new FakeGmailClient();
       fake.messages.set("m1", msgWithAttachment("m1", "t1"));
 
-      await applyMessageIds({ db, accountId: acctId, owner, gmail: fake, signal }, ["m1"]);
+      await applyMessageIds(
+        { db, accountId: acctId, owner, provider: gmailProvider(fake), signal },
+        ["m1"],
+      );
 
       const message = (
         await db.execute(sql`SELECT id FROM email_messages WHERE account_id=${acctId}`)
@@ -98,8 +102,14 @@ describe("applyMessageIds attachment persistence", () => {
       const fake = new FakeGmailClient();
       fake.messages.set("m1", msgWithAttachment("m1", "t1"));
 
-      await applyMessageIds({ db, accountId: acctId, owner, gmail: fake, signal }, ["m1"]);
-      await applyMessageIds({ db, accountId: acctId, owner, gmail: fake, signal }, ["m1"]);
+      await applyMessageIds(
+        { db, accountId: acctId, owner, provider: gmailProvider(fake), signal },
+        ["m1"],
+      );
+      await applyMessageIds(
+        { db, accountId: acctId, owner, provider: gmailProvider(fake), signal },
+        ["m1"],
+      );
 
       const message = (
         await db.execute(sql`SELECT id FROM email_messages WHERE account_id=${acctId}`)

@@ -5,6 +5,7 @@ import { seedUser } from "@/db/testing/factories";
 import { FakeStorageClient } from "../files/storageFake";
 import { FakeGmailClient } from "./gmailFake";
 import { claim } from "./outboxClaim";
+import { gmailProvider } from "./provider/gmailProvider";
 import { sendEmail } from "./send";
 
 describe("scheduled_at column", () => {
@@ -54,7 +55,7 @@ describe("sendEmail with scheduledSendAt", () => {
         actorId: user.id,
         actorType: "regular",
         actorGroupIds: new Set<string>(),
-        gmail: fake,
+        provider: gmailProvider(fake),
         storage: new FakeStorageClient(),
         input: {
           accountId: acct.id,

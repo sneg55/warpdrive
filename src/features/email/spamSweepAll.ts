@@ -29,7 +29,7 @@ export async function sweepAllMailboxes(
   const accounts = (
     await db.execute(
       sql`SELECT id, email_address FROM email_accounts
-          WHERE status <> 'disconnected' ORDER BY email_address`,
+          WHERE status <> 'disconnected' AND provider='gmail' ORDER BY email_address`,
     )
   ).rows as { id: string; email_address: string }[];
   signal.throwIfAborted();

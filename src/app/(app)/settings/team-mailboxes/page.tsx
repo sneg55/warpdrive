@@ -1,3 +1,4 @@
+import { env } from "@/config/env";
 import { TeamMailboxSettings } from "@/features/email/TeamMailboxSettings";
 import { listTeamMailboxSettings } from "@/features/email/teamMailboxAdmin";
 import { listAssignableUsers } from "@/features/identity/users.service";
@@ -37,7 +38,11 @@ export default async function TeamMailboxesPage({
       />
       {x === "ok" && <p role="status">X account connected.</p>}
       {x === "error" && <p role="alert">Connecting the X account failed. Try again.</p>}
-      <TeamMailboxSettings mailboxes={mailboxes.value} users={assignable} />
+      <TeamMailboxSettings
+        mailboxes={mailboxes.value}
+        users={assignable}
+        agenticEnabled={env.AGENTIC_INBOX_ENABLED}
+      />
       <XAccountsCard
         enabled={xEnabled}
         accounts={xAccounts?.ok === true ? xAccounts.value : []}

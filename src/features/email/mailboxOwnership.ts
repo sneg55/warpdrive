@@ -4,6 +4,7 @@ import { AppError, ERROR_IDS } from "@/constants/errorIds";
 import type { Db } from "@/db/client";
 import { err, ok, type Result } from "@/types/result";
 import { canUseMailbox } from "./mailboxAccess";
+import type { ProviderKind } from "./provider/types";
 
 export async function getActorMailbox(
   db: Db,
@@ -65,13 +66,15 @@ export async function assertMailboxOwner(
   accountId: string,
   actorId: string,
   signal: AbortSignal,
-): Promise<Result<{ emailAddress: string }, AppError>> {
+): Promise<Result<{ emailAddress: string; provider: ProviderKind }, AppError>> {
   signal.throwIfAborted();
   const row = (
     await db.execute(
-      sql`SELECT user_id, kind, email_address FROM email_accounts WHERE id=${accountId}`,
+      sql`SELECT user_id, kind, email_address, provider FROM email_accounts WHERE id=${accountId}`,
     )
-  ).rows[0] as { user_id: string | null; kind: string; email_address: string } | undefined;
+  ).rows[0] as
+    | { user_id: string | null; kind: string; email_address: string; provider: ProviderKind }
+    | undefined;
   signal.throwIfAborted();
   if (row === undefined || !(await canUseMailbox(db, accountId, actorId, signal))) {
     return err(
@@ -82,7 +85,7 @@ export async function assertMailboxOwner(
       ),
     );
   }
-  return ok({ emailAddress: row.email_address });
+  return ok({ emailAddress: row.email_address, provider: row.provider });
 }
 
 export async function assertSignatureOwner(

@@ -16,6 +16,15 @@ const MESSAGES: Record<string, string> = {
   [ERROR_IDS.GMAIL_SEND_INPUT_INVALID]:
     "Something in this message was rejected before sending. Check the recipients and subject.",
   [ERROR_IDS.GMAIL_API_EXHAUSTED]: STRINGS.inbox.errorSend,
+  [ERROR_IDS.AINBOX_TOO_MANY_RECIPIENTS]: COMPOSER_STRINGS.tooManyAgenticRecipients,
+  [ERROR_IDS.AINBOX_SEND_REJECTED]:
+    "The mail server refused this message. Check the recipients, then send again.",
+  [ERROR_IDS.GMAIL_SEND_REJECTED]:
+    "Gmail refused this message. Check the recipients and attachments, then send again.",
+  [ERROR_IDS.GMAIL_SEND_MAY_HAVE_SENT]:
+    "This email may have been sent. Check Sent before trying again.",
+  [ERROR_IDS.AINBOX_AUTH_FAILED]:
+    "This mailbox's access token was rejected. An admin needs to reconnect it in Settings.",
 };
 
 export function sendFailureMessage(errorId: string): string {

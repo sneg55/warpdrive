@@ -1,5 +1,8 @@
 import { z } from "zod";
-import { EMAIL_VISIBILITY } from "@/constants/email";
+import { AGENTIC_MAX_RECIPIENTS, EMAIL_PROVIDER_KIND, EMAIL_VISIBILITY } from "@/constants/email";
+import { AppError, ERROR_IDS } from "@/constants/errorIds";
+import { err, ok, type Result } from "@/types/result";
+import type { ProviderKind } from "./provider/types";
 
 export const sendEmailInput = z.object({
   accountId: z.string().uuid(),
@@ -23,3 +26,19 @@ export const sendEmailInput = z.object({
 });
 
 export type SendEmailInput = z.infer<typeof sendEmailInput>;
+
+export function checkRecipientLimit(
+  provider: ProviderKind,
+  r: { to: string[]; cc?: string[]; bcc?: string[] },
+): Result<void, AppError> {
+  const count = r.to.length + (r.cc?.length ?? 0) + (r.bcc?.length ?? 0);
+  if (provider !== EMAIL_PROVIDER_KIND.agenticInbox || count <= AGENTIC_MAX_RECIPIENTS) {
+    return ok(undefined);
+  }
+  return err(
+    new AppError(ERROR_IDS.AINBOX_TOO_MANY_RECIPIENTS, "too many recipients for this mailbox", {
+      count,
+      max: AGENTIC_MAX_RECIPIENTS,
+    }),
+  );
+}

@@ -42,6 +42,7 @@ export async function claim(
       AND (
         status IN ('pending','failed')
         OR (status='sending' AND claimed_at < now() - (${CLAIM_LEASE_SECONDS} * interval '1 second'))
+        OR (status='waiting_for_limit' AND next_attempt_at <= now())
       )
       AND (scheduled_at IS NULL OR scheduled_at <= now())
     RETURNING id

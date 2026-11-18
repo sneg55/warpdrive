@@ -6,6 +6,7 @@ import { ok } from "@/types/result";
 import { FakeStorageClient } from "../files/storageFake";
 import { FakeGmailClient } from "./gmailFake";
 import { processSendAttempt } from "./outbox";
+import { gmailProvider } from "./provider/gmailProvider";
 import { sendEmail } from "./send";
 
 type SchedDb = Parameters<Parameters<typeof withTestDb>[0]>[0];
@@ -57,7 +58,7 @@ describe("scheduled send bakes tracking + signature into the stored payload (fix
         actorId: user.id,
         actorType: "regular",
         actorGroupIds: new Set<string>(),
-        gmail: fake,
+        provider: gmailProvider(fake),
         storage: new FakeStorageClient(),
         input: {
           accountId: acctId,
@@ -95,7 +96,7 @@ describe("scheduled send bakes tracking + signature into the stored payload (fix
         actorId: user.id,
         actorType: "regular",
         actorGroupIds: new Set<string>(),
-        gmail: fake,
+        provider: gmailProvider(fake),
         storage: new FakeStorageClient(),
         input: {
           accountId: acctId,
@@ -143,7 +144,7 @@ describe("scheduled send bakes tracking + signature into the stored payload (fix
         actorId: user.id,
         actorType: "regular",
         actorGroupIds: new Set<string>(),
-        gmail: fake,
+        provider: gmailProvider(fake),
         storage: new FakeStorageClient(),
         input: {
           accountId: acctId,
@@ -166,7 +167,7 @@ describe("scheduled send bakes tracking + signature into the stored payload (fix
       const outcome = await processSendAttempt(db, {
         accountId: acctId,
         idempotencyKey: key,
-        gmail: fake,
+        provider: gmailProvider(fake),
         storage: new FakeStorageClient(),
         signal,
       });

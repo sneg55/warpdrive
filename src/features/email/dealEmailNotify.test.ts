@@ -9,6 +9,7 @@ import type { AuthUser } from "@/features/permissions/types";
 import { applyMessageIds } from "./applyMessages";
 import { FakeGmailClient } from "./gmailFake";
 import type { GmailMessage } from "./gmailSchemas";
+import { gmailProvider } from "./provider/gmailProvider";
 
 type TestDb = Parameters<Parameters<typeof withTestDb>[0]>[0];
 const signal = new AbortController().signal;
@@ -126,9 +127,10 @@ describe("inbound email on a deal-linked thread", () => {
         }),
       );
 
-      await applyMessageIds({ db, accountId: s.accountId, owner: s.owner, gmail: fake, signal }, [
-        "m1",
-      ]);
+      await applyMessageIds(
+        { db, accountId: s.accountId, owner: s.owner, provider: gmailProvider(fake), signal },
+        ["m1"],
+      );
 
       const rows = await notificationsFor(db, s.ownerId);
       expect(rows).toHaveLength(1);
@@ -161,9 +163,10 @@ describe("inbound email on a deal-linked thread", () => {
         }),
       );
 
-      await applyMessageIds({ db, accountId: s.accountId, owner: s.owner, gmail: fake, signal }, [
-        "m1",
-      ]);
+      await applyMessageIds(
+        { db, accountId: s.accountId, owner: s.owner, provider: gmailProvider(fake), signal },
+        ["m1"],
+      );
 
       expect(await notificationsFor(db, follower.id)).toHaveLength(1);
     });
@@ -189,9 +192,10 @@ describe("inbound email on a deal-linked thread", () => {
         }),
       );
 
-      await applyMessageIds({ db, accountId: s.accountId, owner: s.owner, gmail: fake, signal }, [
-        "m1",
-      ]);
+      await applyMessageIds(
+        { db, accountId: s.accountId, owner: s.owner, provider: gmailProvider(fake), signal },
+        ["m1"],
+      );
 
       expect(await notificationsFor(db, follower.id)).toHaveLength(0);
       expect(await notificationsFor(db, s.ownerId)).toHaveLength(1);
@@ -213,7 +217,13 @@ describe("inbound email on a deal-linked thread", () => {
         }),
       );
 
-      const args = { db, accountId: s.accountId, owner: s.owner, gmail: fake, signal };
+      const args = {
+        db,
+        accountId: s.accountId,
+        owner: s.owner,
+        provider: gmailProvider(fake),
+        signal,
+      };
       await applyMessageIds(args, ["m1"]);
       await applyMessageIds(args, ["m1"]);
 
@@ -249,7 +259,13 @@ describe("inbound email on a deal-linked thread", () => {
         }),
       );
 
-      const args = { db, accountId: s.accountId, owner: s.owner, gmail: fake, signal };
+      const args = {
+        db,
+        accountId: s.accountId,
+        owner: s.owner,
+        provider: gmailProvider(fake),
+        signal,
+      };
       await applyMessageIds(args, ["m1"]);
       await applyMessageIds(args, ["m2"]);
 
@@ -286,7 +302,10 @@ describe("inbound email on a deal-linked thread", () => {
         }),
       );
 
-      await applyMessageIds({ db, accountId: acct.id, owner, gmail: fake, signal }, ["m1"]);
+      await applyMessageIds(
+        { db, accountId: acct.id, owner, provider: gmailProvider(fake), signal },
+        ["m1"],
+      );
 
       expect(await notificationsFor(db, user.id)).toHaveLength(0);
     });

@@ -13,16 +13,17 @@ import { createContext } from "@/server/trpc/context";
 import { type ActionResult, clientErr, toClientResult } from "@/types/actionResult";
 import { ok } from "@/types/result";
 import { softDisconnectMailbox } from "./disconnect";
-import { createGmailClient, type GmailClient } from "./gmailClient";
-import { makeRefresh } from "./gmailRefresh";
+import type { GmailClient } from "./gmailClient";
 import { mailboxAccessPredicate } from "./mailboxAccess";
 import { assertMailboxOwner } from "./mailboxOwnership";
 import { buildAuthUrl, GMAIL_OAUTH_STATE_COOKIE } from "./oauth";
+import { gmailProvider } from "./provider/gmailProvider";
+import { resolveProvider } from "./provider/resolveProvider";
 import { sendEmail as orchestrateSend, type SendEmailInput, sendEmailInput } from "./send";
+import { sendActionResult } from "./sendActionResult";
 import { isFutureScheduledSend } from "./sendScheduling";
 import { assertMailboxManager } from "./teamMailboxAdmin";
 import { trashThread } from "./threadTrash";
-import { ensureAccessToken } from "./tokens";
 
 function scheduledStubGmail(): GmailClient {
   const unreachable = (): never => {
@@ -69,7 +70,7 @@ export async function sendEmail(
         actorId: ctx.actor.id,
         actorType: ctx.actor.type,
         actorGroupIds: ctx.actor.groupIds,
-        gmail: scheduledStubGmail(),
+        provider: gmailProvider(scheduledStubGmail()),
         storage: makeStorageClient(),
         input,
         signal,
@@ -77,24 +78,18 @@ export async function sendEmail(
     );
   }
 
-  const token = await ensureAccessToken(db, {
-    accountId: input.accountId,
-    deps: { refresh: makeRefresh(signal) },
+  const provider = await resolveProvider(db, input.accountId, signal);
+  if (!provider.ok) return clientErr(provider.error);
+  const sent = await orchestrateSend(db, {
+    actorId: ctx.actor.id,
+    actorType: ctx.actor.type,
+    actorGroupIds: ctx.actor.groupIds,
+    provider: provider.value,
+    storage: makeStorageClient(),
+    input,
+    signal,
   });
-  if (!token.ok) return clientErr(token.error);
-
-  const gmail = createGmailClient(token.value.token);
-  return toClientResult(
-    await orchestrateSend(db, {
-      actorId: ctx.actor.id,
-      actorType: ctx.actor.type,
-      actorGroupIds: ctx.actor.groupIds,
-      gmail,
-      storage: makeStorageClient(),
-      input,
-      signal,
-    }),
-  );
+  return sendActionResult(db, sent, input, signal);
 }
 
 export async function trashThreadAction(
@@ -128,13 +123,13 @@ export async function trashThreadAction(
   if (acct === undefined)
     return clientErr(new AppError(ERROR_IDS.GMAIL_THREAD_NOT_FOUND, "thread not found", {}));
 
-  const token = await ensureAccessToken(db, {
-    accountId: acct.id,
-    deps: { refresh: makeRefresh(signal) },
-  });
-  if (!token.ok) return clientErr(token.error);
-
-  const gmail = createGmailClient(token.value.token);
+  const provider = await resolveProvider(db, acct.id, signal);
+  if (!provider.ok) return clientErr(provider.error);
+  const gmail = provider.value.gmail;
+  if (gmail === null)
+    return clientErr(
+      new AppError(ERROR_IDS.AINBOX_TRASH_UNSUPPORTED, "trash is not supported for this mailbox"),
+    );
   return toClientResult(
     await trashThread(db, { actor: ctx.actor, threadId: parsed.data.threadId, gmail }, signal),
   );
