@@ -35,8 +35,9 @@ const legacy = {
 function storageOf(raw: EnvFragment) {
   const result = parseEnv({ ...base, ...raw });
   if (!result.ok) throw new Error(result.error);
-  const { S3_ENDPOINT, S3_ACCESS_KEY, S3_SECRET_KEY, S3_BUCKET, S3_REGION } = result.value;
-  return { S3_ENDPOINT, S3_ACCESS_KEY, S3_SECRET_KEY, S3_BUCKET, S3_REGION };
+  const { S3_ENDPOINT, S3_ACCESS_KEY, S3_SECRET_KEY, S3_BUCKET, S3_REGION, S3_SERVER_ENDPOINT } =
+    result.value;
+  return { S3_ENDPOINT, S3_ACCESS_KEY, S3_SECRET_KEY, S3_BUCKET, S3_REGION, S3_SERVER_ENDPOINT };
 }
 
 describe("storage env", () => {
@@ -52,6 +53,7 @@ describe("storage env", () => {
       S3_SECRET_KEY: "new-secret",
       S3_BUCKET: "warpdrive",
       S3_REGION: undefined,
+      S3_SERVER_ENDPOINT: undefined,
     });
   });
 
@@ -66,6 +68,7 @@ describe("storage env", () => {
       S3_SECRET_KEY: "old-secret",
       S3_BUCKET: "old-bucket",
       S3_REGION: undefined,
+      S3_SERVER_ENDPOINT: undefined,
     });
   });
 
@@ -85,6 +88,24 @@ describe("storage env", () => {
 
   test("S3_REGION pins the signing region when set", () => {
     expect(storageOf({ ...s3, S3_REGION: "garage" }).S3_REGION).toBe("garage");
+  });
+
+  test("S3_SERVER_ENDPOINT is absent by default so ops follow S3_ENDPOINT", () => {
+    expect(storageOf(s3).S3_SERVER_ENDPOINT).toBeUndefined();
+  });
+
+  test("an empty S3_SERVER_ENDPOINT behaves as unset", () => {
+    expect(storageOf({ ...s3, S3_SERVER_ENDPOINT: "" }).S3_SERVER_ENDPOINT).toBeUndefined();
+  });
+
+  test("S3_SERVER_ENDPOINT pins the server-side storage endpoint", () => {
+    expect(storageOf({ ...s3, S3_SERVER_ENDPOINT: "http://garage:3900" }).S3_SERVER_ENDPOINT).toBe(
+      "http://garage:3900",
+    );
+  });
+
+  test("rejects a bare-hostname S3_SERVER_ENDPOINT", () => {
+    expect(parseEnv({ ...base, ...s3, S3_SERVER_ENDPOINT: "garage" }).ok).toBe(false);
   });
 
   test("rejects a bare-hostname endpoint the browser could not reach", () => {

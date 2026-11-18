@@ -54,8 +54,26 @@ export interface StorageClient {
   getObjectBytes(key: string, signal: AbortSignal): Promise<Result<Buffer, AppError>>;
 }
 
-function buildS3Client(): Minio.Client {
-  const parsed = new URL(env.S3_ENDPOINT);
+// The two addresses the storage boundary talks to. `presign` is baked into URLs handed to the
+// BROWSER, so it must be browser-reachable (host-published port on a dev box, the public s3.
+// subdomain in production). `ops` is dialed only by the server containers; a dev stack points it
+// at the compose-network service (http://garage:3900) because localhost inside a container is
+// that container, not the host. Production leaves them identical by omitting S3_SERVER_ENDPOINT.
+export interface StorageEndpoints {
+  presign: string;
+  ops: string;
+}
+
+export function resolveStorageEndpoints(
+  publicEndpoint: string,
+  serverEndpoint: string | undefined,
+): StorageEndpoints {
+  const ops = serverEndpoint == null || serverEndpoint.length === 0 ? publicEndpoint : serverEndpoint;
+  return { presign: publicEndpoint, ops };
+}
+
+export function buildS3Client(endpoint: string): Minio.Client {
+  const parsed = new URL(endpoint);
   const useSSL = parsed.protocol === "https:";
   const port = parsed.port.length > 0 ? Number(parsed.port) : useSSL ? 443 : 80;
   return new Minio.Client({
@@ -84,10 +102,15 @@ function storageErr(
 }
 
 class S3StorageClient implements StorageClient {
-  private readonly client: Minio.Client;
+  // presignClient signs URLs the browser will call (browser-facing endpoint); opsClient is the
+  // one this server actually dials (container-network endpoint in dev). Split so a dev stack can
+  // publish Garage on a host port for the browser while the app reaches it by service name.
+  private readonly presignClient: Minio.Client;
+  private readonly opsClient: Minio.Client;
 
-  constructor(client: Minio.Client) {
-    this.client = client;
+  constructor(presignClient: Minio.Client, opsClient: Minio.Client) {
+    this.presignClient = presignClient;
+    this.opsClient = opsClient;
   }
 
   async presignPost(
@@ -98,13 +121,13 @@ class S3StorageClient implements StorageClient {
   ): Promise<Result<PresignedPost, AppError>> {
     signal.throwIfAborted();
     try {
-      const policy = this.client.newPostPolicy();
+      const policy = this.presignClient.newPostPolicy();
       policy.setBucket(env.S3_BUCKET);
       policy.setKey(objectKey);
       policy.setContentLengthRange(1, Math.min(maxBytes, env.MAX_FILE_BYTES));
       policy.setContentType(contentType);
       policy.setExpires(new Date(Date.now() + PRESIGN_TTL_SECONDS * 1000));
-      const result = await this.client.presignedPostPolicy(policy);
+      const result = await this.presignClient.presignedPostPolicy(policy);
       signal.throwIfAborted();
       return ok({ url: result.postURL, fields: result.formData });
     } catch (cause) {
@@ -115,7 +138,7 @@ class S3StorageClient implements StorageClient {
   async headObject(key: string, signal: AbortSignal): Promise<Result<ObjectMetadata, AppError>> {
     signal.throwIfAborted();
     try {
-      const stat = await this.client.statObject(env.S3_BUCKET, key);
+      const stat = await this.opsClient.statObject(env.S3_BUCKET, key);
       signal.throwIfAborted();
       const metaData = stat.metaData as Record<string, string | undefined>;
       return ok({
@@ -135,7 +158,7 @@ class S3StorageClient implements StorageClient {
   ): Promise<Result<string, AppError>> {
     signal.throwIfAborted();
     try {
-      const url = await this.client.presignedGetObject(env.S3_BUCKET, key, PRESIGN_TTL_SECONDS, {
+      const url = await this.presignClient.presignedGetObject(env.S3_BUCKET, key, PRESIGN_TTL_SECONDS, {
         "response-content-disposition": `attachment; filename="${displayFilename}"`,
       });
       signal.throwIfAborted();
@@ -153,7 +176,7 @@ class S3StorageClient implements StorageClient {
     signal.throwIfAborted();
     try {
       // CopyConditions left empty: an unconditional server-side copy within the bucket.
-      await this.client.copyObject(
+      await this.opsClient.copyObject(
         env.S3_BUCKET,
         destKey,
         `/${env.S3_BUCKET}/${sourceKey}`,
@@ -169,7 +192,7 @@ class S3StorageClient implements StorageClient {
   async deleteObject(key: string, signal: AbortSignal): Promise<Result<void, AppError>> {
     signal.throwIfAborted();
     try {
-      await this.client.removeObject(env.S3_BUCKET, key);
+      await this.opsClient.removeObject(env.S3_BUCKET, key);
       signal.throwIfAborted();
       return ok(undefined);
     } catch (cause) {
@@ -180,7 +203,7 @@ class S3StorageClient implements StorageClient {
   async getObjectBytes(key: string, signal: AbortSignal): Promise<Result<Buffer, AppError>> {
     signal.throwIfAborted();
     try {
-      const stream = await this.client.getObject(env.S3_BUCKET, key);
+      const stream = await this.opsClient.getObject(env.S3_BUCKET, key);
       signal.throwIfAborted();
       const chunks: Buffer[] = [];
       await new Promise<void>((resolve, reject) => {
@@ -195,6 +218,8 @@ class S3StorageClient implements StorageClient {
   }
 }
 
-export function makeStorageClient(): StorageClient {
-  return new S3StorageClient(buildS3Client());
+export function makeStorageClient(endpoints?: StorageEndpoints): StorageClient {
+  const resolved =
+    endpoints ?? resolveStorageEndpoints(env.S3_ENDPOINT, env.S3_SERVER_ENDPOINT);
+  return new S3StorageClient(buildS3Client(resolved.presign), buildS3Client(resolved.ops));
 }

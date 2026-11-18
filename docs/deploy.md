@@ -148,3 +148,15 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
 Then the app is at `http://localhost:3000`, the Garage S3 API at `http://localhost:9000` (`S3_ENDPOINT`), and Postgres
 at `localhost:5433`. Set `BASE_URL=http://localhost:3000` and `NEXT_PUBLIC_WS_URL=ws://localhost:8080`
 in `.env` for this mode.
+
+**NOTE**: The host ports are for tools running on your machine only. The containers talk over the compose
+network, so `.env` values read inside the stack must keep the service names: `DATABASE_URL` stays
+`postgres://warpdrive:warpdrive@postgres:5432/warpdrive` (NOT `localhost:5433`, which nothing
+listens on inside the `migrate`/`app` containers), `WS_PUBLIC_URL` stays `ws://ws:8080`, and
+`S3_SERVER_ENDPOINT=http://garage:3900` routes the server's storage calls (import/avatar/attachment
+confirm) to Garage by service name. `S3_ENDPOINT` itself must stay `http://localhost:9000`: it is
+baked into the presigned URLs your browser uses, and without `S3_SERVER_ENDPOINT` the upload
+succeeds from the browser while the confirm step fails on a connect error. Keep
+`POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` identical to the credentials inside
+`DATABASE_URL`: Postgres applies them only at `initdb`, so on an existing `pgdata` volume a changed
+password is silently ignored and the `migrate` service fails to authenticate.

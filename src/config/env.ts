@@ -58,6 +58,15 @@ const base = z.object({
   WS_TICKET_SECRET: z.string().min(32),
   WS_PUBLIC_URL: z.string().min(1),
   S3_ENDPOINT: z.string().url(),
+  // Endpoint for SERVER-side S3 calls (HEAD/copy/delete/reads). Needed when S3_ENDPOINT names a
+  // host-published address the browser uses but the containers cannot dial (local dev stacks);
+  // presigned URLs for browsers always keep S3_ENDPOINT. Unset (or empty) => same as S3_ENDPOINT.
+  S3_SERVER_ENDPOINT: z
+    .string()
+    .url()
+    .or(z.literal(""))
+    .optional()
+    .transform((v) => (v == null || v.length === 0 ? undefined : v)),
   S3_ACCESS_KEY: z.string().min(1),
   S3_SECRET_KEY: z.string().min(1),
   S3_BUCKET: z.string().min(1).default("warpdrive"),
