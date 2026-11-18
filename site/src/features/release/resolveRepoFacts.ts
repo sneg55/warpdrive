@@ -4,6 +4,10 @@ import type { ReleaseFacts, RepoFacts } from "@/types/repoFacts";
 const repoSchema = z.object({ stargazers_count: z.number().int().nonnegative() });
 const releaseSchema = z.object({ tag_name: z.string(), published_at: z.iso.datetime() });
 const SEMVER = /^v?(\d+)\.(\d+)\.(\d+)$/;
+const stampedStarsSchema = z.object({ stars: z.number().int().nonnegative() });
+const stampedReleaseSchema = z.object({
+  release: z.object({ version: z.string().regex(SEMVER), releasedOn: z.iso.date() }),
+});
 
 type Triple = readonly [number, number, number];
 
@@ -45,10 +49,19 @@ export function resolveRepoFacts(input: {
   releaseJson: unknown;
   packageVersion: string | null;
   buildDate: Date;
+  stampedJson?: unknown;
 }): RepoFacts {
   const repo = repoSchema.safeParse(input.repoJson);
+  const stampedStars = stampedStarsSchema.safeParse(input.stampedJson);
+  const stampedRelease = stampedReleaseSchema.safeParse(input.stampedJson);
   return {
-    stars: repo.success ? repo.data.stargazers_count : null,
-    release: resolveRelease(input.releaseJson, input.packageVersion, input.buildDate),
+    stars: repo.success
+      ? repo.data.stargazers_count
+      : stampedStars.success
+        ? stampedStars.data.stars
+        : null,
+    release:
+      resolveRelease(input.releaseJson, input.packageVersion, input.buildDate) ??
+      (stampedRelease.success ? stampedRelease.data.release : null),
   };
 }

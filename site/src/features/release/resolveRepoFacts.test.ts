@@ -68,4 +68,54 @@ describe("resolveRepoFacts", () => {
     expect(facts.stars).toBeNull();
     expect(facts.release?.version).toBe("1.4.0");
   });
+
+  it("falls back to the facts stamped at publish when GitHub refuses the build", () => {
+    const facts = resolveRepoFacts({
+      repoJson: { message: "API rate limit exceeded" },
+      releaseJson: { message: "API rate limit exceeded" },
+      packageVersion: "2.11.4",
+      buildDate: BUILD_DATE,
+      stampedJson: { stars: 927, release: { version: "2.11.4", releasedOn: "2026-11-18" } },
+    });
+    expect(facts).toEqual({
+      stars: 927,
+      release: { version: "2.11.4", releasedOn: "2026-11-18" },
+    });
+  });
+
+  it("prefers live GitHub facts over the stamped ones", () => {
+    const facts = resolveRepoFacts({
+      repoJson: { stargazers_count: 1000 },
+      releaseJson: { tag_name: "v2.12.0", published_at: "2026-11-20T10:00:00Z" },
+      packageVersion: "2.12.0",
+      buildDate: BUILD_DATE,
+      stampedJson: { stars: 927, release: { version: "2.11.4", releasedOn: "2026-11-18" } },
+    });
+    expect(facts).toEqual({
+      stars: 1000,
+      release: { version: "2.12.0", releasedOn: "2026-11-20" },
+    });
+  });
+
+  it("keeps the stamped stars when a prerelease tag makes the stamped release unusable", () => {
+    const facts = resolveRepoFacts({
+      repoJson: null,
+      releaseJson: null,
+      packageVersion: null,
+      buildDate: BUILD_DATE,
+      stampedJson: { stars: 927, release: { version: "1.2.3-rc.1", releasedOn: "2026-11-18" } },
+    });
+    expect(facts).toEqual({ stars: 927, release: null });
+  });
+
+  it("ignores a malformed stamp", () => {
+    const facts = resolveRepoFacts({
+      repoJson: null,
+      releaseJson: null,
+      packageVersion: null,
+      buildDate: BUILD_DATE,
+      stampedJson: { stars: "lots", release: { version: "next" } },
+    });
+    expect(facts).toEqual({ stars: null, release: null });
+  });
 });

@@ -59,6 +59,42 @@ describe("loadRepoFacts", () => {
     expect(facts).toEqual({ stars: null, release: null });
   });
 
+  it("reads the facts stamped at publish when GitHub is unreachable", async () => {
+    vi.spyOn(globalThis, "fetch").mockRejectedValue(new TypeError("fetch failed"));
+    vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const dir = await mkdtemp(path.join(tmpdir(), "repo-facts-"));
+    const stampedFactsPath = path.join(dir, "repo-facts.json");
+    await writeFile(
+      stampedFactsPath,
+      JSON.stringify({ stars: 927, release: { version: "2.11.4", releasedOn: "2026-11-18" } }),
+    );
+    const facts = await loadRepoFacts({
+      repoSlug: "sneg55/warpdrive",
+      packageJsonPath: await packageJsonWith("2.11.4"),
+      stampedFactsPath,
+      now: NOW,
+      signal: AbortSignal.timeout(5000),
+    });
+    expect(facts).toEqual({
+      stars: 927,
+      release: { version: "2.11.4", releasedOn: "2026-11-18" },
+    });
+  });
+
+  it("logs the HTTP status when GitHub refuses a build request", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response("{}", { status: 403, headers: { "x-ratelimit-remaining": "0" } }),
+    );
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    await loadRepoFacts({
+      repoSlug: "sneg55/warpdrive",
+      packageJsonPath: await packageJsonWith("1.0.0"),
+      now: NOW,
+      signal: AbortSignal.timeout(5000),
+    });
+    expect(warn).toHaveBeenCalledWith(expect.stringMatching(/403.*ratelimit-remaining=0/));
+  });
+
   it("bypasses the Next data cache so a cached build never freezes the star count", async () => {
     const spy = stubGitHub({});
     await loadRepoFacts({

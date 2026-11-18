@@ -11,6 +11,7 @@ export function getBuildRepoFacts(): Promise<RepoFacts> {
   pending ??= loadRepoFacts({
     repoSlug: REPO_SLUG,
     packageJsonPath: path.join(process.cwd(), "..", "package.json"),
+    stampedFactsPath: path.join(process.cwd(), "repo-facts.json"),
     now: new Date(),
     signal: AbortSignal.timeout(GITHUB_TIMEOUT_MS),
   });
