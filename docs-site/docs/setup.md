@@ -178,6 +178,11 @@ The app is then at `http://localhost:3000`, the Garage S3 API at
 `BASE_URL=http://localhost:3000` and `NEXT_PUBLIC_WS_URL=ws://localhost:8080` for this
 mode.
 
+To sign in without Google use the `dev-login` route:
+http://localhost:3000/auth/dev-login?email=admin@example.com
+where `admin@example.com` is the email address you set in `SEED_ADMIN_EMAIL` (for this
+to work you'll also need to set `NODE_ENV=development`).
+
 ## Operating the deployment
 
 See [Updating](./operations/updating.md) for upgrades, backups, and day-to-day
