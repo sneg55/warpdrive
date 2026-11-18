@@ -34,13 +34,9 @@ export async function markWonAction(
   const { actor } = await createContext();
   if (actor === null) return { ok: false, error: { id: ERROR_IDS.AUTH_SESSION_DEAD } };
 
-  // Record-scoped: loadEditableDeal inside markWon gates edit permission.
   const result = await markWon(db, actor, input.dealId, SIG());
   if (!result.ok) return { ok: false, error: { id: result.error.id } };
 
-  // Fan out deal_won to followers UNION owner minus actor (spec-0 notify gap fix). Runs outside
-  // the markWon transaction on the db singleton, so it is deferred past the response rather than
-  // billed to the user's click. It must never throw in after().
   const won = result.value;
   after(async () => {
     try {
@@ -68,13 +64,9 @@ export async function reopenDealAction(
   const { actor } = await createContext();
   if (actor === null) return { ok: false, error: { id: ERROR_IDS.AUTH_SESSION_DEAD } };
 
-  // Record-scoped: loadEditableDeal inside reopenDeal gates edit permission.
   const result = await reopenDeal(db, actor, input.dealId, SIG());
   if (!result.ok) return { ok: false, error: { id: result.error.id } };
 
-  // Notify followers of the status change, like markWon/markLost and the generic update path.
-  // status "open" routes to the followed-update fan-out (not won/lost). Deferred past the
-  // response: outside the reopenDeal transaction, invisible to the caller.
   const reopened = result.value;
   after(async () => {
     try {
@@ -114,7 +106,6 @@ export async function markLostAction(
   );
   if (!result.ok) return { ok: false, error: { id: result.error.id } };
 
-  // Fan out deal_lost to followers UNION owner minus actor (spec-0 notify gap fix).
   await notifyOnDealUpdate(db, {
     deal: result.value,
     input: { status: "lost" },

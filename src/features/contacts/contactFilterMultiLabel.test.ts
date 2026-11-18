@@ -1,5 +1,3 @@
-// "is any of": a People / Orgs labels condition may carry several names at once. The names stay in
-// one bound array parameter, and the match stays case-insensitive for legacy lowercase values.
 import type { SQL } from "drizzle-orm";
 import { PgDialect } from "drizzle-orm/pg-core";
 import { describe, expect, it } from "vitest";
@@ -80,8 +78,6 @@ describe("compileContactFilter with a list of label values", () => {
     expect(q.params).toEqual([["Hot", "Warm"]]);
   });
 
-  // Zod rejects an empty list, so one arriving here means the boundary was bypassed. Compiling it
-  // would produce a condition that can never match, which reads as a filter that ate every row.
   it("rejects an empty list rather than compiling a condition that matches nothing", () => {
     expect(() =>
       compileContactFilter(

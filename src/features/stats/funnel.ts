@@ -1,7 +1,3 @@
-// Funnel query: per-stage count of open deals + conversion rate relative to
-// the first stage. Requires JOIN pipelines p so the visibility predicate can
-// gate on p.visibility_group_id (pipeline restriction).
-// v1 snapshot: no date window (current resting-state count, not a time series).
 import { sql } from "drizzle-orm";
 import type { Db } from "@/db/client";
 import { dealVisibilityClause } from "@/features/deals/visibility";
@@ -29,7 +25,6 @@ export async function funnel(
 ): Promise<FunnelStage[]> {
   signal.throwIfAborted();
 
-  // Fetch stages ordered by their position.
   const stagesResult = await db.execute(sql`
     SELECT id, name, "order"
     FROM stages
@@ -47,7 +42,6 @@ export async function funnel(
   const visClause = dealVisibilityClause(toSession(actor));
   const ownerClause = ownerFilterClause(sql`d.owner_id`, owners);
 
-  // Count open deals per stage behind the visibility predicate (+ owner filter when me-scoped).
   const countsResult = await db.execute(sql`
     SELECT d.stage_id AS "stageId", count(*)::int AS c
     FROM deals d

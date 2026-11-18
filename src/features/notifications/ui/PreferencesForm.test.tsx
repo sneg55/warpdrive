@@ -44,7 +44,6 @@ describe("PreferencesForm", () => {
       "aria-checked",
       "true",
     );
-    // Unchecked row renders the same switch with aria-checked="false".
     cleanup();
     render(<PreferencesForm prefs={allFalse} onChange={() => {}} />);
     expect(screen.getAllByRole("switch", { name: columnInApp })[0]!).toHaveAttribute(
@@ -58,7 +57,6 @@ describe("PreferencesForm", () => {
     const onChange = vi.fn();
     render(<PreferencesForm prefs={allFalse} onChange={onChange} />);
     const inAppToggles = screen.getAllByRole("switch", { name: columnInApp });
-    // getAllByRole throws if nothing found, so index 0 is always defined
     await user.click(inAppToggles[0]!);
     expect(onChange).toHaveBeenCalledWith("mention", { inApp: true, email: false });
   });
@@ -67,7 +65,6 @@ describe("PreferencesForm", () => {
     const user = userEvent.setup();
     const onChange = vi.fn();
     render(<PreferencesForm prefs={allFalse} onChange={onChange} />);
-    // Click the visible "In-app" label of the first row, not the switch control itself.
     const inAppLabels = screen.getAllByText(columnInApp);
     await user.click(inAppLabels[0]!);
     expect(onChange).toHaveBeenCalledWith("mention", { inApp: true, email: false });
@@ -78,7 +75,6 @@ describe("PreferencesForm", () => {
     const onChange = vi.fn();
     render(<PreferencesForm prefs={allTrue} onChange={onChange} />);
     const emailToggles = screen.getAllByRole("switch", { name: columnEmail });
-    // getAllByRole throws if nothing found, so index 0 is always defined
     await user.click(emailToggles[0]!);
     expect(onChange).toHaveBeenCalledWith("mention", { inApp: true, email: false });
   });

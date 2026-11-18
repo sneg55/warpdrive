@@ -1,8 +1,6 @@
 "use client";
 import type React from "react";
 
-// One labeled text input inside a section bulk editor. The label doubles as the input's
-// accessible name so the whole section's fields are individually reachable while open at once.
 export function BulkEditRow({
   label,
   value,

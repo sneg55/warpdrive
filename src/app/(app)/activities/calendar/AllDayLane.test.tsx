@@ -48,8 +48,6 @@ describe("AllDayLane", () => {
   });
 
   it("reserves the week's lane height even on a day that has none", () => {
-    // Each column stacks its hour grid under the lane row, so a lane that exists on only some days
-    // would push those days' hours down and 09:00 would stop being level across the week.
     renderLane([], 2);
     const lane = document.querySelector("[data-all-day-lane]");
     expect((lane as HTMLElement).style.height).toBe(`${2 * ALL_DAY_ROW_HEIGHT_PX}px`);

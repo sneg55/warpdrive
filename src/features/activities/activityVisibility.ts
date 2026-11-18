@@ -1,9 +1,6 @@
 import type { VisibilityLevel } from "@/constants/visibility";
 import type { VisibleActivity } from "@/features/permissions/types";
 
-// Parent visibility fields pre-fetched via join, so a list can resolve activity visibility in
-// memory instead of re-querying each parent per row (the N+1 the DB resolver in visibility.ts
-// incurs). Same dominant-parent precedence, kept pure so it is cheap to unit-test.
 interface ParentVisibility {
   ownerId: string;
   visibilityLevel: VisibilityLevel;
@@ -21,8 +18,6 @@ export interface ActivityVisibilityInput {
   personId: string | null;
   orgId: string | null;
   assigneeId: string;
-  // null when the id above is set but the parent row is missing or soft-deleted (deal also null
-  // when its pipeline row is missing): both mean "not visible" under dominant-parent precedence.
   deal: DealParentVisibility | null;
   person: ParentVisibility | null;
   org: ParentVisibility | null;
@@ -41,9 +36,6 @@ function contactVisibility(p: ParentVisibility, assigneeId: string): VisibleActi
   };
 }
 
-// Pure equivalent of resolveActivityVisibility for a row whose parents were pre-fetched via join.
-// Same dominant-parent precedence (deal > person > org > parentless); an id set with a null parent
-// record means the parent is missing/soft-deleted (or the deal's pipeline is gone) -> not visible.
 export function activityVisibilityFromParents(
   input: ActivityVisibilityInput,
 ): VisibleActivity | null {
@@ -91,9 +83,6 @@ function contactParent(
   };
 }
 
-// The nullable parent columns a list query selects via LEFT JOIN (soft-deleted parents excluded by
-// the join predicate, so a null column means "no visible parent"). Both the table and the calendar
-// select these exact aliases and hand the row to buildActivityVisibility.
 export interface ActivityParentColumns {
   dealId: string | null;
   personId: string | null;
@@ -115,7 +104,6 @@ export interface ActivityParentColumns {
   orgVisibleTo: string[] | null;
 }
 
-// Resolve visibility from a joined row + pre-fetched participants (no per-row DB round-trip).
 export function buildActivityVisibility(
   cols: ActivityParentColumns,
   participantUserIds: string[],

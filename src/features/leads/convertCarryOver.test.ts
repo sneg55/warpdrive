@@ -9,19 +9,13 @@ import { seedPipelineWithStages, seedUser } from "@/db/testing/factories";
 import { convertLead } from "./leadConvert";
 import { insertLead, seedSettings, session, sig } from "./leadConvert.test-helpers";
 
-// Converting a lead used to leave its whole history behind: notes hang off (entity_type='lead',
-// entity_id), activities off activities.lead_id and email off email_threads.lead_id, none of which
-// the deal reads. The deal now inherits all three, and the archived lead keeps its own copy.
-
 type TestDb = Parameters<Parameters<typeof withTestDb>[0]>[0];
 
-// Migrations already seed the built-in types, so reuse one rather than inserting a duplicate key.
 async function anyActivityType(db: TestDb): Promise<string> {
   const [row] = await db.select({ id: activityTypes.id }).from(activityTypes).limit(1);
   return row?.id ?? "";
 }
 
-// A mailbox + a thread already linked to the lead (as inbound sync would leave it).
 async function seedLeadThread(db: TestDb, userId: string, leadId: string): Promise<string> {
   const [account] = await db
     .insert(emailAccounts)
@@ -55,7 +49,6 @@ describe("convertLead carries the lead's history onto the deal", () => {
           authorId: owner.id,
           pinned: true,
         },
-        // Soft-deleted: must not be resurrected onto the deal.
         {
           entityType: "lead",
           entityId: lead.id,
@@ -88,7 +81,6 @@ describe("convertLead carries the lead's history onto the deal", () => {
       expect(onDeal.find((n) => n.body === "Pinned one")?.pinned).toBe(true);
       expect(onDeal.every((n) => n.authorId === owner.id)).toBe(true);
 
-      // The archived lead keeps its own notes (copy, not move).
       const onLead = await db
         .select()
         .from(notes)
@@ -138,7 +130,6 @@ describe("convertLead carries the lead's history onto the deal", () => {
       expect(onDeal).toHaveLength(1);
       expect(onDeal[0]?.subject).toBe("Call Steve");
       expect(onDeal[0]?.note).toBe("ask about the feed");
-      // activity_single_parent: the copy belongs to the deal alone.
       expect(onDeal[0]?.leadId).toBeNull();
       const parts = await db
         .select()
@@ -146,7 +137,6 @@ describe("convertLead carries the lead's history onto the deal", () => {
         .where(eq(activityParticipants.activityId, onDeal[0]?.id ?? ""));
       expect(parts.map((p) => p.userId)).toEqual([mate.id]);
 
-      // Original still on the lead.
       const onLead = await db.select().from(activities).where(eq(activities.leadId, lead.id));
       expect(onLead).toHaveLength(1);
     });
@@ -180,8 +170,6 @@ describe("convertLead carries the lead's history onto the deal", () => {
     });
   });
 
-  // The copy is a separate row, so a column added to activities has to be listed in
-  // copyActivities or the deal's copy silently falls back to the database default.
   it("keeps an all-day activity date-only when the lead converts", async () => {
     await withTestDb(async (db) => {
       const owner = await seedUser(db);
@@ -234,8 +222,6 @@ describe("convertLead carries the lead's history onto the deal", () => {
       if (!r.ok) return;
 
       const [thread] = await db.select().from(emailThreads).where(eq(emailThreads.id, threadId));
-      // A second row is impossible (unique account_id + gmail_thread_id), so the one thread carries
-      // both links and shows on the deal and the archived lead.
       expect(thread?.dealId).toBe(r.value.dealId);
       expect(thread?.leadId).toBe(lead.id);
     });

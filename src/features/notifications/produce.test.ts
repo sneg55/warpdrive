@@ -5,8 +5,6 @@ import { withTestDb } from "@/db/testing";
 import { seedPipelineWithStages, seedUser } from "@/db/testing/factories";
 import { createNotification, fanOut } from "./produce";
 
-// Seed a deal owned by the given user with owner-level visibility.
-// No seedDeal factory exists; insert directly using the deals table.
 async function seedOwnerDeal(
   db: Parameters<Parameters<typeof withTestDb>[0]>[0],
   ownerId: string,
@@ -25,7 +23,6 @@ async function seedOwnerDeal(
   return row.id;
 }
 
-// Seed a deal with all-visibility (any authenticated user can see it).
 async function seedAllVisibilityDeal(
   db: Parameters<Parameters<typeof withTestDb>[0]>[0],
   ownerId: string,
@@ -74,7 +71,6 @@ describe("createNotification", () => {
     await withTestDb(async (db) => {
       const alice = await seedUser(db);
       const bob = await seedUser(db);
-      // owner-level deal owned by alice; bob cannot see it
       const dealId = await seedOwnerDeal(db, alice.id);
       const ctrl = new AbortController();
 
@@ -93,7 +89,6 @@ describe("createNotification", () => {
 
       expect(r.ok).toBe(true);
       if (r.ok !== true) return;
-      // Security assertion: suppressed, no row inserted
       expect(r.value).toEqual({ suppressed: true });
 
       const rows = await db
@@ -180,7 +175,6 @@ describe("createNotification", () => {
 
       expect(r.ok).toBe(true);
       if (r.ok !== true) return;
-      // A gated type with no id can never pass a visibility check: suppress, never insert.
       expect(r.value).toEqual({ suppressed: true });
 
       const rows = await db
@@ -197,7 +191,6 @@ describe("fanOut", () => {
     await withTestDb(async (db) => {
       const alice = await seedUser(db);
       const bob = await seedUser(db);
-      // all-visibility deal: both alice and bob can see it
       const dealId = await seedAllVisibilityDeal(db, alice.id);
       const ctrl = new AbortController();
 
@@ -233,7 +226,6 @@ describe("fanOut", () => {
     await withTestDb(async (db) => {
       const alice = await seedUser(db);
       const bob = await seedUser(db);
-      // owner deal: only alice can see it, bob is suppressed
       const dealId = await seedOwnerDeal(db, alice.id);
       const ctrl = new AbortController();
 
@@ -261,7 +253,6 @@ describe("fanOut", () => {
       );
 
       expect(results).toHaveLength(2);
-      // alice: inserted; bob: suppressed
       expect(results[0]?.ok).toBe(true);
       if (results[0]?.ok === true) expect("notificationId" in results[0].value).toBe(true);
       expect(results[1]?.ok).toBe(true);

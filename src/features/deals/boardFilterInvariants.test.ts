@@ -1,11 +1,3 @@
-// Finder #4 (UI-wiring audit): logic-invariant tests over the pipeline board's filter builder.
-//
-// The bug class this guards: an option the builder OFFERS that can never return results
-// ("offered-but-impossible", e.g. Status=Won on a board whose query hardcodes status='open'),
-// and empty value dropdowns. For every field the builder offers we assert, against seeded data
-// through the real getBoardColumns query path (no mocked DB), that a representative value returns
-// > 0 cards. Adding a new offered field with no representative case fails loudly here, forcing the
-// author to prove it is reachable before shipping it.
 import { sql } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import { organizations } from "@/db/schema";
@@ -26,12 +18,9 @@ import { getBoardColumns } from "./dealRepo";
 type AstField = (typeof FILTER_FIELDS)[number];
 type Condition = FilterDefinition["conditions"][number];
 
-// Fixed so the seed and its representative condition cannot drift with the clock.
 const SEED_CLOSE_DATE = "2026-09-30";
-// deals.labels is a text[] of label NAMES, not catalog ids, so the filter value is the name.
 const SEED_LABEL = "Hot";
 
-// Ids only the running seed knows, so their conditions cannot be plain constants.
 interface SeedRefs {
   ownerId: string;
   stageId: string;
@@ -62,8 +51,6 @@ function representativeCondition(field: AstField, seed: SeedRefs): Condition {
 
 describe("board filter builder invariants (finder #4)", () => {
   it("offers only fields the schema allows, each with at least one operator", () => {
-    // Guards empty operator dropdowns: an offered field with no valid operator would render an
-    // op picker with nothing to choose.
     for (const f of dealFilterFields()) {
       expect(FILTER_FIELDS).toContain(f.field);
       expect(OPS_BY_FIELD[f.field].length).toBeGreaterThan(0);
@@ -75,9 +62,6 @@ describe("board filter builder invariants (finder #4)", () => {
   });
 
   it("never offers an owner value option with zero matching cards", () => {
-    // The owner dropdown is derived from the board's own cards, so every option must match >= 1
-    // card. This locks that property in: deriving owners from a broader source (all users) would
-    // reintroduce empty options.
     const cards = [
       { ownerId: "u1", ownerName: "Alice" },
       { ownerId: "u2", ownerName: "Bob" },
@@ -98,7 +82,6 @@ describe("board filter builder invariants (finder #4)", () => {
       });
       const u = await seedUser(db);
       const p = await seedPipelineWithStages(db, ["A"]);
-      // An org-linked deal so the orgName representative condition ("contains Apex") has a match.
       const [org] = await db
         .insert(organizations)
         .values({ name: "Apex Labs", ownerId: u.id, visibilityLevel: "all" })

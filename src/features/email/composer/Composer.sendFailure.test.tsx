@@ -48,9 +48,6 @@ vi.stubGlobal("fetch", () => Promise.resolve(new Response(null, { status: 204 })
 import { Composer } from "./Composer";
 import { COMPOSER_STRINGS } from "./composer.constants";
 
-// The send action arms an 8s deadline of its own, so a slow Gmail send rejects instead of
-// returning a failed Result. An escaping rejection left `sending` stuck true, which greyed
-// out Send permanently with no banner to explain it. This is the user-visible half of that.
 describe("Composer when the send action rejects", () => {
   beforeEach(() => {
     sendEmailMock.mockReset();

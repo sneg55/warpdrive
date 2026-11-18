@@ -5,8 +5,6 @@ const css = readFileSync(new URL("./globals.css", import.meta.url), "utf8");
 
 describe("scrollbars", () => {
   it("thins every scroll container, not just the root: scrollbar-width does not inherit", () => {
-    // Measured in Chrome: with the declaration only on :root, a board lane still computed
-    // scrollbar-width: auto. Only scrollbar-color inherits; scrollbar-width has to be universal.
     expect(css).toMatch(/:where\(\*\)\s*\{\s*scrollbar-width:\s*thin/);
   });
 
@@ -21,8 +19,6 @@ describe("scrollbars", () => {
   });
 
   it("does not style ::-webkit-scrollbar, which would force always-visible bars on macOS", () => {
-    // Styling the webkit pseudo-elements opts out of the platform's overlay scrollbars, so a
-    // trackpad user who sees nothing today would start seeing a bar on every scroll container.
     expect(css).not.toMatch(/::-webkit-scrollbar/);
   });
 });

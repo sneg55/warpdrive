@@ -38,8 +38,6 @@ describe("ActivityChip", () => {
   });
 
   it("keeps the parent name at a readable weight rather than fading it below AA", () => {
-    // opacity-60 on 11px text measured 3.93:1 on the normal chip and 2.96:1 on the overdue one,
-    // both under the 4.5:1 floor. An explicit secondary colour clears it on either background.
     render(<ActivityChip a={activity} />);
     const parent = screen.getByText("Acme renewal");
     expect(parent).toHaveClass("text-foreground/70");

@@ -17,11 +17,8 @@ const S = ENRICHMENT_STRINGS.dialog;
 
 const LOADING: EnrichRunState = { kind: "loading" };
 
-// The header asks on every section render; one cached answer per tab is plenty, since connecting a
-// provider is an admin action that happens once.
 const STATUS_STALE_MS = 5 * 60_000;
 
-// The three props SectionHeaderMenu needs to render the Fill the gaps button.
 interface FillGapsProps {
   onFillGaps?: () => void;
   fillGapsBusy?: boolean;
@@ -46,8 +43,6 @@ function isoFrom(context: Record<string, unknown> | undefined, key: string): str
   return typeof value === "string" ? value : null;
 }
 
-// Errors a fresh fan-out could answer differently. A missing identifier or an unconfigured
-// provider is about this record or this workspace, and re-running changes neither.
 const RETRYABLE_RUN_ERRORS = new Set<string>([
   ERROR_IDS.ENRICH_ALL_FAILED,
   ERROR_IDS.ENRICH_THROTTLED,
@@ -72,8 +67,6 @@ function runErrorMessage(id: string, context: Record<string, unknown> | undefine
   return S.runError;
 }
 
-// Owns the enrichment call and the review dialog; the caller owns the button's placement, which is
-// why this hands the button's props back through a render prop instead of drawing one itself.
 export function EnrichButton({
   entityType,
   entityId,
@@ -87,27 +80,16 @@ export function EnrichButton({
     staleTime: STATUS_STALE_MS,
     retry: false,
   });
-  // The dialog belongs to the record it was opened for, so pointing this button at another record
-  // closes it rather than showing the new name over the previous one's run.
   const [openFor, setOpenFor] = useState<string | null>(null);
   const open = openFor === entityId;
-  // The state carries the record it describes. The sidebar is reused as the user moves between
-  // records, so a slower answer for the one just closed can land after a faster one; without this
-  // it would replace what is on screen and Apply would post the wrong record's runId.
   const [state, setState] = useState<{ entityId: string; value: EnrichRunState }>({
     entityId,
     value: LOADING,
   });
   const shown = state.entityId === entityId ? state.value : LOADING;
 
-  // Every record with a fan-out still running, not just the last one. Dismissing the dialog does
-  // not cancel the request, and a second click while it runs starts another before the first can
-  // fill the cache. A set rather than one slot: moving to another record and back must not re-enable
-  // a button whose own request is still out.
   const [pendingFor, setPendingFor] = useState<ReadonlySet<string>>(new Set());
   const busy = pendingFor.has(entityId);
-  // Tagged with their record for the same reason the run state is: an apply is as slow as any
-  // other request, and what comes back must not close or annotate a different record's dialog.
   const [applyError, setApplyError] = useState<{
     entityId: string;
     value: EnrichApplyError;
@@ -126,8 +108,6 @@ export function EnrichButton({
         refresh ? { entityType, entityId, refresh: true } : { entityType, entityId },
         readCsrfToken(),
       ).catch(() => null);
-      // A rejected action, a dropped connection or an unexpected server throw, would otherwise
-      // leave the record loading forever with its button disabled.
       const value: EnrichRunState =
         result === null
           ? { kind: "error", message: S.runError, canRefresh: true }
@@ -157,19 +137,15 @@ export function EnrichButton({
 
   function applyErrorFor(id: string): { message: string; canRefresh: boolean } {
     if (id === ERROR_IDS.ENRICH_STALE) return { message: S.staleError, canRefresh: true };
-    // A repointed mapping means the preview described a different target. Re-running rebuilds it.
     if (id === ERROR_IDS.ENRICH_MAPPINGS_CHANGED) {
       return { message: S.mappingsChangedError, canRefresh: true };
     }
-    // The run aged out of the cache while the dialog sat open. Re-running is the whole remedy.
     if (id === ERROR_IDS.ENRICH_RUN_NOT_FOUND) {
       return { message: S.staleError, canRefresh: true };
     }
     return { message: S.applyError, canRefresh: false };
   }
 
-  // An apply writes change-log rows, and the History panel reads those through its own query
-  // rather than the RSC tree, so refreshing the tree alone leaves it showing the old story.
   function refreshAfterApply(appliedTo: string): void {
     void utils.contacts.contactTimeline.invalidate({ entityType, entityId: appliedTo });
     router.refresh();
@@ -178,8 +154,6 @@ export function EnrichButton({
 
   async function apply(selections: Selection[]): Promise<void> {
     if (shown.kind !== "loaded") return;
-    // An apply is as slow as any other request, so it follows the same rule as the fan-out: what
-    // comes back belongs to the record it was sent for and may not touch another one's dialog.
     const appliedTo = entityId;
     setApplyBusyFor(appliedTo);
     setApplyError(null);
@@ -193,8 +167,6 @@ export function EnrichButton({
       readCsrfToken(),
     ).catch(() => null);
     setApplyBusyFor((prev) => (prev === appliedTo ? null : prev));
-    // Never closes on failure: the picks stay on screen so the user can retry or refresh. A
-    // rejected action is a failure like any other, not a reason to leave Apply disabled.
     if (result === null) {
       setApplyError({
         entityId: appliedTo,
@@ -206,11 +178,6 @@ export function EnrichButton({
       setApplyError({ entityId: appliedTo, value: applyErrorFor(result.error.id) });
       return;
     }
-    // Some fields applied but an organization could not be linked unambiguously. Closing on that
-    // would report success for a row the user watched get counted in "Apply N". The write that did
-    // land moved the record's updatedAt, so the dialog adopts the version the write returned rather
-    // than re-running the fan-out to learn it: with the cache disabled or the run aged out, a
-    // re-run would call every paid provider again purely because a name could not be linked.
     if (result.value.unresolved.length > 0) {
       setState({
         entityId,
@@ -219,12 +186,6 @@ export function EnrichButton({
           run: {
             ...shown.run,
             entityUpdatedAtIso: result.value.entityUpdatedAtIso,
-            // The committed rows leave the dialog: keeping them would let a retry rewrite fields
-            // that already landed and add a second change-log row for each. So do the unresolved
-            // ones. An unresolved company name means no single organization matched the provider's
-            // string, which is a property of the string and the org list, not of the attempt, so
-            // the same apply resolves to nothing every time. Leaving it checked with Apply live
-            // offered a retry that could only re-raise the error it had just shown.
             fields: remainingFields(
               shown.run.fields,
               result.value.appliedFields,
@@ -249,10 +210,6 @@ export function EnrichButton({
   return (
     <>
       {children({
-        // Not disabled on a global cooldown: this record may already have a cached run, which the
-        // server returns before it ever looks at provider availability. Disabling here would hide
-        // the only way to open it. A cooldown with no cached run comes back as E_ENRICH_003, which
-        // the dialog explains with its resume time.
         onFillGaps: ready ? openAndRun : undefined,
         fillGapsBusy: busy,
       })}

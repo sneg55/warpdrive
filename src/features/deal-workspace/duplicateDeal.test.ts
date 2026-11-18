@@ -1,4 +1,3 @@
-// Integration tests for duplicateDeal (clone a deal). Real Postgres, no DB mocking.
 import { and, eq } from "drizzle-orm";
 import { afterAll, beforeAll, expect, it } from "vitest";
 import type { PermissionFlagKey } from "@/constants/permissionFlags";
@@ -70,7 +69,6 @@ it("clones fields into a new open deal owned by the actor, dropping won/archived
   const [clone] = await h.db.select().from(deals).where(eq(deals.id, r.value.id));
   expect(clone).toBeDefined();
   if (clone === undefined) return;
-  // Copied core fields.
   expect(clone.title).toBe("Acme expansion (copy)");
   expect(clone.value).toBe("2500.00");
   expect(clone.pipelineId).toBe(source.pipelineId);
@@ -78,17 +76,13 @@ it("clones fields into a new open deal owned by the actor, dropping won/archived
   expect(clone.labels).toEqual(["hot"]);
   expect(clone.sourceChannel).toBe("outbound");
   expect(clone.customFields).toEqual({ region: "EU" });
-  // Owner is the actor, not the source owner.
   expect(clone.ownerId).toBe(actor.id);
-  // NOT copied: won/lost/archived state.
   expect(clone.status).toBe("open");
   expect(clone.wonTime).toBeNull();
   expect(clone.archivedAt).toBeNull();
   expect(clone.deletedAt).toBeNull();
-  // Fresh timestamps (distinct row, own createdAt).
   expect(clone.createdAt).not.toBeNull();
 
-  // A changelog "created" trail exists on the new deal referencing the source.
   const logs = await h.db
     .select()
     .from(changeLogs)
@@ -97,8 +91,6 @@ it("clones fields into a new open deal owned by the actor, dropping won/archived
 });
 
 it("clones under the group visibility default using the actor's primary visibility group", async () => {
-  // Production seeds a settings row whose deal default is "group"; the actor's primary group must
-  // be honored (regression: a hardcoded null group made this fail with E_PERM_003).
   const [group] = await h.db
     .insert(visibilityGroups)
     .values({ name: `G-${Date.now()}-${Math.random().toString(36).slice(2)}` })
@@ -139,7 +131,6 @@ it("clones under the group visibility default using the actor's primary visibili
   expect(clone?.visibilityLevel).toBe("group");
   expect(clone?.visibilityGroupId).toBe(group.id);
 
-  // Clean up the singleton settings row so sibling tests see the no-settings (owner) default.
   await h.db.delete(settings);
 });
 
@@ -170,7 +161,6 @@ it("404s (E_DEAL_001) when the source is not visible to the actor", async () => 
   const owner = await seedUser(h.db);
   const actor = await seedUser(h.db);
   const p = await seedPipelineWithStages(h.db, ["A"]);
-  // owner-only visibility deal the actor cannot see.
   const [source] = await h.db
     .insert(deals)
     .values({

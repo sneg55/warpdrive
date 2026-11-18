@@ -1,10 +1,3 @@
-/**
- * scripts/seed-smoke-phase5-records.ts
- *
- * Record seeders: activity types, pipelines, stages, deals, orgs, persons, activities.
- * All functions are idempotent.
- */
-
 import type { Db } from "./seed-smoke-phase5-infra";
 
 export async function ensureActivityType(db: Db): Promise<string> {

@@ -27,7 +27,6 @@ afterEach(() => {
 const callArg = (index: number): unknown =>
   (updatePersonAction.mock.calls as unknown as unknown[][])[index]?.[0];
 
-// Blank firstName/lastName/phones/emails: every row but Name is value-less.
 const blankPerson: Person = {
   id: "p1",
   name: "Person One",
@@ -60,7 +59,6 @@ it("hides blank First name/Last name/Phone/Email rows when the funnel is hiding 
   expect(screen.queryByText("Last name")).not.toBeInTheDocument();
   expect(screen.queryByText("Phone")).not.toBeInTheDocument();
   expect(screen.queryByText("Email")).not.toBeInTheDocument();
-  // Name is never value-less; it always stays.
   expect(screen.getByText("Name")).toBeInTheDocument();
 });
 
@@ -74,9 +72,6 @@ it("a filled-in field stays visible even while the funnel is hiding empties", ()
   expect(screen.queryByText("Last name")).not.toBeInTheDocument();
 });
 
-// Regression: a committed write was reported as "Couldn't save" because save() coupled the
-// (successful) action result to router.refresh(); when refresh throws, the whole save promise
-// rejected and the footer showed a failure banner on a record that actually persisted.
 it("does NOT report a failure when the write succeeded but router.refresh throws", async () => {
   refresh.mockImplementationOnce(() => {
     throw new Error("refresh interrupted");
@@ -88,7 +83,6 @@ it("does NOT report a failure when the write succeeded but router.refresh throws
   fireEvent.click(screen.getByRole("button", { name: "Save" }));
 
   await waitFor(() => expect(updatePersonAction).toHaveBeenCalled());
-  // The action committed (ok:true), so no error banner and the editor closes normally.
   expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   await waitFor(() => expect(screen.queryByLabelText("editor-firstName")).not.toBeInTheDocument());
 });
@@ -133,8 +127,6 @@ it("renders Phone as a tel: link and Email as a mailto: link", () => {
   expect(email).toHaveAttribute("href", "mailto:ava.bauer63@harborsystems.com");
 });
 
-// Built-in fields hidden in Settings > Data fields must not render here even when they hold a
-// value (the deal sidebar previously ignored the hidden set that the person detail page respects).
 it("hides the Phone/Email rows whose built-in key is in the hidden set, keeps the rest", () => {
   const person = {
     ...blankPerson,
@@ -146,7 +138,6 @@ it("hides the Phone/Email rows whose built-in key is in the hidden set, keeps th
   render(<PersonBlock person={person} hidden={new Set(["phones"])} />);
 
   expect(screen.queryByText("Phone")).not.toBeInTheDocument();
-  // Non-hidden rows still render.
   expect(screen.getByText("Email")).toBeInTheDocument();
   expect(screen.getByText("First name")).toBeInTheDocument();
   expect(screen.getByText("Name")).toBeInTheDocument();
@@ -172,12 +163,9 @@ it("surfaces a permission-specific message when the edit is denied (E_PERM_001)"
   const alert = await screen.findByRole("alert");
   expect(alert).toHaveTextContent(/permission/i);
   expect(alert).not.toHaveTextContent("Couldn't save");
-  // The editor stays open on failure so the draft is not lost.
   expect(screen.getByLabelText("editor-firstName")).toBeInTheDocument();
 });
 
-// The lead drawer reuses PersonBlock but matches PD's compact lead-person section, which shows the
-// display Name only (no First name / Last name split). Deal/contact surfaces keep the split.
 it("hides the First name and Last name rows when hideNameParts is set (lead drawer parity)", () => {
   render(
     <HideEmptyContext.Provider value={false}>
@@ -186,7 +174,6 @@ it("hides the First name and Last name rows when hideNameParts is set (lead draw
   );
   expect(screen.queryByText("First name")).not.toBeInTheDocument();
   expect(screen.queryByText("Last name")).not.toBeInTheDocument();
-  // Name, Phone, Email still render.
   expect(screen.getByText("Name")).toBeInTheDocument();
   expect(screen.getByText("Email")).toBeInTheDocument();
 });
@@ -201,9 +188,6 @@ it("renders provided label chips under the section (PD's per-person Labels row)"
   expect(screen.getByText("Hot")).toBeInTheDocument();
 });
 
-// A person can hold several addresses (import, merge, enrichment all append them). The sidebar
-// used to render persons.primary_email alone, so every other address was invisible and one
-// inline save rewrote the primary while the rest stayed unreachable.
 const multiPointPerson = {
   ...blankPerson,
   primaryEmail: "pat.scrimgeour@ottawa.ca",

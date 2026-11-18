@@ -18,7 +18,6 @@ describe("assertReferenceVisible (Phase 3 real implementation)", () => {
         visibilityGroupIds: [],
       };
 
-      // owner-visibility person owned by someone else: actor cannot see it
       const [hidden] = await db
         .insert(persons)
         .values({
@@ -47,7 +46,6 @@ describe("assertReferenceVisible (Phase 3 real implementation)", () => {
       if (!hiddenResult.ok && !missingResult.ok) {
         expect(hiddenResult.error.id).toBe("E_CONTACT_001");
         expect(missingResult.error.id).toBe("E_CONTACT_001");
-        // indistinguishable: same error id for hidden vs. missing
         expect(hiddenResult.error.id).toBe(missingResult.error.id);
       }
     });
@@ -84,10 +82,6 @@ describe("assertReferenceVisible (Phase 3 real implementation)", () => {
     });
   });
 
-  // Codex finding F15: checkDeal loads the pipeline's visibility_group_id but never checks
-  // is_archived. assertReferenceVisible gates collaboration reads/writes, activity creation,
-  // and linking, so an archived-pipeline deal must be 404 here too (list/search/workspace
-  // already hide it). An all-visibility deal isolates the archived-pipeline gate.
   it("returns 404 for a deal in an archived pipeline even when otherwise visible", async () => {
     await withTestDb(async (db) => {
       const me = await seedUser(db);

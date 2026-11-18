@@ -165,7 +165,6 @@ describe("listActivityRows", () => {
 
       const rows = await listActivityRows(db, actor(u.id), noFilter, sig());
       const row = rows.find((r) => r.subject === "Call Emma");
-      // Still listed via the deal, but the deleted person's link id is gone.
       expect(row).toBeDefined();
       expect(row?.personId).toBeNull();
       expect(row?.dealTitle).toBe("Acme deal");
@@ -230,7 +229,6 @@ describe("listActivityRows", () => {
       expect(a?.assigneeId).toBe(ann.id);
       expect(a?.assigneeName).toBe("Ann");
       expect(a?.ownerName).toBe("Ann");
-      // done filter excludes B.
       expect(openRows.map((r) => r.subject)).not.toContain("B");
 
       const doneRows = await listActivityRows(

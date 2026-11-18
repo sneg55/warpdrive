@@ -14,16 +14,10 @@ import { assertMailboxOwner } from "./mailboxOwnership";
 export interface ApplyThreadLinkArgs {
   actor: AuthUser;
   threadId: string;
-  // undefined preserves the existing value; explicit null clears it.
   personId?: string | null;
   dealId?: string | null;
 }
 
-// Plain, testable authz + update for manual thread linking. The actor must be able to
-// SEE the target thread (mailbox privacy), and EVERY supplied FK is re-checked for
-// visibility from scratch (data-model 18: never trust client FKs). Visibility is NOT
-// changed here (it is governed separately). The "use server" wrapper (linkActions.ts)
-// adds CSRF + actor resolution around this.
 export async function applyThreadLink(
   db: Db,
   args: ApplyThreadLinkArgs,
@@ -31,7 +25,6 @@ export async function applyThreadLink(
 ): Promise<Result<{ threadId: string }, AppError>> {
   signal.throwIfAborted();
 
-  // (a) The actor must be able to see the target thread, else 404-on-invisible.
   const thread = (
     await db.execute(
       sql`SELECT account_id, visibility, deal_id, person_id FROM email_threads WHERE id=${args.threadId}`,
@@ -53,16 +46,11 @@ export async function applyThreadLink(
     return err(new AppError("E_GMAIL_011", "thread not found", {}));
   }
 
-  // (a2) MUTATION requires mailbox OWNERSHIP, not mere visibility (F10). A shared thread is
-  // visible to non-owners who can see the linked record, but only the mailbox owner may
-  // relink it; otherwise a viewer could re-point another user's thread at a broader deal or
-  // person and widen who can read it.
   const owner = await assertMailboxOwner(db, visRow.accountId, args.actor.id, signal);
   if (!owner.ok) {
     return err(new AppError("E_PERM_001", "not allowed to relink this thread", {}));
   }
 
-  // (b) Re-check each supplied reference's visibility from scratch.
   if (args.personId !== null && args.personId !== undefined) {
     if (!(await canSeeLinkedPerson(db, args.actor, args.personId, signal))) {
       return err(new AppError("E_PERM_001", "linked person not visible", {}));
@@ -74,7 +62,6 @@ export async function applyThreadLink(
     }
   }
 
-  // (c) Apply the link. undefined leaves the column as-is; explicit null clears it.
   await db.execute(sql`
     UPDATE email_threads
     SET person_id = ${args.personId === undefined ? sql`person_id` : args.personId},

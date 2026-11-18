@@ -10,7 +10,6 @@ const TABS: { key: UserStatusFilter; label: string }[] = [
   { key: "deactivated", label: "Deactivated" },
 ];
 
-// Status filter tabs for the Manage users table (S-U3).
 export function UserStatusTabs({
   value,
   onChange,

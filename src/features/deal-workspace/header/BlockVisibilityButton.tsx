@@ -15,8 +15,6 @@ interface BlockVisibilityButtonProps {
   onToggle: (id: DealBlockId) => void;
 }
 
-// Eye + chevron button (Pipedrive block-visibility). Opens a checkbox menu, one per detail block;
-// unchecking hides that section on the page. State + persistence live in useBlockVisibility.
 export function BlockVisibilityButton({
   isHidden,
   onToggle,
@@ -31,7 +29,6 @@ export function BlockVisibilityButton({
           <DropdownMenuCheckboxItem
             key={b.id}
             checked={!isHidden(b.id)}
-            // Keep the menu open while toggling several blocks in a row.
             onSelect={(e) => e.preventDefault()}
             onCheckedChange={() => onToggle(b.id)}
           >

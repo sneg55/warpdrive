@@ -16,8 +16,6 @@ export type FilterActionResult<T = undefined> =
   | { ok: true; value: T }
   | { ok: false; error: { id: string } };
 
-// Resolve the actor as a FilterSession: userId + isAdmin + a boolean flag map built from the
-// actor's permission flag set. owner/flags are derived server-side, never from the client.
 async function actorSession(
   csrfToken: string | null,
 ): Promise<

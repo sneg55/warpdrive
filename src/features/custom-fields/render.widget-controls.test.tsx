@@ -86,7 +86,6 @@ describe("DateControl", () => {
       />,
     );
     fireEvent.click(screen.getByLabelText("Renewal"));
-    // findByText: the calendar is a next/dynamic chunk that loads on open.
     fireEvent.click(await screen.findByText("15"));
     expect(onChange).toHaveBeenCalledWith(expect.stringMatching(/-15$/));
   });
@@ -151,7 +150,6 @@ const optionDef = (over: Partial<CustomFieldDef> = {}) =>
 describe("option controls hide archived options from the picker", () => {
   it("SingleOptionControl omits an archived option that is not selected", () => {
     render(<SingleOptionControl id="s" def={optionDef()} value="" onChange={vi.fn()} />);
-    // The branded Select only mounts its option list once opened.
     fireEvent.click(screen.getByLabelText("Stage"));
     expect(screen.queryByRole("option", { name: "Retired" })).not.toBeInTheDocument();
     expect(screen.getByRole("option", { name: "Active" })).toBeInTheDocument();
@@ -160,7 +158,6 @@ describe("option controls hide archived options from the picker", () => {
   it("SingleOptionControl still shows an archived option that is the current value", () => {
     render(<SingleOptionControl id="s" def={optionDef()} value="z" onChange={vi.fn()} />);
     fireEvent.click(screen.getByLabelText("Stage"));
-    // Historical data must remain visible/deselectable even though the option is archived.
     expect(screen.getByRole("option", { name: "Retired" })).toBeInTheDocument();
   });
 

@@ -11,8 +11,6 @@ describe("upgradeMappedRow", () => {
     expect(upgradeMappedRow(grouped)).toBe(grouped);
   });
 
-  // Rows validated before cross-entity mapping are stored flat and are already "valid", so nothing
-  // revalidates them. Commit must read them as they are.
   it("wraps a legacy flat row as the primary record", () => {
     expect(upgradeMappedRow({ name: "Legacy Person", customFields: {} })).toEqual({
       primary: { name: "Legacy Person", customFields: {} },
@@ -37,8 +35,6 @@ describe("upgradeMappedRow", () => {
     expect(upgradeMappedRow(null)).toEqual({ primary: {} });
   });
 
-  // A legacy row could legitimately have a column literally named "primary" only if it were a
-  // grouped row; guard the type check so a stray scalar does not masquerade as one.
   it("does not mistake a scalar 'primary' cell for a grouped row", () => {
     expect(upgradeMappedRow({ primary: "yes", name: "X" })).toEqual({
       primary: { primary: "yes", name: "X" },

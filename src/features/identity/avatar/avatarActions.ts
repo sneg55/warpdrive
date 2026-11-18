@@ -10,8 +10,6 @@ import { type ActionResult, clientErr, toClientResult } from "@/types/actionResu
 import { err, type Result } from "@/types/result";
 import { confirmAvatarUpload, removeAvatar, requestAvatarUpload } from "./avatarService";
 
-// Client-callable server actions for the avatar presigned-upload handshake. Auth comes from
-// the server session; every mutation is CSRF-guarded before any write.
 async function authorize(csrfToken: string | null): Promise<Result<{ id: string }, AppError>> {
   const csrf = await guardCsrf(csrfToken);
   if (!csrf.ok) return err(new AppError(ERROR_IDS.PERM_DENIED, "csrf failed", {}));

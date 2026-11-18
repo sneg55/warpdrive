@@ -54,7 +54,6 @@ describe("AvatarUpload", () => {
     await waitFor(() => expect(confirmMock).toHaveBeenCalledTimes(1));
     expect(requestMock).toHaveBeenCalledTimes(1);
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    // Same csrf token (null in jsdom: no cookie) threaded through request + confirm.
     expect(confirmMock).toHaveBeenCalledWith(null);
     expect(refreshMock).toHaveBeenCalled();
   });

@@ -21,9 +21,6 @@ interface FollowersButtonProps {
   isFollowedBySelf: boolean;
 }
 
-// Followers control (Pipedrive parity): a count button that opens a menu listing follower avatars +
-// names, with a Follow/Following toggle for the viewer. The toggle calls follow/unfollow per the
-// current self-follow state and refreshes so the server-rendered count updates.
 export function FollowersButton({
   dealId,
   followers,

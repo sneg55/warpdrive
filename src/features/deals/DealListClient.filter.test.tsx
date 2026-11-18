@@ -4,8 +4,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-// Real @tanstack/react-query here (NOT mocked): the stale-rows bug lives in how initialData +
-// staleTime interact with a changing queryKey, so the test must exercise the real cache.
 const listQueryMock = vi.fn();
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ refresh: vi.fn() }),
@@ -30,8 +28,6 @@ vi.mock("./DealList", () => ({ DealList: () => <div data-testid="deal-list" /> }
 vi.mock("./BoardToolbar", () => ({
   BoardToolbar: (p: { filterSlot: React.ReactNode }) => <div>{p.filterSlot}</div>,
 }));
-// The saved-filter menu owns "Clear filter"; expose it so the list's inline definition can be
-// cleared from there, the way the board's toolbar does.
 vi.mock("./BoardFilterControl", () => ({
   BoardFilterControl: (p: {
     selectedFilterId: string | null;
@@ -168,7 +164,6 @@ describe("DealListClient inline filter", () => {
     listQueryMock.mockResolvedValue({ rows: [], total: 0, totalValue: "0" });
     renderClient();
 
-    // Apply "Title contains acme" via the inline builder (default field=title, first op=contains).
     fireEvent.click(screen.getByRole("button", { name: "Filter" }));
     fireEvent.click(screen.getByRole("button", { name: /add condition/i }));
     fireEvent.change(screen.getByLabelText("Condition 1 value"), { target: { value: "acme" } });
@@ -186,9 +181,6 @@ describe("DealListClient inline filter", () => {
     );
   });
 
-  // The inline builder has to reopen on what the list is actually filtered by. An edit the user
-  // walked away from is not applied, so showing it back misreports the list and the next Apply
-  // silently commits it.
   it("reopens the inline builder on the applied conditions, dropping an abandoned edit", async () => {
     listQueryMock.mockResolvedValue({ rows: [], total: 0, totalValue: "0" });
     renderClient();
@@ -201,7 +193,6 @@ describe("DealListClient inline filter", () => {
 
     await waitFor(() => expect(screen.queryByLabelText("Condition 1 value")).toBeNull());
 
-    // Reopen, retype, then close without applying.
     fireEvent.click(filterTrigger());
     expect(screen.getByLabelText<HTMLInputElement>("Condition 1 value").value).toBe("acme");
     fireEvent.change(screen.getByLabelText("Condition 1 value"), { target: { value: "corp" } });

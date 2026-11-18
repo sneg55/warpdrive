@@ -20,9 +20,6 @@ import type {
 } from "./schemas";
 import { deleteStage, updateStage } from "./stageActions";
 
-// Thin CSRF-guarded wrappers around the pure pipeline/stage mutation functions, for the Edit
-// Pipeline page. Every action guards CSRF first, then derives a ManageSession from the real actor
-// (isAdmin + capability flags). Client input never carries the permission decision.
 export type EditResult<T = undefined> =
   | { ok: true; value: T }
   | { ok: false; error: { id: string } };
@@ -33,8 +30,6 @@ interface ManageSession {
   flags: Record<string, boolean>;
 }
 
-// Resolves the current actor into a ManageSession, or an auth/csrf error result. Returns a
-// discriminated union so callers can early-return on the failure branch.
 async function authorize(
   csrfToken: string | null,
 ): Promise<{ ok: true; session: ManageSession } | { ok: false; error: { id: string } }> {

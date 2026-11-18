@@ -1,5 +1,3 @@
-// Fixtures move deals through moveDeal, never by inserting change_logs directly: the whole
-// point of this query is that it reads the history the app actually writes.
 import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import { deals } from "@/db/schema/deals";
@@ -108,7 +106,6 @@ describe("stageConversion", () => {
         { ...BASE, pipelineId: p.pipeline.id },
         new AbortController().signal,
       );
-      // It currently sits in A, but it did reach C, and a funnel measures how far deals got.
       expect(rows.map((r) => r.reached)).toEqual([1, 1, 1]);
     });
   });
@@ -123,7 +120,6 @@ describe("stageConversion", () => {
 
       const d = await makeDeal(db, u.id, p.pipeline.id, s0.id, "won one");
       await move(db, u.id, d, s1.id);
-      // Close it the way the app does, so the last interval has an end.
       await db.update(deals).set({ status: "won", wonTime: new Date() }).where(eq(deals.id, d.id));
 
       const rows = await stageConversion(
@@ -153,8 +149,6 @@ describe("stageConversion", () => {
         { ...BASE, pipelineId: p.pipeline.id },
         new AbortController().signal,
       );
-      // Wall-clock durations are not assertable to a value here; what matters is that both
-      // stages produce a real number rather than null.
       for (const r of rows) {
         expect(typeof r.medianDaysInStage).toBe("number");
         expect(r.medianDaysInStage ?? -1).toBeGreaterThanOrEqual(0);
@@ -162,9 +156,6 @@ describe("stageConversion", () => {
     });
   });
 
-  // The funnel reading "Qualified 10 · 100%" over four zeros is the arithmetic working, not
-  // failing: reached is "got at least this far", and the cohort is narrower than the board.
-  // These three cases pin the two narrowings the board does not have.
   it("credits a deal created straight into a later stage with every stage before it", async () => {
     await withTestDb(async (db) => {
       await seedSettings(db);
@@ -173,7 +164,6 @@ describe("stageConversion", () => {
       const [, , , s3] = p.stages;
       if (s3 === undefined) throw new Error("stages");
 
-      // No moves at all: max_order comes from the stage it is resting in.
       await makeDeal(db, u.id, p.pipeline.id, s3.id, "born in D");
 
       const rows = await stageConversion(
@@ -213,7 +203,6 @@ describe("stageConversion", () => {
         },
         new AbortController().signal,
       );
-      // The board would show both cards; the funnel measures a cohort, so it counts one.
       expect(rows[0]?.reached).toBe(1);
     });
   });

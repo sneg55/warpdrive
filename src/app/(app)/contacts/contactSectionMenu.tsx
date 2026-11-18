@@ -1,7 +1,6 @@
 "use client";
 import type { SectionHeaderMenuItem } from "@/features/deal-workspace/sidebar/SectionHeaderMenu";
 
-// Convenience: the "Customize fields" kebab item routing to the field settings for an entity.
 export function customizeFieldsItem(
   push: (href: string) => void,
   entity: "person" | "organization",

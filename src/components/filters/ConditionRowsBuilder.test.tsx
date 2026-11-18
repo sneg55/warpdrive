@@ -29,7 +29,6 @@ describe("ConditionRowsBuilder", () => {
     fireEvent.change(screen.getByLabelText("Condition 1 value"), { target: { value: "1000" } });
     fireEvent.click(screen.getByRole("button", { name: "Apply" }));
 
-    // Emits the raw row (default field = first field, default op = its first op) plus combinator.
     expect(onApply).toHaveBeenCalledWith([{ field: "value", op: "gt", value: "1000" }], "and");
   });
 

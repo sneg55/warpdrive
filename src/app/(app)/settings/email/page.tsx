@@ -11,8 +11,6 @@ import { TemplatesSettingsClient } from "./TemplatesSettingsClient";
 
 export const metadata = { title: STRINGS.settings.emailTemplates };
 
-// Email settings: manage templates (own + shared) and signatures. Reads run with the trusted
-// actor; the client components call server actions and router.refresh() to re-fetch.
 export default async function EmailSettingsPage(): Promise<ReactNode> {
   const ctx = await createContext();
   if (ctx.actor === null) return null;

@@ -21,8 +21,6 @@ export const identityRouter = router({
     requireManage(ctx.actor);
     return listUsers(ctx.db, AbortSignal.timeout(5000));
   }),
-  // Ungated on purpose: an owner/assignee picker needs the full active-user list.
-  // The owner-change write paths keep their gates + active-check.
   assignableUsers: protectedProcedure.query(({ ctx }) =>
     listAssignableUsers(ctx.db, AbortSignal.timeout(5000)),
   ),
@@ -34,8 +32,6 @@ export const identityRouter = router({
     requireManage(ctx.actor);
     return listVisibilityGroups(ctx.db, AbortSignal.timeout(5000));
   }),
-  // listGroupMembers gates itself (permissions.manage/admin); unwrap its Result here
-  // rather than gating twice at the router.
   groupMembers: protectedProcedure
     .input(z.object({ groupId: z.string().uuid() }))
     .query(async ({ ctx, input }) => {

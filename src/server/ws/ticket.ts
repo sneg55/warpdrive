@@ -29,7 +29,6 @@ export async function verifyTicket(
     }
     return ok({ userId: sub, sessionId: sid, jti });
   } catch (cause) {
-    // Log the error CLASS only for observability. Never log the token or secret.
     const reason = cause instanceof Error ? cause.constructor.name : "Unknown";
     console.warn(`ws ticket verify rejected: ${reason}`);
     return err("invalid");

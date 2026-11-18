@@ -31,7 +31,6 @@ export function TopBar({
         <search className="min-w-0 flex-1">
           <SearchTrigger />
         </search>
-        {/* Global quick-add: opens Deal/Lead/Person/Organization create modals from any page. */}
         <GlobalAddMenu />
       </div>
       <div className="flex w-44 shrink-0 items-center justify-end gap-3">

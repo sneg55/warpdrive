@@ -34,9 +34,6 @@ describe("leadConditionInput numeric-field guard", () => {
     expect(r.success).toBe(true);
   });
 
-  // codex final review P2: an operator invalid for the field's column type (e.g. `contains` on the
-  // numeric `value` field) passed validation and then threw in compileLeadFilter, turning user input
-  // into a tRPC/export failure. Reject the bad field/op pairing at the boundary.
   it("rejects an operator that is invalid for the field (contains on numeric value)", () => {
     const r = leadConditionInput.safeParse({
       combinator: "and",
@@ -54,9 +51,6 @@ describe("leadConditionInput numeric-field guard", () => {
   });
 });
 
-// leadConditionInput, not the compiler's own leadFilterSchema, is what lead.list and /leads/export
-// validate against, so the valueless ops are only usable if this schema implements the same
-// contract the compiler does.
 describe("leadConditionInput valueless operators", () => {
   it("accepts a valueless op with the value key omitted", () => {
     for (const op of ["isEmpty", "isNotEmpty"] as const) {
@@ -68,8 +62,6 @@ describe("leadConditionInput valueless operators", () => {
     }
   });
 
-  // `value` is the numeric field, so a valueless op there must skip the numeric check too rather
-  // than demanding a number nobody typed.
   it("accepts a valueless op on the numeric value field", () => {
     const r = leadConditionInput.safeParse({
       combinator: "and",
@@ -147,9 +139,7 @@ describe("leadCreateInput labels", () => {
   });
 
   it("accepts any catalog label name (no fixed enum) but still enforces shape", () => {
-    // Labels are user-managed in the catalog, so an arbitrary name is accepted.
     expect(leadCreateInput.parse({ title: "A", labels: ["Blocker"] }).labels).toEqual(["Blocker"]);
-    // Shape is still enforced: an empty name is rejected.
     expect(() => leadCreateInput.parse({ title: "A", labels: [""] })).toThrow();
   });
 
@@ -192,7 +182,6 @@ describe("leadUpdateInput title", () => {
   });
 });
 
-// A lead condition posted without a combinator (an older client, a stored view) means AND.
 describe("leadConditionInput combinator", () => {
   it("defaults an absent combinator to and", () => {
     const r = leadConditionInput.safeParse({

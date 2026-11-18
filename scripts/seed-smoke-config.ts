@@ -8,10 +8,8 @@ const WORKSPACE_DOMAIN = process.env.GOOGLE_WORKSPACE_DOMAIN ?? "example.com";
 export const BASE_CURRENCY = process.env.BASE_CURRENCY ?? "USD";
 
 export const SMOKE_EMAIL = `smoke@${WORKSPACE_DOMAIN}`;
-// Must match src/features/auth/devLogin.ts: sub = `dev-${email}`
 export const SMOKE_GOOGLE_SUB = `dev-${SMOKE_EMAIL}`;
 
-// Fixed values so re-runs always target the same rows.
 export const SMOKE_PIPELINE_NAME = "BD";
 export const SMOKE_STAGE_NAME = "Lead";
 export const SMOKE_GMAIL_THREAD_ID = "smoke-thread-1";

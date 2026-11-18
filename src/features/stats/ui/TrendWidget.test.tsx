@@ -17,8 +17,6 @@ const DATA: WonTrendPoint[] = [
 ];
 
 describe("WonTrendWidget", () => {
-  // A line of SVG carries no text. The table is the readable copy of the same numbers, and it
-  // is what these tests assert on, so nothing depends on recharts internals.
   it("carries every plotted number in an accessible table", () => {
     render(<WonTrendWidget data={DATA} currency="USD" />);
     const table = screen.getByRole("table", { name: STRINGS.dashboard.trendTableCaption });
@@ -33,20 +31,17 @@ describe("WonTrendWidget", () => {
     expect(screen.getByRole("row", { name: /Mar 2026/ })).toBeInTheDocument();
   });
 
-  // A gap in a line reads as missing data; a zero reads as zero. The table has to say the same.
   it("keeps a month with no wins as a zero row instead of dropping it", () => {
     render(<WonTrendWidget data={DATA} currency="USD" />);
     const february = screen.getByRole("row", { name: /Feb 2026/ });
     expect(within(february).getByText("0")).toBeInTheDocument();
   });
 
-  // The SVG restates the table, so exposing both makes a screen reader read every number twice.
   it("hides the drawn chart from assistive tech, leaving the table as the single source", () => {
     const { container } = render(<WonTrendWidget data={DATA} currency="USD" />);
     expect(container.querySelector('[data-slot="chart"]')).toHaveAttribute("aria-hidden", "true");
   });
 
-  // An axis over an empty range implies data that is not there.
   it("explains an empty range instead of drawing an axis with nothing on it", () => {
     render(
       <WonTrendWidget

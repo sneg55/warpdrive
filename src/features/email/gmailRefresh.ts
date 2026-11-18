@@ -5,15 +5,6 @@ import { tokenResponseSchema } from "./gmailSchemas";
 
 const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 
-// Build the deps.refresh callback ensureAccessToken (Task 7) needs: exchange a stored
-// refresh token for a fresh access token at Google's token endpoint. Shared by the
-// interactive send action and the system-send primitive so there is one refresh path.
-// Only OAuth error=invalid_grant means the grant is genuinely revoked (E_GMAIL_002,
-// which disconnects the account and nulls the stored refresh token). Every other non-OK,
-// including config errors like invalid_client/invalid_request that also return 4xx, is
-// transient (E_GMAIL_001) so a single misconfiguration can never destroy refresh tokens
-// across mailboxes (F32). A rotated refresh_token is passed through so it gets re-encrypted.
-// Threaded with the request signal so an aborted send cannot keep the refresh alive.
 export function makeRefresh(
   signal: AbortSignal,
 ): (
@@ -33,8 +24,6 @@ export function makeRefresh(
     });
     signal.throwIfAborted();
     if (!res.ok) {
-      // Classify by Google's OAuth error code, not the raw status: only invalid_grant
-      // definitively means the grant was revoked. Anything unparseable stays transient.
       const oauthError = await res
         .clone()
         .json()

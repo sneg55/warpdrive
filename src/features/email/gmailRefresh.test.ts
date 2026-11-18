@@ -1,13 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { makeRefresh } from "./gmailRefresh";
 
-// Codex finding F32: makeRefresh mapped EVERY 4xx from Google's token endpoint to
-// E_GMAIL_002, which ensureAccessToken (tokens.ts) treats as a genuine revocation and
-// nulls refresh_token_enc. A config/deployment error (invalid_client, invalid_request)
-// is a 4xx too, so a single misconfiguration could permanently destroy the stored
-// refresh token across every mailbox as workers refresh. Only invalid_grant means the
-// grant is actually revoked; all other statuses must be transient (E_GMAIL_001), which
-// preserves the encrypted refresh token.
 function jsonResponse(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {
     status,

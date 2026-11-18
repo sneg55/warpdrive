@@ -7,13 +7,6 @@ import { canSee } from "@/features/permissions/canSee";
 import { err, ok, type Result } from "@/types/result";
 import { type ContactActor, toVisibleRecord } from "./personsRepo";
 
-// Soft-delete a person. Gates on canSee + contact.delete (a distinct, admin-configurable
-// permission from contact.edit: REGULAR_DEFAULT_FLAGS grants contact.edit_own but
-// intentionally withholds every delete flag, so an editor must not get delete for free).
-// Visibility alone is not authority to mutate a record, and an invisible/already-deleted id
-// 404s (CONTACT_NOT_FOUND) rather than 403ing, so a stranger cannot learn the record exists
-// by attempting to delete it. Kept in its own file (not personsRepo.ts) to stay under the
-// project's file-size budget.
 export async function deletePerson(
   db: Db,
   actor: ContactActor,

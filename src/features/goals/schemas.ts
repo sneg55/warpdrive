@@ -9,8 +9,6 @@ import {
   GOAL_SUBJECTS,
 } from "@/constants/goals";
 
-// Target arrives as a decimal string so it survives the round trip to numeric(14,2) without
-// a float in the middle.
 const target = z
   .string()
   .regex(/^\d+(\.\d{1,2})?$/)
@@ -30,8 +28,6 @@ const shape = z.object({
   endsOn: z.string().date().nullable().default(null),
 });
 
-// Not every combination of the enums describes a real goal, and the database cannot express
-// the dependency between two columns' values. The boundary is where they are rejected.
 export const goalInput = shape
   .refine((g) => (g.subject === "deal" ? DEAL_ACTIONS.includes(g.action) : true), {
     message: "a deal goal counts deals added, won or lost",
@@ -41,7 +37,6 @@ export const goalInput = shape
     message: "an activity goal counts activities added or completed",
     path: ["action"],
   })
-  // An activity carries no monetary value, so a value target on one has nothing to measure.
   .refine((g) => !(g.subject === "activity" && g.metric === "value"), {
     message: "activities have no value to total",
     path: ["metric"],
@@ -54,8 +49,6 @@ export const goalInput = shape
     message: "a company goal has no assignee; a user or team goal needs one",
     path: ["assigneeId"],
   })
-  // A count goal advances one whole deal or activity at a time, so a fractional target is a
-  // quota that can never be met exactly.
   .refine((g) => g.metric !== "count" || Number.isInteger(Number(g.target)), {
     message: "a count target must be a whole number",
     path: ["target"],

@@ -22,8 +22,6 @@ export default async function DashboardPage(): Promise<React.ReactNode> {
     loadDashboardConfig(ctx.db, signal),
     getPreferencesForActor(db, ctx.actor.id),
   ]);
-  // Resolved here, not in the browser: near UTC midnight a viewer's local date can sit on the
-  // other side of a goal period boundary from everyone else looking at the same goal.
   const today = todayInZone(prefs.timezone, new Date());
 
   return (

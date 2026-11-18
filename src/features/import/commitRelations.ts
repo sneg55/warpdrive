@@ -19,18 +19,11 @@ import { resolveMappedOrgLink, resolveMappedPersonLink } from "./mappedLinks";
 import { reassignRowOwners } from "./rowOwners";
 import type { ImportTarget } from "./wizardState";
 
-// One CSV row can produce several records: its primary entity, the organization and person it
-// names, and a note. This module writes them together, inside ONE savepoint per row, so a failure
-// anywhere rolls back everything the row created rather than leaving orphans in the batch
-// transaction. commit.ts owns claim/dedup/finalize; this owns "what the row actually writes".
-
 type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0];
 
 export type Created = { entityId: string; side: SideEffects; warnings: RowError[] };
 export type Updated = { side: SideEffects; warnings: RowError[] };
 
-// Sentinel that rolls the row's SAVEPOINT back while carrying its errors out (drizzle rolls a
-// nested transaction back on throw, then re-throws for us to catch).
 class RowRollback extends Error {
   constructor(readonly errors: RowError[]) {
     super("import row rolled back");
@@ -77,15 +70,10 @@ async function createPrimary(
   }
 }
 
-// Notes attach only to these entity types (ENTITY_TYPES); the map step offers no Note group on an
-// activity import, so an activity row can never carry one.
 function notableTarget(target: ImportTarget): NotableEntity | null {
   return target === "activity" || target === "note" ? null : target;
 }
 
-// Create the row's primary entity plus every related record it described, inside ONE savepoint: a
-// failure anywhere (a lead that cannot be created, a note whose entity is invisible) rolls back
-// the organization this row just created rather than leaving it orphaned in the batch transaction.
 export async function createWithRelations(
   tx: Tx,
   actor: ImportActor,
@@ -120,8 +108,6 @@ export async function createWithRelations(
       );
       const entityId = primary.id;
 
-      // Firmographics are not on orgCreateInput, so an organization import applies them after the
-      // create. Nothing to protect on a record this row just made: take every mapped field.
       if (target === "organization") {
         unwrap(await writeOrgFields(sp, actor, entityId, mapped.primary, false, signal));
       }
@@ -142,8 +128,6 @@ export async function createWithRelations(
   }
 }
 
-// Update the matched record, plus the related records the row described. Mirrors
-// createWithRelations: one savepoint, so a failed note leaves no half-linked org behind.
 export async function updateWithRelations(
   tx: Tx,
   actor: ImportActor,

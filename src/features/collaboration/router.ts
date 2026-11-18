@@ -10,7 +10,6 @@ import { listChangeLogForViewer } from "./changeLog";
 import { listCommentsForEntity } from "./commentsRepo";
 import { listNotes } from "./notesRepo";
 
-// Build the DealVisibilitySession shape assertReferenceVisible expects.
 function toRefActor(actor: PermSetUser) {
   return {
     userId: actor.id,
@@ -27,10 +26,6 @@ const entityInput = z.object({
   entityId: z.string().uuid(),
 });
 
-// listNotes/listChangeLog do NOT gate the parent (notes/changelog inherit parent
-// visibility); the router must verify the parent is visible first. ENTITY_TYPES
-// (deal/person/organization/lead) are all valid EntityRef kinds, so a single
-// assertReferenceVisible call covers all cases. Throws NOT_FOUND if invisible.
 async function gateParent(
   db: Db,
   actor: PermSetUser,
@@ -73,6 +68,4 @@ export const collaborationRouter = router({
     await gateParent(ctx.db, ctx.actor, input.entityType, input.entityId, signal);
     return listCommentsForEntity(ctx.db, ctx.actor, input.entityType, input.entityId, signal);
   }),
-
-  // TODO Phase 3 follow-up: listFiles needs a filesRepo with a per-entity list function.
 });

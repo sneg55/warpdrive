@@ -25,9 +25,6 @@ export type MergeArgs = {
   fieldChoices: Record<string, unknown>;
 };
 
-// TRUST BOUNDARY (FIX 1): only `name` may be chosen from the client. .strip()
-// drops everything else, so ownerId / visibility* / deletedAt / id can never
-// reach the survivor UPDATE via fieldChoices.
 export const fieldChoicesSchema = z.object({ name: z.string().min(1).max(255).optional() }).strip();
 
 export type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0];
@@ -49,7 +46,6 @@ function toVisible(kind: "person" | "organization", row: VisibleFields): Visible
   };
 }
 
-// FIX 2: 404-on-invisible (canSee) BEFORE the 403 permission-flag check.
 export function gateMerge(
   actor: PermSetUser,
   kind: "person" | "organization",
@@ -68,8 +64,6 @@ export function gateMerge(
   return ok(true);
 }
 
-// FIX 3: composite-PK collision-safe repoint. Repoint only rows that would NOT
-// collide with an existing survivor row, then delete the colliding remainder.
 export async function repointPersonFks(
   tx: Tx,
   survivorId: string,
@@ -124,8 +118,6 @@ export async function repointPersonFks(
     .set({ entityId: survivorId })
     .where(and(eq(files.entityType, "person"), eq(files.entityId, mergedId)));
 
-  // person_labels (PK [person_id, label_id]) has the same collision shape as
-  // deal_participants: merge soft-deletes, so the cascade FK never fires.
   await tx
     .update(personLabels)
     .set({ personId: survivorId })
@@ -142,9 +134,6 @@ export async function repointPersonFks(
       ),
     );
   await tx.delete(personLabels).where(eq(personLabels.personId, mergedId));
-  // notifications.entity_id (polymorphic) is intentionally NOT repointed: no
-  // Phase 3 path writes person/org-scoped notifications yet (review note F2);
-  // revisit when such notifications are added.
 }
 
 export async function repointOrgFks(tx: Tx, survivorId: string, mergedId: string): Promise<void> {
@@ -160,7 +149,6 @@ export async function repointOrgFks(tx: Tx, survivorId: string, mergedId: string
     .set({ entityId: survivorId })
     .where(and(eq(files.entityType, "organization"), eq(files.entityId, mergedId)));
 
-  // org_labels (PK [org_id, label_id]): same collision-safe repoint as person_labels.
   await tx
     .update(orgLabels)
     .set({ orgId: survivorId })

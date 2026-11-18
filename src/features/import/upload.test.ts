@@ -7,7 +7,6 @@ import type { StorageClient } from "@/features/files/storage";
 import { ok } from "@/types/result";
 import { confirmImportUpload, requestImportUpload } from "./upload";
 
-// Minimal inline StorageClient fake: only the methods the upload path uses.
 function fakeStorage(over: Partial<StorageClient> = {}): StorageClient {
   return {
     presignPost: () => Promise.resolve(ok({ url: "http://garage/put", fields: { key: "k" } })),

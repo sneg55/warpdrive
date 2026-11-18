@@ -14,12 +14,10 @@ export interface ProgressArgs {
   status: string;
 }
 
-// One event per max(total/50, floor) rows keeps a 50k-row phase to ~50 notifications.
 export function progressStep(total: number): number {
   return Math.max(Math.floor(total / 50), IMPORT_PROGRESS_MIN_STEP);
 }
 
-// Emit on the final row unconditionally so the terminal count is never dropped.
 export function shouldEmit(processed: number, total: number, lastEmitted: number): boolean {
   if (processed >= total) return true;
   return processed - lastEmitted >= progressStep(total);

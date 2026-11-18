@@ -77,7 +77,6 @@ describe("compileLeadFilter", () => {
   it("throws AppError for a field/op pairing outside the allow-list", () => {
     expect(() =>
       compileLeadFilter(
-        // contains is not allowed on the numeric value column.
         { combinator: "and", conditions: [{ field: "value", op: "contains", value: "5" }] },
         LEAD_FILTER_CONFIG,
       ),
@@ -104,8 +103,6 @@ function lead(field: string, op: LeadFilterOp, value?: string | number) {
 }
 
 describe("compileLeadFilter operator depth (tier 2)", () => {
-  // A lead with no value must survive "value is not 5". `<>` against NULL yields NULL, which drops
-  // the row; IS DISTINCT FROM treats NULL as a distinct value and keeps it.
   it("compiles neq to IS DISTINCT FROM so a NULL column is not dropped", () => {
     const q = lead("value", "neq", 5);
     expect(q.sql).toBe(`("leads"."value" IS DISTINCT FROM $1)`);
@@ -146,7 +143,6 @@ describe("compileLeadFilter operator depth (tier 2)", () => {
     expect(lead("labels", "isEmpty").params).toEqual([]);
   });
 
-  // An injection payload must land as a parameter, never as SQL text.
   it("keeps a hostile value bound for every value-taking operator", () => {
     const hostile = "%' OR 1=1 --";
     for (const op of ["contains", "notContains", "startsWith", "eq", "neq"] as LeadFilterOp[]) {
@@ -157,7 +153,6 @@ describe("compileLeadFilter operator depth (tier 2)", () => {
   });
 });
 
-// "is any of": a labels condition may carry several names at once, bound as one array parameter.
 describe("compileLeadFilter with a list of label values", () => {
   const MEMBERSHIP = `EXISTS (SELECT 1 FROM unnest("leads"."labels") AS t(v) WHERE lower(t.v) = ANY(SELECT lower(x) FROM unnest($1::text[]) AS x))`;
 
@@ -181,8 +176,6 @@ describe("compileLeadFilter with a list of label values", () => {
     expect(neq.params).toEqual([["Hot", "Warm"]]);
   });
 
-  // Zod rejects an empty list, so one arriving here means the boundary was bypassed. Compiling it
-  // would produce a condition that can never match, which reads as a filter that ate every row.
   it("rejects an empty list, and a list on a scalar field, at the compiler too", () => {
     expect(() =>
       compileLeadFilter(

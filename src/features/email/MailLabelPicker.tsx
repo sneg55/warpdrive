@@ -10,20 +10,13 @@ import { trpc } from "@/lib/trpc-client";
 import { readCsrfToken } from "@/utils/csrfCookie";
 import { createMailLabelAction } from "./mailLabelsActions";
 
-// Default color applied to an inline-created mail label (Gmail assigns one automatically; recoloring
-// lives in a later settings surface). Kept as a named constant, not a magic string.
 const DEFAULT_NEW_LABEL_COLOR = "blue" as const;
 
 interface MailLabelPickerProps {
-  // Applied catalog keys (built-in tokens or custom slugs), as stored on email_threads.labels[].
   value: string[];
   onChange: (keys: string[]) => void;
 }
 
-// Searchable mail-label picker with inline create (inbox parity U6). Lists the mail-label catalog,
-// toggles membership by key, and offers "Create <term>" when the search matches no existing label.
-// cmdk + Popover (the sanctioned shadcn combobox stack, mirroring MultiCombobox); own filtering so
-// the create row survives an empty result set.
 export function MailLabelPicker({ value, onChange }: MailLabelPickerProps): React.ReactNode {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");

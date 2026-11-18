@@ -1,6 +1,3 @@
-// Custom-field edit audit logging for updateDeal. Split from dealUpdate.changeLog.test.ts to keep
-// that file under the size limit. Seeds real deal custom-field defs so the values pass the
-// validateDealCustomFieldsPartial gate the update path now enforces.
 import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import { deals } from "@/db/schema";
@@ -16,7 +13,6 @@ describe("updateDeal: custom-field audit logs", () => {
     await withTestDb(async (db) => {
       const { u, deal } = await setupDeal(db);
       const signal = new AbortController().signal;
-      // Real active defs: region + tier (text). Their slug keys are "region" / "tier".
       const region = await createDef(
         db,
         { targetEntity: "deal", type: "text", name: "region" },
@@ -29,8 +25,6 @@ describe("updateDeal: custom-field audit logs", () => {
       );
       if (region.ok === false || tier.ok === false) throw new Error("def seed failed");
 
-      // Seed initial custom-field values. .set() does not touch updated_at, so the deal's CAS
-      // precondition (deal.updatedAt) still matches after this write.
       const [seeded] = await db
         .update(deals)
         .set({ customFields: { region: "EMEA", tier: "gold" } })
@@ -44,7 +38,6 @@ describe("updateDeal: custom-field audit logs", () => {
         {
           dealId: deal.id,
           expectedUpdatedAt: seeded.updatedAt.toISOString(),
-          // region changes EMEA -> APAC; tier is re-submitted unchanged.
           customFields: { region: "APAC", tier: "gold" },
         },
         signal,
@@ -57,7 +50,6 @@ describe("updateDeal: custom-field audit logs", () => {
       expect(regionChg?.oldValue).toBe("EMEA");
       expect(regionChg?.newValue).toBe("APAC");
       expect(regionChg?.actorId).toBe(u.id);
-      // The unchanged key logs nothing.
       expect(log.some((c) => c.field === "custom_field:tier")).toBe(false);
     });
   });

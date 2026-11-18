@@ -1,7 +1,4 @@
 // @vitest-environment node
-// Gate + boundary tests for setBuiltinFieldHiddenAction. Mirrors actions.test.ts: next/headers +
-// context are mocked so guardCsrf/permission run as in production, while the repo is spied so the
-// point is the ACTION layer (gate + Zod), not the DB (that round-trip is integration-tested).
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { CSRF_COOKIE } from "@/features/auth/csrf";
 

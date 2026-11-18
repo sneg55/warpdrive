@@ -1,6 +1,3 @@
-// Helpers extracted from send.ts to keep that file within the 300-line / complexity limits.
-// These are internal to the email feature; not part of the public API surface.
-
 import { eq, sql } from "drizzle-orm";
 import { AppError, ERROR_IDS } from "@/constants/errorIds";
 import type { Db } from "@/db/client";
@@ -12,7 +9,6 @@ import { assertSignatureOwner } from "./mailboxOwnership";
 import { sanitizeAuthorHtml } from "./sanitizeHtml";
 import { mintTokensForSend, rewriteBody } from "./tracking";
 
-// Resolved attachment metadata stored in the outbox payload so replay can rebuild MIME.
 export interface ResolvedAttachment {
   fileId: string;
   s3Key: string;
@@ -20,8 +16,6 @@ export interface ResolvedAttachment {
   filename: string;
 }
 
-// Pull http(s) link hrefs out of authored html so tracking can tokenize them. The
-// tracking layer re-validates each scheme; this is just a coarse extractor.
 function extractLinks(html: string): string[] {
   const links: string[] = [];
   const re = /href=["']([^"']+)["']/g;
@@ -34,8 +28,6 @@ function extractLinks(html: string): string[] {
   return links;
 }
 
-// Apply tracking token rewrites (Phase 2) then append the sanitised signature (Phase 4).
-// Returns the final body string for MIME build and CRM copy storage.
 export async function applyTrackingAndSignature(
   db: Db,
   args: {
@@ -89,9 +81,6 @@ export async function applyTrackingAndSignature(
   return ok(body);
 }
 
-// Authorize each fileId against the actor and return its storage metadata.
-// Returns E_GMAIL_012 for any file that is missing, not ready, or not readable by
-// the actor. Missing and inaccessible cases share the same message (no existence leak).
 export async function resolveAttachments(
   db: Db,
   actor: AuthUser,

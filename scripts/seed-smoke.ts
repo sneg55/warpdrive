@@ -1,17 +1,3 @@
-/**
- * scripts/seed-smoke.ts
- *
- * Idempotent fixture seeder for the Phase 4 agent-browser smoke test.
- * Run: pnpm db:seed:smoke
- *
- * Prints to stderr on success (console.warn per project lint rules):
- *   smoke_email=<email>
- *   smoke_thread_id=<uuid>
- *   smoke_open_token=<token>
- *
- * Running twice must not error or duplicate rows.
- */
-
 import { Pool } from "pg";
 import {
   BASE_CURRENCY,
@@ -249,7 +235,6 @@ async function main(): Promise<void> {
   const outboundId = await seedEmailMessages(threadId, accountId);
   await seedTrackingToken(accountId, threadId, outboundId);
 
-  // console.warn is allowed by project lint rules (no-console allows warn/error).
   console.warn(`smoke_email=${SMOKE_EMAIL}`);
   console.warn(`smoke_thread_id=${threadId}`);
   console.warn(`smoke_open_token=${SMOKE_OPEN_TOKEN}`);

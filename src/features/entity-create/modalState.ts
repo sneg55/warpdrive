@@ -5,23 +5,21 @@ export interface Option {
   name: string;
 }
 
-// Fields shared by the Add deal and Add lead dialogs. Deals extend this with pipeline/stage; leads
-// use it as-is. One shape so a new create field is added once and both dialogs stay in step.
 export interface EntityCreateState {
   personMode: "existing" | "new";
-  personId: string; // selected existing person (personMode === "existing")
-  newPersonName: string; // name for a person created inline (personMode === "new")
+  personId: string;
+  newPersonName: string;
   orgMode: "existing" | "new";
-  orgId: string; // selected existing org (orgMode === "existing")
-  newOrgName: string; // name for an org created inline (orgMode === "new")
+  orgId: string;
+  newOrgName: string;
   title: string;
   value: string;
-  labels: string[]; // DEAL_LABELS keys (multi-select)
-  expectedCloseDate: string; // yyyy-mm-dd or ""
-  ownerId: string; // "" = self
+  labels: string[];
+  expectedCloseDate: string;
+  ownerId: string;
   sourceChannel: string;
   sourceChannelId: string;
-  visibilityGroupId: string; // "" = server default
+  visibilityGroupId: string;
   phones: ContactPoint[];
   emails: ContactPoint[];
   personCustomFields: Record<string, unknown>;

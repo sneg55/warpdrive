@@ -11,8 +11,6 @@ export type DuplicateDealResult =
   | { ok: true; deal: { id: string } }
   | { ok: false; error: { id: string } };
 
-// CSRF-guarded duplicate action. Standard prologue: guardCsrf -> actor (null -> session-dead) ->
-// domain fn with a threaded AbortSignal. Returns the new deal id so the client can navigate to it.
 export async function duplicateDealAction(
   input: { dealId: string },
   csrfToken: string | null = null,
@@ -20,8 +18,6 @@ export async function duplicateDealAction(
   const csrfOk = await guardCsrf(csrfToken);
   if (!csrfOk.ok) return { ok: false, error: { id: "E_AUTH_CSRF" } };
 
-  // Validate at the boundary (E_DEAL_011) so a malformed dealId is a typed error, not an uncaught
-  // throw from duplicateDeal's internal .parse (matches the convert + merge actions).
   const parsed = duplicateDealInput.safeParse(input);
   if (!parsed.success) {
     return { ok: false, error: { id: ERROR_IDS.DEAL_DUPLICATE_INPUT_INVALID } };

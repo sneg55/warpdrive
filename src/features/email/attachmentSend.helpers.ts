@@ -1,7 +1,3 @@
-// Shared test helpers for attachment send integration tests.
-// Exported so attachmentSend.test.ts and attachmentAuthz.test.ts can both use them
-// without duplication. Not part of the production API.
-
 import { sql } from "drizzle-orm";
 import { files } from "@/db/schema";
 import type { withTestDb } from "@/db/testing";
@@ -9,9 +5,6 @@ import type { FakeStorageClient } from "../files/storageFake";
 
 export type TestDb = Parameters<Parameters<typeof withTestDb>[0]>[0];
 
-// Seed a "ready" file row directly (bypasses the presigned-upload handshake,
-// which is already tested in the files suite). Registers bytes in the fake so
-// getObjectBytes can serve them at send time.
 export async function seedReadyFile(
   db: TestDb,
   opts: {
@@ -44,7 +37,6 @@ export async function seedReadyFile(
   return { fileId, s3Key };
 }
 
-// Seed a connected email account for the given owner.
 export async function seedAccount(
   db: TestDb,
   ownerId: string,

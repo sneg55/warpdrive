@@ -9,7 +9,6 @@ beforeAll(() => {
   Element.prototype.scrollIntoView = vi.fn();
   Element.prototype.hasPointerCapture = vi.fn(() => false);
   Element.prototype.releasePointerCapture = vi.fn();
-  // The insert-field menu is now a Popover + cmdk combobox; cmdk observes its list size.
   global.ResizeObserver = class {
     observe = vi.fn();
     unobserve = vi.fn();
@@ -31,8 +30,6 @@ vi.mock("@/components/shell/ActionErrorProvider", () => ({
   useActionError: () => reportError,
 }));
 
-// RichTextBody arrives via next/dynamic (a tick after the editor chrome); surface both the seeded
-// html and the inserted merge token so the T1 assertion can observe the {{token}} insertion.
 vi.mock("@/features/email/composer/RichTextBody", () => ({
   RichTextBody: ({
     html,
@@ -177,7 +174,6 @@ describe("TemplatesSettingsClient", () => {
     await user.click(screen.getByRole("button", { name: "Save" }));
     expect(createTemplateAction).not.toHaveBeenCalled();
     expect(await screen.findByRole("alert")).toHaveTextContent(/name/i);
-    // The message clears once the user starts typing a name.
     await user.type(screen.getByLabelText("Name"), "Outreach");
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });

@@ -4,8 +4,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 
-// Real @tanstack/react-query and the real DealList/DealsEmpty: the question under test is which
-// sentence the user ends up reading, so nothing between the filter and the copy is mocked.
 const listQueryMock = vi.fn();
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ refresh: vi.fn(), push: vi.fn() }),
@@ -78,7 +76,6 @@ function renderClient(initial: { rows: DealListRow[]; total: number }): void {
   );
 }
 
-// Apply "Title contains zzz" through the real inline builder (default field=title, op=contains).
 function applyFilter(): void {
   fireEvent.click(screen.getByRole("button", { name: "Filter" }));
   fireEvent.click(screen.getByRole("button", { name: /add condition/i }));
@@ -96,8 +93,6 @@ it("blames the filter when the pipeline does hold deals the filter excluded", as
   );
 });
 
-// An empty pipeline plus any active filter used to state that the pipeline still holds deals.
-// It does not, and the exit it offered (clear the filter) would have changed nothing.
 it("does not claim the pipeline holds deals when it holds none", async () => {
   listQueryMock.mockResolvedValue({ rows: [], total: 0, totalValue: "0" });
   renderClient({ rows: [], total: 0 });

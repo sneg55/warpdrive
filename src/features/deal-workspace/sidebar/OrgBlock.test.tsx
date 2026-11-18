@@ -20,7 +20,6 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
-// Blank firmographics: every row but Name is value-less.
 const blankOrg: Organization = {
   id: "o1",
   name: "Org One",
@@ -77,7 +76,6 @@ it("hides blank firmographic rows when the funnel is hiding empties", () => {
   expect(screen.queryByText("Annual revenue")).not.toBeInTheDocument();
   expect(screen.queryByText("Number of employees")).not.toBeInTheDocument();
   expect(screen.queryByText("Address")).not.toBeInTheDocument();
-  // Name is never value-less; it always stays.
   expect(screen.getByText("Name")).toBeInTheDocument();
 });
 
@@ -88,7 +86,6 @@ it("edits the Address as a composite of subfields, saving a merged address objec
   } as unknown as Organization;
   render(<OrgBlock org={org} />);
 
-  // A populated Address renders a formatted value + a pencil to open the composite editor.
   fireEvent.click(screen.getByRole("button", { name: "Edit Address" }));
   fireEvent.change(screen.getByLabelText("City"), { target: { value: "Portland" } });
   fireEvent.change(screen.getByLabelText("Postal code"), { target: { value: "97201" } });
@@ -115,8 +112,6 @@ it("a filled-in field stays visible even while the funnel is hiding empties", ()
   expect(screen.queryByText("Website")).not.toBeInTheDocument();
 });
 
-// Built-in fields hidden in Settings > Data fields must not render here even when they hold a
-// value (the deal sidebar previously ignored the hidden set that the org detail page respects).
 it("hides a built-in firmographic row whose key is in the hidden set, keeps the rest", () => {
   const org = {
     ...blankOrg,
@@ -129,7 +124,6 @@ it("hides a built-in firmographic row whose key is in the hidden set, keeps the 
 
   expect(screen.queryByText("Industry")).not.toBeInTheDocument();
   expect(screen.queryByText("Annual revenue")).not.toBeInTheDocument();
-  // Non-hidden rows still render.
   expect(screen.getByText("Website")).toBeInTheDocument();
   expect(screen.getByText("Number of employees")).toBeInTheDocument();
   expect(screen.getByText("Name")).toBeInTheDocument();

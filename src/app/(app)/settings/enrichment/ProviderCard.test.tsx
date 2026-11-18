@@ -101,8 +101,6 @@ describe("ProviderCard", () => {
     expect(screen.getByText(S.statusThrottled(hhmm))).toBeInTheDocument();
   });
 
-  // The clock is local wall-time, so the server has no business rendering it: before the client
-  // has supplied a clock the card must fall through to the plain enabled/disabled line.
   it("renders no cooldown clock until the client supplies a clock", () => {
     render(
       <ProviderCard
@@ -162,8 +160,6 @@ describe("ProviderCard", () => {
     expect(screen.queryByRole("button", { name: S.remove })).toBeNull();
   });
 
-  // Remove is the control most likely to be reached while a key save is still in flight, and the
-  // two writes would then land in whichever order the server finished them.
   it("locks the toggle, Save and Remove while a mutation is in flight", () => {
     renderCard({ hasKey: true, apiKeyHint: "9f2a" }, {}, { pending: true });
     expect(screen.getByRole("switch")).toBeDisabled();
@@ -253,7 +249,6 @@ describe("test connection", () => {
     expect(screen.getByRole("button", { name: S.testing })).toBeDisabled();
   });
 
-  // A key replaced mid-probe would leave the card showing a verdict about the previous credential.
   it("locks the toggle, Save and Remove while its own probe is in flight", () => {
     renderCard({ hasKey: true, apiKeyHint: "9f2a" }, {}, { testing: true });
     expect(screen.getByRole("switch")).toBeDisabled();
@@ -262,8 +257,6 @@ describe("test connection", () => {
   });
 });
 
-// A cooling provider is filtered out of the usable set, so a probe comes back as a missing key,
-// which is not what happened. Better to say the cooldown than to lie about the credential.
 it("locks Test connection while the provider is cooling down", () => {
   renderCard({
     hasKey: true,

@@ -1,6 +1,3 @@
-// Reads a record's current value for every mapped canonical key. The merge step needs it to tell
-// a gap from an overwrite, and the lookup step needs it because a mapped LinkedIn URL is an
-// identifier as well as a target.
 import { and, eq, inArray, isNull } from "drizzle-orm";
 import type { Db } from "@/db/client";
 import type { Organization, Person } from "@/db/schema";
@@ -11,11 +8,7 @@ const ADDRESS_PREFIX = "address.";
 
 export interface CurrentValues {
   canonicalValues: Record<string, string | number | null>;
-  // Keys whose target holds a value this actor may not be shown. The merge needs to know the
-  // difference between an empty field and one it cannot read.
   occupiedKeys: string[];
-  // Targets that hold a set rather than one value, keyed by canonical key. A provider value already
-  // in the set is not new, even when canonicalValues reports a different member of it.
   multiValues: Record<string, readonly string[]>;
   customFieldKeyById: Map<string, string>;
 }
@@ -43,8 +36,6 @@ function scalar(value: unknown): string | number | null {
   return null;
 }
 
-// persons.emails is the whole truth about which addresses the record holds; primary_email is one
-// of them promoted to a column. Case is preserved for display and folded only for the dedup.
 function personEmails(person: Person): string[] {
   const seen = new Set<string>();
   const out: string[] = [];
@@ -58,8 +49,6 @@ function personEmails(person: Person): string[] {
   return out;
 }
 
-// One mapping's current state. `occupied` means the target holds something this actor may not be
-// shown, which the merge has to tell apart from an empty field.
 interface TargetState {
   value: string | number | null;
   addresses?: string[];
@@ -83,10 +72,6 @@ function personTarget(
       return { value: addresses[0] ?? null, addresses };
     }
     case "org":
-      // The organization's real name, never a sentinel: a placeholder would make a provider
-      // returning the company's actual name look like an overwrite, would be written into the
-      // change log as the value replaced, and would be sent to providers as a company to match.
-      // A link the actor cannot see reads as null, so it is reported as occupied instead.
       return {
         value: linkedOrg === null ? null : scalar(linkedOrg.name),
         occupied: linkedOrg === null && person.orgId !== null,
@@ -107,8 +92,6 @@ export async function readPersonCurrent(
   person: Person,
   mappings: readonly ResolvedMapping[],
   signal: AbortSignal,
-  // The linked organization as the ACTOR is allowed to see it, resolved by the caller because only
-  // it holds the actor. Null covers both "no link" and "linked to something hidden from you".
   linkedOrg: { name: string; domain: string | null } | null = null,
 ): Promise<CurrentValues> {
   const customFieldKeyById = await customFieldKeys(db, mappings, signal);
@@ -159,7 +142,6 @@ export async function readOrgCurrent(
       : scalar(columns[target]);
   }
 
-  // No organization target is a set: every one of them is a single column or address leaf.
   return { canonicalValues, multiValues: {}, occupiedKeys: [], customFieldKeyById };
 }
 

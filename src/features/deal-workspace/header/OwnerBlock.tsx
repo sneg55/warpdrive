@@ -17,17 +17,12 @@ import { readCsrfToken } from "@/utils/csrfCookie";
 
 interface OwnerBlockProps {
   dealId: string;
-  // CAS precondition: the deal's updatedAt ISO string.
   expectedUpdatedAt: string;
   owner: { id: string; name: string; avatarUrl: string | null } | null;
-  // Only actors holding deal.changeOwner see the reassignment trigger (gated server-side too).
   canChangeOwner: boolean;
   assignableUsers: { id: string; name: string }[];
 }
 
-// Owner avatar + name + "Owner" caption (Pipedrive parity). The name is plain text (no profile
-// route). When the actor may change owner, a chevron opens a UserMenu-style dropdown of assignable
-// users; selecting one reassigns via changeOwnerAction and refreshes.
 export function OwnerBlock({
   dealId,
   expectedUpdatedAt,
@@ -39,8 +34,6 @@ export function OwnerBlock({
   const reportError = useDealActionError();
   const [pending, setPending] = useState(false);
 
-  // Humanize the owner name (an email-shaped name renders as a display name) and map
-  // an empty/absent name to "Unassigned", mirroring OwnerBadge. Never leak a raw email.
   const name = formatUserName(owner?.name ?? "");
 
   async function reassign(userId: string): Promise<void> {

@@ -33,8 +33,6 @@ describe("getprospectProvider transport failures", () => {
     expect(out.kind).toBe("provider_error");
   });
 
-  // The caller times out with AbortSignal.timeout, whose rejection is named TimeoutError. Reading
-  // that as an outage puts a slow provider on the same footing as a dead one.
   it("classifies a request timeout as timeout, not as an unreachable provider", async () => {
     const timedOut = new Error("The operation was aborted due to timeout");
     timedOut.name = "TimeoutError";

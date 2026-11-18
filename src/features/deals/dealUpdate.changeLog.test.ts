@@ -1,5 +1,3 @@
-// dealUpdate.changeLog.test.ts: audit change-log rows written inside updateDeal's
-// transaction. Split out of dealUpdate.test.ts to keep both files under the size limit.
 import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import { deals, organizations, persons } from "@/db/schema";
@@ -151,7 +149,6 @@ describe("updateDeal: audit change logs", () => {
         .returning();
       if (person === undefined) throw new Error("setup: person insert failed");
 
-      // Link null -> person.id.
       const linked = await updateDeal(
         db,
         adminSession(u.id),
@@ -162,7 +159,6 @@ describe("updateDeal: audit change logs", () => {
       if (linked.ok === false) return;
       expect(linked.value.personId).toBe(person.id);
 
-      // Unlink person.id -> null.
       const unlinked = await updateDeal(
         db,
         adminSession(u.id),
@@ -178,7 +174,6 @@ describe("updateDeal: audit change logs", () => {
       const log = await listChangeLog(db, "deal", deal.id, new AbortController().signal);
       const rows = log.filter((c) => c.field === "person_id");
       expect(rows.length).toBe(2);
-      // Newest-first: unlink then link.
       expect(rows[0]?.oldValue).toBe(person.id);
       expect(rows[0]?.newValue).toBeNull();
       expect(rows[1]?.oldValue).toBeNull();
@@ -206,7 +201,6 @@ describe("updateDeal: audit change logs", () => {
       expect(linked.ok).toBe(true);
       if (linked.ok === false) return;
 
-      // Re-submit the same orgId: no-op, logs nothing new.
       const again = await updateDeal(
         db,
         adminSession(u.id),
@@ -231,8 +225,6 @@ describe("updateDeal: audit change logs", () => {
     await withTestDb(async (db) => {
       const { u, deal } = await setupDeal(db);
       const stranger = await seedUser(db);
-      // Owner-visibility person owned by someone else: a regular (non-admin) editor of the
-      // deal must not be able to relink to (or probe) it.
       const [hidden] = await db
         .insert(persons)
         .values({ name: "Secret", ownerId: stranger.id, visibilityLevel: "owner" })
@@ -241,8 +233,6 @@ describe("updateDeal: audit change logs", () => {
 
       const r = await updateDeal(
         db,
-        // Regular owner-editor of the deal (passes the deal-edit gate) who nonetheless cannot
-        // SEE the stranger-owned owner-visibility person, so the relink must be rejected.
         regularSession(u.id),
         { dealId: deal.id, expectedUpdatedAt: deal.updatedAt.toISOString(), personId: hidden.id },
         new AbortController().signal,

@@ -22,9 +22,6 @@ function trigger(): HTMLElement {
   return screen.getByRole("button", { name: /Filter/ });
 }
 
-// The owner picker is a separate control, so this menu knows the board is narrowed to one owner
-// only if it is told. Without that the trigger reads unfiltered and Clear filter leaves the board
-// still filtered.
 describe("BoardFilterMenu owner dimension", () => {
   it("marks the trigger filtered when only an owner is selected", () => {
     render(<BoardFilterMenu savedFilters={SAVED} ownerFiltered />);

@@ -1,10 +1,6 @@
 import { z } from "zod";
 import { CUSTOM_FIELD_TARGETS, CUSTOM_FIELD_TYPES } from "@/constants/customFieldTypes";
 
-// Boundary schema for custom-field-definition create input. Mirrors CreateDefInput (defsRepo.ts)
-// so the action can trust parsed.data. name is bounded so a def label cannot be blank or absurdly
-// long; type/targetEntity are constrained to the known enums so a client cannot smuggle an unknown
-// widget kind past the action.
 const optionSchema = z.object({
   id: z.string(),
   label: z.string().min(1),
@@ -23,8 +19,6 @@ export const createDefInputSchema = z.object({
 
 export const archiveDefInputSchema = z.object({ id: z.string().uuid() });
 
-// Both flags are required (never partial): the row toggle always sends the full pair, so a
-// crafted request can't flip one flag while silently defaulting the other.
 export const setDefFlagsInputSchema = z.object({
   id: z.string().uuid(),
   isImportant: z.boolean(),

@@ -11,7 +11,6 @@ import { CreatedCard } from "./history/CreatedCard";
 import { NoteCard } from "./history/NoteCard";
 import type { HistoryItem } from "./historyTimeline";
 
-// Change-log event = a plain-text row (no card chrome), Pipedrive's audit-trail style.
 function EventRow({
   label,
   at,
@@ -47,10 +46,6 @@ function IconRailBadge({
   );
 }
 
-// Rail marker per kind: notes an amber dot, emails an envelope, everything else a neutral dot.
-// Activities do NOT get their type glyph on the rail: ActivityCard already shows the type icon next
-// to the subject, and duplicating it on the rail made a task activity (whose glyph is a checkmark)
-// look like it had a stray checkmark beside its still-empty done toggle.
 function RailMarker({ item }: { item: HistoryItem }): React.ReactNode {
   if (item.kind === "email" || item.kind === "emailDraft") {
     return (
@@ -78,8 +73,6 @@ function RailMarker({ item }: { item: HistoryItem }): React.ReactNode {
   );
 }
 
-// Shared deal-history timeline: a connector rail with a per-kind marker; created,
-// stage, activity, note, and event blocks interleaved chronologically.
 export function HistoryFeed({
   items,
   emptyLabel,
@@ -94,18 +87,11 @@ export function HistoryFeed({
   items: HistoryItem[];
   emptyLabel: string;
   onActivityChanged?: () => void;
-  // Invalidate the notes query after an in-feed note mutation (pin/edit/delete).
   onNoteChanged?: () => void;
-  // Open an activity in the inline edit composer (deal workspace only).
   onEditActivity?: (activityId: string) => void;
-  // Which record's timeline this is, for the email cards' unlink and reply.
   emailScope?: EmailCardScope;
-  // Refetch the record's linked messages after an unlink or a sent reply.
   onEmailChanged?: () => void;
-  // Open a draft in the host's composer. Absent on surfaces with no composer, where a draft row
-  // simply does not render rather than offering a Continue that goes nowhere.
   onResumeDraft?: (draft: DraftSummary) => void;
-  // Refetch the record's drafts after one is discarded.
   onDraftChanged?: () => void;
 }): React.ReactNode {
   if (items.length === 0) {
@@ -142,8 +128,6 @@ export function HistoryFeed({
           {item.kind === "event" && (
             <EventRow label={item.label} at={item.at} actorName={item.actorName} />
           )}
-          {/* emailScope is absent on surfaces that carry no linked mail (a lead timeline), so an
-              email item simply does not render there rather than guessing a scope. */}
           {item.kind === "emailDraft" && (
             <EmailDraftCard
               draft={item.draft}

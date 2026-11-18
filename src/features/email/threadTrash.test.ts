@@ -8,11 +8,6 @@ import { err } from "@/types/result";
 import { FakeGmailClient } from "./gmailFake";
 import { trashThread } from "./threadTrash";
 
-// P4: reader Delete -> Gmail Trash. trashThread moves the real Gmail conversation (threads/{id}/trash
-// keyed by the GMAIL thread id) and, only on success, stamps trashed_at so the thread leaves every
-// local folder. A Gmail failure leaves trashed_at null (no local delete without the real move); a
-// non-owner cannot trash and never reaches Gmail.
-
 type TestDb = Parameters<Parameters<typeof withTestDb>[0]>[0];
 const SIG = (): AbortSignal => AbortSignal.timeout(8000);
 const actorOf = (id: string): AuthUser => ({
@@ -56,7 +51,6 @@ describe("trashThread", () => {
 
       const res = await trashThread(db, { actor: actorOf(owner.id), threadId, gmail }, SIG());
       expect(res.ok).toBe(true);
-      // The GMAIL thread id (not our internal uuid) is what Gmail trashes.
       expect(gmail.calls).toContainEqual({
         method: "trashThread",
         args: expect.objectContaining({ threadId: "gmail-abc" }),

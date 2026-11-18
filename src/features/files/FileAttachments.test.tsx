@@ -57,9 +57,7 @@ it("renders the confirmed files from the query", () => {
 
 it("hides the upload control in readOnly mode but keeps the list + download", () => {
   render(<FileAttachments entityType="deal" entityId="d1" readOnly />);
-  // The confirmed file list and its download affordance still render.
   expect(screen.getByRole("button", { name: "Download report.pdf" })).toBeInTheDocument();
-  // But there is no uploader: neither the button nor the hidden file input.
   expect(screen.queryByLabelText("Upload file")).not.toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "Upload file" })).not.toBeInTheDocument();
 });
@@ -111,7 +109,6 @@ it("downloads via an anchor click, not window.open (which popup blockers suppres
 });
 
 it("still refetches after a partial-batch failure so confirmed uploads are not hidden", async () => {
-  // File 1 uploads fine, file 2's POST fails: the already-confirmed file 1 must still surface.
   vi.stubGlobal(
     "fetch",
     vi.fn().mockResolvedValueOnce({ ok: true }).mockResolvedValueOnce({ ok: false }),

@@ -1,7 +1,4 @@
 // @vitest-environment jsdom
-// Link insertion against a REAL TipTap editor (not a stub chain), because the interesting
-// failure mode lives in ProseMirror's mark semantics: applying a link mark over an empty
-// (collapsed) selection marks nothing, so the toolbar silently produced no link at all.
 import "@testing-library/jest-dom/vitest";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -13,9 +10,6 @@ import { richTextExtensions } from "./richText.extensions";
 
 afterEach(cleanup);
 
-// jsdom has no layout engine, so ProseMirror's scrollToSelection blows up on Text nodes that
-// lack getClientRects/getBoundingClientRect. Stub zero-size rects: the tests assert on document
-// content, never on geometry.
 beforeAll(() => {
   const rect = new DOMRect(0, 0, 0, 0);
   const rects = Object.assign([], { item: () => null });
@@ -28,9 +22,6 @@ beforeAll(() => {
   }
 });
 
-// Mounts a real editor plus the toolbar, handing the instance back to the test so assertions
-// read the editor document directly (not a React-rendered copy that may lag a transaction).
-// `selection` is applied once on create.
 function Harness({
   content,
   selection,
@@ -58,7 +49,6 @@ function Harness({
   );
 }
 
-// Renders the harness and resolves once the editor exists.
 async function mountEditor(
   content: string,
   selection?: { from: number; to: number },
@@ -97,7 +87,6 @@ describe("FormatToolbar link insertion (real editor)", () => {
   });
 
   it("links the selected text, keeping it as the link label", async () => {
-    // "My Linkedin" occupies positions 1..12 in a single paragraph.
     const html = await mountEditor("<p>My Linkedin</p>", { from: 1, to: 12 });
     await insertLink("https://linkedin.com/in/nick");
     await waitFor(() => {

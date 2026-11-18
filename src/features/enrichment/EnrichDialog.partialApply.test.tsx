@@ -67,9 +67,6 @@ function dialog(run: RunView, onApply: () => void, applyBusy = false): React.Rea
   );
 }
 
-// A partial apply drops the rows it committed and moves the record version. Remounting the panel on
-// that version reset every remaining row to its default, so a gap the user had deliberately
-// unchecked came back checked and a retry could write a value they declined.
 it("keeps a row the user unchecked after a partial apply", async () => {
   const user = userEvent.setup();
   const onApply = vi.fn();
@@ -78,14 +75,11 @@ it("keeps a row the user unchecked after a partial apply", async () => {
   await user.click(screen.getByRole("checkbox", { name: /Job title/ }));
   expect(screen.getByRole("checkbox", { name: /Job title/ })).not.toBeChecked();
 
-  // The company could not be linked, so it stays; the title committed and leaves the dialog.
   view.rerender(dialog(runWith([title], "2026-08-24T09:05:00.000Z"), onApply));
 
   expect(screen.getByRole("checkbox", { name: /Job title/ })).not.toBeChecked();
 });
 
-// Refresh is a paid fan-out. Starting one while an apply is in flight lets the two answers land on
-// the same dialog in either order.
 it("locks Refresh while an apply is in flight", () => {
   const cached = { ...runWith([title], "2026-08-24T09:00:00.000Z"), cached: true };
   render(dialog(cached, () => undefined, true));

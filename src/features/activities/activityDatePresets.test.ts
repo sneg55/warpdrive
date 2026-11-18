@@ -1,15 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { type ActivityDatePreset, activePreset, presetRange } from "./activityDatePresets";
 
-// Local-day formatter mirroring the filter's YYYY-MM-DD bounds.
 function ymd(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
     d.getDate(),
   ).padStart(2, "0")}`;
 }
 
-// A Wednesday, chosen so "this week" is unambiguously mid-week.
-const TODAY = new Date(2026, 6, 8); // 2026-07-08
+const TODAY = new Date(2026, 6, 8);
 
 describe("presetRange", () => {
   it("today: both bounds are today", () => {
@@ -30,8 +28,8 @@ describe("presetRange", () => {
     expect(to).not.toBeNull();
     const start = new Date(`${from}T00:00:00`);
     const end = new Date(`${to}T00:00:00`);
-    expect(start.getDay()).toBe(1); // Monday
-    expect(end.getDay()).toBe(0); // Sunday
+    expect(start.getDay()).toBe(1);
+    expect(end.getDay()).toBe(0);
     expect(Math.round((end.getTime() - start.getTime()) / 86_400_000)).toBe(6);
     expect(ymd(start) <= ymd(TODAY) && ymd(TODAY) <= ymd(end)).toBe(true);
   });
@@ -42,8 +40,6 @@ describe("activePreset", () => {
   for (const p of presets) {
     it(`round-trips ${p}`, () => {
       const r = presetRange(p, TODAY);
-      // "todo" clears the range, which also matches the default empty filter; every other
-      // preset must resolve back to exactly itself.
       expect(activePreset(r, TODAY)).toBe(p);
     });
   }

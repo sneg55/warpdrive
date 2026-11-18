@@ -6,9 +6,6 @@ import { trpc } from "@/lib/trpc-client";
 import type { LeadNextActivityBucket } from "../schemas";
 import { POP_ITEM, PopMenu } from "./PopMenu";
 
-// Owner filtering is always server-side: the menu lists real users from identity.assignableUsers
-// (ungated) and drives filters.ownerIds by id. No client-name fallback: every user, manager or not,
-// filters against the full server-side owner set.
 export interface OwnerFilter {
   users: { id: string; name: string }[];
   selected: string[];
@@ -75,9 +72,6 @@ export function LeadFilters({
   const catalogNames = (trpc.labels.listByTarget.useQuery({ target: "lead" }).data ?? []).map(
     (l) => l.name,
   );
-  // Union in what leads actually carry. The catalog is the control point for applying a label, but
-  // a name written straight to the database is still rendered on the row, and a filter that omits
-  // a label the user can see on screen reads as broken. Catalog order first, then the strays.
   const appliedNames = trpc.labels.appliedNames.useQuery({ target: "lead" }).data ?? [];
   const allLabels = mergeLabelOptions(catalogNames, appliedNames);
   const labelText = labelKeys.length === 0 ? "All labels" : `${labelKeys.length} labels`;

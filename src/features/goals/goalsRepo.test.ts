@@ -56,7 +56,6 @@ describe("listVisibleGoals", () => {
     expect(ids.has(own.id)).toBe(true);
     expect(ids.has(teamGoal.id)).toBe(true);
     expect(ids.has(companyGoal.id)).toBe(true);
-    // Another rep's quota is not Alice's business without stats.viewOthers.
     expect(ids.has(bobsGoal.id)).toBe(false);
   });
 
@@ -119,8 +118,6 @@ describe("assigneeExists", () => {
     expect(await assigneeExists(h.db, "user", u.id, new AbortController().signal)).toBe(true);
   });
 
-  // No foreign key can express "users OR teams depending on another column", so a goal against
-  // a made-up id would otherwise be stored and never resolve to anyone.
   it("rejects an id that belongs to no user", async () => {
     const missing = "11111111-1111-4111-8111-111111111111";
     expect(await assigneeExists(h.db, "user", missing, new AbortController().signal)).toBe(false);

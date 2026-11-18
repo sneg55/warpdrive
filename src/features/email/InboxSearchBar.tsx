@@ -9,10 +9,6 @@ interface InboxSearchBarProps {
   onQuery: (q: string) => void;
 }
 
-// Debounced free-text search for the Inbox list. A2 (Pipedrive parity): collapsed to a search icon
-// by default and expanded to an input on activation, rather than a persistent full-width field.
-// Clearing the input fires onQuery("") immediately (no debounce) so the caller snaps back to the
-// folder view without delay; blurring an empty input collapses back to the icon.
 export function InboxSearchBar({ onQuery }: InboxSearchBarProps): React.ReactNode {
   const [expanded, setExpanded] = useState(false);
   const [value, setValue] = useState("");
@@ -26,7 +22,6 @@ export function InboxSearchBar({ onQuery }: InboxSearchBarProps): React.ReactNod
     [],
   );
 
-  // Focus the input the moment it appears so the user can type immediately after clicking the icon.
   useEffect(() => {
     if (expanded) inputRef.current?.focus();
   }, [expanded]);
@@ -42,7 +37,6 @@ export function InboxSearchBar({ onQuery }: InboxSearchBarProps): React.ReactNod
   }
 
   function handleBlur(): void {
-    // Collapse back to the icon only when the field is empty, so an active query stays visible.
     if (value.trim() === "") setExpanded(false);
   }
 

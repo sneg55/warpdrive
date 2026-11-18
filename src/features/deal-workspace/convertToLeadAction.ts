@@ -11,8 +11,6 @@ export type ConvertToLeadResult =
   | { ok: true; lead: { id: string } }
   | { ok: false; error: { id: string } };
 
-// CSRF-guarded convert-to-lead action. Validates input at the boundary (E_DEAL_012), then runs the
-// domain fn under the standard prologue. Returns the new lead id so the client can route to it.
 export async function convertToLeadAction(
   input: { dealId: string; expectedUpdatedAt: string },
   csrfToken: string | null = null,

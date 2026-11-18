@@ -25,7 +25,6 @@ vi.mock("@/features/contacts/actions", () => ({
   updateOrgAction: vi.fn(() => Promise.resolve({ ok: true, value: { id: "o1" } })),
   updatePersonAction: vi.fn(() => Promise.resolve({ ok: true, value: { id: "p1" } })),
 }));
-// ParticipantsControl (Summary action list) queries tRPC on render; stub it.
 vi.mock("@/lib/trpc-client", () => ({
   trpc: {
     useUtils: () => ({

@@ -3,8 +3,6 @@ import Link from "next/link";
 import type React from "react";
 import { cn } from "@/lib/utils";
 
-// Shared secondary-rail row used by Settings and Contacts. Keeping the complete row treatment in
-// one component prevents icon, active-state, typography, and spacing drift between app sections.
 export function SecondaryNavLink({
   href,
   label,

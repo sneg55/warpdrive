@@ -5,9 +5,6 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { HideEmptyContext } from "./sidebar/sectionFilter";
 
-// A titled, collapsible sidebar section (Pipedrive's deal detail groups Summary/Details/Source/
-// etc. as collapsible cards). Defaults open; the header toggles visibility. The funnel button
-// hides value-less FieldRows via HideEmptyContext (pixel-parity fix 2).
 export function CollapsibleSection({
   title,
   defaultOpen = true,
@@ -18,8 +15,6 @@ export function CollapsibleSection({
   title: string;
   defaultOpen?: boolean;
   headerActions?: (ctx: { hideEmpty: boolean; showEmptyFields: () => void }) => React.ReactNode;
-  // PD's Summary header carries only the kebab (no hide-empty funnel: its action-list rows are
-  // never empty), so that section opts out of the filter toggle.
   showFilter?: boolean;
   children: React.ReactNode;
 }): React.ReactNode {
@@ -62,8 +57,6 @@ export function CollapsibleSection({
       </div>
       <div
         aria-hidden={!open}
-        // Keep content mounted so the Tailwind grid transition can reverse smoothly. `inert`
-        // removes closed controls from focus/navigation while preserving their layout subtree.
         inert={!open}
         className={cn(
           "grid transition-[grid-template-rows,opacity] duration-200 ease-out motion-reduce:transition-opacity",

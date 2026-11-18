@@ -73,16 +73,11 @@ describe("Dashboard timezone", () => {
 describe("Dashboard date range", () => {
   it("passes a from/to range into the stats query and updates it when a date is picked", async () => {
     render(<Dashboard today="2026-03-01" canViewOthers currency="USD" />);
-    // Default range is the current calendar year.
     const year = new Date().getFullYear();
     expect(useQuery).toHaveBeenLastCalledWith(
       expect.objectContaining({ from: `${year}-01-01`, to: `${year}-12-31` }),
     );
     fireEvent.click(screen.getByLabelText("Range start"));
-    // Day buttons carry the full date as their aria-label (e.g. "Thursday,
-    // January 15th, 2026"); the visible "15" is plain text content, so match
-    // on text rather than accessible name (same convention as
-    // AddActivityModal.test.tsx's DatePicker interactions).
     fireEvent.click((await screen.findAllByText("15"))[0]!);
     expect(useQuery).toHaveBeenLastCalledWith(
       expect.objectContaining({ from: expect.stringMatching(/-15$/) }),
@@ -101,8 +96,6 @@ describe("Dashboard date range", () => {
 
 describe("Dashboard pipeline switcher", () => {
   it("defaults to 'All pipelines' (null pipelineId) and offers the option", () => {
-    // STATS-08: the dashboard defaults to aggregating across all visible pipelines
-    // (null pipelineId), and "All pipelines" is a selectable option.
     useQuery.mockClear();
     render(<Dashboard today="2026-03-01" canViewOthers currency="USD" />);
     expect(useQuery).toHaveBeenLastCalledWith(expect.objectContaining({ pipelineId: null }));
@@ -115,12 +108,10 @@ describe("Dashboard pipeline switcher", () => {
     useQuery.mockClear();
     render(<Dashboard today="2026-03-01" canViewOthers currency="USD" />);
 
-    // Pick a specific pipeline: its id flows to the query.
     fireEvent.click(screen.getByLabelText("Pipeline"));
     fireEvent.click(screen.getByRole("option", { name: "Partners" }));
     expect(useQuery).toHaveBeenLastCalledWith(expect.objectContaining({ pipelineId: "p2" }));
 
-    // Return to "All pipelines": pipelineId clears back to null in-session.
     fireEvent.click(screen.getByLabelText("Pipeline"));
     fireEvent.click(screen.getByRole("option", { name: "All pipelines" }));
     expect(useQuery).toHaveBeenLastCalledWith(expect.objectContaining({ pipelineId: null }));

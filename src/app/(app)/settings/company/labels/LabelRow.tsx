@@ -28,7 +28,6 @@ interface Props {
   onDelete: () => void;
 }
 
-// A single label row: color chip + enum color picker + inline rename + reorder + guarded delete.
 export function LabelRow({
   row,
   isFirst,

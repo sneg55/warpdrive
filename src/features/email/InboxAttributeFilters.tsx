@@ -21,15 +21,8 @@ import {
   NO_ATTRIBUTE_FILTER,
 } from "./threadAttributeFilter";
 
-// Follow-up filter offers the actionable states only (waiting/replied/closed). "none"/unset is
-// intentionally omitted: followUpStatus null (unset) is distinct from the explicit "none" value,
-// so a single "None" filter option would be ambiguous. See implementation notes.
 const FOLLOW_UP_FILTER_STATES = ["waiting", "replied", "closed"] as const;
 
-// U5 quick-filters (A12): server-side single-select narrowing surfaced in a shadcn DropdownMenu
-// (never a native control). "none" maps back to the "all" InboxFilter so the linking tabs regain
-// control. Copy is local (owned-file constant) rather than STRINGS.inbox to keep this change
-// scoped to the files U5 owns.
 const QUICK_FILTER_OPTIONS: { value: InboxFilter; label: string }[] = [
   { value: "shared", label: "Shared" },
   { value: "private", label: "Private" },
@@ -41,8 +34,6 @@ const QUICK_FILTER_OPTIONS: { value: InboxFilter; label: string }[] = [
 const QUICK_FILTER_TRIGGER = "More filters";
 const QUICK_FILTER_NONE = "none";
 
-// The dropdown only owns the six quick-filters; when the active InboxFilter is a linking tab
-// (all/unmatched/needs_linking) no radio is checked and the "None" reset is selected.
 function isQuickFilter(f: InboxFilter): boolean {
   return QUICK_FILTER_OPTIONS.some((o) => o.value === f);
 }
@@ -82,7 +73,6 @@ function QuickFilterMenu({
   );
 }
 
-// Toggle label + its accessible name paired with a labelled checkbox (design-system control).
 function FilterToggle({
   label,
   checked,
@@ -101,13 +91,9 @@ function FilterToggle({
   );
 }
 
-// Surfaced inbox filters (IB1 + P2): follow-up status + label (single-select), attachment/unread
-// toggles, a date-range preset, and a Clear reset. All shadcn primitives, no native controls.
 export function InboxAttributeFilters({
   value,
   onChange,
-  // U5 server-side quick-filter (single-select). Optional so existing callers that only drive the
-  // client-side attribute filters keep working; defaults to "all" (no quick-filter) + a no-op.
   quickFilter = "all",
   onQuickFilterChange = () => {},
 }: {
@@ -173,9 +159,6 @@ export function InboxAttributeFilters({
         variant="ghost"
         size="sm"
         onClick={() => {
-          // Clear resets BOTH the client-side attribute filters and the server-side quick-filter;
-          // resetting only the former left the list narrowed by a still-active quick-filter (codex
-          // review). "all" is the no-quick-filter state (the linking tabs regain control).
           onChange(NO_ATTRIBUTE_FILTER);
           onQuickFilterChange("all");
         }}

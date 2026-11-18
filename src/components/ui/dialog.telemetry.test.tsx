@@ -37,9 +37,6 @@ it("emits modal_opened on mount when defaultOpen and modal_closed with escape re
 });
 
 it("emits lifecycle for a CONTROLLED dialog when the open prop flips (state-driven)", () => {
-  // Radix onOpenChange does not fire when a parent flips `open`, so this exercises the
-  // effect-based lifecycle: a state-driven open and a programmatic (parent-state) close, which is
-  // the "modal closing when it should not" case the feature exists to surface.
   const content = (
     <DialogContent>
       <DialogTitle>c</DialogTitle>
@@ -75,10 +72,6 @@ it("emits lifecycle for a CONTROLLED dialog when the open prop flips (state-driv
 });
 
 it("emits modal_closed for a controlled dialog that UNMOUNTS on close (escape)", async () => {
-  // The conditionally-mounted controlled pattern ({open && <Dialog open ...>}): closing removes the
-  // dialog from the tree, so the [open] effect never re-renders with open=false. The close must be
-  // emitted in the open-change callback, before the parent unmounts us. This is the GlobalNoteModal /
-  // convert / merge shape the review flagged as losing modal_closed entirely.
   const user = userEvent.setup();
   function Harness(): ReactNode {
     const [open, setOpen] = useState(true);
@@ -101,8 +94,6 @@ it("emits modal_closed for a controlled dialog that UNMOUNTS on close (escape)",
 });
 
 it("emits EXACTLY ONE modal_closed for an always-mounted controlled dialog (no double-emit)", async () => {
-  // When the same interaction is observed by BOTH the callback and the [open] effect (dialog stays
-  // mounted, open flips to false), prevOpen must dedup so we do not emit two modal_closed events.
   const user = userEvent.setup();
   function Harness(): ReactNode {
     const [open, setOpen] = useState(true);

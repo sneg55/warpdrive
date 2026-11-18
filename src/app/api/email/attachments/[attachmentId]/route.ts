@@ -1,14 +1,3 @@
-/**
- * /api/email/attachments/[attachmentId]: lazy inbound-attachment download.
- *
- * Bytes are never stored in Postgres (email_message_attachments holds metadata only,
- * see Task 4). This route is a thin wrapper: it resolves the signed-in actor, builds a
- * real Gmail client resolver (same ensureAccessToken + makeRefresh dependency the worker
- * uses), and delegates the authz-gated fetch to resolveAttachmentDownload, which is unit
- * tested with a fake Gmail client. A denied or missing attachment returns 404 (never a
- * 403, so existence of a private thread's attachment is never leaked).
- */
-
 import type { NextRequest } from "next/server";
 import { db } from "@/db/client";
 import { resolveAttachmentDownload } from "@/features/email/attachmentDownload";

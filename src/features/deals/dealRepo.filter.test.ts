@@ -52,9 +52,6 @@ describe("getBoardColumns with a FilterDefinition", () => {
   });
 });
 
-// deals.labels is text[] of label names, so a labels condition compiles to a case-insensitive
-// membership test, not a scalar comparison. Real Postgres is the only thing that proves the
-// operator and the empty-array case behave, which is why this runs against the DB, not a mock.
 describe("getBoardColumns with a labels condition", () => {
   async function seedLabelledDeals(db: Parameters<Parameters<typeof withTestDb>[0]>[0]) {
     await db.insert(settings).values({
@@ -105,8 +102,6 @@ describe("getBoardColumns with a labels condition", () => {
     });
   });
 
-  // A migrated install can still hold legacy lowercase values in deals.labels while the picker
-  // offers the catalog's cased name, so matching has to ignore case on both sides.
   it("matches a legacy lowercase label value against the cased name the picker offers", async () => {
     await withTestDb(async (db) => {
       const { u, pipelineId } = await seedLabelledDeals(db);
@@ -153,9 +148,6 @@ describe("getBoardColumns with a labels condition", () => {
   });
 });
 
-// Null semantics are the one thing a mocked query cannot get right: `NULL <> 5` and
-// `NULL NOT ILIKE 'x'` are both NULL, so the row silently disappears from the result rather than
-// failing loudly. Every assertion here runs against real Postgres for that reason.
 describe("getBoardColumns null semantics on the Tier 2 operators", () => {
   async function seedNullShapes(db: TestDb) {
     await db.insert(settings).values({
@@ -193,8 +185,6 @@ describe("getBoardColumns null semantics on the Tier 2 operators", () => {
       if (r.ok === false) throw new Error("seed failed");
       if (s.title === "Gamma") gammaId = r.value.id;
     }
-    // createDeal requires a non-empty title, so blank one directly: an empty title is a state an
-    // import can leave behind and is exactly what `title isEmpty` exists to find.
     await db.execute(sql`UPDATE deals SET title = '' WHERE id = ${gammaId}`);
     return { u, pipelineId: p.pipeline.id };
   }

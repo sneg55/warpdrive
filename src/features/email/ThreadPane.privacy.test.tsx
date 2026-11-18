@@ -4,8 +4,6 @@ import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-// B2: the reader header shows an owner-only privacy dropdown (ThreadPrivacyToggle), gated by
-// canCompose, wired to setThreadVisibilityAction and surfacing a failed flip via useActionError.
 type Res = { ok: true; value: { threadId: string } } | { ok: false; error: { id: string } };
 
 vi.mock("./readActions", () => ({

@@ -6,9 +6,6 @@ import AppSegmentError from "./error";
 
 afterEach(cleanup);
 
-// Operational failures in this codebase are Result values, not throws, so anything that reaches
-// this boundary is a genuine bug. In production Next redacts the message and gives only a digest,
-// which is the one handle an operator has to correlate the screen with a server log. Show it.
 describe("(app) error boundary", () => {
   it("tells the user something broke rather than showing a blank screen", () => {
     render(<AppSegmentError error={new Error("boom")} reset={vi.fn()} />);

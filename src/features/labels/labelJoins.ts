@@ -6,8 +6,6 @@ import { leads } from "@/db/schema/leads";
 import { organizations } from "@/db/schema/organizations";
 import { persons } from "@/db/schema/persons";
 
-// Dispatch a label target to its join table + the (entity id, label id) columns, so the entity
-// read/write helpers and the usage counter can operate uniformly over deal/person/org/lead.
 export interface LabelJoin {
   table: PgTable;
   entityCol: PgColumn;
@@ -31,9 +29,6 @@ export function labelJoin(target: LabelTarget): LabelJoin {
   }
 }
 
-// The entity table + its denormalized `labels` text[] column, per target. This array is what the
-// list cells, board cards and filters actually read, so any question about "is this label in use"
-// has to be answered here, not from the join tables alone.
 export interface LabelArraySource {
   table: PgTable;
   labelsCol: PgColumn;

@@ -17,7 +17,6 @@ function adminActorFor(id: string): ImportActor {
   };
 }
 
-// Regular (non-admin) actor holding only data.import, no activity.create.
 function importOnlyActorFor(id: string): ImportActor {
   return {
     id,

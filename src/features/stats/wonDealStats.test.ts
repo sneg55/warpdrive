@@ -48,7 +48,6 @@ describe("wonDealStats", () => {
       new AbortController().signal,
     );
     expect(Number(r.avgValue)).toBe(400);
-    // Median resists the one large deal that drags the mean to 400.
     expect(Number(r.medianValue)).toBe(200);
   });
 

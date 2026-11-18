@@ -74,8 +74,6 @@ export function UsersClient({ rows, permissionSets, viewerIsAdmin }: Props): Rea
       <div className="space-y-3">
         <UserStatusTabs value={status} onChange={setStatus} />
         <SettingsCard className="shadow-none">
-          {/* Own scroll container: on the card itself, overflow-x-auto competes with the card's
-              overflow-hidden and the action column ends up clipped instead of scrollable. */}
           <div className="overflow-x-auto">
             <table className="w-full min-w-[640px] text-sm">
               <thead className={SETTINGS_TABLE_HEAD}>

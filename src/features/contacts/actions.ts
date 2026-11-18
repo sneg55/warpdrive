@@ -66,8 +66,6 @@ export async function createPersonAction(
     return { ok: false, error: { id: ERROR_IDS.PERM_DENIED } };
   }
 
-  // Parse at the boundary like updatePersonAction already does: callers reach this straight from
-  // client components, so an invalid email or an overlong name would otherwise persist unchecked.
   const parsed = personCreateInput.safeParse(input);
   if (!parsed.success) return { ok: false, error: { id: ERROR_IDS.CONTACT_CREATE_INPUT_INVALID } };
 
@@ -93,7 +91,6 @@ export async function updatePersonAction(
     return { ok: false, error: { id: ERROR_IDS.CONTACT_UPDATE_INPUT_INVALID } };
   }
 
-  // Record-scoped: updatePerson gates visibility/edit internally. No double gate.
   const result = await updatePerson(db, toContactActor(actor), parsed.data, SIG());
   if (!result.ok) return { ok: false, error: { id: result.error.id } };
   return { ok: true, value: { id: result.value.id } };
@@ -109,13 +106,9 @@ export async function deletePersonAction(
   const { actor } = await createContext();
   if (actor === null) return { ok: false, error: { id: ERROR_IDS.AUTH_SESSION_DEAD } };
 
-  // A malformed id can never match a row; 404-shape it the same way a genuinely missing/
-  // invisible id would (isUuidParam does the same in getPerson) instead of a distinct
-  // validation error, so a stranger learns nothing either way.
   const parsed = personDeleteInput.safeParse(input);
   if (!parsed.success) return { ok: false, error: { id: ERROR_IDS.CONTACT_NOT_FOUND } };
 
-  // Record-scoped: deletePerson gates visibility/delete internally. No double gate.
   const result = await deletePerson(db, toContactActor(actor), parsed.data.id, SIG());
   if (!result.ok) return { ok: false, error: { id: result.error.id } };
   return { ok: true, value: { id: result.value.id } };
@@ -172,13 +165,9 @@ export async function deleteOrgAction(
   const { actor } = await createContext();
   if (actor === null) return { ok: false, error: { id: ERROR_IDS.AUTH_SESSION_DEAD } };
 
-  // A malformed id can never match a row; 404-shape it the same way a genuinely missing/
-  // invisible id would (isUuidParam does the same in getOrg) instead of a distinct
-  // validation error, so a stranger learns nothing either way.
   const parsed = orgDeleteInput.safeParse(input);
   if (!parsed.success) return { ok: false, error: { id: ERROR_IDS.CONTACT_NOT_FOUND } };
 
-  // Record-scoped: deleteOrg gates visibility/delete internally. No double gate.
   const result = await deleteOrg(db, toContactActor(actor), parsed.data.id, SIG());
   if (!result.ok) return { ok: false, error: { id: result.error.id } };
   return { ok: true, value: { id: result.value.id } };
@@ -194,7 +183,6 @@ export async function mergePersonsAction(
   const { actor } = await createContext();
   if (actor === null) return { ok: false, error: { id: ERROR_IDS.AUTH_SESSION_DEAD } };
 
-  // Record-scoped: gateMerge inside mergePersons handles visibility + contact.merge.
   const result = await mergePersons(db, actor, input, SIG());
   if (!result.ok) return { ok: false, error: { id: result.error.id } };
   return { ok: true, value: { id: result.value.id } };

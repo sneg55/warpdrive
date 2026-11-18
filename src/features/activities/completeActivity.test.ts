@@ -157,7 +157,6 @@ it("completeActivity(done:false) reopens a completed activity", async () => {
 });
 
 it("completeActivity returns 404-on-invisible when actor cannot see the deal", async () => {
-  // Owner creates the deal with visibilityLevel "owner" (only owner can see it).
   const owner = await seedUser(ctx.db);
   const ownerActor = makeActor(owner);
   const outsider = await seedUser(ctx.db);
@@ -179,7 +178,6 @@ it("completeActivity returns 404-on-invisible when actor cannot see the deal", a
   const [type] = await ctx.db.select().from(activityTypes).where(eq(activityTypes.key, "call"));
   if (!type) throw new Error("activity type 'call' not found");
 
-  // Owner creates the activity on the hidden deal.
   const created = await createActivity(
     ctx.db,
     ownerActor,
@@ -199,7 +197,6 @@ it("completeActivity returns 404-on-invisible when actor cannot see the deal", a
   );
   if (!created.ok) throw new Error("activity creation failed");
 
-  // Outsider tries to complete it: should get 404-on-invisible, not 403.
   const result = await completeActivity(
     ctx.db,
     outsiderActor,

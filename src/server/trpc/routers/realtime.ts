@@ -3,7 +3,6 @@ import { mintTicket } from "@/server/ws/ticket";
 import { err, ok, type Result } from "@/types/result";
 import { protectedProcedure, router } from "../trpc";
 
-// Pure-ish helper so the gate is unit-testable without a tRPC harness.
 export async function mintTicketForActor(args: {
   userId: string;
   sessionId: string;
@@ -17,7 +16,6 @@ export async function mintTicketForActor(args: {
 
 export const realtimeRouter = router({
   ticket: protectedProcedure.mutation(async ({ ctx }) => {
-    // ctx.actor non-null and session live by protectedProcedure; re-affirm is_active.
     const r = await mintTicketForActor({
       userId: ctx.session.userId,
       sessionId: ctx.session.sessionId,

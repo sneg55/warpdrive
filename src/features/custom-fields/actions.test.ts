@@ -1,8 +1,4 @@
 // @vitest-environment node
-// Boundary-validation tests for the custom-field create/archive server actions. Uses the same
-// next/headers + context mocking pattern as dealActions.csrf.test.ts so guardCsrf/permission run
-// as in production, while the repo layer (createDef/archiveDef) is spied so no DB is touched: the
-// point is that invalid input is rejected BEFORE any repo call.
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { CSRF_COOKIE } from "@/features/auth/csrf";
 import { createDefInputSchema } from "./defSchema";

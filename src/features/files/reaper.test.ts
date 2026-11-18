@@ -9,8 +9,6 @@ import { FakeStorageClient } from "./storageFake";
 
 const TWO_HOURS_MS = 2 * 60 * 60 * 1000;
 
-// Insert the three fixture rows: one stale uploading, one ready, one recent
-// uploading. entity_id has no FK, so a random uuid is enough to satisfy NOT NULL.
 async function seedFixtures(
   db: Parameters<Parameters<typeof withTestDb>[0]>[0],
   userId: string,
@@ -80,8 +78,6 @@ describe("reapStaleUploads", () => {
       await seedFixtures(db, user.id);
 
       const storage = new FakeStorageClient();
-      // Force the stale object's delete to fail: object-first means the row is
-      // left intact and the failure must not abort the batch or throw.
       storage.failDeleteKeys.add("k-stale");
 
       const out = await reapStaleUploads(db, {

@@ -13,9 +13,6 @@ import type { VisiblePersonOrOrg } from "@/features/permissions/types";
 import { readBaseCurrency } from "@/features/settings/readBaseCurrency";
 import { OrgDetailClient } from "./OrgDetailClient";
 
-// Shared org-detail loader. Exported so both the full page ([orgId]/page.tsx) and the intercepted
-// slide-over drawer (@modal/(.)[orgId]/page.tsx) render identical content, and generateMetadata can
-// reuse the cached load. Mirrors PersonDetailView.
 export const loadOrg = cachedDetailLoad((ctx, actor, orgId) =>
   getOrg(ctx.db, toContactActor(actor), orgId, AbortSignal.timeout(10_000)),
 );
@@ -30,7 +27,6 @@ export async function OrgDetailView({ orgId }: { orgId: string }): Promise<React
   }
   const { ctx, actor, value: org } = loaded;
 
-  // All three reads need only the already-loaded org, so they are issued together.
   const [defs, baseCurrency, { followers, isFollowedBySelf }, hidden] = await Promise.all([
     listDefs(ctx.db, "organization", {}, AbortSignal.timeout(10_000)),
     readBaseCurrency(ctx.db, AbortSignal.timeout(8000)),

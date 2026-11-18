@@ -19,7 +19,6 @@ it("builds a CSV of invalid rows with flattened error reasons", () => {
   const lines = csv.split("\n");
   expect(lines[0]).toBe("row,errors,warnings,Name,Email");
   expect(lines[1]).toBe("2,name: required,,,a@x.co");
-  // Formula-injection cell is neutralized with a leading apostrophe.
   expect(lines[2]).toContain("'=CMD");
 });
 

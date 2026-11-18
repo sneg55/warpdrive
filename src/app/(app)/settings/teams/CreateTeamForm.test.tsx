@@ -8,7 +8,6 @@ beforeAll(() => {
   Element.prototype.scrollIntoView = vi.fn();
   Element.prototype.hasPointerCapture = vi.fn();
   Element.prototype.releasePointerCapture = vi.fn();
-  // ResizeObserver (needed by form-nested Radix Checkbox) is polyfilled globally in vitest.setup.ts.
 });
 
 afterEach(() => {
@@ -80,9 +79,6 @@ describe("CreateTeamForm", () => {
   });
 
   it("only offers the users it is passed as manager/member options (no deactivated users)", () => {
-    // page.tsx passes the isActive-filtered assignable list here, so a deactivated user (Bob,
-    // omitted below) must never surface as a selectable manager or member. This locks the picker
-    // contract: CreateTeamForm renders exactly the users it receives and pulls no wider list.
     render(<CreateTeamForm users={[ALICE]} onCreated={vi.fn()} />);
     fireEvent.click(screen.getByLabelText("Manager"));
     expect(screen.getByRole("option", { name: ALICE.name })).toBeInTheDocument();

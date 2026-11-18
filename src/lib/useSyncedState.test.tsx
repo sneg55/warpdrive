@@ -30,7 +30,6 @@ describe("useSyncedState", () => {
     await user.click(screen.getByRole("button", { name: "edit" }));
     expect(screen.getByTestId("value").textContent).toBe("edited");
 
-    // A re-render with the SAME source must not clobber the local edit.
     rerender(<Probe source="a" />);
     expect(screen.getByTestId("value").textContent).toBe("edited");
   });

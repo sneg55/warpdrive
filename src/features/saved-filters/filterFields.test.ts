@@ -4,13 +4,7 @@ import { describe, expect, it } from "vitest";
 import { ARRAY_OPS, EXACT_OPS, FILTER_OP_KEYS, ORDERED_OPS, TEXT_OPS } from "@/constants/filterOps";
 import { DEAL_CONDITION_CONFIG, hasStatusCondition, OPS_BY_FIELD, SORT_DIRS } from "./filterFields";
 
-// The deal filter builder (a client component) imports OPS_BY_FIELD to populate its operator
-// dropdown. These constants live in a zod-free module so importing them does not drag zod
-// (~62 KB gzipped) into the deals/pipeline client bundle. saved-filters/schemas.ts re-exports
-// them and re-validates on the server, so the client dropdown and server allow-list cannot drift.
 describe("filterFields", () => {
-  // Identity, not deep equality: a copied class would drift the day an operator is added to the
-  // shared vocabulary, which is the failure this rewire exists to prevent.
   it("maps every filterable deal field to a shared operator class", () => {
     expect(OPS_BY_FIELD.title).toBe(TEXT_OPS);
     expect(OPS_BY_FIELD.orgName).toBe(TEXT_OPS);
@@ -25,8 +19,6 @@ describe("filterFields", () => {
     expect(OPS_BY_FIELD.labels).toBe(ARRAY_OPS);
   });
 
-  // A new text condition should default to substring match, matching the contacts and leads
-  // builders (contactFilterConfig.ts, leadFilter.ts), so "contains" has to sort first.
   it("puts contains first on text fields so it is the default op", () => {
     expect(OPS_BY_FIELD.title[0]).toBe("contains");
     expect(OPS_BY_FIELD.orgName[0]).toBe("contains");
@@ -45,8 +37,6 @@ describe("filterFields", () => {
     expect(SORT_DIRS).toEqual(["asc", "desc"]);
   });
 
-  // Every op a field offers must be in the enum the server validates against, or the builder can
-  // produce a row Zod rejects.
   it("offers no operator outside the shared enum", () => {
     for (const ops of Object.values(OPS_BY_FIELD)) {
       for (const op of ops) expect(FILTER_OP_KEYS).toContain(op);

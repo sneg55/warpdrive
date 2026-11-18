@@ -1,9 +1,6 @@
 import { pgTable, primaryKey, text, timestamp } from "drizzle-orm/pg-core";
 import { customFieldTarget } from "./customFieldDefs";
 
-// Built-in fields are code-defined (see src/constants/builtinFields.ts), not rows. This table
-// stores only the hidden OVERRIDES: a row's presence means "this built-in field is hidden".
-// Unhide = delete the row. Single-tenant, so no workspace scoping column.
 export const hiddenBuiltinFields = pgTable(
   "hidden_builtin_fields",
   {

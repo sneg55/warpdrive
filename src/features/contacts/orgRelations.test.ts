@@ -10,9 +10,6 @@ import { addOrgRelation, listRelatedOrgs, removeOrgRelation } from "./orgRelatio
 
 type Db = NodePgDatabase<typeof schema>;
 
-// Defaults to contact.edit_own so existing "owner acting on their own orgs" tests keep
-// working under the contact.edit gate; pass an explicit empty array to build an actor who
-// can SEE a record but lacks edit capability (mirrors contactEditAuthz.test.ts's helper).
 function actor(
   id: string,
   isAdmin = false,
@@ -61,7 +58,6 @@ it("adds and lists a related organization in both directions", async () => {
     const fromA = await listRelatedOrgs(db, me, orgA.id, sig());
     const fromB = await listRelatedOrgs(db, me, orgB.id, sig());
     expect(fromA).toEqual([{ orgId: orgB.id, name: "Beta Co", relationType: "partner" }]);
-    // Reverse direction is visible too: B's related-orgs list also shows A.
     expect(fromB).toEqual([{ orgId: orgA.id, name: "Acme", relationType: "partner" }]);
   });
 });
@@ -115,7 +111,6 @@ it("removes a relation regardless of which side is passed as source", async () =
       sig(),
     );
 
-    // Pass the pair reversed from how it was stored: still removes the row.
     const r = await removeOrgRelation(
       db,
       me,
@@ -174,7 +169,6 @@ it("filters out a related org the actor cannot see from the list", async () => {
     const orgA = await seedOrg(db, owner.id, "Acme", "all");
     const hidden = await seedOrg(db, stranger.id, "Hidden Co", "owner");
 
-    // Admin can create the relation even though `me` (a regular actor) cannot see `hidden`.
     const r = await addOrgRelation(
       db,
       admin,
@@ -183,7 +177,6 @@ it("filters out a related org the actor cannot see from the list", async () => {
     );
     expect(r.ok).toBe(true);
 
-    // `me` sees org A (visibilityLevel "all") but the related "Hidden Co" row is filtered out.
     const fromA = await listRelatedOrgs(db, me, orgA.id, sig());
     expect(fromA).toEqual([]);
   });
@@ -206,10 +199,6 @@ it("returns an empty list for an org the actor cannot see at all", async () => {
   });
 });
 
-// Important finding 1 (Task 23 review): addOrgRelation only deduped the exact ordered
-// (source, target) pair via the composite PK. Nothing stopped (A,B) and (B,A) from both
-// existing as distinct rows for the same org pair, which made listRelatedOrgs (asSource
-// union asTarget) return the same org TWICE. Adding the reverse direction must be a no-op.
 it("prevents a reverse-direction duplicate: adding (A,B) then (B,A) yields one entry per org", async () => {
   await withTestDb(async (db) => {
     const owner = await seedUser(db);
@@ -225,7 +214,6 @@ it("prevents a reverse-direction duplicate: adding (A,B) then (B,A) yields one e
     );
     expect(r1.ok).toBe(true);
 
-    // Reverse direction: same unordered pair, opposite source/target, different label.
     const r2 = await addOrgRelation(
       db,
       me,
@@ -238,14 +226,10 @@ it("prevents a reverse-direction duplicate: adding (A,B) then (B,A) yields one e
     const fromB = await listRelatedOrgs(db, me, orgB.id, sig());
     expect(fromA).toHaveLength(1);
     expect(fromB).toHaveLength(1);
-    // The first-written label wins; the no-op reverse insert does not overwrite it.
     expect(fromA[0]?.relationType).toBe("partner");
   });
 });
 
-// Important finding 2 (Task 23 review): add/remove were gated on canSee only. A relation is
-// shared, org-wide-visible data (unlike dealFollowers' self-scoped opt-in), so mutating it
-// should require contact.edit on the source org, mirroring updateOrg/deleteOrg's gate.
 it("denies add/remove to an actor who can see both orgs but lacks contact.edit", async () => {
   await withTestDb(async (db) => {
     const owner = await seedUser(db);
@@ -255,7 +239,6 @@ it("denies add/remove to an actor who can see both orgs but lacks contact.edit",
     const orgA = await seedOrg(db, owner.id, "Acme", "all");
     const orgB = await seedOrg(db, owner.id, "Beta Co", "all");
 
-    // Pre-seed a relation as the owner so removal has a real row to act on.
     const seeded = await addOrgRelation(
       db,
       me,
@@ -264,7 +247,6 @@ it("denies add/remove to an actor who can see both orgs but lacks contact.edit",
     );
     expect(seeded.ok).toBe(true);
 
-    // `noEdit` can see both orgs (visibilityLevel "all") but holds no contact.edit flag.
     const addResult = await addOrgRelation(
       db,
       noEdit,
@@ -283,7 +265,6 @@ it("denies add/remove to an actor who can see both orgs but lacks contact.edit",
     expect(removeResult.ok).toBe(false);
     if (!removeResult.ok) expect(removeResult.error.id).toBe("E_PERM_001");
 
-    // Neither call actually mutated anything: the seeded relation is untouched.
     expect(await listRelatedOrgs(db, me, orgA.id, sig())).toHaveLength(1);
   });
 });

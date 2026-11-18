@@ -1,6 +1,3 @@
-// Toggleable detail blocks on the deal workspace (Pipedrive's block-visibility eye button). The
-// user hides/shows these sections; the choice persists per user via user_preferences.ui
-// (dealHeaderBlocks holds the HIDDEN block ids). No magic strings elsewhere: reference these keys.
 export const DEAL_BLOCKS = [
   { id: "summary", name: "Summary" },
   { id: "details", name: "Details" },

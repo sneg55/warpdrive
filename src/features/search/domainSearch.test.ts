@@ -132,8 +132,6 @@ describe("organization search by domain", () => {
     });
   });
 
-  // Rebuilding a generated column means dropping it, which drops its indexes. drizzle-kit does not
-  // re-emit them, so pin the index here: losing it turns every org search into a sequential scan.
   it("keeps the GIN index on search_tsv after the migrations run", async () => {
     await withTestDb(async (db) => {
       const r = (await db.execute(

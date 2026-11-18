@@ -79,8 +79,6 @@ describe("matchPerson polling", () => {
     expect(spy).toHaveBeenCalledTimes(2);
   });
 
-  // Fails by running out of test time if the last poll gets the full request timeout: it would hold
-  // the fan-out open past the budget and throw away the partial candidate already in hand.
   it("bounds a late poll by the budget left, not by the full request timeout", async () => {
     const spy = hangingFetch(body(personSearching));
     const out = await matchPerson(LOOKUP, API_KEY, signal(), {
@@ -117,7 +115,6 @@ describe("matchPerson polling", () => {
     expect(out.kind).toBe("throttled");
     expect(resumesInMs(out)).toBeGreaterThan(30_000);
     expect(fields(out)["person.email"]).toBe("ada@analyticalengines.com");
-    // The merge reads candidates off every outcome, so a partial one still reaches the dialog.
     const proposed = mergeCandidates([out], {}, [
       {
         canonicalKey: "person.email",

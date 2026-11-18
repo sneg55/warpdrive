@@ -23,13 +23,9 @@ vi.mock("@/lib/trpc-client", () => ({
 const linkThread = vi.fn();
 vi.mock("./linkActions", () => ({ linkThread: (...a: unknown[]) => linkThread(...a) }));
 vi.mock("@/utils/csrfCookie", () => ({ readCsrfToken: () => "csrf" }));
-// ReaderMessageCard and ReaderActions are covered by their own tests; stub them so this file
-// asserts the card's own behavior (collapse, fetch-on-expand, menu wiring) and not theirs.
 vi.mock("./ReaderMessageCard", () => ({
   ReaderMessageCard: () => <div data-testid="reader-message-card" />,
 }));
-// The stub seeds its own state from initialMode exactly as the real ReaderActions does, so a mode
-// that changes while the composer is already mounted only takes effect if the card remounts it.
 const readerActionsProps = vi.fn();
 vi.mock("./ReaderActions", async () => {
   const { useState } = await import("react");
@@ -86,8 +82,6 @@ describe("EmailTimelineCard collapsed", () => {
     expect(screen.getByText(/Hello Mr. Ramirez/)).toBeInTheDocument();
   });
 
-  // mergeEmailItems orders a message with no Gmail Date header by createdAt, so the card has to
-  // date it the same way instead of rendering an empty date behind a leading separator.
   it("dates a message with no Date header by when it arrived", () => {
     const undated = { ...message, sentAt: null, createdAt: "2026-06-01T09:15:00Z" };
     render(<EmailTimelineCard message={undated} scope={dealScope} onUnlinked={() => {}} />);
@@ -325,14 +319,11 @@ describe("EmailTimelineCard reply invalidation", () => {
     await userEvent.click(screen.getByRole("button", { name: /^reply$/i }));
     await userEvent.click(screen.getByTestId("reader-sent"));
 
-    // A thread can be linked to a deal AND a person: replying from one record must not leave the
-    // other serving a cached list without the reply.
     expect(invalidateDeal).toHaveBeenCalled();
     expect(invalidateContact).toHaveBeenCalled();
   });
 });
 
-// Gmail hands us the snippet HTML-escaped, so rendering it as text prints "wasn&#39;t".
 it("decodes the HTML entities Gmail escapes into the snippet", () => {
   const escaped = { ...message, snippet: "Your message wasn&#39;t delivered" };
   render(<EmailTimelineCard message={escaped} scope={dealScope} onUnlinked={() => {}} />);

@@ -14,7 +14,6 @@ vi.mock("@/lib/trpc-client", () => ({
       savedFilters: { listByTarget: { invalidate: vi.fn() } },
     }),
     identity: { assignableUsers: { useQuery: () => ({ data: [] }) } },
-    // The filter builder's Label condition reads the label catalog.
     labels: {
       listByTarget: { useQuery: () => ({ data: [] }) },
       appliedNames: { useQuery: () => ({ data: [] }) },
@@ -143,7 +142,6 @@ describe("OrgsList", () => {
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 
-  // CV-4 / spec B4: PD org list defaults to Address / Closed deals / Open deals (People is opt-in).
   it("renders Address, Closed deals, and Open deals columns with the row's data", () => {
     render(
       <OrgsList
@@ -162,7 +160,6 @@ describe("OrgsList", () => {
     expect(screen.getByRole("columnheader", { name: "Address" })).toBeInTheDocument();
     expect(screen.getByRole("columnheader", { name: "Closed deals" })).toBeInTheDocument();
     expect(screen.getByRole("columnheader", { name: "Open deals" })).toBeInTheDocument();
-    // People is not a default column now (opt-in), so its header must be absent.
     expect(screen.queryByRole("columnheader", { name: "People" })).not.toBeInTheDocument();
 
     const row = screen.getByText("Acme Inc").closest("tr") as HTMLElement;
@@ -175,7 +172,6 @@ describe("OrgsList", () => {
     render(<OrgsList rows={[orgRow("o1", "Acme Inc")]} total={1} />);
     const row = screen.getByText("Acme Inc").closest("tr") as HTMLElement;
     const cells = within(row).getAllByRole("cell");
-    // checkbox, name, address, people, deals: address is the third cell and should be empty.
     expect(cells[2]).toHaveTextContent("");
   });
 
@@ -230,7 +226,6 @@ describe("OrgsList", () => {
           : { ok: false, error: { id: "E_PERM_001" } },
       ),
     );
-    // o1's delete succeeded so it's gone from the reloaded list; o2's failed so it's still there.
     listOrgsQuery.mockResolvedValue({
       total: 1,
       rows: [

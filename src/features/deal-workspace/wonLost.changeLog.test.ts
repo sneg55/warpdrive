@@ -1,5 +1,3 @@
-// Integration tests for the change-log row markLost writes. Real Postgres via Testcontainers.
-// No database mocking: mock/prod divergence hides broken queries (see CLAUDE.md).
 import { afterAll, beforeAll, expect, it } from "vitest";
 import { CHANGE_FIELD_STATUS } from "@/constants/changeLogFields";
 import { deals, lostReasons } from "@/db/schema";

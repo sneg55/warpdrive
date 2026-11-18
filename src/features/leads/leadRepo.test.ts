@@ -275,7 +275,6 @@ describe("listLeadsForExport", () => {
     await withTestDb(async (db) => {
       const owner = await seedUser(db);
       const other = await seedUser(db);
-      // Three visible to owner (owner-visibility), one owned by other and owner-private.
       await insertLead(db, owner.id, { title: "A", labels: ["warm"] });
       await insertLead(db, owner.id, { title: "B", labels: ["warm"] });
       await insertLead(db, owner.id, { title: "C", labels: ["cold"] });
@@ -287,7 +286,6 @@ describe("listLeadsForExport", () => {
         { ...listArgs, limit: 1, filters: { labelKeys: ["warm"] } },
         sig(),
       );
-      // limit:1 is ignored by export; label filter keeps A + B; D is not visible to owner.
       expect(rows.map((r) => r.title).sort()).toEqual(["A", "B"]);
     });
   });

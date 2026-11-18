@@ -1,9 +1,3 @@
-// Regression coverage for the three Wave 3 Task 22 pagination bugs: a compound (dueAt, id)
-// keyset cursor (rows tied on due_at at a page boundary must not be dropped) and the
-// over-fetch-before-filter fix (a restricted actor's visible rows must still surface even when
-// the newest raw SQL window is mostly invisible to them). Split out of contactsFeed.test.ts to
-// keep both files under the project's file-size limit.
-
 import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import { activities, activityTypes, persons } from "@/db/schema";
@@ -52,7 +46,6 @@ describe("contactsFeed pagination", () => {
           dueAt: tiedDueAt,
         });
       }
-      // An older, untied row confirms paging still advances correctly past the tie.
       await db.insert(activities).values({
         typeId,
         subject: "Older, untied",
@@ -76,9 +69,6 @@ describe("contactsFeed pagination", () => {
         beforeId = last.id;
       }
 
-      // A lt(dueAt, before)-only cursor drops whichever of the tied rows sorts second at the
-      // boundary; the compound (dueAt, id) cursor must surface both exactly once, then the
-      // older untied row, then terminate on an empty page rather than looping.
       expect(seen).toHaveLength(3);
       expect(new Set(seen).size).toBe(3);
       expect(new Set(seen.slice(0, 2))).toEqual(new Set(["Tied A", "Tied B"]));
@@ -105,8 +95,6 @@ describe("contactsFeed pagination", () => {
         throw new Error("seed failed");
       }
 
-      // 5 newest activities are all on a person only the owner can see: with limit 1 the raw
-      // over-fetch window (limit * 3 = 3) is entirely invisible to restrictedActor.
       for (let i = 0; i < 5; i++) {
         await db.insert(activities).values({
           typeId,
@@ -117,7 +105,6 @@ describe("contactsFeed pagination", () => {
           dueAt: new Date(`2026-07-1${5 - i}T10:00:00.000Z`),
         });
       }
-      // 2 older activities are visible to everyone.
       await db.insert(activities).values({
         typeId,
         subject: "Visible newer",
@@ -135,9 +122,6 @@ describe("contactsFeed pagination", () => {
         dueAt: new Date("2026-07-04T10:00:00.000Z"),
       });
 
-      // A LIMIT-before-filter implementation fetches only the newest row (all 5 hidden ones
-      // sort ahead of both visible rows), filters it away, and returns an empty, falsely
-      // "exhausted" page. The over-fetch fix must surface "Visible newer" here instead.
       const page1 = await contactsFeed(db, actor(restrictedActor.id), { limit: 1 }, sig());
       expect(page1.map((r) => r.subject)).toEqual(["Visible newer"]);
 
@@ -149,7 +133,6 @@ describe("contactsFeed pagination", () => {
       );
       expect(page2.map((r) => r.subject)).toEqual(["Visible older"]);
 
-      // Pagination must terminate cleanly (an empty final page), not loop or duplicate.
       const page3 = await contactsFeed(
         db,
         actor(restrictedActor.id),

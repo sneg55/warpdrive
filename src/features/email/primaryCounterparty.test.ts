@@ -1,12 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { primaryCounterparty } from "./primaryCounterparty";
 
-// Regression (codex review, P1 sidebar): the "Create new contact" prefill used participants[0],
-// which is built from fromEmail. On an outbound-only thread every sender is the mailbox owner, so
-// the prefill seeded the owner's own address and linked a contact for the current user instead of
-// the recipient. The counterparty must be the OTHER party: an inbound sender, or (sent-only) the
-// first recipient that is not the owner.
-
 type Msg = Parameters<typeof primaryCounterparty>[0][number];
 
 const inbound = (fromEmail: string, fromName: string | null = null): Msg => ({
@@ -51,7 +45,6 @@ describe("primaryCounterparty", () => {
   });
 
   it("returns null for a null owner email with no inbound", () => {
-    // No owner reference and no inbound sender: nothing reliable to prefill.
     expect(primaryCounterparty([outbound(["ada@client.com"])], null)).toEqual({
       email: "ada@client.com",
       name: null,

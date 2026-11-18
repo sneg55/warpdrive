@@ -1,5 +1,3 @@
-// RocketReach payload -> canonical keys. Every key here is declared in CANONICAL_FIELDS.
-// Phone payloads (`phones`, `phone_numbers`) are read by nothing: phones are out of scope.
 import { pickNumber, pickString } from "./http";
 
 const INVALID_SMTP = "invalid";
@@ -55,8 +53,6 @@ function twitterHandle(raw: unknown): string | undefined {
   return handle.length > 0 ? handle : undefined;
 }
 
-// RocketReach returns every known address with an smtp_valid of "valid", "invalid" or unstated.
-// An invalid one is never returned: it would be proposed as a fill and written onto a real contact.
 function bestEmail(value: unknown): string | undefined {
   if (!Array.isArray(value)) return undefined;
   let fallback: string | undefined;

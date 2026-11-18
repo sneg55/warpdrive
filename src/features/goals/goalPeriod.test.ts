@@ -37,8 +37,6 @@ describe("currentPeriod", () => {
     });
   });
 
-  // Adding a month to the 31st has no 31st to land on in February; clamping to the last day
-  // is the only answer that keeps periods contiguous with no gap or overlap.
   test("a monthly goal starting on the 31st ends the day before the clamped next start", () => {
     expect(currentPeriod("monthly", "2026-01-31", null, "2026-02-10")).toEqual({
       start: "2026-01-31",
@@ -78,7 +76,6 @@ describe("currentPeriod", () => {
 
 describe("elapsedFraction", () => {
   test("is a small share on the first day of a long period", () => {
-    // Day 1 of 31 counts as one day done, not zero, so pace is defined immediately.
     expect(elapsedFraction({ start: "2026-01-01", end: "2026-01-31" }, "2026-01-01")).toBeCloseTo(
       1 / 31,
       5,

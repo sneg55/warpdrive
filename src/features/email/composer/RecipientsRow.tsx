@@ -20,9 +20,6 @@ export function RecipientsRow({
   onBccChange,
 }: RecipientsRowProps): React.ReactNode {
   const [showCcBcc, setShowCcBcc] = useState(false);
-  // Addresses already entered force the rows to stay visible: collapsing them would hide
-  // recipients that Send still delivers to. The toggle is therefore only offered while both
-  // are empty, so it never becomes an inert control.
   const hasAddresses = cc.length > 0 || bcc.length > 0;
   const expanded = showCcBcc || hasAddresses;
 

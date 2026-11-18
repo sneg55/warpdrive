@@ -14,8 +14,6 @@ export interface BatchResult {
   total: number;
 }
 
-// Exact outcome split computed from row statuses (finalizeBatch conflates imported +
-// skipped_duplicate into importedRows, so it cannot report the split on its own).
 export async function getBatchResult(
   db: Db,
   actor: ImportActor,
@@ -55,8 +53,6 @@ export type BatchSummary = { warnedRows: number } & Pick<
   | "undoneAt"
 >;
 
-// The actor's own import runs, newest first (history page). Scoped to createdBy so one
-// user never sees another's imports.
 export async function listBatches(
   db: Db,
   actor: ImportActor,

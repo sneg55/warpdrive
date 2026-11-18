@@ -1,8 +1,3 @@
-// notifyWiring.test.ts: integration test proving notifyEmailEvent fires after
-// recordEvent records a tracking hit.
-//
-// RED: fails until recordEvent is wired to call notifyEmailEvent after the
-// transaction commits.
 import { sql } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import { notifications } from "@/db/schema";
@@ -55,7 +50,6 @@ async function seedMailboxAndMessage(db: Db): Promise<{
     )
   ).rows[0] as { id: string };
 
-  // Update attempt to link thread (for composite FK).
   await db.execute(
     sql`UPDATE email_send_attempts SET thread_id = ${thread.id} WHERE id = ${attempt.id}`,
   );
@@ -68,7 +62,6 @@ describe("recordEvent notification wiring: email_open", () => {
     await withTestDb(async (db) => {
       const { userId, messageId } = await seedMailboxAndMessage(db);
 
-      // Mint an open token for the send attempt, then backfill the message_id.
       const attemptRow = (
         await db.execute(sql`SELECT id FROM email_send_attempts WHERE account_id = (
           SELECT id FROM email_accounts WHERE user_id = ${userId}
@@ -94,7 +87,6 @@ describe("recordEvent notification wiring: email_open", () => {
       expect(openToken).not.toBeNull();
       if (openToken === null) return;
 
-      // recordEvent should, after this wiring, fire notifyEmailEvent.
       await recordEvent(db, openToken, "Mozilla/5.0", "open", new AbortController().signal);
 
       const rows = await db.select().from(notifications).where(sql`user_id = ${userId}::uuid`);

@@ -23,7 +23,6 @@ import { resolveOwnerUpdate } from "./resolveOwnerUpdate";
 import type { OrgCreateInput, OrgSortField, OrgUpdateInput } from "./schemas";
 import { deriveContactVisibility } from "./visibility";
 
-// Structured address from addressInputSchema: all subfields optional, address nullable.
 type AddressInput = {
   street?: string;
   city?: string;
@@ -34,9 +33,6 @@ type AddressInput = {
   lng?: number;
 };
 
-// Build VisiblePersonOrOrg for canSee checks (explicit, no spread). Exported so deleteOrg.ts
-// (a separate file, kept small per the file-size convention) can reuse the same
-// canSee/contact.delete gate as updateOrg without duplicating the record projection.
 export function toVisibleRecord(row: Organization): VisiblePersonOrOrg {
   return {
     kind: "organization",
@@ -47,19 +43,12 @@ export function toVisibleRecord(row: Organization): VisiblePersonOrOrg {
   };
 }
 
-// The Org Summary presents Street/City/Region/Country as independent, individually editable
-// inline fields, so a partial address (e.g. Street + City, no Country yet) is legitimate and
-// MUST NOT be rejected: a country-required gate here silently reverted such edits (CONTACTS-20).
-// The only remaining structural invariant is that geo coordinates come as a pair, since a lone
-// lat or lng is meaningless. Exported for a direct unit test of that relaxed rule.
 export function addressIsValid(a: AddressInput): boolean {
   const hasLat = a.lat != null;
   const hasLng = a.lng != null;
   return hasLat === hasLng;
 }
 
-// An omitted address leaves the stored one alone and an explicit null clears it; only a supplied
-// address is validated. Extracted from updateOrg to keep that function under the complexity cap.
 function rejectInvalidAddress(address: AddressInput | null | undefined): AppError | null {
   if (address === undefined || address === null) return null;
   if (addressIsValid(address)) return null;
@@ -130,7 +119,6 @@ export async function updateOrg(
     if (current === undefined || canSee(actor, toVisibleRecord(current)) === false) {
       return err(new AppError(ERROR_IDS.CONTACT_NOT_FOUND, "not found", { id: input.id }));
     }
-    // Edit capability gate (F2): visibility alone is not authority to mutate.
     if (!can(actor, "contact.edit", toVisibleRecord(current))) {
       return err(new AppError(ERROR_IDS.PERM_DENIED, "contact.edit required", { id: input.id }));
     }
@@ -153,7 +141,6 @@ export async function updateOrg(
       resolvedCustomFields = cfResult.value;
     }
 
-    // Owner transfer (CO-3): gated by deal.changeOwner/admin; ignored otherwise.
     const ownerResult = await resolveOwnerUpdate(tx, actor, input.ownerId, current.ownerId, signal);
     if (ownerResult.ok === false) return ownerResult;
 
@@ -171,7 +158,6 @@ export async function updateOrg(
         annualRevenue:
           input.annualRevenue === undefined ? current.annualRevenue : input.annualRevenue,
         linkedinUrl: input.linkedinUrl === undefined ? current.linkedinUrl : input.linkedinUrl,
-        // Add-labels (spec B5): omitted -> leave untouched.
         labels: input.labels ?? current.labels,
       })
       .where(and(eq(organizations.id, input.id), isNull(organizations.deletedAt)))
@@ -187,8 +173,6 @@ export async function updateOrg(
   });
 }
 
-// The full org record plus the resolved owner display name (detail page, Wave 4 Task 5). A
-// separate type (not an Organization field) because the name only exists via a join to users.
 export type OrgDetail = Organization & { ownerName: string | null };
 
 export async function getOrg(
@@ -199,8 +183,6 @@ export async function getOrg(
 ): Promise<Result<OrgDetail, AppError>> {
   signal.throwIfAborted();
 
-  // A non-uuid id (a malformed [orgId] path param) can never match a row; return the
-  // not-found err instead of letting Postgres reject the uuid cast and throw a 500.
   if (!isUuidParam(id)) {
     return err(new AppError(ERROR_IDS.CONTACT_NOT_FOUND, "not found", { id }));
   }
@@ -217,11 +199,9 @@ export async function getOrg(
   return ok(row);
 }
 
-// A listOrgs row: the organization record plus visibility-gated counts (Task 19).
 interface OrgListRow extends Organization {
   customFields: Record<string, unknown>;
   peopleCount: number;
-  // Pipedrive splits the org list's deal count into Closed (won+lost) and Open columns.
   closedDeals: number;
   openDeals: number;
 }
@@ -231,10 +211,6 @@ export interface ListOrgsResult {
   total: number;
 }
 
-// Global organizations list for the contacts nav. Mirrors listPeople: fetch
-// non-deleted rows ordered by name, filter to the visible set (canSee), and
-// paginate that set. total is the visible count so an actor never learns how
-// many hidden orgs exist.
 export async function listOrgs(
   db: Db,
   actor: ContactActor,
@@ -248,8 +224,6 @@ export async function listOrgs(
 ): Promise<ListOrgsResult> {
   signal.throwIfAborted();
 
-  // Server-side condition filter, AND-ed after the not-deleted guard and before the JS visibility
-  // filter (so hidden rows never leak). Null when no conditions were given.
   const filterSql =
     opts.filter !== undefined
       ? compileContactFilter(opts.filter, ORG_FILTER_CONFIG, ORG_COLUMN_SQL)
@@ -263,18 +237,12 @@ export async function listOrgs(
     .select()
     .from(organizations)
     .where(whereClause)
-    // id is the unique tiebreaker: name is non-unique, and load-more issues a separate
-    // offset query per page, so equal-name rows straddling a boundary can dup or skip
-    // without a stable secondary sort.
     .orderBy(await orgOrderBy(db, opts.sort, signal), organizations.id);
   signal.throwIfAborted();
 
   const visible = rows.filter((row) => canSee(actor, toVisibleRecord(row)));
   const page = visible.slice(opts.offset, opts.offset + opts.limit);
 
-  // Counts are computed only for the sliced page (not every visible org), and are
-  // visibility-gated per actor (see orgCounts): a naive COUNT(*) over all people/deals
-  // would leak the existence of records the actor can't otherwise see.
   const { peopleCounts, closedDealCounts, openDealCounts } = await orgCounts(
     db,
     actor,
@@ -293,6 +261,3 @@ export async function listOrgs(
     })),
   };
 }
-
-// listOrgOptions (lightweight {id,name} projection for pickers) lives in ./orgOptionsRepo, split
-// out to keep this file under the size budget (mirrors personOptionsRepo).

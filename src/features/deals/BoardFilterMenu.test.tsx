@@ -37,7 +37,6 @@ async function openMenu(
 ): Promise<ReturnType<typeof userEvent.setup>> {
   const user = userEvent.setup();
   renderMenu(props);
-  // The trigger names the applied filter ("Filter: Big deals"), so match on the prefix.
   await user.click(screen.getByRole("button", { name: /^Filter/ }));
   return user;
 }
@@ -120,8 +119,6 @@ describe("BoardFilterMenu current row", () => {
     );
   });
 
-  // An ad-hoc filter leaves selectedFilterId null too, so keying the highlight off the id alone
-  // claims "All open deals" while the board shows a filtered subset.
   it("does not mark All open deals current while an ad-hoc filter is applied", async () => {
     await openMenu({ savedFilters: [own], selectedFilterId: null, appliedDefinition: AD_HOC });
     expect(screen.getByRole("menuitem", { name: "All open deals" })).not.toHaveAttribute(
@@ -210,7 +207,6 @@ describe("BoardFilterMenu delete", () => {
     expect(within(dialog).getByText(/"Big deals"/)).toBeInTheDocument();
     expect(nativeConfirm).not.toHaveBeenCalled();
     expect(onDeleteFilter).not.toHaveBeenCalled();
-    // Asking to delete a row must not also apply it to the board.
     expect(onSelectFilter).not.toHaveBeenCalled();
   });
 
@@ -235,8 +231,6 @@ describe("BoardFilterMenu delete", () => {
     expect(onDeleteFilter).not.toHaveBeenCalled();
   });
 
-  // The row lives in a Radix menu: a delete that let the item select would close the menu and take
-  // the dialog with it, so cancelling has to land back on the still-open list.
   it("keeps the menu open behind the confirmation", async () => {
     const user = await openMenu({ savedFilters: [own], onDeleteFilter: vi.fn() });
 

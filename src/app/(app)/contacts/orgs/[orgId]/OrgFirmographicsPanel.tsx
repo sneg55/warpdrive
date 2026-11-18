@@ -18,7 +18,6 @@ interface PanelOrg {
 interface OrgFirmographicsPanelProps {
   org: PanelOrg;
   onSaved: () => void;
-  // Hidden built-in field keys (settings > Data fields). A hidden firmographic row is not rendered.
   hidden?: ReadonlySet<string>;
 }
 
@@ -32,9 +31,6 @@ type FirmographicPatch = Partial<{
   linkedinUrl: string | null;
 }>;
 
-// Click-to-edit-in-place Details/Firmographics rows for the org detail aside, autosaving
-// through updateOrgAction. Mirrors OrgSummaryEditPanel's inline-edit style; org has no CAS
-// precondition (last-write-wins), so no expectedUpdatedAt is threaded through here either.
 export function OrgFirmographicsPanel({
   org,
   onSaved,

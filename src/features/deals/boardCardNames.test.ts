@@ -20,8 +20,6 @@ function admin(userId: string) {
 }
 
 describe("board card names", () => {
-  // Pipedrive parity: pipeline cards lead with the org/person name and a real owner, not a
-  // raw id. getBoardColumns must resolve owner/person/org display names via JOINs.
   it("returns resolved owner, person, and org names on each card", async () => {
     await withTestDb(async (db) => {
       const signal = new AbortController().signal;

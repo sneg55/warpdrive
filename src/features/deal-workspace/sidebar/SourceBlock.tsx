@@ -30,9 +30,6 @@ interface SourceBlockProps {
   onExitBulk?: () => void;
 }
 
-// Source section: Channel (enum) + Channel ID (free text). Per-field inline editing normally; the
-// section pencil opens both at once behind a single Save, committing one updateDealAction with
-// just the changed fields under the deal CAS precondition.
 export function SourceBlock({
   dealId,
   updatedAt,

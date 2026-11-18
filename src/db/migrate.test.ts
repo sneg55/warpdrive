@@ -19,7 +19,6 @@ afterAll(async () => {
 
 test("applyMigrations brings an empty db to a usable schema", async () => {
   const db = drizzle(pool);
-  // pgcrypto/citext come from the first migration itself, not pre-seeded here.
   const result = await applyMigrations(db);
   expect(result.ok).toBe(true);
   const tables = await db.execute(
@@ -29,8 +28,6 @@ test("applyMigrations brings an empty db to a usable schema", async () => {
 });
 
 test("applyMigrations honors an explicit migrations folder", async () => {
-  // The bundled entrypoint passes the folder explicitly (import.meta.url is unreliable once
-  // esbuild moves the code), so a bogus folder must actually be used and surface as an error.
   const db = drizzle(pool);
   const result = await applyMigrations(db, undefined, "/nonexistent/drizzle/folder");
   expect(result.ok).toBe(false);

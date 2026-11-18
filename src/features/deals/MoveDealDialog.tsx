@@ -13,9 +13,6 @@ interface MoveDealDialogProps {
   onClose: () => void;
 }
 
-// Opened when a deal is dropped on the "Move" drag zone. Lists the current pipeline's stages so the
-// user can move the deal to any stage (not just the drop-under column). Cross-pipeline move is not
-// supported by moveDeal (it validates stage-in-pipeline), so this is a same-pipeline stage picker.
 export function MoveDealDialog(props: MoveDealDialogProps): React.ReactNode {
   const { stages, onPick, onClose } = props;
 

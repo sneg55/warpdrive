@@ -69,16 +69,9 @@ async function checkDeal(
     .from(pipelines)
     .where(eq(pipelines.id, row.pipelineId));
   signal.throwIfAborted();
-  // Defense-in-depth: a deal whose pipeline row is missing must NOT fall through to
-  // null (which would skip the pipeline-restriction hard gate in canSee, fail-open).
-  // Practically unreachable today (deals.pipelineId is NOT NULL with an FK), but this
-  // is the security spine, so fail closed explicitly.
   if (pipe === undefined) {
     return err(new AppError(ERROR_IDS.DEAL_NOT_FOUND, "not found", { ref }));
   }
-  // An archived pipeline hides all its deals from list/search/workspace paths (F7/F9).
-  // This reference gate feeds collaboration reads/writes, activity creation, and linking,
-  // so it must hide archived-pipeline deals identically (F15): fail closed as not-found.
   if (pipe.isArchived) {
     return err(new AppError(ERROR_IDS.DEAL_NOT_FOUND, "not found", { ref }));
   }
@@ -102,8 +95,6 @@ async function checkLead(
   ref: EntityRef,
   signal: AbortSignal,
 ): Promise<Result<void, AppError>> {
-  // Leads reuse the deal visibility predicate (owner / all / group / allowlist), gated in SQL.
-  // A lead the actor cannot see is reported as not-found (404-on-invisible), never 403.
   const [row] = await tx
     .select({ id: leads.id })
     .from(leads)

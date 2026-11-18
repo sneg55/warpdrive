@@ -58,9 +58,6 @@ describe("setThreadVisibility", () => {
     });
   });
 
-  // A non-owner who CANNOT see the thread (private, not theirs) must get the same not-found
-  // response as a missing id: returning E_PERM_001 here would confirm the thread exists to a
-  // non-owner (existence oracle), breaking the 404-on-invisible mailbox privacy pattern.
   it("a non-owner who cannot see a private thread gets not-found, unchanged", async () => {
     await withTestDb(async (db) => {
       const owner = await seedUser(db, { email: "o@gunsnation.com" });
@@ -79,8 +76,6 @@ describe("setThreadVisibility", () => {
     });
   });
 
-  // A non-owner who CAN see the thread (shared, linked to a visible-to-all person) legitimately
-  // knows it exists, so the owner-only mutation returns the distinct permission error, not 404.
   it("a non-owner who can see a shared thread gets E_PERM_001, unchanged", async () => {
     await withTestDb(async (db) => {
       const owner = await seedUser(db, { email: "o@gunsnation.com" });

@@ -18,8 +18,6 @@ import { ReaderMessageCard } from "./ReaderMessageCard";
 import type { ReplyMode } from "./replyPrefill";
 import { decodeEmailSnippet } from "./snippetText";
 
-// Which record's timeline this card sits on. Unlink clears exactly that link and leaves the
-// other one alone, so detaching a thread from a deal keeps it on the person it belongs to.
 export type EmailCardScope =
   | { kind: "deal"; dealId: string; personId?: string }
   | { kind: "person"; personId: string };
@@ -33,13 +31,9 @@ function composerContextOf(scope: EmailCardScope): ComposerContext {
 interface EmailTimelineCardProps {
   message: EmailTimelineMessage;
   scope: EmailCardScope;
-  // Refetch the record's message list after the thread is detached.
   onUnlinked: () => void;
 }
 
-// One linked email as a deal or person timeline row (Pipedrive parity): collapsed to subject,
-// meta line and snippet, expanding in place to the full body. Bodies never ship with the list,
-// so expanding is what fetches this message and nothing else.
 export function EmailTimelineCard({
   message,
   scope,
@@ -62,8 +56,6 @@ export function EmailTimelineCard({
         ? { threadId: message.threadId, dealId: null }
         : { threadId: message.threadId, personId: null };
     const res = await linkThread(readCsrfToken(), patch);
-    // Never silently no-op: a denied unlink must say so rather than leaving the card in place
-    // with no explanation.
     if (!res.ok) {
       reportError(res.error.id);
       return;
@@ -71,7 +63,6 @@ export function EmailTimelineCard({
     onUnlinked();
   }
 
-  // The mode is what the composer opens in, so Forward never lands on a Reply prefill.
   function startCompose(mode: ReplyMode): void {
     setExpanded(true);
     setComposeMode(mode);
@@ -87,8 +78,6 @@ export function EmailTimelineCard({
             {message.subject ?? "(no subject)"}
           </h3>
           <p className="mt-0.5 truncate text-xs text-muted-foreground">
-            {/* No Gmail Date header: mergeEmailItems orders such a message by createdAt, so date
-                it by createdAt too rather than leaving the slot blank. */}
             <span className="tabular-nums">
               {formatTimelineEmailDate(message.sentAt ?? message.createdAt)}
             </span>
@@ -150,7 +139,6 @@ export function EmailTimelineCard({
           {body.isLoading && (
             <p className="text-xs text-muted-foreground">{STRINGS.inbox.loadingEmail}</p>
           )}
-          {/* An error must not read as an empty body: say it failed and offer the retry. */}
           {body.isError && (
             <div className="flex items-center gap-2">
               <p role="alert" className="text-xs text-destructive">
@@ -174,8 +162,6 @@ export function EmailTimelineCard({
               />
               {composeMode !== null && message.canCompose && (
                 <div className="mt-3">
-                  {/* Keyed on the mode so picking a second mode re-seeds the composer instead of
-                      leaving it on the one it opened with. */}
                   <ReaderActions
                     key={composeMode}
                     initialMode={composeMode}
@@ -186,8 +172,6 @@ export function EmailTimelineCard({
                     threadId={message.threadId}
                     onSent={() => {
                       setComposeMode(null);
-                      // A reply can land under a deal and a person at once, so refresh both rather
-                      // than only the record this card happens to sit on.
                       invalidateRecordTimelines(utils);
                     }}
                   />

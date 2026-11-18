@@ -29,13 +29,7 @@ export default async function AppLayout({ children }: { children: ReactNode }): 
   if (ctx.actor === null) redirect("/login");
   const jar = await cookies();
   const hasCsrf = jar.get(CSRF_COOKIE) !== undefined;
-  // Read the persisted rail state server-side so the nav renders at its correct width on the first
-  // paint (no reload flash). Absent cookie collapses by default; the client reconciles after mount.
   const navExpanded = jar.get(NAV_PREF_COOKIE)?.value === "1";
-  // The avatar name + photo now ride along on the hydrated actor (createContext already read the
-  // user row), so the shell no longer re-reads that row per authenticated page. Only the per-user
-  // interface preferences remain; default comfortable when no row exists (DealCard/Board read the
-  // density via the data-density attribute).
   const prefs = await getPreferencesForActor(db, ctx.actor.id);
   return (
     <ActionErrorProvider>
@@ -47,8 +41,6 @@ export default async function AppLayout({ children }: { children: ReactNode }): 
           role: ctx.actor.type,
         }}
       />
-      {/* Reconciles this device's theme cookie with the account's stored choice, inline and ahead
-          of the shell, so a cold browser never paints a frame of the wrong theme. */}
       <script
         // biome-ignore lint/security/noDangerouslySetInnerHtml: three known literals; must be inline to beat first paint
         dangerouslySetInnerHTML={{

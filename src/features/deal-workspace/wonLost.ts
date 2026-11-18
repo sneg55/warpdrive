@@ -1,6 +1,3 @@
-// markWon / markLost: dedicated won/lost workspace actions.
-// Reuses loadEditableDeal (the single shared deal-auth authority) and mirrors the
-// publishBoardEvent pattern from updateDeal so the board reflects transitions.
 import { and, eq, isNull, ne } from "drizzle-orm";
 import type { z } from "zod";
 import { BOARD_EVENT, dealChannel, dealMovedChannel } from "@/constants/boardChannels";
@@ -72,9 +69,6 @@ export async function markWon(
   });
 }
 
-// Reopen a won/lost deal back to open (recovery from a mis-click, since Won/Convert commit on a
-// single click). Clears the won/lost timestamps and reason, mirroring updateDeal's open transition.
-// Reuses loadEditableDeal so the same edit-permission gate applies as Won/Lost.
 export async function reopenDeal(
   db: Db,
   actor: PermSetUser,
@@ -127,9 +121,6 @@ export async function reopenDeal(
       signal,
     );
 
-    // ALSO publish on the pipeline channel: the board subscribes only to pipeline:<id>
-    // (useBoardRealtime), and a reopened deal becomes open again, so without this it would not
-    // reappear on an open board until a manual refresh. Mirrors deleteDeal's dual publish.
     await publishBoardEvent(
       tx,
       {
@@ -160,8 +151,6 @@ export async function markLost(
 
     const oldStatus = editable.value.deal.status;
 
-    // Validate the predefined reason only when one was chosen. A missing reason is allowed
-    // (Pipedrive parity: a deal can be marked lost with a free-text reason, or none at all).
     let reasonName: string | null = null;
     if (input.lostReasonId !== null) {
       const [reason] = await tx
@@ -202,8 +191,6 @@ export async function markLost(
         entityId: dealId,
         field: CHANGE_FIELD_STATUS,
         oldValue: oldStatus,
-        // The reason NAME, not its id: the history row is read straight out of the log and
-        // nothing downstream resolves ids.
         newValue: lostStatusValue(reasonName, input.lostReason),
         actorId: actor.id,
       },

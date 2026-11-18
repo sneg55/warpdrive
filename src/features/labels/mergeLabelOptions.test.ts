@@ -11,8 +11,6 @@ describe("mergeLabelOptions", () => {
   });
 
   it("treats a differently-cased applied name as the catalog label it resolves to", () => {
-    // resolveLabelChips matches the catalog case-insensitively, so "hot" IS "Hot": offering both
-    // would put two checkboxes on screen that filter the same records.
     expect(mergeLabelOptions(["Hot"], ["hot"])).toEqual(["Hot"]);
   });
 

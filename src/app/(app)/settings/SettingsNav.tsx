@@ -26,7 +26,6 @@ import { STRINGS } from "@/constants/strings";
 interface NavItem {
   href: string;
   label: string;
-  // Leading glyph, matching Pipedrive's settings menu (each row is icon + label).
   icon: LucideIcon;
 }
 interface NavSection {
@@ -45,7 +44,6 @@ const MY_ACCOUNT: NavSection = {
   ],
 };
 
-// Company items need the MANAGE flag (or admin); hidden, not disabled, for everyone else.
 const COMPANY: NavSection = {
   title: STRINGS.settings.companyOverview,
   items: [
@@ -63,16 +61,12 @@ const COMPANY: NavSection = {
   ],
 };
 
-// The enrichment page, its config query and its settings actions all require a real admin, so the
-// MANAGE flag alone must not surface this link.
 const ENRICHMENT_ITEM: NavItem = {
   href: "/settings/enrichment",
   label: ENRICHMENT_STRINGS.nav,
   icon: Sparkles,
 };
 
-// Grouped left secondary menu (Pipedrive settings IA): My account for everyone, Company overview
-// for managers and admins. Replaces the old flat tab bar.
 export function SettingsNav({
   isAdmin,
   canManageCompany,
@@ -105,7 +99,6 @@ export function SettingsNav({
     <nav aria-label="Settings sections" className="w-56 shrink-0 space-y-4">
       {sections.map((section) => (
         <div key={section.title}>
-          {/* PD section header: 13px uppercase, muted, no extra letter-spacing. */}
           <p className="mb-1 px-2 text-[13px] font-semibold uppercase text-muted-foreground">
             {section.title}
           </p>

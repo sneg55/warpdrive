@@ -11,8 +11,6 @@ describe("mailboxSyncHealth", () => {
   });
 
   test("a mailbox that has not synced for the stall window is stalled, whatever the column says", () => {
-    // The bug this exists for: prod read status=connected while last_sync_at was 8 hours old and
-    // 4,862 sync jobs had failed in a row.
     const health = mailboxSyncHealth({ status: "connected", lastSyncAtIso: ago(8 * 60 * 60) }, NOW);
     expect(health).toBe("stalled");
   });

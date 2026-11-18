@@ -12,8 +12,6 @@ import { createContext } from "@/server/trpc/context";
 
 type ActionResult = { ok: true; value: { id: string } } | { ok: false; error: { id: string } };
 
-// Every goal mutation runs the same gate: a valid CSRF token, a live session, and
-// goals.manage. Setting someone's quota is an administrative act, not a personal preference.
 async function guard(csrfToken: string | null) {
   const csrfOk = await guardCsrf(csrfToken);
   if (!csrfOk.ok) return { ok: false as const, error: { id: "E_AUTH_CSRF" } };
@@ -42,8 +40,6 @@ export async function createGoalAction(
   return { ok: true, value: { id: goal.id } };
 }
 
-// The id is as much untrusted input as the body: a server action is a public endpoint, and an
-// unparsed string reaches Postgres as a uuid cast and throws instead of returning a Result.
 const goalId = z.string().uuid();
 
 export async function updateGoalAction(

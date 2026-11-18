@@ -16,9 +16,6 @@ function regularActor(id: string): ContactActor {
   };
 }
 
-// CONTACTS-20: the Org Summary edits Street/City/Region/Country as independent inline fields,
-// so a partial address (no Country) is legitimate and must validate. Pure unit coverage of the
-// relaxed rule; the only remaining invariant is coordinate pairing.
 describe("addressIsValid", () => {
   it("accepts a partial address with no country (street/city only)", () => {
     expect(addressIsValid({ street: "500 Main St", city: "SF" })).toBe(true);
@@ -186,8 +183,6 @@ it("updateOrg persists firmographic fields", async () => {
       type: "regular",
       isActive: true,
       groupIds: new Set(),
-      // contact.edit is capability-gated separately from visibility (F2): the owner needs
-      // contact.edit_own to mutate their own record, matching contactEditAuthz.test.ts.
       flags: new Set(["contact.edit_own"]),
       primaryVisibilityGroupId: null,
     };

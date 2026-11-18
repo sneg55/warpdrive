@@ -17,7 +17,6 @@ it("creates a person, derives owner+primary_email, and rejects bad custom fields
       primaryVisibilityGroupId: null,
     };
 
-    // Create a required custom-field def for persons.
     const defResult = await createDef(
       db,
       { targetEntity: "person", type: "text", name: "Seniority", isRequired: true },
@@ -25,7 +24,6 @@ it("creates a person, derives owner+primary_email, and rejects bad custom fields
     );
     if (defResult.ok === false) throw new Error(`createDef failed: ${defResult.error.message}`);
 
-    // Missing required custom field -> E_CF_003.
     const bad = await createPerson(
       db,
       meActor,
@@ -41,7 +39,6 @@ it("creates a person, derives owner+primary_email, and rejects bad custom fields
     expect(bad.ok).toBe(false);
     if (bad.ok === false) expect(bad.error.id).toBe("E_CF_003");
 
-    // Valid custom fields -> ok.
     const good = await createPerson(
       db,
       meActor,
@@ -136,7 +133,6 @@ it("returns a 404-shape from getPerson for a person the actor cannot see", async
       primaryVisibilityGroupId: null,
     };
 
-    // Create a person owned by other (settings empty -> level = "owner").
     const hidden = await createPerson(
       db,
       otherActor,
@@ -151,7 +147,6 @@ it("returns a 404-shape from getPerson for a person the actor cannot see", async
     );
     if (hidden.ok === false) throw new Error(`setup failed: ${hidden.error.message}`);
 
-    // meActor cannot see otherActor's owner-level person.
     const got = await getPerson(db, meActor, hidden.value.id, signal);
     expect(got.ok).toBe(false);
     if (got.ok === false) expect(got.error.id).toBe("E_CONTACT_001");

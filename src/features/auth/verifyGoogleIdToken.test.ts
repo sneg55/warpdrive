@@ -1,14 +1,3 @@
-/**
- * Security test: verifyGoogleIdToken must reject tokens signed with the wrong key.
- * This proves real signature verification is in place, not just claim inspection.
- *
- * verifyGoogleIdToken is the SAME function /auth/callback runs in production, so this
- * test covers the real verification path (route passes a remote JWKS, test a local one).
- *
- * Strategy: generate a real RSA key pair, sign a well-formed JWT with the WRONG private key,
- * expose the WRONG public key via a fake local JWKS (injected), and assert rejection.
- */
-
 import { createLocalJWKSet, exportJWK, generateKeyPair, type JWK, SignJWT } from "jose";
 import { describe, expect, test } from "vitest";
 import { verifyGoogleIdToken } from "./verifyGoogleIdToken";
@@ -68,7 +57,6 @@ describe("verifyGoogleIdToken", () => {
     const { privateKey: signingKey } = await generateKeyPair("RS256");
     const { publicKey: differentPublicKey } = await generateKeyPair("RS256");
 
-    // Sign with signingKey but expose differentPublicKey in the fake JWKS.
     const token = await makeSignedToken(signingKey, { aud: "test-client-id" });
 
     const result = await verifyGoogleIdToken(token, {
@@ -79,7 +67,6 @@ describe("verifyGoogleIdToken", () => {
       signal: AbortSignal.timeout(5000),
     });
 
-    // Must be rejected - wrong signature key.
     expect(result.ok).toBe(false);
     if (result.ok === false) {
       expect(result.error).toBe("rejected");

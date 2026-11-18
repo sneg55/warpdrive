@@ -1,5 +1,3 @@
-// leadUpdate.test.ts: CAS precondition, permissions, and field updates for updateLead
-// (the LeadSummaryEditPanel's Value/Owner/Expected-close inline-edit save path).
 import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import { permissionSets } from "@/db/schema";
@@ -205,7 +203,7 @@ describe("updateLead: field updates", () => {
 
       const r = await updateLead(
         db,
-        session(a.id), // only deal.create, not deal.changeOwner
+        session(a.id),
         { leadId: lead.id, expectedUpdatedAt: lead.updatedAt.toISOString(), ownerId: b.id },
         sig(),
       );

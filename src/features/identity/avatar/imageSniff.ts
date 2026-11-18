@@ -1,13 +1,7 @@
 import type { AvatarContentType } from "./avatarStorage";
 
-// Detect an image type from the leading magic bytes of the actual object content. This is the
-// real gate on "is this an image": the presigned-POST policy pins the object's declared
-// Content-Type to whatever the client requested, so a confirm-time HEAD echoes that declared
-// type back and cannot catch a client that declared image/png but POSTed other bytes. Sniffing
-// the bytes closes that gap. Returns null when the content is not a supported image.
 export function sniffImageType(bytes: Uint8Array): AvatarContentType | null {
   const b = bytes;
-  // PNG: 89 50 4E 47 0D 0A 1A 0A
   if (
     b.length >= 8 &&
     b[0] === 0x89 &&
@@ -21,11 +15,9 @@ export function sniffImageType(bytes: Uint8Array): AvatarContentType | null {
   ) {
     return "image/png";
   }
-  // JPEG: FF D8 FF
   if (b.length >= 3 && b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff) {
     return "image/jpeg";
   }
-  // GIF: "GIF87a" or "GIF89a"
   if (
     b.length >= 6 &&
     matchesAscii(b, 0, "GIF8") &&
@@ -34,7 +26,6 @@ export function sniffImageType(bytes: Uint8Array): AvatarContentType | null {
   ) {
     return "image/gif";
   }
-  // WebP: "RIFF" .... "WEBP" (bytes 8-11), distinguishing it from other RIFF containers (WAVE/AVI).
   if (b.length >= 12 && matchesAscii(b, 0, "RIFF") && matchesAscii(b, 8, "WEBP")) {
     return "image/webp";
   }

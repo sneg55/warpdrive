@@ -16,9 +16,9 @@ function rgbPrefix(rgba: string): string {
 }
 
 const stages = [
-  { id: "s0", name: "Qualified" }, // order 0 -> slate
-  { id: "s1", name: "Contact" }, // order 1 -> blue
-  { id: "s2", name: "Demo" }, // order 2 -> indigo
+  { id: "s0", name: "Qualified" },
+  { id: "s1", name: "Contact" },
+  { id: "s2", name: "Demo" },
 ];
 
 describe("StageChevron (Add deal stage picker)", () => {

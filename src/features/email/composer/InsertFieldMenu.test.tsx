@@ -9,7 +9,6 @@ beforeAll(() => {
   Element.prototype.scrollIntoView = vi.fn();
   Element.prototype.hasPointerCapture = vi.fn(() => false);
   Element.prototype.releasePointerCapture = vi.fn();
-  // cmdk observes its list size; jsdom has no ResizeObserver.
   global.ResizeObserver = class {
     observe = vi.fn();
     unobserve = vi.fn();
@@ -71,7 +70,6 @@ it("filters the field list by the search box (PD parity)", async () => {
   render(<InsertFieldMenu items={items} onInsert={vi.fn()} />);
   await user.click(screen.getByRole("button", { name: /insert field/i }));
   await user.type(screen.getByPlaceholderText(/search/i), "deal");
-  // Only the matching field survives the type-ahead.
   expect(screen.getByRole("option", { name: "Deal title" })).toBeInTheDocument();
   expect(screen.queryByRole("option", { name: "First name" })).toBeNull();
 });

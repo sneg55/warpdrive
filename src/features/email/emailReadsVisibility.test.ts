@@ -1,7 +1,3 @@
-// Mailbox-visibility rules for the email reads, split out of router.test.ts (300-line cap). These
-// pin THE privacy contract: a private thread is owner-only (no admin bypass, rule 675), a shared
-// thread is readable by anyone who can see its linked deal/person, and the Inbox FOLDER is personal
-// (owner-only) so a colleague's shared thread reaches them on the record, never in their Inbox.
 import { sql } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import { withTestDb } from "@/db/testing";
@@ -50,7 +46,6 @@ describe("email reads visibility", () => {
       const owner = await seedUser(db, { email: "o@gunsnation.com" });
       const other = await seedUser(db, { email: "x@gunsnation.com" });
       const acctId = await seedAccount(db, owner.id);
-      // A person visible to all, so the non-owner can see the thread via the shared path.
       const person = (
         await db.execute(sql`
           INSERT INTO persons (name, primary_email, owner_id, visibility_level)
@@ -64,13 +59,10 @@ describe("email reads visibility", () => {
         `)
       ).rows[0] as { id: string };
 
-      // The Inbox folder is personal: the non-owner's Inbox does NOT surface the owner's shared
-      // thread. It reaches them on the linked contact record (listMessagesForContact) instead.
       const otherView = (await listInbox(db, { actor: actorOf(other.id), filter: "all" }, SIG()))
         .threads;
       expect(otherView.length).toBe(0);
 
-      // But canSeeEmail still grants read access: opening the thread (as from the record) succeeds.
       const got = await getThread(
         db,
         { actor: actorOf(other.id), threadId: thr.id, allowRemote: false },
@@ -85,7 +77,6 @@ describe("email reads visibility", () => {
       const owner = await seedUser(db, { email: "o@gunsnation.com" });
       const other = await seedUser(db, { email: "x@gunsnation.com" });
       const acctId = await seedAccount(db, owner.id);
-      // shared but unlinked: nothing for the non-owner to see through.
       await db.execute(sql`
         INSERT INTO email_threads (gmail_thread_id, account_id, visibility, last_message_at)
         VALUES ('t1', ${acctId}, 'shared', now())
@@ -116,7 +107,6 @@ describe("email reads visibility", () => {
         groupIds: new Set(),
       };
 
-      // getThread: a private thread the admin does not own is 404-on-invisible.
       const got = await getThread(
         db,
         { actor: adminActor, threadId: thr.id, allowRemote: false },
@@ -125,7 +115,6 @@ describe("email reads visibility", () => {
       expect(got.ok).toBe(false);
       if (!got.ok) expect(got.error.id).toBe("E_GMAIL_011");
 
-      // listInbox: the private non-owned thread never appears for the admin.
       const adminView = (await listInbox(db, { actor: adminActor, filter: "all" }, SIG())).threads;
       expect(adminView).toEqual([]);
     });

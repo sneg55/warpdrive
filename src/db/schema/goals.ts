@@ -23,13 +23,10 @@ export const goals = pgTable(
     action: goalAction("action").notNull(),
     metric: goalMetric("metric").notNull(),
     assigneeKind: goalAssigneeKind("assignee_kind").notNull(),
-    // Null when assigneeKind is 'company'. No FK: it points at users or teams depending on
-    // the kind, and a discriminated reference cannot be expressed as one constraint.
     assigneeId: uuid("assignee_id"),
     pipelineId: uuid("pipeline_id").references(() => pipelines.id),
     activityTypeId: uuid("activity_type_id").references(() => activityTypes.id),
     interval: goalInterval("interval").notNull(),
-    // Count goals store a whole number here; value goals store money.
     target: numeric("target", { precision: 14, scale: 2 }).notNull(),
     startsOn: date("starts_on").notNull(),
     endsOn: date("ends_on"),

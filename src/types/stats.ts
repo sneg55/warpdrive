@@ -3,8 +3,6 @@ export interface MoneyBucket {
   value: string;
 }
 
-// added/won/lost each window on their own date column (created_at, won_time, lost_time).
-// open is an unwindowed snapshot: an open deal has no close date to window on.
 export interface DealCounters {
   added: MoneyBucket;
   won: MoneyBucket;
@@ -12,8 +10,6 @@ export interface DealCounters {
   open: MoneyBucket;
 }
 
-// Every field is null over an empty set: no deals won is a different fact from an average
-// of zero, and the UI renders them differently.
 export interface WonDealStats {
   avgValue: string | null;
   medianValue: string | null;
@@ -29,8 +25,6 @@ export interface FunnelStage {
   conversion: number;
 }
 
-// completed windows on done_at, added on created_at, scheduled on due_at. undated counts
-// open activities with no due date, which no window can contain and which must not vanish.
 export interface ActivityCounters {
   completed: number;
   added: number;
@@ -38,7 +32,6 @@ export interface ActivityCounters {
   undated: number;
 }
 
-// A type with no completions in the range still appears, with completed = 0.
 export interface ActivityTypeCount {
   typeId: string;
   key: string;
@@ -46,7 +39,6 @@ export interface ActivityTypeCount {
   completed: number;
 }
 
-// name is null only when the deal was lost with no reason at all; the UI supplies the label.
 export interface LostReasonCount {
   reasonId: string | null;
   name: string | null;
@@ -54,8 +46,6 @@ export interface LostReasonCount {
   value: string;
 }
 
-// reached counts deals that ever got to this stage (from change-log history), not deals
-// currently sitting in it. conversion is measured against the first stage.
 export interface StageConversionRow {
   stageId: string;
   name: string;
@@ -65,8 +55,6 @@ export interface StageConversionRow {
   medianDaysInStage: number | null;
 }
 
-// One month of won deals. month is YYYY-MM. Every month in the requested range gets a point,
-// so a month with no wins carries a zero rather than leaving a gap in the line.
 export interface WonTrendPoint {
   month: string;
   count: number;
@@ -76,8 +64,6 @@ export interface WonTrendPoint {
 export interface StageSum {
   stageId: string;
   name: string;
-  // Position in the pipeline. Carried so the "All pipelines" view can merge stages across
-  // pipelines, which share no stage ids and can only line up by position.
   order: number;
   dealCount: number;
   total: string;

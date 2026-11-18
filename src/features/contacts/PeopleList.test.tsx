@@ -6,7 +6,6 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("next/navigation", () => ({ usePathname: () => "/contacts/people" }));
 
-// listPeople.query returns raw Person-shaped rows; the client maps them into PeopleListRow.
 const listPeopleQuery = vi.fn();
 const savedViews = vi.fn<() => unknown[]>(() => []);
 vi.mock("@/lib/trpc-client", () => ({
@@ -16,7 +15,6 @@ vi.mock("@/lib/trpc-client", () => ({
       savedFilters: { listByTarget: { invalidate: vi.fn() } },
     }),
     identity: { assignableUsers: { useQuery: () => ({ data: [] }) } },
-    // The filter builder's Label condition reads the label catalog.
     labels: {
       listByTarget: { useQuery: () => ({ data: [] }) },
       appliedNames: { useQuery: () => ({ data: [] }) },
@@ -113,7 +111,6 @@ describe("PeopleList", () => {
     render(<PeopleList rows={rows} total={3} orgNames={{ o2: "Globex" }} />);
     const loadMore = screen.getByRole("button", { name: /load more/i });
     fireEvent.click(loadMore);
-    // Fetches starting at the current loaded count.
     await vi.waitFor(() =>
       expect(listPeopleQuery).toHaveBeenCalledWith(
         expect.objectContaining({ offset: 2, limit: 50 }),
@@ -125,7 +122,6 @@ describe("PeopleList", () => {
       "href",
       "/contacts/orgs/o2",
     );
-    // All three now loaded, so the affordance is gone.
     expect(screen.queryByRole("button", { name: /load more/i })).not.toBeInTheDocument();
   });
 
@@ -136,7 +132,6 @@ describe("PeopleList", () => {
 
     const alert = await screen.findByRole("alert");
     expect(alert).toHaveTextContent(/couldn't load more|could not load more|failed/i);
-    // The button returns so the user can retry (not stuck in "Loading...").
     expect(screen.getByRole("button", { name: /load more/i })).toBeEnabled();
   });
 
@@ -216,7 +211,6 @@ describe("PeopleList", () => {
           : { ok: false, error: { id: "E_PERM_001" } },
       ),
     );
-    // p1's delete succeeded so it's gone from the reloaded list; p2's failed so it's still there.
     listPeopleQuery.mockResolvedValue({
       total: 1,
       rows: [{ id: "p2", name: "John Doe", primaryEmail: null, phones: [], orgId: null }],
@@ -282,7 +276,6 @@ describe("PeopleList", () => {
     fireEvent.click(screen.getByRole("checkbox", { name: "Select Jane Roe" }));
     fireEvent.click(screen.getByRole("checkbox", { name: "Select John Doe" }));
     fireEvent.click(screen.getByRole("button", { name: "Merge duplicates" }));
-    // Confirm in the opened dialog (survivor defaults to the first selected, p1).
     fireEvent.click(screen.getByRole("button", { name: "Merge" }));
 
     await vi.waitFor(() =>

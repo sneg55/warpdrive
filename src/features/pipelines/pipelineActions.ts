@@ -51,9 +51,6 @@ export async function createPipeline(
   return ok(row);
 }
 
-// Creates a pipeline together with the default stage set, in one transaction. UI-created
-// pipelines always get stages because a pipeline with zero stages renders an unusable board;
-// bare createPipeline (no stages) is kept for callers that add stages themselves.
 export async function createPipelineWithStages(
   db: Db,
   session: ManageSession,
@@ -154,10 +151,6 @@ export async function reorderStages(
   const input = stageReorderInput.parse(raw);
   signal.throwIfAborted();
 
-  // Pre-flight ownership check: every id must belong to the named pipeline.
-  // Prevents a pipeline.manage holder from renumbering another pipeline's
-  // stages by passing foreign stage ids. Dedupe so a repeated id cannot
-  // inflate the count and pass the guard.
   const uniqueIds = [...new Set(input.orderedStageIds)];
   const owned = await db
     .select({ id: stages.id })
@@ -176,7 +169,6 @@ export async function reorderStages(
     for (let i = 0; i < input.orderedStageIds.length; i++) {
       const stageId = input.orderedStageIds[i];
       if (stageId === undefined) continue;
-      // Defense-in-depth: also scope each UPDATE to the pipeline.
       await tx
         .update(stages)
         .set({ order: i, updatedAt: new Date() })

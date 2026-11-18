@@ -17,8 +17,6 @@ import type { PermSetUser } from "@/features/permissions/effective";
 import type { EntityCreateSession } from "@/features/permissions/entityCreate";
 import { err, ok, type Result } from "@/types/result";
 
-// An import actor must satisfy BOTH createPerson's ContactActor (owner +
-// visibility derivation) AND can()'s PermSetUser (permission-flag checks).
 export type ImportActor = ContactActor & PermSetUser;
 
 export type RowError = { field: string; message: string };
@@ -28,9 +26,6 @@ export type Commit = {
   warnings: RowError[];
 };
 
-// Records a row created ALONGSIDE its primary entity. Each stays null when the row linked to a
-// pre-existing record instead of creating one, which is exactly the distinction undo needs: it
-// removes what the import created and leaves what the import merely linked to.
 export interface SideEffects {
   createdOrgId: string | null;
   createdPersonId: string | null;
@@ -45,22 +40,14 @@ export const noSideEffects: SideEffects = {
 
 export type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0];
 
-// Map a Zod failure to row-level errors so commitRow can finalize "invalid"
-// deterministically (a malformed mapped row must never throw an opaque DB error
-// that rolls back the claim and loops the row forever). Exported so the deal/lead/
-// activity commit authorities (commitDeal.ts etc.) share the same mapping.
 export function issuesOf(error: ZodError): RowError[] {
   return error.issues.map((i) => ({ field: i.path.join("."), message: i.message }));
 }
 
-// Map a failed authority Result to a single row error carrying its stable id.
 export function authorityError(error: AppError): RowError[] {
   return [{ field: "_", message: error.id }];
 }
 
-// Build the deal/lead creation trust-boundary session from an import actor. Mirrors
-// createDealAction's flags conversion (Set -> Record) but reuses ImportActor's own
-// primaryVisibilityGroupId directly instead of a redundant DB lookup.
 export function toEntityCreateSession(actor: ImportActor): EntityCreateSession {
   const flags: Record<string, boolean> = {};
   for (const f of actor.flags) flags[f] = true;
@@ -76,10 +63,6 @@ export function toEntityCreateSession(actor: ImportActor): EntityCreateSession {
   };
 }
 
-// CREATE path: parse mapped through the SAME boundary schema the API uses, then
-// reuse the audited authority so imported records get identical treatment to
-// API-created ones (owner = actor, visibility from settings, custom fields
-// validated). err arm -> commitRow finalizes "invalid" cleanly.
 export async function applyCreate(
   tx: Tx,
   actor: ImportActor,
@@ -87,10 +70,6 @@ export async function applyCreate(
   mapped: Record<string, unknown>,
   signal: AbortSignal,
 ): Promise<Result<string, RowError[]>> {
-  // createPerson/createOrg have no internal create-capability gate (unlike createDeal/
-  // createLead), and commitRow bypasses createPersonAction/createOrgAction where the
-  // contact.create check normally lives. Enforce it here so a data.import user without
-  // contact.create cannot create contacts via import. Mirrors applyCreateActivity.
   if (can(actor, "contact.create") === false) {
     return err(authorityError(new AppError(ERROR_IDS.PERM_DENIED, "contact.create required", {})));
   }
@@ -108,9 +87,6 @@ export async function applyCreate(
   return ok(result.value.id);
 }
 
-// UPDATE path: parse { ...mapped, id } through the boundary schema, then reuse
-// the audited authority (re-derives primaryEmail, validates custom fields,
-// re-checks canSee). err arm -> commitRow finalizes "invalid" cleanly.
 export async function applyUpdate(
   tx: Tx,
   actor: ImportActor,
@@ -133,9 +109,6 @@ export async function applyUpdate(
   return ok(result.value.id);
 }
 
-// Terminal write for a row in the SAME transaction as claim + dedup + apply. The side effects are
-// the org/person/note this row created (null where it linked to a pre-existing record); they are
-// persisted so undo can remove them too.
 export async function finalize(
   tx: Tx,
   rowId: string,

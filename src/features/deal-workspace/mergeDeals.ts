@@ -1,9 +1,3 @@
-// mergeDeals: merge source deal S into target deal T in ONE transaction. T is the survivor and
-// KEEPS all of its own core field values (target-wins precedence; see the unit-D implementation
-// notes); S contributes only its child rows, which are re-parented onto T (activities, notes,
-// email threads, files, participants, followers, followers/participants deduped). S is then
-// soft-deleted and the merge is logged on T. Both deals must be visible+editable by the actor, and
-// each is CAS-locked on its updatedAt so a stale header cannot merge a concurrently-modified deal.
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { z } from "zod";
 import { BOARD_EVENT, dealChannel, dealMovedChannel } from "@/constants/boardChannels";
@@ -23,11 +17,10 @@ import { repointDealChildren } from "./mergeReparent";
 export const mergeDealsInput = z.object({
   targetDealId: z.string().uuid(),
   sourceDealId: z.string().uuid(),
-  expectedTargetUpdatedAt: z.string().datetime(), // CAS precondition on T
-  expectedSourceUpdatedAt: z.string().datetime(), // CAS precondition on S
+  expectedTargetUpdatedAt: z.string().datetime(),
+  expectedSourceUpdatedAt: z.string().datetime(),
 });
 
-// Thrown inside the transaction to roll the whole merge back when either CAS lock loses.
 class MergeConflict extends Error {}
 
 async function casTouch(
@@ -67,7 +60,6 @@ export async function mergeDeals(
     );
   }
 
-  // Gate visibility + edit on BOTH deals (404-on-invisible, PERM_DENIED-on-unowned).
   const target = await loadEditableDeal(db, actor, input.targetDealId, signal);
   if (!target.ok) return target;
   const source = await loadEditableDeal(db, actor, input.sourceDealId, signal);
@@ -108,8 +100,6 @@ export async function mergeDeals(
         signal,
       );
 
-      // Realtime: T changed (absorbed children), S is gone. Notify each deal channel and the
-      // pipeline channel(s) so open board/detail views refetch.
       await publishBoardEvent(
         tx,
         {

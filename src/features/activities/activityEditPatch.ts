@@ -2,11 +2,6 @@ import { toYmd } from "@/components/ui/dateFormat";
 import { composeDueAt } from "./activityTime";
 import type { ActivityUpdateInput } from "./schemas";
 
-// The activity fields ActivityEditModal can prefill and patch. Callers (ActivitiesTable,
-// the calendar chip) map their own row/chip shape onto this; fields not tracked by the
-// caller's source (durationMinutes, location) default to null, which is safe because Save
-// only sends fields the user actually changed (see buildActivityPatch), never clobbering an
-// unseen existing value.
 export interface EditableActivity {
   id: string;
   subject: string;
@@ -29,12 +24,6 @@ export interface EditFormState {
   location: string;
 }
 
-// Local Y-M-D + H:m (24h) derived from an ISO instant, using the same local wall-clock
-// convention as composeDueAtIso/todayLocalDateString, so re-composing unchanged inputs
-// round-trips to the exact same ISO string (no spurious dueAt diff on an untouched date).
-// An all-day activity gives back its day and no time. Seeding the field from the stored
-// midnight would show a time nobody chose AND, on the next save, diff as a real time and
-// quietly convert a date-only activity into a midnight one.
 export function isoToLocalParts(
   iso: string | null,
   allDay = false,
@@ -47,9 +36,6 @@ export function isoToLocalParts(
   return { date: toYmd(d), time };
 }
 
-// Diffs the edit form's current state against the original activity and returns only the
-// changed fields (plus id), so an untouched field never overwrites existing data with an
-// implicit value. Returns null when nothing changed (Save then just closes, no network call).
 export function buildActivityPatch(
   activity: EditableActivity,
   state: EditFormState,
@@ -71,8 +57,6 @@ export function buildActivityPatch(
     patch.priority = priority;
     changed = true;
   }
-  // The flag rides with the timestamp: removing a time from an existing activity has to
-  // actually remove it, not leave the old midnight behind looking chosen.
   const { iso: dueAt, allDay } = composeDueAt(state.date, state.time);
   if (dueAt !== activity.dueAtIso || allDay !== activity.allDay) {
     patch.dueAt = dueAt;

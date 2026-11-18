@@ -18,10 +18,6 @@ export function listUsers(db: Db, signal: AbortSignal) {
   return db.select().from(users);
 }
 
-// Active users projected to { id, name } for owner/assignee pickers. Deliberately
-// NOT listUsers (which returns full rows and is MANAGE-gated): this read is ungated
-// so any actor holding deal.changeOwner can populate the picker. The write path
-// (changeOwner) remains the real authority + active-check.
 export function listAssignableUsers(
   db: Db,
   signal: AbortSignal,
@@ -52,9 +48,6 @@ export async function assignPermissionSet(
   });
   if (gate.ok === false) return gate;
 
-  // Escalation gate (F11): assigning a set that CARRIES high-risk flags is admin-only, the
-  // same policy as granting them via create/update. Without this a non-admin manager could
-  // hand another account permissions.manage / pipeline.manage / data.export by assignment.
   if (actor.type !== "admin") {
     const [set] = await db
       .select({ flags: permissionSets.flags })
@@ -95,10 +88,6 @@ export async function setUserAdmin(
   if (gate.ok === false) return gate;
   if (input.userId === actor.id && input.isAdmin === true) return err("cannot self-promote");
 
-  // Demotion (last-admin lockout guard, F6): the count read and the update must be atomic
-  // wrt other admin-state changes, or two concurrent demotions each see count > 1 and both
-  // proceed, zeroing out admins. Serialize by locking every active-admin row FOR UPDATE
-  // inside one transaction; a concurrent demotion blocks, then re-reads the reduced count.
   if (input.isAdmin === false) {
     signal.throwIfAborted();
     const result = await db.transaction(async (tx): Promise<Result<true, string>> => {
@@ -157,8 +146,6 @@ export async function setUserActive(
   input: { userId: string; isActive: boolean },
   signal: AbortSignal,
 ): Promise<Result<true, string>> {
-  // Deactivation: same last-admin lockout race as demotion (F6). Lock active-admin rows
-  // FOR UPDATE, re-check the count, then flip is_active and revoke sessions, all atomic.
   if (input.isActive === false) {
     signal.throwIfAborted();
     const result = await db.transaction(async (tx): Promise<Result<true, string>> => {

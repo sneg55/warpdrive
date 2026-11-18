@@ -15,7 +15,6 @@ const TABS = [
   { href: "/settings/company/pipelines", label: STRINGS.settings.pipelines },
 ] as const;
 
-// Company settings container: title + tab strip (Currencies omitted, out of scope).
 export default function CompanyLayout({ children }: { children: ReactNode }): ReactNode {
   const pathname = usePathname();
   return (

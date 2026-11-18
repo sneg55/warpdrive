@@ -8,7 +8,6 @@ import { ProgressBar } from "./ProgressBar";
 import { RowWarnings } from "./RowWarnings";
 
 const IMP = STRINGS.settings.importer;
-// Poll every second until the batch reaches a terminal status, then stop.
 const POLL_MS = 1000;
 
 function statusLabel(status: string): string {
@@ -36,8 +35,6 @@ export function CommitStep({ batchId, onReset }: CommitStepProps): React.ReactNo
   ).data;
 
   const done = batch !== undefined && isTerminalImportStatus(batch.status);
-  // The exact imported/skipped/invalid split, computed server-side from row statuses once
-  // the commit is terminal (finalizeBatch conflates imported + skipped_duplicate).
   const result = trpc.import.getResult.useQuery({ batchId }, { enabled: done }).data;
   const rows = trpc.import.listRows.useQuery({ batchId }, { enabled: done }).data ?? [];
 

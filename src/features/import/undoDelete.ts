@@ -15,15 +15,11 @@ import { lockImportMutation } from "./importLock";
 import { alreadyGone } from "./undoGone";
 import type { ImportTarget } from "./wizardState";
 
-// Tally of the org/person/note records an import created alongside its primary entities. `undone`
-// is only claimed when every one of them came back out.
 export interface SideRemoval {
   attempted: number;
   removed: number;
 }
 
-// One row's undo target: the created primary id (null for update-mode rows), plus the side-effect
-// ids to remove. A record the row merely LINKED to carries a null id here and is never touched.
 export interface UndoRow {
   id: string | null;
   orgId: string | null;
@@ -31,8 +27,6 @@ export interface UndoRow {
   noteId: string | null;
 }
 
-// Remove the contacts a row created as a side effect of linking. A contact already soft-deleted by
-// a prior undo attempt counts as removed (the delete authority 404s on it, but it IS gone).
 async function removeSideContacts(
   db: Db,
   actor: ImportActor,
@@ -58,10 +52,6 @@ async function removeSideContacts(
   }
 }
 
-// An import-created org that gets removed may still be referenced: an "update"-mode row that
-// matched a pre-existing person/deal linked it to this new org, and that record survives undo. The
-// org never existed before this import, so any live reference to it came FROM this import and is
-// now dangling; null it out. A record the import deleted (its own primary) is unaffected.
 async function clearOrgLinks(db: Db, orgId: string, signal: AbortSignal): Promise<void> {
   signal.throwIfAborted();
   await db
@@ -78,14 +68,6 @@ async function clearOrgLinks(db: Db, orgId: string, signal: AbortSignal): Promis
     .where(and(eq(leads.orgId, orgId), isNull(leads.deletedAt)));
 }
 
-// Soft-delete a note THIS IMPORT created, by the id the row recorded. Returns true when the note is
-// gone after the call, whether this call removed it or an earlier attempt already did.
-//
-// Not softDeleteNote: that authority gates on the note's parent being visible, and the parent was
-// soft-deleted one line earlier, so it would always deny. Authorization is already established:
-// undo is gated on data.import, the primary delete just succeeded under the actor's own per-entity
-// permission, and the id comes from import_rows.created_note_id, so only a note this import created
-// can ever be targeted.
 async function softDeleteCreatedNote(db: Db, noteId: string): Promise<boolean> {
   const [row] = await db
     .update(notes)
@@ -93,15 +75,10 @@ async function softDeleteCreatedNote(db: Db, noteId: string): Promise<boolean> {
     .where(and(eq(notes.id, noteId), isNull(notes.deletedAt)))
     .returning({ id: notes.id });
   if (row !== undefined) return true;
-  // No live note matched: it never existed, or a prior attempt already deleted it. Only the latter
-  // counts as removed.
   const [existing] = await db.select({ id: notes.id }).from(notes).where(eq(notes.id, noteId));
   return existing !== undefined;
 }
 
-// Route one created entity id to its target's soft-delete authority and report whether the record
-// was actually removed by THIS call. A per-row permission denial is a skip, not a batch failure
-// (undo is gated on data.import, distinct from the per-entity delete flags).
 async function deleteOne(
   db: Db,
   actor: ImportActor,
@@ -163,7 +140,6 @@ async function undoRowLocked(
     const deleted = await deleteOne(db, actor, target, row.id, signal);
     if (deleted) removedIds.push(row.id);
     const primaryGone = deleted || (await alreadyGone(db, target, row.id, signal));
-    // A live primary the actor could not delete: leave its side effects untouched.
     if (!primaryGone) return false;
   }
 

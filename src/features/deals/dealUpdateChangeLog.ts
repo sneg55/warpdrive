@@ -1,6 +1,3 @@
-// Change-log writes for updateDeal, extracted to keep dealUpdate.ts under the size/complexity
-// caps. Every row is written on the caller's transaction (atomic with the UPDATE) and only when
-// the field was present in the input AND its value actually changed (a no-op edit logs nothing).
 import {
   CHANGE_FIELD_EXPECTED_CLOSE,
   CHANGE_FIELD_ORG,
@@ -17,7 +14,6 @@ import type { DealUpdateInput } from "./schemas";
 
 type DealRow = typeof deals.$inferSelect;
 
-// Order-insensitive equality for the label-key arrays, so reordering the same set is a no-op.
 function arraysEqual(a: readonly string[], b: readonly string[]): boolean {
   if (a.length !== b.length) return false;
   const sa = [...a].sort();
@@ -25,7 +21,6 @@ function arraysEqual(a: readonly string[], b: readonly string[]): boolean {
   return sa.every((v, i) => v === sb[i]);
 }
 
-// Scalar deal columns that log identically: present-in-input AND changed.
 function scalarChanges(
   input: DealUpdateInput,
   before: DealRow,
@@ -73,8 +68,6 @@ function scalarChanges(
     .map((c) => ({ field: c.field, oldValue: c.o, newValue: c.n }));
 }
 
-// One row per custom-field key whose value actually changed (deep-equal via JSON to catch
-// object/array values). `status` is intentionally NOT logged here (won/lost flow owns it).
 function customFieldChanges(
   input: DealUpdateInput,
   before: DealRow,
@@ -97,7 +90,6 @@ export async function logDealUpdateChanges(
 ): Promise<void> {
   const changes: { field: string; oldValue: unknown; newValue: unknown }[] = [];
 
-  // Labels: order-insensitive array compare (reorder of the same set is a no-op).
   if (args.input.labels !== undefined && !arraysEqual(args.before.labels, args.after.labels)) {
     changes.push({ field: "labels", oldValue: args.before.labels, newValue: args.after.labels });
   }

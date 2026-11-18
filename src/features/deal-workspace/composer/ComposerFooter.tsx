@@ -12,10 +12,6 @@ interface Props {
   onSave: () => void;
 }
 
-// Activity-composer action bar (Pipedrive parity). PD layout: the settings gear sits alone on the
-// left; Mark-as-done, Cancel, Save, and the Duplicate icon are right-grouped, in that order (WD was
-// missing Cancel and put Mark-as-done on the left / Duplicate before Save). Kept as its own
-// component so ActivityComposerInline stays within the file-size cap.
 export function ComposerFooter({
   done,
   onDone,

@@ -1,5 +1,3 @@
-// Co-located copy for the Email sync settings page. Kept out of the global src/constants/strings.ts
-// so that shared file stays within its size budget; this page is the only consumer.
 export const EMAIL_SYNC_STRINGS = {
   title: "Email sync",
   intro: "Connect your Google Workspace mailbox to sync email into Warpdrive.",

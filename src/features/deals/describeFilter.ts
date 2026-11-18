@@ -10,17 +10,11 @@ function optionLabel(def: ConditionFieldOption | undefined, value: string): stri
   return def.input.options.find((o) => o.value === value)?.label ?? value;
 }
 
-// Human-readable value: a dropdown field resolves its stored id to the option's label (owner name,
-// stage name, label name); free-text/number/date fields read as typed. A multi-value condition
-// means "any of these", so its values read as alternatives.
 function valueLabel(def: ConditionFieldOption | undefined, value: RowValue): string {
   if (!Array.isArray(value)) return optionLabel(def, value);
   return value.map((v) => optionLabel(def, v)).join(" or ");
 }
 
-// A default filter name derived from the conditions, e.g. "Owner is Ada King and Value greater
-// than 60000". Skips incomplete rows; empty when nothing is set yet. A valueless op reads as
-// "Value is empty", with nothing after the operator.
 export function describeRows(
   rows: readonly RawCondition[],
   fields: readonly ConditionFieldOption[],

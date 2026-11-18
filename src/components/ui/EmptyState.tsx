@@ -1,9 +1,6 @@
 import type React from "react";
 import { cn } from "@/lib/utils";
 
-// One empty state for the whole app, composed like the app's not-found page: centred, quiet,
-// one sentence that says what this surface holds, and the action it just described.
-// `action` is optional because some surfaces (a quota the viewer cannot set) have no honest one.
 export function EmptyState({
   title,
   body,

@@ -67,7 +67,6 @@ describe("describeRows", () => {
     ).toBe("Title is not empty and Value greater than 60000");
   });
 
-  // "Label is Hot,Cold" reads as one label named "Hot,Cold"; the condition means either one.
   it("reads a multi-label condition as a list of alternatives", () => {
     expect(describeRows([{ field: "labels", op: "eq", value: ["Hot", "Cold"] }], FIELDS)).toBe(
       "Label is Hot or Cold",

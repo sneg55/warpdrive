@@ -40,7 +40,6 @@ describe("EntityCombobox", () => {
   it("stays closed when the input is only focused (e.g. modal autofocus on mount)", () => {
     renderCombobox();
     fireEvent.focus(screen.getByLabelText("Organization"));
-    // Programmatic focus must not spill the whole option list open before the user interacts.
     expect(screen.queryByText("Acme Inc")).toBeNull();
     expect(screen.queryByText("Beta LLC")).toBeNull();
   });
@@ -111,7 +110,6 @@ describe("EntityCombobox", () => {
 
   it("re-reconciles a committed selection that was edited before blur", () => {
     const { onSelectExisting, onCreateNew } = renderCombobox();
-    // Pick an existing option, then edit the text to something new and blur without re-picking.
     fireEvent.change(screen.getByLabelText("Organization"), { target: { value: "beta" } });
     fireEvent.mouseDown(screen.getByText("Beta LLC"));
     expect(onSelectExisting).toHaveBeenLastCalledWith("or2");
@@ -145,7 +143,7 @@ describe("EntityCombobox", () => {
     });
     fireEvent.change(screen.getByLabelText("Organization"), { target: { value: "test" } });
     fireEvent.mouseDown(screen.getByText(/Add 'test' as new organization/));
-    expect(screen.queryByText("test org")).toBeNull(); // menu closed after create
+    expect(screen.queryByText("test org")).toBeNull();
     fireEvent.mouseDown(screen.getByRole("button", { name: "Review" }));
     expect(screen.getByText("test org")).toBeInTheDocument();
   });
@@ -155,7 +153,6 @@ describe("EntityCombobox", () => {
       options: [{ id: "or1", name: "Acme Inc" }],
       similarWarning: "Similar organization already exists.",
     });
-    // "Acme Global" shares the first word with "Acme Inc" but neither contains the other.
     fireEvent.change(screen.getByLabelText("Organization"), { target: { value: "Acme Global" } });
     fireEvent.mouseDown(screen.getByText(/Add 'Acme Global' as new organization/));
     fireEvent.mouseDown(screen.getByRole("button", { name: "Review" }));

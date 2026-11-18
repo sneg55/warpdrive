@@ -73,8 +73,6 @@ describe("EmailDraftCard", () => {
     expect(onChanged).toHaveBeenCalled();
   });
 
-  // Surfaces with no composer (a timeline that cannot open one) must not offer a Continue that
-  // goes nowhere; the row still shows, because an unsent draft is worth knowing about.
   it("hides Continue when the surface cannot resume a draft", () => {
     render(<EmailDraftCard draft={draft()} onChanged={vi.fn()} />);
 

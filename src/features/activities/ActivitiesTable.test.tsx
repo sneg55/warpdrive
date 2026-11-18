@@ -10,7 +10,6 @@ vi.mock("next/navigation", () => ({
 }));
 
 beforeAll(() => {
-  // Radix Select + the Combobox/DatePicker popovers (ActivitiesFilters) need these in jsdom.
   Element.prototype.scrollIntoView = vi.fn();
   Element.prototype.hasPointerCapture = vi.fn(() => false);
   Element.prototype.releasePointerCapture = vi.fn();
@@ -138,16 +137,13 @@ describe("ActivitiesTable", () => {
     ]) {
       expect(screen.getByText(h)).toBeInTheDocument();
     }
-    // Type tabs come from listTypes (custom + system types), not a hardcoded list.
     expect(screen.getByRole("button", { name: "All" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Call" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Meeting" })).toBeInTheDocument();
-    // The filter toolbar (owner, status, date range) is present.
     expect(screen.getByLabelText("Owner")).toBeInTheDocument();
     expect(screen.getByLabelText("Status")).toBeInTheDocument();
     expect(screen.getByLabelText("From")).toBeInTheDocument();
     expect(screen.getByLabelText("To")).toBeInTheDocument();
-    // Enriched cells.
     expect(screen.getByText("jane@acme.com")).toBeInTheDocument();
     expect(screen.getByText("+14155550100")).toBeInTheDocument();
     expect(screen.getByText("High")).toBeInTheDocument();
@@ -190,9 +186,6 @@ describe("ActivitiesTable", () => {
   });
 
   it("shows an error state with a Retry (not the empty state) when the query fails", () => {
-    // A transient batched-401 leaves rowsQ.data undefined AND isError=true. The table must not
-    // paint that as "No activities in this view." (indistinguishable from a genuinely empty list),
-    // and must offer a way to recover. Regression guard for ACTIVITIES-01 / the F5-1 class.
     useQuery.mockReturnValue({
       data: undefined,
       isError: true,

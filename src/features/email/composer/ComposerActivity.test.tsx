@@ -1,5 +1,4 @@
 // @vitest-environment jsdom
-// Phase 5 tests: add-as-activity toggle behaviour in Composer.
 import "@testing-library/jest-dom/vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -38,8 +37,6 @@ vi.mock("@/features/email/actions", () => ({
 
 vi.mock("@/utils/csrfCookie", () => ({ readCsrfToken: () => "csrf" }));
 
-// Accepts the input arg so mock.calls[0] captures it for assertion in tests.
-// dealId/personId/orgId are nullable: a standalone (inbox) activity sends all three as null.
 type ActivityInput = {
   dealId: string | null;
   personId: string | null;
@@ -101,7 +98,6 @@ describe("Composer – add-as-activity toggle (Phase 5)", () => {
   it("with toggle ON in inbox context, successful send creates a standalone activity (dealId/personId/orgId null)", async () => {
     render(<Composer accountId="a1" />);
 
-    // Recipient required for canSend; RecipientsRow "to" field is a combobox input.
     const input = screen
       .getAllByRole("combobox")
       .find((el) => el.tagName === "INPUT") as HTMLInputElement;
@@ -177,10 +173,6 @@ describe("Composer – add-as-activity toggle (Phase 5)", () => {
     expect(screen.getByRole("checkbox", { name: /add as activity/i })).not.toBeChecked();
   });
 
-  // Item 5: positive test that a TYPED subject is forwarded to createActivityAction.
-  // The existing happy-path test never types a subject, so it only exercises the
-  // default fallback ("Email sent"). This test catches regressions that ignore the
-  // typed subject (e.g., reading subject after resetDraft clears it).
   it("(item 5) typed subject is forwarded to createActivityAction, not the default fallback", async () => {
     const onSent = vi.fn();
     render(
@@ -191,7 +183,6 @@ describe("Composer – add-as-activity toggle (Phase 5)", () => {
       />,
     );
 
-    // Type a custom subject before sending.
     const subjectInput = screen.getByPlaceholderText("Subject");
     fireEvent.change(subjectInput, { target: { value: "Q2 Partnership Proposal" } });
 
@@ -201,12 +192,9 @@ describe("Composer – add-as-activity toggle (Phase 5)", () => {
     await waitFor(() => expect(createActivityMock).toHaveBeenCalledTimes(1));
 
     const [inputArg] = createActivityMock.mock.calls[0] as [{ subject: string }];
-    // Must be the typed subject, NOT the default fallback "Email sent".
     expect(inputArg.subject).toBe("Q2 Partnership Proposal");
   });
 
-  // Item 6: failure-isolation test must also assert sendEmailMock was called exactly once.
-  // Previously it only asserted onSent fired, so a regression skipping the send would pass.
   it("(item 6) activity-create failure: sendEmail called once AND onSent fires", async () => {
     createActivityMock.mockImplementation(() =>
       Promise.resolve({ ok: false, error: { id: "E_DB_001" } }),
@@ -225,17 +213,11 @@ describe("Composer – add-as-activity toggle (Phase 5)", () => {
     fireEvent.click(screen.getByRole("button", { name: /^send$/i }));
 
     await waitFor(() => expect(onSent).toHaveBeenCalledTimes(1));
-    // The email was actually sent (not skipped).
     expect(sendEmailMock).toHaveBeenCalledTimes(1);
-    // No error banner shown (activity failure is silent).
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 
-  // Item b (send-success ordering): a slow createActivity must NOT block onSent.
-  // This is the critical ordering test: onSent (and resetDraft) must fire immediately
-  // after sendEmail succeeds, without waiting for the activity creation to complete.
   it("(item b) slow createActivity does not delay onSent: onSent fires before activity resolves", async () => {
-    // createActivity hangs (never resolves during this test).
     let resolveActivity!: (v: ActivityResult) => void;
     createActivityMock.mockImplementation(
       () =>
@@ -256,12 +238,9 @@ describe("Composer – add-as-activity toggle (Phase 5)", () => {
     fireEvent.click(screen.getByRole("checkbox", { name: /add as activity/i }));
     fireEvent.click(screen.getByRole("button", { name: /^send$/i }));
 
-    // onSent must fire even though createActivity hasn't resolved yet.
     await waitFor(() => expect(onSent).toHaveBeenCalledTimes(1));
-    // sendEmail was called exactly once.
     expect(sendEmailMock).toHaveBeenCalledTimes(1);
 
-    // Resolve the dangling promise to avoid test teardown warnings.
     resolveActivity({ ok: true, value: { id: "act-resolved" } });
   });
 });

@@ -12,8 +12,6 @@ import type { BuiltinRow, FieldRow } from "./types";
 
 export const metadata = { title: STRINGS.settings.dataFields };
 
-// Data fields admin page (spec 7): gated on metadata.manage (the same gate the def actions
-// enforce). List, create, archive, rename, reorder, and option editing.
 export default async function DataFieldsPage({
   searchParams,
 }: {
@@ -34,8 +32,6 @@ export default async function DataFieldsPage({
   }
 
   const signal = AbortSignal.timeout(5000);
-  // The hidden-builtins read and the four per-target def reads are all independent; run them
-  // concurrently instead of five serial round trips (one listHiddenBuiltins + a listDefs loop).
   const [hidden, defsPerTarget] = await Promise.all([
     listHiddenBuiltins(db, signal),
     Promise.all(

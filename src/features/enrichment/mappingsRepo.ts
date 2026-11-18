@@ -1,5 +1,3 @@
-// Canonical-key to target-field mapping, and the run cache TTL. The client never names a target:
-// it names a canonical key, and this module is the only thing that decides where the value lands.
 import { and, eq } from "drizzle-orm";
 import { BUILTIN_FIELDS, isImportFieldHidden } from "@/constants/builtinFields";
 import { AppError, ERROR_IDS } from "@/constants/errorIds";
@@ -18,9 +16,6 @@ export type MappingTarget =
   | { kind: "builtin"; key: string }
   | { kind: "custom"; fieldDefId: string };
 
-// Built-ins enrichment must never write: owner and label are relationship pickers with their own
-// authorities, phones has no canonical source and is contact-point shaped, and "address" is
-// reached through its dotted leaves rather than as a whole object.
 const NON_ENRICHABLE_BUILTINS = new Set(["owner", "label", "phones", "address"]);
 
 function dataFieldsOf(entity: EnrichEntity): string[] {
@@ -29,8 +24,6 @@ function dataFieldsOf(entity: EnrichEntity): string[] {
     .map((f) => f.key);
 }
 
-// The only keys a builtin mapping may name. plan.ts turns targetKey straight into an update-patch
-// key, so an unvetted string here is a write into an arbitrary column.
 export const WRITABLE_BUILTIN_TARGETS: Readonly<Record<EnrichEntity, ReadonlySet<string>>> = {
   organization: new Set([
     ...dataFieldsOf("organization"),
@@ -75,7 +68,6 @@ export async function listMappings(
 
   const hidden = (await listHiddenBuiltins(db, signal))[entity];
   const isHidden = (k: string | null): boolean => k !== null && isImportFieldHidden(k, hidden);
-  // An archived custom field or a hidden built-in is no place to write; the row stays on record.
   return rows
     .filter((r) => (r.targetKind === "custom" ? r.archivedAt === null : !isHidden(r.targetKey)))
     .map((r) => ({
@@ -164,8 +156,6 @@ async function writeMapping(
       });
     return ok(undefined);
   } catch (error) {
-    // The loser of a concurrent save hears it from the index rather than from targetTaken, and an
-    // operational conflict stays a Result.
     if (!isTargetIndexViolation(error)) throw error;
     return err(targetTakenError(values.canonicalKey, null));
   }
@@ -178,8 +168,6 @@ function targetTakenError(canonicalKey: string, conflictsWith: string | null): A
   });
 }
 
-// Postgres unique_violation from the partial indexes that keep one target to one canonical key.
-// Walks the cause chain, as features/email/oauth.ts does, because drizzle wraps the driver error.
 const PG_UNIQUE_VIOLATION = "23505";
 const TARGET_INDEXES = new Set([
   "enrichment_mapping_builtin_target_unique",
@@ -230,8 +218,6 @@ async function validateCustomTarget(
   return null;
 }
 
-// plan.ts writes one patch key per target, so two canonical keys sharing a target means the later
-// one silently wins while both are reported as applied and both reach the change log.
 async function targetTaken(
   db: Db,
   entity: EnrichEntity,

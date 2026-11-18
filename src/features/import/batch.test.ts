@@ -9,9 +9,6 @@ import { commitBatch, createBatch, setMapping, validateBatch } from "./batch";
 import type { ImportActor } from "./commit";
 import type { ColumnMappingInput } from "./schemas";
 
-// Admin import actor: admin bypasses can() flag checks, keeping the lifecycle test
-// focused on orchestration rather than permission-flag plumbing. Mirrors the
-// adminActorFor helper in commit.test.ts.
 function adminActorFor(id: string): ImportActor {
   return {
     id,
@@ -23,8 +20,6 @@ function adminActorFor(id: string): ImportActor {
   };
 }
 
-// Regular import actor carrying the regular default true-flags. Used for the
-// ownership-404 boundary: a non-owner regular actor must NOT see another user's batch.
 function regularActorFor(id: string): ImportActor {
   const flags = new Set<PermissionFlagKey>(
     (Object.entries(REGULAR_DEFAULT_FLAGS) as [PermissionFlagKey, boolean][])
@@ -41,7 +36,6 @@ function regularActorFor(id: string): ImportActor {
   };
 }
 
-// Map the CSV headers "Name" and "Email" to the person name + emails fields.
 function personMapping(dedupMode: "skip" | "update"): ColumnMappingInput {
   return {
     dedupMode,
@@ -58,7 +52,6 @@ it("runs the full create-batch -> validate -> commit lifecycle", async () => {
     const user = await seedUser(db);
     const actor = adminActorFor(user.id);
 
-    // 1. Create a batch with one valid row (name + email) and one invalid (no name).
     const created = await createBatch(
       db,
       actor,
@@ -76,11 +69,9 @@ it("runs the full create-batch -> validate -> commit lifecycle", async () => {
     if (created.ok === false) throw new Error(`createBatch failed: ${created.error.id}`);
     const { batchId } = created.value;
 
-    // 2. Persist the column mapping (dedupMode skip).
     const mapped = await setMapping(db, actor, batchId, personMapping("skip"), signal);
     expect(mapped.ok).toBe(true);
 
-    // 3. Validate every row: one valid, one invalid (missing required name).
     const validated = await validateBatch(db, actor, batchId, signal);
     expect(validated.ok).toBe(true);
     if (validated.ok === true) {
@@ -100,8 +91,6 @@ it("runs the full create-batch -> validate -> commit lifecycle", async () => {
     const statuses = rowsAfterValidate.map((r) => r.status).sort();
     expect(statuses).toEqual(["invalid", "valid"]);
 
-    // 4. Commit: only the valid row commits, creating a real person. The invalid
-    // row is not "valid" so it is left alone; the batch lands "partial".
     const committed = await commitBatch(db, actor, batchId, signal);
     expect(committed.ok).toBe(true);
     if (committed.ok === true) {
@@ -117,7 +106,6 @@ it("runs the full create-batch -> validate -> commit lifecycle", async () => {
       .where(eq(importBatches.id, batchId));
     expect(batchAfterCommit?.status).toBe("partial");
 
-    // 5. Idempotency: re-running commitBatch does not double-create.
     const recommit = await commitBatch(db, actor, batchId, signal);
     expect(recommit.ok).toBe(true);
     if (recommit.ok === true) {
@@ -134,7 +122,6 @@ it("commits a duplicate row as skipped_duplicate in skip mode", async () => {
     const user = await seedUser(db);
     const actor = adminActorFor(user.id);
 
-    // Pre-existing person with the same primaryEmail the CSV row carries.
     await db.insert(persons).values({
       name: "Existing Dupe",
       primaryEmail: "dupe@a.com",
@@ -164,7 +151,6 @@ it("commits a duplicate row as skipped_duplicate in skip mode", async () => {
       expect(committed.value).toEqual({ imported: 0, skipped: 1, invalid: 0 });
     }
 
-    // No second person created for the duplicate email.
     const matches = await db.select().from(persons).where(eq(persons.primaryEmail, "dupe@a.com"));
     expect(matches).toHaveLength(1);
   });
@@ -185,7 +171,6 @@ it("hides another user's batch from a non-owner regular actor (ownership 404)", 
     if (created.ok === false) throw new Error(`createBatch failed: ${created.error.id}`);
     const { batchId } = created.value;
 
-    // A different regular user (not the creator, not admin) must get 404-on-invisible.
     const other = await seedUser(db);
     const otherActor = regularActorFor(other.id);
     const r = await setMapping(db, otherActor, batchId, personMapping("skip"), signal);
@@ -208,16 +193,12 @@ it("returns IMPORT_MAPPING_MISSING when validating before a mapping is set", asy
     );
     if (created.ok === false) throw new Error(`createBatch failed: ${created.error.id}`);
 
-    // No setMapping call: columnMapping is still the {} default. Must be a clean
-    // Result error, not an uncaught ZodError from parse({}).
     const r = await validateBatch(db, actor, created.value.batchId, signal);
     expect(r.ok).toBe(false);
     if (r.ok === false) expect(r.error.id).toBe("E_IMPORT_003");
   });
 });
 
-// The mapping arrives from the client. A tampered one could aim a column at an entity the target
-// never links to, and commit would then create an orphan contact nothing references.
 it("rejects a mapping whose column targets an entity the import cannot write", async () => {
   await withTestDb(async (db) => {
     const signal = new AbortController().signal;
@@ -246,17 +227,12 @@ it("rejects a mapping whose column targets an entity the import cannot write", a
   });
 });
 
-// End to end through JSONB: prepare stores raw as a JSONB object whose key order Postgres does not
-// preserve, so a row note built from Object.keys(raw) could reorder its lines. The batch's stored
-// headers must fix the order. This exercises the real round-trip, not an in-memory object.
 it("orders a row note by the batch headers after the JSONB round-trip", async () => {
   await withTestDb(async (db) => {
     const signal = new AbortController().signal;
     const user = await seedUser(db, { isAdmin: true });
     const actor = adminActorFor(user.id);
 
-    // Keys inserted in reverse of the CSV header order, so JSONB storage cannot accidentally
-    // reproduce header order for us.
     const headers = ["title", "alpha", "mike", "zulu"];
     const [batch] = await db
       .insert(importBatches)

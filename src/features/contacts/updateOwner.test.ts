@@ -31,7 +31,6 @@ it("persists person labels through updatePerson and leaves them untouched when o
       .returning();
     if (person === undefined) throw new Error("person seed failed");
 
-    // Set labels.
     const r1 = await updatePerson(
       db,
       actor(owner.id, { flags: ["contact.edit_any"] }),
@@ -42,7 +41,6 @@ it("persists person labels through updatePerson and leaves them untouched when o
     const [afterSet] = await db.select().from(persons).where(eq(persons.id, person.id));
     expect(afterSet?.labels).toEqual(["hot", "warm"]);
 
-    // A later edit that omits labels must NOT wipe them.
     const r2 = await updatePerson(
       db,
       actor(owner.id, { flags: ["contact.edit_any"] }),
@@ -90,7 +88,6 @@ it("ignores an ownerId change from an actor without deal.changeOwner (no privile
       .returning();
     if (person === undefined) throw new Error("person seed failed");
 
-    // contact.edit_any lets the edit through, but without deal.changeOwner the owner override is dropped.
     const r = await updatePerson(
       db,
       actor(target.id, { flags: ["contact.edit_any"] }),
@@ -99,8 +96,8 @@ it("ignores an ownerId change from an actor without deal.changeOwner (no privile
     );
     expect(r.ok).toBe(true);
     const [row] = await db.select().from(persons).where(eq(persons.id, person.id));
-    expect(row?.name).toBe("Ada Lovelace"); // the edit applied
-    expect(row?.ownerId).toBe(owner.id); // ...but the owner did NOT change
+    expect(row?.name).toBe("Ada Lovelace");
+    expect(row?.ownerId).toBe(owner.id);
   });
 });
 
@@ -153,7 +150,6 @@ it("owner transfer preserves existing emails and custom fields (codex P1: no def
     expect(r.ok).toBe(true);
     const [row] = await db.select().from(persons).where(eq(persons.id, person.id));
     expect(row?.ownerId).toBe(target.id);
-    // The owner-only update must NOT reset the contact's other fields to schema defaults.
     expect(row?.emails).toHaveLength(1);
     expect(row?.phones).toHaveLength(1);
   });

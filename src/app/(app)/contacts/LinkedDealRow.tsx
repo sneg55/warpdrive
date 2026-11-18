@@ -7,8 +7,6 @@ export interface LinkedDealRowProps {
   deal: { id: string; title: string; status: DealStatus };
 }
 
-// Shared contact-sidebar deal row: title and lifecycle status stay aligned and identical on the
-// Person and Organization surfaces.
 export function LinkedDealRow({ deal }: LinkedDealRowProps): React.ReactNode {
   return (
     <li>

@@ -16,8 +16,6 @@ const S = ENRICHMENT_STRINGS.settings;
 
 export const metadata = { title: S.title };
 
-// Built-in targets carry their label in two catalogues: the data-fields one for plain columns, the
-// import one for the address leaves. Both are keyed the same way, so one lookup covers both.
 function builtinLabel(entity: EnrichEntity, key: string): string {
   const builtin = BUILTIN_FIELDS[entity].find((f) => f.key === key);
   if (builtin !== undefined) return builtin.label;
@@ -33,7 +31,6 @@ function builtinOptionsFor(entity: EnrichEntity): SelectOption[] {
 
 export default async function EnrichmentSettingsPage(): Promise<ReactNode> {
   const ctx = await createContext();
-  // Server-side gate: the nav hides this page for a non-admin, but hiding is not a boundary.
   if (ctx.actor === null || ctx.actor.type !== "admin") {
     return <p className="text-sm text-red-600">{S.adminOnly}</p>;
   }

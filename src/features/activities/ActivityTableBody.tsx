@@ -7,8 +7,6 @@ import type { ActivityTableRow } from "./activityRows";
 interface Props {
   loadFailed: boolean;
   loadPending: boolean;
-  // Painted slice of the full row set; count header / select-all / bulk actions stay over the
-  // full set upstream, so this only bounds how many <tr> mount at once.
   rowWindow: RenderWindow<ActivityTableRow>;
   groupByDay: boolean;
   renderRow: (row: ActivityTableRow) => React.ReactNode;
@@ -16,9 +14,6 @@ interface Props {
   onRetry: () => void;
 }
 
-// The activities table body: the load-error / loading / empty branch, the (optionally
-// day-grouped) rows, and the render-window "Show more" control. Extracted from ActivitiesTable
-// so that component stays under the cognitive-complexity cap.
 export function ActivityTableBody({
   loadFailed,
   loadPending,
@@ -51,7 +46,6 @@ export function ActivityTableBody({
   if (loadPending) {
     return <TableRowsSkeleton columnCount={columnCount} label="Loading activities" />;
   }
-  // visible is a prefix of the full row set, so an empty slice means an empty set.
   if (rowWindow.visible.length === 0) {
     return (
       <tr>

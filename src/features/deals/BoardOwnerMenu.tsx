@@ -9,15 +9,10 @@ import type { BoardOwner } from "./boardFilter";
 interface BoardOwnerMenuProps {
   owners: BoardOwner[];
   selectedOwnerId: string | null;
-  // The signed-in user's id, so their row in the list is marked "(my)".
   currentUserId?: string;
   onSelectOwner: (ownerId: string | null) => void;
 }
 
-// The board toolbar's owner picker: everyone with a deal on this board, plus "Everyone". Saved
-// filters live in BoardFilterMenu, next to the badge that says the board is filtered.
-// The panel holds a search input, so this is a Popover rather than a DropdownMenu (a menu would
-// steal the arrow keys and type-ahead from the input).
 export function BoardOwnerMenu({
   owners,
   selectedOwnerId,

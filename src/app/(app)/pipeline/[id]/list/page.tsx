@@ -11,8 +11,6 @@ import type { SearchParams } from "@/features/stats/drillDown";
 import { createContext } from "@/server/trpc/context";
 import { createCaller } from "@/server/trpc/root";
 
-// Shared per-request loader: generateMetadata (for the tab title) and the page body both call
-// this; React.cache dedupes so createContext + the visible-pipelines read run once per request.
 const load = cache(async () => {
   const ctx = await createContext();
   if (ctx.actor === null) {
@@ -48,7 +46,6 @@ export default async function PipelineListPage({
   const { ctx, pipelines } = loaded;
   if (ctx.actor === null) return <main>Unauthorized</main>;
 
-  // A nonexistent (or hidden) pipeline 404s like the entity detail routes, not a 200 soft-404.
   const pipeline = resolveVisiblePipeline(pipelines, id);
 
   const drillDownView = wonDealsDrillDownSeed(query, ctx.actor.id, id);

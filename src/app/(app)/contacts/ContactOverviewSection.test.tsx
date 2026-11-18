@@ -42,13 +42,10 @@ describe("ContactOverviewSection", () => {
     const section = within(screen.getByRole("region", { name: "Overview" }));
     expect(section.getByText("Total activities")).toBeInTheDocument();
     expect(section.getByText("3")).toBeInTheDocument();
-    // Per-type breakdown (key capitalized).
     expect(section.getByText("Call")).toBeInTheDocument();
     expect(section.getByText("Meeting")).toBeInTheDocument();
-    // Most active users (spec B2).
     expect(section.getByText("Most active users")).toBeInTheDocument();
     expect(section.getByText("Ann (2), Bob (1)")).toBeInTheDocument();
-    // Inactive days.
     expect(section.getByText("Inactive")).toBeInTheDocument();
     expect(section.getByText(/5/)).toBeInTheDocument();
   });
@@ -66,7 +63,6 @@ describe("ContactOverviewSection", () => {
     render(<ContactOverviewSection entityType="person" entityId="pe1" />);
     const section = within(screen.getByRole("region", { name: "Overview" }));
     expect(section.getByText("Last activity")).toBeInTheDocument();
-    // Never-active contact: a dash placeholder, not a date.
     expect(section.getAllByText("-").length).toBeGreaterThan(0);
   });
 });

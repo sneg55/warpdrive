@@ -18,8 +18,6 @@ function actor(id: string, groupIds: string[] = [], isAdmin = false): PermSetUse
 
 const sig = () => new AbortController().signal;
 
-// Anchor "now" so month-bucketing + the 3-month period window are deterministic. With now in
-// July, monthsBack: 3 spans May, June, July.
 const NOW = new Date("2026-07-15T00:00:00.000Z");
 
 async function typeIdFor(
@@ -72,7 +70,6 @@ describe("engagementTimeline", () => {
           personId: bob.id,
           dueAt: new Date("2026-07-05T10:00:00.000Z"),
         },
-        // Older than the 3-month window -> excluded.
         {
           typeId: call,
           subject: "Ancient call",
@@ -98,7 +95,6 @@ describe("engagementTimeline", () => {
       expect(aliceLane?.byMonth["2026-05"]?.map((m) => m.subject)).toEqual(["Call Alice"]);
       expect(aliceLane?.byMonth["2026-06"]?.map((m) => m.subject)).toEqual(["Meet Alice"]);
       expect(aliceLane?.byMonth["2026-07"]).toBeUndefined();
-      // Ancient call excluded from the period.
       expect(aliceLane?.total).toBe(2);
       expect(bobLane?.byMonth["2026-07"]?.map((m) => m.subject)).toEqual(["Call Bob"]);
     });

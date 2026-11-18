@@ -5,10 +5,8 @@ import type { ResolvedColumnMapping } from "./schemas";
 import type { ImportTarget } from "./wizardState";
 
 export { validateMappedRow } from "./validateMappedRow";
-// Defined in src/types so the Drizzle schema can type importRows.mapped without an import cycle.
 export type { MappedRow };
 
-// CSV gives a single email/phone cell; model it as one labeled primary contact point.
 function coerceField(field: string, value: string): unknown {
   if (field === "emails" || field === "phones") {
     return [{ label: "work", value, primary: true }];
@@ -16,8 +14,6 @@ function coerceField(field: string, value: string): unknown {
   return value;
 }
 
-// "address.city" -> group.address.city. orgCreateInput.address is a structured object, so the
-// dotted leaves the picker offers are reassembled here rather than handed over as raw cells.
 function setNested(group: Record<string, unknown>, field: string, value: unknown): void {
   if (!field.startsWith(ADDRESS_PREFIX)) {
     group[field] = value;
@@ -29,9 +25,6 @@ function setNested(group: Record<string, unknown>, field: string, value: unknown
   group.address = address;
 }
 
-// A contact export routinely splits the name across two columns and carries no full-name one, so
-// the display name is joined from whichever parts the row mapped. A mapped name column wins: it is
-// what the file says the person is called, and rebuilding it would drop a middle name or a suffix.
 function deriveDisplayName(group: Record<string, unknown> | undefined): void {
   if (group === undefined || typeof group.name === "string") return;
   const parts: string[] = [];
@@ -51,7 +44,6 @@ function mergeDueTime(primary: Record<string, unknown>): void {
   delete primary.dueTime;
 }
 
-// Where the cells of one row accumulate as the mapping is walked.
 interface RowGroups {
   primary: Record<string, unknown>;
   customFields: Record<string, unknown>;
@@ -59,7 +51,6 @@ interface RowGroups {
   noteBody: string | null;
 }
 
-// Route one mapped cell to the group its entity owns.
 function routeCell(
   acc: RowGroups,
   col: ResolvedColumnMapping["columns"][string],
@@ -67,7 +58,6 @@ function routeCell(
   primaryEntity: string,
 ): void {
   if (col.isCustom) {
-    // Only the target's own custom-field defs are offered, so a custom column is always primary.
     if (col.key !== "") acc.customFields[col.key] = cell;
     return;
   }
@@ -85,9 +75,6 @@ function routeCell(
   acc.related[col.entity] = group;
 }
 
-// `headers` fixes the order of a row-note's unmapped lines. In the storage-backed flow `raw` comes
-// from a JSONB column whose key order Postgres does not preserve, so the batch's stored headers are
-// threaded through to keep the note in CSV column order.
 export function applyMapping(
   raw: Record<string, string>,
   mapping: ResolvedColumnMapping,

@@ -15,13 +15,10 @@ const COOKIE_OPTS = {
   secure: env.NODE_ENV === "production",
   sameSite: "lax" as const,
   path: "/",
-  maxAge: 60 * 10, // 10 minutes
+  maxAge: 60 * 10,
 };
 
-// GET /auth/start: build the Google OAuth redirect, set state/nonce/PKCE cookies.
 export async function GET(req: NextRequest): Promise<Response> {
-  // Starting a login is a human act with a redirect in the middle; nobody legitimately does it
-  // twenty times a minute. Each call mints two 32-byte secrets, a PKCE pair and four cookies.
   const limit = checkRateLimit("authStart", req.headers);
   if (!limit.allowed) return tooManyRequestsResponse(limit);
 

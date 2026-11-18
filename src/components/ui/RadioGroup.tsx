@@ -4,10 +4,6 @@ import { Circle } from "lucide-react";
 import { forwardRef } from "react";
 import { cn } from "@/lib/utils";
 
-// Branded radio group (Radix), the design-system replacement for native <input type=radio>.
-// Radix brings roving focus + arrow-key navigation for free, which is exactly the part a
-// hand-rolled radio drops. Composable: wrap RadioGroupItem next to its label text, or give the
-// item an aria-label when it stands alone. Token-styled to match the rest of the UI.
 export const RadioGroup = forwardRef<
   React.ElementRef<typeof RadioGroupPrimitive.Root>,
   React.ComponentPropsWithoutRef<typeof RadioGroupPrimitive.Root>
@@ -16,10 +12,6 @@ export const RadioGroup = forwardRef<
 ));
 RadioGroup.displayName = "RadioGroup";
 
-// Default renders the standard dot (label text sits beside the item). Pass `children` to render
-// custom content instead of the dot: e.g. a clip-path chevron stage segment whose whole surface
-// is the control. The dot-specific box styling is applied only in the default (childless) case;
-// with children the caller owns all visual styling via className.
 export const RadioGroupItem = forwardRef<
   React.ElementRef<typeof RadioGroupPrimitive.Item>,
   React.ComponentPropsWithoutRef<typeof RadioGroupPrimitive.Item>

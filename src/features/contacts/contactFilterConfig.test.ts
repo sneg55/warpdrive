@@ -8,11 +8,6 @@ import {
   PERSON_FILTER_CONFIG,
 } from "./contactFilterConfig";
 
-// The People/Orgs list filter builders (client components) read a filter config's field metadata
-// (fields, opsByField, numericFields) to render their dropdowns. This config lives in a module
-// free of zod AND drizzle AND @/db/schema, so importing it does not drag all three into the
-// contacts client bundle. contactFilter.ts holds the server-only SQL column map and re-uses this
-// metadata to build the zod validators, so the client dropdown and server allow-list cannot drift.
 describe("contactFilterConfig", () => {
   it("exposes person filter field metadata", () => {
     expect(PERSON_FILTER_CONFIG.fields).toEqual(["name", "primaryEmail", "ownerId", "labels"]);
@@ -31,8 +26,6 @@ describe("contactFilterConfig", () => {
     expect(ORG_FILTER_CONFIG.numericFields).toEqual(["employeeCount"]);
   });
 
-  // labels is a text[] of label keys: it takes only "is" / "is not" (compiled to array overlap),
-  // and it must never be treated as numeric or the builder would coerce the key to NaN.
   it("offers labels on both entities with the array ops and never as a numeric field", () => {
     for (const config of [PERSON_FILTER_CONFIG, ORG_FILTER_CONFIG]) {
       expect(config.fields).toContain("labels");
@@ -42,8 +35,6 @@ describe("contactFilterConfig", () => {
     }
   });
 
-  // One vocabulary across deals, contacts, and leads: the op classes come from the shared module,
-  // so a new operator reaches every entity's dropdown and allow-list at once.
   it("sources every field's ops from the shared op classes", () => {
     expect(PERSON_FILTER_CONFIG.opsByField.name).toBe(TEXT_OPS);
     expect(PERSON_FILTER_CONFIG.opsByField.primaryEmail).toBe(TEXT_OPS);

@@ -5,11 +5,6 @@ import { seedUser } from "@/db/testing/factories";
 import type { AuthUser } from "@/features/permissions/types";
 import { getThread } from "./router";
 
-// Regression: a text/plain-only inbound email (body_html NULL, only body_text set) used to render
-// a BLANK body because getThread selected and sanitized only body_html. Gmail delivers many
-// transactional / notification / mailing-list emails as text/plain, and Pipedrive renders them
-// with line breaks preserved and URLs/emails auto-linked. WD must match, not show an empty frame.
-
 const SIG = (): AbortSignal => AbortSignal.timeout(8000);
 
 function actorOf(id: string): AuthUser {
@@ -48,7 +43,7 @@ describe("thread.get plain-text body fallback", () => {
         expect(body).toContain("Hello Nick,");
         expect(body).toContain('href="https://example.com/x"');
         expect(body).toContain('href="mailto:support@hetzner.com"');
-        expect(body).toMatch(/<br\s*\/?>/i); // newline preserved
+        expect(body).toMatch(/<br\s*\/?>/i);
       }
     });
   });

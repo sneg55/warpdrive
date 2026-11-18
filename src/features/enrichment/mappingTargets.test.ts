@@ -15,7 +15,6 @@ afterAll(async () => {
   await h.close();
 });
 
-// The migration seeds the defaults, so these start from a table that already has mappings.
 describe("built-in target compatibility", () => {
   it("refuses prose aimed at a numeric column", async () => {
     const r = await upsertMapping(
@@ -41,7 +40,6 @@ describe("built-in target compatibility", () => {
     expect(r.ok).toBe(false);
   });
 
-  // emails is a contact-point array and org is a link, so neither takes an arbitrary scalar.
   it("reserves the shaped person built-ins for their own canonical key", async () => {
     const wrongEmails = await upsertMapping(
       h.db,
@@ -74,8 +72,6 @@ describe("built-in target compatibility", () => {
   });
 });
 
-// plan.ts writes one patch key per target, so a shared target means one value silently wins while
-// both canonical keys are reported as applied and both reach the change log.
 describe("duplicate targets", () => {
   it("refuses a second canonical key aimed at a target already mapped", async () => {
     const r = await upsertMapping(
@@ -101,9 +97,6 @@ describe("duplicate targets", () => {
     expect(r.ok).toBe(true);
   });
 
-  // Two admins saving at once both pass the in-application check before either row is visible, and
-  // only the partial index on the target sees the second one. A repeatable-read snapshot puts the
-  // reader in exactly that position without needing the two saves to interleave by luck.
   it("returns a Result, not a throw, when the target index rejects the insert", async () => {
     await clearMapping(h.db, "organization", "org.industry", signal);
     await clearMapping(h.db, "organization", "org.foundedYear", signal);

@@ -27,7 +27,6 @@ describe("buildColumnOptions built-in gating", () => {
   });
 
   it("never drops a required primary field even if marked hidden", () => {
-    // "name" is the required org key; a crafted hidden entry must not remove it.
     const hidden = { organization: new Set(["name"]) };
     const v = values(buildColumnOptions("organization", [], hidden));
     expect(v).toContain("s:organization:name");

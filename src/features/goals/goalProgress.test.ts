@@ -48,7 +48,6 @@ describe("goalProgress", () => {
     for (const [value, wonOn] of [
       ["400.00", "2026-03-05"],
       ["100.00", "2026-03-20"],
-      // Won in the next period, so it must not inflate March.
       ["9999.00", "2026-04-02"],
     ] as const) {
       await seedDeal(h, {
@@ -247,7 +246,6 @@ describe("goalProgress", () => {
     });
     const goal = await seedGoal({ pipelineId: pipeline.id, target: "1000.00" });
 
-    // Day 5 of 31: half the target booked on a sixth of the month is well ahead.
     const p = await goalProgress(
       h.db,
       toActor(user),

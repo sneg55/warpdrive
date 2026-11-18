@@ -1,12 +1,4 @@
 // @vitest-environment node
-// The file-upload/download handshake was the only server-action family with no CSRF guard. It
-// authenticated (ctx.actor) and authorized (the domain functions), so it was never an auth bypass,
-// but a cross-site page could still drive the handshake on a logged-in user's behalf. Every other
-// mutation family runs guardCsrf first; these now do too.
-//
-// Mirrors contacts/actions.test.ts: next/headers + context mocked so guardCsrf runs exactly as in
-// production, while the domain layer is spied so no storage or DB is touched. The point is that a
-// forged request is rejected BEFORE any domain call.
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { CSRF_COOKIE } from "@/features/auth/csrf";
 

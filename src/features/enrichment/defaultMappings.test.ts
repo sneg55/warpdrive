@@ -13,8 +13,6 @@ afterAll(async () => {
   await h.close();
 });
 
-// The migration seeds these. Without it nothing has a mapping on a fresh install, mergeCandidates
-// drops every provider field, and the dialog says "Nothing new found" no matter what came back.
 describe("default mappings on a fresh database", () => {
   it("maps the organization built-ins the migration seeds", async () => {
     const rows = await listMappings(h.db, "organization", SIG());
@@ -40,7 +38,6 @@ describe("default mappings on a fresh database", () => {
     expect(byKey.get("person.companyName")).toBe("org");
   });
 
-  // The migration SQL is hand-written, so nothing but this stops it drifting from the constant.
   it("seeds exactly what DEFAULT_BUILTIN_MAPPINGS declares", async () => {
     const seeded = new Map<string, string | null>();
     for (const entity of ["person", "organization"] as const) {

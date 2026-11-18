@@ -6,7 +6,6 @@ import {
 import { isBlankHtml } from "@/features/activities/isBlankHtml";
 import type { LinkKind, LinkTarget, LinkValue } from "./LinkChips";
 
-// Draft state the composer submits; kept here so ActivityComposerInline stays under the file cap.
 export interface ActivityDraft {
   typeId: string;
   subject: string;
@@ -25,11 +24,6 @@ export interface ActivityDraft {
   participants: string[];
 }
 
-// Inverse of composeDueAt: split a stored ISO timestamp back into the composer's local date
-// (YYYY-MM-DD) and time (HH:mm) inputs. Uses local getters to match how composeDueAtIso builds the
-// ISO from local parts, so an edit round-trips to the same instant. Empty ISO -> empty inputs.
-// An all-day activity gives back its day and NO time: the stored midnight is a placeholder for
-// the day, not a time the user picked, and echoing it back is the reported bug.
 export function localPartsFromIso(
   iso: string | null,
   allDay = false,
@@ -43,16 +37,11 @@ export function localPartsFromIso(
   return { date, time };
 }
 
-// dueAt and allDay always travel together: a timestamp without the flag is exactly the state
-// that made a blank time read back as midnight.
 function composedDue(d: ActivityDraft): { dueAt: string | null; allDay: boolean } {
   const { iso, allDay } = composeDueAt(d.startDate, d.startTime);
   return { dueAt: iso, allDay };
 }
 
-// Map the composer draft to an activityUpdateInput patch for an existing activity. Mirrors
-// buildActivityInput but carries the id and the update-shaped fields (the composer's participants
-// are person guests -> guestPersonIds, matching create; participantUserIds is not edited here).
 type StoredLinks = Pick<OwnLinks, "dealId" | "personId" | "orgId">;
 
 function changedLinks(links: LinkValue, stored: StoredLinks) {
@@ -81,7 +70,6 @@ export function buildActivityUpdateInput(id: string, d: ActivityDraft, stored: S
   };
 }
 
-// Map the composer draft to the createActivityAction input (nullish/trim normalization in one place).
 export function buildActivityInput(d: ActivityDraft) {
   return {
     typeId: d.typeId,
@@ -105,10 +93,6 @@ export function buildActivityInput(d: ActivityDraft) {
   };
 }
 
-// The [from, to] window the Free/Busy availability query should cover for the current composer draft.
-// `to` uses the end date + time when a multi-day end is set; for a same-day draft it uses the start
-// date + the end TIME (so a 10:00-11:00 draft checks the whole hour, not just the 10:00 instant);
-// with no end time it collapses to the start instant.
 export function availabilityWindow(
   startDate: string,
   startTime: string,
@@ -125,8 +109,6 @@ export function availabilityWindow(
   return { from, to };
 }
 
-// Local YYYY-MM-DD for the Start date default. Built from local date parts (not
-// toISOString, which is UTC and can land on the wrong calendar day for the user).
 export function todayLocalDateString(): string {
   const d = new Date();
   const year = d.getFullYear();
@@ -141,7 +123,6 @@ const LINK_FALLBACK: Record<LinkKind, string> = {
   org: "Organization",
 };
 
-// Build the removable link chips from the composer's deal context (only non-null links).
 export function buildLinkTargets(
   dealId: string | null,
   personId: string | null,

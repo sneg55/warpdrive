@@ -3,8 +3,6 @@ import { HistoryFeed } from "./HistoryFeed";
 import type { HistoryItem } from "./historyTimeline";
 import { SectionHeading } from "./SectionHeading";
 
-// One pinned-note surface for deal, lead, person, and organization timelines. The partitioner
-// guarantees this bucket contains only pinned notes and excludes them from History.
 export function PinnedNotesSection({
   items,
   onNoteChanged,

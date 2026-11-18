@@ -22,8 +22,6 @@ function renderChips(props: Partial<React.ComponentProps<typeof BoardFilterChips
   );
 }
 
-// The board narrows on three independent dimensions and the trigger can name only one of them, so
-// the chip row is where each applied dimension is visible and separately removable.
 describe("BoardFilterChips", () => {
   it("renders nothing when the board is not narrowed", () => {
     const { container } = renderChips();

@@ -13,9 +13,6 @@ import { createCaller } from "@/server/trpc/root";
 
 export const metadata = { title: STRINGS.contacts.peopleHeading };
 
-// Contacts nav landing: a paginated, visibility-filtered list of people. The heading renders
-// immediately; the row data streams into the <Suspense> boundary so a navigation shows the real
-// page chrome without waiting on the list query.
 export default async function PeopleListPage(): Promise<React.ReactNode> {
   const ctx = await createContext();
   if (ctx.actor === null) {
@@ -38,8 +35,6 @@ export default async function PeopleListPage(): Promise<React.ReactNode> {
   );
 }
 
-// Data region: fetched inside the Suspense boundary so the heading above never waits on it.
-// createContext is React.cache-wrapped, so re-resolving the actor here reuses the page's work.
 async function PeopleSection({ actorId }: { actorId: string }): Promise<React.ReactNode> {
   const ctx = await createContext();
   const caller = createCaller(ctx);
@@ -51,9 +46,6 @@ async function PeopleSection({ actorId }: { actorId: string }): Promise<React.Re
       listDefs(ctx.db, "person", {}, AbortSignal.timeout(8000)),
       readBaseCurrency(ctx.db, AbortSignal.timeout(8000)),
     ]);
-  // Resolve each person's org name from the visible org set (hidden orgs stay unnamed).
-  // orgOptions is the plain {id,name} lookup (no count computation, no pagination cap),
-  // which is all this page needs; listOrgs would compute people/deal counts for nothing.
   const orgNameById = new Map(orgOptions.map((o) => [o.id, o.name]));
   return (
     <PeopleList

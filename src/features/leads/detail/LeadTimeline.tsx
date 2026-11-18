@@ -45,11 +45,6 @@ function EmailList({ emails }: { emails: LeadTimelineEmail[] }): React.ReactNode
   );
 }
 
-// Lead detail timeline (Wave 3, Task 18): a Focus/History switch on top (mirrors the deal
-// workspace, Task 17), then the existing All/Activities/Notes/Email type filters nested under
-// History. Focus surfaces open activities only, so it never needs the type-filter row. Email
-// stays out of the interleaved HistoryItem model (its own EmailList), matching the deal workspace.
-// Presentational: data comes from the leadTimeline query.
 export function LeadTimeline({
   items,
   emails,

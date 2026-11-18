@@ -5,7 +5,6 @@ import { withTestDb } from "@/db/testing";
 import { seedPipelineWithStages, seedUser } from "@/db/testing/factories";
 import { scrubInaccessible } from "./scrub";
 
-// Insert a deal with the given visibility level owned by the given user.
 async function seedDeal(
   db: Parameters<Parameters<typeof withTestDb>[0]>[0],
   ownerId: string,
@@ -26,15 +25,12 @@ async function seedDeal(
 }
 
 describe("scrubInaccessible", () => {
-  // SECURITY: the core case - a user who lost access has their notifications deleted.
   it("deletes notifications for a user who lost access after visibility tightened", async () => {
     await withTestDb(async (db) => {
       const owner = await seedUser(db);
       const bob = await seedUser(db);
-      // Start with all-visibility so bob can see it.
       const dealId = await seedDeal(db, owner.id, "all");
 
-      // Insert a notification for bob referencing the deal.
       await db.insert(notifications).values({
         userId: bob.id,
         type: "deal_followed_update",
@@ -44,7 +40,6 @@ describe("scrubInaccessible", () => {
         payload: {},
       });
 
-      // Tighten visibility to owner-only: bob can no longer see it.
       await db.execute(sql`UPDATE deals SET visibility_level = 'owner' WHERE id = ${dealId}`);
 
       const signal = new AbortController().signal;
@@ -54,7 +49,6 @@ describe("scrubInaccessible", () => {
         signal,
       });
 
-      // SECURITY assertion: the notification MUST have been deleted.
       expect(deleted).toBe(1);
 
       const remaining = await db.select().from(notifications).where(sql`user_id = ${bob.id}::uuid`);
@@ -62,14 +56,12 @@ describe("scrubInaccessible", () => {
     });
   });
 
-  // A recipient who CAN still see the entity is NOT scrubbed.
   it("keeps notifications for a user who still has access", async () => {
     await withTestDb(async (db) => {
       const owner = await seedUser(db);
       const bob = await seedUser(db);
       const dealId = await seedDeal(db, owner.id, "all");
 
-      // Insert notifications for both owner and bob.
       await db.insert(notifications).values([
         {
           userId: owner.id,
@@ -89,7 +81,6 @@ describe("scrubInaccessible", () => {
         },
       ]);
 
-      // Tighten to owner-only: bob loses access, owner keeps it.
       await db.execute(sql`UPDATE deals SET visibility_level = 'owner' WHERE id = ${dealId}`);
 
       const signal = new AbortController().signal;
@@ -99,14 +90,12 @@ describe("scrubInaccessible", () => {
         signal,
       });
 
-      // Only bob's notification is deleted (1), not the owner's.
       expect(deleted).toBe(1);
 
       const ownerNotifs = await db
         .select()
         .from(notifications)
         .where(sql`user_id = ${owner.id}::uuid`);
-      // The owner's notification MUST remain.
       expect(ownerNotifs).toHaveLength(1);
 
       const bobNotifs = await db.select().from(notifications).where(sql`user_id = ${bob.id}::uuid`);
@@ -114,7 +103,6 @@ describe("scrubInaccessible", () => {
     });
   });
 
-  // A notification for a DIFFERENT entityId is untouched by the scrub.
   it("does not touch notifications for a different entity", async () => {
     await withTestDb(async (db) => {
       const owner = await seedUser(db);
@@ -122,7 +110,6 @@ describe("scrubInaccessible", () => {
       const dealId = await seedDeal(db, owner.id, "all");
       const otherDealId = await seedDeal(db, owner.id, "all");
 
-      // Notification for the OTHER deal (still all-visibility).
       await db.insert(notifications).values({
         userId: bob.id,
         type: "deal_followed_update",
@@ -132,7 +119,6 @@ describe("scrubInaccessible", () => {
         payload: {},
       });
 
-      // Tighten the first deal: bob would lose access to it.
       await db.execute(sql`UPDATE deals SET visibility_level = 'owner' WHERE id = ${dealId}`);
 
       const signal = new AbortController().signal;
@@ -142,7 +128,6 @@ describe("scrubInaccessible", () => {
         signal,
       });
 
-      // Nothing for this entity to scrub; the other-deal notification is untouched.
       expect(deleted).toBe(0);
 
       const bobNotifs = await db.select().from(notifications).where(sql`user_id = ${bob.id}::uuid`);

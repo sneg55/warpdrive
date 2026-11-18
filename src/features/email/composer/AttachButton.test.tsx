@@ -5,7 +5,6 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 afterEach(cleanup);
 
-// Stub server actions used by AttachButton.
 const requestUploadMock = vi.fn<
   () => Promise<{
     ok: boolean;
@@ -29,7 +28,6 @@ vi.mock("@/features/files/serverActions", () => ({
   confirmUploadAction: () => confirmUploadMock(),
 }));
 
-// Stub global fetch so the fake presigned POST doesn't hit the network.
 const fetchMock = vi.fn<() => Promise<Response>>(() =>
   Promise.resolve(new Response(null, { status: 204 })),
 );
@@ -59,7 +57,6 @@ describe("AttachButton", () => {
     const input = document.querySelector('input[type="file"]') as HTMLInputElement;
     expect(input).toBeTruthy();
 
-    // Simulate file selection with a PDF file.
     const file = new File(["pdf-content"], "report.pdf", { type: "application/pdf" });
     Object.defineProperty(input, "files", { value: [file], configurable: true });
     fireEvent.change(input);
@@ -77,8 +74,6 @@ describe("AttachButton", () => {
     render(<AttachButton entityType="deal" entityId="deal-1" onAttached={onAttached} />);
 
     const input = document.querySelector('input[type="file"]') as HTMLInputElement;
-    // Create a file that is 1 byte over the limit (MAX_FILE_BYTES from schemas).
-    // We use a size override since we can't really allocate that many bytes.
     const bigFile = new File(["x"], "huge.pdf", { type: "application/pdf" });
     Object.defineProperty(bigFile, "size", { value: 50 * 1024 * 1024 + 1 });
     Object.defineProperty(input, "files", { value: [bigFile], configurable: true });

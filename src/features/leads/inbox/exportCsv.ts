@@ -3,8 +3,6 @@ import { formatCurrency } from "@/lib/formatCurrency";
 import type { LeadRow } from "../leadRepo";
 import { LEAD_COLUMNS, type LeadColumn } from "./columns";
 
-// Resolve an ordered visible-key list (from the client) to ordered column descriptors, dropping any
-// key the server does not recognize. Keeps the export header/order matching the user's table.
 export function columnsFromKeys(keys: readonly string[]): LeadColumn[] {
   return keys.flatMap((k) => {
     const c = LEAD_COLUMNS.find((x) => x.key === k);
@@ -39,7 +37,6 @@ function cellValue(key: string, row: LeadRow, currency: string): string {
   }
 }
 
-// Pure: build a CSV string for the visible columns of the given rows (current filtered/sorted set).
 export function leadRowsToCsv(rows: LeadRow[], columns: LeadColumn[], currency: string): string {
   const header = columns.map((c) => escapeCsv(c.header)).join(",");
   const lines = rows.map((row) =>

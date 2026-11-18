@@ -5,10 +5,6 @@ import { seedUser } from "@/db/testing/factories";
 import type { AuthUser } from "@/features/permissions/types";
 import { getThreadNeighbors } from "./threadNeighbors";
 
-// P3: reader prev/next navigation. neighbors() returns the previous/next thread ids plus the 1-based
-// index and total over the owner's mailbox for a folder, ordered like the inbox list
-// (last_message_at DESC NULLS LAST, id DESC). A non-owner (shared-thread viewer) gets no nav.
-
 type TestDb = Parameters<Parameters<typeof withTestDb>[0]>[0];
 const SIG = (): AbortSignal => AbortSignal.timeout(8000);
 const actorOf = (id: string): AuthUser => ({
@@ -27,7 +23,6 @@ async function seedAccount(db: TestDb, ownerId: string): Promise<string> {
   return acct.id;
 }
 
-// Three inbox threads, newest first: t3 (newest) > t2 > t1 (oldest).
 async function seedThreeInbox(
   db: TestDb,
   acctId: string,
@@ -59,7 +54,6 @@ describe("getThreadNeighbors", () => {
         { actor: actorOf(owner.id), threadId: t2, folder: "inbox" },
         SIG(),
       );
-      // Order is newest-first: t3 (1), t2 (2), t1 (3). t2's prev is the newer t3, next is the older t1.
       expect(out).toEqual({ prevId: t3, nextId: t1, index: 2, total: 3 });
     });
   });
@@ -91,7 +85,6 @@ describe("getThreadNeighbors", () => {
       const owner = await seedUser(db, { email: "o@gunsnation.com" });
       const acctId = await seedAccount(db, owner.id);
       const { t2, t3 } = await seedThreeInbox(db, acctId);
-      // Archive the middle thread: the inbox set is now just t3, t1.
       await db.execute(sql`UPDATE email_threads SET archived_at = now() WHERE id = ${t2}`);
 
       const out = await getThreadNeighbors(
@@ -107,8 +100,6 @@ describe("getThreadNeighbors", () => {
     await withTestDb(async (db) => {
       const owner = await seedUser(db, { email: "o@gunsnation.com" });
       const acctId = await seedAccount(db, owner.id);
-      // A: newest by last_message_at but OLDEST outbound. B: oldest by last_message_at but NEWEST
-      // outbound. Sent orders by outbound sent_at (matching listSentThreads), so B leads, not A.
       const mk = async (gmailId: string, lastAt: string, sentAt: string): Promise<string> => {
         const r = (
           await db.execute(

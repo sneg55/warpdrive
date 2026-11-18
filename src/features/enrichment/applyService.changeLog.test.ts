@@ -85,8 +85,6 @@ async function readLog(entityId: string, field: string) {
   return row;
 }
 
-// The planner coerces a provider value to what the target column can hold (money is rounded to two
-// decimals). Logging the raw selection instead makes the timeline name a value the record never had.
 describe("applyEnrichment change-log values", () => {
   it("logs the rounded revenue the column holds, not the provider's raw number", async () => {
     const org = await seedOrg();
@@ -181,7 +179,6 @@ describe("applyEnrichment change-log values", () => {
     }
   });
 
-  // A company name resolves to an organization link, so there is no coerced scalar to log.
   it("logs the selected company name when a person is linked", async () => {
     const org = await seedOrg({ name: "Soylent Holdings", domain: `soylent-${uniq()}.test` });
     const [person] = await h.db

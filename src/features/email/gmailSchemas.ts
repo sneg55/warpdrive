@@ -10,9 +10,6 @@ export const historyListSchema = z.object({
       z.object({
         messagesAdded: z.array(z.object({ message: messageRefSchema })).optional(),
         messagesDeleted: z.array(z.object({ message: messageRefSchema })).optional(),
-        // labelIds carries WHICH labels changed; needed to detect a Gmail-side TRASH add (delete)
-        // and TRASH removal (restore) (P4), which arrive as label changes on an existing message,
-        // not messagesAdded events.
         labelsAdded: z
           .array(z.object({ message: messageRefSchema, labelIds: z.array(z.string()).default([]) }))
           .optional(),
@@ -27,7 +24,6 @@ export type HistoryList = z.infer<typeof historyListSchema>;
 
 const headerSchema = z.object({ name: z.string(), value: z.string() });
 
-// GmailPart is recursive so we need an explicit type + z.lazy.
 export type GmailPart = {
   mimeType?: string;
   filename?: string;
@@ -74,8 +70,6 @@ export type MessageList = z.infer<typeof messageListSchema>;
 
 export const gmailThreadSchema = z.object({
   id: z.string(),
-  // Per-message labelIds (format=metadata returns them). Used to tell a WHOLE-thread trash from a
-  // single-message trash (P4): a thread is trashed in WD only when every message is in TRASH.
   messages: z
     .array(z.object({ id: z.string(), labelIds: z.array(z.string()).default([]) }))
     .default([]),

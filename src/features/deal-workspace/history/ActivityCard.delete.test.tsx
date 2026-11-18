@@ -67,7 +67,6 @@ function makeActivity(over: Partial<CalendarActivity> = {}): CalendarActivity {
   };
 }
 
-// Opens the "..." overflow and picks Delete, returning the confirmation it raises.
 async function openDeleteConfirm(user: ReturnType<typeof userEvent.setup>): Promise<HTMLElement> {
   await user.click(screen.getByRole("button", { name: /more actions/i }));
   await user.click(screen.getByRole("menuitem", { name: "Delete" }));

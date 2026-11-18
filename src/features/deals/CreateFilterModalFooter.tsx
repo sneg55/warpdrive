@@ -6,18 +6,14 @@ const BTN =
   "rounded-md border px-3 py-1.5 text-sm transition-[background-color,scale] duration-150 ease-out hover:bg-accent active:scale-[0.96] disabled:opacity-50 motion-reduce:transition-colors";
 
 interface CreateFilterModalFooterProps {
-  // Every action that leaves the dialog is disabled while a row carries a value its field rejects.
   disabled: boolean;
   onPreview?: () => void;
   onCancel: () => void;
   onApply?: () => void;
   onSave: () => void;
-  // Names what Save does here: create, update in place, or fork someone else's filter.
   saveLabel: string;
 }
 
-// The filter dialog's action bar: Preview on the left, Cancel / Apply / Save on the right.
-// Split out of CreateFilterModal so the modal body stays readable.
 export function CreateFilterModalFooter({
   disabled,
   onPreview,

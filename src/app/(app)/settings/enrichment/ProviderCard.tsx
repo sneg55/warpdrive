@@ -22,14 +22,11 @@ export interface ProviderCardView {
   needsAttention: boolean;
 }
 
-// Local wall-clock, because a cooldown is something the admin reads against their own clock.
 function clockTime(iso: string): string {
   const at = new Date(iso);
   return `${String(at.getHours()).padStart(2, "0")}:${String(at.getMinutes()).padStart(2, "0")}`;
 }
 
-// Zero is a real count and has to survive to the admin, so each window is tested for presence
-// rather than truthiness.
 function quotaLine(quota: QuotaRemaining | null): string | null {
   if (quota === null) return null;
   const windows: string[] = [];
@@ -46,8 +43,6 @@ function notEntitledLine(entities: readonly string[] | null): string | null {
   return S.testNotEntitledLine(named.join(S.testLookupSeparator));
 }
 
-// A null clock is the pre-mount render: both the comparison and the printed time are local, so
-// neither may run until the browser has supplied its own clock.
 function statusLine(view: ProviderCardView, now: Date | null): string {
   if (!view.hasKey) return S.statusNoKey;
   if (view.needsAttention) return S.statusRejected;
@@ -88,11 +83,7 @@ export function ProviderCard({
   const [confirming, setConfirming] = useState(false);
   const allowance = quotaLine(testQuota);
   const planGap = notEntitledLine(testNotEntitled);
-  // A probe reports on the key the row held when it started, so the key controls are locked for
-  // its duration too, not only while a write is in flight.
   const locked = pending || testing;
-  // A cooling provider is filtered out of the usable set, so a probe can only come back as a
-  // missing key, which is not what happened.
   const resting =
     view.throttledUntilIso !== null && now !== null && new Date(view.throttledUntilIso) > now;
 
@@ -126,8 +117,6 @@ export function ProviderCard({
         <label htmlFor={keyFieldId} className="block text-sm font-medium">
           {S.apiKeyLabel}
         </label>
-        {/* Wraps rather than squeezes: the three action labels are fixed-width, so on a narrow
-            window the buttons drop to their own line instead of crushing the key field. */}
         <div className="flex flex-wrap items-center gap-2">
           <Input
             id={keyFieldId}

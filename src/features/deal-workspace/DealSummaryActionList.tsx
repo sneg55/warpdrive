@@ -26,8 +26,6 @@ interface SummaryDeal {
 
 const ICON = "h-4 w-4";
 
-// One Summary row: PD's icon-gutter + content layout (no field labels). `right` carries the
-// row's right-aligned shortcut (+ Participants on the person row).
 function ActionRow({
   icon,
   children,
@@ -46,10 +44,6 @@ function ActionRow({
   );
 }
 
-// Pipedrive-exact deal Summary (minus out-of-scope Scores/Products/sequence/Project): an action
-// list, not a label/value table. Values render as text or entity links; empty fields are blue
-// CTAs ("Add labels", "Set expected close date"); "+ Participants" hangs on the person row.
-// Owner lives in the page header, matching PD.
 export function DealSummaryActionList({
   deal,
   person,
@@ -83,8 +77,6 @@ export function DealSummaryActionList({
     router.refresh();
   }
 
-  // Dirty + parseable gating for the value editor's Save (PD disables Save until the
-  // draft differs; an unparseable draft must never commit).
   const trimmed = draft.trim();
   const parsedValue = trimmed === "" ? null : Number(trimmed);
   const valueValid = parsedValue === null || !Number.isNaN(parsedValue);

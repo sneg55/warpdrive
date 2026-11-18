@@ -3,10 +3,6 @@ import { describe, expect, it } from "vitest";
 import { filterToSql } from "./filterAst";
 import { parseSavedFilterDefinition, parseSavedFilterDefinitionFor } from "./parseDefinition";
 
-// Saved filters store their definition as jsonb. This parse used to run client-side in
-// savedFilterView (dragging zod into the board bundle); it now runs at the server tRPC boundary.
-// These cases pin the behavior the client relied on: a valid definition passes through; anything
-// malformed collapses to an empty (no-op) filter rather than throwing.
 describe("parseSavedFilterDefinition", () => {
   it("passes a valid definition through", () => {
     const def = {
@@ -22,8 +18,6 @@ describe("parseSavedFilterDefinition", () => {
     expect(parseSavedFilterDefinition({}).conditions).toEqual([]);
   });
 
-  // Saved rows predate the combinator, so a stored definition without the key has to keep meaning
-  // AND, both after parsing and once compiled.
   it("defaults a stored definition with no combinator key to and", () => {
     const parsed = parseSavedFilterDefinition({
       conditions: [
@@ -44,8 +38,6 @@ describe("parseSavedFilterDefinition", () => {
   });
 });
 
-// A saved view belongs to one entity, so a stored row is parsed against that entity's field
-// allow-list. Parsing a person row with the deal schema would drop every person-only field.
 describe("parseSavedFilterDefinitionFor", () => {
   it("parses a person definition against the person fields", () => {
     const parsed = parseSavedFilterDefinitionFor("person", {

@@ -3,8 +3,6 @@ import { deals } from "./deals";
 import { leads } from "./leads";
 import { organizations } from "./organizations";
 import { persons } from "./persons";
-// labels table + label_target/label_color enums already live in system.ts
-// (created in migration 0000). This file adds only the many-to-many join tables.
 import { labels } from "./system";
 
 export const dealLabels = pgTable(

@@ -9,10 +9,6 @@ import { CalendarClient } from "./CalendarClient";
 import { CalendarEmpty } from "./CalendarEmpty";
 import { CalendarFilterBar } from "./CalendarFilterBar";
 
-// Client wrapper that adds owner/type/status filters (AC1) over the calendar. The full in-window
-// activity set is fetched server-side (page.tsx); filtering happens client-side so switching a
-// filter is instant and needs no re-query. Option metadata reuses the same tRPC queries the list
-// toolbar uses.
 export function FilterableCalendar({
   view,
   anchorIso,
@@ -64,8 +60,6 @@ export function FilterableCalendar({
           <CalendarEmpty
             view={view}
             hasFilter={hasFilter}
-            // `activities` is the whole window as the server returned it; `filtered` is what the
-            // filter bar left of it. Only the first can answer "was there anything to exclude".
             hasUnfilteredActivities={activities.length > 0}
             dateIso={anchorIso}
             onClearFilters={() => setFilter(NO_CALENDAR_FILTER)}

@@ -1,6 +1,3 @@
-// Enrichment writes one change_logs row per applied field: a dotted canonical key for
-// `field` and `{ value, providers }` for `newValue`. Both have to read as prose in the
-// timeline, not as raw JSON.
 import { describe, expect, it } from "vitest";
 import { CHANGE_FIELD_TITLE } from "@/constants/changeLogFields";
 import { buildHistoryTimeline, formatChangeLabel } from "./historyTimeline";

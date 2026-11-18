@@ -1,11 +1,9 @@
 // @vitest-environment jsdom
-// SaveAsTemplateDialog.test.tsx: saving the current composer draft as a private template.
 import "@testing-library/jest-dom/vitest";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
-// Radix Dialog needs these jsdom polyfills to open under userEvent.
 beforeAll(() => {
   Element.prototype.scrollIntoView = vi.fn();
   Element.prototype.hasPointerCapture = vi.fn(() => false);

@@ -6,13 +6,6 @@ import type { Db } from "@/db/client";
 import { type MailLabelRow, mailLabels } from "@/db/schema/mailLabels";
 import { err, ok, type Result } from "@/types/result";
 
-// Mail-label catalog reads/writes (inbox parity U6). Labels are inbox-personal metadata, created
-// inline by any user; a thread references a row by its stable `key`. Built-in keys equal the
-// historic follow-up tokens so the existing inbox label filter keeps matching (see mailLabels.ts).
-
-// A url/token-safe key derived from the display name: lowercased, punctuation/space runs collapsed
-// to a single underscore, trimmed. Two names that normalize the same share a key (that is the
-// dedupe axis). Kept in sync with the built-in keys seeded by migration 0055.
 export function slugifyMailLabelKey(name: string): string {
   return name
     .trim()
@@ -26,10 +19,6 @@ export async function listMailLabels(db: Db, signal: AbortSignal): Promise<MailL
   return db.select().from(mailLabels).orderBy(asc(mailLabels.order), asc(mailLabels.name));
 }
 
-// Returns the subset of `keys` that have no matching catalog row. Case-insensitive on key to mirror
-// resolveMailLabelChips (legacy tokens resolve regardless of case). Empty input or all-known returns
-// []. Callers reject a thread-labels write when this is non-empty so an unknown key never persists as
-// invisible, unremovable metadata (resolveMailLabelChips would silently drop it on read).
 export async function findUnknownMailLabelKeys(
   db: Db,
   keys: string[],
@@ -49,8 +38,6 @@ export async function createMailLabel(
 ): Promise<Result<MailLabelRow, AppError>> {
   signal.throwIfAborted();
   const name = input.name.trim();
-  // Fall back to a random key when the name has no slug-able characters (e.g. all punctuation) so
-  // the row is never keyed by the empty string.
   const key = slugifyMailLabelKey(name) || `label_${randomUUID().slice(0, 8)}`;
 
   const [maxRow] = await db
@@ -58,8 +45,6 @@ export async function createMailLabel(
     .from(mailLabels);
   const nextOrder = (maxRow?.max ?? -1) + 1;
 
-  // Find-or-create: a duplicate key resolves to the existing row (dedupe by normalized name)
-  // instead of erroring. onConflictDoNothing guards a concurrent create racing on the unique key.
   const inserted = await db
     .insert(mailLabels)
     .values({ key, name, color: input.color, order: nextOrder })

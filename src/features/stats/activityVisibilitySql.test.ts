@@ -1,5 +1,3 @@
-// The dominant-parent rule (deal > person > org > parentless) mirrored in SQL. Exercised
-// through activitiesByType, which is one of the three queries that apply it.
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import * as schema from "@/db/schema";
 import { makeTestDb, type TestDb } from "@/test/db";

@@ -39,7 +39,6 @@ const FIELD_TYPE_OPTIONS = CUSTOM_FIELD_TYPES.map((fieldType) => ({
 }));
 const OPTION_TYPES = new Set<CustomFieldType>(["single_option", "multi_option"]);
 
-// Parses the comma-separated options input into the {id,label} option shape createDef expects.
 function parseOptions(raw: string): { id: string; label: string }[] {
   return raw
     .split(",")
@@ -72,7 +71,6 @@ export function DataFieldsClient({
     const trimmed = name.trim();
     if (trimmed === "") return;
     const options = OPTION_TYPES.has(type) ? parseOptions(optionsRaw) : undefined;
-    // An option-typed field with no options is unusable; block it before the action.
     if (options !== undefined && options.length === 0) {
       setError(S.fieldOptionsRequired);
       return;

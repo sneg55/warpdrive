@@ -1,7 +1,3 @@
-// getWorkspace must issue its post-gate reads concurrently, not one after another.
-// Real Postgres via Testcontainers (no DB mocking, see CLAUDE.md): we wrap the real pool's
-// query method to observe how many statements are in flight at once, then hand the untouched
-// db handle to getWorkspace.
 import { afterAll, beforeAll, expect, it } from "vitest";
 import type { PermissionFlagKey } from "@/constants/permissionFlags";
 import { deals } from "@/db/schema";
@@ -32,9 +28,6 @@ function makeActor(userId: string) {
 
 const sig = () => new AbortController().signal;
 
-// Swap pool.query for a counting wrapper. Returns the peak number of statements that were
-// in flight simultaneously, plus a restore(). The wrapper delegates to the real query, so the
-// database work is unchanged.
 function trackPeakConcurrency(pool: typeof h.pool): {
   peak: () => number;
   restore: () => void;
@@ -59,9 +52,6 @@ function trackPeakConcurrency(pool: typeof h.pool): {
   };
 }
 
-// The reads after the visibility gate (stages, followers, owner, lost-reason options, custom
-// field defs) depend only on the already-loaded deal, so all five can be in flight together.
-// Serialized, the peak is 1.
 const UNCONDITIONAL_POST_GATE_READS = 5;
 
 it("issues the post-gate reads concurrently rather than serially", async () => {

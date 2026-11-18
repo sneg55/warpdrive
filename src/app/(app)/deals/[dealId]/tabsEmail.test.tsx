@@ -137,8 +137,6 @@ describe("deal workspace email timeline", () => {
   });
 });
 
-// An in-flight or failed read carries no empty result to report, so the Email filter must say which
-// of the three it is instead of defaulting to "none linked".
 describe("deal workspace Email filter status", () => {
   function renderEmailTab(): void {
     render(

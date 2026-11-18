@@ -39,11 +39,6 @@ describe("MCP env", () => {
   });
 });
 
-// RFC 7591 dynamic registration is what lets an MCP client self-onboard without an admin
-// pre-provisioning it, so it stays open by default or every existing deploy breaks on upgrade.
-// But an open registration endpoint means any stranger can mint a client whose name the consent
-// screen then shows to a user, which is the setup for consent phishing. A deploy that has
-// already connected the clients it needs should be able to shut the door.
 describe("OAUTH_REGISTRATION", () => {
   const withKey = { ...base, OAUTH_SIGNING_KEY: Buffer.alloc(32).toString("base64") };
 

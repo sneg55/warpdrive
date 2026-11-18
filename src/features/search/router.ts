@@ -2,8 +2,6 @@ import { protectedProcedure, router } from "@/server/trpc/trpc";
 import { searchAll } from "./query";
 import { searchInput } from "./schemas";
 
-// 15-second timeout per request; no signal on ctx so we create one here.
-// Matches the pattern used in src/features/notifications/router.ts.
 const SIG = (): AbortSignal => AbortSignal.timeout(15_000);
 
 export const searchRouter = router({

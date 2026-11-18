@@ -44,8 +44,6 @@ const ROW: FieldRow = {
   showInAddForm: false,
 };
 
-// FieldRowItem calls useSortable, which reads dnd-kit's React context, so it must render
-// under the same DndContext/SortableContext nesting FieldList provides in production.
 function renderRow(row: FieldRow): ReturnType<typeof render> {
   return render(
     <DndContext>

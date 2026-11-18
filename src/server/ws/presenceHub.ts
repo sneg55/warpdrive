@@ -1,13 +1,5 @@
-// Presence hub: manages per-channel sender registries and orchestrates
-// PresenceRegistry join/leave/drop and broadcast. Created once per
-// startWsServer call so multiple test servers never share state.
-//
-// Presence frames are NEVER seq-stamped and NEVER go through the relay.
-// Frame shape: { kind: "presence", channel, users: [{ userId, name }] }
-
 import { PresenceRegistry, type PresenceUser } from "./presence";
 
-// Channel families that participate in presence tracking.
 const PRESENCE_CHANNEL_PREFIXES = ["deal:", "pipeline:"] as const;
 
 export function isPresenceChannel(channel: string): boolean {
@@ -20,12 +12,10 @@ interface PresenceFrame {
   users: PresenceUser[];
 }
 
-// sender: a function that delivers a raw JSON string to one socket.
 type Sender = (json: string) => void;
 
 export class PresenceHub {
   private readonly registry = new PresenceRegistry();
-  // channel -> connId -> send function
   private readonly senders = new Map<string, Map<string, Sender>>();
 
   private broadcastPresence(channel: string): void {
@@ -61,7 +51,6 @@ export class PresenceHub {
     this.broadcastPresence(channel);
   }
 
-  // Called on socket close. Returns affected channels (for logging if needed).
   dropConnection(connId: string): string[] {
     const affected = this.registry.dropConnection(connId);
     for (const channel of affected) {

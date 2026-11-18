@@ -45,10 +45,7 @@ export function MapStep({
 }: MapStepProps): React.ReactNode {
   const complete = isMappingComplete(state, state.source);
   const columnOptions = buildColumnOptions(state.target, defs, hiddenBuiltins, state.source);
-  // Dedup applies to the record a row MATCHES on. Leads have no natural dedup key and always
-  // create, so the control would do nothing there.
   const showDedup = state.target === "person" || state.target === "organization";
-  // Notes attach to deal/person/organization/lead, never to activities.
   const canRowNote = state.target !== "activity";
 
   return (
@@ -66,9 +63,6 @@ export function MapStep({
               <tr key={header} className="border-t first:border-t-0">
                 <td className="px-3 py-2 align-middle">
                   <span className="font-medium">{header}</span>
-                  {/* Sample values legitimately repeat (a boolean column reads "False" twice), so
-                      the value is not a unique key. This list is derived read-only from a frozen
-                      slice: it never reorders, never grows, and holds no component state. */}
                   {sampleValues(state.rows, header).map((value, i) => (
                     <span
                       // biome-ignore lint/suspicious/noArrayIndexKey: static, never-reordered list

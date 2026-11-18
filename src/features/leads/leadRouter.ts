@@ -5,7 +5,6 @@ import { getLeadById, listLeads } from "./leadRepo";
 import { leadTimeline as loadLeadTimeline } from "./leadTimeline";
 import { leadByIdInput, leadListInput, leadTimelineInput } from "./schemas";
 
-// Build a DealVisibilitySession from the protected-procedure actor (mirrors dealRouter).
 function actorToSession(actor: {
   id: string;
   type: string;

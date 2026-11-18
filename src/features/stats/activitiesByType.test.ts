@@ -78,9 +78,7 @@ describe("activitiesByType", () => {
       new AbortController().signal,
     );
     const byId = new Map(rows.map((r) => [r.typeId, r]));
-    // The second call was due in 2024 but done in 2025: completion date is what counts.
     expect(byId.get(call.id)?.completed).toBe(2);
-    // A type nobody used still appears, so "no meetings booked" is visible rather than absent.
     expect(byId.get(lunch.id)?.completed).toBe(0);
   });
 

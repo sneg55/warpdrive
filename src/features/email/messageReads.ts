@@ -30,22 +30,15 @@ interface Row {
   owner_email: string;
 }
 
-// ThreadMessage plus the two fields a reply needs, which the thread reader gets from ThreadView
-// but a single-message read has to carry itself.
 export interface TimelineMessageBody extends ThreadMessage {
   accountId: string;
   ownerEmail: string;
 }
 
-// jsonb columns round-trip through the driver as `unknown`; narrow rather than trust the shape.
 function asStringArray(v: unknown): string[] {
   return Array.isArray(v) ? (v as string[]) : [];
 }
 
-// One message with its body sanitized for the caller's allowRemote choice, enforcing canSeeEmail
-// on the parent thread. Feeds expand-on-demand in the record timelines, where the collapsed cards
-// carry no body. A missing or invisible message returns the same E_GMAIL_026, so the error never
-// distinguishes the two (404-on-invisible, mirroring getThread's E_GMAIL_011).
 export async function getMessage(
   db: Db,
   args: { actor: AuthUser; messageId: string; allowRemote: boolean },
@@ -99,8 +92,6 @@ export async function getMessage(
     toEmails: asStringArray(row.to_emails),
     ccEmails: asStringArray(row.cc_emails),
     subject: row.subject,
-    // Prefer the HTML part; fall back to safe HTML from text/plain, matching getThread so a
-    // text-only message renders the same whichever read loaded it.
     bodyHtml: sanitizeInboundHtml(
       row.body_html !== null && row.body_html.trim() !== ""
         ? row.body_html

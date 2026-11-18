@@ -45,15 +45,11 @@ export function TemplatesSettingsClient({
   const router = useRouter();
   const reportError = useActionError();
   const [draft, setDraft] = useState<TemplateDraft | null>(null);
-  // A blank-name save used to return silently, so Save looked dead. Track the validation
-  // failure and render it on the form instead.
   const [nameError, setNameError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const csrf = (): string | null => readCsrfToken();
 
-  // T4c optimistic order over ALL own ids (unfiltered). Resync during render (not an effect) when
-  // the server list changes: compare a stable key and adjust state, the React-sanctioned pattern.
   const allOwnIds = useMemo(() => templates.filter((t) => t.isOwn).map((t) => t.id), [templates]);
   const ownKey = allOwnIds.join(",");
   const [order, setOrder] = useState<string[]>(allOwnIds);
@@ -68,7 +64,6 @@ export function TemplatesSettingsClient({
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
-  // T2: case-insensitive substring filter by name; empty query shows all.
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return q === "" ? templates : templates.filter((t) => t.name.toLowerCase().includes(q));
@@ -108,7 +103,6 @@ export function TemplatesSettingsClient({
     });
   }
 
-  // Every draft transition (open, edit, cancel) clears the stale validation message.
   function changeDraft(next: TemplateDraft | null): void {
     setDraft(next);
     if (next === null || next.name.trim() !== "") setNameError(null);
@@ -158,10 +152,8 @@ export function TemplatesSettingsClient({
     if (over === null || active.id === over.id) return;
     const prev = order;
     const next = reorderByDrag(order, String(active.id), String(over.id));
-    setOrder(next); // optimistic
+    setOrder(next);
     const r = await reorderTemplatesAction(csrf(), { orderedIds: next });
-    // On failure, restore the exact prior order directly: router.refresh() returns the same id set,
-    // so ownKey is unchanged and the render-time resync would leave the failed order stuck.
     if (!r.ok) {
       setOrder(prev);
       reportError(r.error.id);
@@ -206,8 +198,6 @@ export function TemplatesSettingsClient({
         <ul className="divide-y rounded-md border">
           {(ownViewIds.length > 0 || sharedRows.length > 0) && (
             <li className="flex items-center gap-3 px-3 py-2 text-xs font-medium text-muted-foreground">
-              {/* Drag-handle column spacer so the header aligns with the rows below (own rows lead
-                with a drag handle, shared rows with a matching spacer). */}
               <span className="size-7" />
               {ownViewIds.length > 0 ? (
                 <Checkbox checked={allChecked} onCheckedChange={toggleAll} label={S.selectAll} />

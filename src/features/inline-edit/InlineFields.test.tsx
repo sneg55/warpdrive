@@ -21,7 +21,6 @@ describe("InlineTextField (PD mechanism)", () => {
   it("renders the value as plain text with a pencil-only edit trigger", () => {
     render(<InlineTextField label="Value" value="10" onSave={vi.fn()} />);
     expect(screen.getByText("10")).toBeInTheDocument();
-    // The value is NOT a click target; clicking it must not open the editor.
     fireEvent.click(screen.getByText("10"));
     expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Edit Value" })).toBeInTheDocument();
@@ -43,7 +42,6 @@ describe("InlineTextField (PD mechanism)", () => {
     fireEvent.change(screen.getByLabelText("Value"), { target: { value: "20" } });
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
     expect(onSave).toHaveBeenCalledWith("20");
-    // Let the in-flight save settle (pending disables the editor controls) before re-editing.
     await waitFor(() => expect(screen.getByText("10")).toBeInTheDocument());
 
     fireEvent.click(screen.getByRole("button", { name: "Edit Value" }));
@@ -147,7 +145,6 @@ describe("InlineDateField (PD mechanism)", () => {
     const onSave = vi.fn(() => Promise.resolve(ok(undefined)));
     render(<InlineDateField label="Expected close date" value="2026-07-04" onSave={onSave} />);
     fireEvent.click(screen.getByRole("button", { name: "Edit Expected close date" }));
-    // Editor opens with the calendar already showing (PD behavior).
     fireEvent.click(await screen.findByText("15"));
     expect(onSave).not.toHaveBeenCalled();
     const save = screen.getByRole("button", { name: "Save" });

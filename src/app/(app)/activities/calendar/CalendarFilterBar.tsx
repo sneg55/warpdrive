@@ -10,9 +10,6 @@ import {
 } from "@/features/activities/activityFilterOptions";
 import type { CalendarFilterState } from "@/features/activities/calendarFilter";
 
-// Calendar filter toolbar (AC1): owner (assignee) / status / type, the same three axes the list
-// toolbar offers, minus the date range (the calendar view is the date window). Reuses the shared
-// Combobox / Select / ActivityTypeTab primitives.
 export function CalendarFilterBar({
   filter,
   onChange,
@@ -31,8 +28,6 @@ export function CalendarFilterBar({
   return (
     <div className="flex flex-col gap-2">
       <div className="flex flex-wrap items-center gap-2">
-        {/* Both primitives default to w-full; with no width here each claims the whole flex line
-            and wraps, so two one-word pickers render full-bleed and stacked. */}
         <Combobox
           ariaLabel="Owner"
           triggerClassName="w-52"

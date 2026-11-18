@@ -13,11 +13,8 @@ it("labels accepts valid keys and dedupes", () => {
 });
 
 it("labels defaults to an empty array and accepts any catalog name (validated by the UI catalog)", () => {
-  // Labels are user-managed in Settings > Company > Labels, so the schema no longer rejects by a
-  // fixed enum; it validates shape only. An arbitrary catalog name passes.
   expect(dealCreateInput.parse(base).labels).toEqual([]);
   expect(dealCreateInput.parse({ ...base, labels: ["Enterprise"] }).labels).toEqual(["Enterprise"]);
-  // Shape is still enforced: an empty name is rejected.
   expect(dealCreateInput.safeParse({ ...base, labels: [""] }).success).toBe(false);
 });
 

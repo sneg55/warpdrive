@@ -1,11 +1,3 @@
-/**
- * scripts/seed-demo-collab.ts
- *
- * Collaboration + peripheral state: notes (with comments/mentions), notifications,
- * file attachments, saved filters, and activity participants/guests. All rows are
- * demo-owned so wipeDemo clears them before reseeding.
- */
-
 import { at, pick, type Rng, randInt } from "./seed-demo-data";
 import type { Db } from "./seed-smoke-phase5-infra";
 
@@ -60,8 +52,6 @@ export async function seedNotes(db: Db, rng: Rng, t: Targets, userIds: string[])
       if (rng() >= frac) continue;
       const noteId = await noteOn(db, rng, kind, id, userIds);
       count += 1;
-      // ~30% of notes get a comment + an @mention of another user, which also
-      // lands a notification in that user's feed.
       if (rng() < 0.3) {
         const author = pick(rng, userIds);
         const mentioned = pick(rng, userIds);
@@ -154,14 +144,6 @@ export interface SavedFilterSeed {
   def: Record<string, unknown>;
 }
 
-// Builds the demo saved-filter rows. Definitions MUST conform to the saved-filters
-// FilterDefinition schema (src/features/saved-filters/schemas.ts); a stored key the schema
-// strips is a silent no-op (see scripts/auditConfig). Only "deal"-target filters are consumed
-// (dealRouter.savedFilters queries target="deal"); activities have their own separate filter
-// system and never read saved_filters, so no activity filter is seeded.
-//
-// "My open deals" is the owner's open deals. filterToSql has no access to the actor id, so the
-// owner is bound into the definition as a concrete ownerId=eq condition alongside status=open.
 export function buildSavedFilterSeeds(userIds: string[]): SavedFilterSeed[] {
   const seeds: SavedFilterSeed[] = [];
   const owner0 = userIds[0];
@@ -202,7 +184,6 @@ export async function seedSavedFilters(db: Db, userIds: string[]): Promise<void>
   }
 }
 
-// Attaches user participants and person guests to a sample of demo activities.
 export async function seedActivityExtras(
   db: Db,
   rng: Rng,

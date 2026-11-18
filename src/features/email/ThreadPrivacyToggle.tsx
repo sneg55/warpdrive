@@ -13,15 +13,11 @@ import {
 import { readCsrfToken } from "@/utils/csrfCookie";
 import { setThreadVisibilityAction } from "./threadVisibilityActions";
 
-// A closed padlock (private) or an open one (shared).
 function LockGlyph({ open }: { open: boolean }): React.ReactNode {
   const Glyph = open ? LockOpen : Lock;
   return <Glyph aria-hidden="true" className="h-3.5 w-3.5" />;
 }
 
-// Owner-only per-row privacy switch (P5). Private = closed lock; the DropdownMenu offers
-// Private/Shared. Only the mailbox owner mounts this (ThreadRow gates on thread.isOwner), and the
-// server re-checks ownership, so this is an affordance, not the security boundary.
 export function ThreadPrivacyToggle({
   threadId,
   visibility,

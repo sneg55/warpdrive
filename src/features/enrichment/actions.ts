@@ -9,8 +9,6 @@ import { createContext } from "@/server/trpc/context";
 import { type Applied, applyEnrichment } from "./applyService";
 import { type RunView, runEnrichment } from "./service";
 
-// The fan-out waits on RocketReach's polling budget, so the ordinary 8s action signal is too
-// short. This is the only place in the app that deliberately runs longer.
 const ENRICH_TIMEOUT_MS = 25_000;
 
 type ActionResult<T> =
@@ -32,8 +30,6 @@ const applyInput = z.object({
       z.object({
         canonicalKey: z.string().min(1),
         value: z.union([z.string(), z.number()]),
-        // Set targets only. Declared here because z.object strips what it does not name, so
-        // omitting it would silently turn every promotion back into a plain add.
         makePrimary: z.boolean().optional(),
       }),
     )

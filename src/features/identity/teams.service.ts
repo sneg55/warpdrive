@@ -14,8 +14,6 @@ export function listTeams(db: Db, signal: AbortSignal) {
   return db.select().from(teams);
 }
 
-// Current members of a team, resolved to display names for the edit screen's roster. Uses the
-// unfiltered users join so a member who was later deactivated still shows (like the manager cell).
 export async function listTeamMembers(
   db: Db,
   teamId: string,
@@ -30,7 +28,6 @@ export async function listTeamMembers(
   return rows.map((r) => ({ userId: r.userId, name: r.name }));
 }
 
-// Rename a team and/or change its manager. Same manage gate as create; updatedAt bumps via $onUpdate.
 export async function updateTeam(
   db: Db,
   actor: PermSetUser,
@@ -49,7 +46,6 @@ export async function updateTeam(
   return ok(true);
 }
 
-// Delete a team. team_members rows cascade (FK onDelete cascade), so the roster is cleaned up.
 export async function deleteTeam(
   db: Db,
   actor: PermSetUser,
@@ -80,7 +76,6 @@ export async function createTeam(
   return ok({ id: row.id });
 }
 
-// Teams are a filtering mechanism only (no ACL effect), so membership is not audited.
 export async function setTeamMembers(
   db: Db,
   actor: PermSetUser,

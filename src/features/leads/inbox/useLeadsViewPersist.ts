@@ -5,9 +5,6 @@ import { setLeadsViewAction } from "@/features/identity/preferencesActions";
 import { readCsrfToken } from "@/utils/csrfCookie";
 import type { LeadSort } from "./useLeadSort";
 
-// Best-effort, debounced persistence of the Leads Inbox column order + sort to user_preferences.
-// Skips the initial mount (server already seeded the view), and flushes a still-pending write on
-// unmount so a reorder/sort change made just before navigating away is not silently dropped.
 export function useLeadsViewPersist(order: readonly string[], sort: LeadSort): void {
   const mounted = useRef(false);
   const persistTimer = useRef<ReturnType<typeof setTimeout> | null>(null);

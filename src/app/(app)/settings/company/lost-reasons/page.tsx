@@ -8,7 +8,6 @@ import { LostReasonsClient } from "./LostReasonsClient";
 
 export const metadata = { title: STRINGS.settings.lostReasons };
 
-// Company settings > Lost reasons tab (spec 6.3): catalog list + add + rename + reorder + archive.
 export default async function LostReasonsPage(): Promise<ReactNode> {
   const { actor } = await createContext();
   if (actor === null || (actor.type !== "admin" && !actor.flags.has(PERMISSION_FLAGS.MANAGE))) {

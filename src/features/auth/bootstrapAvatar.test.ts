@@ -32,11 +32,9 @@ async function firstLogin(over: Partial<VerifiedIdentity> = {}): Promise<string>
 describe("avatar preservation across re-login", () => {
   test("re-login does NOT clobber an uploaded avatar with a null identity photo", async () => {
     const userId = await firstLogin();
-    // Simulate an avatar upload: the avatar service stores the internal serve-route URL.
     const uploaded = `/api/users/${userId}/avatar?v=abc123`;
     await h.db.update(users).set({ avatarUrl: uploaded }).where(eq(users.id, userId));
 
-    // Same Google subject re-logs in with no photo (dev login, or a photoless Workspace account).
     const again = await upsertUserOnLogin(h.db, ident({ avatarUrl: null }), SIG());
     expect(again.ok).toBe(true);
 

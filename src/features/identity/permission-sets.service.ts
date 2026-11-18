@@ -49,7 +49,6 @@ export async function updatePermissionSetFlags(
   input: { setId: string; flags: Partial<Record<PermissionFlagKey, boolean>> },
   signal: AbortSignal,
 ): Promise<Result<true, string>> {
-  // Resolve the actor's own set id to block self-set edits.
   const [me] = await db
     .select({ setId: users.permissionSetId })
     .from(users)

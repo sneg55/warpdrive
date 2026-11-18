@@ -45,8 +45,6 @@ vi.mock("@/lib/trpc-client", () => ({
                 createdAt: "",
               },
               {
-                // Scheduled for the future BUT already claimed by a worker (status "sending"):
-                // the server refuses cancel, so the button must not appear despite scheduledAt.
                 id: "a3",
                 subject: "Claimed",
                 to: ["c@y.com"],
@@ -74,7 +72,7 @@ it("renders queued and needs_review rows; Cancel only on pending", () => {
   expect(screen.getByText("Stuck")).toBeInTheDocument();
   expect(screen.getByText(/E_GMAIL_004/)).toBeInTheDocument();
   const cancels = screen.getAllByRole("button", { name: /Cancel/ });
-  expect(cancels).toHaveLength(1); // only the pending row
+  expect(cancels).toHaveLength(1);
 });
 
 it("reports the error id when cancel is denied (no silent no-op)", async () => {

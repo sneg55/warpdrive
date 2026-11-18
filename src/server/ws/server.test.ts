@@ -55,7 +55,6 @@ describe("ws server dispatch + relay", () => {
     const inner = event.event as { channel: string; type: string; seq: number };
     expect(inner.channel).toBe(`user:${userId}`);
     expect(inner.type).toBe("note_added");
-    // The WS server stamps a per-socket seq (the published payload carries none).
     expect(inner.seq).toBe(0);
   });
 
@@ -64,7 +63,6 @@ describe("ws server dispatch + relay", () => {
     ws.send(JSON.stringify({ kind: "subscribe", channel: `user:${userId}` }));
     await nextMessage(ws, "subscribed");
 
-    // Collect the seq of the first two delivered events on this socket.
     const seqs: number[] = [];
     const got = new Promise<void>((resolve) => {
       ws.on("message", (raw: Buffer) => {
@@ -93,7 +91,6 @@ describe("ws server dispatch + relay", () => {
       const msg = JSON.parse(raw.toString()) as { kind?: string };
       if (msg.kind === "event") delivered = true;
     });
-    // Notify a different (unsubscribed) channel; relay has no LISTEN for it.
     await publish(`user:${otherUserId}`);
     await new Promise((r) => setTimeout(r, 300));
     expect(delivered).toBe(false);
@@ -109,7 +106,6 @@ describe("ws server dispatch + relay", () => {
       const msg = JSON.parse(raw.toString()) as { kind?: string };
       if (msg.kind === "event") delivered = true;
     });
-    // Forge a client event: this kind is unhandled, must not fan out.
     ws.send(
       JSON.stringify({
         kind: "notify",

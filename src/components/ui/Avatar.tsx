@@ -4,15 +4,10 @@ import { cn } from "@/lib/utils";
 
 interface AvatarProps {
   name: string;
-  // Optional avatar image (e.g. users.avatar_url). Renders the image when present, falling back to
-  // colored initials when null/undefined or if it fails to load is not handled (kept simple).
   src?: string | null;
   className?: string;
 }
 
-// Colored initial avatar (Pipedrive shows one beside every contact/owner). The
-// name drives both the initials and a deterministic swatch. role="img" with an
-// aria-label keeps the initials from being read as loose text.
 export function Avatar({ name, src, className }: AvatarProps): React.ReactNode {
   if (src !== null && src !== undefined && src !== "") {
     return (

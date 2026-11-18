@@ -19,7 +19,7 @@ import {
 
 afterEach(() => {
   markReady(false);
-  resetIdentity(); // clear any buffered identity so it cannot leak into the next test
+  resetIdentity();
   vi.clearAllMocks();
 });
 
@@ -32,8 +32,6 @@ describe("whenReady", () => {
   });
 
   it("defers the callback until telemetry becomes ready", () => {
-    // A one-shot event fired from a component that mounts BEFORE TelemetryProvider's effect (React
-    // runs child effects first) would otherwise be dropped: capture() no-ops while not ready.
     const cb = vi.fn();
     whenReady(cb);
     expect(cb).not.toHaveBeenCalled();
@@ -100,15 +98,11 @@ describe("capture facade", () => {
     markReady(true);
     captureException(new Error("boom for a@b.com"), { route: "/p" });
     const [passed, ctx] = posthog.captureException.mock.calls[0] as [Error, unknown];
-    // The exception payload itself is scrubbed of emails, not just the ctx props: posthog derives
-    // $exception_list from the raw error, which bypasses the ctx scrub.
     expect(passed.message).toBe("boom for [email]");
     expect(ctx).toEqual({ route: "/p" });
   });
 
   it("buffers an identify requested before ready and flushes it once ready", () => {
-    // Effects run child-first, so IdentifyUser (a nested child) can call identifyUser before the
-    // ancestor TelemetryProvider effect calls markReady(true). The identity must not be dropped.
     identifyUser({ id: "u1", name: "Nick", email: "nick@example.com", role: "admin" });
     expect(posthog.identify).not.toHaveBeenCalled();
     markReady(true);

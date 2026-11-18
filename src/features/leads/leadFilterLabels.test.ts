@@ -6,9 +6,6 @@ import { seedUser } from "@/db/testing/factories";
 import type { LeadFilterField } from "./leadFilterFields";
 import { listLeads } from "./leadRepo";
 
-// leads.labels is a text[] of label names, so "is" / "is not" compile to a case-insensitive
-// membership test. A lead with no labels lands on the "is not" side of every name.
-
 type TestDb = Parameters<Parameters<typeof withTestDb>[0]>[0];
 const sig = () => new AbortController().signal;
 
@@ -75,8 +72,6 @@ describe("listLeads filtered by the labels array column", () => {
     });
   });
 
-  // A migrated install can still hold legacy lowercase values in leads.labels while the picker
-  // offers the catalog's cased name, so matching has to ignore case on both sides.
   it("matches a legacy lowercase label value against the cased name the picker offers", async () => {
     await withTestDb(async (db) => {
       const me = await seedUser(db);
@@ -129,9 +124,6 @@ function opListArgs(field: LeadFilterField, op: FilterOpKey, value: string | num
   };
 }
 
-// The tier 2 operators live or die on null handling, which only a real Postgres settles: `<>` and a
-// bare NOT ILIKE both evaluate to NULL against a NULL column, silently dropping the row. leads.value
-// is the nullable column here; title and sourceOrigin are NOT NULL, so they carry the blank case.
 describe("listLeads with the tier 2 operators", () => {
   async function seedValues(db: TestDb, ownerId: string): Promise<void> {
     await db.insert(leads).values([

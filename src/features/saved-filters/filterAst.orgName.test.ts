@@ -1,6 +1,3 @@
-// filterAst orgName test: split out of filterAst.test.ts to keep that file under the size cap.
-// Verifies the deal filter can match on the linked organization's name (o.name), which the board
-// and list reads join. This is what lets a board filter find "Apex Labs" deals by organization.
 import { sql } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import { organizations } from "@/db/schema";

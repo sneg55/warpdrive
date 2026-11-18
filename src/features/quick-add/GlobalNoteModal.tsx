@@ -6,10 +6,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { ComposeNoteTab } from "@/features/compose/ComposeNoteTab";
 import { trpc } from "@/lib/trpc-client";
 
-// Global "+ Note" surface (Pipedrive parity). Notes are polymorphic (entity_type, entity_id), so
-// unlike the deal/lead/person create modals a note needs a target chosen first. The user picks a
-// Person, then the existing ComposeNoteTab writes the note through createNoteAction (no new
-// backend). Person is the most common note anchor; other anchors are a future enhancement.
 export function GlobalNoteModal({
   onClose,
   onCreated,

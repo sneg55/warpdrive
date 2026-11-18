@@ -1,6 +1,4 @@
 // @vitest-environment node
-// The dashboard payload must carry the won-deal trend. Kept out of router.test.ts, which is
-// already at the file-size ceiling.
 import { sql } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import type { PermissionFlagKey } from "@/constants/permissionFlags";

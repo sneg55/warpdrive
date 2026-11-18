@@ -63,7 +63,6 @@ const secondRow = {
   hasAttachment: false,
 };
 
-// ThreadList pages the inbox via useInfiniteQuery; the mock mirrors its page shape.
 const inboxPages = { pages: [{ threads: [inboxRow], nextCursor: null }] };
 const inboxListQuery = vi.fn(() => ({
   data: inboxPages,
@@ -155,10 +154,6 @@ describe("ThreadList", () => {
     expect(subject).toHaveClass("font-semibold");
   });
 
-  // Regression (codex review): the Has-attachment / Unread-only quick-filters only make sense on
-  // the inbox feed (the only folder that projects those fields and shows the filter row). An active
-  // filter must not carry over when the folder prop switches to Sent/Archive, whose rows default
-  // both fields to false and would otherwise all be hidden.
   it("does not apply inbox quick-filters after switching to a non-inbox folder", () => {
     const readRow = { ...inboxRow, id: "t9", subject: "Archived read", unread: false };
     const { rerender } = render(<ThreadList folder="inbox" />);

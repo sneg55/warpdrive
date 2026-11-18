@@ -28,7 +28,6 @@ function stub(outcome: ProviderOutcome) {
   });
 }
 
-// The two endpoints can disagree, which is the whole reason the probe calls both.
 function stubEach(organization: ProviderOutcome, personOutcome: ProviderOutcome) {
   return (id: ProviderId): EnrichmentProvider => ({
     id,
@@ -37,7 +36,6 @@ function stubEach(organization: ProviderOutcome, personOutcome: ProviderOutcome)
   });
 }
 
-// A person endpoint that answers only when its own signal ends it, as RocketReach's poll does.
 function stubHangingPerson(organization: ProviderOutcome) {
   return (id: ProviderId): EnrichmentProvider => ({
     id,
@@ -73,8 +71,6 @@ async function providerRow() {
 }
 
 describe("testProvider", () => {
-  // The whole point is checking a key before switching the provider on, so a disabled provider
-  // must still be testable.
   it("tests a provider that is stored but not enabled", async () => {
     await storeKey(false);
     const result = await testProvider(
@@ -87,8 +83,6 @@ describe("testProvider", () => {
     expect(result.ok && result.value.kind).toBe("ok");
   });
 
-  // The counts are the reason an admin runs the test on Apollo at all, so they have to survive the
-  // trip out of the provider rather than being reduced to a verdict.
   it("carries the remaining quota the probe reported", async () => {
     await storeKey(true);
     const result = await testProvider(
@@ -192,8 +186,6 @@ describe("testProvider", () => {
     expect((await providerRow())?.needsAttention).toBe(false);
   });
 
-  // A run enriches people as well as organizations, and on Apollo the two endpoints are entitled
-  // separately. Probing only one lets a key that cannot enrich a person report green.
   it("fails the test when the person endpoint rejects a key the organization endpoint accepted", async () => {
     await storeKey(true);
     const result = await testProvider(
@@ -207,8 +199,6 @@ describe("testProvider", () => {
     expect((await providerRow())?.needsAttention).toBe(true);
   });
 
-  // The verdict is what the row must end up describing, whichever endpoint produced it: a probe
-  // that answered green elsewhere must not clear the badge the failure just earned.
   it("keeps the rejected badge when only the person endpoint accepted the key", async () => {
     await storeKey(true);
     const result = await testProvider(
@@ -238,8 +228,6 @@ describe("testProvider", () => {
     expect((await providerRow())?.throttledUntil?.toISOString()).toBe("2026-08-25T12:00:00.000Z");
   });
 
-  // RocketReach polls for up to 15s, well past the action budget. That is not a verdict about the
-  // key, so it must not turn a working credential red.
   it("keeps the organization verdict when the person probe outruns its own budget", async () => {
     await storeKey(true);
     const result = await testProvider(h.db, "apollo", NOW, SIG(), stubHangingPerson(ORG_OK), 10);

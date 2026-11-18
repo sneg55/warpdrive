@@ -2,7 +2,6 @@ import { readFileSync } from "node:fs";
 import { z } from "zod";
 import { err, ok, type Result } from "@/types/result";
 
-// Secret vars may be supplied as <VAR>_FILE pointing at a Docker secret file.
 const SECRET_FILE_VARS = [
   "GOOGLE_OAUTH_CLIENT_SECRET",
   "WS_TICKET_SECRET",
@@ -71,30 +70,16 @@ const base = z.object({
     .refine((v) => Buffer.from(v, "base64").length === 32, "must be base64 of exactly 32 bytes"),
   MCP_ENABLED: boolFromString.default(true),
   OAUTH_SIGNING_KEY: z.string().default(""),
-  // RFC 7591 dynamic client registration. Open by default because it is what lets an MCP client
-  // self-onboard with no admin step, and closing it by default would break every existing deploy
-  // on upgrade. It is a knob because an open endpoint lets any stranger mint a client whose name
-  // the consent screen then shows to a user, which is the setup for consent phishing: a deploy
-  // that has already connected the clients it needs can set "disabled" and shut the door. An
-  // enum rather than a boolean so a typo fails at boot instead of silently reading as "open".
   OAUTH_REGISTRATION: z.enum(["open", "disabled"]).default("open"),
   BASE_CURRENCY: z.string().length(3).default("USD"),
   SEED_ADMIN_EMAIL: z.string().email().or(z.literal("")).default(""),
   ALLOW_FIRST_LOGIN_ADMIN: boolFromString.default(false),
-  // Optional build-time stamp of the running version (e.g. a release tag). Empty when unstamped;
-  // the release feature then falls back to package.json, then "dev". See resolveVersion.
   APP_VERSION: z.string().default(""),
-  // Client PostHog config is passed to the browser via the server layout (props), not
-  // NEXT_PUBLIC vars, so this stays the single env boundary. Empty key disables telemetry.
   POSTHOG_KEY: z.string().default(""),
   POSTHOG_HOST: z.string().default(""),
   DISABLE_TELEMETRY: boolFromString.default(false),
-  // Console.warn/error forwarding is off by default (widens the event surface); opt in per deploy.
   TELEMETRY_CONSOLE_FORWARDING: boolFromString.default(false),
-  // Git SHA of the running build, for regression attribution alongside APP_VERSION.
   APP_COMMIT: z.string().default(""),
-  // Kill switch for the GitHub update-check banner. A hosted/managed deployment sets this true;
-  // OSS self-hosters leave it false to get the banner.
   DISABLE_UPDATE_CHECK: boolFromString.default(false),
   AGENTIC_INBOX_ENABLED: flagFromString.default(false),
   INTERCOM_ACCESS_TOKEN: z.string().default(""),
@@ -103,7 +88,6 @@ const base = z.object({
   X_CLIENT_SECRET: z.string().default(""),
 });
 
-// Production guardrails for the first-run bootstrap (ops spec E6).
 const schema = base.superRefine((v, ctx) => {
   if (v.MCP_ENABLED && Buffer.from(v.OAUTH_SIGNING_KEY, "base64").length !== 32) {
     ctx.addIssue({
@@ -130,13 +114,10 @@ const schema = base.superRefine((v, ctx) => {
   }
 });
 
-// Named export of the full validated schema (with production guardrails) so
-// boundary tests can parse a candidate env map directly.
 export const envSchema = schema;
 
 export type Env = z.infer<typeof base>;
 
-// Pure, testable: validates a given source map without touching the global env.
 export function parseEnv(raw: NodeJS.ProcessEnv): Result<Env, string> {
   const resolved = applyLegacyStorageNames(resolveFileVars(raw));
   const parsed = schema.safeParse(resolved);
@@ -149,7 +130,6 @@ export function parseEnv(raw: NodeJS.ProcessEnv): Result<Env, string> {
 function loadOrThrow(): Env {
   const result = parseEnv(process.env);
   if (!result.ok) {
-    // Fail fast at import time so misconfiguration is a boot error, not a first-use error.
     throw new Error(`Invalid environment: ${result.error}`);
   }
   return result.value;

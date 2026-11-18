@@ -22,7 +22,7 @@ describe("scheduled_at column", () => {
         )
       ).rows[0] as { id: string };
       const acctId: string = acctRow.id;
-      const future = new Date(Date.now() + 3_600_000); // 1 hour from now
+      const future = new Date(Date.now() + 3_600_000);
       const idempotencyKey = "33333333-3333-3333-3333-333333333333";
       const msgId = "<test-sched-1@example.com>";
       const payload = JSON.stringify({ to: ["x@y.com"], subject: "S", html: "<p>hi</p>" });
@@ -105,7 +105,7 @@ describe("outboxClaim: scheduled_at due filter", () => {
       ).rows[0] as { id: string };
       const signal = new AbortController().signal;
       const token = await claim(db, row.id, signal);
-      expect(token).toBeNull(); // not claimable yet
+      expect(token).toBeNull();
     });
   });
 
@@ -121,7 +121,7 @@ describe("outboxClaim: scheduled_at due filter", () => {
           sql`INSERT INTO email_accounts (user_id, email_address) VALUES (${u.id},'sched4@x.com') RETURNING id`,
         )
       ).rows[0] as { id: string };
-      const past = new Date(Date.now() - 60_000); // 1 minute ago
+      const past = new Date(Date.now() - 60_000);
       const row = (
         await db.execute(sql`
         INSERT INTO email_send_attempts (idempotency_key, message_id_header, account_id, payload, status, scheduled_at)
@@ -131,7 +131,7 @@ describe("outboxClaim: scheduled_at due filter", () => {
       ).rows[0] as { id: string };
       const signal = new AbortController().signal;
       const token = await claim(db, row.id, signal);
-      expect(token).not.toBeNull(); // past due: claimable
+      expect(token).not.toBeNull();
     });
   });
 
@@ -156,7 +156,7 @@ describe("outboxClaim: scheduled_at due filter", () => {
       ).rows[0] as { id: string };
       const signal = new AbortController().signal;
       const token = await claim(db, row.id, signal);
-      expect(token).not.toBeNull(); // NULL scheduled_at: always claimable
+      expect(token).not.toBeNull();
     });
   });
 });

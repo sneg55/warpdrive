@@ -22,8 +22,6 @@ import { archiveThread, unarchiveThread } from "./threadArchive";
 const CSRF_FAIL = () => err(new AppError(ERROR_IDS.PERM_DENIED, "csrf check failed", {}));
 const UNAUTH = () => err(new AppError(ERROR_IDS.AUTH_LOGIN_REJECTED, "unauthenticated", {}));
 
-// The folder domain functions scope every query by actor.id alone; the rest of the AuthUser
-// shape is not consulted, so a minimal regular-actor projection is sufficient here.
 const toActor = (id: string): AuthUser => ({
   id,
   type: "regular",

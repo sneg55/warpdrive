@@ -1,8 +1,3 @@
-// Shared integration test harness for WS server tests.
-// Manages a single real Postgres + real ws server instance.
-// Import into each *integration* test file; vitest --no-file-parallelism keeps
-// them from racing over the same port.
-
 import type { AddressInfo } from "node:net";
 import { sql } from "drizzle-orm";
 import { Client } from "pg";
@@ -82,7 +77,6 @@ export function opened(ws: WebSocket): Promise<void> {
   });
 }
 
-// Resolve with the next message whose kind matches; reject on timeout/close.
 export function nextMessage(
   ws: WebSocket,
   kind: string,
@@ -112,8 +106,6 @@ export function closeCode(ws: WebSocket, ms = 4000): Promise<number> {
   });
 }
 
-// Mirror publishEvent's wire format: pg_notify(channel, JSON.stringify(event)).
-// The published payload carries NO seq; the WS server stamps a per-socket seq.
 export async function publish(channel: string, type = "note_added"): Promise<void> {
   const event = {
     v: 1,

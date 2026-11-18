@@ -1,8 +1,3 @@
-// Heartbeat liveness re-validation (ops spec A1 step 4, Codex finding F4). The socket's
-// isActive/groupIds are captured once at auth; if the session is revoked or the user is
-// deactivated AFTER auth, a periodic heartbeat must close the socket with 4401. Uses a
-// dedicated server with a short heartbeat interval (the shared harness uses the default).
-
 import type { AddressInfo } from "node:net";
 import { eq, sql } from "drizzle-orm";
 import { Client } from "pg";
@@ -97,7 +92,6 @@ function closeCode(ws: WebSocket, ms = 4000): Promise<number> {
 
 test("closes with 4401 after the session is revoked (heartbeat)", async () => {
   const ws = await authed();
-  // Revoke the session AFTER auth; the heartbeat should notice and close the socket.
   await h.db.update(sessions).set({ revokedAt: new Date() }).where(eq(sessions.id, sessionId));
   expect(await closeCode(ws)).toBe(4401);
 });
@@ -114,7 +108,6 @@ test("stays open while the session remains live", async () => {
   ws.on("close", () => {
     closed = true;
   });
-  // Wait several heartbeat ticks; nothing revoked, so the socket must stay open.
   await new Promise((r) => setTimeout(r, HEARTBEAT_MS * 4));
   expect(closed).toBe(false);
   ws.close();
@@ -132,9 +125,6 @@ async function publishDealMoved(channel: string, dealId: string): Promise<void> 
   await h.db.execute(sql`SELECT pg_notify(${channel}, ${JSON.stringify(event)})`);
 }
 
-// F8: authority (group membership) is captured at auth; the heartbeat must rehydrate it so
-// per-recipient fan-out stops delivering restricted-pipeline events after the user is
-// removed from the gating group, without waiting for a reconnect.
 test("stops delivering restricted-pipeline events after group removal (heartbeat rehydrate)", async () => {
   const [g] = await h.db.insert(visibilityGroups).values({ name: "Gate" }).returning();
   await h.db.insert(visibilityGroupMembers).values({ groupId: g!.id, userId });
@@ -178,16 +168,13 @@ test("stops delivering restricted-pipeline events after group removal (heartbeat
     });
   });
 
-  // Member: the event is delivered.
   await publishDealMoved(channel, d!.id);
   await new Promise((r) => setTimeout(r, 300));
   expect(received.length).toBe(1);
 
-  // Remove from the group and let the heartbeat rehydrate the connection's authority.
   await h.db.delete(visibilityGroupMembers).where(eq(visibilityGroupMembers.userId, userId));
   await new Promise((r) => setTimeout(r, HEARTBEAT_MS * 4));
 
-  // No longer a member: the restricted-pipeline event is dropped for this socket.
   await publishDealMoved(channel, d!.id);
   await new Promise((r) => setTimeout(r, 300));
   expect(received.length).toBe(1);

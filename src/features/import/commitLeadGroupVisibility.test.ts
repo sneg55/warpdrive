@@ -6,12 +6,6 @@ import { seedUser } from "@/db/testing/factories";
 import { commitRow } from "./commit";
 import { loadImportActor } from "./importActor";
 
-// Regression for the prod incident where a 115-row lead import landed every row "invalid" with
-// E_PERM_003. The org's default deal visibility was "group"; createLead derives lead visibility
-// from that default and calls resolveVisibilityGroup, which rejects unless the actor carries a
-// primary group. The background import actor (loadImportActor) hardcoded primaryVisibilityGroupId
-// to null, so every row failed even though the importing user's primary group was set. Build the
-// actor through the REAL loadImportActor path so the fix (loading the user's group) is exercised.
 it("commits a lead when the deal default visibility is 'group' and the user has a primary group", async () => {
   await withTestDb(async (db) => {
     const signal = AbortSignal.timeout(5000);

@@ -5,8 +5,6 @@ import { Button } from "@/components/ui/Button";
 import { RELEASE_DISMISS_KEY } from "../constants";
 import { useVersion } from "./useVersion";
 
-// Storage access is best-effort: a blocked/absent localStorage (private mode, storage policy, SSR)
-// must never throw from render or the dismiss handler, or it would take down the whole app shell.
 function readDismissed(): string | null {
   try {
     return globalThis.localStorage.getItem(RELEASE_DISMISS_KEY);
@@ -18,14 +16,9 @@ function readDismissed(): string | null {
 function writeDismissed(version: string): void {
   try {
     globalThis.localStorage.setItem(RELEASE_DISMISS_KEY, version);
-  } catch {
-    // Ignore: the banner still hides via in-memory state this session.
-  }
+  } catch {}
 }
 
-// App-shell banner shown to admins when a newer GitHub release exists. Dismissal is remembered
-// per-version in localStorage, so a newer release re-shows it. Release notes are plain text
-// (no markdown rendering) to avoid an XSS surface on GitHub-sourced content.
 export function VersionBanner() {
   const { data } = useVersion();
   const [expanded, setExpanded] = useState(false);

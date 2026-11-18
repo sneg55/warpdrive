@@ -1,10 +1,6 @@
 import { sql } from "drizzle-orm";
 import { boolean, check, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 
-// Singleton cache of the latest GitHub release, refreshed by the release-check cron job and read
-// by the version.get query. Exactly one row, guarded by CHECK (id = true) like `settings`. Nulls
-// are allowed because a partial/malformed release may lack a tag, url, or body; fetched_at stamps
-// the last successful refresh.
 export const appReleaseStatus = pgTable(
   "app_release_status",
   {

@@ -6,7 +6,7 @@ import { ActivityPresetChips } from "./ActivityPresetChips";
 
 afterEach(cleanup);
 
-const NOW = new Date(2026, 6, 8); // Wed 2026-07-08
+const NOW = new Date(2026, 6, 8);
 
 describe("ActivityPresetChips", () => {
   it("renders the four preset chips", () => {

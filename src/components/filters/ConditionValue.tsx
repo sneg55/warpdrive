@@ -6,9 +6,6 @@ import { Select, type SelectOption } from "@/components/ui/Select";
 import { DateConditionValue } from "./DateConditionValue";
 import { type RowValue, rowValueList, singleRowValue } from "./rowValue";
 
-// Value-input shape for a field: a plain text/number/date control, a branded Select, or a
-// multi-select for a field that means "is any of" (labels). Keeping options caller-supplied lets
-// the rows stay presentational (no trpc) so contacts, deals, and leads can all share them.
 export type ConditionValueInput =
   | { kind: "text" | "number" | "date" }
   | { kind: "select"; options: SelectOption[] }
@@ -21,8 +18,6 @@ interface ConditionValueProps {
   onChange: (v: RowValue) => void;
 }
 
-// The row value control, sized to fill its slot. Design-system only: Select, MultiCombobox,
-// DatePicker, or Input; never a native <select>/<input type="date">.
 export function ConditionValue({
   input,
   ariaLabel,

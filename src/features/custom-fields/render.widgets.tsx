@@ -1,6 +1,4 @@
 "use client";
-// Custom-field widget dispatch: CustomFieldDetail (read-only) and
-// CustomFieldFormControl (editable). Controls use the shared shadcn-style UI primitives.
 import { assertNever } from "@/types/result";
 import { useCustomFieldRefLabels } from "./refLabelsContext";
 import { formatCustomFieldDisplay } from "./render";

@@ -16,19 +16,13 @@ import { STRINGS } from "@/constants/strings";
 
 interface EmailCardMenuProps {
   threadId: string;
-  // Actor owns this message's mailbox. Compose and unlink are owner-only server-side, so a
-  // non-owner is never shown a control the backend would reject.
   canCompose: boolean;
   onReplyAll: () => void;
   onForward: () => void;
   onUnlink: () => void;
-  // "Unlink from deal" or "Unlink from person", chosen by the surface.
   unlinkLabel: string;
 }
 
-// The caret menu on a timeline email card. Mailbox triage (archive, delete, mark unread,
-// follow-up status, labels, privacy) lives only in the Inbox reader, which "Open in Inbox"
-// reaches; a record surface offers the compose modes plus unlink.
 export function EmailCardMenu({
   threadId,
   canCompose,

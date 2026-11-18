@@ -34,7 +34,6 @@ import { leadVisibilityClause } from "./visibility";
 
 type Db = NodePgDatabase<typeof schema>;
 
-// Shared row projection so the paged list and the full export stay in lockstep.
 const leadRowSelection = {
   id: leads.id,
   title: leads.title,
@@ -69,24 +68,17 @@ export interface LeadRow {
   customFields: Record<string, unknown>;
 }
 
-// The full lead record plus resolved person/org/owner display names (detail page).
 export type LeadDetail = Lead & {
   personName: string | null;
   orgName: string | null;
   ownerName: string | null;
 };
 
-// The fully-loaded linked person + organization records for the lead sidebar's Person/Organization
-// blocks (reused from the deal workspace so the lead surfaces the contact's whole field set, not
-// just the name). Loaded by id like summaryRepo.getWorkspace does for deals: the lead's own
-// visibility gate (getLeadById) is the authority, so the contact reads are ungated here.
 export interface LeadRelations {
   person: Person | null;
   org: Organization | null;
 }
 
-// Load the linked person + org for a lead. Soft-deleted contacts are filtered so the sidebar never
-// renders a link to a detail page that 404s, matching summaryRepo's deletedAt filter for deals.
 export async function getLeadRelations(
   db: Db,
   lead: Pick<Lead, "personId" | "orgId">,
@@ -111,8 +103,6 @@ export async function getLeadRelations(
   return { person: personRows[0] ?? null, org: orgRows[0] ?? null };
 }
 
-// A single visible lead with resolved names, or null when not visible (404-on-invisible:
-// never leak existence to an actor who cannot see the lead).
 export async function getLeadById(
   db: Db,
   session: DealVisibilitySession,
@@ -120,8 +110,6 @@ export async function getLeadById(
   signal: AbortSignal,
 ): Promise<LeadDetail | null> {
   signal.throwIfAborted();
-  // A non-uuid id (a malformed [leadId] path param) can never match a row; short-circuit to the
-  // not-found sentinel instead of letting Postgres reject the uuid cast and throw a 500.
   if (!isUuidParam(id)) return null;
   const [row] = await db
     .select({
@@ -139,8 +127,6 @@ export async function getLeadById(
   return row ?? null;
 }
 
-// Map a sort field to its ORDER BY column. 'ownerName' sorts on the joined users.name;
-// 'label' sorts on the leads.labels array (lexicographic, Postgres default).
 function sortColumn(field: LeadBuiltinSortField): SQL {
   switch (field) {
     case "title":
@@ -162,7 +148,6 @@ function sortColumn(field: LeadBuiltinSortField): SQL {
   }
 }
 
-// Server-side next-activity bucket predicate against next_activity_at.
 function nextActivityClause(bucket: LeadNextActivityBucket): SQL {
   const col = leads.nextActivityAt;
   switch (bucket) {
@@ -173,7 +158,6 @@ function nextActivityClause(bucket: LeadNextActivityBucket): SQL {
     case "today":
       return sql`${col} >= date_trunc('day', now()) AND ${col} < date_trunc('day', now()) + interval '1 day'`;
     case "week":
-      // From the start of today through the next 7 days.
       return sql`${col} >= date_trunc('day', now()) AND ${col} < date_trunc('day', now()) + interval '7 days'`;
     default:
       return assertNever(bucket);
@@ -200,9 +184,6 @@ function buildFilters(parsed: LeadListParsed): SQL[] {
   if (labelKeys !== undefined && labelKeys.length > 0)
     conds.push(arrayOverlaps(leads.labels, labelKeys));
   if (nextActivity !== undefined) conds.push(nextActivityClause(nextActivity));
-  // Inline ad-hoc condition builder: re-validated + compiled to a bound, allow-listed SQL fragment
-  // by the leadFilter module (the input was Zod-validated at the boundary; compile is defense in
-  // depth). Null when the definition carries no conditions.
   if (condition !== undefined) {
     const frag = compileLeadFilter(condition, LEAD_FILTER_CONFIG);
     if (frag !== null) conds.push(frag);
@@ -210,9 +191,6 @@ function buildFilters(parsed: LeadListParsed): SQL[] {
   return conds;
 }
 
-// Visible leads for the Leads Inbox. "inbox" = active (not archived); "archived" = archived only.
-// Both exclude soft-deleted rows and apply the same visibility gate as deals. Sort and structured
-// filters are applied server-side.
 export async function listLeads(
   db: Db,
   session: DealVisibilitySession,
@@ -220,8 +198,6 @@ export async function listLeads(
   signal: AbortSignal,
 ): Promise<{ rows: LeadRow[]; total: number }> {
   signal.throwIfAborted();
-  // Re-parse so callers may pass a partial object; zod fills sort/filters defaults. Idempotent when
-  // the router already parsed via .input(leadListInput).
   const parsed = leadListInput.parse(input);
   const archiveGate =
     parsed.filter === "archived" ? isNotNull(leads.archivedAt) : isNull(leads.archivedAt);
@@ -241,8 +217,6 @@ export async function listLeads(
     .leftJoin(organizations, eq(organizations.id, leads.orgId))
     .leftJoin(users, eq(users.id, leads.ownerId))
     .where(where)
-    // Stable tiebreak so equal sort keys keep a deterministic order. leads.id is the final,
-    // guaranteed-unique key so offset pagination can never dup or skip on equal sort + createdAt.
     .orderBy(orderBy, desc(leads.createdAt), asc(leads.id))
     .offset(parsed.offset)
     .limit(parsed.limit);
@@ -252,8 +226,6 @@ export async function listLeads(
   return { rows, total: countRow?.n ?? 0 };
 }
 
-// Full-result export: same visibility gate, filters, and sort as listLeads, but no offset/limit.
-// Used by the /leads/export route to serialize every matching row server-side (not just the page).
 export async function listLeadsForExport(
   db: Db,
   session: DealVisibilitySession,

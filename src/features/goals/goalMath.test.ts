@@ -6,7 +6,6 @@ describe("attainment", () => {
     expect(attainment("25", "100")).toBe(0.25);
   });
 
-  // Uncapped: a rep at 120% of quota should see 120%, not a bar pinned at full.
   test("goes past 1 when the target is beaten", () => {
     expect(attainment("120", "100")).toBeCloseTo(1.2, 5);
   });
@@ -19,8 +18,6 @@ describe("attainment", () => {
     expect(attainment("2500.50", "5001.00")).toBeCloseTo(0.5, 5);
   });
 
-  // A zero target is rejected at the boundary, so reaching here means corrupt data; null is
-  // the honest answer rather than Infinity rendered as a percentage.
   test("is null when the target is zero", () => {
     expect(attainment("10", "0")).toBeNull();
   });

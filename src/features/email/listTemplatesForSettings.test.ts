@@ -62,7 +62,6 @@ describe("listTemplatesForSettings", () => {
       );
       const shared = rows.find((r) => r.name === "Shared");
       expect(shared).toBeDefined();
-      // isOwn is the only gate the UI needs; the raw owner UUID must not reach the client.
       expect(shared).not.toHaveProperty("ownerId");
     });
   });

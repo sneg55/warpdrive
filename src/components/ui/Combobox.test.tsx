@@ -1,5 +1,4 @@
 // @vitest-environment jsdom
-// src/components/ui/Combobox.test.tsx
 import "@testing-library/jest-dom/vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
@@ -10,7 +9,6 @@ beforeAll(() => {
   Element.prototype.scrollIntoView = vi.fn();
   Element.prototype.hasPointerCapture = vi.fn(() => false);
   Element.prototype.releasePointerCapture = vi.fn();
-  // cmdk observes its list's size to manage height; jsdom has no ResizeObserver.
   global.ResizeObserver = class {
     observe = vi.fn();
     unobserve = vi.fn();
@@ -33,10 +31,6 @@ describe("Combobox", () => {
     render(<Combobox value="u1" onChange={onChange} options={options} ariaLabel="Owner" />);
     fireEvent.click(screen.getByLabelText("Owner"));
     fireEvent.change(screen.getByPlaceholderText("Search..."), { target: { value: "Bob" } });
-    // Prove the type-ahead actually narrows the option list to the single
-    // match (not just that an already-visible row is clickable). Ann Owner
-    // still shows in the trigger since it is the current value, so assert on
-    // the option role, which is list-scoped.
     expect(screen.getAllByRole("option")).toHaveLength(1);
     expect(screen.getByRole("option")).toHaveTextContent("Bob Rep");
     fireEvent.click(screen.getByText("Bob Rep"));

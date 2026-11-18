@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { type WsFrame, WsMultiplexer } from "./wsMultiplexer";
 
-// Minimal WebSocket stand-in the multiplexer drives via onopen/onmessage/onclose.
 class FakeSocket {
   onopen: (() => void) | null = null;
   onmessage: ((e: { data: string }) => void) | null = null;
@@ -44,7 +43,6 @@ function setup(url = "ws://x") {
   return { mux, sockets, mintTicket };
 }
 
-// Await the microtask where connect()'s awaited mintTicket resolves and the socket is created.
 const flush = (): Promise<void> => Promise.resolve().then(() => undefined);
 
 describe("WsMultiplexer", () => {

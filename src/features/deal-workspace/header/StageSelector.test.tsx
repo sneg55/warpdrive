@@ -58,11 +58,9 @@ it("clicking the current stage is a no-op", () => {
 
 it("shows a 12px day-count on each chevron segment (C3 PD parity) while keeping the stage name", () => {
   render(<StageSelector {...props} />);
-  // PD shows day-counts at 12px (not WD's old 10px). The current stage has spent 3 days.
   const dayCount = screen.getByText(/^3\s+days$/);
   expect(dayCount.className).toContain("text-xs");
   expect(dayCount.className).not.toContain("text-[10px]");
-  // The stage-name affordance stays available (warpdrive keeps names; PD drops them).
   expect(screen.getByText("Proposal")).toBeDefined();
 });
 
@@ -102,10 +100,8 @@ it("makes the current stage pop out of the row: slightly larger and raised above
   render(<StageSelector {...props} />);
   const current = screen.getByRole("option", { name: /Proposal/ });
   const passed = screen.getByRole("option", { name: /Qualified/ });
-  // The current chevron is scaled up and sits above its neighbours so it reads as popped out.
   expect(current.className).toMatch(/scale-\[1\./);
   expect(current.className).toMatch(/z-10/);
-  // Neighbours are not raised or enlarged.
   expect(passed.className).not.toMatch(/scale-\[1\./);
   expect(passed.className).not.toMatch(/z-10/);
 });

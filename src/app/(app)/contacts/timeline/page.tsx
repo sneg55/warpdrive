@@ -6,9 +6,6 @@ import { EngagementTimelineClient } from "./EngagementTimelineClient";
 
 export const metadata = { title: STRINGS.contacts.timelineHeading };
 
-// Contacts nav: the per-contact engagement timeline (CO-4), Pipedrive parity. Activities rolled up
-// per visible person/org, bucketed by month, with entity/period/owner/type filters. The client
-// fetches its own data via contacts.engagementTimeline, so this page only guards auth.
 export default async function ContactsTimelinePage(): Promise<React.ReactNode> {
   const ctx = await createContext();
   if (ctx.actor === null) {

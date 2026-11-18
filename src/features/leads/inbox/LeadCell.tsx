@@ -31,8 +31,6 @@ function NextActivity({
       </span>
     );
   }
-  // Pre-mount `now` is null (server + first client render): render the date with no time-based
-  // color so SSR and hydration agree. The overdue/today color appears once the clock is set.
   if (now === null) {
     return <span>{fmtDate(at)}</span>;
   }

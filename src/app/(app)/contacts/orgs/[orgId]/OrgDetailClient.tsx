@@ -58,8 +58,6 @@ export function OrgDetailClient({
 
   function onMerged(survivorId: string): void {
     setMerging(false);
-    // If this record was merged away, its own URL now 404s (loader filters deletedAt),
-    // so navigate to the survivor. If it survived, a refresh picks up the merged data.
     if (survivorId === org.id) router.refresh();
     else router.push(`/contacts/orgs/${survivorId}`);
   }

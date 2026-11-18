@@ -3,9 +3,6 @@ import { buildParticipantOptions } from "./participantOptions";
 
 describe("buildParticipantOptions", () => {
   it("always includes the deal's contact person, even when the deal has an org", () => {
-    // The bug: a person attached to a deal need not be a formal member of the org
-    // record, so org membership alone (listPeopleForOrg) drops the deal's actual
-    // contact and offers unrelated org colleagues instead.
     const orgPeople = [{ id: "kai", name: "Kai Carter" }];
     const options = buildParticipantOptions(orgPeople, "mia", "Mia Silva");
 

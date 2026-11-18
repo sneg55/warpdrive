@@ -9,12 +9,9 @@ import { readCsrfToken } from "@/utils/csrfCookie";
 interface EditableTitleProps {
   dealId: string;
   title: string;
-  // CAS precondition: the deal's updatedAt ISO string.
   expectedUpdatedAt: string;
 }
 
-// Deal-title variant of the shared inline field. Only calls the action when the value changed and
-// is non-empty (schema requires 1..255).
 export function EditableTitle({
   dealId,
   title,
@@ -24,7 +21,7 @@ export function EditableTitle({
 
   async function commit(next: string): Promise<InlineSaveResult> {
     const r = await updateDealAction({ dealId, expectedUpdatedAt, title: next }, readCsrfToken());
-    router.refresh(); // stale CAS or error: re-sync from the server (reverts the input)
+    router.refresh();
     return r.ok ? { ok: true, value: undefined } : { ok: false, error: r.error.id };
   }
 

@@ -66,8 +66,6 @@ describe("isDarkAppearance", () => {
   });
 });
 
-// The no-flash script is inlined before hydration, so it has to work from raw document.cookie
-// and matchMedia alone. Running the real source here is the only way to know it does.
 describe("appearanceScript", () => {
   function runScript(cookie: string, prefersDark: boolean): void {
     document.documentElement.className = "";

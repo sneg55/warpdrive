@@ -6,7 +6,6 @@ import { afterEach, beforeAll, expect, it, vi } from "vitest";
 import { ERROR_IDS } from "@/constants/errorIds";
 
 beforeAll(() => {
-  // Radix DropdownMenu (in CatalogLabelPicker) reaches for these jsdom-missing APIs.
   Element.prototype.scrollIntoView = vi.fn();
   Element.prototype.hasPointerCapture = vi.fn(() => false);
   Element.prototype.releasePointerCapture = vi.fn();
@@ -59,7 +58,6 @@ it("surfaces the shared error dialog when a label edit is denied (no silent reve
   );
 
   await user.click(screen.getByRole("button", { name: /add labels/i }));
-  // Toggle the "Hot" catalog label in the dropdown picker.
   await user.click(await screen.findByRole("menuitemcheckbox", { name: /hot/i }));
 
   const dialog = await screen.findByRole("dialog");

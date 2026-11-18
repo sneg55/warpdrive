@@ -1,6 +1,3 @@
-// Integration tests for followContact / unfollowContact / listContactFollowers.
-// Real Postgres, no DB mocking. Mirrors deal-workspace/followers.test.ts: self-only follow
-// toggle gated on VISIBILITY (canSee), not edit, and idempotent both directions.
 import { and, eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import { contactFollowers, organizations, persons } from "@/db/schema";
@@ -27,7 +24,6 @@ describe("followContact / unfollowContact / listContactFollowers", () => {
       const a = actor(owner.id);
 
       expect((await followContact(db, a, "person", person.id, sig())).ok).toBe(true);
-      // Idempotent: a second follow by the same user is a no-op.
       expect((await followContact(db, a, "person", person.id, sig())).ok).toBe(true);
 
       const f1 = await listContactFollowers(db, "person", person.id, sig());
@@ -39,7 +35,6 @@ describe("followContact / unfollowContact / listContactFollowers", () => {
       const f2 = await listContactFollowers(db, "person", person.id, sig());
       expect(f2.map((u) => u.id)).not.toContain(owner.id);
 
-      // Idempotent: unfollow-when-absent is also a no-op.
       const again = await unfollowContact(db, a, "person", person.id, sig());
       expect(again.ok).toBe(true);
     });
@@ -69,7 +64,6 @@ describe("followContact / unfollowContact / listContactFollowers", () => {
     await withTestDb(async (db) => {
       const owner = await seedUser(db);
       const stranger = await seedUser(db);
-      // owner-level visibility: a non-owner regular actor cannot see it.
       const [person] = await db
         .insert(persons)
         .values({ name: "Hidden", ownerId: owner.id, visibilityLevel: "owner" })

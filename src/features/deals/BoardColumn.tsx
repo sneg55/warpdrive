@@ -61,9 +61,7 @@ export interface BoardColumnProps {
   dealCount: number;
   totalValue: string;
   density: "comfortable" | "compact";
-  // null until the client clock is set (see Board). Threads down to each DealCard's time visuals.
   now: Date;
-  // For the per-stage add-deal button (opens the modal preset to this stage).
   pipelineId: string;
   pipelines: Array<{ id: string; name: string; stages: Array<{ id: string; name: string }> }>;
   baseCurrency?: string;
@@ -75,8 +73,6 @@ export function BoardColumn(props: BoardColumnProps): React.ReactNode {
   const { pipelineId, pipelines, baseCurrency } = props;
   const { setNodeRef, isOver } = useDroppable({ id: stageId });
   const accent = accentForOrder(order);
-  // P1: local collapse state, toggled from the per-column actions menu. Session-only (no persist):
-  // a rep collapses a stage to focus the board for the current session, not as a durable preference.
   const [collapsed, setCollapsed] = useState(false);
 
   return (
@@ -85,14 +81,7 @@ export function BoardColumn(props: BoardColumnProps): React.ReactNode {
       aria-roledescription="stage column"
       aria-label={stageName}
       className={[
-        // Pipedrive-style lane: a tall, subtly filled column so every stage (even empty ones)
-        // reads as a drop lane rather than barren white space. isOver swaps to the accent tint.
-        // flex-1 + min-w lets a few stages fill the board width while many stages scroll.
-        // Concentric radius: lane is rounded-xl so its 8px padding + rounded-lg cards nest cleanly
-        // (outer radius > inner radius) instead of the equal-radius look that reads as "off".
         "flex min-w-72 flex-1 flex-col gap-2 overflow-hidden rounded-xl p-2 transition-colors",
-        // Collapsed lanes shrink to just their header (no tall empty drop zone); expanded lanes
-        // keep the min-height so even empty stages read as a drop target.
         collapsed ? "" : "min-h-96",
         isOver ? "bg-accent/60 ring-2 ring-ring/40" : "bg-muted/40",
       ]
@@ -100,7 +89,6 @@ export function BoardColumn(props: BoardColumnProps): React.ReactNode {
         .trim()}
     >
       <header className="relative">
-        {/* P1: per-column actions menu, top-right of the header (Pipedrive reveals it on hover). */}
         <div className="absolute right-1 top-0.5 z-10">
           <StageColumnMenu
             pipelineId={pipelineId}
@@ -112,8 +100,6 @@ export function BoardColumn(props: BoardColumnProps): React.ReactNode {
             onToggleCollapse={() => setCollapsed((v) => !v)}
           />
         </div>
-        {/* Pipedrive-style funnel: a tinted arrow segment per stage. P4: 16px stage headings
-            (text-base) to match Pipedrive's board hierarchy; keep the colored funnel chip. */}
         <div
           className="px-3 py-1.5 text-base font-semibold text-foreground"
           style={{
@@ -125,7 +111,6 @@ export function BoardColumn(props: BoardColumnProps): React.ReactNode {
           {stageName}
         </div>
         <div className="mt-1 flex items-center gap-1 px-1 text-xs text-muted-foreground">
-          {/* Balance/scale glyph before the value line (Pipedrive convention). */}
           <Scale data-stage-metric-icon aria-hidden="true" className="h-3.5 w-3.5 shrink-0" />
           <span className="tabular-nums">
             {stageSubtitle(formatCurrency(totalValue), dealCount)}

@@ -1,13 +1,8 @@
 import { describe, expect, test } from "vitest";
-import { AppError, ERROR_IDS, type ErrorId } from "./errorIds";
+import { AppError, ERROR_IDS, type ErrorId, RETIRED_ERROR_IDS } from "./errorIds";
 
 describe("error IDs", () => {
   test("every id matches E_<DOMAIN>_<NNN> with a known domain", () => {
-    // Phase 1-2: AUTH, PERM, DEAL, PIPELINE, CONTACT, DB, WS. Phase 3 adds CF, NOTE,
-    // IMPORT, ACTIVITY, USER. Phase 4 adds GMAIL, SYNC, FILE. Phase 5 adds NOTIF, SEARCH, STATS.
-    // JOBS covers the background-queue boundary. OAUTH covers the MCP authorization server.
-    // GOAL covers quota goals and their progress. ENRICH covers the lead-research providers.
-    // UI covers design-system invariants, e.g. a chart part rendered outside its container.
     const domains = [
       "AUTH",
       "OAUTH",
@@ -51,6 +46,16 @@ describe("error IDs", () => {
   test("ids are unique", () => {
     const values = Object.values(ERROR_IDS);
     expect(new Set(values).size).toBe(values.length);
+  });
+
+  test("retired ids stay registered, searchable and explained so they are never reused", () => {
+    expect(RETIRED_ERROR_IDS.get(ERROR_IDS.DEAL_LOST_REASON_REQUIRED)).toMatch(/lost reason/i);
+    expect(RETIRED_ERROR_IDS.get(ERROR_IDS.STATS_NO_PIPELINE)).toMatch(/all pipelines/i);
+    const live = new Set<string>(Object.values(ERROR_IDS));
+    for (const [id, reason] of RETIRED_ERROR_IDS) {
+      expect(live.has(id)).toBe(true);
+      expect(reason.length).toBeGreaterThan(0);
+    }
   });
 
   test("AppError carries id and context", () => {

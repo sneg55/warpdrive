@@ -11,13 +11,6 @@ import { trpc } from "@/lib/trpc-client";
 import { useSyncedState } from "@/lib/useSyncedState";
 import { readCsrfToken } from "@/utils/csrfCookie";
 
-// Inline label editor for the lead-sidebar Summary section (Pipedrive parity: leads carry their
-// own labels just like deals). Mirrors the deal LabelRow: wraps the shared CatalogLabelPicker and
-// commits each change through updateLeadAction under the CAS precondition (expectedUpdatedAt).
-// Holds optimistic local state for the labels and the expected timestamp so a quick second edit
-// uses the freshly-advanced updatedAt (from the success response) rather than the stale prop,
-// which would otherwise CAS-fail against its own prior write. Errors surface through the app-shell
-// ActionErrorProvider (leads use the shared reporter, not the deal-specific one).
 export function LeadLabelRow({
   leadId,
   expectedUpdatedAt,
@@ -29,7 +22,6 @@ export function LeadLabelRow({
 }): React.ReactNode {
   const router = useRouter();
   const reportError = useActionError();
-  // Both re-seed from the server once a router.refresh() delivers new props.
   const [current, setCurrent] = useSyncedState<string[]>(labels);
   const [expected, setExpected] = useSyncedState<string>(expectedUpdatedAt);
   const [pending, setPending] = useState(false);
@@ -39,7 +31,7 @@ export function LeadLabelRow({
   async function onChange(next: string[]): Promise<void> {
     if (pending) return;
     setPending(true);
-    setCurrent(next); // optimistic: reflect the toggle immediately
+    setCurrent(next);
     const r = await updateLeadAction(
       { leadId, expectedUpdatedAt: expected, labels: next },
       readCsrfToken(),
@@ -47,25 +39,19 @@ export function LeadLabelRow({
     setPending(false);
     if (r.ok) {
       setStale(false);
-      setExpected(new Date(r.value.updatedAt).toISOString()); // advance so back-to-back edits pass CAS
+      setExpected(new Date(r.value.updatedAt).toISOString());
       router.refresh();
       return;
     }
-    setCurrent(labels); // revert the optimistic change on failure
-    // CAS-fail (E_LEAD_007 = LEAD_PRECONDITION): the lead moved under us. Surface a stale hint and
-    // refresh so the row reloads the server-true labels and expectedUpdatedAt on the next render.
+    setCurrent(labels);
     if (r.error.id === ERROR_IDS.LEAD_PRECONDITION) {
       setStale(true);
       router.refresh();
       return;
     }
-    // Any other failure (a non-owner hitting E_PERM_001, a dead session) must not revert with no
-    // explanation. Surface the shared modal so the reverted toggle reads as "denied", not "flaky".
     reportError(r.error.id);
   }
 
-  // Active labels render as solid chips (colored from the catalog); the catalog dropdown picker
-  // sits alongside them, matching the deal sidebar's label row.
   const chips = resolveLabelChips(catalog, current);
 
   return (

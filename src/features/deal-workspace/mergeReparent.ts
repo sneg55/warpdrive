@@ -1,8 +1,3 @@
-// Re-parent a source deal's child rows onto the target deal, inside the merge transaction.
-// Extracted from mergeDeals.ts to keep that file small. Composite-PK children (participants on
-// [deal_id, person_id], followers on [deal_id, user_id]) are repointed only where they would NOT
-// collide with an existing target row, then the colliding remainder is deleted (mirrors the
-// contact-merge collision-safe repoint) so the merge leaves no duplicate rows and no orphans.
 import { and, eq, notInArray } from "drizzle-orm";
 import type { Db } from "@/db/client";
 import {
@@ -35,7 +30,6 @@ export async function repointDealChildren(
     .set({ entityId: targetId })
     .where(and(eq(files.entityType, "deal"), eq(files.entityId, sourceId)));
 
-  // Participants (PK [deal_id, person_id]): move only people not already on the target, drop rest.
   await tx
     .update(dealParticipants)
     .set({ dealId: targetId })
@@ -53,7 +47,6 @@ export async function repointDealChildren(
     );
   await tx.delete(dealParticipants).where(eq(dealParticipants.dealId, sourceId));
 
-  // Followers (PK [deal_id, user_id]): move only users not already following the target, drop rest.
   await tx
     .update(dealFollowers)
     .set({ dealId: targetId })

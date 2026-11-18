@@ -6,7 +6,6 @@ import { users } from "./identity";
 
 export const importStatusEnum = pgEnum("import_status", IMPORT_STATUS);
 
-// One CSV import run (data-model section 17). Row-level progress lives in import_rows.
 export const importBatches = pgTable("import_batches", {
   id: uuid("id").primaryKey().defaultRandom(),
   targetEntity: text("target_entity").notNull(),
@@ -22,8 +21,6 @@ export const importBatches = pgTable("import_batches", {
   validRows: integer("valid_rows").notNull().default(0),
   importedRows: integer("imported_rows").notNull().default(0),
   errorRows: integer("error_rows").notNull().default(0),
-  // Storage-backed flow (import overhaul): live counter + server-parsed headers/preview
-  // for the map step, and the undo tombstone.
   processedRows: integer("processed_rows").notNull().default(0),
   headers: jsonb("headers").$type<string[]>(),
   previewRows: jsonb("preview_rows").$type<Record<string, string>[]>(),

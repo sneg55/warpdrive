@@ -10,8 +10,6 @@ it("lists only the actor's own batches, newest first", async () => {
   await withTestDb(async (db) => {
     const me = await seedUser(db, {});
     const other = await seedUser(db, {});
-    // Explicit createdAt so the newest-first ordering is deterministic (a single multi-row
-    // insert would stamp identical timestamps).
     await db.insert(importBatches).values([
       {
         targetEntity: "person",

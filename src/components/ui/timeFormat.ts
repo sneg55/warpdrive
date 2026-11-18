@@ -1,7 +1,3 @@
-// Masked 24h time helpers for the shared TimePicker. Value contract is "HH:mm"
-// so it drops into the composer startTime/endTime state that composeDueAtIso and
-// deriveDurationMinutes already consume. Empty string means "no time".
-
 export function isValidHm(v: string): boolean {
   const m = /^(\d{2}):(\d{2})$/.exec(v);
   if (m === null) return false;
@@ -10,10 +6,6 @@ export function isValidHm(v: string): boolean {
   return h >= 0 && h <= 23 && min >= 0 && min <= 59;
 }
 
-// Splits on the FIRST colon and masks each side independently, so a typed colon
-// position is always respected instead of being stripped and re-derived from
-// total digit count (which silently misreads which digits are the hour vs the
-// minute, e.g. "13:5" must stay hour=13/min=5, not be re-split as "1" + "35").
 function maskColonTime(trimmed: string, colonIdx: number): string {
   const hDigits = trimmed.slice(0, colonIdx).replace(/\D/g, "");
   const minDigits = trimmed.slice(colonIdx + 1).replace(/\D/g, "");

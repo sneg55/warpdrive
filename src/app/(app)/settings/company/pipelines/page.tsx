@@ -9,8 +9,6 @@ import { SettingsCard, SettingsCardBody, SettingsCardHeader } from "../../Settin
 
 export const metadata = { title: STRINGS.settings.pipelines };
 
-// Company settings > Pipelines tab: list pipelines, create new ones, link to the stage editor.
-// Gated on admin or the pipeline.manage flag (same capability createPipeline enforces server-side).
 export default async function PipelinesSettingsPage(): Promise<ReactNode> {
   const ctx = await createContext();
   const { actor } = ctx;

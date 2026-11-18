@@ -64,9 +64,6 @@ describe("reduceRealtime", () => {
   });
 
   it("invalidates a self-actor deal_updated (delete/archive), which the board never applied optimistically", () => {
-    // Delete/archive originate from the deal workspace, not the board, so there is no local
-    // optimistic apply to echo-suppress. The acting user's own board must still refetch to drop
-    // the card. Echo suppression is reserved for deal_moved (the only board-optimistic action).
     const updatedEvent = {
       ...movedEvent,
       type: "deal_updated" as const,

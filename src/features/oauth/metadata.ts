@@ -15,8 +15,6 @@ export function buildAuthServerMetadata(
     issuer: base,
     authorization_endpoint: `${base}/oauth/authorize`,
     token_endpoint: `${base}/oauth/token`,
-    // Omitted entirely (not advertised as an endpoint that then 404s) when a deploy has turned
-    // dynamic registration off, so discovery reflects policy instead of looking like a bug.
     ...(opts.registration === "open"
       ? { registration_endpoint: `${base}/oauth/register` }
       : undefined),

@@ -7,8 +7,6 @@ import type { CalendarActivity } from "@/features/activities/calendar";
 import { ActivityChip } from "./calendarChip";
 import { MoreActivitiesChip } from "./MoreActivitiesChip";
 
-// One day's all-day activities. Every lane in the week reserves the same number of rows so the
-// hour grids underneath all start at the same y and a given hour stays level across the week.
 export function AllDayLane({
   dayLabel,
   items,

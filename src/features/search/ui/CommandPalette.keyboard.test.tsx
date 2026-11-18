@@ -1,7 +1,4 @@
 // @vitest-environment jsdom
-// Keyboard-navigation behavior for the command palette, split out of
-// CommandPalette.test.tsx (which covers rendering/selection) to keep both
-// files under the project's line-count limit.
 import "@testing-library/jest-dom/vitest";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -32,9 +29,6 @@ import { OPEN_SEARCH_EVENT } from "./events";
 
 const EMPTY_RESULTS: SearchResults = { deals: [], people: [], organizations: [], leads: [] };
 
-// Sets the data the mocked trpc.search.query.useQuery hook returns on its
-// next call. The mock ignores its input args, so tests only need to control
-// the shape of the response, not the query string routing.
 function setResults(results: SearchResults) {
   useQueryMock.mockReturnValue({ data: results });
 }
@@ -45,8 +39,6 @@ beforeEach(() => {
   vi.useFakeTimers();
 });
 
-// Opens the palette, types a query, and advances past the debounce so the
-// results list (rather than the idle placeholder) is rendered.
 function openAndSearch(query: string) {
   render(<CommandPalette />);
   fireEvent(window, new Event(OPEN_SEARCH_EVENT));
@@ -70,8 +62,8 @@ describe("CommandPalette keyboard navigation", () => {
     setResults(MIXED_RESULTS);
     const input = openAndSearch("x");
 
-    fireEvent.keyDown(input, { key: "ArrowDown" }); // active -> Deal A (already first)
-    fireEvent.keyDown(input, { key: "ArrowDown" }); // active -> Lead B
+    fireEvent.keyDown(input, { key: "ArrowDown" });
+    fireEvent.keyDown(input, { key: "ArrowDown" });
     fireEvent.keyDown(input, { key: "Enter" });
 
     expect(pushMock).toHaveBeenCalledWith("/leads/l1");
@@ -114,10 +106,8 @@ describe("CommandPalette keyboard navigation", () => {
     setResults(MIXED_RESULTS);
     const input = openAndSearch("x");
 
-    fireEvent.keyDown(input, { key: "ArrowDown" }); // active -> Lead B (index 1 of 2)
+    fireEvent.keyDown(input, { key: "ArrowDown" });
 
-    // A new query collapses the result set to a single row; the stale
-    // index (1) would be out of bounds, so it must reset to 0.
     setResults({
       deals: [{ id: "d3", primary: "Only Deal", secondary: null }],
       people: [],
@@ -135,14 +125,11 @@ describe("CommandPalette keyboard navigation", () => {
   });
 
   it("resets the active index to the top when the results change content at the same length", () => {
-    setResults(MIXED_RESULTS); // [Deal A, Lead B], 2 rows
+    setResults(MIXED_RESULTS);
     const input = openAndSearch("x");
 
-    fireEvent.keyDown(input, { key: "ArrowDown" }); // active -> Lead B (index 1 of 2)
+    fireEvent.keyDown(input, { key: "ArrowDown" });
 
-    // A new query returns a DIFFERENT set of rows, but the same count (2).
-    // Length-only reset logic would leave the stale index (1) pointing at
-    // the new second row instead of resetting to the top.
     setResults({
       deals: [{ id: "d9", primary: "New Deal", secondary: null }],
       people: [],

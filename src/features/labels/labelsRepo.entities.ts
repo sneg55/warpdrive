@@ -5,9 +5,6 @@ import { labels } from "@/db/schema/system";
 import type { DbOrTx } from "@/server/realtime/channelVersions";
 import { labelJoin } from "./labelJoins";
 
-// Replace an entity's applied labels with exactly `labelIds`, transactionally: delete the links no
-// longer present, insert the newly-added ones. A no-op set clears all links. Accepts a Db or an
-// open transaction so callers can fold it into an existing write.
 export async function setEntityLabels(
   db: DbOrTx,
   target: LabelTarget,
@@ -35,7 +32,6 @@ export async function setEntityLabels(
         .values(toAdd.map((labelId) => ({ [entityColName(target)]: entityId, labelId })));
     }
   };
-  // If we were handed a plain Db, wrap in a transaction; if already a tx, run inline.
   if ("transaction" in db && typeof db.transaction === "function") {
     await (db as Db).transaction(run);
   } else {
@@ -43,15 +39,6 @@ export async function setEntityLabels(
   }
 }
 
-// Name-based entry point for the write paths. Entities store applied labels as a name array, so
-// every writer holds names, not catalog ids: this resolves them (case-insensitively, matching
-// resolveLabelChips) and replaces the join rows in the same transaction as the array write.
-//
-// A name with no catalog row is ADOPTED into the catalog rather than rejected or dropped. That
-// keeps the invariant every read path assumes, that an applied name always has a catalog entry, so
-// it appears in Settings and in the pickers, and it never renders as an unresolvable gray chip.
-// Rejecting instead would break lead-to-deal conversion, which carries lead label names onto a
-// deal whose catalog may not have them yet.
 export async function syncEntityLabelNames(
   db: DbOrTx,
   target: LabelTarget,
@@ -89,16 +76,12 @@ async function resolveOrAdoptNames(
       continue;
     }
     signal.throwIfAborted();
-    // Adopted labels get the neutral color the resolver already falls back to, so the chip's
-    // appearance does not change the moment it becomes catalog-backed.
     const [row] = await tx
       .insert(labels)
       .values({ target, name, color: "gray", order: nextOrder })
       .onConflictDoNothing()
       .returning();
     nextOrder += 1;
-    // A concurrent writer may have adopted the same name first; the unique index makes that a
-    // no-op insert, so re-read to get the winner's id.
     const id = row?.id ?? (await findLabelIdByName(tx, target, name));
     if (id === undefined) continue;
     byName.set(name.toLowerCase(), id);

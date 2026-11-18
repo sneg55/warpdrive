@@ -34,7 +34,6 @@ function invisibleDeal(): VisibleDeal {
     pipelineVisibilityGroupId: null,
   };
 }
-// A parentless activity visible to VIEWER (assignee = VIEWER, visibilityLevel = "all" so canSee passes).
 function visibleActivity(assigneeId: string = VIEWER): VisibleActivity {
   return {
     kind: "activity",
@@ -84,12 +83,9 @@ describe("can matrix (permissions spec 8)", () => {
     expect(can(u("regular", []), "activity.delete", visibleActivity(VIEWER))).toBe(false);
   });
   test("non-assignee regular user is denied activity.complete without flags", () => {
-    // assigneeId is OWNER, viewer is VIEWER: the assignee exception must not fire
     expect(can(u("regular", []), "activity.complete", visibleActivity(OWNER))).toBe(false);
   });
 
-  // Team-manager scope: managedUserIds contains OWNER (populated via team.viewMembers at hydration),
-  // so an owner-level deal owned by OWNER is visible (canSee via managesOwner).
   test("team-manager edits a managed member's deal (edit_team + manages owner)", () => {
     const mgr = u("regular", ["deal.edit_team"], { managedUserIds: new Set([OWNER]) });
     expect(can(mgr, "deal.edit", invisibleDeal())).toBe(true);

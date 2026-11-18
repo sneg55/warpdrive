@@ -1,7 +1,3 @@
-// The change-log value markLost writes for a status transition. The row has nowhere else to put
-// the lost reason, so the reason NAME (already resolved, no id leaks) and the free-text comment
-// ride along inside new_value. Rows written before this, and every non-lost transition, stay
-// plain strings, so both readers must tolerate either shape.
 export interface LostStatusValue {
   value: "lost";
   reason: string | null;

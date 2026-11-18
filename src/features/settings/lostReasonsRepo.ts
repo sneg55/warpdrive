@@ -4,9 +4,6 @@ import type { Db } from "@/db/client";
 import { type LostReason, lostReasons } from "@/db/schema/lostReasons";
 import { err, ok, type Result } from "@/types/result";
 
-// Lost-reason catalog CRUD (settings spec 6.3). Archive is a soft-delete (archivedAt) because
-// historical won/lost deals reference the reason; the deal-close picker filters archived out.
-
 export async function listLostReasons(db: Db, signal: AbortSignal): Promise<LostReason[]> {
   signal.throwIfAborted();
   return db

@@ -1,8 +1,3 @@
-// Completed activities broken out by activity type, for the range.
-// LEFT JOIN from activity_types so a type with no completions still returns a zero row:
-// "no meetings booked this month" is a finding, and an absent row hides it.
-// Visibility follows the dominant parent (deal > person > org > parentless), shared with
-// activitiesPerformance and the goal totals.
 import { sql } from "drizzle-orm";
 import type { Db } from "@/db/client";
 import type { PermSetUser } from "@/features/permissions/effective";
@@ -27,8 +22,6 @@ export async function activitiesByType(
         )`
       : sql``;
 
-  // Every activity predicate lives in the JOIN condition, not a WHERE clause: moving any of
-  // them to WHERE turns the LEFT JOIN into an inner join and the zero rows disappear.
   const result = await db.execute(sql`
     SELECT
       t.id AS "typeId",

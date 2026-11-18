@@ -32,15 +32,11 @@ describe("aggregateStageConversion", () => {
     expect(out[0]?.name).toBe("Lead");
   });
 
-  // Two pipelines can call position 2 different things, and inventing a merged label would
-  // misreport both. The position is the only honest name left.
   test("falls back to the position when pipelines disagree on the name", () => {
     const out = aggregateStageConversion([[row(1, "Demo", 1)], [row(1, "Trial", 1)]]);
     expect(out[0]?.name).toBe("Stage 2");
   });
 
-  // A median cannot be rebuilt from other medians, so aggregating drops it rather than
-  // reporting a number that is not one.
   test("drops days-in-stage once more than one pipeline contributes", () => {
     const out = aggregateStageConversion([[row(0, "Lead", 1)], [row(0, "Lead", 1)]]);
     expect(out[0]?.medianDaysInStage).toBeNull();

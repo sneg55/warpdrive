@@ -2,7 +2,6 @@ import { index, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { users } from "./identity";
 import { notes } from "./notes";
 
-// Comments thread under a note; deleting the note cascades them away.
 export const comments = pgTable(
   "comments",
   {

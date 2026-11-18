@@ -5,9 +5,6 @@ import { files } from "@/db/schema";
 
 export type FileEntityType = (typeof FILE_ENTITY_TYPE)[number];
 
-// The client-facing projection: id, display name, size, type, and creation time.
-// s3Key / etag / uploadedBy are deliberately never selected so storage internals
-// never leave the server boundary.
 export interface FileListItem {
   id: string;
   filename: string;
@@ -16,11 +13,6 @@ export interface FileListItem {
   createdAt: Date;
 }
 
-// Plain read of the CONFIRMED (status='ready') files attached to one entity,
-// newest first, on the files_entity_idx (entity_type, entity_id). Excludes
-// 'uploading' rows (pending, and the same rows the reaper later deletes). This
-// is NOT an authorization boundary: the caller (tRPC router / server action)
-// must gate the parent's visibility before exposing the result.
 export async function listFilesForEntity(
   db: Db,
   entityType: FileEntityType,

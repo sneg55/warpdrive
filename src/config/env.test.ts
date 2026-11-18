@@ -87,15 +87,11 @@ describe("env boundary", () => {
     });
 
     test("TOKEN_ENCRYPTION_KEY_FILE contents take preference over the plain var", () => {
-      // Two DISTINCT valid 32-byte base64 keys: byte-0 vs byte-9 fill.
-      // The file holds keyFromFile, the plain var holds keyFromPlain.
-      // If resolveFileVars works, the parsed value MUST equal keyFromFile.
       const keyFromFile = Buffer.alloc(32, 0).toString("base64");
       const keyFromPlain = Buffer.alloc(32, 9).toString("base64");
-      expect(keyFromFile).not.toBe(keyFromPlain); // guard: assertion is not vacuous
+      expect(keyFromFile).not.toBe(keyFromPlain);
 
       const filePath = join(dir, "token_encryption_key");
-      // Trailing whitespace/newline must be trimmed by resolveFileVars.
       writeFileSync(filePath, `${keyFromFile}\n`, "utf8");
 
       const result = parseEnv({
@@ -105,7 +101,7 @@ describe("env boundary", () => {
       });
 
       expect(result.ok).toBe(true);
-      if (!result.ok) return; // narrow for TypeScript
+      if (!result.ok) return;
       expect(result.value.TOKEN_ENCRYPTION_KEY).toBe(keyFromFile);
       expect(result.value.TOKEN_ENCRYPTION_KEY).not.toBe(keyFromPlain);
     });

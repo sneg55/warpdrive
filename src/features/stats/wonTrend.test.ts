@@ -1,5 +1,3 @@
-// Integration test: real Postgres, real migrations. The trend is the only stats query that is
-// not a resting-state snapshot, so what it must prove is bucketing, gap filling and scoping.
 import { describe, expect, it } from "vitest";
 import { deals } from "@/db/schema/deals";
 import { withTestDb } from "@/db/testing";
@@ -74,7 +72,6 @@ describe("wonTrend", () => {
     });
   });
 
-  // A gap in a line reads as missing data. A month nobody won anything in is a fact, not a hole.
   it("emits a zero bucket for every month in the range, including months with no wins", async () => {
     await withTestDb(async (db) => {
       const f = await fixture(db);
@@ -165,7 +162,6 @@ describe("wonTrend", () => {
     });
   });
 
-  // A stats query that leaks a restricted deal is a security bug, not a rounding error.
   it("applies the deal visibility predicate, so an owner-only deal stays out of another user's trend", async () => {
     await withTestDb(async (db) => {
       const f = await fixture(db);

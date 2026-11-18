@@ -6,9 +6,6 @@ import { listPeople } from "./listPeople";
 import { listOrgs } from "./orgsRepo";
 import type { ContactActor } from "./personsRepo";
 
-// persons.labels / organizations.labels are text[] of label names, so "is" / "is not" compile to a
-// case-insensitive membership test. A row with no labels lands on the "is not" side of every name.
-
 function regularActor(id: string): ContactActor {
   return {
     id,
@@ -97,8 +94,6 @@ describe("listPeople filtered by the labels array column", () => {
     });
   });
 
-  // A migrated install can still hold legacy lowercase values in persons.labels while the picker
-  // offers the catalog's cased name, so matching has to ignore case on both sides.
   it("matches a legacy lowercase label value against the cased name the picker offers", async () => {
     await withTestDb(async (db) => {
       const me = await seedUser(db);
@@ -123,8 +118,6 @@ describe("listPeople filtered by the labels array column", () => {
   });
 });
 
-// "is any of": the names travel as one bound text[], so only a real server proves the cast and the
-// case-insensitive comparison hold together.
 describe("listPeople filtered by several label names at once", () => {
   function multiFilter(op: "eq" | "neq", value: string[]) {
     return {
@@ -135,7 +128,6 @@ describe("listPeople filtered by several label names at once", () => {
   }
 
   async function seedFour(db: TestDb, ownerId: string): Promise<void> {
-    // "hot" is stored lowercase the way the label backfill leaves a legacy value.
     await seedPerson(db, { name: "Hot Hank", ownerId, labels: ["hot"] });
     await seedPerson(db, { name: "Warm Wanda", ownerId, labels: ["Warm"] });
     await seedPerson(db, { name: "Cold Cody", ownerId, labels: ["Cold"] });

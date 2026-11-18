@@ -3,7 +3,6 @@ import "@testing-library/jest-dom/vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-// Active detection reads the pathname; pin it to the Users route.
 vi.mock("next/navigation", () => ({ usePathname: () => "/settings/users" }));
 vi.mock("next/link", () => ({
   default: ({ href, children, ...rest }: { href: string; children: React.ReactNode }) => (
@@ -28,7 +27,6 @@ describe("SettingsNav", () => {
     render(<SettingsNav isAdmin={true} canManageCompany={true} canImport={true} />);
     const active = screen.getByRole("link", { name: /Users/ });
     expect(active.getAttribute("aria-current")).toBe("page");
-    // PD highlights the active settings item in blue (text + tinted background), not bg-accent gray.
     expect(active.className).toMatch(/text-blue-700/);
     expect(active.className).toMatch(/bg-blue-50/);
     expect(active.className).not.toContain("bg-accent");
@@ -49,8 +47,6 @@ describe("SettingsNav", () => {
     );
   });
 
-  // The enrichment page, its config query and its settings actions all require a real admin,
-  // so the MANAGE flag alone must not surface a link into that denial page.
   it("shows Enrichment to a real admin", () => {
     render(<SettingsNav isAdmin={true} canManageCompany={true} canImport={false} />);
     expect(screen.getByRole("link", { name: /Enrichment/ })).toHaveAttribute(

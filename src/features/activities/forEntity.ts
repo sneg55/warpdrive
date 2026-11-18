@@ -1,6 +1,3 @@
-// listActivitiesForEntity: per-entity activity list for the deal workspace (and
-// future person/org detail pages). Reuses resolveActivityVisibility + canSee from
-// calendarRange so visibility is consistent and the audited gate cannot diverge.
 import { and, eq, isNull } from "drizzle-orm";
 import type { VisibilityLevel } from "@/constants/visibility";
 import type { Db } from "@/db/client";
@@ -42,17 +39,10 @@ interface ActivityRow {
   leadVisibleToUserIds: string[] | null;
   personId: string | null;
   orgId: string | null;
-  // Link-safe ids from the deletedAt-filtered joins: null when the linked person/org is soft-
-  // deleted, so the UI never renders a link to a contact whose detail page 404s. The raw personId/
-  // orgId above stay for visibility/parent resolution (a deleted parent still gates the activity).
   personVisibleId: string | null;
   orgVisibleId: string | null;
-  // Display names from the same deletedAt-filtered joins (null when unlinked or soft-deleted).
   personName: string | null;
   orgName: string | null;
-  // Visibility columns for the linked person/org, so the name + link are only disclosed when the
-  // actor can see that record. The activity itself is authorized through its deal parent, which does
-  // NOT imply the actor may see an owner-only linked contact (they must be gated separately).
   personOwnerId: string | null;
   personVisibilityLevel: VisibilityLevel | null;
   personVisibilityGroupId: string | null;
@@ -98,8 +88,6 @@ function toActivity(row: ActivityRow): Activity {
   };
 }
 
-// Build a person/org visibility record from the linked-contact columns, or null when there is no
-// (non-soft-deleted) linked record. Used to gate the disclosed name + link by the actor's access.
 function linkedRecord(
   kind: "person" | "organization",
   visibleId: string | null,
@@ -138,15 +126,10 @@ function toCalendarActivity(
     dealId: row.dealId,
     dealTitle: row.dealTitle,
     leadId: leadOk ? row.leadVisibleId : null,
-    // Gate the link + name by the actor's visibility of the linked contact: the activity is
-    // authorized via its deal parent, which does not imply access to an owner-only linked record.
     personId: personOk ? row.personVisibleId : null,
     orgId: orgOk ? row.orgVisibleId : null,
     overdue: isActivityOverdue(row.dueAt, row.allDay, row.done, now),
     ownerName: row.ownerName,
-    // Defense in depth: re-sanitize author HTML at the read boundary (same pattern as
-    // emailAuthoringReads). Idempotent on already-clean HTML written via createActivity, so no
-    // behavior change for the normal path, but the render site no longer trusts every write path.
     note: row.note === null ? null : sanitizeAuthorHtml(row.note),
     location: row.location,
     videoCallUrl: row.videoCallUrl,
@@ -165,9 +148,6 @@ export async function listActivitiesForEntity(
   signal.throwIfAborted();
   const now = Date.now();
 
-  // Build the where clause based on entityType. The FK column names in the
-  // activities table map directly: deal_id, person_id, org_id. Lead-scoped activities
-  // are served by the separate lead.leadTimeline procedure, not this function.
   const fkCondition =
     entityType === "deal"
       ? eq(activities.dealId, entityId)

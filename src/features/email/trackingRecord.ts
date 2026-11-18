@@ -14,7 +14,6 @@ export interface TokenRow {
   disabled: boolean;
 }
 
-// Load the token row plus the owner user id for the publish channel.
 async function loadToken(
   db: DbOrTx,
   token: string,
@@ -43,9 +42,6 @@ async function loadToken(
   };
 }
 
-// Read-only token lookup, no event write. Exported for the redirect-only click path
-// (resolveClickTarget), which needs the stored target_url to send a real recipient to the real
-// destination but must not pay for, or record, the full event when /t/click is over its limit.
 export async function loadTokenRow(
   db: DbOrTx,
   token: string,
@@ -55,10 +51,6 @@ export async function loadTokenRow(
   return loaded?.row ?? null;
 }
 
-// Write a tracking event (+ publish) unless the token is disabled or not yet backfilled
-// with a message_id (the event table requires a non-null message FK). Best-effort: the
-// caller serves the pixel / redirect regardless. Returns the loaded row (for target_url)
-// or null when the token is unknown.
 export async function recordEvent(
   db: Db,
   token: string,
@@ -70,13 +62,9 @@ export async function recordEvent(
   if (loaded === null) return null;
   const { row, ownerId } = loaded;
 
-  // Disabled tokens record nothing; a missing message_id means the send has not
-  // reconciled yet, so there is no message to anchor the event to.
   if (row.disabled || row.message_id === null) return row;
   const messageId = row.message_id;
 
-  // Capture the inserted event id and the message's thread_id so we can fire the
-  // notification OUTSIDE the transaction (best-effort; never aborts the record).
   const eventId = await db.transaction(async (tx) => {
     const ins = await tx.execute(sql`
       INSERT INTO email_tracking_events (token_id, message_id, event_type, recipient, target_url, user_agent)
@@ -99,8 +87,6 @@ export async function recordEvent(
     return inserted?.id ?? null;
   });
 
-  // Resolve the thread_id for the notification payload. Best-effort: if the query
-  // fails or the message is gone, we skip the notification and continue.
   if (eventId !== null) {
     try {
       const msgRow = (

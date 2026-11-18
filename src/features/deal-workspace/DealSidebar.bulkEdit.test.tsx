@@ -112,16 +112,13 @@ it("the Person section pencil opens every field at once and saves them in one ac
   );
 
   const personSection = within(screen.getByRole("region", { name: "Person" }));
-  // The header pencil enters section bulk-edit rather than the old reveal-empties no-op.
   fireEvent.click(personSection.getByRole("button", { name: "Edit Person section" }));
 
-  // All editable Person fields are open simultaneously (First name + Last name inputs both present).
   const firstName = personSection.getByLabelText("First name");
   const lastName = personSection.getByLabelText("Last name");
   fireEvent.change(firstName, { target: { value: "Mia" } });
   fireEvent.change(lastName, { target: { value: "Stone" } });
 
-  // A single Save commits the whole section in one call carrying only the changed fields.
   fireEvent.click(personSection.getByRole("button", { name: "Save" }));
 
   await vi.waitFor(() => expect(updatePersonAction).toHaveBeenCalledTimes(1));

@@ -14,15 +14,10 @@ import { AddLeadModal } from "../AddLeadModal";
 
 export interface AddLeadButtonProps {
   baseCurrency?: string;
-  // Whether the actor holds data.import; gates the "Import leads" link so it is not a
-  // dead-end to the denial page (mirrors SettingsNav hiding the import entry).
   canImport: boolean;
   onCreated: () => void;
 }
 
-// "Lead" split button (Pipedrive parity): primary segment opens the Add lead dialog; the attached
-// caret opens an options menu with "New lead" and (when permitted) "Import leads" (the latter
-// links to /settings/import, now that the import wizard route exists).
 export function AddLeadButton({
   baseCurrency,
   canImport,

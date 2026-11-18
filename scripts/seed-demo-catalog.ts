@@ -1,20 +1,9 @@
-/**
- * scripts/seed-demo-catalog.ts
- *
- * Shared catalog rows (labels, lost reasons, custom-field defs) plus owner-scoped
- * extras (teams, email templates, signatures). Catalogs are idempotent by natural
- * key so they coexist with smoke fixtures; extras are recreated each run (wipeDemo
- * clears the demo-owned ones first).
- */
-
 import { DEFAULT_LABELS } from "@/constants/defaultCatalog";
 import { DEAL_SOURCES, INDUSTRIES } from "./seed-demo-data";
 import type { Db } from "./seed-smoke-phase5-infra";
 
 export type LabelIds = { deal: string[]; person: string[]; org: string[] };
 
-// Demo catalog labels come from the shared first-run defaults so demo data and a fresh
-// install stay identical. Mapped to mutable string[][] for ensureLabels.
 const toDefs = (target: keyof typeof DEFAULT_LABELS): string[][] =>
   DEFAULT_LABELS[target].map(([name, color]) => [name, color]);
 
@@ -66,8 +55,6 @@ export async function seedLabels(db: Db): Promise<LabelIds> {
     person: await ensureLabels(db, "person", PERSON_LABELS),
     org: await ensureLabels(db, "organization", ORG_LABELS),
   };
-  // Lead labels exist in the catalog for parity with production defaults, though the demo
-  // record builders do not apply them, so their ids are not returned.
   await ensureLabels(db, "lead", LEAD_LABELS);
   return ids;
 }
@@ -93,11 +80,7 @@ export async function seedLostReasons(db: Db): Promise<string[]> {
   return ids;
 }
 
-// Deal custom-field defs whose keys match buildDeals() (industry, deal_source).
-// Single-option values are stored as the option id, so we set id == label.
 export async function seedCustomFieldDefs(db: Db): Promise<void> {
-  // is_important pins the field to the summary panel; show_in_add_form surfaces it
-  // in the add-deal modal (both migration 0036). Industry is flagged as important.
   const defs = [
     { key: "industry", name: "Industry", options: INDUSTRIES, important: true, inAddForm: true },
     {
@@ -116,8 +99,6 @@ export async function seedCustomFieldDefs(db: Db): Promise<void> {
       [d.key],
     );
     if (ex) {
-      // Backfill the flags on a pre-existing def so reseeds over an older catalog
-      // still exercise the important/add-form states.
       await db.q(
         `UPDATE custom_field_defs SET is_important = $2, show_in_add_form = $3 WHERE id = $1`,
         [ex.id, d.important, d.inAddForm],
@@ -134,8 +115,6 @@ export async function seedCustomFieldDefs(db: Db): Promise<void> {
   }
 }
 
-// Two teams over the 5 demo users; managers are demo2 and demo4. Demo-owned, so
-// wipeDemo clears prior copies before this runs.
 export async function seedTeams(db: Db, userIds: string[]): Promise<void> {
   const teams = [
     { name: "West Team", managerIdx: 1, memberIdx: [1, 2] },

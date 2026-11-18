@@ -1,5 +1,3 @@
-// Integration test for the free-text Channel ID (deals.source_channel_id) becoming editable via
-// updateDeal. Split out of dealUpdate.test.ts to keep that file under the size cap.
 import { describe, expect, it } from "vitest";
 import { withTestDb } from "@/db/testing";
 import { updateDeal } from "./dealActions";

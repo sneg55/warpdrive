@@ -1,4 +1,3 @@
-// Channel name builders (no magic strings at call sites).
 export const wsChannel = {
   pipeline: (id: string) => `pipeline:${id}` as const,
   deal: (id: string) => `deal:${id}` as const,
@@ -8,7 +7,6 @@ export const wsChannel = {
 
 export type WsChannelFamily = "pipeline" | "deal" | "user" | "import";
 
-// Parse "family:id"; returns null on a malformed channel string.
 export function parseChannel(channel: string): { family: WsChannelFamily; id: string } | null {
   const idx = channel.indexOf(":");
   if (idx <= 0) return null;

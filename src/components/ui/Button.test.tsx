@@ -14,9 +14,6 @@ describe("Button", () => {
     expect(onClick).toHaveBeenCalledOnce();
   });
 
-  // Buttons have a fixed height per size, so a label that wraps to two lines spills out of the
-  // box rather than growing it. Sizing stays the caller's business: no shrink-0 here, because
-  // buttonVariants also dresses full-width combobox triggers that share a row with siblings.
   it("keeps its label on one line", () => {
     expect(buttonVariants({})).toContain("whitespace-nowrap");
   });
@@ -32,8 +29,6 @@ describe("Button", () => {
     expect(classes).not.toContain("bg-primary");
   });
 
-  // Dimming a filled button to 50% put white on a pale green at 1.55:1. A disabled filled button
-  // now swaps to the neutral disabled pair (#475569 on #e2e8f0) instead of fading.
   it("filled variants swap to the neutral disabled fill rather than fading out", () => {
     for (const variant of ["default", "destructive"] as const) {
       const classes = buttonVariants({ variant });

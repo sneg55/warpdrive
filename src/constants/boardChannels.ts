@@ -1,5 +1,3 @@
-// Realtime channel names and board event type strings. No magic strings elsewhere.
-// Delegates to wsChannel builders so channel-name format stays in one place.
 import { wsChannel } from "./wsChannels";
 
 export const dealMovedChannel = (pipelineId: string): string => wsChannel.pipeline(pipelineId);

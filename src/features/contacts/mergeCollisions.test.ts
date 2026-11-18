@@ -42,7 +42,6 @@ it("FIX 3: deal_participants PK collision repoints to exactly one survivor row",
       .returning();
     if (deal === undefined) throw new Error("deal seed failed");
 
-    // BOTH survivor and dup participate on the same deal -> PK collision on repoint.
     await db.insert(dealParticipants).values([
       { dealId: deal.id, personId: survivor.value.id },
       { dealId: deal.id, personId: dup.value.id },
@@ -91,7 +90,6 @@ it("F1: person_labels PK collision repoints to exactly one survivor row", async 
       .returning();
     if (label === undefined) throw new Error("label seed failed");
 
-    // BOTH survivor and dup carry the same label -> PK collision on repoint.
     await db.insert(personLabels).values([
       { personId: survivor.value.id, labelId: label.id },
       { personId: dup.value.id, labelId: label.id },

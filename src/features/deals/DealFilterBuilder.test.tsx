@@ -28,14 +28,12 @@ describe("DealFilterBuilder", () => {
     fireEvent.change(screen.getByLabelText("Condition 1 value"), { target: { value: "acme" } });
     fireEvent.click(screen.getByRole("button", { name: "Apply" }));
 
-    // Default first field is Title, whose first operator is "contains" (TEXT_OPS order).
     expect(onApply).toHaveBeenCalledWith({
       combinator: "and",
       conditions: [{ field: "title", op: "contains", value: "acme" }],
     });
   });
 
-  // Deals used to hide the selector and hardcode AND, so "any of these" was unreachable.
   it("offers the all/any combinator once there is more than one condition", () => {
     render(<DealFilterBuilder stages={STAGES} activeCount={0} onApply={vi.fn()} />);
     fireEvent.click(screen.getByRole("button", { name: "Filter" }));
@@ -132,8 +130,6 @@ describe("DealFilterBuilder", () => {
     expect(onApply).toHaveBeenCalledWith(null);
   });
 
-  // Reopening a blank form misreports what the list is showing, and an "any of" filter reopened as
-  // "all of" is silently rewritten on the next Apply.
   it("reopens on the applied conditions and combinator, not a blank form", () => {
     render(
       <DealFilterBuilder

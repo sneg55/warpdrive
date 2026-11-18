@@ -5,8 +5,6 @@ import type { PermSetUser } from "@/features/permissions/effective";
 import type { DealVisibilitySession } from "@/types/session";
 import type { ContactActor } from "./personsRepo";
 
-// Build the DealVisibilitySession shape assertReferenceVisible expects. Shared by contactTimeline
-// and activityStats so the entity-visibility gate is defined once (was duplicated per call site).
 export function toRefActor(actor: PermSetUser): DealVisibilitySession {
   return {
     userId: actor.id,
@@ -18,12 +16,6 @@ export function toRefActor(actor: PermSetUser): DealVisibilitySession {
   };
 }
 
-// Build the ContactActor shape personsRepo/orgsRepo expect from a PermSetUser. flags are carried
-// through so contact update paths can enforce contact.edit (F2). primaryVisibilityGroupId defaults
-// to null: read/update/delete paths never resolve a group, so they need not pay a lookup. The
-// CREATE paths (createPerson/createOrg) MUST pass the real group via loadContactActor, or
-// deriveContactVisibility rejects with E_PERM_003 whenever the person/org default visibility is
-// "group" (mirrors the import-actor bug that failed every group-scoped lead import).
 export function toContactActor(
   actor: PermSetUser,
   primaryVisibilityGroupId: string | null = null,
@@ -38,8 +30,6 @@ export function toContactActor(
   };
 }
 
-// Create-path variant: load the actor's real primaryVisibilityGroupId (same source as
-// leadServerActions/createDealAction) so a group-level person/org create can resolve its group.
 export async function loadContactActor(
   db: Db,
   actor: PermSetUser,

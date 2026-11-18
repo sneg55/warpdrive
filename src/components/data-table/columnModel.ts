@@ -1,16 +1,9 @@
-// Generic, catalog-driven column visibility + order model shared by every list table (leads, deals
-// list, people, orgs). Pure functions so the ordering/toggle logic is unit-tested once and every
-// list inherits identical behavior. Mirrors the original leads-only useLeadColumns helpers, now
-// parameterized by a column catalog + its single pinned column (the row-link anchor).
-
 import type { CustomFieldDef } from "@/types/customFields";
 
 export interface ColumnDef {
   key: string;
   header: string;
-  // Exactly one column per catalog is pinned: always first, never hidden or dragged (the row link).
   pinned?: boolean;
-  // Seeds the default visible set before any stored preference loads.
   defaultVisible?: boolean;
   customField?: CustomFieldDef;
 }
@@ -23,8 +16,6 @@ function defaultVisibleKeys(catalog: readonly ColumnDef[]): string[] {
   return catalog.filter((c) => c.defaultVisible === true).map((c) => c.key);
 }
 
-// Resolve a persisted key list to an ORDERED visible-key array: pinned first, then the stored keys
-// in order (known-only, deduped). Falls back to the catalog defaults when stored is empty/unusable.
 export function resolveVisibleOrder(
   catalog: readonly ColumnDef[],
   stored: readonly string[] | undefined,
@@ -40,7 +31,6 @@ export function resolveVisibleOrder(
   return ordered;
 }
 
-// Toggle a non-pinned column's visibility, appending newly shown columns to the end.
 export function toggleColumnOrder(
   catalog: readonly ColumnDef[],
   visible: readonly string[],
@@ -51,7 +41,6 @@ export function toggleColumnOrder(
   return visible.includes(key) ? visible.filter((k) => k !== key) : [...visible, key];
 }
 
-// Move `from` to `to`'s index. The pinned column is anchored at index 0: never a source or target.
 export function reorderColumns(
   catalog: readonly ColumnDef[],
   visible: readonly string[],

@@ -22,8 +22,6 @@ import { scheduleReminder } from "./reminders";
 import { type ActivityCreateInput, activityCreateInput } from "./schemas";
 import { resolveActivityVisibility } from "./visibility";
 
-// Pipedrive parity: block linking a new activity to an archived deal. Extracted so
-// createActivity stays under the cognitive-complexity budget. No-op when dealId is null.
 async function assertDealNotArchived(
   tx: DbOrTx,
   dealId: string | null,
@@ -48,8 +46,6 @@ async function assertDealNotArchived(
   return ok(undefined);
 }
 
-// Sanitize the raw note HTML before it reaches Postgres. Extracted (alongside
-// resolveDoneAt below) so createActivity stays under the cognitive-complexity budget.
 function sanitizeNote(note: string | null): string | null {
   return note === null ? null : sanitizeAuthorHtml(note);
 }
@@ -63,8 +59,6 @@ function resolveDoneAt(done: boolean, override: Date | undefined): Date | null {
   return done ? (override ?? new Date()) : null;
 }
 
-// Multi-day guard: a provided endAt must not precede the start (dueAt). Both are ISO strings
-// at this point. No-op when either bound is absent (a dateless or open-ended activity).
 function assertEndNotBeforeStart(
   dueAt: string | null,
   endAt: string | null,
@@ -83,8 +77,6 @@ function assertEndNotBeforeStart(
 
 type RefKind = "deal" | "lead" | "person" | "organization" | "user";
 
-// Collect every entity a create payload references, so createActivity can visibility-gate them
-// in one loop. Extracted to keep createActivity under the cognitive-complexity budget.
 function collectReferences(input: {
   dealId: string | null;
   leadId: string | null;
@@ -110,7 +102,6 @@ function collectReferences(input: {
   return refs;
 }
 
-// Build a DealVisibilitySession from a PermSetUser for assertReferenceVisible.
 function toVisibilitySession(actor: PermSetUser) {
   return {
     userId: actor.id,
@@ -129,7 +120,6 @@ export async function createActivity(
   signal: AbortSignal,
   options: CreateActivityOptions = {},
 ): Promise<Result<Activity, AppError>> {
-  // Parse at the boundary so defaulted fields (priority, dueAt, arrays) are always present.
   const input = activityCreateInput.parse(raw);
   const defs = await listDefs(db, "activity", {}, signal);
   const cf = buildCustomFieldsSchema(defs).safeParse(input.customFields);
@@ -147,15 +137,12 @@ export async function createActivity(
   const refActor = toVisibilitySession(actor);
 
   const result = await db.transaction(async (tx) => {
-    // Validate all referenced entities are visible to the actor. A lead reference is gated
-    // here too, so an actor cannot attach an activity to a lead they cannot see.
     const refs = collectReferences(input);
     for (const ref of refs) {
       const v = await assertReferenceVisible(tx, refActor, ref, signal);
       if (!v.ok) return v;
     }
 
-    // Pipedrive parity: you cannot link a new activity to an archived deal.
     const guard = await assertDealNotArchived(tx, input.dealId, signal);
     if (!guard.ok) return guard;
 
@@ -166,7 +153,6 @@ export async function createActivity(
         subject: input.subject,
         priority: input.priority,
         dueAt: input.dueAt === null ? null : new Date(input.dueAt),
-        // A null dueAt cannot be all-day: there is no day.
         allDay: input.dueAt !== null && input.allDay,
         endAt: input.endAt === null ? null : new Date(input.endAt),
         durationMinutes: input.durationMinutes,
@@ -233,7 +219,6 @@ export async function completeActivity(
     const vis = await resolveActivityVisibility(tx, current, signal);
 
     if (vis === null || !canSee(actor, vis)) {
-      // Invisible: return 404-on-invisible, not 403.
       return err(new AppError(ERROR_IDS.ACTIVITY_NOT_FOUND, "activity not found", { id }));
     }
 

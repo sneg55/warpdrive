@@ -139,9 +139,6 @@ function scroller(): HTMLElement {
 
 describe("WeekAgendaGrid scroll position", () => {
   it("keeps the pinned rows inside the same scroll box as the hours", () => {
-    // Split across two scroll boxes, the scrolling half loses the scrollbar's width wherever
-    // scrollbars are not overlays, and the shared gridTemplateColumns then resolves against two
-    // different widths: the day columns stop lining up with their own headings.
     const offsite = { ...mk("a2", "2026-07-15T12:00:00.000Z"), allDay: true };
     render(<WeekAgendaGrid dayIsos={dayIsos} activities={[offsite]} />);
     const box = scroller();
@@ -155,8 +152,6 @@ describe("WeekAgendaGrid scroll position", () => {
   });
 
   it("leaves the viewer's scroll position alone when the data refreshes", () => {
-    // Saving an activity calls router.refresh(), which hands down a new activities array. Treating
-    // that as a fresh mount yanked the viewer back to the top, away from the slot they just used.
     const { rerender } = render(<WeekAgendaGrid dayIsos={dayIsos} activities={[]} />);
     scroller().scrollTop = 900;
     rerender(<WeekAgendaGrid dayIsos={dayIsos} activities={[]} />);
@@ -172,8 +167,6 @@ describe("WeekAgendaGrid scroll position", () => {
   });
 
   it("ignores an activity outside the displayed week when choosing where to open", () => {
-    // calendarRange pads the fetched range by a day either side and groupByLocalDay drops those
-    // rows from every column, so one at 02:00 must not pull the view up to an empty 02:00.
     const padding = {
       ...mk("pad", "2026-07-15T09:00:00.000Z"),
       dueAt: new Date(2026, 6, 10, 2, 0),
@@ -201,8 +194,6 @@ describe("WeekAgendaGrid", () => {
   });
 
   it("opens the deal drawer from a calendar chip, the same thing the Activities list opens", () => {
-    // The list routes a row to its record; a chip for the same activity must not open a different
-    // thing (an edit modal) just because the user is looking at the calendar.
     const onDeal = {
       ...mk("a1", "2026-07-15T09:30:00.000Z"),
       dealId: "d1",
@@ -243,8 +234,6 @@ describe("WeekAgendaGrid", () => {
   });
 
   it("opens an all-day activity as all-day, not as a midnight appointment", () => {
-    // The editor reads allDay to decide whether to show a start time; passing false would echo the
-    // stored midnight back at the user as a real 00:00 start.
     const offsite = {
       ...mk("a2", "2026-07-15T00:00:00.000Z"),
       allDay: true,

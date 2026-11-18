@@ -14,8 +14,6 @@ export type CustomFieldContact =
   | { kind: "person"; id: string; customFields: Record<string, unknown> }
   | { kind: "organization"; id: string; customFields: Record<string, unknown> };
 
-// Contact custom fields rendered as ordinary sidebar rows, not a second card. Each save is a
-// server-side per-key patch so archived values and overlapping edits are preserved.
 export function ContactCustomFieldRows({
   contact,
   defs,

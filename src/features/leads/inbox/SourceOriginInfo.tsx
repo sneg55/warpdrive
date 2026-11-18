@@ -3,7 +3,6 @@ import { Info } from "lucide-react";
 import type React from "react";
 import { PopMenu } from "./PopMenu";
 
-// Static explanatory popover next to the Source origin header (Pipedrive's source-popover-button).
 export function SourceOriginInfo(): React.ReactNode {
   return (
     <PopMenu

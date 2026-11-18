@@ -1,16 +1,4 @@
 // @vitest-environment jsdom
-// TipTap rich-text editor tests.
-//
-// TipTap + jsdom limitation: ProseMirror relies on browser-level selection/range APIs
-// that jsdom does not fully implement. Direct "type text and observe HTML" is not
-// reliably possible. We test the observable contract at the component boundary:
-//   - RichTextBody mounts without error.
-//   - onChange is called once on initial content and (via direct editor manipulation) on updates.
-//   - Disallowed HTML is stripped by sanitizeAuthorHtml before onChange fires.
-//   - After reset (html === ""), the emitted body is empty.
-//
-// FormatToolbar is tested in FormatToolbar.test.tsx, which passes a stub editor
-// directly to the component instead of using the test-only onEditorReady leak.
 
 import "@testing-library/jest-dom/vitest";
 import { cleanup, render, waitFor } from "@testing-library/react";
@@ -18,16 +6,11 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 afterEach(cleanup);
 
-// ---------------------------------------------------------------------------
-// Task 3.1: RichTextBody renders and calls onChange
-// ---------------------------------------------------------------------------
-
 describe("RichTextBody – basic render + onChange", () => {
   it("renders an editable region without error", async () => {
     const { RichTextBody } = await import("./RichTextBody");
     const onChange = vi.fn();
     render(<RichTextBody html="" onChange={onChange} />);
-    // TipTap mounts a contenteditable element.
     await waitFor(() => {
       expect(document.querySelector("[contenteditable]")).toBeInTheDocument();
     });
@@ -37,21 +20,13 @@ describe("RichTextBody – basic render + onChange", () => {
     const { RichTextBody } = await import("./RichTextBody");
     const onChange = vi.fn();
     render(<RichTextBody html="<p>Hello</p>" onChange={onChange} />);
-    // The editor fires an initial update on mount.
     await waitFor(() => {
       expect(onChange).toHaveBeenCalled();
     });
-    // The emitted HTML must include the text (sanitised passthrough of safe content).
     const lastCall = onChange.mock.calls[onChange.mock.calls.length - 1]![0] as string;
     expect(lastCall).toContain("Hello");
   });
 });
-
-// ---------------------------------------------------------------------------
-// Links must LOOK like links inside the editor. Tailwind's preflight resets anchors to
-// inherit colour and text-decoration, so an applied link rendered identically to plain text
-// and the toolbar's Link button appeared to do nothing at all.
-// ---------------------------------------------------------------------------
 
 describe("RichTextBody – link affordance", () => {
   it("styles anchors inside the editor surface", async () => {
@@ -67,10 +42,6 @@ describe("RichTextBody – link affordance", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// Fix 1 (CORRECTNESS): editor clears after reset (html prop set to "")
-// ---------------------------------------------------------------------------
-
 describe("RichTextBody – clears editor when html resets to empty string", () => {
   it("emits empty body when html prop is reset to empty string", async () => {
     const { RichTextBody } = await import("./RichTextBody");
@@ -79,30 +50,19 @@ describe("RichTextBody – clears editor when html resets to empty string", () =
       <RichTextBody html="<p>Original content</p>" onChange={onChange} />,
     );
 
-    // Wait for initial mount emit.
     await waitFor(() => {
       expect(onChange).toHaveBeenCalled();
     });
 
-    // Simulate a reset: parent sets html back to empty string.
     rerender(<RichTextBody html="" onChange={onChange} />);
 
-    // After reset, the next onChange emission must be empty (no stale content).
     await waitFor(() => {
       const calls = onChange.mock.calls;
       const lastCall = calls[calls.length - 1]![0] as string;
-      // An empty TipTap editor emits either "" or "<p></p>". Both are acceptable
-      // as "empty" — neither should contain the original content.
       expect(lastCall).not.toContain("Original content");
     });
   });
 });
-
-// ---------------------------------------------------------------------------
-// Item 1: applying a template must update the editor content.
-// When the html prop changes to a non-empty value that differs from what the
-// editor last emitted, the editor must sync to the new html.
-// ---------------------------------------------------------------------------
 
 describe("RichTextBody – syncs to html prop when template is applied", () => {
   it("emits the template body after html prop changes to a non-empty value", async () => {
@@ -110,14 +70,11 @@ describe("RichTextBody – syncs to html prop when template is applied", () => {
     const onChange = vi.fn();
     const { rerender } = render(<RichTextBody html="" onChange={onChange} />);
 
-    // Wait for initial mount emit.
     await waitFor(() => expect(onChange).toHaveBeenCalled());
     onChange.mockClear();
 
-    // Simulate applying a template: parent sets html to template body.
     rerender(<RichTextBody html="<p>Template content</p>" onChange={onChange} />);
 
-    // The editor must sync and emit the new content.
     await waitFor(() => {
       const calls = onChange.mock.calls;
       expect(calls.length).toBeGreaterThan(0);
@@ -126,11 +83,6 @@ describe("RichTextBody – syncs to html prop when template is applied", () => {
     });
   });
 });
-
-// ---------------------------------------------------------------------------
-// Item 2a: insert-field must insert as PLAIN TEXT (not parsed HTML)
-// A field value like "<b>Acme</b>" must appear literally in the body, not as markup.
-// ---------------------------------------------------------------------------
 
 describe("RichTextBody – insertToken inserts plain text only", () => {
   it("inserts HTML-special characters literally, not as markup", async () => {
@@ -143,24 +95,16 @@ describe("RichTextBody – insertToken inserts plain text only", () => {
       const calls = onChange.mock.calls;
       if (calls.length === 0) return;
       const last = calls[calls.length - 1]![0] as string;
-      // The literal angle-bracket text must appear (escaped as &lt;b&gt; or similar)
-      // and must NOT contain a rendered <b> element.
       expect(last).not.toMatch(/<b>Acme/);
-      // Must contain the text in some escaped form
       expect(last).toMatch(/Acme/);
     });
   });
 });
 
-// ---------------------------------------------------------------------------
-// Task 3.3: sanitizeAuthorHtml strips disallowed HTML before onChange
-// ---------------------------------------------------------------------------
-
 describe("RichTextBody – sanitise on the way out", () => {
   it("strips script tags from initial HTML before passing to onChange", async () => {
     const { RichTextBody } = await import("./RichTextBody");
     const onChange = vi.fn();
-    // Initial HTML contains a disallowed script tag.
     render(<RichTextBody html='<p>Safe</p><script>alert("xss")</script>' onChange={onChange} />);
     await waitFor(() => {
       expect(onChange).toHaveBeenCalled();
@@ -195,7 +139,6 @@ describe("RichTextBody – toolbar placement", () => {
     const editor = document.querySelector("[contenteditable]");
     const toolbar = document.querySelector('[role="toolbar"]');
     expect(toolbar).not.toBeNull();
-    // The toolbar must come AFTER the editor content in the document (PD docks it below the body).
     expect(
       editor && toolbar
         ? editor.compareDocumentPosition(toolbar) & Node.DOCUMENT_POSITION_FOLLOWING
@@ -213,8 +156,6 @@ describe("RichTextBody – editor frame", () => {
     await waitFor(() => {
       expect(document.querySelector("[contenteditable]")).toBeInTheDocument();
     });
-    // The email composer frames the editor as a white rounded card (PD parity); the wrapper
-    // carries the passed classes instead of the default bottom-border-only style.
     expect(container.querySelector("div.rounded-md.border.bg-background")).not.toBeNull();
   });
 
@@ -224,9 +165,6 @@ describe("RichTextBody – editor frame", () => {
     await waitFor(() => {
       expect(document.querySelector("[contenteditable]")).toBeInTheDocument();
     });
-    // The full-pane email composer must stretch the editor so the card fills the viewport
-    // height instead of floating as a short box over dead space. The frame becomes a flex-1
-    // column and the content scrolls internally.
     const frame = container.querySelector("div.flex-1.min-h-0");
     expect(frame).not.toBeNull();
     expect(container.querySelector("div.flex-1.min-h-0 .overflow-y-auto")).not.toBeNull();

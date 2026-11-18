@@ -1,6 +1,3 @@
-// SQL-shape tests for the Tier 2 operators, split out of filterAst.test.ts to keep that file
-// under the size cap. The null-safe parenthesised forms and the bound parameters are the whole
-// point of these operators, so assert the emitted SQL text and params, not just row counts.
 import { PgDialect } from "drizzle-orm/pg-core";
 import { describe, expect, it } from "vitest";
 import { ERROR_IDS } from "@/constants/errorIds";
@@ -21,8 +18,6 @@ describe("filterToSql: Tier 2 operator SQL", () => {
     expect(q.params).toEqual(["Al"]);
   });
 
-  // A bare NOT ILIKE is NULL for a null column, so it would drop exactly the rows that most
-  // obviously "do not contain" the term.
   it("notContains keeps null columns and binds the value", () => {
     const q = emit({ field: "orgName", op: "notContains", value: "acme" });
     expect(q.sql).toBe(`(o.name IS NULL OR o.name NOT ILIKE '%' || $1 || '%')`);
@@ -47,7 +42,6 @@ describe("filterToSql: Tier 2 operator SQL", () => {
     expect(emit({ field: "labels", op: "isNotEmpty" }).sql).toBe(`NOT (cardinality(d.labels) = 0)`);
   });
 
-  // `d.value <> $1` is NULL for a deal with no value, so "is not 5" dropped every valueless deal.
   it("neq compiles to IS DISTINCT FROM so a null column still compares", () => {
     const q = emit({ field: "value", op: "neq", value: "5" });
     expect(q.sql).toBe(`d.value IS DISTINCT FROM $1`);
@@ -62,10 +56,6 @@ describe("filterToSql: Tier 2 operator SQL", () => {
     }
   });
 
-  // `value` is optional on the schema so isEmpty/isNotEmpty can omit it, which lets an internal
-  // caller type-check a value-taking op with no value. node-postgres binds undefined as NULL, so
-  // `title IS DISTINCT FROM NULL` would match every non-null title and the condition would silently
-  // disappear while the user still sees a "filtered" list.
   it("rejects a value-taking op that arrives with no value", () => {
     const ops = ["eq", "neq", "contains", "startsWith", "notContains"] as const;
     for (const op of ops) {

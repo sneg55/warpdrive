@@ -41,7 +41,6 @@ it("groups cells into rows so the ARIA grid is well-formed (header + 6 weeks)", 
   render(
     <MonthView anchorIso="2026-06-15" dayIsos={dayIsos} activities={[]} todayIso="2026-06-15" />,
   );
-  // A valid grid is grid > row > gridcell. 1 weekday-header row + 6 week rows = 7.
   expect(screen.getAllByRole("row")).toHaveLength(7);
 });
 
@@ -58,7 +57,6 @@ it("de-emphasizes adjacent-month cells and marks today", () => {
   render(
     <MonthView anchorIso="2026-06-15" dayIsos={dayIsos} activities={[]} todayIso="2026-06-15" />,
   );
-  // Leading cell June 1 is in-month; a trailing July cell is adjacent-month.
   const julyCell = screen.getByTestId("cell-2026-07-01");
   expect(julyCell).toHaveAttribute("data-adjacent", "true");
   const todayCell = screen.getByTestId("cell-2026-06-15");
@@ -82,7 +80,6 @@ it("toggle + prev/next/today render as links carrying the right params", () => {
   expect(screen.getByText("June 2026")).toBeInTheDocument();
 });
 
-// An empty week rendered as a blank grid with no message at all.
 it("shows the caller's empty state only while the window holds nothing", () => {
   const empty = <p>Nothing scheduled</p>;
   const { rerender } = render(
@@ -116,8 +113,6 @@ it("renders the month grid when view=month (durability: same as a reloaded URL)"
 it("draws the header label and the adjacent-month tone from theme tokens", () => {
   render(<CalendarClient view="month" anchorIso="2026-06-15" dayIsos={dayIsos} activities={[]} />);
   expect(screen.getByText("June 2026")).toHaveClass("text-foreground");
-  // An adjacent month is de-emphasised by lowering the token's alpha, not by reaching for a
-  // lighter fixed gray, so the cell follows Night with everything else.
   const julyCell = screen.getByTestId("cell-2026-07-01");
   expect(julyCell).toHaveClass("bg-muted/50", "text-foreground/60");
   expect(julyCell.className).not.toMatch(/-gray-/);

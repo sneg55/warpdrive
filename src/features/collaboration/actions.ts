@@ -21,8 +21,6 @@ export async function createNoteAction(
   const { actor } = await createContext();
   if (actor === null) return { ok: false, error: { id: ERROR_IDS.AUTH_SESSION_DEAD } };
 
-  // createNoteWithMentions gates visibility via assertReferenceVisible and then
-  // best-effort fires mention notifications for any @[Name](userId) tokens.
   const result = await createNoteWithMentions(db, actor, input, SIG());
   if (!result.ok) return { ok: false, error: { id: result.error.id } };
   return { ok: true, value: { id: result.value.id } };
@@ -50,7 +48,6 @@ export async function updateNoteAction(
   const csrfOk = await guardCsrf(csrfToken);
   if (!csrfOk.ok) return { ok: false, error: { id: "E_AUTH_CSRF" } };
 
-  // Validate at the boundary: body length / uuid shape (the DB text column is unbounded).
   const parsed = noteUpdateInput.safeParse(input);
   if (!parsed.success) return { ok: false, error: { id: ERROR_IDS.NOTE_NOT_FOUND } };
 

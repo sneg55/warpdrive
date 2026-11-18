@@ -1,4 +1,3 @@
-// Integration tests for deleteDeal (soft delete). Real Postgres, no DB mocking.
 import { and, eq } from "drizzle-orm";
 import { afterAll, beforeAll, expect, it } from "vitest";
 import type { PermissionFlagKey } from "@/constants/permissionFlags";
@@ -26,13 +25,10 @@ function adminActor(userId: string): PermSetUser {
   return { id: userId, type: "admin", isActive: true, groupIds: new Set(), flags: new Set() };
 }
 
-// Regular actor who can SEE an "all"-visibility deal but has no edit capability.
 function viewerActor(userId: string): AuthUser {
   return { id: userId, type: "regular", isActive: true, groupIds: new Set() };
 }
 
-// The flat set of TRUE flags a default "regular" permission set grants (edit_own yes,
-// delete_* no). Built from the same registry the runtime uses so the test cannot drift.
 function regularDefaultFlagSet(): Set<PermissionFlagKey> {
   return new Set(
     (Object.entries(REGULAR_DEFAULT_FLAGS) as [PermissionFlagKey, boolean][])
@@ -95,7 +91,6 @@ it("returns a perm error and leaves the deal intact for a non-editor", async () 
   const p = await seedPipelineWithStages(h.db, ["A"]);
   const deal = await seedDeal(p.pipeline.id, p.stages[0]!.id, owner.id);
 
-  // viewerActor has no edit flags; a PermSetUser is required by deleteDeal.
   const actor: PermSetUser = { ...viewerActor(viewer.id), flags: new Set() };
   const r = await deleteDeal(
     h.db,
@@ -112,9 +107,6 @@ it("returns a perm error and leaves the deal intact for a non-editor", async () 
   expect(row?.deletedAt).toBeNull();
 });
 
-// PERMISSIONS-05: delete is a distinct capability from edit. A default "regular" user has
-// edit_own but NOT delete_own, so owning (hence being able to edit) a deal must NOT let them
-// delete it. Without an explicit deal.delete gate this call would succeed (privilege escalation).
 it("denies a default regular user deleting a deal they own (edit_own is not delete_own)", async () => {
   const u = await seedUser(h.db);
   const p = await seedPipelineWithStages(h.db, ["A"]);
@@ -152,8 +144,6 @@ it("allows an owner who holds deal.delete_own to delete their own deal", async (
   expect(r.value.deletedAt).not.toBeNull();
 });
 
-// A user who can edit ANY deal (deal.edit_any, e.g. a manager) but holds only delete_own must
-// NOT be able to delete a deal they do not own: delete_any is required for that.
 it("denies a non-owner with edit_any + delete_own (needs delete_any) and leaves the deal intact", async () => {
   const owner = await seedUser(h.db);
   const manager = await seedUser(h.db);

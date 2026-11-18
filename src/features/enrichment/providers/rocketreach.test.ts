@@ -39,7 +39,6 @@ describe("matchPerson request", () => {
     expect(urlOf(spy)).toContain("https://api.rocketreach.co/api/v2/person/lookup");
     expect(urlOf(spy)).toContain("return_cached_emails=true");
     expect(new Headers(initOf(spy).headers).get("Api-Key")).toBe(API_KEY);
-    // The request carries its own deadline, so what matters is that it still follows the caller.
     const sent = initOf(spy).signal;
     expect(sent?.aborted).toBe(false);
     caller.abort();
@@ -67,8 +66,6 @@ describe("matchPerson request", () => {
     expect(spy).not.toHaveBeenCalled();
   });
 
-  // There is no domain parameter here, so a name with only a company domain beside it would go out
-  // as a bare name and can come back as a different person entirely.
   it("declines a name it cannot disambiguate, rather than paying for an ambiguous lookup", async () => {
     const spy = stubFetch();
     const out = await matchPerson(

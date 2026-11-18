@@ -32,8 +32,6 @@ describe("monthsInRange", () => {
     expect(monthsInRange("2026-05-01", "2026-01-01")).toEqual([]);
   });
 
-  // A decade-wide range would draw 120 unreadable ticks, so the series keeps the most recent
-  // months rather than the oldest.
   it("caps a very wide range at the most recent months", () => {
     const months = monthsInRange("2000-01-01", "2026-12-31");
     expect(months).toHaveLength(MAX_TREND_MONTHS);
@@ -47,8 +45,6 @@ describe("windowStart", () => {
     expect(windowStart("2026-01-17", ["2026-01", "2026-02"])).toBe("2026-01-17");
   });
 
-  // When the cap drops leading months, the SQL window has to move with the chart, otherwise
-  // the query scans years the chart never draws.
   it("moves to the first rendered month when the cap dropped earlier ones", () => {
     expect(windowStart("2000-01-01", ["2022-01", "2022-02"])).toBe("2022-01-01");
   });

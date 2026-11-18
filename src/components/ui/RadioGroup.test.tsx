@@ -39,8 +39,6 @@ describe("RadioGroup", () => {
         </RadioGroupItem>
       </RadioGroup>,
     );
-    // The segment renders its own label text (not just an aria-label + dot), so a
-    // clip-path chevron stage picker can use it without a stray radio dot.
     expect(screen.getByRole("radio", { name: "Qualified" })).toHaveTextContent("Qualified");
   });
 });

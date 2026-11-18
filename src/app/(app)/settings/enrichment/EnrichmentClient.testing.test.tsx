@@ -71,8 +71,6 @@ function toggleFor(name: string): HTMLElement {
   return screen.getByRole("switch", { name: `${S.enabledLabel}: ${name}` });
 }
 
-// The probe button changes label mid-flight, so it is matched on either label and told apart from
-// the other card's by DOM order.
 function probeButton(index: number): HTMLElement {
   const buttons = screen.getAllByRole("button", {
     name: (accessibleName: string) => accessibleName === S.test || accessibleName === S.testing,

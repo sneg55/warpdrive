@@ -20,8 +20,6 @@ vi.mock("@/features/enrichment/actions", () => ({
   applyEnrichmentAction: vi.fn(),
 }));
 
-// Field grids and label controls are irrelevant here: this file asserts one wiring decision, that
-// each of the four section components hands the enrichment button to its header.
 vi.mock("./PersonBlock", () => ({ PersonBlock: () => <div /> }));
 vi.mock("./OrgBlock", () => ({ OrgBlock: () => <div /> }));
 vi.mock("./DetailsBlock", () => ({ DetailsBlock: () => <div /> }));

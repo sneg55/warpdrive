@@ -24,8 +24,6 @@ const followers = [
 
 it("renders the follower count", () => {
   render(<FollowersButton dealId="d1" followers={followers} isFollowedBySelf={false} />);
-  // The count and label sit in separate nodes inside the trigger, so match on the button's
-  // accessible name rather than a single text node.
   expect(screen.getByRole("button", { name: /2 followers/ })).toBeTruthy();
 });
 

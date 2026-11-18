@@ -47,8 +47,6 @@ it("offers pipeline/stage for deal only", () => {
   );
 });
 
-// The url column in a BD shortlist has to land somewhere. organizations.domain is the
-// website/domain column; before this it was not offered at all.
 it("offers the organization firmographics that the table actually has", () => {
   const orgFields = ENTITY_FIELDS.organization.map((f) => f.field);
   expect(orgFields).toEqual(
@@ -63,8 +61,6 @@ it("offers the organization firmographics that the table actually has", () => {
   );
 });
 
-// address is a nested object on orgCreateInput, so it is offered as dotted leaf fields that
-// mapRow reassembles. A raw CSV cell fed to the object schema would fail.
 it("offers address subfields as dotted leaves, never a bare address field", () => {
   const orgFields = ENTITY_FIELDS.organization.map((f) => f.field);
   expect(orgFields).toContain("address.city");
@@ -77,8 +73,6 @@ it("offers a note body", () => {
   expect(ENTITY_FIELDS.note[0]?.required).toBe(false);
 });
 
-// A lead links to an org through the Organization group's name field now, not a lead-level
-// orgName pseudo-field.
 it("no longer carries the orgName pseudo-field on lead", () => {
   expect(ENTITY_FIELDS.lead.map((f) => f.field)).not.toContain("orgName");
 });
@@ -90,8 +84,6 @@ it("groups each target with the entities it may write", () => {
   expect(TARGET_ENTITY_GROUPS.organization).toEqual(["organization", "note"]);
 });
 
-// notes.entityType is deal/person/organization/lead. Offering Note on an activity import would
-// build a mapping that only fails once the row reaches createNote.
 it("offers no note group on an activity import, since notes cannot attach to activities", () => {
   expect(TARGET_ENTITY_GROUPS.activity).toEqual(["activity"]);
 });
@@ -108,22 +100,16 @@ it("labels every mappable entity for the picker", () => {
   }
 });
 
-// A row that maps "Company" to Organization > Name and "Name" to Person > Name showed the same
-// bare "Name" on both collapsed pickers, so the two destinations were indistinguishable without
-// reopening the menu. Qualify the label with its owning entity.
 it("qualifies a field label with its owning entity", () => {
   expect(qualifiedFieldLabel("organization", "Name")).toBe("Organization[Name]");
   expect(qualifiedFieldLabel("person", "Name")).toBe("Person[Name]");
   expect(qualifiedFieldLabel("organization", "Address: city")).toBe("Organization[Address: city]");
 });
 
-// The note entity has one field whose label already IS the entity name; "Note[Note]" is noise.
 it("does not repeat an entity whose field label already names it", () => {
   expect(qualifiedFieldLabel("note", "Note")).toBe("Note");
 });
 
-// STANDARD_IMPORT_FIELDS stays as the primary entity's fields so mapping-completeness and the
-// row schemas keep one source of truth.
 it("derives STANDARD_IMPORT_FIELDS from the primary entity's catalog", () => {
   expect(STANDARD_IMPORT_FIELDS.lead).toEqual(ENTITY_FIELDS.lead);
   expect(STANDARD_IMPORT_FIELDS.organization).toEqual(ENTITY_FIELDS.organization);

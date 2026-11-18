@@ -27,8 +27,6 @@ describe("mailboxStatusLabel", () => {
   });
 
   test("before the browser clock exists, a disconnected mailbox still reads disconnected", () => {
-    // The stall needs a clock, but the other states do not, so the pre-hydration render must not
-    // fall back to claiming everything is connected.
     expect(mailboxStatusLabel({ status: "disconnected", lastSyncAtIso: null }, null)).toBe(
       EMAIL_SYNC_STRINGS.statusDisconnected,
     );

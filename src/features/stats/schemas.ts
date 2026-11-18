@@ -1,8 +1,6 @@
 import { z } from "zod";
 import { timeZoneInput } from "@/schemas/timeZoneInput";
 
-// Boundary validation for the dashboard procedure input.
-// Query functions receive the validated/narrowed types and trust them.
 export const ownerScopeInput = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("me") }),
   z.object({ kind: z.literal("all") }),

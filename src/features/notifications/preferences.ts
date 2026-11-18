@@ -5,8 +5,6 @@ import { NOTIFICATION_TYPES } from "@/constants/notificationTypes";
 import type { Db } from "@/db/client";
 import { notificationPreferences } from "@/db/schema";
 
-// Single source of truth for the defaults applied when a user has no row for a type,
-// so both getPreferences and resolveDelivery read them from one place.
 function defaultPreference(type: NotificationType): { inApp: boolean; email: boolean } {
   return { inApp: DEFAULT_IN_APP, email: DEFAULT_EMAIL_BY_TYPE[type] };
 }

@@ -20,14 +20,10 @@ describe("sampleValues", () => {
     expect(sampleValues(rows, "state")).toHaveLength(MAP_SAMPLE_VALUE_COUNT);
   });
 
-  // PD shows repeated values verbatim rather than collapsing them (see has_rt: False / False in
-  // docs/parity-captures/leads-import-pd/08-map-step.png). Deduping would misrepresent the data.
   it("keeps duplicate values instead of deduping them", () => {
     expect(sampleValues(rows, "has_rt")).toEqual(["False", "False"]);
   });
 
-  // Blank cells would render as empty lines under the column name, so skip past them to the next
-  // row that actually has a value.
   it("skips blank and whitespace-only values", () => {
     const sparse = [{ city: "" }, { city: "   " }, { city: "Newark" }, { city: "Chicago" }];
     expect(sampleValues(sparse, "city")).toEqual(["Newark", "Chicago"]);

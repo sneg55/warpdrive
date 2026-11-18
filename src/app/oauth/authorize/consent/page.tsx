@@ -38,9 +38,6 @@ export default async function OAuthConsentPage({
     <Consent
       action={`${action.pathname}${action.search}`}
       clientName={client.name}
-      // Shown to the user because it is where the grant actually goes. Safe to display: it was
-      // checked against the client's registered set above, so it cannot be a value this request
-      // invented.
       redirectUri={parsed.data.redirect_uri}
     />
   );

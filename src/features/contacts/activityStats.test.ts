@@ -61,7 +61,6 @@ it("aggregates a person's activities into counts-by-type and a last-activity dat
     expect(stats.done).toBe(2);
     expect(stats.open).toBe(1);
     expect(stats.byType).toEqual({ call: 2, meeting: 1 });
-    // Last activity = most recent DONE activity (2026-07-02).
     expect(stats.lastActivityAt).toEqual(new Date("2026-07-02T10:00:00Z"));
     expect(typeof stats.inactiveDays).toBe("number");
   });
@@ -92,7 +91,6 @@ it("returns zeroed stats for a contact the actor cannot see, even if the activit
     const ownerA = await seedUser(db, { name: "Owner A" });
     const viewerB = await seedUser(db, { name: "Viewer B" });
 
-    // Person is owner-only (hidden from viewerB); org is visible to everyone.
     const [person] = await db
       .insert(persons)
       .values({ name: "Hidden Ada", ownerId: ownerA.id, visibilityLevel: "owner" })
@@ -106,9 +104,6 @@ it("returns zeroed stats for a contact the actor cannot see, even if the activit
     const [call] = await db.select().from(activityTypes).where(eq(activityTypes.key, "call"));
     if (call === undefined) throw new Error("activity type missing");
 
-    // Activity links BOTH the hidden person and a visible org. The entity-visibility gate (mirroring
-    // contactTimeline) must return zeroed stats for the hidden person regardless of the org parent,
-    // so aggregate counts + last-activity for a contact the actor cannot open are never disclosed.
     await db.insert(activities).values({
       typeId: call.id,
       subject: "Discovery call",

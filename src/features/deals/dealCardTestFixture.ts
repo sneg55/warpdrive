@@ -1,7 +1,5 @@
 import type { BoardCard } from "./dealRepo";
 
-// Shared fixture for DealCard tests. Kept out of the *.test.tsx file so the test
-// module stays under the file-size limit.
 export const baseCard: BoardCard = {
   id: "d1",
   title: "Acme renewal",

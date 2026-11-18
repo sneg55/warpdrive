@@ -37,7 +37,6 @@ describe("BUILTIN_FIELDS catalog", () => {
     expect(isBuiltinFieldKey("organization", "nope")).toBe(false);
     expect(isBuiltinLocked("organization", "name")).toBe(true);
     expect(isBuiltinLocked("organization", "industry")).toBe(false);
-    // An unknown key is not "locked" (it is simply not a built-in).
     expect(isBuiltinLocked("organization", "nope")).toBe(false);
   });
 

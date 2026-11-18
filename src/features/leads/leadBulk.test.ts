@@ -86,7 +86,7 @@ describe("bulkUpdateLeads", () => {
 
       const r = await bulkUpdateLeads(
         db,
-        session(a.id), // only deal.create, not deal.changeOwner
+        session(a.id),
         { ids: [l1.id], change: { ownerId: b.id } },
         sig(),
       );
@@ -170,7 +170,6 @@ describe("bulkUpdateLeads", () => {
         .select()
         .from(leads)
         .where(inArray(leads.id, [hidden.id]));
-      // The invisible lead was NOT archived.
       expect(hiddenAfter?.archivedAt).toBeNull();
     });
   });

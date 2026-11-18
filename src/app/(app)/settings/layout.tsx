@@ -4,8 +4,6 @@ import { can } from "@/features/permissions/can";
 import { createContext } from "@/server/trpc/context";
 import { SettingsNav } from "./SettingsNav";
 
-// Wraps every /settings/* page with the grouped left secondary menu (Pipedrive settings IA).
-// Company-overview items are shown only to admins / managers.
 export default async function SettingsLayout({
   children,
 }: {

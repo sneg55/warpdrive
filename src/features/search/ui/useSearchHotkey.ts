@@ -2,7 +2,6 @@
 import { useEffect } from "react";
 import { isTypingTarget } from "@/features/shortcuts/shortcutTarget";
 
-// Opens the command palette on Cmd/Ctrl+K or "/" when not focused in a text field.
 export function useSearchHotkey(onOpen: () => void): void {
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {

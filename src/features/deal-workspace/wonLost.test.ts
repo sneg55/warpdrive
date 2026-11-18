@@ -1,5 +1,3 @@
-// Integration tests for markWon / markLost. Real Postgres via Testcontainers.
-// No database mocking: mock/prod divergence hides broken queries (see CLAUDE.md).
 import { and, eq } from "drizzle-orm";
 import { afterAll, beforeAll, expect, it } from "vitest";
 import { ERROR_IDS } from "@/constants/errorIds";
@@ -10,7 +8,6 @@ import type { PermSetUser } from "@/features/permissions/effective";
 import { makeTestDb } from "@/test/db";
 import { markLost, markWon } from "./wonLost";
 
-// Single shared container across all tests in this file (fastest, still isolated).
 let h: Awaited<ReturnType<typeof makeTestDb>>;
 
 beforeAll(async () => {
@@ -21,8 +18,6 @@ afterAll(async () => {
   await h.close();
 });
 
-// Build an admin PermSetUser for a given db user row. Admin bypass lets us focus
-// the tests on won/lost logic rather than on permission-flag wiring.
 function makeActor(userId: string): PermSetUser {
   return {
     id: userId,
@@ -109,7 +104,6 @@ it("markLost: sets status=lost, lostTime, and lostReasonId for a valid reason", 
     .returning();
   if (deal === undefined) throw new Error("deal insert returned undefined");
 
-  // Select one of the seeded default lost reasons.
   const [reason] = await h.db.select().from(lostReasons).limit(1);
   if (reason === undefined)
     throw new Error("no seeded lost_reasons found - migration may not have run");
@@ -193,8 +187,6 @@ it("markLost succeeds with no reason at all", async () => {
 });
 
 it("markWon: a non-owner follower receives a deal_won notification", async () => {
-  // Mirrors markWonAction: markWon then notifyOnDealUpdate. Actor is the owner, so the
-  // fan-out targets the (non-owner) follower.
   const owner = await seedUser(h.db);
   const follower = await seedUser(h.db);
   const pipe = await seedPipelineWithStages(h.db, ["Qualified"]);

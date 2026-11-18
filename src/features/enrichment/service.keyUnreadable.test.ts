@@ -76,9 +76,6 @@ function run(orgId: string, resolve: (id: ProviderId) => EnrichmentProvider) {
 }
 
 describe("runEnrichment unreadable credentials", () => {
-  // Only three things keep an enabled, credentialled provider out of the fan-out: a cooldown, a
-  // decrypt that failed, or nothing at all. Reporting the second as a rate limit tells the admin
-  // to come back later for a key that will never decrypt until they paste it again.
   it("does not claim a rate limit when the stored key cannot be decrypted", async () => {
     await connect("apollo", UNREADABLE);
     const org = await seedOrg();
@@ -108,7 +105,6 @@ describe("runEnrichment unreadable credentials", () => {
     expect(result.error.id).toBe(ERROR_IDS.ENRICH_THROTTLED);
   });
 
-  // Another provider answering does not make the unreadable key a limit: waiting cannot fix it.
   it("does not claim a rate limit when an unreadable key sits beside an unsupported lookup", async () => {
     await connect("apollo", UNREADABLE);
     await connect("getprospect");
@@ -125,10 +121,6 @@ describe("runEnrichment unreadable credentials", () => {
     expect(result.error.context?.providers).toEqual(["apollo"]);
   });
 
-  // The cooling provider resumes on its own, so its deadline is worth showing even next to a key
-  // that will never start working by itself.
-  // An unreadable key outranks a cooldown: only one of the two fixes itself, and told to come
-  // back at the resume time the admin returns to find that provider just as dead.
   it("names the unreadable key even when a real cooldown stands beside it", async () => {
     await connect("apollo", UNREADABLE);
     await connect("rocketreach", {
@@ -147,7 +139,6 @@ describe("runEnrichment unreadable credentials", () => {
     if (result.ok) return;
     expect(result.error.id).toBe(ERROR_IDS.ENRICH_KEY_UNREADABLE);
     expect(result.error.context?.providers).toEqual(["apollo"]);
-    // The resume time is still carried, so nothing is lost by leading with the broken key.
     expect(result.error.context?.earliestRetryIso).toBe("2026-08-24T15:00:00.000Z");
   });
 });

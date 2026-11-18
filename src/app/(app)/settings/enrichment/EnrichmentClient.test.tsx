@@ -176,8 +176,6 @@ describe("EnrichmentClient", () => {
     expect(screen.getByText(S.testNotEntitledLine(S.testLookupPerson))).toBeInTheDocument();
   });
 
-  // A verdict describes the key that was tested. router.refresh keeps client state, so a stale
-  // "Key works" would otherwise be claimed about a credential that was just replaced.
   it("forgets the verdict when the key is replaced", async () => {
     vi.mocked(testProviderAction).mockResolvedValueOnce({ ok: true, kind: "ok" });
     renderClient();
@@ -202,8 +200,6 @@ describe("EnrichmentClient", () => {
     await waitFor(() => expect(screen.queryByText(S.testOk)).not.toBeInTheDocument());
   });
 
-  // The cooldown clock is local wall-time and the comparison is against the local clock, so both
-  // have to wait for the browser: server markup and the first client render must match.
   it("keeps the local cooldown clock out of the server markup and shows it after mount", async () => {
     const until = new Date(Date.now() + 60 * 60 * 1000);
     const hhmm = `${String(until.getHours()).padStart(2, "0")}:${String(until.getMinutes()).padStart(2, "0")}`;
@@ -251,8 +247,6 @@ describe("EnrichmentClient", () => {
     expect(setCacheTtlAction).not.toHaveBeenCalled();
   });
 
-  // An empty field reads as zero to Number(), and zero is a legal TTL that turns the cache off, so
-  // a cleared field would quietly start paying for every click.
   it.each(["", "   "])("rejects a blank cache TTL rather than disabling the cache", async (raw) => {
     renderClient();
     fireEvent.change(screen.getByLabelText(S.cacheLabel), { target: { value: raw } });
@@ -270,8 +264,6 @@ describe("EnrichmentClient", () => {
   });
 });
 
-// EnrichButton holds enrichment.status for five minutes. router.refresh redraws this page only, so
-// without an invalidation a provider connected here stays invisible on a record until it expires.
 describe("EnrichmentClient status cache", () => {
   it("invalidates the enrichment status query after a provider mutation", async () => {
     renderClient();

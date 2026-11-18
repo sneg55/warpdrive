@@ -18,21 +18,13 @@ interface DealHeaderProps {
   workspace: DealWorkspace;
   selfActorId: string;
   canChangeOwner: boolean;
-  // Whether the actor holds deal.delete (own/any) for this deal; gates the overflow Delete item.
   canDelete: boolean;
   assignableUsers: { id: string; name: string }[];
-  // Block-visibility state lifted to DealWorkspaceClient so the hidden set can gate sibling
-  // sections; the header only reads isHidden (for the button) and calls toggle on click.
   isHidden: (id: DealBlockId) => boolean;
   toggle: (id: DealBlockId) => void;
-  // Personal preference (user_preferences.ui.scheduleFollowUpAfterWon), passed through to
-  // DealCloseActions so a successful Won can prompt to schedule a follow-up activity.
   scheduleFollowUpAfterWon: boolean;
 }
 
-// Two-row deal-detail header (Pipedrive parity). Row 1: editable title + a right cluster of owner,
-// followers, presence, close actions, block-visibility, and the overflow menu. Row 2: the
-// interactive stage selector + pipeline breadcrumb. Layout only; each control owns its own logic.
 export function DealHeader({
   workspace,
   selfActorId,
@@ -53,7 +45,6 @@ export function DealHeader({
     isFollowedBySelf,
     pipelineName,
   } = workspace;
-  // Deal.updatedAt may arrive as a Date (RSC) or string; normalize to the ISO CAS precondition.
   const expectedUpdatedAt = new Date(deal.updatedAt).toISOString();
   const currentStageName = stageProgress.chips.find((c) => c.current)?.name ?? null;
   const archived = deal.archivedAt !== null;

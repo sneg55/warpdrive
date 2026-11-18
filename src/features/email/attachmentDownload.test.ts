@@ -1,5 +1,3 @@
-// Integration test; real DB for authz (per CLAUDE.md, no mocking), fake Gmail client for
-// the byte fetch (the network call is never made from a test).
 import { sql } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import { withTestDb } from "@/db/testing";
@@ -104,7 +102,7 @@ describe("resolveAttachmentDownload", () => {
 
       expect(r.ok).toBe(false);
       if (!r.ok) expect(r.error.id).toBe("E_GMAIL_012");
-      expect(fake.calls).toEqual([]); // never touches Gmail for a denied actor
+      expect(fake.calls).toEqual([]);
     });
   });
 

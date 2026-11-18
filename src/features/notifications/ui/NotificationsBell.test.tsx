@@ -4,8 +4,6 @@ import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-// Router/stream/actions/trpc are mocked at the module boundary (mirrors DealSidebar.test.tsx)
-// so the dropdown renders purely off an empty feed without a QueryClientProvider or real DB.
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }) }));
 vi.mock("./useNotificationStream", () => ({ useNotificationStream: () => undefined }));
 const markAllReadAction = vi.fn(() => Promise.resolve({ ok: true, value: {} }));
@@ -44,10 +42,8 @@ afterEach(() => {
 describe("NotificationsBell", () => {
   it("renders a crisp lucide bell icon, not an emoji glyph", () => {
     const { container } = render(<NotificationsBell userId="u1" />);
-    // No emoji glyphs: the system-font bell (blurry) or the old lightbulb.
     expect(container.textContent).not.toContain("\u{1F514}");
     expect(container.textContent).not.toContain("\u{1F4A1}");
-    // A vector bell icon is rendered instead.
     expect(container.querySelector("svg.lucide-bell")).not.toBeNull();
   });
 

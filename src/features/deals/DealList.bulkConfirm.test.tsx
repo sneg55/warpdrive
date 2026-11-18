@@ -4,7 +4,6 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 beforeAll(() => {
-  // Radix Select and AlertDialog both use pointer capture + scrollIntoView, which jsdom lacks.
   Element.prototype.scrollIntoView = vi.fn();
   Element.prototype.hasPointerCapture = vi.fn(() => false);
   Element.prototype.releasePointerCapture = vi.fn();
@@ -57,7 +56,6 @@ function baseProps(onBulkStage: (ids: string[], to: string) => Promise<boolean>)
   };
 }
 
-// Select every row, then pick a destination stage. Stops short of confirming.
 function selectAllAndPick(stageName: string): void {
   fireEvent.click(screen.getByRole("checkbox", { name: "Select all deals" }));
   fireEvent.click(screen.getByLabelText("Move to stage"));

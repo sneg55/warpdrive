@@ -20,8 +20,6 @@ describe("swapSignatureInBody (C3)", () => {
   });
 
   it("does not strip when the tail no longer matches (edited signature), only appends", () => {
-    // The user edited the signature so the tail differs from `embedded`; the old text is left in
-    // place. Send never double-appends regardless, since it passes no signatureId.
     const body = "<p>hi</p><p>-- Jane (edited)</p>";
     expect(swapSignatureInBody(body, SIG_A, SIG_B)).toBe(`${body}${SIG_B}`);
   });

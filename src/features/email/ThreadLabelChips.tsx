@@ -6,28 +6,17 @@ import { useState } from "react";
 import { trpc } from "@/lib/trpc-client";
 import { resolveMailLabelChips } from "./mailLabelResolve";
 
-// The label editor (cmdk + Popover) is only needed once the pencil is activated, so it is
-// code-split out of the inbox-list path (ThreadRow renders these chips read-only per row).
 const MailLabelPicker = dynamic(async () => (await import("./MailLabelPicker")).MailLabelPicker, {
   ssr: false,
 });
 
-// Local label: adding to src/constants/inboxStrings.ts is out of this unit's file scope, so the
-// pencil affordance carries its accessible name here.
 const EDIT_LABELS_LABEL = "Edit labels";
 
 interface ThreadLabelChipsProps {
   labels: string[];
-  // When provided, the chips gain a pencil affordance (B5) that reveals the label editor; the
-  // editor stays hidden until the pencil is clicked. Omitted for read-only usage (the inbox row).
   onLabelsChange?: (keys: string[]) => void;
 }
 
-// Colored chips for a thread's applied mail labels (U6 catalog + U7 visual). Resolves each stored
-// key against the user-managed mail-label catalog for its display name + color, so custom labels
-// render (not just the three built-ins) and a legacy token still resolves via its seeded built-in.
-// Keys with no catalog entry are skipped so a stray token never renders an unstyled chip. A15:
-// chips render uppercase at 10px so they read as Pipedrive-style tags.
 export function ThreadLabelChips({
   labels,
   onLabelsChange,

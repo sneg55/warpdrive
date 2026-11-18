@@ -22,7 +22,6 @@ import { emailTabStatusLabel } from "@/features/email/emailTabStatus";
 import { useSupportConversations } from "@/features/intercom/useSupportConversations";
 import { trpc } from "@/lib/trpc-client";
 
-// Stable empty array: a new [] on every render would churn useMemo dependencies below.
 const EMPTY: never[] = [];
 
 type Tab = HistoryTab;
@@ -32,23 +31,14 @@ interface WorkspaceTabsProps {
   tab: Tab;
   onTab: (t: Tab) => void;
   activities: CalendarActivity[];
-  // Pipeline stages (id + name) used to resolve stageId changelog rows to names.
   stages: { id: string; name: string }[];
-  // Display name of the creating actor for the synthesized "Deal created" anchor.
   createdActorName: string | null;
-  // Invalidate the activities query after an in-feed mutation (mark-as-done).
   onActivityChanged?: () => void;
-  // Invalidate the notes query after an in-feed note mutation (pin/edit/delete, Task 6).
   onNoteChanged?: () => void;
-  // Open an activity in the inline edit composer (threaded to the Focus + History feeds).
   onEditActivity?: (activityId: string) => void;
-  // Open one of the deal's unsent drafts in the compose bar, which the workspace owns.
   onResumeDraft?: (draft: DraftSummary) => void;
 }
 
-// Buckets the History side's items by the per-type filter row. "created" never appears under a
-// type filter other than "all". Files aren't timeline items, so that tab renders its own feature
-// component instead of HistoryFeed.
 export function bucketByType(history: HistoryItem[]): Record<Tab, HistoryItem[]> {
   return {
     all: history,
@@ -74,33 +64,25 @@ export function WorkspaceTabs({
   onEditActivity,
   onResumeDraft,
 }: WorkspaceTabsProps) {
-  // `?? EMPTY` rather than `?? []`: a fresh array literal each render changes the identity of every
-  // downstream useMemo dependency, so the timeline was rebuilt on every render while data was absent.
   const notes =
     trpc.collaboration.listNotes.useQuery({ entityType: "deal", entityId: deal.id }).data ?? EMPTY;
   const changelog =
     trpc.collaboration.listChangeLog.useQuery({ entityType: "deal", entityId: deal.id }).data ??
     EMPTY;
 
-  // Resolve stageId changelog rows (id values) to stage names before the model
-  // builds the timeline, so the stage event row shows names, never raw ids.
   const resolvedChangelog = useMemo(() => {
     const stageNameById = new Map(stages.map((s) => [s.id, s.name]));
     return resolveStageChangeNames(changelog, stageNameById);
   }, [changelog, stages]);
 
-  // Lazy "Deal created" anchor (decision 1): synthesized, not a persisted row, so
-  // it appears in the interleaved "All" feed but not the raw Changelog audit trail.
   const createdAt = deal.createdAt;
   const createdAnchor = useMemo(
     () => ({ createdAt, actorName: createdActorName }),
     [createdAt, createdActorName],
   );
 
-  // Linked email reads as timeline items rather than an embedded mailbox reader.
   const emailQuery = trpc.email.listMessagesForDeal.useQuery({ dealId: deal.id });
   const emails = emailQuery.data ?? EMPTY;
-  // The actor's own unsent drafts for this deal, shown beside the sent messages.
   const draftQuery = trpc.email.drafts.listForDeal.useQuery({ dealId: deal.id });
   const drafts = draftQuery.data ?? EMPTY;
   const utils = trpc.useUtils();
@@ -136,9 +118,6 @@ export function WorkspaceTabs({
     void utils.email.drafts.listForDeal.invalidate({ dealId: deal.id });
   }, [utils, deal.id]);
 
-  // Every badge counts off the History bucket (what the tab's list actually shows), not the raw
-  // totals: open activities live in Focus and pinned notes live above Focus, so counting
-  // activities.length / notes.length would overstate the tab lists below.
   const fileCount = trpc.files.listForEntity.useQuery({ entityType: "deal", entityId: deal.id })
     .data?.length;
   const counts: Partial<Record<Tab, number>> = countHistoryTabs(historyByType, fileCount);
@@ -147,8 +126,6 @@ export function WorkspaceTabs({
     <div className="space-y-6">
       <PinnedNotesSection items={pinned} onNoteChanged={onNoteChanged} />
 
-      {/* A failed email read must not read as "this deal has no email", so say so explicitly
-          while the rest of the timeline still renders. */}
       {emailQuery.isError === true && (
         <p role="alert" className="text-sm text-destructive">
           Couldn't load emails for this deal. Please try again.

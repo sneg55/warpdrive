@@ -15,8 +15,6 @@ import {
   updateSavedFilterInputFor,
 } from "./schemas";
 
-// Persists a saved filter for the session user.
-// SECURITY: is_shared=true is gated by the filter.share flag (admins bypass, isAdmin implies all).
 export async function saveFilter(
   db: DbOrTx,
   session: FilterSession,
@@ -65,7 +63,6 @@ export async function saveFilter(
   return ok(row);
 }
 
-// Saved filters visible to the session user for one entity: own filters plus every shared one.
 export async function listSavedFilters(
   db: DbOrTx,
   session: FilterSession,
@@ -84,8 +81,6 @@ export async function listSavedFilters(
     );
 }
 
-// Owner-only delete. A non-owner or missing id is reported not-found so the endpoint never
-// confirms the existence of another user's private filter.
 export async function removeSavedFilter(
   db: DbOrTx,
   session: FilterSession,
@@ -107,8 +102,6 @@ export async function removeSavedFilter(
   return ok(undefined);
 }
 
-// Owner-only update, gated on filter.share to elevate isShared (admins bypass). The patch is
-// validated against the stored row's own entity, so a person view cannot take a deal-only field.
 export async function updateSavedFilter(
   db: DbOrTx,
   session: FilterSession,
@@ -175,7 +168,6 @@ export async function updateSavedFilter(
   return ok(row);
 }
 
-// Owner-only favorite toggle. Reads then writes the negation in one round trip via SQL NOT.
 export async function toggleFavorite(
   db: DbOrTx,
   session: FilterSession,

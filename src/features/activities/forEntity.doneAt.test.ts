@@ -10,8 +10,6 @@ function makeActor(id: string): PermSetUser {
   return { id, type: "regular", isActive: true, groupIds: new Set(), flags: new Set() };
 }
 
-// Regression: the read layer used to hardcode doneAt: null, so the history card could never show
-// WHEN an activity was completed. listActivitiesForEntity must carry the real completion timestamp.
 it("surfaces the completion timestamp (doneAt) for a done deal activity", async () => {
   await withTestDb(async (db) => {
     const signal = new AbortController().signal;

@@ -13,8 +13,6 @@ import { sessionFixture } from "@/features/auth/session.test-helpers";
 import { makeTestDb, type TestDb } from "@/test/db";
 import { authorizeSubscribe } from "./authorize";
 
-// Deal-channel WS authorization tests. Split out of authorize.test.ts to keep each test
-// file focused (and under the file-size limit): this file owns the deal:{id} subscribe rules.
 let h: TestDb;
 let userId: string;
 let sessionId: string;
@@ -42,7 +40,6 @@ beforeEach(async () => {
   sessionId = s!.id;
 });
 
-// Helper: seed a pipeline + stage, return their ids.
 async function seedPipelineStage(db: typeof h.db, opts?: { visibilityGroupId?: string }) {
   const [pipe] = await db
     .insert(pipelines)
@@ -53,7 +50,6 @@ async function seedPipelineStage(db: typeof h.db, opts?: { visibilityGroupId?: s
   return { pipelineId, stageId: stage!.id };
 }
 
-// Helper: seed a deal owned by ownerId; returns deal id.
 async function seedDeal(
   db: typeof h.db,
   opts: {
@@ -237,10 +233,6 @@ describe("ws authorize deal channel", () => {
     expect(r.ok).toBe(true);
   });
 
-  // Codex finding F37: an archived pipeline hides ALL its deals from every read/edit path.
-  // The WS deal-channel authorization joined pipelines only for the visibility-group gate
-  // and never checked is_archived, so a user who still satisfied the raw visibility predicate
-  // could subscribe to realtime events for an archived-pipeline deal.
   test("deal: owner is DENIED subscribing to a deal in an archived pipeline", async () => {
     const { pipelineId, stageId } = await seedPipelineStage(h.db);
     const dealId = await seedDeal(h.db, {

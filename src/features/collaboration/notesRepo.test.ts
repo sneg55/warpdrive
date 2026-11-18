@@ -77,8 +77,6 @@ it("resolves the note author's display name (actorName) via the users join", asy
     if (created.ok === false) throw new Error("setup failed");
 
     const list = await listNotes(db, "deal", deal.id, signal);
-    // Attribution: the note row must carry the author's display name, mirroring the
-    // changelog's users-join (so AttributionLine can render "Ada Lovelace").
     expect(list[0]?.actorName).toBe("Ada Lovelace");
   });
 });
@@ -157,9 +155,6 @@ it("returns NOTE_NOT_FOUND updating a missing note", async () => {
   });
 });
 
-// Security branch: edit/delete are visibility-gated (assertReferenceVisible), so an actor
-// who cannot see the note's parent deal must be denied with the reference-check's 404-shape
-// error, and the note must be left untouched. Mirrors the createNote denial test above.
 it("rejects updateNote when the actor cannot see the note's parent (404-shape)", async () => {
   await withTestDb(async (db) => {
     const signal = new AbortController().signal;
@@ -178,7 +173,6 @@ it("rejects updateNote when the actor cannot see the note's parent (404-shape)",
     expect(res.ok).toBe(false);
     if (!res.ok) expect(res.error.id).toBe("E_DEAL_001");
 
-    // Body unchanged: the denied write never landed.
     const listed = await listNotes(db, "deal", hidden.id, signal);
     expect(listed[0]?.body).toBe("secret");
   });
@@ -202,7 +196,6 @@ it("rejects softDeleteNote when the actor cannot see the note's parent (404-shap
     expect(res.ok).toBe(false);
     if (!res.ok) expect(res.error.id).toBe("E_DEAL_001");
 
-    // Note still lists: the denied delete never landed.
     const listed = await listNotes(db, "deal", hidden.id, signal);
     expect(listed).toHaveLength(1);
   });

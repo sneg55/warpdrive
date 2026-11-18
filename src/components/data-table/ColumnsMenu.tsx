@@ -7,9 +7,6 @@ import { Checkbox } from "@/components/ui/Checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/Popover";
 import { type ColumnDef, pinnedKey } from "./columnModel";
 
-// dnd-kit lives behind this boundary. The cog trigger stays in the route bundle so it paints with
-// the toolbar; the draggable list is fetched on first open of the popover. ssr:false because the
-// list only ever renders inside Radix's client-mounted PopoverContent.
 const ColumnsMenuSortableList = dynamic(
   async () => (await import("./ColumnsMenuSortableList")).ColumnsMenuSortableList,
   { ssr: false, loading: () => <div aria-hidden="true" className="min-h-8" /> },
@@ -23,10 +20,6 @@ export interface ColumnsMenuProps {
   onReorder: (from: string, to: string) => void;
 }
 
-// Shared "Customize columns" cog menu for any list table. Visible columns render in stored order as
-// a draggable list (pinned column first, no handle); hidden columns render below as checkboxes so
-// they can be re-added. Built on the shadcn Popover (not DropdownMenu) because the content is
-// heterogeneous form-like controls (checkboxes, drag handles) a Radix menu would trap.
 export function ColumnsMenu({
   catalog,
   order,

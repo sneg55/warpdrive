@@ -22,8 +22,6 @@ async function meetingTypeId(db: Parameters<Parameters<typeof withTestDb>[0]>[0]
 
 it("hides an owner-only lead's title from the assignee of an activity hanging off it", async () => {
   await withTestDb(async (db) => {
-    // A lead-parented activity has no lead branch in the dominant-parent rule, so it resolves as
-    // parentless and its assignee can see it. That must not carry the private lead's name with it.
     const owner = await seedUser(db);
     const assignee = await seedUser(db);
     const typeId = await meetingTypeId(db);

@@ -17,13 +17,10 @@ export interface BoardSortControlProps<K extends string = BoardSortKey> {
   extraOptions?: readonly { key: K; label: string }[];
 }
 
-// The "Sort by" cluster Pipedrive puts above the board: a field dropdown plus an asc/desc
-// arrow toggle. The chosen sort applies within each column (BoardColumn stays position-agnostic).
 export function BoardSortControl<K extends string = BoardSortKey>(
   props: BoardSortControlProps<K>,
 ): React.ReactNode {
   const { sortKey, direction, onKeyChange, onToggleDirection, extraOptions = [] } = props;
-  // The arrow points the way the data currently reads; the button offers the opposite action.
   const toggleLabel = direction === "asc" ? SORT.descending : SORT.ascending;
   const options: SelectOption[] = [
     ...BOARD_SORT_KEYS.map<SelectOption>((key) => ({ value: key, label: SORT.options[key] })),
@@ -32,11 +29,7 @@ export function BoardSortControl<K extends string = BoardSortKey>(
 
   return (
     <div className="inline-flex items-center gap-2">
-      {/* Label kept on one line: at the far right of the filter row a wrapping "Sort / by" reads
-          as broken. */}
       <span className="shrink-0 whitespace-nowrap text-sm text-muted-foreground">{SORT.label}</span>
-      {/* Field + direction share one bordered pill (like the "+ Deal" split button) so the sort
-          reads as a single control rather than three loose pieces. */}
       <div className="inline-flex items-center rounded-md border bg-card">
         <Select
           ariaLabel={SORT.label}
@@ -52,7 +45,6 @@ export function BoardSortControl<K extends string = BoardSortKey>(
             onClick={onToggleDirection}
             className="flex items-center justify-center rounded-r-md border-l px-2 py-1.5 text-muted-foreground transition-[color,scale] duration-150 ease-out hover:text-foreground active:scale-[0.96] motion-reduce:transition-colors"
           >
-            {/* Up arrow = ascending; rotated 180deg for descending. */}
             <ArrowUp
               aria-hidden="true"
               className={cn("h-4 w-4 transition-transform", direction === "desc" && "rotate-180")}

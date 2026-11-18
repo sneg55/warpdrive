@@ -1,5 +1,3 @@
-// Change-log row -> display label. Split out of historyTimeline.ts, which owns the shape of the
-// feed rather than the wording of an individual audit row.
 import {
   CHANGE_FIELD_CONVERTED_DEAL,
   CHANGE_FIELD_CONVERTED_TO_LEAD,
@@ -38,7 +36,6 @@ import { isSourceChannelKey, SOURCE_CHANNELS } from "@/constants/sourceChannels"
 import { canonicalField } from "@/features/enrichment/canonical";
 import { asLostStatusValue } from "./lostStatusValue";
 
-// Format a jsonb audit value for display; null/empty read as "(none)".
 export function formatValue(value: unknown): string {
   if (value === null || value === undefined) return "(none)";
   if (typeof value === "string") return value.length === 0 ? "(none)" : value;
@@ -46,11 +43,9 @@ export function formatValue(value: unknown): string {
   return JSON.stringify(value);
 }
 
-// Field-aware value formatting: resolve label-key arrays and source-channel keys to display names.
 function formatFieldValue(field: string, value: unknown): string {
   if (field === "labels") {
     if (!Array.isArray(value) || value.length === 0) return "(none)";
-    // Stored label values are the catalog display names, so render them directly.
     return value.map((k) => String(k)).join(", ");
   }
   if (field === "source_channel" || field === "sourceChannel") {
@@ -59,8 +54,6 @@ function formatFieldValue(field: string, value: unknown): string {
   return formatValue(value);
 }
 
-// Enrichment logs the applied value together with the providers that backed it. Anything that
-// is not exactly that shape (a legacy row, a hand-written payload) falls back to the plain diff.
 interface EnrichedValue {
   value: unknown;
   providers: string[];
@@ -77,7 +70,6 @@ function asEnrichedValue(value: unknown): EnrichedValue | null {
 
 const PROVIDER_NAMES: Readonly<Record<string, string>> = ENRICHMENT_STRINGS.settings.providerNames;
 
-// "apollo" -> "Apollo"; an id no longer in the roster renders as itself rather than vanishing.
 function provenanceClause(providers: string[]): string {
   const names = providers.map((p) => PROVIDER_NAMES[p] ?? p);
   const last = names.at(-1);
@@ -86,10 +78,6 @@ function provenanceClause(providers: string[]): string {
   return ` (from ${list})`;
 }
 
-// "expected_close_date" -> "Expected close date". Enrichment writes the dotted canonical key
-// (org.industry), which the shared vocabulary already carries a label for. Custom-field edits
-// carry a dynamic def key under a prefix (custom_field:region); collapse them all to one generic
-// "Custom field" label since the read layer does not resolve the def name here.
 function humanizeField(field: string): string {
   if (field.startsWith(CHANGE_FIELD_CUSTOM_PREFIX)) return CHANGE_LABEL_CUSTOM_FIELD;
   const canonical = canonicalField(field);
@@ -99,8 +87,6 @@ function humanizeField(field: string): string {
   return spaced.charAt(0).toUpperCase() + spaced.slice(1);
 }
 
-// Direction of a link change, inferred from which side is null: null->id = link/add,
-// id->null = unlink/remove, id->id = change.
 type LinkDir = "add" | "remove" | "change";
 function linkDir(oldValue: unknown, newValue: unknown): LinkDir {
   const had = oldValue !== null && oldValue !== undefined;
@@ -110,8 +96,6 @@ function linkDir(oldValue: unknown, newValue: unknown): LinkDir {
   return "change";
 }
 
-// Directional phrasing per link field (the stored value is an opaque id we deliberately do
-// not surface). Participants/followers only ever add or remove, so "change" reuses "add".
 const PERSON_DIR: Record<LinkDir, string> = {
   add: CHANGE_LABEL_PERSON_LINKED,
   remove: CHANGE_LABEL_PERSON_UNLINKED,
@@ -139,16 +123,12 @@ const DIRECTIONAL_FIELDS: Record<string, Record<LinkDir, string>> = {
   [CHANGE_FIELD_FOLLOWER]: FOLLOWER_DIR,
 };
 
-// Returns a directional phrase for the link fields, or null so the caller falls back to the
-// "field: old → new" diff form for every other field.
 function directionalLabel(field: string, oldValue: unknown, newValue: unknown): string | null {
   const dir = DIRECTIONAL_FIELDS[field];
   if (dir === undefined) return null;
   return dir[linkDir(oldValue, newValue)];
 }
 
-// "Status: open → lost · Bad timing · my bad", matching the reason chip in the deal header.
-// Returns null for any row that is not a lost transition carrying a reason or comment.
 function lostStatusLabel(field: string, oldValue: unknown, newValue: unknown): string | null {
   if (field !== CHANGE_FIELD_STATUS) return null;
   const lost = asLostStatusValue(newValue);

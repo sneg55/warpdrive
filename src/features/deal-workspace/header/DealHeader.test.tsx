@@ -3,7 +3,6 @@ import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 import type { DealWorkspace } from "@/features/deal-workspace/summaryRepo";
 
-// Mock every leaf that reaches a server action, the websocket, or router so the render is pure.
 vi.mock("@/features/deal-workspace/actions", () => ({
   changeStageAction: vi.fn(),
   changeOwnerAction: vi.fn(),

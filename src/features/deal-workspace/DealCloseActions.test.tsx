@@ -8,7 +8,6 @@ beforeAll(() => {
   Element.prototype.scrollIntoView = vi.fn();
   Element.prototype.hasPointerCapture = vi.fn(() => false);
   Element.prototype.releasePointerCapture = vi.fn();
-  // The Lost dialog's reason picker (Combobox) uses cmdk, which observes its list size.
   global.ResizeObserver = class {
     observe = vi.fn();
     unobserve = vi.fn();
@@ -40,8 +39,6 @@ vi.mock("@/features/deal-workspace/DealActionErrorProvider", () => ({
   useDealActionError: () => reportError,
 }));
 
-// The Won follow-up prompt reuses AddActivityModal for real (not mocked), so its own
-// server-action and tRPC dependencies need the same stubs as AddActivityModal.test.tsx.
 const createActivityAction = vi.hoisted(() =>
   vi.fn(() => Promise.resolve({ ok: true as const, value: { id: "a1" } })),
 );
@@ -110,7 +107,6 @@ it("has no Won options dropdown: Won is a single plain button", () => {
   render(<DealCloseActions {...props} />);
   expect(screen.getByLabelText("Deal status: Open")).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Won" })).toBeInTheDocument();
-  // The redundant split-button chevron / "Mark as won" menu item is gone.
   expect(screen.queryByRole("button", { name: "Won options" })).toBeNull();
   expect(screen.queryByRole("menuitem", { name: "Mark as won" })).toBeNull();
 });
@@ -133,7 +129,6 @@ it("opens a centered Mark as Lost dialog and submits a free-text comment when no
   const lostBtn = screen.getByRole("button", { name: "Lost" });
   expect(lostBtn).toBeEnabled();
   fireEvent.click(lostBtn);
-  // Pipedrive parity: the flow is a centered modal, not an inline row.
   const dialog = await screen.findByRole("dialog");
   expect(dialog).toHaveTextContent("Mark as Lost");
   fireEvent.change(screen.getByLabelText("Comments (optional)"), {

@@ -9,12 +9,10 @@ import type { EntityRef } from "@/types/entityRef";
 import { err, ok, type Result } from "@/types/result";
 import type { NoteCreateInput } from "./notesSchemas";
 
-// ENTITY_TYPES values (deal/person/organization/lead) are all valid EntityRef kinds.
 function refFor(entityType: string, id: string): EntityRef {
   return { kind: entityType as EntityRef["kind"], id };
 }
 
-// AuthUser to the DealVisibilitySession shape assertReferenceVisible expects.
 function toRefActor(actor: AuthUser): {
   userId: string;
   isActive: boolean;
@@ -117,8 +115,6 @@ export async function togglePin(
   });
 }
 
-// Edit a note body in place. Visibility-gated like togglePin: any actor who can see
-// the parent may edit. (Author-only restriction is an open product question.)
 export async function updateNote(
   db: Db,
   actor: AuthUser,
@@ -159,9 +155,6 @@ export async function updateNote(
   });
 }
 
-// Soft-delete: set deletedAt so listNotes (which filters isNull(deletedAt)) hides it.
-// Comments cascade at the DB level only on hard delete; soft-deleted notes keep their
-// rows, so their comments stay orphaned-but-hidden, acceptable for the undo-friendly model.
 export async function softDeleteNote(
   db: Db,
   actor: AuthUser,
@@ -201,13 +194,8 @@ export async function softDeleteNote(
   });
 }
 
-// A note row plus its author's resolved display name. actorName is null when the
-// author is unknown (a since-deleted user), mirroring the changelog's users-join.
 export type NoteWithAuthor = Note & { actorName: string | null };
 
-// Visibility note: listNotes does NOT itself gate the parent. Notes inherit the
-// parent's visibility, and the CALLER is responsible for having checked canSee
-// on the parent before exposing its notes.
 export async function listNotes(
   db: Db,
   entityType: string,
@@ -215,9 +203,6 @@ export async function listNotes(
   signal: AbortSignal,
 ): Promise<NoteWithAuthor[]> {
   signal.throwIfAborted();
-  // LEFT JOIN users so the note carries its author's display name for the
-  // attribution line (matches listChangeLog, which resolves actorName via users.name).
-  // Left (not inner) so a note whose author was since deleted still lists, actorName null.
   return db
     .select({ ...getTableColumns(notes), actorName: users.name })
     .from(notes)

@@ -32,8 +32,6 @@ export function LostReasonsWidget({
   data: LostReasonCount[];
   currency: string;
 }) {
-  // Scaled by money lost, not by deal count: one deal lost for $91,500 and one for $31,000 are
-  // the same count and very different news. The count stays beside the label.
   const max = Math.max(1, ...data.map((r) => Number(r.value)));
   return (
     <Panel
@@ -43,8 +41,6 @@ export function LostReasonsWidget({
     >
       <div className="space-y-2">
         {data.map((r) => {
-          // A null name means the deal was closed lost with nothing recorded, which is worth
-          // seeing as its own row rather than hiding.
           const label = r.name ?? STRINGS.dashboard.lostReasonUnspecified;
           return (
             <div key={r.reasonId ?? `text:${r.name ?? "unspecified"}`}>

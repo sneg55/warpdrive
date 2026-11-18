@@ -1,7 +1,3 @@
-// The single source of truth for which deal fields a filter builder offers, shared by the ad-hoc
-// popover (DealFilterBuilder) and the saved-filter modal (CreateFilterModal) so the two cannot
-// drift apart. Pure data at runtime: every import here is type-only except the operator allow-list,
-// so the finder #4 invariant test can read the offered list without loading React.
 import type { ConditionFieldOption, ConditionRow } from "@/components/filters/ConditionRows";
 import type { SelectOption } from "@/components/ui/Select";
 import { DEAL_STATUS, DEAL_STATUS_LABELS } from "@/constants/dealStatus";
@@ -14,15 +10,11 @@ export interface DealFilterFieldOption extends ConditionFieldOption {
   field: DealFilterField;
 }
 
-// Operator key to human label, shared by both builders and by the auto-generated filter name.
-// The vocabulary itself lives in @/constants/filterOps so deals, contacts, and leads label an
-// operator identically; widened to a string index so callers can look up an unvalidated row op.
 export const OP_LABELS: Record<string, string> = FILTER_OP_LABELS;
 
 export interface DealFilterCatalogSources {
   owners?: readonly { id: string; name: string }[];
   stages?: readonly { id: string; name: string }[];
-  // Label names, already merged from the catalog and what deals actually carry.
   labelOptions?: readonly string[];
 }
 
@@ -35,8 +27,6 @@ const STATUS_OPTIONS: SelectOption[] = DEAL_STATUS.map((s) => ({
   label: DEAL_STATUS_LABELS[s],
 }));
 
-// A fresh, empty row seeded from the first offered field and its first operator, matching what
-// "+ Add condition" produces inside ConditionRows.
 export function blankConditionRow(fields: readonly ConditionFieldOption[]): ConditionRow {
   const first = fields[0];
   return {

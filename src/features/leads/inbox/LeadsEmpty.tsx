@@ -15,8 +15,6 @@ export interface LeadsEmptyProps {
   onBackToInbox: () => void;
 }
 
-// The inbox with nothing in it. Which sentence and which exit depends on WHY it is empty, so the
-// wording never claims no lead exists when a filter is what emptied the view.
 export function LeadsEmpty({
   archived,
   hasFilter,

@@ -15,9 +15,6 @@ export interface ColumnsState<T extends ColumnDef> {
   reorder: (from: string, to: string) => void;
 }
 
-// Generic column visibility/order hook: seeds from a stored order (user_preferences) and drives the
-// shared ColumnsMenu. Same shape as the original leads useLeadColumns, now catalog-parameterized so
-// deals list, people, and orgs reuse it verbatim.
 export function useColumns<T extends ColumnDef>(
   catalog: readonly T[],
   initial: readonly string[] | undefined,

@@ -9,8 +9,6 @@ import { CompanyGeneralClient } from "./CompanyGeneralClient";
 
 export const metadata = { title: STRINGS.settings.companyGeneral };
 
-// Company settings > General tab. The tab strip lives in company/layout.tsx, so this page renders
-// only the General content (no extra heading). Admin-gated like the other company catalog pages.
 export default async function CompanyGeneralPage(): Promise<ReactNode> {
   const { actor } = await createContext();
   if (actor === null || (actor.type !== "admin" && !actor.flags.has(PERMISSION_FLAGS.MANAGE))) {

@@ -19,7 +19,6 @@ function setPrefersDark(matches: boolean): void {
   );
 }
 
-// Runs the seed the way the browser does: inline, during parse, before the shell paints.
 function run(stored: Parameters<typeof appearanceSeedScript>[0]): void {
   // biome-ignore lint/security/noGlobalEval: running the real inlined source is the point of the test
   eval(appearanceSeedScript(stored));
@@ -36,9 +35,6 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-// The cookie is a per-device mirror; user_preferences.ui.appearance is the durable record. A
-// device that has never carried the cookie, or is carrying another account's, must land on the
-// signed-in account's choice, and must do so before the first paint rather than after it.
 describe("appearanceSeedScript", () => {
   it("writes the account's appearance when the device has no cookie", () => {
     run("night");

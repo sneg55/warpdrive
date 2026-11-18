@@ -1,5 +1,3 @@
-// Centralized UI copy (ops spec E7: English-only v1, but no hardcoded text in components,
-// so a future locale layer is a drop-in). No em dashes anywhere.
 import { DEAL_SIDEBAR_STRINGS } from "./dealSidebarStrings";
 import { ENRICHMENT_STRINGS } from "./enrichmentStrings";
 import { INBOX_STRINGS } from "./inboxStrings";
@@ -83,8 +81,6 @@ export const STRINGS = {
       "Archiving a lead takes it out of the inbox without deleting it. Nothing is archived right now.",
     emptyArchivedAction: "Back to inbox",
     emptyFilteredTitle: "No leads match these filters",
-    // Every count the inbox has is already narrowed by the filter, so this sentence cannot claim
-    // leads exist behind it. It has to be true of an empty inbox too.
     emptyFilteredBody:
       "The filters above are the only thing narrowing this view. Clear them to see it whole.",
     emptyFilteredAction: "Clear filters",
@@ -174,7 +170,6 @@ export const STRINGS = {
     scoreActivities: "Activities completed",
     days: "days",
     noValue: "-",
-    // A duration that rounds to zero days is shorter than the unit reported here, not instant.
     underADay: "Under a day",
     emptyGoalsBody: "A goal sets a target for a person or the team over a period you choose.",
     emptyFunnel: "No deals were created in this range, so there is no funnel to measure.",
@@ -197,8 +192,6 @@ export const STRINGS = {
     trendMonth: "Month",
     trendCount: "Deals won",
     trendValue: "Value won",
-    // The funnel is a cohort measure and the board is a live snapshot, so the two disagree by
-    // design. The widget has to say which cohort it counted or the gap reads as a bug.
     funnelBasisMe: "Counts only deals you own that were created in this range.",
     funnelBasisAll: "Counts deals created in this range, whoever owns them.",
     funnelBasisUser: "Counts only deals the selected person owns that were created in this range.",
@@ -217,8 +210,6 @@ export const STRINGS = {
     emptyOrganizations: "No organizations",
     emptyLeads: "No leads",
   },
-  // Copy for the route error / not-found boundaries. Deliberately vague about the cause: in
-  // production Next redacts the message, and the digest is the operator's only handle to the log.
   errors: {
     notFound: "Not found",
     forbidden: "You do not have permission to do that.",
@@ -248,7 +239,6 @@ export const STRINGS = {
         owner: "Owner name",
       },
     },
-    // Screen-reader announcements for board drags (aria-live).
     announcements: {
       pickedUp: (title: string, stage: string): string =>
         `Picked up ${title}${stage !== "" ? `, ${stage}` : ""}`,
@@ -286,8 +276,6 @@ export const STRINGS = {
     calendar: "Calendar",
     dealList: "Deals list",
     editPipeline: "Edit pipeline",
-    // Fallbacks when a detail entity has no name yet or is not visible. The pipeline board's
-    // fallback reuses nav.pipeline (same word, one source).
     dealFallback: "Deal",
     leadFallback: "Lead",
     personFallback: "Person",

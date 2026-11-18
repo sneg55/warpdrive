@@ -1,4 +1,3 @@
-// Integration tests for changeOwner. Real Postgres via Testcontainers, no DB mocking.
 import { and, eq } from "drizzle-orm";
 import { afterAll, beforeAll, expect, it } from "vitest";
 import type { PermissionFlagKey } from "@/constants/permissionFlags";
@@ -22,7 +21,6 @@ function adminActor(userId: string): PermSetUser {
   return { id: userId, type: "admin", isActive: true, groupIds: new Set(), flags: new Set() };
 }
 
-// Regular actor with edit_any (passes loadEditableDeal) but NO deal.changeOwner.
 function editOnlyActor(userId: string): PermSetUser {
   return {
     id: userId,

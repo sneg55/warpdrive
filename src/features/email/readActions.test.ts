@@ -1,14 +1,3 @@
-// Integration test for the readActions.ts server-action boundary. Real Postgres (via
-// makeTestDb), redirected into the prod db singleton the same way server/worker.test.ts does:
-// this is NOT mocking the DB, just pointing @/db/client at the test container instead of the
-// placeholder URL from vitest.setup.ts. Only the request-context boundary (createContext,
-// guardCsrf) is mocked, since those depend on next/headers rather than the database.
-//
-// Bug: markThreadReadAction/markThreadUnreadAction built a bare toActor(ctx.actor.id) (always
-// type: "regular", empty groupIds) before calling markThreadRead/markThreadUnread, instead of
-// passing the hydrated ctx.actor. canSeeEmail's shared-thread path defers to canSee, which needs
-// the real type (admin bypass) and groupIds (visibility-group membership) to grant access to a
-// thread the actor can see only via one of those, not as the mailbox owner.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { AuthUser } from "@/features/permissions/types";
 import type { TestDb } from "@/test/db";
@@ -115,7 +104,6 @@ describe("readActions actor visibility", () => {
       isActive: true,
       groupIds: new Set([groupId]),
     };
-    // Mark read first (bypassing the action under test) so unread has a state to flip.
     await markThreadReadAction("csrf", { threadId });
     const r = await markThreadUnreadAction("csrf", { threadId });
     expect(r.ok).toBe(true);

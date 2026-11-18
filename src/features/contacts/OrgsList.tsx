@@ -33,24 +33,17 @@ const LOAD_MORE = "Load more";
 const LOAD_MORE_ERROR = "Couldn't load more organizations. Please try again.";
 const RELOAD_ERROR = "Couldn't load organizations. Please try again.";
 const BULK_DELETE_ERROR = "Couldn't delete some organizations. Please try again.";
-// Stable module reference: passed as useColumnSort's fallback, so `effective` only changes
-// reference when the sort state itself changes (not on every OrgsList re-render).
 const DEFAULT_SORT: ColumnSort<OrgSortField> = { field: "name", dir: "asc" };
 
 export interface OrgsListProps {
   rows: OrgsListRow[];
   total: number;
-  // Seeded from user_preferences.ui.orgsView (server); falls back to catalog defaults.
   initialColumns?: string[];
   customFieldDefs?: CustomFieldDef[];
   baseCurrency?: string;
   refLabels?: CustomFieldRefLabels;
 }
 
-// Organizations list for the Contacts nav. Client-side "Load more" pages through the rest
-// of the visible set via contacts.listOrgs; the first page is seeded server-side. Row
-// selection, column sort, and bulk delete adopt the shared Wave 1 data-table hooks, mirroring
-// PeopleList (Task 19) applied to orgs.
 export function OrgsList({
   rows: initial,
   total: initialTotal,
@@ -66,13 +59,7 @@ export function OrgsList({
   const columns = useColumns(catalog, initialColumns);
   usePersistColumns("orgs", columns.order);
   const utils = trpc.useUtils();
-  // A ref, not a dependency: trpc.useUtils() is documented as stable, but reading through a ref
-  // means fetchPage's identity can't be knocked loose by a caller (e.g. a test double) that
-  // returns a fresh object per render, which would otherwise cascade into reload/the sort-change
-  // effect and re-fire on every render.
   const utilsRef = useRef(utils);
-  // Written in an effect, not during render: ref writes during render are unsafe under concurrent
-  // rendering. fetchPage only reads utilsRef inside callbacks, which always run after commit.
   useEffect(() => {
     utilsRef.current = utils;
   });
@@ -82,13 +69,10 @@ export function OrgsList({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const selection = useRowSelection();
-  // Depend on the stable callback, not the selection object, which is recreated every render.
   const clearSelection = selection.clear;
   const { effective, cycle } = useColumnSort<OrgSortField>(DEFAULT_SORT);
   const [filter, setFilter] = useState<ContactFilterDefinition | null>(null);
-  // The saved view the filter came from, so the picker can show which one is applied.
   const [savedViewId, setSavedViewId] = useState<string | null>(null);
-  // Whether the pair-merge dialog is open (only reachable with exactly two rows selected).
   const [merging, setMerging] = useState(false);
 
   const fetchPage = useCallback(
@@ -127,8 +111,6 @@ export function OrgsList({
       setTotal(page.total);
       setRefLabels((prev) => mergeRefLabels(prev, page.refLabels));
     } catch {
-      // The list query has a server-side AbortSignal.timeout, so rejection is realistic.
-      // Surface it inline and leave the button enabled to retry rather than swallow it.
       setError(LOAD_MORE_ERROR);
     } finally {
       setLoading(false);
@@ -150,8 +132,6 @@ export function OrgsList({
     }
   }, [fetchPage]);
 
-  // Re-query the first page under the new sort. Skip the initial mount: the first page is
-  // already seeded server-side under the default sort, so firing here too would double-fetch.
   const mounted = useRef(false);
   useEffect(() => {
     if (!mounted.current) {
@@ -169,25 +149,17 @@ export function OrgsList({
       ids.map(async (id) => ({ id, result: await deleteOrgAction({ id }, readCsrfToken()) })),
     );
     const failedIds = outcomes.filter((o) => o.result.ok === false).map((o) => o.id);
-    // Don't silently drop failures: clear only the ids that actually deleted, keep the
-    // failed ones selected (so the user sees exactly what still needs attention).
     selection.clear();
     for (const id of failedIds) selection.toggle(id);
-    // reload() manages `error` itself (clears it, then sets RELOAD_ERROR on its own
-    // failure), so set the bulk-delete error AFTER it settles or reload would wipe it out.
     await reload();
     if (failedIds.length > 0) setError(BULK_DELETE_ERROR);
   }
 
-  // Only the truly-empty list (no filter) shows the bare empty state; with a filter active the
-  // toolbar stays so the user can clear/adjust a filter that produced zero matches.
   if (filter === null && rows.length === 0) {
     return <p className="text-sm text-muted-foreground">{STRINGS.contacts.orgsEmpty}</p>;
   }
 
   const visibleIds = rows.map((r) => r.id);
-  // The two records to merge when exactly two are selected (Pipedrive merges pairs). The tuple cast
-  // is guarded by the length check, so both entries are present.
   const selectedRecords = rows
     .filter((r) => selection.isSelected(r.id))
     .map((r) => ({ id: r.id, name: r.name }));

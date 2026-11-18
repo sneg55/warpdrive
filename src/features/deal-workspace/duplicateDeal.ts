@@ -1,6 +1,3 @@
-// duplicateDeal: clone a visible deal into a NEW open deal in the same pipeline/stage, owned by the
-// actor, with fresh timestamps. Won/lost/archived/deleted state is intentionally NOT copied (a
-// duplicate is a fresh opportunity). Gated on deal.create (like createDeal) + source visibility.
 import { and, desc, eq, isNull } from "drizzle-orm";
 import { z } from "zod";
 import { BOARD_EVENT, dealMovedChannel } from "@/constants/boardChannels";
@@ -23,7 +20,6 @@ import { err, ok, type Result } from "@/types/result";
 
 export const duplicateDealInput = z.object({ dealId: z.string().uuid() });
 
-// Suffix appended to the cloned title (Pipedrive parity: "Deal (copy)").
 const COPY_SUFFIX = " (copy)";
 
 export async function duplicateDeal(
@@ -35,7 +31,6 @@ export async function duplicateDeal(
   const input = duplicateDealInput.parse(raw);
   signal.throwIfAborted();
 
-  // Load the source (soft-deleted deals are invisible; 404 like any missing row).
   const [source] = await db
     .select()
     .from(deals)
@@ -54,7 +49,6 @@ export async function duplicateDeal(
   }
   const pipelineVisibilityGroupId = pipe.visibilityGroupId ?? null;
 
-  // Source must be visible to the actor (404-on-invisible: do not leak existence).
   if (!canSee(actor, toVisibleDeal(source, pipelineVisibilityGroupId))) {
     return err(
       new AppError(ERROR_IDS.DEAL_NOT_FOUND, "Deal not found or not visible", {
@@ -63,7 +57,6 @@ export async function duplicateDeal(
     );
   }
 
-  // Creating the clone requires the global deal.create capability (admin bypasses).
   if (actor.type !== "admin" && !actor.flags.has("deal.create")) {
     return err(
       new AppError(ERROR_IDS.PERM_DENIED, "deal.create capability required", { userId: actor.id }),
@@ -71,8 +64,6 @@ export async function duplicateDeal(
   }
   signal.throwIfAborted();
 
-  // Duplication creates a new deal. Validate active Important fields before inserting, while
-  // retaining the source object below so historical values for archived definitions are preserved.
   const customFields = await validateDealCustomFieldsForCreate(
     db,
     source.customFields as Record<string, unknown>,
@@ -80,15 +71,10 @@ export async function duplicateDeal(
   );
   if (!customFields.ok) return customFields;
 
-  // Visibility derived server-side from the deal default (never inherited from the source, which
-  // may be more permissive than the actor's default allows them to grant).
   const [cfg] = await db.select().from(settings).where(eq(settings.id, true));
   const level = (cfg?.defaultVisibilityLevels.deal ?? "owner") as "owner" | "group" | "all";
   let visibilityGroupId: string | null = null;
   if (level === "group") {
-    // Resolve the actor's own primary group (like normal deal creation). PermSetUser does not carry
-    // it, so load it from the users row; a hardcoded null here made group-default duplication fail
-    // with E_PERM_003 even for users whose primary group is set.
     const [u] = await db
       .select({ primary: users.primaryVisibilityGroupId })
       .from(users)
@@ -124,7 +110,6 @@ export async function duplicateDeal(
       .insert(deals)
       .values({
         title: source.title + COPY_SUFFIX,
-        // Always a fresh open deal: won/lost/archived/deleted state is NOT carried over.
         status: "open",
         value: source.value,
         expectedCloseDate: source.expectedCloseDate,

@@ -5,11 +5,6 @@ import { seedPipelineWithStages, seedUser } from "@/db/testing/factories";
 import { ownerOnly } from "./dealList.test-helpers";
 import { getStageSums, listDeals } from "./dealRepo";
 
-// Codex finding F7: deal reads join pipelines only for the visibility-group predicate and
-// never filter p.is_archived. listVisiblePipelines/stats treat archived pipelines as
-// invisible, so open deals in an archived (public) pipeline must not leak through the deal
-// list or stage sums either.
-
 type Db = Parameters<Parameters<typeof withTestDb>[0]>[0];
 
 async function seedOpenDeal(
@@ -26,7 +21,7 @@ async function seedOpenDeal(
     stageId,
     boardPosition,
     ownerId,
-    visibilityLevel: "all", // visible to everyone; archived-pipeline gate is the only filter
+    visibilityLevel: "all",
   });
 }
 

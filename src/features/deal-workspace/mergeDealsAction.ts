@@ -11,8 +11,6 @@ export type MergeDealsResult =
   | { ok: true; deal: { id: string } }
   | { ok: false; error: { id: string } };
 
-// CSRF-guarded merge action. Validates input at the boundary (E_DEAL_013), then runs the domain
-// fn under the standard prologue. Returns the surviving (target) deal id.
 export async function mergeDealsAction(
   input: {
     targetDealId: string;

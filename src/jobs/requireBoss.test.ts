@@ -4,8 +4,6 @@ import { AppError, ERROR_IDS } from "@/constants/errorIds";
 
 const BOSS_KEY = Symbol.for("warpdrive.jobs.boss");
 
-// The real env module validates process.env at import time and would throw here. Mock it so each
-// test can pick the NODE_ENV that matters.
 const nodeEnv = vi.hoisted(() => ({ value: "test" }));
 vi.mock("@/config/env", () => ({
   get env() {
@@ -30,7 +28,6 @@ describe("requireBoss", () => {
     expect(requireBoss()).toBe(boss);
   });
 
-  // Tests and one-off scripts run with no queue on purpose; producers must stay callable there.
   it.each(["test", "development"] as const)("returns null with no boss in %s", async (mode) => {
     nodeEnv.value = mode;
     const { requireBoss } = await import("./requireBoss");
@@ -38,10 +35,6 @@ describe("requireBoss", () => {
     expect(requireBoss()).toBeNull();
   });
 
-  // In production a null boss is a wiring bug, not a legitimate no-op. Returning null here is what
-  // let a broken enqueue report success for three days (see the boss-singleton bundle-layer bug):
-  // confirmImportUpload dropped the import.prepare job and still returned ok(), so the wizard
-  // polled a batch that could never move. Fail loudly instead.
   it("throws in production when no boss was ever set", async () => {
     nodeEnv.value = "production";
     const { requireBoss } = await import("./requireBoss");

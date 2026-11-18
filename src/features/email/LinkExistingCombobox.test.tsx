@@ -3,7 +3,6 @@ import "@testing-library/jest-dom/vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
-// Radix Popover + cmdk need these jsdom polyfills (mirrors Combobox.test.tsx).
 beforeAll(() => {
   Element.prototype.scrollIntoView = vi.fn();
   Element.prototype.hasPointerCapture = vi.fn(() => false);
@@ -15,8 +14,6 @@ beforeAll(() => {
   };
 });
 
-// The search query returns grouped arrays (deals/people/organizations/leads), each item
-// { id, primary, secondary }. There is no per-item kind discriminator; the group IS the kind.
 const searchData = {
   deals: [{ id: "d1", primary: "Big Deal", secondary: "$1000" }],
   people: [{ id: "p1", primary: "Jane Doe", secondary: "jane@acme.com" }],
@@ -39,7 +36,6 @@ describe("LinkExistingCombobox", () => {
     fireEvent.click(screen.getByRole("button", { name: "Link to existing" }));
     fireEvent.change(screen.getByPlaceholderText(/search/i), { target: { value: "Ja" } });
 
-    // Person row appears; the deal and org rows are filtered out (kind="person" reads only people).
     expect(await screen.findByText("Jane Doe")).toBeInTheDocument();
     expect(screen.queryByText("Big Deal")).not.toBeInTheDocument();
     expect(screen.queryByText("Acme Inc")).not.toBeInTheDocument();

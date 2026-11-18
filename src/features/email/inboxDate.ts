@@ -1,6 +1,3 @@
-// Inbox list date, formatted like Pipedrive's Sales Inbox: a short "MMM D" for the current year
-// (e.g. "Jul 2") and "MMM D, YYYY" for older messages, instead of a verbose locale datetime
-// ("7/1/2026, 10:14:50 AM"). `now` is injectable so the year boundary is testable.
 export function formatInboxListDate(iso: string | null, now: Date = new Date()): string {
   if (iso === null || iso === "") return "";
   const d = new Date(iso);
@@ -13,9 +10,6 @@ export function formatInboxListDate(iso: string | null, now: Date = new Date()):
   });
 }
 
-// Reader message-header date, formatted like Pipedrive's thread view ("June 11 (29 days ago)"):
-// full month + day, an omitted year for the current year, and a relative age, instead of a raw
-// locale datetime with seconds ("7/11/2026, 12:14:47 AM"). `now` is injectable for testing.
 export function formatReaderDate(iso: string | null, now: Date = new Date()): string {
   if (iso === null || iso === "") return "";
   const d = new Date(iso);
@@ -33,8 +27,6 @@ export function formatReaderDate(iso: string | null, now: Date = new Date()): st
   return `${datePart} (${rel})`;
 }
 
-// Timeline card date, formatted like Pipedrive's deal history ("5:04 PM (a minute ago)"): the
-// time of day, then an age that stays useful at every scale. `now` is injectable for testing.
 export function formatTimelineEmailDate(iso: string | null, now: Date = new Date()): string {
   if (iso === null || iso === "") return "";
   const d = new Date(iso);

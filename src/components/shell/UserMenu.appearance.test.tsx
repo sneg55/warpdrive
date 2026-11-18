@@ -40,8 +40,6 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-// The theme switch belongs where people reach for it. Buried on a settings page it was three
-// clicks deep, behind an avatar Settings item that lands on the company roster instead.
 describe("UserMenu appearance", () => {
   it("offers the three appearance choices and marks the stored one", async () => {
     render(<UserMenu userId="u1" userName="Ada" appearance="night" />);
@@ -52,9 +50,6 @@ describe("UserMenu appearance", () => {
     expect(screen.getByRole("menuitemradio", { name: "System" })).not.toBeChecked();
   });
 
-  // Radix unmounts the menu content on close, so state living inside it is reseeded from the
-  // server prop on every open. That prop is whatever the page was rendered with, so a pick made
-  // this session would silently read back as the old theme.
   it("still shows the pick after the menu is closed and reopened", async () => {
     render(<UserMenu userId="u1" userName="Ada" appearance="day" />);
     await userEvent.click(screen.getByRole("button", { name: "Account menu" }));

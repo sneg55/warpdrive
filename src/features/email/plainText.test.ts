@@ -39,7 +39,6 @@ describe("plainTextToSafeHtml", () => {
 
   it("does not double-link an email that is part of a URL", () => {
     const out = plainTextToSafeHtml("https://x.com/u@host/page");
-    // one anchor, the whole URL; no separate mailto for u@host
     expect(out).not.toContain("mailto:");
     expect((out.match(/<a /g) ?? []).length).toBe(1);
   });

@@ -47,16 +47,12 @@ const ACTIVITY_ICON_OPTIONS: SelectOption[] = ACTIVITY_TYPE_ICON_KEYS.map((key) 
   icon: <ActivityTypeIcon typeKey={key} />,
 }));
 
-// Activities tab (spec 6.2): list + rename + enable/disable + up/down reorder + guarded delete +
-// add form with an icon picker. Reorder uses buttons (dnd deferred).
 export function ActivityTypesClient({
   rows: initial,
 }: {
   rows: ActivityTypeRow[];
 }): React.ReactNode {
   const router = useRouter();
-  // Re-seeds from refreshed server props (ACTIVITIES-17). See LostReasonsClient for why this is a
-  // render-time sync rather than an effect.
   const [rows, setRows] = useSyncedState(initial);
   const [addName, setAddName] = useState("");
   const [addIcon, setAddIcon] = useState(ACTIVITY_TYPE_ICON_KEYS[0] ?? "task");

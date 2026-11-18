@@ -99,7 +99,6 @@ const APOLLO = (fields: Record<string, string | number>): ProviderOutcome => ({
 
 describe("applyEnrichment organization linking", () => {
   it("links the organization matching the candidate domain over a same-name one", async () => {
-    // Both sides carry the shapes people actually store: a pasted URL here, a bare host there.
     const byDomain = await seedOrg({
       name: "Initech Holdings",
       domain: "https://www.Initech.com/",
@@ -122,8 +121,6 @@ describe("applyEnrichment organization linking", () => {
     expect(after?.orgId).toBe(byDomain.id);
   });
 
-  // The domain outranks the name in matching, so a domain taken from the provider the user did
-  // NOT pick links the person to the wrong company, silently and with no sign in the dialog.
   it("ignores a domain reported by a provider whose company the user did not pick", async () => {
     await seedOrg({ name: "Acme Systems", domain: "acme.com" });
     const chosen = await seedOrg({ name: "Beta Works" });
@@ -149,8 +146,6 @@ describe("applyEnrichment organization linking", () => {
     expect(after?.orgId).toBe(chosen.id);
   });
 
-  // Domain outranks name, so taking the first of two disagreeing domains picks a company the user
-  // never chose. Disagreement has to fall back to the name.
   it("ignores the domain when providers agree on the name but not the domain", async () => {
     await seedOrg({ name: "Globex Systems", domain: "globex.io" });
     const byName = await seedOrg({ name: "Globex" });
@@ -204,8 +199,6 @@ describe("applyEnrichment organization linking", () => {
     expect(after?.orgId).toBe(byDomain.id);
   });
 
-  // Returning a hidden organization's id only makes updatePerson reject the reference and fail the
-  // whole transaction, so the other selected fields would be lost too.
   it("reports the company as unresolved rather than linking one the actor cannot see", async () => {
     const stranger = await seedUser(h);
     await seedOrg({ name: "Umbrella Corp", ownerId: admin.id, visibilityLevel: "owner" });
@@ -238,9 +231,6 @@ describe("applyEnrichment organization linking", () => {
     expect(after?.orgId).toBeNull();
   });
 
-  // A different spelling of the company already linked resolves back to the same organization.
-  // Counting it as applied moves updatedAt and writes a change-log row for a link nobody can see
-  // change, and the cached run keeps proposing it.
   it("does not count a company name that resolves to the organization already linked", async () => {
     const org = await seedOrg({ name: "Vandelay Holdings", domain: "vandelay.test" });
     const person = await seedPerson({ orgId: org.id });

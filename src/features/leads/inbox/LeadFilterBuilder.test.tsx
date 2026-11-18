@@ -3,8 +3,6 @@ import "@testing-library/jest-dom/vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-// "hot" is the catalog's "Hot" under case-insensitive matching, so it must not become a second
-// option; "high priority" is applied-only and still has to be selectable.
 const CATALOG = [{ id: "l1", name: "Hot" }];
 const APPLIED = ["high priority", "hot"];
 

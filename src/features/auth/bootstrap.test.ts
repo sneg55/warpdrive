@@ -23,7 +23,6 @@ afterAll(async () => {
   await h.close();
 });
 beforeEach(async () => {
-  // Clean slate per test (hard-delete; order respects FKs).
   await h.db.execute(
     sql`TRUNCATE labels, stages, pipelines, visibility_group_members, visibility_groups, sessions, users, permission_sets, settings, audit_events RESTART IDENTITY CASCADE`,
   );
@@ -55,22 +54,16 @@ describe("first-run bootstrap", () => {
       expect(r.value.isAdmin).toBe(false);
     }
     const [s] = await h.db.select().from(settings);
-    expect(s!.bootstrappedAt).toBeNull(); // still open: seeded admin has not logged in
+    expect(s!.bootstrappedAt).toBeNull();
   });
 
-  // Codex finding F25: an existing user was selected by EMAIL and had googleSub overwritten
-  // with the incoming subject. If a Workspace email is reassigned/recreated, the new Google
-  // identity would inherit the old CRM user (admin state, permissions). The stable binding is
-  // the Google subject; a same-email/different-subject login must be a conflict, not a rebind.
   test("does not rebind an existing account when the same email logs in with a different subject", async () => {
-    const first = await upsertUserOnLogin(h.db, ident(), SIG()); // email admin@, sub g-admin
+    const first = await upsertUserOnLogin(h.db, ident(), SIG());
     expect(first.ok).toBe(true);
 
-    // Same email, DIFFERENT Google subject (address reassigned to a new person).
     const second = await upsertUserOnLogin(h.db, ident({ sub: "g-evil" }), SIG());
-    expect(second.ok).toBe(false); // identity conflict: must not silently rebind
+    expect(second.ok).toBe(false);
 
-    // The original account's stable binding is untouched, and no admin was inherited.
     const [u] = await h.db.select().from(users);
     expect(u!.googleSub).toBe("g-admin");
     const count = await h.db.execute(sql`SELECT count(*)::int AS n FROM users`);
@@ -78,33 +71,32 @@ describe("first-run bootstrap", () => {
   });
 
   test("re-login with the same subject and a changed email updates the existing account", async () => {
-    const first = await upsertUserOnLogin(h.db, ident(), SIG()); // email admin@, sub g-admin
+    const first = await upsertUserOnLogin(h.db, ident(), SIG());
     expect(first.ok).toBe(true);
     const firstId = first.ok ? first.value.userId : "";
 
-    // Same subject, new email (the user's Workspace address changed).
     const second = await upsertUserOnLogin(
       h.db,
       ident({ email: "admin.new@example.com", sub: "g-admin" }),
       SIG(),
     );
     expect(second.ok).toBe(true);
-    if (second.ok) expect(second.value.userId).toBe(firstId); // same account, not a new one
+    if (second.ok) expect(second.value.userId).toBe(firstId);
     const [u] = await h.db.select().from(users);
     expect(u!.email).toBe("admin.new@example.com");
   });
 
   test("after bootstrap, a later seed-email login is NOT re-elected admin (idempotent)", async () => {
-    await upsertUserOnLogin(h.db, ident({ email: "first@example.com", sub: "g-f" }), SIG()); // regular
-    const seed = await upsertUserOnLogin(h.db, ident(), SIG()); // admin, closes bootstrap
+    await upsertUserOnLogin(h.db, ident({ email: "first@example.com", sub: "g-f" }), SIG());
+    const seed = await upsertUserOnLogin(h.db, ident(), SIG());
     expect(seed.ok).toBe(true);
     if (seed.ok) {
       expect(seed.value.isAdmin).toBe(true);
     }
-    const second = await upsertUserOnLogin(h.db, ident(), SIG()); // same admin again
+    const second = await upsertUserOnLogin(h.db, ident(), SIG());
     expect(second.ok).toBe(true);
     if (second.ok) {
-      expect(second.value.isAdmin).toBe(true); // stays admin, no duplicate user
+      expect(second.value.isAdmin).toBe(true);
     }
     const count = await h.db.execute(
       sql`SELECT count(*)::int AS n FROM users WHERE email = 'admin@example.com'`,
@@ -116,7 +108,6 @@ describe("first-run bootstrap", () => {
     const r = await upsertUserOnLogin(h.db, ident(), SIG());
     if (r.ok === false) throw new Error("setup");
 
-    // Exactly one default pipeline, public (no visibility group), with the default stages in order.
     const pl = await h.db.select().from(pipelines);
     expect(pl).toHaveLength(1);
     expect(pl[0]!.name).toBe(DEFAULT_PIPELINE.name);
@@ -128,11 +119,9 @@ describe("first-run bootstrap", () => {
       .orderBy(asc(stages.order));
     expect(st.map((s) => s.name)).toEqual([...DEFAULT_PIPELINE.stages]);
 
-    // settings.default_pipeline_id points at the seeded pipeline.
     const [s] = await h.db.select().from(settings);
     expect(s!.defaultPipelineId).toBe(pl[0]!.id);
 
-    // Default labels seeded for all four targets, name+color+order matching the catalog.
     for (const target of ["person", "organization", "deal", "lead"] as const) {
       const rows = await h.db
         .select()
@@ -146,8 +135,8 @@ describe("first-run bootstrap", () => {
   });
 
   test("re-running bootstrap does not duplicate the seeded pipeline or labels", async () => {
-    await upsertUserOnLogin(h.db, ident(), SIG()); // seeds
-    await upsertUserOnLogin(h.db, ident(), SIG()); // same admin again, must not re-seed
+    await upsertUserOnLogin(h.db, ident(), SIG());
+    await upsertUserOnLogin(h.db, ident(), SIG());
     expect(await h.db.select().from(pipelines)).toHaveLength(1);
     const labelCount = await h.db.execute(sql`SELECT count(*)::int AS n FROM labels`);
     const expected = Object.values(DEFAULT_LABELS).reduce((a, defs) => a + defs.length, 0);
@@ -178,12 +167,8 @@ describe("first-run bootstrap", () => {
     expect((admins.rows[0] as { n: number }).n).toBe(1);
   });
 
-  // Task 11: an invited placeholder (googleSub NULL) must be adopted, not treated as a
-  // foreign identity conflict, so the pre-authorized email actually gets the account.
   test("adopts an invited placeholder (googleSub null) on first login by email", async () => {
-    // Bootstrap must already be closed (an admin exists) for this to be a realistic invite
-    // scenario, and to isolate the adoption path from the seed-admin-election branch.
-    await upsertUserOnLogin(h.db, ident(), SIG()); // seed admin logs in first, closes bootstrap
+    await upsertUserOnLogin(h.db, ident(), SIG());
 
     const [placeholder] = await h.db
       .insert(users)
@@ -202,21 +187,21 @@ describe("first-run bootstrap", () => {
       SIG(),
     );
     expect(r.ok).toBe(true);
-    if (r.ok) expect(r.value.userId).toBe(placeholder!.id); // adopted, not a second row
+    if (r.ok) expect(r.value.userId).toBe(placeholder!.id);
 
     const [u] = await h.db.select().from(users).where(eq(users.email, "new@ex.com"));
-    expect(u!.googleSub).toBe("google-123"); // real subject now bound
-    expect(u!.name).toBe("New Real"); // profile refreshed from the real identity
-    expect(u!.invitedAt).toBeNull(); // no longer pending
+    expect(u!.googleSub).toBe("google-123");
+    expect(u!.name).toBe("New Real");
+    expect(u!.invitedAt).toBeNull();
 
     const count = await h.db.execute(
       sql`SELECT count(*)::int AS n FROM users WHERE email = 'new@ex.com'`,
     );
-    expect((count.rows[0] as { n: number }).n).toBe(1); // no duplicate row
+    expect((count.rows[0] as { n: number }).n).toBe(1);
   });
 
   test("a non-invited (unknown) email still follows the normal create path", async () => {
-    await upsertUserOnLogin(h.db, ident(), SIG()); // closes bootstrap
+    await upsertUserOnLogin(h.db, ident(), SIG());
 
     const r = await upsertUserOnLogin(
       h.db,
@@ -230,9 +215,7 @@ describe("first-run bootstrap", () => {
   });
 
   test("an already-bound account (googleSub set) is never re-adopted by a new subject", async () => {
-    // Reaffirms the existing conflict behavior still holds once a placeholder has been
-    // adopted: a second, different Google subject claiming the same email must fail closed.
-    await upsertUserOnLogin(h.db, ident(), SIG()); // closes bootstrap
+    await upsertUserOnLogin(h.db, ident(), SIG());
 
     const first = await upsertUserOnLogin(
       h.db,
@@ -246,9 +229,9 @@ describe("first-run bootstrap", () => {
       { email: "bound@ex.com", sub: "google-someone-else", name: "Someone Else", avatarUrl: null },
       SIG(),
     );
-    expect(second.ok).toBe(false); // must not re-adopt an already-bound account
+    expect(second.ok).toBe(false);
 
     const [u] = await h.db.select().from(users).where(eq(users.email, "bound@ex.com"));
-    expect(u!.googleSub).toBe("google-bound"); // untouched
+    expect(u!.googleSub).toBe("google-bound");
   });
 });

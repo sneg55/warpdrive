@@ -1,4 +1,3 @@
-// Unit tests for folding unsent drafts into a record timeline. Pure, no DB.
 import { describe, expect, it } from "vitest";
 import { bucketByType } from "@/app/(app)/deals/[dealId]/tabs";
 import type { DraftSummary } from "@/features/email/draftRepo";
@@ -52,8 +51,6 @@ describe("mergeDraftItems", () => {
 });
 
 describe("draft items in the existing splits", () => {
-  // A draft belongs beside the sent messages under the Email tab, which is filtered out of the
-  // History bucket, so it must not be diverted into Focus the way an open activity is.
   it("lands a draft in History, next to the emails it will become", () => {
     const { pinned, focus, history } = partitionFocusHistory(mergeDraftItems([], [draft()]));
 

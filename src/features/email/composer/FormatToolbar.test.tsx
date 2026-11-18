@@ -1,14 +1,4 @@
 // @vitest-environment jsdom
-// FormatToolbar unit tests – command wiring and URL security.
-//
-// FormatToolbar accepts an `editor` prop directly, so we pass a stub editor
-// whose chain().focus().<cmd>().run() methods are spied. No need to mount
-// RichTextBody or leak a test-only onEditorReady callback into production.
-//
-// Fix 2 (SECURITY): Link and Image handlers must reject dangerous URL schemes.
-// Fix 4 (QUALITY): Replaces the onEditorReady-based tests from RichTextBody.test.tsx.
-//
-// Font/size/color controls (Spec 6.5) are tested in FormatToolbar.fontControls.test.tsx.
 
 import "@testing-library/jest-dom/vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
@@ -17,10 +7,6 @@ import type { Editor } from "@tiptap/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 afterEach(cleanup);
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
 
 function makeRunSpy(): ReturnType<typeof vi.fn> {
   return vi.fn();
@@ -53,7 +39,6 @@ function buildStubChain(runSpy: ReturnType<typeof vi.fn>, overrides: Record<stri
 }
 
 async function renderToolbar(
-  // Link insertion branches on whether the selection is collapsed, so the stub must model it.
   selectionEmpty = false,
 ): Promise<{ runSpy: ReturnType<typeof vi.fn> }> {
   const { FormatToolbar } = await import("./FormatToolbar");
@@ -68,15 +53,10 @@ async function renderToolbar(
   return { runSpy };
 }
 
-// ---------------------------------------------------------------------------
-// Toolbar button -> editor command wiring
-// ---------------------------------------------------------------------------
-
 describe("FormatToolbar – icon rendering", () => {
   it("renders icon-only command buttons (svg icon, label via aria-label not text)", async () => {
     await renderToolbar();
     const bold = screen.getByRole("button", { name: /bold/i });
-    // Icon present, and no visible text label (accessible name comes from aria-label).
     expect(bold.querySelector("svg")).not.toBeNull();
     expect(bold.textContent).toBe("");
   });
@@ -174,7 +154,7 @@ describe("FormatToolbar – editor command wiring", () => {
   });
 
   it("Link dialog still reaches the editor when the selection is collapsed", async () => {
-    const { runSpy } = await renderToolbar(/* selectionEmpty= */ true);
+    const { runSpy } = await renderToolbar(true);
     await userEvent.click(screen.getByRole("button", { name: /^link$/i }));
     await userEvent.type(screen.getByRole("textbox", { name: "Link URL" }), "https://example.com");
     await userEvent.click(screen.getByRole("button", { name: "Insert link" }));
@@ -192,10 +172,6 @@ describe("FormatToolbar – editor command wiring", () => {
     expect(runSpy).toHaveBeenCalledTimes(1);
   });
 });
-
-// ---------------------------------------------------------------------------
-// Fix 2 (SECURITY): dangerous URL schemes must be rejected before editor call
-// ---------------------------------------------------------------------------
 
 describe("FormatToolbar – URL security (Fix 2)", () => {
   it.each([

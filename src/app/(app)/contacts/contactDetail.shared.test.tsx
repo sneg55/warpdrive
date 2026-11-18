@@ -59,8 +59,6 @@ const mixedItems: HistoryItem[] = [
   },
 ];
 
-// Mutable per-test fixture so each test can shape what the mocked query returns without
-// redefining the whole vi.mock factory.
 let queryItems: HistoryItem[] = mixedItems;
 const invalidate = vi.fn();
 const invalidateActivityStats = vi.fn();
@@ -90,25 +88,18 @@ describe("ContactTimelinePanel", () => {
   });
 
   it("stacks Focus and History as always-visible sections (no toggle)", () => {
-    // S1: Focus and History are stacked sections, not a mutually-exclusive toggle, matching
-    // the deal page. The open activity sits under Focus; the done activity and note under
-    // History, all visible at once.
     render(<ContactTimelinePanel entityType="person" entityId="pe1" />);
 
     expect(screen.getByRole("heading", { name: "Focus" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "History" })).toBeInTheDocument();
     expect(screen.queryByRole("tab", { name: "Focus" })).not.toBeInTheDocument();
 
-    // Every item is visible simultaneously (no clicking).
     expect(screen.getByText("Open follow-up")).toBeInTheDocument();
     expect(screen.getByText("Done call")).toBeInTheDocument();
     expect(screen.getByText("Called Jane")).toBeInTheDocument();
   });
 
   it("renders the deal-page history filter row and filters the History bucket by type", async () => {
-    // CO-1: the contact Activity feed gets the same per-type filter row the deal page has
-    // (All/Activities/Notes/Email/Files/Changelog). The filter buckets the History side only;
-    // Focus (open activities) is unaffected.
     render(<ContactTimelinePanel entityType="person" entityId="pe1" />);
 
     expect(screen.getByRole("tab", { name: /^All/ })).toBeInTheDocument();
@@ -118,26 +109,21 @@ describe("ContactTimelinePanel", () => {
     expect(screen.getByRole("tab", { name: /^Files/ })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: /^Changelog/ })).toBeInTheDocument();
 
-    // Default "All": the done activity and the note both show under History.
     expect(screen.getByText("Done call")).toBeInTheDocument();
     expect(screen.getByText("Called Jane")).toBeInTheDocument();
 
-    // Click "Notes": only the note remains in History; the done activity is filtered out.
     await userEvent.click(screen.getByRole("tab", { name: /Notes/ }));
     expect(screen.getByText("Called Jane")).toBeInTheDocument();
     expect(screen.queryByText("Done call")).not.toBeInTheDocument();
-    // Focus is above the filter row and unaffected by it.
     expect(screen.getByText("Open follow-up")).toBeInTheDocument();
   });
 
   it("counts every History tab and leaves the empty ones unbadged", () => {
     render(<ContactTimelinePanel entityType="person" entityId="pe1" />);
-    // History holds the done activity and the note; the open one lives in Focus.
     expect(screen.getByRole("tab", { name: "All (2)" })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "Activities (1)" })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "Notes (1)" })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "Files (2)" })).toBeInTheDocument();
-    // Nothing under Email or Changelog, so neither carries a (0).
     expect(screen.getByRole("tab", { name: "Email" })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "Changelog" })).toBeInTheDocument();
     expect(screen.queryByRole("tab", { name: /\(0\)/ })).not.toBeInTheDocument();
@@ -155,7 +141,6 @@ describe("ContactTimelinePanel", () => {
       },
     ];
     render(<ContactTimelinePanel entityType="organization" entityId="o1" />);
-    // Both sections render at once: History shows the note, Focus shows its empty label.
     expect(screen.getByText("Called Jane")).toBeInTheDocument();
     expect(screen.getByText("Nothing needs your attention")).toBeInTheDocument();
   });
@@ -194,9 +179,6 @@ describe("ContactTimelinePanel", () => {
     expect(invalidateActivityStats).not.toHaveBeenCalled();
   });
 });
-
-// Wave 4, Task 5: the person/org detail header shows who owns the record via the shared
-// OwnerBadge (avatar + name), sourced from the joined ownerName the repos now return.
 
 describe("contact detail theme tokens", () => {
   it("colours the tab strip and the empty line from tokens, not a fixed gray", () => {

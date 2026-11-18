@@ -21,8 +21,6 @@ function admin(userId: string) {
 }
 
 describe("board card next-activity title", () => {
-  // The card badge tooltip names the next action, so getBoardColumns must return the SUBJECT of
-  // the soonest open, dated activity (the same row that drives next_activity_at), not just its date.
   it("returns the subject of the soonest open dated activity on each card", async () => {
     await withTestDb(async (db) => {
       const signal = new AbortController().signal;
@@ -51,7 +49,6 @@ describe("board card next-activity title", () => {
       const [type] = await db.select().from(activityTypes).where(eq(activityTypes.key, "call"));
       if (!type) throw new Error("no system 'call' activity type");
 
-      // Two open dated activities: the soonest (earlier due_at) is the one the badge names.
       await db.insert(activities).values([
         {
           typeId: type.id,

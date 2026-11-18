@@ -20,7 +20,6 @@ function regular(userId: string) {
   };
 }
 
-// Unwrap the first stage or throw; test data always has at least one stage.
 function firstStageId(p: Awaited<ReturnType<typeof seedPipelineWithStages>>): string {
   const s = p.stages[0];
   if (s === undefined) throw new Error("seedPipelineWithStages returned no stages");
@@ -28,10 +27,6 @@ function firstStageId(p: Awaited<ReturnType<typeof seedPipelineWithStages>>): st
 }
 
 describe("createDeal", () => {
-  // Codex finding F27: createDeal wrote the caller-provided status directly, bypassing the
-  // won/lost transition logic that stamps wonTime/lostTime and requires a lost reason. That
-  // let a caller create a "won"/"lost" deal with no transition metadata, corrupting stats.
-  // A newly created deal is always open; closing goes through updateDeal.
   it("ignores a caller-supplied closed status and always creates an open deal", async () => {
     await withTestDb(async (db) => {
       await db.insert(settings).values({
@@ -60,9 +55,6 @@ describe("createDeal", () => {
     });
   });
 
-  // Codex finding F28: createDeal gated the restricted-pipeline group but never is_archived,
-  // so a stale archived pipelineId/stageId could create an open deal that every read path
-  // then hides, an effectively lost record that bypasses the archived-pipeline invariant.
   it("rejects creating a deal in an archived pipeline", async () => {
     await withTestDb(async (db) => {
       await db.insert(settings).values({
@@ -126,8 +118,6 @@ describe("createDeal", () => {
       const u = await seedUser(db);
       const impersonated = await seedUser(db);
       const p = await seedPipelineWithStages(db, ["Open"]);
-      // Raw input includes ownerId and visibilityLevel: dealCreateInput strips them
-      // at the Zod boundary so they never reach the insert.
       const rawWithTrustedFields: unknown = {
         title: "Spoofed deal",
         pipelineId: p.pipeline.id,
@@ -147,9 +137,7 @@ describe("createDeal", () => {
       const row = rows[0];
       expect(row).toBeDefined();
       if (row === undefined) return;
-      // Must be the session user, not the impersonated user.
       expect(row.ownerId).toBe(u.id);
-      // Must be derived from settings, not the client-supplied 'owner'.
       expect(row.visibilityLevel).toBe("all");
     });
   });
@@ -164,7 +152,6 @@ describe("createDeal", () => {
       const u = await seedUser(db);
       const p = await seedPipelineWithStages(db, ["Stage"]);
       const stageId = firstStageId(p);
-      // Insert first deal.
       const r1 = await createDeal(
         db,
         regular(u.id),
@@ -172,7 +159,6 @@ describe("createDeal", () => {
         new AbortController().signal,
       );
       expect(r1.ok).toBe(true);
-      // Insert second deal; it should get a larger board_position.
       const r2 = await createDeal(
         db,
         regular(u.id),
@@ -209,7 +195,6 @@ describe("createDeal", () => {
 
   it("rejects group-level default with no resolvable group", async () => {
     await withTestDb(async (db) => {
-      // Default level is 'group' but session has no groups.
       await db.insert(settings).values({
         id: true,
         baseCurrency: "USD",
@@ -219,13 +204,12 @@ describe("createDeal", () => {
       const p = await seedPipelineWithStages(db, ["S1"]);
       const r = await createDeal(
         db,
-        regular(u.id), // visibilityGroupIds: [], primaryVisibilityGroupId: null
+        regular(u.id),
         { title: "Orphan", pipelineId: p.pipeline.id, stageId: firstStageId(p) },
         new AbortController().signal,
       );
       expect(r.ok).toBe(false);
       if (r.ok === true) return;
-      // E_PERM_003 = group-level create with no resolvable group.
       expect(r.error.id).toBe("E_PERM_003");
     });
   });
@@ -246,7 +230,6 @@ describe("createDeal", () => {
         new AbortController().signal,
       );
       expect(r.ok).toBe(true);
-      // Verify the channel_versions row was bumped for this pipeline's channel.
       const channel = `pipeline:${p.pipeline.id}`;
       const cvRows = await db
         .select()

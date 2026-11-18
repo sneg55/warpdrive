@@ -13,9 +13,6 @@ interface SourceChannelIdFieldProps {
   sourceChannelId: string | null;
 }
 
-// Free-text external source identifier (Source section). Inline-editable through updateDealAction
-// under the deal's CAS precondition; refresh on both branches so a stale CAS picks up the advanced
-// updatedAt next render. Mirrors SourceChannelField but a text value rather than a fixed enum.
 export function SourceChannelIdField({
   dealId,
   updatedAt,

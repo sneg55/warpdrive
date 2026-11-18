@@ -32,7 +32,6 @@ describe("import mapping", () => {
     expect(mapped.note).toBeUndefined();
   });
 
-  // A BD shortlist row is a lead AND its organization. url has to reach organizations.domain.
   it("groups cells by the entity that owns them", () => {
     const m = normalizeMapping(
       {
@@ -170,7 +169,6 @@ describe("import mapping", () => {
     if (bad.ok === false) expect(bad.errors.some((e) => e.field === "dueAt")).toBe(true);
   });
 
-  // An organization group with no name has no key to find-or-create on.
   it("rejects an organization group that carries fields but no name", () => {
     const defs: CustomFieldDef[] = [];
     const result = validateMappedRow(

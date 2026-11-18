@@ -10,9 +10,6 @@ beforeAll(() => {
   Element.prototype.releasePointerCapture = vi.fn();
 });
 
-// vitest.config.ts sets globals: false, so @testing-library/react's auto
-// cleanup (which checks for a global `afterEach`) never registers; without
-// this, renders from earlier `it` blocks accumulate in the same jsdom document.
 afterEach(() => {
   cleanup();
 });
@@ -27,10 +24,6 @@ describe("DatePicker", () => {
     const onChange = vi.fn();
     render(<DatePicker value="2026-07-04" onChange={onChange} ariaLabel="Start date" />);
     fireEvent.click(screen.getByLabelText("Start date"));
-    // v10's DayButton sets aria-label to the full formatted date ("PPPP", e.g.
-    // "Wednesday, July 15th, 2026") for a11y, so the accessible *name* is not
-    // "15"; the visible day-of-month is the button's text content instead.
-    // findByText (not getByText): the calendar is a next/dynamic chunk that loads on open.
     fireEvent.click(await screen.findByText("15"));
     expect(onChange).toHaveBeenCalledWith("2026-07-15");
   });
@@ -44,18 +37,12 @@ describe("DatePicker", () => {
   });
 
   it("allows navigating into a future year via the next-month control", async () => {
-    // Regression for: captionLayout="dropdown" without startMonth/endMonth
-    // caps react-day-picker v10's navigable range at Dec 31 of the current
-    // year, so the next-month chevron silently no-ops there and future
-    // years are unreachable. Starting from December of the current year and
-    // clicking "next month" must land on January of next year.
     const currentYear = new Date().getFullYear();
     const onChange = vi.fn();
     render(
       <DatePicker value={`${currentYear}-12-01`} onChange={onChange} ariaLabel="Start date" />,
     );
     fireEvent.click(screen.getByLabelText("Start date"));
-    // findByRole: the calendar (a next/dynamic chunk) loads on open; once awaited it is present.
     fireEvent.click(await screen.findByRole("button", { name: "Go to the Next Month" }));
     fireEvent.click(screen.getByText("15"));
     expect(onChange).toHaveBeenCalledWith(`${currentYear + 1}-01-15`);

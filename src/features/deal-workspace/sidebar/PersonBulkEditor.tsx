@@ -8,8 +8,6 @@ import { BulkEditRow as BulkRow } from "./BulkEditRow";
 import { type ContactPointKind, ContactPointsEditor } from "./ContactPointsField";
 import { committedPoints, parsePoints, serializePoints } from "./contactPoints";
 
-// The change shape PersonBlock.save accepts (kept in sync with it). All optional so the bulk save
-// sends only the fields the user actually changed.
 export interface PersonBulkChange {
   firstName?: string | null;
   lastName?: string | null;
@@ -24,7 +22,6 @@ interface PersonBulkEditorProps {
   emails: ContactPoint[];
   save: (change: PersonBulkChange) => Promise<{ ok: boolean; errorId?: string }>;
   onExit: () => void;
-  // Built-in field keys hidden in Settings > Data fields; a hidden contact point is not offered here.
   hidden?: ReadonlySet<string>;
 }
 
@@ -32,9 +29,6 @@ const NONE: ReadonlySet<string> = new Set();
 
 const textOrNull = (v: string): string | null => (v.trim() === "" ? null : v.trim());
 
-// Section bulk editor for the Person block: every field open at once behind a single Save. Mounted
-// only while the section is in bulk mode, so its draft state initializes fresh from the record each
-// time. Save sends one updatePersonAction carrying only the changed fields.
 export function PersonBulkEditor({
   firstName,
   lastName,

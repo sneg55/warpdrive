@@ -26,8 +26,6 @@ function mk(id: string, dueAt: Date, allDay = false): CalendarActivity {
 
 describe("MoreActivitiesChip", () => {
   it("gives each hidden activity its own start time", () => {
-    // One overflow marker can stand for activities at different hours, because a long activity
-    // keeps the cluster connected. Listed without times they all read as the marker's own hour.
     const items = [mk("a", new Date(2026, 6, 15, 9, 0)), mk("b", new Date(2026, 6, 15, 11, 30))];
     render(<MoreActivitiesChip activities={items} onOpen={vi.fn()} />);
     fireEvent.click(screen.getByRole("button", { name: "Show 2 more activities" }));

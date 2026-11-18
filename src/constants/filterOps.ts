@@ -1,6 +1,3 @@
-// The condition-operator vocabulary shared by the deal, contact, and lead filter builders. One
-// copy so a new operator reaches every entity's allow-list and every op dropdown at once.
-
 export const FILTER_OP_KEYS = [
   "eq",
   "neq",
@@ -30,13 +27,8 @@ export const FILTER_OP_LABELS: Record<FilterOpKey, string> = {
   isNotEmpty: "is not empty",
 };
 
-// Operators that take no value. The builder hides the value control for them and the schemas skip
-// their value checks, so a blank value is a complete row rather than an incomplete one.
 export const VALUELESS_OPS: ReadonlySet<string> = new Set(["isEmpty", "isNotEmpty"]);
 
-// Operator classes by column type. "contains" leads the text class so a new text condition defaults
-// to substring match. EXACT_OPS covers identity columns (owner, stage, status) that are NOT NULL,
-// so it omits the empty checks rather than offering a condition that can never match.
 export const TEXT_OPS = [
   "contains",
   "notContains",

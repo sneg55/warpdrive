@@ -25,9 +25,6 @@ export type ContactCustomFieldPatchInput = z.infer<typeof contactCustomFieldPatc
 
 type PatchResult = Result<{ id: string }, AppError>;
 
-// Inline custom-field edits are patches, not complete entity snapshots. Validate the one active
-// definition, then let Postgres merge the one JSON key atomically. The SQL merge preserves
-// archived/unknown historical keys and composes correctly with another field save in flight.
 export async function patchContactCustomField(
   db: Db,
   actor: ContactActor,

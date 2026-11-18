@@ -23,9 +23,6 @@ import NotificationSettingsPage from "./page";
 
 describe("NotificationSettingsPage layout", () => {
   it("left-aligns the pane like the other settings pages (no centering wrapper)", () => {
-    // Regression guard: the pane used to be `mx-auto`, which centered it in the wide
-    // content column and left a large gap after the settings nav, unlike every other
-    // settings page (which renders a bare left-aligned <section>).
     const { container } = render(<NotificationSettingsPage />);
     const pane = container.firstElementChild;
     expect(pane).not.toBeNull();

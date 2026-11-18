@@ -20,8 +20,6 @@ describe("dealRowsToDefinition", () => {
     });
   });
 
-  // The combinator the user picked is what the read path joins on, so it has to travel with the
-  // conditions rather than being re-derived (or hardcoded to AND) further down.
   it("carries the chosen combinator into the definition", () => {
     const def = dealRowsToDefinition(
       [
@@ -52,7 +50,6 @@ describe("dealRowsToDefinition", () => {
     expect(def?.conditions[0]).not.toHaveProperty("value", "acme");
   });
 
-  // Several labels are one "is any of" condition, so the array travels whole.
   it("compiles a multi-value row into a single condition carrying every value", () => {
     expect(
       dealRowsToDefinition([{ field: "labels", op: "eq", value: ["Hot", "Cold"] }], "and"),
@@ -62,25 +59,19 @@ describe("dealRowsToDefinition", () => {
     });
   });
 
-  // An empty multi-select is an unfinished row. Compiling it would build a condition matching
-  // nothing while the filter looked applied.
   it("drops a multi-value row with nothing picked", () => {
     expect(dealRowsToDefinition([{ field: "labels", op: "eq", value: [] }], "and")).toBeNull();
     expect(dealRowsToDefinition([{ field: "labels", op: "eq", value: ["  "] }], "and")).toBeNull();
   });
 
   it("drops rows whose field/op pairing is not allow-listed", () => {
-    // contains is not a valid op for the numeric `value` column.
     expect(
       dealRowsToDefinition([{ field: "value", op: "contains", value: "5" }], "and"),
     ).toBeNull();
-    // unknown field.
     expect(dealRowsToDefinition([{ field: "bogus", op: "eq", value: "x" }], "and")).toBeNull();
   });
 });
 
-// Reopening a saved filter has to show the conditions and the combinator that were saved, so the
-// definition must map back to editable rows.
 describe("definitionToRows", () => {
   it("rebuilds one row per saved condition", () => {
     const rows = definitionToRows({
@@ -108,8 +99,6 @@ describe("definitionToRows", () => {
 
 const FIELDS = dealFilterFields();
 
-// Catching a malformed value as the user types keeps a doomed save off the wire, and the message
-// names the field so the user knows which row to fix.
 describe("conditionRowIssue", () => {
   it("passes rows whose values match the field's input kind", () => {
     expect(

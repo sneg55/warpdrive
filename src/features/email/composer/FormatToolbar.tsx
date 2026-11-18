@@ -9,10 +9,6 @@ interface FormatToolbarProps {
   editor: Editor;
 }
 
-/**
- * Connects shared toolbar controls and URL dialogs to a TipTap editor instance.
- * Visual controls live in FormatToolbarControls so editor commands remain easy to audit.
- */
 export function FormatToolbar({ editor }: FormatToolbarProps): React.ReactNode {
   const [fontFamily, setFontFamily] = useState("");
   const [fontSize, setFontSize] = useState("");
@@ -65,9 +61,6 @@ export function FormatToolbar({ editor }: FormatToolbarProps): React.ReactNode {
 
   function handleInsertUrl(url: string): void {
     if (insertKind === "link") {
-      // A link mark over an empty (collapsed) selection marks nothing, so clicking Link with
-      // just a cursor used to be a silent no-op. Insert the URL as its own linked text instead,
-      // matching Gmail. With text selected, that text stays as the link label.
       if (editor.state.selection.empty) {
         editor
           .chain()
@@ -77,7 +70,6 @@ export function FormatToolbar({ editor }: FormatToolbarProps): React.ReactNode {
             text: url,
             marks: [{ type: "link", attrs: { href: url } }],
           })
-          // Leave the link mark behind so text typed after the link is not swallowed into it.
           .unsetMark("link")
           .run();
         return;

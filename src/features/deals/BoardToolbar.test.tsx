@@ -28,10 +28,8 @@ describe("BoardToolbar view toggle", () => {
     renderToolbar();
     const board = screen.getByRole("link", { name: "Board view" });
     const list = screen.getByRole("link", { name: "List view" });
-    // Each control carries an icon glyph, not just a text label.
     expect(board.querySelector("svg")).not.toBeNull();
     expect(list.querySelector("svg")).not.toBeNull();
-    // The active view is marked for assistive tech.
     expect(board.getAttribute("aria-current")).toBe("page");
   });
 
@@ -79,8 +77,6 @@ describe("BoardToolbar view toggle", () => {
 
   it("keeps the full board summary and pipeline controls on the list/archive views (parity)", () => {
     renderToolbar("list");
-    // The list view must show the same deal count + pipeline selector + edit control as the board,
-    // so the toolbar does not shift when switching views.
     expect(screen.getByRole("link", { name: "Edit pipeline" })).not.toBeNull();
     expect(screen.getByText(/deal/i)).not.toBeNull();
   });

@@ -72,7 +72,6 @@ describe("file actions", () => {
       const key = row?.s3Key;
       if (key === undefined) throw new Error("no s3Key");
 
-      // Simulate the browser POST landing in storage with matching metadata.
       storage.objectsByKey.set(key, { size: 100, contentType: "application/pdf" });
 
       const done = await confirmUpload(
@@ -99,8 +98,6 @@ describe("file actions", () => {
         {
           actor: actorFor(owner.id),
           storage: new FakeStorageClient(),
-          // Cast through unknown: the executable content-type is not in the TS
-          // enum on purpose, so we test that the Zod boundary rejects it.
           input: {
             entityType: "deal",
             entityId: dealId,
@@ -148,7 +145,6 @@ describe("file actions", () => {
       const key = row?.s3Key;
       if (key === undefined) throw new Error("no s3Key");
 
-      // HEAD reports a different size than the row's sizeBytes: tamper detected.
       storage.objectsByKey.set(key, { size: 999, contentType: "application/pdf" });
 
       const done = await confirmUpload(
@@ -167,10 +163,6 @@ describe("file actions", () => {
       expect(after?.status).toBe("uploading");
     });
   });
-
-  // --- Zod boundary gap fix (Task-23 Part B) ---
-  // confirmUpload and requestDownload must return a Result err (E_FILE_001) for
-  // non-uuid fileId values instead of throwing a Postgres uuid-cast error.
 
   it("confirmUpload returns E_FILE_001 err for a non-uuid fileId (no throw)", async () => {
     await withTestDb(async (db) => {

@@ -5,9 +5,6 @@ import type { Activity } from "@/db/schema/activities";
 import type { VisibleActivity } from "@/features/permissions/types";
 import type { DbOrTx } from "@/server/realtime/channelVersions";
 
-// Parentless activities (no deal/person/org) are visible to their assignee + participants, so fetch
-// those participants in one batched query keyed by activity id rather than per row. Used by the list
-// and calendar paths, which resolve the rest of visibility in memory (see activityVisibility.ts).
 export async function loadParentlessParticipants(
   db: Db,
   rows: { id: string; dealId: string | null; personId: string | null; orgId: string | null }[],
@@ -31,10 +28,6 @@ export async function loadParentlessParticipants(
   return byActivity;
 }
 
-// Resolve the visibility record for a single activity using dominant-parent precedence:
-// deal > person > org > parentless. Returns null when the dominant parent is soft-deleted or
-// missing (not visible). This is the per-activity DB path (completeActivity etc.); list rendering
-// uses the in-memory buildActivityVisibility to avoid the per-row N+1 this incurs.
 export async function resolveActivityVisibility(
   db: DbOrTx,
   activity: Activity,
@@ -72,9 +65,6 @@ async function resolveDealParent(
     .from(pipelines)
     .where(eq(pipelines.id, deal.pipelineId));
   signal.throwIfAborted();
-  // Missing pipeline: fail closed (same defense-in-depth as referenceCheck.ts). An archived
-  // pipeline hides all its deals from reads (F7/F15/F16), so a deal-parented activity must be
-  // hidden too (F22): return null so canSee/can never see it.
   if (pipe === undefined || pipe.isArchived) return null;
 
   return {
@@ -149,12 +139,6 @@ async function resolveParentless(
 
   const participantUserIds = participants.map((p) => p.userId);
 
-  // Assignee + participants go into visibleToUserIds so canSee's additive-allow
-  // rule yields exactly the parentless visibility spec: assignee/participant ONLY.
-  // ownerId is null (not activity.ownerId): the parentless read rule grants NO
-  // ownership-path visibility, matching the assignee/participant-only SQL predicate
-  // (Task 13). This prevents a parentless activity reassigned away from its creator
-  // from being "completable but invisible in lists" or vice versa.
   return {
     kind: "activity",
     ownerId: null,

@@ -1,5 +1,3 @@
-// Task 4: applyMessageIds must persist inbound attachment metadata (not just the body)
-// into email_message_attachments, in the same tx as the message insert.
 import { sql } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import { withTestDb } from "@/db/testing";
@@ -12,7 +10,6 @@ import { gmailProvider } from "./provider/gmailProvider";
 type TestDb = Parameters<Parameters<typeof withTestDb>[0]>[0];
 const signal = new AbortController().signal;
 
-// A message with one text/plain body part and one PDF attachment part.
 function msgWithAttachment(id: string, threadId: string): GmailMessage {
   return {
     id,
@@ -85,7 +82,6 @@ describe("applyMessageIds attachment persistence", () => {
       }[];
 
       expect(rows).toHaveLength(1);
-      // node-pg returns bigint columns as strings to avoid precision loss; coerce for comparison.
       expect({ ...rows[0], size_bytes: Number(rows[0]?.size_bytes) }).toMatchObject({
         filename: "invoice.pdf",
         mime_type: "application/pdf",

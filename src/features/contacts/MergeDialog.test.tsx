@@ -3,7 +3,6 @@ import "@testing-library/jest-dom/vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
-// Radix Select (branded dropdown) needs these jsdom polyfills.
 beforeAll(() => {
   Element.prototype.scrollIntoView = vi.fn();
   Element.prototype.hasPointerCapture = vi.fn(() => false);
@@ -47,9 +46,6 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
-// Both selects are now the branded Select (Radix): open the trigger by aria-label,
-// then click the option by its role (not text, since a picked value's label can also
-// appear as plain text in an already-selected trigger elsewhere on the page).
 function pick(labelText: string, optionText: string): void {
   fireEvent.click(screen.getByLabelText(labelText));
   fireEvent.click(screen.getByRole("option", { name: optionText }));
@@ -77,8 +73,6 @@ describe("MergeDialog", () => {
         "tok",
       ),
     );
-    // onMerged must receive the survivor id so the caller can navigate to it (the
-    // current record is the survivor here, so it stays put).
     await vi.waitFor(() => expect(onMerged).toHaveBeenCalledWith("o1"));
   });
 
@@ -96,7 +90,6 @@ describe("MergeDialog", () => {
         "tok",
       ),
     );
-    // The current record (p1) was merged away, so the caller must be told to go to p2.
     await vi.waitFor(() => expect(onMerged).toHaveBeenCalledWith("p2"));
   });
 

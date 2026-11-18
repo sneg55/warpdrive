@@ -26,8 +26,6 @@ function render(over: {
 describe("renderNotificationEmail link", () => {
   it("links to the real route for each entity type", () => {
     expect(render({ entityType: "deal", entityId: "d1" }).text).toContain("/deals/d1");
-    // The old renderer pluralized the entity type: /persons/<id> and /organizations/<id>, neither
-    // of which is a route in this app.
     expect(render({ entityType: "person", entityId: "p1" }).text).toContain("/contacts/people/p1");
     expect(render({ entityType: "organization", entityId: "o1" }).text).toContain(
       "/contacts/orgs/o1",
@@ -36,7 +34,6 @@ describe("renderNotificationEmail link", () => {
   });
 
   it("falls back to the app root for a ref with no detail route", () => {
-    // "activity" used to render /activitys/<id>.
     const out = render({ entityType: "activity", entityId: "a1" });
     expect(out.text).not.toContain("/activitys/");
     expect(out.text).not.toContain("a1");

@@ -66,7 +66,6 @@ describe("searchAll", () => {
         visibilityLevel: "owner",
       });
 
-      // charlie is a third party: should see the 'all' person, not bob's 'owner' person
       const charlieActor = makeActor(charlie.id);
       const r = await searchAll(db, charlieActor, "Zephyr", signal);
       expect(r.ok).toBe(true);
@@ -111,20 +110,17 @@ describe("searchAll", () => {
       const owner = await seedUser(db);
       const outsider = await seedUser(db);
 
-      // Create a visibility group; outsider is NOT a member.
       const [grp] = await db
         .insert(schema.visibilityGroups)
         .values({ name: "RestrictedGroup" })
         .returning();
       const group = grp!;
 
-      // Pipeline restricted to the group.
       const { pipeline, stages } = await seedPipelineWithStages(db, ["Proposal"], {
         visibilityGroupId: group.id,
       });
       const stage = stages[0]!;
 
-      // Deal itself is all-visible but the pipeline is restricted (should be hidden).
       await db.insert(schema.deals).values({
         title: "Nebula Restricted Deal",
         ownerId: owner.id,
@@ -133,9 +129,6 @@ describe("searchAll", () => {
         stageId: stage.id,
       });
 
-      // Present control: an all-visible deal in a NON-restricted pipeline matching
-      // the same query term. Proves the pipeline gate (not an empty result set)
-      // is what excludes the restricted deal.
       const { pipeline: openPipeline, stages: openStages } = await seedPipelineWithStages(db, [
         "Discovery",
       ]);
@@ -198,7 +191,6 @@ describe("searchAll", () => {
     });
   });
 
-  // F7: an all-visible deal in an ARCHIVED pipeline must not surface in search.
   it("excludes a deal in an archived pipeline from search results", async () => {
     await withTestDb(async (db) => {
       const signal = new AbortController().signal;

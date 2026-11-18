@@ -1,6 +1,5 @@
 import type { PermissionFlagKey } from "@/constants/permissionFlags";
 
-// Ownership-scoped actions (always also record-scoped). The stored flags are _own/_any pairs.
 const OWNERSHIP_ACTIONS = [
   "deal.edit",
   "deal.delete",
@@ -13,8 +12,6 @@ const OWNERSHIP_ACTIONS = [
   "record.share",
 ] as const;
 
-// Record-scoped but NOT ownership-scoped: still requires canSee, flag is unscoped.
-// activity.complete is record-scoped and gated by the assignee exception or activity.edit flags.
 const RECORD_SCOPED_ONLY = ["activity.complete"] as const;
 
 type GlobalAction =
@@ -34,8 +31,6 @@ type GlobalAction =
 export type OwnershipAction = (typeof OWNERSHIP_ACTIONS)[number];
 export type Action = OwnershipAction | (typeof RECORD_SCOPED_ONLY)[number] | GlobalAction;
 
-// Team-scoped subset: actions a team manager may perform on a managed member's record (a _team
-// flag variant). Mirrors TEAM_SCOPED_FLAGS; excludes delete/merge/share by design.
 const TEAM_SCOPED_ACTIONS = [
   "deal.edit",
   "contact.edit",
@@ -63,7 +58,6 @@ export function anyVariant(action: OwnershipAction): PermissionFlagKey {
   return `${action}_any` as PermissionFlagKey;
 }
 
-// True for the ownership actions that also have a team-scoped (_team) variant.
 export function isTeamScoped(action: OwnershipAction): boolean {
   return teamScopedSet.has(action);
 }

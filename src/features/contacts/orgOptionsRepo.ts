@@ -4,9 +4,6 @@ import { organizations } from "@/db/schema";
 import { canSee } from "@/features/permissions/canSee";
 import type { ContactActor } from "./personsRepo";
 
-// Every visible organization as a lightweight {id,name} option, name-sorted, with no pagination cap
-// (mirrors listPersonOptions). Feeds the Add deal/lead organization combobox. Split out of orgsRepo
-// to keep that file under the size budget.
 export async function listOrgOptions(
   db: Db,
   actor: ContactActor,

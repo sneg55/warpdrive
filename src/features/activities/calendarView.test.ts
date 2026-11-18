@@ -33,12 +33,8 @@ it("falls back to defaults on invalid params (E6), never throws", () => {
   expect(parseCalendarParams({ d: "2026-13-40" }, TODAY).anchorIso).toBe("2026-07-03");
 });
 
-// The seven columns are the UTC week, but the range around them carries a day of slack either
-// side so a viewer west or east of UTC still gets the activities their LOCAL week contains
-// (see weekAgendaTimezone.test.ts). E2: the end is end-of-day so an activity later that day is
-// not excluded by the inclusive comparison.
 it("selectWindow: week columns are the UTC week, range spans a day either side", () => {
-  const { days, range } = selectWindow("week", "2026-07-03"); // week Mon Jun 29 .. Sun Jul 5
+  const { days, range } = selectWindow("week", "2026-07-03");
   expect(days).toHaveLength(7);
   expect(days[0]?.toISOString().slice(0, 10)).toBe("2026-06-29");
   expect(range.from.toISOString()).toBe("2026-06-28T00:00:00.000Z");

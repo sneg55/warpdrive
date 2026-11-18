@@ -12,10 +12,7 @@ const S = ENRICHMENT_STRINGS.dialog;
 export interface EnrichFieldRowProps {
   field: ProposedField;
   checked: boolean;
-  // Kept as a string because that is what RadioGroup speaks; the dialog maps it back to the
-  // provider's original string-or-number before building a Selection.
   selectedValue: string;
-  // Set targets only: whether this value takes the promotion from the one the record holds.
   makePrimary: boolean;
   onCheckedChange: (checked: boolean) => void;
   onValueChange: (value: string) => void;
@@ -37,7 +34,6 @@ function SingleValue({ value }: { value: ProposedValue }): React.ReactNode {
   );
 }
 
-// The value text is the click target, not the dot beside it, so the label owns the association.
 function ContestedOption({ value }: { value: ProposedValue }): React.ReactNode {
   const id = useId();
   return (
@@ -72,8 +68,6 @@ function ContestedValues({
   );
 }
 
-// Where an added value sits among the ones the record already holds. Only a set target has a
-// promotion to give, and nothing is promoted unless the user says so on this control.
 function PrimaryChoice({
   makePrimary,
   onMakePrimaryChange,
@@ -91,9 +85,6 @@ function PrimaryChoice({
         onValueChange={(value) => onMakePrimaryChange(value === PRIMARY_CHOICE.primary)}
         className="gap-1"
       >
-        {/* The words are the obvious click target, and the dot is a few pixels wide. On a row that
-            opens on the promotion, text that does nothing means clicking "add alongside" to opt
-            out still submits a promotion. */}
         <div className="flex items-center gap-2">
           <RadioGroupItem id={alongsideId} value={PRIMARY_CHOICE.alongside} />
           <label htmlFor={alongsideId} className="text-sm text-foreground">
@@ -111,8 +102,6 @@ function PrimaryChoice({
   );
 }
 
-// One reviewable proposal. The checkbox decides whether the field is written at all; the radio
-// group only decides which variant is written when the providers disagreed.
 export function EnrichFieldRow({
   field,
   checked,

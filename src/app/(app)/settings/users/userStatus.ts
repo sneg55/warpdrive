@@ -1,7 +1,3 @@
-// User status classification + filter for the Manage users table (S-U3). Pure so it is unit-
-// testable. Status is derived, not stored: deactivation (isActive === false) takes precedence
-// over a still-pending invite (invitedAt !== null).
-
 export type UserStatus = "active" | "invited" | "deactivated";
 export type UserStatusFilter = "all" | UserStatus;
 

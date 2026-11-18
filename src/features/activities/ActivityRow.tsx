@@ -11,8 +11,6 @@ import type { ActivityTableRow } from "./activityRows";
 import { fmtDue } from "./dueLabel";
 import { isActivityOverdue } from "./overdue";
 
-// Wrapped at module scope so the clock read stays out of the render body (React Compiler
-// flags Date.now() called during render). An all-day row is late only once its DAY has passed.
 function isOverdue(row: ActivityTableRow): boolean {
   return isActivityOverdue(
     row.dueAtIso === null ? null : new Date(row.dueAtIso),
@@ -22,9 +20,6 @@ function isOverdue(row: ActivityTableRow): boolean {
   );
 }
 
-// Extracted from ActivitiesTable to keep both files under the project's file-size budget
-// (mirrors PeopleTable/PeopleList): a single Pipedrive-style row, with a selection checkbox
-// (bulk actions) kept independent of the Done checkbox (per-row complete/reopen).
 export interface ActivityRowProps {
   row: ActivityTableRow;
   selected: boolean;
@@ -32,7 +27,6 @@ export interface ActivityRowProps {
   onToggleDone: (id: string, currentDone: boolean) => void;
   donePending: boolean;
   onRowClick: (row: ActivityTableRow) => void;
-  // True for the single row under the j/k keyboard cursor.
   cursor: boolean;
 }
 
@@ -51,7 +45,6 @@ export function ActivityRow({
 }: ActivityRowProps): React.ReactNode {
   const ref = useRef<HTMLTableRowElement>(null);
 
-  // Keep the cursor row in view when j/k walks past the edge of the scroll container.
   useEffect(() => {
     if (cursor) ref.current?.scrollIntoView({ block: "nearest" });
   }, [cursor]);
@@ -68,9 +61,6 @@ export function ActivityRow({
       )}
     >
       <td className="px-3 py-2">
-        {/* Row is clickable (opens the editor); the span stops the checkbox click from
-            bubbling to the row so selecting does not also open the modal. The Checkbox owns
-            its own interaction, so the wrapper is a pure pointer-propagation guard. */}
         {/* biome-ignore lint/a11y/noStaticElementInteractions: propagation guard only */}
         {/* biome-ignore lint/a11y/useKeyWithClickEvents: propagation guard only */}
         <span className="inline-flex" onClick={(e) => e.stopPropagation()}>

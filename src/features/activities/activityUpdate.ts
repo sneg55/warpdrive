@@ -23,8 +23,6 @@ import { resolveActivityVisibility } from "./visibility";
 
 type ParsedUpdate = z.infer<typeof activityUpdateInput>;
 
-// Mirror of repo.ts's toVisibilitySession: builds a DealVisibilitySession from a
-// PermSetUser so assertReferenceVisible can gate the assigneeId reference.
 function toVisibilitySession(actor: PermSetUser) {
   return {
     userId: actor.id,
@@ -36,8 +34,6 @@ function toVisibilitySession(actor: PermSetUser) {
   };
 }
 
-// A patched typeId must reference an existing, non-archived activity type. Archived types
-// stay valid on rows that already reference them, but must not be assignable going forward.
 async function assertTypeActive(
   tx: DbOrTx,
   typeId: string,
@@ -58,10 +54,6 @@ async function assertTypeActive(
   return ok(undefined);
 }
 
-// Only include columns the patch actually provided (activityUpdateInput.refine already requires
-// at least one), so an omitted field never clobbers existing data with an implicit null write.
-// Re-sanitizes note through the same helper createActivity uses (sanitizeAuthorHtml).
-// Columns copied verbatim when their key is present (Zod already validated the values).
 const PASS_THROUGH_KEYS = [
   "subject",
   "typeId",
@@ -81,11 +73,8 @@ function buildPatch(input: ParsedUpdate): Partial<typeof activities.$inferInsert
   for (const key of PASS_THROUGH_KEYS) {
     if (input[key] !== undefined) sink[key] = input[key];
   }
-  // Transformed columns: dates are coerced and the note is re-sanitized (same helper as create).
   if (input.dueAt !== undefined) {
     patch.dueAt = input.dueAt === null ? null : new Date(input.dueAt);
-    // Clearing the date clears the claim with it; otherwise the flag follows what was sent,
-    // so removing a time on an existing activity actually removes it.
     patch.allDay = input.dueAt !== null && (input.allDay ?? false);
   } else if (input.allDay !== undefined) {
     patch.allDay = input.allDay;
@@ -99,9 +88,6 @@ function buildPatch(input: ParsedUpdate): Partial<typeof activities.$inferInsert
 
 type RefKind = "deal" | "person" | "organization" | "user";
 
-// Every entity a patch may newly reference, so assertPatchRefsVisible gates them in one loop
-// (mirrors createActivity's collectReferences). Guest/participant sets and the deal/person/org
-// re-links are included; a null link clears the field and needs no visibility check.
 function patchReferences(input: ParsedUpdate): Array<{ kind: RefKind; id: string }> {
   const refs: Array<{ kind: RefKind; id: string }> = [];
   const singles: Array<[RefKind, string | null | undefined]> = [
@@ -118,7 +104,6 @@ function patchReferences(input: ParsedUpdate): Array<{ kind: RefKind; id: string
   return refs;
 }
 
-// Validate every entity a patch references is visible to the actor, mirroring createActivity's gate.
 async function assertPatchRefsVisible(
   tx: DbOrTx,
   actor: PermSetUser,
@@ -137,8 +122,6 @@ async function assertPatchRefsVisible(
   return ok(undefined);
 }
 
-// Multi-day guard for edits: the effective end (patched or current) must not precede the
-// effective start (patched or current). No-op when either resolved bound is null.
 function assertUpdateEndOrder(current: Activity, input: ParsedUpdate): Result<undefined, AppError> {
   const start = input.dueAt !== undefined ? toDate(input.dueAt) : current.dueAt;
   const end = input.endAt !== undefined ? toDate(input.endAt) : current.endAt;
@@ -188,7 +171,6 @@ export async function updateActivity(
     const vis = await resolveActivityVisibility(tx, current, signal);
 
     if (vis === null || !canSee(actor, vis)) {
-      // Invisible: return 404-on-invisible, not 403.
       return err(
         new AppError(ERROR_IDS.ACTIVITY_NOT_FOUND, "activity not found", { id: input.id }),
       );
@@ -207,8 +189,6 @@ export async function updateActivity(
     const archivedOk = await assertRelinkDealNotArchived(tx, current, input, signal);
     if (!archivedOk.ok) return archivedOk;
 
-    // A guest/participant-only edit has no scalar columns to write; skip the row UPDATE (Drizzle
-    // rejects an empty .set()) and keep the current row for the recompute below.
     const patch = buildPatch(input);
     let row = current;
     if (Object.keys(patch).length > 0) {
@@ -227,7 +207,6 @@ export async function updateActivity(
 
     await reconcileGuestsAndParticipants(tx, row.id, input);
 
-    // Recompute next_activity for the new deal AND the previous one when the link moved.
     const affectedDeals = new Set<string>();
     if (row.dealId !== null) affectedDeals.add(row.dealId);
     if (current.dealId !== null && current.dealId !== row.dealId) affectedDeals.add(current.dealId);
@@ -237,7 +216,6 @@ export async function updateActivity(
   });
 }
 
-// Re-linking to a NEW deal cannot target an archived deal (mirrors createActivity's guard).
 async function assertRelinkDealNotArchived(
   tx: DbOrTx,
   current: Activity,
@@ -262,7 +240,6 @@ async function assertRelinkDealNotArchived(
   return ok(undefined);
 }
 
-// Guest/participant sets replace wholesale when provided; an omitted key leaves the set untouched.
 async function reconcileGuestsAndParticipants(
   tx: DbOrTx,
   activityId: string,

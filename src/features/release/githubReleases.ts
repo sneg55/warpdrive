@@ -3,16 +3,12 @@ import { err, ok, type Result } from "@/types/result";
 import { GITHUB_RELEASES_URL, RELEASE_FETCH_USER_AGENT } from "./constants";
 import type { ReleaseInfo } from "./types";
 
-// Validate the GitHub response at the boundary. Only the fields we surface are read; anything
-// else is ignored. All three may be absent on a malformed/partial release, so they are nullish.
 const releaseResponseSchema = z.object({
   tag_name: z.string().nullish(),
   html_url: z.string().nullish(),
   body: z.string().nullish(),
 });
 
-// Fetch the latest GitHub release. Every failure (non-2xx, network error, malformed JSON, abort)
-// is an `err` value, never a throw, so the caller can log it and leave the last-good cache intact.
 export async function fetchLatestRelease(
   signal: AbortSignal,
 ): Promise<Result<ReleaseInfo, string>> {

@@ -67,7 +67,6 @@ describe("AddLeadModal", () => {
     expect(screen.getByLabelText("Contact person")).toBeInTheDocument();
     expect(screen.getByLabelText("Lead title")).toBeInTheDocument();
     expect(screen.getByLabelText("Phone 1")).toBeInTheDocument();
-    // Leads have no pipeline / stage.
     expect(screen.queryByLabelText("Pipeline")).toBeNull();
     expect(screen.queryByRole("radiogroup", { name: "Pipeline stage" })).toBeNull();
   });
@@ -121,7 +120,6 @@ describe("AddLeadModal", () => {
     render(<AddLeadModal onClose={vi.fn()} onCreated={onCreated} />);
     fireEvent.change(screen.getByLabelText("Lead title"), { target: { value: "New lead" } });
     fireEvent.click(screen.getByLabelText("Expected close date"));
-    // findByText: the calendar is a next/dynamic chunk that loads on open.
     fireEvent.click(await screen.findByText("15"));
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
     await waitFor(() =>
@@ -144,7 +142,6 @@ describe("AddLeadModal", () => {
     render(<AddLeadModal onClose={vi.fn()} onCreated={vi.fn()} />);
     fireEvent.change(screen.getByLabelText("Organization"), { target: { value: "Brand New Org" } });
     fireEvent.blur(screen.getByLabelText("Organization"));
-    // The org autofills the title; clear it so the lead is invalid (blank title) again.
     fireEvent.change(screen.getByLabelText("Lead title"), { target: { value: "" } });
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
     expect(await screen.findByRole("alert")).toHaveTextContent(/title/i);

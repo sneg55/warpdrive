@@ -21,7 +21,6 @@ export interface AuditEventInput {
   correlationId?: string | null;
 }
 
-// Writes one security-relevant change to audit_events (permissions spec 9).
 export async function recordAudit(
   db: Db,
   event: AuditEventInput,

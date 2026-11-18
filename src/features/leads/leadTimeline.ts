@@ -1,10 +1,3 @@
-// Lead detail timeline: unions lead notes (entity_type='lead'), lead-scoped activities
-// (activities.lead_id), lead change-log rows (change_logs where entity_type='lead', e.g. label/
-// owner edits and the convert-to-deal event), and lead-scoped email (email_threads.lead_id) into
-// one feed. Notes + activities + changelog are shaped through the shared buildHistoryTimeline so
-// the lead feed renders with the same cards as the deal workspace; email is returned separately
-// (the Email tab), mirroring the deal workspace which keeps email out of the interleaved history
-// model.
 import { and, desc, eq, isNull } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import type * as schema from "@/db/schema";
@@ -60,8 +53,6 @@ export interface LeadTimelineResult {
 
 const EMPTY: LeadTimelineResult = { items: [], emails: [] };
 
-// Feed for a single lead, gated by leadVisibilityClause: an actor who cannot see the lead gets an
-// empty feed (never leak note/activity/email existence).
 export async function leadTimeline(
   db: Db,
   session: DealVisibilitySession,
@@ -179,8 +170,6 @@ export async function leadTimeline(
     })
     .from(emailMessages)
     .innerJoin(emailThreads, eq(emailThreads.id, emailMessages.threadId))
-    // Exclude trashed threads (P4): a conversation moved to Gmail Trash leaves every view, the lead
-    // Email tab included.
     .where(and(eq(emailThreads.leadId, leadId), isNull(emailThreads.trashedAt)))
     .orderBy(desc(emailMessages.sentAt));
   signal.throwIfAborted();

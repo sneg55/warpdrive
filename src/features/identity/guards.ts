@@ -10,7 +10,6 @@ function requireManage(actor: PermSetUser): Result<true, string> {
   return err("permissions.manage required");
 }
 
-// A non-admin manager cannot edit a set currently assigned to themselves.
 export function canEditPermissionSet(
   actor: PermSetUser,
   args: { setId: string; actorOwnSetId: string | null },
@@ -24,7 +23,6 @@ export function canEditPermissionSet(
   return ok(true);
 }
 
-// Granting any high-risk flag requires admin, not merely permissions.manage.
 export function canGrantFlags(
   actor: PermSetUser,
   flagsBeingEnabled: PermissionFlagKey[],
@@ -50,8 +48,6 @@ export function canAssignPermissionSet(
   return ok(true);
 }
 
-// A non-admin manager may manage membership only of groups they do NOT belong to,
-// that gate no restricted pipeline, and never their own membership (self-escalation).
 export function canManageGroupMembership(
   actor: PermSetUser,
   args: {
@@ -71,13 +67,11 @@ export function canManageGroupMembership(
   return ok(true);
 }
 
-// Assigning/clearing is_admin is admin-only (permissions.manage does NOT include it).
 export function canToggleAdminRole(actor: PermSetUser): Result<true, string> {
   if (actor.type === "admin") return ok(true);
   return err("admin required to change admin role");
 }
 
-// Cannot self-deactivate; the last active admin cannot be deactivated (prevents lockout).
 export function canDeactivateUser(
   actor: PermSetUser,
   args: { targetUserId: string; targetIsAdmin: boolean; activeAdminCount: number },
@@ -89,8 +83,6 @@ export function canDeactivateUser(
   return ok(true);
 }
 
-// Demoting the last active admin to non-admin orphans the instance (same lockout risk as
-// deactivating them). Only block when the target is currently admin AND would be demoted.
 export function canDemoteAdmin(args: {
   targetIsAdmin: boolean;
   isDemotion: boolean;

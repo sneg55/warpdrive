@@ -115,8 +115,6 @@ it("renders no button while the status query is still in flight", () => {
   expect(screen.queryByRole("button", { name: BUTTON })).not.toBeInTheDocument();
 });
 
-// The record may already have a cached run, which the server returns before it looks at provider
-// availability. Disabling the button on a cooldown would hide the only way to open it.
 it("keeps the button live while every connected provider is throttled", async () => {
   const user = userEvent.setup();
   status.value = {
@@ -178,8 +176,6 @@ it("applies the selection, closes, and refreshes the surface", async () => {
   await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
 });
 
-// A repointed mapping means the preview described a different target, so it needs the same escape
-// hatch as a stale record rather than the generic failure.
 it("offers Refresh when the field mapping changed while the review was open", async () => {
   const user = userEvent.setup();
   applyEnrichmentAction.mockResolvedValue({
@@ -216,8 +212,6 @@ it("keeps the dialog open and offers Refresh when the record went stale", async 
   );
 });
 
-// "Apply 1 field" counted the organization row, so closing as if it succeeded would report a
-// change the user can see did not happen.
 it("keeps the dialog open when an organization could not be linked", async () => {
   const user = userEvent.setup();
   applyEnrichmentAction.mockResolvedValue({
@@ -235,12 +229,8 @@ it("keeps the dialog open when an organization could not be linked", async () =>
   expect(await screen.findByRole("alert")).toHaveTextContent(S.unresolvedOrgError);
   expect(screen.getByRole("dialog")).toBeInTheDocument();
   await waitFor(() => expect(refresh).toHaveBeenCalledTimes(1));
-  // Never a second fan-out: with the cache off or the run aged out, re-running would call every
-  // paid provider again purely because a company name could not be linked.
   expect(enrichRecordAction).toHaveBeenCalledTimes(1);
 
-  // The committed row leaves the dialog. Keeping it would let a retry rewrite a field that
-  // already landed and add a second change-log row for it.
   await waitFor(() =>
     expect(screen.queryByRole("checkbox", { name: "Job title" })).not.toBeInTheDocument(),
   );
@@ -306,8 +296,6 @@ it("says when the record carries nothing to look up by", async () => {
   expect(await screen.findByRole("alert")).toHaveTextContent(S.noIdentifierError);
 });
 
-// The History panel reads the change log through its own query, not the RSC tree, so a refresh
-// alone leaves it telling the old story after an apply wrote to it.
 it("invalidates the contact timeline after an apply", async () => {
   const user = userEvent.setup();
   renderButton();

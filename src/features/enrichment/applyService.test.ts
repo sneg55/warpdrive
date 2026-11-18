@@ -129,7 +129,6 @@ describe("applyEnrichment", () => {
     expect(logs[0]?.actorId).toBe(admin.id);
   });
 
-  // An overwrite destroys a value, so the timeline has to say which one.
   it("records the value an overwrite replaced", async () => {
     const org = await seedOrg({ industry: "Retail" });
     const run = await seedRun("organization", org.id, [APOLLO({ "org.industry": "Fintech" })]);
@@ -154,7 +153,6 @@ describe("applyEnrichment", () => {
     expect((await readOrg(org.id))?.industry).toBeNull();
   });
 
-  // A stale check that rejects but still committed the write would be worse than no check at all.
   it("leaves no change log behind when the staleness check rejects", async () => {
     const org = await seedOrg();
     const run = await seedRun("organization", org.id, [APOLLO({ "org.industry": "Retail" })]);
@@ -195,8 +193,6 @@ describe("applyEnrichment", () => {
     expect(after?.appliedAt).not.toBeNull();
   });
 
-  // A cached run can be applied in more than one pass. Overwriting would leave the audit naming
-  // only the last batch while the earlier writes stayed committed.
   it("accumulates applied fields across two passes over one run", async () => {
     const org = await seedOrg();
     const run = await seedRun("organization", org.id, [
@@ -215,8 +211,6 @@ describe("applyEnrichment", () => {
     expect(after?.appliedFields.sort()).toEqual(["org.employeeCount", "org.industry"]);
   });
 
-  // A server action is a public endpoint. Without this an editor can post any value they like and
-  // have it written with a change-log row whose provenance names nobody.
   it("refuses a value no provider in the run reported", async () => {
     const org = await seedOrg();
     const run = await seedRun("organization", org.id, [APOLLO({ "org.industry": "Mining" })]);
@@ -275,7 +269,6 @@ describe("applyEnrichment", () => {
     expect((await readOrg(org.id))?.industry).toBeNull();
   });
 
-  // A TTL of zero means "never reuse a cached run", not "no run may ever be applied".
   it("still applies an in-flight run when the TTL disables the cache", async () => {
     const org = await seedOrg();
     const run = await seedRun(

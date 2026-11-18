@@ -9,8 +9,6 @@ import { canManagePipelines } from "@/features/pipelines/canManagePipelines";
 import { createContext } from "@/server/trpc/context";
 import { createCaller } from "@/server/trpc/root";
 
-// Shared per-request loader (mirrors the List page): generateMetadata and the page body both
-// call this; React.cache dedupes so createContext + the visible-pipelines read run once.
 const load = cache(async () => {
   const ctx = await createContext();
   if (ctx.actor === null) {
@@ -31,8 +29,6 @@ export async function generateMetadata({
   return { title: entityTitle(name, STRINGS.titles.dealList) };
 }
 
-// The pipeline's Archive view: the same flat list scoped to this pipeline, but showing archived
-// deals (deal.list drops the open-status filter when archived:true). Each row offers Unarchive.
 export default async function PipelineArchivedPage({
   params,
 }: {
@@ -46,7 +42,6 @@ export default async function PipelineArchivedPage({
   const { ctx, pipelines } = loaded;
   if (ctx.actor === null) return <main>Unauthorized</main>;
 
-  // A nonexistent (or hidden) pipeline 404s like the entity detail routes, not a 200 soft-404.
   const pipeline = resolveVisiblePipeline(pipelines, id);
 
   const { list, prefs, customFieldDefs, baseCurrency, initialView, unfilteredTotal } =

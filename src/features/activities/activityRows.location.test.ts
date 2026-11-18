@@ -10,9 +10,6 @@ function makeActor(id: string): PermSetUser {
   return { id, type: "regular", isActive: true, groupIds: new Set(), flags: new Set() };
 }
 
-// Regression: activities.location was written but omitted from the Activities-table projection, so
-// toEditableActivity hardcoded it null and the edit modal always showed a blank Location even when
-// one was saved. listActivityRows must carry the persisted location so the editor can prefill it.
 it("surfaces the saved location on an activity table row", async () => {
   await withTestDb(async (db) => {
     const signal = new AbortController().signal;

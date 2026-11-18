@@ -34,7 +34,6 @@ function stub(outcome: (id: ProviderId) => ProviderOutcome) {
   });
 }
 
-// Fails the test by flipping `called` if the second click reaches a provider at all.
 function neverCalled(seen: { called: boolean }) {
   return (id: ProviderId): EnrichmentProvider => ({
     id,
@@ -94,8 +93,6 @@ function run(
 }
 
 describe("runEnrichment cache hits", () => {
-  // The second click reads the same all-failed run out of the cache. Handed back as a success it
-  // renders as "Nothing new found" and the rejected key, timeout or outage disappears.
   it("repeats the failure rather than reading an all-failed run as empty", async () => {
     await connect("apollo");
     await connect("getprospect");
@@ -176,8 +173,6 @@ describe("runEnrichment cache hits", () => {
     );
   });
 
-  // Come back at 13:30 is not something to tell someone at 15:00. The failure is still the cached
-  // one, so the id stands; only the dead deadline goes.
   it("drops a cached resume time that has already passed", async () => {
     await connect("apollo");
     const org = await seedOrg();

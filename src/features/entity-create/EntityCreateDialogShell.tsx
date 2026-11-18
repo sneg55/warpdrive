@@ -16,9 +16,6 @@ export interface EntityCreateDialogShellProps {
   onClose: () => void;
 }
 
-// The single create-dialog frame shared by deals, leads, people, and organizations. Entity
-// variants own only their fields; sizing, scrolling, error treatment, actions, and dismissal
-// behavior stay identical across every create surface.
 export function EntityCreateDialogShell({
   title,
   children,

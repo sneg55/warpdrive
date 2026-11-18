@@ -12,8 +12,6 @@ import { type ActionResult, clientErr } from "@/types/actionResult";
 import { err, ok, type Result } from "@/types/result";
 import { createMailLabel } from "./mailLabelsRepo";
 
-// Inline "+ Add label" create (U6). Unlike the company label catalog (admin-gated), any
-// authenticated user can create a mail label from the inbox picker, mirroring Gmail labels.
 const createInput = z.object({
   name: z.string().trim().min(1).max(120),
   color: z.enum(LABEL_COLORS),

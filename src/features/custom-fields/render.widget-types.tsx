@@ -1,4 +1,3 @@
-// Shared types and value-coercion helpers for custom-field widget components.
 import type { CustomFieldDef } from "@/types/customFields";
 
 export type DetailProps = { def: CustomFieldDef; value: unknown; currency?: string };

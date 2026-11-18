@@ -1,7 +1,5 @@
 import { ERROR_IDS } from "@/constants/errorIds";
 
-// Map convert AppError ids to user-facing copy. The stale-CAS conflict is surfaced by leadConvert as
-// LEAD_NOT_FOUND ("Lead changed before convert"), so it reads as a refresh prompt, not a hard error.
 const MESSAGES: Record<string, string> = {
   [ERROR_IDS.PERM_DENIED]: "You do not have permission to create deals.",
   [ERROR_IDS.LEAD_ALREADY_CONVERTED]: "This lead was already converted.",

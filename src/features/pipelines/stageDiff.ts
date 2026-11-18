@@ -1,9 +1,4 @@
-// Pure diff for the Edit Pipeline page: turns the edited stage rows into the minimal set of
-// create/update/delete operations to send to the server. Keeping this pure makes the save flow
-// unit-testable without a DB or a rendered form.
-
 export interface StageRow {
-  // null id = a stage the user just added, not yet persisted.
   id: string | null;
   name: string;
   rottingDays: number | null;

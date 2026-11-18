@@ -1,9 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { MERGE_TOKEN_FIELDS, mergeTokenPlaceholder } from "./mergeTokens";
 
-// The template editor may only offer a merge token that the send-time context (mergeContext.ts)
-// can actually resolve. This is the exhaustive set those put(ctx, ...) calls produce; if
-// mergeContext gains or drops a token, update BOTH and this test guards the pairing.
 const PRODUCIBLE_TOKENS = new Set([
   "person.name",
   "person.first_name",

@@ -1,6 +1,3 @@
-// The per-entity write halves of an apply: plan the patch, resolve an organization link, then go
-// through updatePerson / updateOrg so enrichment inherits their validation rather than growing a
-// second write path.
 import { eq } from "drizzle-orm";
 import { AppError, ERROR_IDS } from "@/constants/errorIds";
 import type { Db } from "@/db/client";
@@ -31,17 +28,11 @@ export interface ApplySubject {
 
 const COMPANY_DOMAIN_KEY = "person.companyDomain";
 
-export // What an apply helper reports. `previous` holds the pre-write values keyed by canonical key so the
-// change log can name what an overwrite replaced. The post-write version is read once by the
-// caller, after the helper has run, rather than by every helper.
-interface Outcome {
+export interface Outcome {
   appliedFields: string[];
   unresolved: string[];
   previous: Record<string, string | number | null>;
-  // What each field was coerced to before the write, so the change log names the stored value
-  // rather than the provider's raw one. A company name links an organization and has no entry.
   written: AppliedValues;
-  // Keys added to a set rather than written over a value. Nothing was replaced for these.
   appended: string[];
 }
 
@@ -58,15 +49,11 @@ export async function applyToPerson(
   const person = await loadPerson(tx, personId, signal);
   if (person === null) return err(new AppError(ERROR_IDS.CONTACT_NOT_FOUND, "not found", {}));
 
-  // The linked organization as this actor may see it, so the change log records the company name
-  // an overwrite replaced rather than a placeholder, and a hidden link reads as no link.
   const linkedOrg = await visibleOrgSummary(tx, actor, person.orgId, signal);
   const current = await readPersonCurrent(tx, person, mappings, signal, linkedOrg);
   const previous = current.canonicalValues;
   const planned = planPersonUpdate(input.selections, mappings, {
     emails: person.emails,
-    // primary_email is a column of its own and is not always mirrored in the array. Without it the
-    // planner rebuilds emails without the existing primary, and updatePerson re-derives from that.
     primaryEmail: person.primaryEmail,
     customFieldKeyById: current.customFieldKeyById,
   });
@@ -86,14 +73,10 @@ export async function applyToPerson(
       signal,
       actor,
     );
-    // Only an unambiguous match links. Creating an organization has its own visibility and
-    // ownership decisions, and guessing them from a provider string breeds duplicates.
     if (orgId === null) {
       drop(appliedFields, COMPANY_NAME_KEY);
       unresolved.push(COMPANY_NAME_KEY);
     } else if (orgId === person.orgId) {
-      // A different spelling of the company already linked. Writing it would move updatedAt and
-      // add a change-log row for a link the user cannot see change.
       drop(appliedFields, COMPANY_NAME_KEY);
     } else patch.orgId = orgId;
   }
@@ -102,15 +85,7 @@ export async function applyToPerson(
     return ok({ appliedFields: [], unresolved, previous, written: {}, appended: [] });
 
   if (Object.keys(patch).length > 0) {
-    // Any write reaching updatePerson has to carry the emails array, or the re-derived
-    // primary_email drops a primary the record held only in its column.
     patch.emails ??= planned.value.resolvedEmails;
-    // The repos take their input as already parsed. Without this, a caller could post an invalid
-    // email or an overlong string through the enrichment action and reach the same tables by a
-    // route that skips every rule the ordinary edit form enforces. Addresses the record already
-    // holds are exempt from the address rule: they are not what this write is introducing.
-    // primary_email counts as held even when the array does not carry it: the planner folds it
-    // back in, so it reaches the patch and would otherwise be judged as newly introduced.
     const held = [...person.emails.map((e) => e.value), person.primaryEmail ?? ""];
     const parsed = parsePersonPatch(personId, patch, held);
     if (!parsed.ok || parsed.value === undefined) {
@@ -141,9 +116,6 @@ export async function applyToPerson(
   });
 }
 
-// organizations.address is free-form jsonb, but the org update schema is a plain z.object and
-// strips every key it does not name (the demo seed writes `locality`). updateOrg replaces the whole
-// column, so writing one leaf would delete the rest. Whatever the schema dropped goes back on top.
 async function restoreAddressKeys(
   tx: Db,
   orgId: string,
@@ -161,9 +133,6 @@ async function restoreAddressKeys(
     .where(eq(organizations.id, orgId));
 }
 
-// One key at a time, through the same JSONB merge the inline editor uses. A whole-object write
-// would run the record's customFields past the active-definition schema, which strips the values
-// of archived fields the selection never named.
 async function writeCustomEntries(
   tx: Db,
   actor: ContactActor,
@@ -245,10 +214,6 @@ function drop(fields: string[], key: string): void {
   if (index !== -1) fields.splice(index, 1);
 }
 
-// The company domain usually has no target of its own, so the run is the only place it exists.
-// It must come from an outcome that reported the company the user actually chose: when providers
-// disagree on the name, a domain lifted from any outcome links the person to the other company,
-// and the domain wins the match, so the wrong link happens silently.
 function candidateDomain(
   outcomes: readonly ProviderOutcome[],
   selectedName: string,
@@ -265,8 +230,5 @@ function candidateDomain(
     domains.add(normaliseDomain(reported));
     firstSpelling ??= reported;
   }
-  // Only an agreed domain is usable. Providers naming the same company but disagreeing on its
-  // domain would otherwise have the first one win, and since domain outranks name in matching, that
-  // silently picks an organization the user never chose. Disagreement falls back to the name.
   return domains.size === 1 ? firstSpelling : undefined;
 }

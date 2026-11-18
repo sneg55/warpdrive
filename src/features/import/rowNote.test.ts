@@ -41,8 +41,6 @@ describe("buildRowNoteBody", () => {
     rt: "",
   };
 
-  // One note per row: the mapped Note column first, a blank line, then the columns that would
-  // otherwise be silently discarded.
   it("puts the mapped note body first, then the unmapped columns", () => {
     expect(buildRowNoteBody(raw, mapping(cols), "Full Reporter, 3431 VOMs")).toBe(
       "Full Reporter, 3431 VOMs\n\nposture: fails",
@@ -74,12 +72,9 @@ describe("buildRowNoteBody", () => {
   });
 });
 
-// In the storage-backed flow `raw` is loaded from a JSONB column, and Postgres does not preserve
-// CSV key order. An explicit header order keeps the note lines in the columns' original order.
 describe("explicit header order", () => {
   it("orders unmapped lines by the given headers, not the raw object's key order", () => {
     const m = mapping({});
-    // raw's own key order is deliberately scrambled vs the headers.
     const raw = { zeta: "3", alpha: "1", mu: "2" };
     const headers = ["alpha", "mu", "zeta"];
     expect(unmappedHeaders(raw, m, headers)).toEqual(["alpha", "mu", "zeta"]);

@@ -44,7 +44,6 @@ interface Props {
   teams: Option[];
   pipelines: Option[];
   activityTypes: Option[];
-  // Present when editing; the same form serves both so create and edit cannot drift apart.
   initial?: Goal;
   submitLabel: string;
   onSubmit: (draft: GoalDraft) => Promise<{ ok: boolean; errorId?: string }>;
@@ -85,8 +84,6 @@ export function GoalForm({
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  // Switching subject can strand an action that no longer applies, so both reset together
-  // rather than letting the form submit a pair the boundary will reject.
   function chooseSubject(next: string): void {
     const s = next as GoalSubject;
     setSubject(s);

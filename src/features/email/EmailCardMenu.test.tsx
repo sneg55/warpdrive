@@ -64,7 +64,6 @@ describe("EmailCardMenu", () => {
 
     await userEvent.click(screen.getByRole("button", { name: /more email actions/i }));
 
-    // Radix merges the item onto the anchor (asChild), so the menuitem IS the link element.
     expect(screen.getByRole("menuitem", { name: "Open in Inbox" })).toHaveAttribute(
       "href",
       "/inbox/t-42",

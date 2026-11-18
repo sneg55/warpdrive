@@ -29,7 +29,6 @@ export function OptionEditor({
 
   async function rename(optionId: string, label: string, previous: string): Promise<void> {
     const trimmed = label.trim();
-    // Skip empty or unchanged values so a plain focus/blur does not fire a spurious write + refresh.
     if (trimmed === "" || trimmed === previous) return;
     const r = await renameOptionAction({ id: defId, optionId, label: trimmed }, readCsrfToken());
     if (r.ok) router.refresh();

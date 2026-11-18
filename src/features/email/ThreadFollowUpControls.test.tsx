@@ -5,7 +5,6 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeAll, expect, it, vi } from "vitest";
 
 beforeAll(() => {
-  // jsdom has no layout/pointer-capture support; Radix Select + cmdk Popover need these stubbed.
   Element.prototype.scrollIntoView = vi.fn();
   Element.prototype.hasPointerCapture = vi.fn(() => false);
   Element.prototype.releasePointerCapture = vi.fn();
@@ -22,7 +21,6 @@ vi.mock("./threadAttributesActions", () => ({
   setFollowUpStatusAction: (...a: unknown[]) => setFollowUpStatusMock(...(a as [])),
   setThreadLabelsAction: (...a: unknown[]) => setThreadLabelsMock(...(a as [])),
 }));
-// The label picker imports the create action (which pulls in db); mock it out for jsdom.
 vi.mock("./mailLabelsActions", () => ({ createMailLabelAction: vi.fn() }));
 vi.mock("@/utils/csrfCookie", () => ({ readCsrfToken: () => "csrf" }));
 
@@ -90,7 +88,6 @@ it("picking an active catalog label removes it via setThreadLabelsAction", async
   );
   const user = userEvent.setup();
   await user.click(screen.getByRole("button", { name: /add label/i }));
-  // "Important" appears both as an applied chip and as a menu row; target the menu option.
   await user.click(screen.getByRole("option", { name: /Important/ }));
   expect(setThreadLabelsMock).toHaveBeenCalledWith("csrf", { threadId: "t1", labels: [] });
 });

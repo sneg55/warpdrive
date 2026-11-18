@@ -17,7 +17,6 @@ vi.mock("@/lib/trpc-client", () => ({
     },
   },
 }));
-// The realtime hook opens a WebSocket; stub it (its logic is covered by its own reducer test).
 vi.mock("@/features/import/useImportProgress", () => ({
   useImportProgress: () => ({ processed: 0, total: 0, status: null }),
 }));

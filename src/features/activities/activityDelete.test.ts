@@ -81,7 +81,6 @@ it("deleteActivity soft-deletes the row, hides it from listActivityRows, and rec
     user.id,
     "2026-07-02T10:00:00.000Z",
   );
-  // A second, later activity on the same deal so we can observe next_activity_at advance.
   await createActivity(
     ctx.db,
     actor,
@@ -153,7 +152,7 @@ it("deleteActivity returns ACTIVITY_FORBIDDEN for a visible actor without delete
   );
 
   const otherUser = await seedUser(ctx.db);
-  const otherActor = makeActor(otherUser); // no delete flags: visible (level "all") but not permitted
+  const otherActor = makeActor(otherUser);
 
   const result = await deleteActivity(
     ctx.db,

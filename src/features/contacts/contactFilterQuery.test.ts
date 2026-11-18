@@ -108,7 +108,6 @@ describe("listPeople with a condition filter", () => {
       const signal = new AbortController().signal;
       const me = await seedUser(db);
       const other = await seedUser(db);
-      // Matches the name filter but is owner-private to someone else: must NOT appear.
       await seedPerson(db, { name: "Secret Sam", ownerId: other.id, visibilityLevel: "owner" });
 
       const res = await listPeople(

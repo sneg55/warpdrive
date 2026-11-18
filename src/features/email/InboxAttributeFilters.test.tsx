@@ -74,7 +74,6 @@ describe("InboxAttributeFilters", () => {
     render(<InboxAttributeFilters value={NO_ATTRIBUTE_FILTER} onChange={noop} />);
     const trigger = screen.getByRole("button", { name: "More filters" });
     expect(trigger).toBeInTheDocument();
-    // No native <select> anywhere in the control (design-system hard rule).
     expect(document.querySelector("select")).toBeNull();
   });
 
@@ -139,8 +138,6 @@ describe("InboxAttributeFilters", () => {
     expect(onChange).toHaveBeenCalledWith(NO_ATTRIBUTE_FILTER);
   });
 
-  // Regression (codex review): Clear previously reset only the client-side attribute filters,
-  // leaving the server-side quick-filter active so the list stayed narrowed. Clear must reset both.
   it("Clear also resets the quick filter to all", () => {
     const onQuickFilterChange = vi.fn<(next: InboxFilter) => void>();
     render(

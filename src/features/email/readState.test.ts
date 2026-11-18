@@ -1,4 +1,3 @@
-// Integration test; real DB (per CLAUDE.md, no mocked database).
 import { sql } from "drizzle-orm";
 import { afterAll, beforeAll, expect, it } from "vitest";
 import { seedUser } from "@/db/testing/factories";
@@ -50,11 +49,8 @@ it("a fresh thread is unread; marking read clears it; marking unread restores it
 });
 
 it("does not count another user's shared thread in the actor's unread badge (Inbox is personal)", async () => {
-  // The unread badge must match the personal Inbox list: a colleague's shared thread, even one the
-  // actor could open via the linked record, is NOT part of the actor's own mailbox count.
   const owner = await seedUser(ctx.db, { email: "ub-owner@ex.com" });
   const viewer = await seedUser(ctx.db, { email: "ub-viewer@ex.com" });
-  // viewer has their own (empty) mailbox, so any count must come from their own threads only.
   await ctx.db.execute(sql`INSERT INTO email_accounts (user_id, email_address, status)
     VALUES (${viewer.id}, 'ub-viewer-box@ex.com', 'connected')`);
   const acct = (
@@ -65,7 +61,6 @@ it("does not count another user's shared thread in the actor's unread badge (Inb
     await ctx.db.execute(sql`INSERT INTO persons (name, primary_email, owner_id, visibility_level)
       VALUES ('Pub', 'pub@ex.com', ${owner.id}, 'all') RETURNING id`)
   ).rows[0] as { id: string };
-  // Owner's shared, unread thread linked to a person the viewer can see.
   await ctx.db.execute(sql`INSERT INTO email_threads (gmail_thread_id, account_id, subject, visibility, person_id, last_message_at)
     VALUES ('gshared', ${acct.id}, 'Shared', 'shared', ${person.id}, now())`);
 

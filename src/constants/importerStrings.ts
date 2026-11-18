@@ -1,5 +1,3 @@
-// Copy for the CSV import wizard (settings section 10). Extracted from strings.ts
-// to keep that file under the 300-line hard cap; referenced as STRINGS.settings.importer.
 export const IMPORTER_STRINGS = {
   title: "Import data",
   subtitle: "Import people, organizations, deals, leads, or activities from a CSV file.",

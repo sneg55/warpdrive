@@ -1,7 +1,4 @@
 // @vitest-environment node
-// The promotion flag has to survive the action boundary. z.object strips keys it does not declare,
-// so a selection schema that omits makePrimary would drop the choice silently and every promotion
-// would apply as a plain add.
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { CSRF_COOKIE } from "@/features/auth/csrf";
 

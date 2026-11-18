@@ -25,9 +25,6 @@ function adminActorFor(id: string): ImportActor {
   };
 }
 
-// Shared drive-the-wizard-then-run-the-pipeline helper for the entity-broadening tests below:
-// set the target, map every header 1:1 to the given standard field, then run create -> map ->
-// validate -> commit exactly as the orchestrator does.
 async function runPipeline(
   db: Parameters<Parameters<typeof withTestDb>[0]>[0],
   actor: ImportActor,
@@ -79,12 +76,10 @@ it("drives create -> map -> validate -> commit from a parsed CSV + built mapping
     const user = await seedUser(db);
     const actor = adminActorFor(user.id);
 
-    // 1. What the browser does: parse the uploaded file text.
     const { headers, rows } = parseCsv(
       "Full Name,Work Email\nJane Doe,jane@a.com\nBob Roe,bob@b.com\n",
     );
 
-    // 2. Reducer state the map step would produce (name + emails mapped).
     let state = wizardReducer(initialWizardState(), {
       type: "loadFile",
       filename: "contacts.csv",
@@ -102,7 +97,6 @@ it("drives create -> map -> validate -> commit from a parsed CSV + built mapping
       choice: { entity: "person", field: "emails", isCustom: false, key: "" },
     });
 
-    // 3. Run the real pipeline the orchestrator calls in sequence.
     const created = await createBatch(
       db,
       actor,

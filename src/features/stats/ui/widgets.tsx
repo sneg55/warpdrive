@@ -15,8 +15,6 @@ export function DealPerformanceWidget({
   data: DealCounters;
   currency: string;
 }) {
-  // Added/won/lost are windowed by their own date column; "Open now" is a snapshot, so it is
-  // labelled differently to stop it reading as a fourth measure of the same period.
   const rows: [string, { count: number; value: string }][] = [
     [STRINGS.dashboard.added, data.added],
     [STRINGS.dashboard.won, data.won],
@@ -25,8 +23,6 @@ export function DealPerformanceWidget({
   ];
   return (
     <Panel title={STRINGS.dashboard.widgetDealPerformance} isEmpty={false} emptyText="">
-      {/* Both numeric columns are their own grid track, so counts and money each line up on a
-          single right edge instead of floating wherever justify-between put them. */}
       {rows.map(([label, b]) => (
         <div key={label} className="grid grid-cols-[1fr_auto_auto] items-baseline gap-4 py-1">
           <span className="truncate">{label}</span>

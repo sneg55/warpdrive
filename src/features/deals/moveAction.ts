@@ -13,9 +13,6 @@ export type MoveResult =
   | { ok: true; deal: { id: string; updatedAt: string } }
   | { ok: false; error: { id: string } };
 
-// CSRF-guarded deal move action.
-// guardCsrf is called FIRST: no DB work happens before CSRF is verified.
-// The actor is loaded from the live session; client identity is never trusted.
 export async function moveDealAction(
   input: DealMoveInput,
   csrfToken: string | null = null,
@@ -29,8 +26,6 @@ export async function moveDealAction(
   const result = await moveDeal(db, actor, input, SIG());
   if (!result.ok) return { ok: false, error: { id: result.error.id } };
 
-  // Deferred past the response: the fan-out is outside the deal transaction and invisible to the
-  // caller. Never let it throw in after(); the user cannot act on a failure there.
   const moved = result.value;
   after(async () => {
     try {

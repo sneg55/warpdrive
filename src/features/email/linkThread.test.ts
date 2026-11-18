@@ -35,8 +35,6 @@ async function seedThread(db: TestDb, accountId: string, visibility = "private")
   return thr.id;
 }
 
-// Seed a deal in a pipeline RESTRICTED to a visibility group, so a non-member actor is
-// blocked by the pipeline-restriction hard gate regardless of the deal's own visibility.
 async function seedRestrictedDeal(db: TestDb, ownerId: string): Promise<string> {
   const group = (
     await db.execute(sql`INSERT INTO visibility_groups (name) VALUES ('restricted') RETURNING id`)
@@ -65,17 +63,14 @@ describe("applyThreadLink", () => {
   it("rejects linking a deal in a pipeline the actor cannot see (E_PERM_001)", async () => {
     await withTestDb(async (db) => {
       const owner = await seedUser(db, { email: "o@gunsnation.com" });
-      // A separate user owns the restricted deal so the actor is neither deal owner nor
-      // pipeline-group member; the pipeline-restriction gate blocks them.
       const dealOwner = await seedUser(db, { email: "d@gunsnation.com" });
       const acctId = await seedAccount(db, owner.id);
-      const threadId = await seedThread(db, acctId); // owner sees own private thread
+      const threadId = await seedThread(db, acctId);
       const dealId = await seedRestrictedDeal(db, dealOwner.id);
 
       const r = await applyThreadLink(db, { actor: actorOf(owner.id), threadId, dealId }, SIG());
       expect(r.ok).toBe(false);
       if (!r.ok) expect(r.error.id).toBe("E_PERM_001");
-      // No link was written.
       const row = (await db.execute(sql`SELECT deal_id FROM email_threads WHERE id=${threadId}`))
         .rows[0] as { deal_id: string | null };
       expect(row.deal_id).toBeNull();
@@ -87,7 +82,7 @@ describe("applyThreadLink", () => {
       const owner = await seedUser(db, { email: "o@gunsnation.com" });
       const other = await seedUser(db, { email: "x@gunsnation.com" });
       const acctId = await seedAccount(db, owner.id);
-      const threadId = await seedThread(db, acctId, "private"); // owned by owner
+      const threadId = await seedThread(db, acctId, "private");
 
       const r = await applyThreadLink(
         db,
@@ -99,8 +94,6 @@ describe("applyThreadLink", () => {
     });
   });
 
-  // F10: a shared thread is VISIBLE to a non-owner who can see the linked record, but only
-  // the mailbox owner may MUTATE its links. A visible non-owner must be denied.
   it("denies a non-owner from relinking a shared thread they can see (E_PERM_001)", async () => {
     await withTestDb(async (db) => {
       const owner = await seedUser(db, { email: "o@gunsnation.com" });
@@ -112,7 +105,6 @@ describe("applyThreadLink", () => {
           VALUES ('Jane','jane@acme.com',${owner.id},'all') RETURNING id
         `)
       ).rows[0] as { id: string };
-      // Shared thread linked to an all-visible person: `viewer` can SEE it via canSeeEmail.
       const threadId = (
         (
           await db.execute(sql`
@@ -135,7 +127,6 @@ describe("applyThreadLink", () => {
       );
       expect(r.ok).toBe(false);
       if (!r.ok) expect(r.error.id).toBe("E_PERM_001");
-      // The link must be unchanged.
       const row = (await db.execute(sql`SELECT person_id FROM email_threads WHERE id=${threadId}`))
         .rows[0] as { person_id: string | null };
       expect(row.person_id).toBe(p1.id);

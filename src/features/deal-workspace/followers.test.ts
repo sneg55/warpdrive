@@ -1,4 +1,3 @@
-// Integration tests for followDeal / unfollowDeal. Real Postgres, no DB mocking.
 import { and, eq } from "drizzle-orm";
 import { afterAll, beforeAll, expect, it } from "vitest";
 import { dealFollowers, deals } from "@/db/schema";
@@ -83,11 +82,9 @@ it("logs a follower add once, then a remove; idempotent repeats write nothing", 
   const actor = regularActor(u.id);
   const signal = new AbortController().signal;
 
-  // First follow logs; the idempotent second follow (conflict no-op) logs nothing.
   await followDeal(h.db, actor, deal.id, signal);
   await followDeal(h.db, actor, deal.id, signal);
 
-  // Unfollow logs; the unfollow-when-absent second call logs nothing.
   await unfollowDeal(h.db, actor, deal.id, signal);
   await unfollowDeal(h.db, actor, deal.id, signal);
 
@@ -95,7 +92,6 @@ it("logs a follower add once, then a remove; idempotent repeats write nothing", 
     (c) => c.field === "follower",
   );
   expect(rows.length).toBe(2);
-  // Newest-first: unfollow (id -> null) then follow (null -> id).
   expect(rows[0]?.oldValue).toBe(u.id);
   expect(rows[0]?.newValue).toBeNull();
   expect(rows[1]?.oldValue).toBeNull();
@@ -107,7 +103,6 @@ it("returns a visibility error and inserts no row when the actor cannot see the 
   const owner = await seedUser(h.db);
   const stranger = await seedUser(h.db);
   const p = await seedPipelineWithStages(h.db, ["A"]);
-  // owner-level visibility: a non-owner regular actor cannot see it.
   const deal = await seedDeal(p.pipeline.id, p.stages[0]!.id, owner.id, "owner");
 
   const r = await followDeal(

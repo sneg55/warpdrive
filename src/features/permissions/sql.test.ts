@@ -19,8 +19,6 @@ import type { AuthUser, VisibleDeal } from "./types";
 
 let h: TestDb;
 
-// A viewer scenario maps to both an AuthUser (for canSee) and a VisibilityCtx (for SQL),
-// so a single source of truth drives both sides of the parity check.
 interface Scenario {
   name: string;
   userId: string;
@@ -28,7 +26,6 @@ interface Scenario {
   isActive: boolean;
   sessionLive: boolean;
   groupIds: string[];
-  // Team members this viewer manages (already gated on team.viewMembers at hydration).
   managedUserIds?: string[];
 }
 
@@ -64,8 +61,6 @@ function toVisibleDeal(f: Fixture): VisibleDeal {
   };
 }
 
-// Expected id set: run the REAL canSee over the SAME fixtures. canSee has no sessionLive
-// concept, so a dead session is asserted directly to be empty rather than via canSee.
 function canSeeVisibleIds(s: Scenario): string[] {
   if (!s.sessionLive) return [];
   const user = toAuthUser(s);
@@ -164,8 +159,6 @@ const SCENARIOS: Scenario[] = [
     groupIds: [],
   },
   {
-    // Team manager: VIEWER manages OWNER, so owner-level rows owned by OWNER become visible, but a
-    // group-restricted pipeline still hard-gates them. Parity with canSee is the assertion.
     name: "team manager of OWNER (managedUserIds)",
     userId: VIEWER,
     isAdmin: false,
@@ -185,8 +178,6 @@ describe("dealVisibilityPredicate id-set parity with canSee", () => {
     });
   }
 
-  // Spot-checks pin the discriminating edge cases to explicit expectations, so a future
-  // regression that silently moves BOTH sides together is still caught.
   test("group-level row hidden from non-admin with empty groupIds", () => {
     const user = toAuthUser({
       name: "",

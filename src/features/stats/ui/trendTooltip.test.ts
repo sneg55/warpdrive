@@ -14,8 +14,6 @@ describe("trendTooltipValue", () => {
     );
   });
 
-  // The datum shape comes back through recharts as unknown, so a row without a usable count must
-  // still render the money rather than "from undefined deals".
   it("falls back to the money alone when the row carries no count", () => {
     expect(trendTooltipValue(1500, undefined, "USD")).toBe("$1,500");
     expect(trendTooltipValue(1500, { nope: true }, "USD")).toBe("$1,500");

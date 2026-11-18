@@ -1,6 +1,3 @@
-// historyTimeline.auditFields.test.ts: labeling for the broadened deal changelog
-// fields (Wave 3 task 16: title/value/probability/expectedCloseDate). Split out
-// of historyTimeline.test.ts to keep both files under the size limit.
 import { describe, expect, it } from "vitest";
 import {
   CHANGE_FIELD_EXPECTED_CLOSE,

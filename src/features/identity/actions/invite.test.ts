@@ -2,11 +2,6 @@ import { describe, expect, it, vi } from "vitest";
 import { AppError, ERROR_IDS } from "@/constants/errorIds";
 import { err, ok } from "@/types/result";
 
-// IDENTITY-02: the action must return a PLAIN, serializable shape. An AppError instance's
-// custom `id` is stripped by React Flight (and by structuredClone), so the client would read
-// `undefined` and collapse every invite error to a generic message. These tests drive the
-// action with the service/context/csrf mocked so we can assert the returned shape directly.
-
 const { guardCsrf } = vi.hoisted(() => ({ guardCsrf: vi.fn(() => Promise.resolve(ok(true))) }));
 const { createContext } = vi.hoisted(() => ({
   createContext: vi.fn(() => Promise.resolve({ actor: { id: "admin-1", type: "admin" } })),
@@ -31,10 +26,8 @@ describe("inviteUserAction serialization (IDENTITY-02)", () => {
 
     expect(result.ok).toBe(false);
     if (result.ok) return;
-    // The specific id, not a leaked AppError instance.
     expect(result.error).toEqual({ id: ERROR_IDS.AUTH_EMAIL_TAKEN });
     expect(result.error instanceof AppError).toBe(false);
-    // The proof the client actually cares about: the id survives serialization.
     const cloned = structuredClone(result);
     expect(cloned.ok).toBe(false);
     if (!cloned.ok) expect(cloned.error.id).toBe(ERROR_IDS.AUTH_EMAIL_TAKEN);

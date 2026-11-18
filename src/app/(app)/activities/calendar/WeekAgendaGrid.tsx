@@ -31,14 +31,8 @@ interface CreateSlot {
   time: string;
 }
 
-// Stable identity so a day with nothing on it does not defeat AgendaDayColumn's memo.
 const NO_ITEMS: CalendarActivity[] = [];
 
-// Maps a calendar-view activity onto ActivityEditModal's field shape. CalendarActivity (from
-// calendarRange) doesn't carry priority, and location is only populated by the deal-history
-// projection, not the calendar one; both default to null here. That's safe by the same rule
-// ActivitiesTable's toEditable relies on: Save only ships fields the user actually touched
-// (see buildActivityPatch), so an unseen existing value is never clobbered.
 function toEditable(a: CalendarActivity, typeIdByKey: Map<string, string>): EditableActivity {
   return {
     id: a.id,
@@ -54,11 +48,6 @@ function toEditable(a: CalendarActivity, typeIdByKey: Map<string, string>): Edit
   };
 }
 
-// Interactive hourly week agenda: a time gutter plus seven day columns, sharing one set of grid
-// tracks across a pinned header row, a pinned all-day row, and a scrolling hour region. Clicking a
-// chip opens the record the activity hangs off; clicking an empty hour lane opens AddActivityModal
-// prefilled with that day + hour. The standalone calendar has no deal/lead context, so a created
-// activity gets no dealId/leadId, matching the "None" parent option other composers support.
 export function WeekAgendaGrid({
   dayIsos,
   activities,
@@ -81,30 +70,14 @@ export function WeekAgendaGrid({
   const hoursRef = useRef<HTMLDivElement>(null);
   const now = useLocalNow();
 
-  // Bucket by LOCAL day (not weekGrid's UTC isoDay): this grid is client-rendered and its hour
-  // lane (placeBlock) already reads local hours, so the day bucket must agree with that same local
-  // frame or an activity near local midnight lands in the wrong column (see weekAgenda.test.ts's
-  // "under a non-UTC timezone" regression). includeOverdue: an incomplete activity due in a past
-  // navigated week must still render on its due day, not vanish; there is no separate overdue rail.
   const grouped = useMemo(() => groupByLocalDay(activities, dayIsos, true), [activities, dayIsos]);
   const selected = activities.find((a) => a.id === selectedId) ?? null;
-  // One lane height for the whole week: a lane sized per column would push only some days' hour
-  // grids down, and the same hour would sit at a different height in each column.
   const allDayRows = useMemo(() => allDayRowCount(grouped.values()), [grouped]);
   const todayIso = now === null ? null : localDayIso(now);
   const showNowLine = todayIso !== null && dayIsos.includes(todayIso);
 
-  // Park the scroll on the working day. Left at the top, a 24-hour column opens on an empty
-  // midnight and every real activity sits below the fold. Once per displayed week, not per data
-  // change: saving an activity calls router.refresh(), and re-anchoring on that would yank the
-  // viewer away from the slot they were just working in. Anchored on the RENDERED activities,
-  // because calendarRange pads the fetched range by a day either side and groupByLocalDay drops
-  // those rows, so one of them must not pull the view to an hour with nothing in it.
   const weekKey = dayIsos.join(",");
   const anchoredWeek = useRef<string | null>(null);
-  // Before paint, not after: a passive effect leaves scrollTop at zero through the first frame, so
-  // the viewer sees the empty top of the grid and then a jump. offsetTop, because the pinned rows
-  // sit in the same scrolled content and take the first stretch of it.
   useIsomorphicLayoutEffect(() => {
     const el = scrollRef.current;
     const hours = hoursRef.current;
@@ -118,8 +91,6 @@ export function WeekAgendaGrid({
     router.refresh();
   }
 
-  // Same rule as the Activities list: a chip is a pointer at the work, so it opens the record the
-  // activity hangs off. Only an activity linked to nothing has its own editor left to show.
   const openActivity = useCallback(
     (a: CalendarActivity) => {
       const target = calendarActivityTarget(a);
@@ -140,12 +111,6 @@ export function WeekAgendaGrid({
   return (
     <div>
       <div className="overflow-hidden rounded-md border border-border bg-card">
-        {/* Headers, all-day lane and hour grid share ONE scroll box. Split across two, the scrolling
-            half loses the scrollbar's width wherever scrollbars are not overlays, and the same
-            gridTemplateColumns then resolves against two different widths: the columns stop lining
-            up with their own headings. Sticky keeps the pinned rows visible without that. */}
-        {/* relative so the hour grid's offsetTop measures from this box, which is what the scroll
-            anchor adds to the target hour to clear the pinned rows above it. */}
         <div ref={scrollRef} data-agenda-scroll className="relative max-h-[60vh] overflow-y-auto">
           <div className="sticky top-0 z-30 bg-card">
             <div

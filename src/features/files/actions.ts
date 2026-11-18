@@ -23,9 +23,6 @@ interface RequestUploadArgs {
   input: RequestUploadInput;
 }
 
-// Authorize the parent, then validate the display filename, then mint an
-// uploading row + presigned POST. No row is written on an authz or validation
-// failure, so a denied actor never observes a URL or a side effect.
 export async function requestUpload(
   db: Db,
   args: RequestUploadArgs,
@@ -33,15 +30,12 @@ export async function requestUpload(
 ): Promise<Result<{ fileId: string; post: PresignedPost }, AppError>> {
   signal.throwIfAborted();
 
-  // a. Boundary validation: content-type allowlist + size <= MAX_FILE_BYTES.
   const parsed = requestUploadInput.safeParse(args.input);
   if (!parsed.success) {
     return err(new AppError(ERROR_IDS.FILE_PRESIGN_INVALID, "invalid upload input", {}));
   }
   const input = parsed.data;
 
-  // b. Parent authorization. Uploads require the entity's WRITE capability (canSee alone is
-  // insufficient: a read-only viewer must not attach files, F18). Deny writes no row.
   const allowed = await canActorModifyParent(
     db,
     args.actor,
@@ -54,7 +48,6 @@ export async function requestUpload(
     return err(new AppError(ERROR_IDS.PERM_DENIED, "not permitted to attach to parent", {}));
   }
 
-  // c. Validate the display filename (CRLF / traversal / over-length).
   const display = validateDisplayFilename(input.filename);
   if (!display.ok) return display;
 
@@ -90,9 +83,6 @@ interface ConfirmUploadArgs {
   fileId: string;
 }
 
-// Reload the row, enforce ownership + uploading status, re-check parent authz
-// (defense in depth), then HEAD the object and require size + content-type to
-// match. A mismatch deletes the object and fails with E_FILE_002.
 export async function confirmUpload(
   db: Db,
   args: ConfirmUploadArgs,
@@ -100,8 +90,6 @@ export async function confirmUpload(
 ): Promise<Result<{ status: "ready" }, AppError>> {
   signal.throwIfAborted();
 
-  // Boundary: validate fileId is a uuid before hitting the DB (a non-uuid causes
-  // Postgres to throw a cast error that escapes the Result envelope).
   const parsed = confirmUploadInput.safeParse({ fileId: args.fileId });
   if (!parsed.success) {
     return err(
@@ -123,7 +111,6 @@ export async function confirmUpload(
     return err(new AppError(ERROR_IDS.FILE_METADATA_MISMATCH, "not in uploading state", {}));
   }
 
-  // Defense in depth: re-check the WRITE capability (not just canSee) on confirm too (F18).
   const allowed = await canActorModifyParent(db, args.actor, row.entityType, row.entityId, signal);
   signal.throwIfAborted();
   if (!allowed) {
@@ -139,16 +126,11 @@ export async function confirmUpload(
     return err(new AppError(ERROR_IDS.FILE_METADATA_MISMATCH, "metadata mismatch", {}));
   }
 
-  // Copy the validated object to an immutable key the uploader's still-valid presigned POST
-  // can never target (its policy pins the upload key). Downloads serve ONLY this key, so an
-  // overwrite of the upload key after confirm cannot change what a recipient receives (F33).
   const immutableKey = confirmedObjectKey(row.s3Key);
   const copied = await args.storage.copyObject(row.s3Key, immutableKey, signal);
   if (!copied.ok) return copied;
   signal.throwIfAborted();
 
-  // Capture the confirmed copy's own ETag (a server-side copy gets a fresh ETag) so a
-  // download can still detect corruption or an out-of-band change as defense in depth.
   const confirmedHead = await args.storage.headObject(immutableKey, signal);
   if (!confirmedHead.ok) return confirmedHead;
   signal.throwIfAborted();
@@ -159,8 +141,6 @@ export async function confirmUpload(
     .where(eq(files.id, args.fileId));
   signal.throwIfAborted();
 
-  // Best-effort: drop the mutable upload object now that the immutable copy is the source of
-  // truth. A failure here is a harmless orphan (never served, never in the DB), not an error.
   await args.storage.deleteObject(row.s3Key, signal);
   signal.throwIfAborted();
   return ok({ status: "ready" });
@@ -172,7 +152,6 @@ interface RequestDownloadArgs {
   fileId: string;
 }
 
-// Reload the row, authorize the parent, then mint a short-lived presigned GET.
 export async function requestDownload(
   db: Db,
   args: RequestDownloadArgs,
@@ -180,7 +159,6 @@ export async function requestDownload(
 ): Promise<Result<{ url: string }, AppError>> {
   signal.throwIfAborted();
 
-  // Boundary: validate fileId is a uuid before hitting the DB.
   const parsed = requestDownloadInput.safeParse({ fileId: args.fileId });
   if (!parsed.success) {
     return err(
@@ -202,16 +180,10 @@ export async function requestDownload(
     return err(new AppError(ERROR_IDS.PERM_DENIED, "not permitted to download", {}));
   }
 
-  // Downloads require status='ready' (data model): an 'uploading' object has not passed the
-  // confirmUpload HEAD size/content-type check, so it must never be served (F19). Checked
-  // AFTER authz so a non-visible actor cannot probe upload state.
   if (row.status !== "ready") {
     return err(new AppError(ERROR_IDS.FILE_PRESIGN_INVALID, "file not ready for download", {}));
   }
 
-  // Revalidate the live object against the ETag captured at confirm: a still-valid presigned
-  // POST could have overwritten the object after confirmation (F31). A changed or missing
-  // object is refused rather than served. Rows with a null etag predate the binding and skip.
   if (row.etag !== null) {
     const head = await args.storage.headObject(row.s3Key, signal);
     signal.throwIfAborted();

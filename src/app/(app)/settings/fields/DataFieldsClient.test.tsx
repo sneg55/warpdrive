@@ -96,7 +96,6 @@ describe("DataFieldsClient", () => {
     render(<DataFieldsClient byTarget={BY_TARGET} />);
     expect(screen.getByLabelText("Entity")).toHaveTextContent("Deal");
     expect(screen.getByLabelText("Type")).toHaveTextContent("text");
-    // "monetary" also appears as a type-select option, so scope to the row.
     expect(screen.getByText("Budget").closest("li")).toHaveTextContent("monetary");
   });
 
@@ -108,11 +107,8 @@ describe("DataFieldsClient", () => {
         initialTarget="organization"
       />,
     );
-    // The built-in Industry row shows with a Built-in badge...
     expect(screen.getByText("Industry").closest("li")).toHaveTextContent("Built-in");
-    // ...and a Hidden switch (reflecting its hidden=true state).
     expect(screen.getByRole("switch", { name: /Hidden: Industry/i })).toBeInTheDocument();
-    // The custom field (Region) still renders below.
     expect(screen.getByText("Region")).toBeInTheDocument();
   });
 
@@ -131,7 +127,6 @@ describe("DataFieldsClient", () => {
 
   it("opens the entity given by initialTarget (from ?entity=), not always deal", () => {
     render(<DataFieldsClient byTarget={BY_TARGET} initialTarget="person" />);
-    // Person fields active: "Priority" is a person field; the deal "Budget" is not shown.
     expect(screen.getByText("Priority")).toBeInTheDocument();
     expect(screen.queryByText("Budget")).not.toBeInTheDocument();
   });
@@ -199,7 +194,6 @@ describe("DataFieldsClient", () => {
     render(<DataFieldsClient byTarget={BY_TARGET} />);
     chooseSelect("Entity", "Person");
     fireEvent.click(screen.getByRole("button", { name: "Edit options" }));
-    // Only the active option ("Low") has a Remove button; the archived one shows a tag.
     fireEvent.click(screen.getByRole("button", { name: "Remove" }));
     await waitFor(() =>
       expect(actions.archiveOptionAction).toHaveBeenCalledWith(

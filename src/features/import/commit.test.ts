@@ -14,14 +14,10 @@ function actorFor(id: string): ImportActor {
     isActive: true,
     groupIds: new Set<string>(),
     primaryVisibilityGroupId: null,
-    // A real regular importer has contact.create (REGULAR_DEFAULT_FLAGS grants it); applyCreate
-    // now enforces it, so the create-path tests need it.
     flags: new Set(["contact.create"]),
   };
 }
 
-// Admin actor: can(contact.edit) passes via admin bypass, keeping the update-mode
-// test focused on the update mechanics rather than permission-flag plumbing.
 function adminActorFor(id: string): ImportActor {
   return {
     id,
@@ -61,7 +57,6 @@ it("denies a create when the actor lacks contact.create", async () => {
   await withTestDb(async (db) => {
     const signal = new AbortController().signal;
     const user = await seedUser(db);
-    // Regular actor WITHOUT contact.create: a data.import user must not create contacts.
     const actor: ImportActor = {
       id: user.id,
       type: "regular",
@@ -102,12 +97,11 @@ it("creates an entity for a zero-candidate row and is idempotent on retry", asyn
     expect(first.ok).toBe(true);
     if (first.ok === true) expect(first.value.status).toBe("imported");
 
-    // retry: row is already imported -> idempotent no-op, no second person created.
     const second = await commitRow(db, actor, row.id, "person", "skip", signal);
     expect(second.ok).toBe(true);
 
     const created = await db.select().from(persons).where(eq(persons.primaryEmail, "imp@a.com"));
-    expect(created).toHaveLength(1); // no duplicate from retry
+    expect(created).toHaveLength(1);
   });
 });
 
@@ -171,7 +165,6 @@ it("updates an existing candidate in update mode (no duplicate created)", async 
     const user = await seedUser(db);
     const actor = adminActorFor(user.id);
 
-    // Existing person owned by the actor, visible+editable.
     const [existing] = await db
       .insert(persons)
       .values({
@@ -195,12 +188,9 @@ it("updates an existing candidate in update mode (no duplicate created)", async 
     expect(r.ok).toBe(true);
     if (r.ok === true) {
       expect(r.value.status).toBe("imported");
-      // createdEntityId is null for an update: this row edited a pre-existing record, it did
-      // not create one. Undo relies on this so it never soft-deletes an updated record.
       expect(r.value.entityId).toBeNull();
     }
 
-    // The existing record was updated in place, not duplicated.
     const matches = await db.select().from(persons).where(eq(persons.primaryEmail, "upd@a.com"));
     expect(matches).toHaveLength(1);
     expect(matches[0]?.id).toBe(existing.id);
@@ -208,10 +198,6 @@ it("updates an existing candidate in update mode (no duplicate created)", async 
   });
 });
 
-// Batches validated BEFORE cross-entity mapping shipped hold a flat mapped row in
-// import_rows.mapped ({ name: "..." }), not { primary: { name: "..." } }. They are already in
-// "valid" state, so nothing revalidates them: commitRow has to read them as they are, or a ready
-// batch sitting in prod fails on deploy instead of importing.
 it("commits a legacy row whose mapped JSON is flat, not grouped", async () => {
   await withTestDb(async (db) => {
     const signal = new AbortController().signal;
@@ -228,7 +214,6 @@ it("commits a legacy row whose mapped JSON is flat, not grouped", async () => {
         batchId: batch!.id,
         rowNumber: 1,
         raw: {},
-        // The pre-upgrade shape, written by the old validate step.
         mapped: { name: "Legacy Person", customFields: {} } as never,
         status: "valid",
       })
@@ -243,7 +228,6 @@ it("commits a legacy row whose mapped JSON is flat, not grouped", async () => {
   });
 });
 
-// The legacy lead shape carried its organization as a flat "orgName" cell.
 it("commits a legacy lead row, linking the org from its flat orgName cell", async () => {
   await withTestDb(async (db) => {
     const signal = new AbortController().signal;
@@ -280,9 +264,6 @@ it("commits a legacy lead row, linking the org from its flat orgName cell", asyn
   });
 });
 
-// A person row that matches an existing contact by email still describes that person's
-// organization and note. The update path must resolve them too, or "update" mode silently drops
-// every related record the row carried.
 it("links the organization and writes the note when updating a duplicate person", async () => {
   await withTestDb(async (db) => {
     const signal = new AbortController().signal;

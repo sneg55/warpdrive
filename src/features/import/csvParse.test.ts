@@ -39,8 +39,6 @@ it("returns empty headers and rows for empty input", () => {
 });
 
 it("skips physical lines that are only whitespace (common in spreadsheet exports)", () => {
-  // A trailing "   " line is a single whitespace field, not real data: it must not
-  // become a phantom all-empty row that then fails required-field validation.
   const { rows } = parseCsv("name\nJane\n   \nBob\n");
   expect(rows).toEqual([{ name: "Jane" }, { name: "Bob" }]);
 });

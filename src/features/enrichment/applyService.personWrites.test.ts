@@ -84,9 +84,6 @@ const APOLLO = (fields: Record<string, string | number>): ProviderOutcome => ({
 });
 
 describe("applyEnrichment person writes", () => {
-  // persons.primary_email is a column of its own and imports produce rows whose emails array does
-  // not carry it. updatePerson re-derives the primary from the array in the patch, so a write that
-  // omits emails, such as linking a company, deletes the address.
   it("keeps a primary email held only in the column when it links a company", async () => {
     const org = await seedOrg({ name: "Soylent Holdings", domain: "soylent.test" });
     const [person] = await h.db
@@ -117,8 +114,6 @@ describe("applyEnrichment person writes", () => {
     expect(after?.primaryEmail).toBe("pat@soylent.test");
   });
 
-  // An email is added to the set, never swapped for the one already there, so logging the old
-  // primary as the value replaced makes the timeline read as a replacement that never happened.
   it("logs an added email as an addition rather than a replacement", async () => {
     const [person] = await h.db
       .insert(schema.persons)

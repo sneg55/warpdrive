@@ -9,10 +9,6 @@ import type { HistoryItem } from "@/features/deal-workspace/historyTimeline";
 import type { EmailCardScope } from "@/features/email/EmailTimelineCard";
 import { FileAttachments } from "@/features/files/FileAttachments";
 
-// Contact-scoped twin of the deal page's HistoryTypeTabs: the same per-type filter row
-// (All/Activities/Notes/Email/Files/Changelog), but Files renders the contact's own
-// attachments instead of the deal-scoped ones. The deal-workspace originals are reused
-// read-only (HistoryFeed) rather than modified, since they hard-code a dealId.
 const TAB_LABELS: Record<HistoryTab, string> = {
   all: "All",
   activities: "Activities",
@@ -37,11 +33,7 @@ interface ContactHistoryTabsProps {
   entityId: string;
   items: Record<HistoryTab, HistoryItem[]>;
   counts: Partial<Record<HistoryTab, number>>;
-  // Which record the email cards reply to and unlink from. Absent for an organization, which
-  // owns no threads.
   emailScope?: EmailCardScope;
-  // Overrides the Email tab's empty line, so an organization can say why it has no mail at all
-  // rather than implying none has arrived yet.
   emailEmptyLabel?: string;
   onActivityChanged?: () => void;
   onNoteChanged?: () => void;
@@ -72,8 +64,6 @@ export function ContactHistoryTabs({
       </TabsList>
 
       <div className="pt-4">
-        {/* History is a view of what is attached, not a compose surface: read-only, mirroring
-            the deal page's Files filter. */}
         {tab === "files" && (
           <FileAttachments entityType={entityType} entityId={entityId} readOnly />
         )}

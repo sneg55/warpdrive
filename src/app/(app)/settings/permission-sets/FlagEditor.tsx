@@ -17,9 +17,6 @@ import { readCsrfToken } from "@/utils/csrfCookie";
 
 const T = IDENTITY_SETTINGS_STRINGS.flagEditor;
 
-// Ownership capabilities that also expose a _team variant (a team manager acting on a managed
-// member's records). Rendered as a third checkbox alongside own/any. Narrows `cap` so the
-// `${cap}_team` flag key is statically one of the four valid team-scoped keys.
 function isTeamScoped(cap: OwnershipCapability): cap is TeamScopedCapability {
   return (TEAM_SCOPED_FLAGS as readonly OwnershipCapability[]).includes(cap);
 }
@@ -69,7 +66,6 @@ export function FlagEditor({ setId, name, flags, onSaved }: Props): React.ReactE
   function save(): void {
     setError(null);
     const csrf = readCsrfToken();
-    // Send an explicit boolean for every known key so unchecked flags are cleared, not omitted.
     const complete: Record<string, boolean> = {};
     for (const key of GLOBAL_FLAGS) complete[key] = current[key] === true;
     for (const cap of OWNERSHIP_FLAGS) {

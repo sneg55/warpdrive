@@ -13,9 +13,6 @@ export interface ColumnsMenuSortableListProps {
   onReorder: (from: string, to: string) => void;
 }
 
-// The drag-reorderable half of ColumnsMenu. Split out so dnd-kit is reachable only from here:
-// ColumnsMenu loads it through next/dynamic, keeping dnd-kit out of the People, Orgs and Deals
-// list bundles, which otherwise paid for it just to render a cog button.
 export function ColumnsMenuSortableList({
   catalog,
   order,

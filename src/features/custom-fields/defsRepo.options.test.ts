@@ -42,7 +42,6 @@ it("archives an option (archived:true) instead of hard-deleting it from the json
     const r = await archiveOption(db, { id: def.id, optionId: "opt-2" }, sig());
     expect(r.ok).toBe(true);
     if (r.ok === true) {
-      // id preserved (old stored values still render), just flagged archived.
       expect(r.value.options.find((o) => o.id === "opt-2")?.archived).toBe(true);
       expect(r.value.options).toHaveLength(2);
     }

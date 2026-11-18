@@ -7,13 +7,9 @@ import { BOARD_QUERY_KEY } from "./useDealMove";
 export interface DealCloseInput {
   dealId: string;
   status: "won" | "lost";
-  // updated_at compare-and-swap precondition, same guard the move path uses.
   expectedUpdatedAt: string;
 }
 
-// Closing a deal (Won/Lost) from a bottom drop zone. Our board returns only open deals, so a
-// closed deal must leave the board immediately: we optimistically remove the card, call the
-// CSRF-guarded update action, and reconcile on settle. Mirrors useDealMove's optimistic shape.
 export function useDealClose(pipelineId: string) {
   const client = useQueryClient();
   const key = BOARD_QUERY_KEY(pipelineId);
@@ -39,8 +35,6 @@ export function useDealClose(pipelineId: string) {
     },
 
     onSettled: (result, _err, _input, ctx) => {
-      // A non-throwing ok:false (e.g. stale precondition, permission) arrives here; roll the
-      // card back so it reappears, then invalidate so the next fetch reconciles.
       if (result !== undefined && result.ok === false && ctx?.previous !== undefined) {
         client.setQueryData(key, ctx.previous);
       }

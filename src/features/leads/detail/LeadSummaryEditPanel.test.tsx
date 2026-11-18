@@ -68,15 +68,11 @@ describe("LeadSummaryEditPanel", () => {
   it("renders the Owner as an OwnerBadge in view mode", () => {
     render(<LeadSummaryEditPanel lead={lead} owners={owners} />);
     expect(screen.getByText("Sam Jones")).toBeInTheDocument();
-    // OwnerBadge wiring specifically (not just plain text): the Avatar renders as a
-    // role="img" element labeled with the owner's name.
     expect(screen.getByRole("img", { name: "Sam Jones" })).toBeInTheDocument();
   });
 
   it("shows the real owner name (not the '+ Add' placeholder) when the current owner is missing from the assignable-users list (deactivated owner)", () => {
     const deactivatedOwnerLead = { ...lead, ownerId: "u9", ownerName: "Dana Deactivated" };
-    // owners (trpc.identity.assignableUsers) filters is_active = true, so a deactivated owner
-    // never appears here even though the lead still has a real, non-null owner.
     render(<LeadSummaryEditPanel lead={deactivatedOwnerLead} owners={owners} />);
 
     expect(screen.getByText("Dana Deactivated")).toBeInTheDocument();
@@ -106,7 +102,6 @@ describe("LeadSummaryEditPanel", () => {
       <LeadSummaryEditPanel lead={{ ...lead, expectedCloseDate: "2026-07-04" }} owners={owners} />,
     );
     fireEvent.click(screen.getByRole("button", { name: "Edit Expected close" }));
-    // findByText: the calendar is a next/dynamic chunk that loads on open.
     fireEvent.click(await screen.findByText("15"));
     expect(updateLeadAction).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("button", { name: "Save" }));

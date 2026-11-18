@@ -38,11 +38,8 @@ const TARGET_LABEL: Record<LabelTarget, string> = {
   lead: S.targetLead,
 };
 
-// Labels tab (spec 6.4): grouped by target, enum-constrained color picker, guarded delete.
 export function LabelsClient({ rows: initial }: { rows: Row[] }): React.ReactNode {
   const router = useRouter();
-  // Re-seeds from refreshed server props, so a failed reorder's optimistic order cannot stick
-  // until a hard reload (SETTINGS-08 sibling).
   const [rows, setRows] = useSyncedState(initial);
   const reportError = useActionError();
   const [addName, setAddName] = useState<Record<string, string>>({});
@@ -71,15 +68,12 @@ export function LabelsClient({ rows: initial }: { rows: Row[] }): React.ReactNod
   async function move(target: LabelTarget, groupIds: string[], index: number, dir: "up" | "down") {
     const next = moveInArray(groupIds, index, dir);
     if (next[index] === groupIds[index]) return;
-    // Optimistically reflect the new within-group order in the flat list.
     const others = rows.filter((r) => r.target !== target);
     const byId = new Map(rows.map((r) => [r.id, r] as const));
     const reordered = next.map((id) => byId.get(id)).filter((r): r is Row => r !== undefined);
     setRows([...others, ...reordered]);
     const r = await reorderLabelsAction({ orderedIds: next }, csrf());
     if (!r.ok) reportError(r.error.id);
-    // Refresh either way: on success it confirms the new order, on failure it re-fetches server
-    // truth and the re-seed effect above reverts the optimistic order the write did not land.
     router.refresh();
   }
 

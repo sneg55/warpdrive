@@ -12,9 +12,6 @@ import { EMAIL_SETTINGS_STRINGS as S } from "./strings";
 const ROW_BUTTON =
   "relative h-auto px-0 py-0 text-sm font-normal text-muted-foreground hover:bg-transparent hover:text-foreground after:absolute after:left-0 after:top-1/2 after:h-10 after:w-full after:-translate-y-1/2 after:content-['']";
 
-// A single OWN template row: drag handle (T4c), bulk-select checkbox (T4b), then the Name/Created/
-// Owner columns (T4a) and Edit/Delete. Owner is always "You" here; shared rows (rendered inline by
-// the client) are neither draggable nor selectable and show the author's name instead.
 export function TemplateRow({
   template: t,
   selected,

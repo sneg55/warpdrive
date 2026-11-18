@@ -30,13 +30,11 @@ describe("findSimilarOptions", () => {
   });
 
   it("matches a near-typo within a small edit distance", () => {
-    // "beta llk" is one substitution from "beta llc"
     const hits = findSimilarOptions(OPTS, "beta llk").map((o) => o.id);
     expect(hits).toEqual(["2"]);
   });
 
   it("matches when two names share a distinctive first word", () => {
-    // "Acme Global" is not a substring of "Acme Inc", but both start with "Acme".
     const hits = findSimilarOptions(OPTS, "Acme Global").map((o) => o.id);
     expect(hits).toEqual(["1"]);
   });
@@ -51,7 +49,6 @@ describe("findSimilarOptions", () => {
   });
 
   it("does not treat two unrelated very short names as a near-typo", () => {
-    // "GE" and "BP" are edit distance 2 apart, but 2-char names are too short to fuzzy-match.
     const opts = [{ id: "9", name: "BP" }];
     expect(findSimilarOptions(opts, "GE")).toEqual([]);
   });

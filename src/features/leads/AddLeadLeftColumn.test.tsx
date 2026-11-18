@@ -5,7 +5,6 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { TITLE_MAX_LEN } from "@/constants/fieldLimits";
 
-// LabelField (in the modal) queries the label catalog via tRPC.
 vi.mock("@/lib/trpc-client", () => ({
   trpc: { labels: { listByTarget: { useQuery: () => ({ data: [] }) } } },
 }));
@@ -17,7 +16,6 @@ beforeAll(() => {
   Element.prototype.scrollIntoView = vi.fn();
   Element.prototype.hasPointerCapture = vi.fn(() => false);
   Element.prototype.releasePointerCapture = vi.fn();
-  // cmdk (Combobox) observes its list's size to manage height; jsdom has no ResizeObserver.
   global.ResizeObserver = class {
     observe = vi.fn();
     unobserve = vi.fn();

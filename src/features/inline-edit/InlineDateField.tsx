@@ -14,9 +14,6 @@ interface InlineDateFieldProps {
   onSave: InlineSaveFn<string | null>;
 }
 
-// PD-mechanism date field. Verified live (expected close date): picking a day does NOT
-// autosave; it lands in the editor's draft (the calendar opens immediately on edit) and the
-// dirty-gated Save footer commits it. Only Cancel/Save close the editor.
 export function InlineDateField({ label, value, onSave }: InlineDateFieldProps): React.ReactNode {
   const f = useInlineEditField(value);
   const dirty = f.draft !== value;

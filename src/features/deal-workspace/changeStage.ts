@@ -1,7 +1,3 @@
-// changeStage: deal-header stage selector. Moves a deal to an explicit target stage,
-// appending it to the bottom of that stage's column. Mirrors moveDeal's CAS + changelog
-// + board-event shape; the difference is the board position is computed server-side
-// (append) rather than from client-supplied neighbors.
 import { and, desc, eq, sql } from "drizzle-orm";
 import { BOARD_EVENT, dealMovedChannel } from "@/constants/boardChannels";
 import { AppError, ERROR_IDS } from "@/constants/errorIds";
@@ -26,12 +22,10 @@ export async function changeStage(
   const input = changeStageInput.parse(raw);
   signal.throwIfAborted();
 
-  // Load deal + enforce can(deal.edit) via the single shared authorization path.
   const editable = await loadEditableDeal(db, actor, input.dealId, signal);
   if (editable.ok === false) return editable;
   const { deal } = editable.value;
 
-  // Validate toStageId belongs to the deal's pipeline (data-model §5).
   const [stage] = await db
     .select({ id: stages.id })
     .from(stages)
@@ -49,7 +43,6 @@ export async function changeStage(
   const expectedIso = input.expectedUpdatedAt;
 
   return db.transaction(async (tx) => {
-    // Append: bottom of the target column (max existing position + 1, or "1" when empty).
     const [bottom] = await tx
       .select({ pos: deals.boardPosition })
       .from(deals)
@@ -59,7 +52,6 @@ export async function changeStage(
     const position = midpoint(bottom?.pos ?? null, null);
     signal.throwIfAborted();
 
-    // Atomic CAS: 0 rows means a concurrent write won; we write nothing.
     const updated = await tx
       .update(deals)
       .set({

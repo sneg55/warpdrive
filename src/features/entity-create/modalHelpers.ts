@@ -3,8 +3,6 @@ import type { ContactPoint } from "@/features/deals/AddDealPersonColumn";
 import { createFailureMessage, settleCreate } from "./createFailure";
 import type { EntityCreateState, Option } from "./modalState";
 
-// Drop blank contact rows so an empty row never becomes a "" contact point; mark the first
-// remaining row primary (Pipedrive treats the top row as primary).
 function cleanPoints(
   rows: ContactPoint[],
 ): Array<{ label: string; value: string; primary: boolean }> {
@@ -13,7 +11,6 @@ function cleanPoints(
     .map((r, i) => ({ label: r.label, value: r.value.trim(), primary: i === 0 }));
 }
 
-// Non-empty tRPC result to options, else null (used to hide manager-only fields on a 403).
 export function optionsOrNull(rows: Option[] | undefined): Option[] | null {
   return rows !== undefined && rows.length > 0
     ? rows.map((r) => ({ id: r.id, name: r.name }))

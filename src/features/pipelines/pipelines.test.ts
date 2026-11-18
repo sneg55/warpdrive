@@ -115,7 +115,6 @@ describe("pipeline CRUD", () => {
       const admin = await seedUser(db);
       const s = adminSession(admin.id);
 
-      // Seed a visibility group and a pipeline restricted to it.
       const [grp] = await db
         .insert(visibilityGroups)
         .values({ name: "Restricted Group" })
@@ -127,7 +126,6 @@ describe("pipeline CRUD", () => {
         .returning();
       if (restricted === undefined) throw new Error("pipeline insert returned no rows");
 
-      // Non-member: restricted pipeline must be hidden (empty list).
       const nonMemberSession = {
         isAdmin: false,
         visibilityGroupIds: [] as string[],
@@ -136,7 +134,6 @@ describe("pipeline CRUD", () => {
       expect(hidden.some((p) => p.name === "Restricted")).toBe(false);
       expect(hidden).toHaveLength(0);
 
-      // Member of the group: restricted pipeline is visible (exercises inArray branch).
       const memberSession = {
         isAdmin: false,
         visibilityGroupIds: [grp.id],
@@ -148,7 +145,6 @@ describe("pipeline CRUD", () => {
       );
       expect(memberList.some((p) => p.name === "Restricted")).toBe(true);
 
-      // Admin sees the restricted pipeline regardless of membership.
       const adminList = await listVisiblePipelines(db, s, new AbortController().signal);
       expect(adminList.some((p) => p.name === "Restricted")).toBe(true);
     });
@@ -228,7 +224,6 @@ describe("pipeline CRUD", () => {
       );
       if (a1.ok !== true || foreign.ok !== true) return;
 
-      // Pass a stage id from P2 while claiming P1: must be rejected, no rows touched.
       const r = await reorderStages(
         db,
         s,
@@ -237,7 +232,6 @@ describe("pipeline CRUD", () => {
       );
       expect(r.ok).toBe(false);
 
-      // The foreign stage's order must be unchanged (still 0 within P2).
       const p2List = await listVisiblePipelines(
         db,
         { isAdmin: true, visibilityGroupIds: [] },

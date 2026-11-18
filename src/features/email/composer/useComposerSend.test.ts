@@ -54,7 +54,6 @@ afterEach(() => vi.useRealTimers());
 
 it("awaits an in-flight autosave before deleting, so a new draft created during send is not orphaned", async () => {
   const draftIdRef = { current: undefined as string | undefined };
-  // A new-draft autosave is still in flight at send time; it sets draftIdRef when it resolves.
   const inFlightRef = {
     current: new Promise<void>((r) =>
       setTimeout(() => {
@@ -65,14 +64,11 @@ it("awaits an in-flight autosave before deleting, so a new draft created during 
   };
   const { handleSend } = buildSendHandlers(makeDeps({ draftIdRef, inFlightRef }));
   const p = handleSend();
-  await vi.advanceTimersByTimeAsync(100); // let sendEmail resolve AND the in-flight save settle
+  await vi.advanceTimersByTimeAsync(100);
   await p;
   expect(deleteMock).toHaveBeenCalledWith("csrf", { draftId: "d-new" });
 });
 
-// buildInput's linkDealId fallback (Task 6: inbox compose deal-linking sidebar). The `linkDealId`
-// dep is the inbox's ComposeLinkSidebar selection; context.dealId is the deal-workspace composer's
-// own deal. Both send paths must keep working after this change.
 describe("buildInput linkDealId", () => {
   it("sends the linkDealId dep for a plain inbox compose (no deal context)", async () => {
     const { handleSend } = buildSendHandlers(makeDeps({ linkDealId: "sidebar-deal" }));
@@ -115,8 +111,6 @@ describe("buildInput linkDealId", () => {
   });
 });
 
-// C1: the composer's privacy pick must ride the send payload so the created thread lands with the
-// chosen visibility. buildInput forwards deps.visibility as sendEmailInput.visibility.
 describe("buildInput visibility", () => {
   it("sends the selected visibility (private) in the payload", async () => {
     const { handleSend } = buildSendHandlers(makeDeps({ visibility: "private" }));
@@ -137,10 +131,6 @@ describe("buildInput visibility", () => {
   });
 });
 
-// fireActivity's dealId (P2 review finding): an inbox compose can pin a deal via
-// ComposeLinkSidebar (the linkDealId dep, same value buildInput uses for the email thread
-// link). Add-as-activity must stay consistent with that link instead of always logging a
-// standalone (dealId: null) activity for non-deal-context composes.
 describe("fireActivity dealId", () => {
   const activityTypes = [{ id: "type-email", key: "email" }];
 
@@ -164,9 +154,6 @@ describe("fireActivity dealId", () => {
     );
   });
 
-  // An email that has already gone out is a thing that happened, not a thing to do. Logging it
-  // open leaves it in the dashboard's `undated` bucket forever (no due date to schedule it, and
-  // nobody goes back to tick off a sent email), so it never reaches the Completed count.
   it("logs the activity as already done, so a sent email counts as completed", async () => {
     const { handleSend } = buildSendHandlers(makeDeps({ addAsActivity: true, activityTypes }));
     await handleSend();
@@ -193,11 +180,7 @@ describe("fireActivity dealId", () => {
   });
 });
 
-// The send action arms its own 8s deadline, so a slow Gmail send rejects the client promise
-// instead of returning a failed Result. A rejection that escapes leaves `sending` true forever,
-// which greys out Send with no banner explaining why.
 describe("send action rejects instead of returning a Result", () => {
-  // The handler logs the rejection; keep it out of the test output.
   beforeEach(() => void vi.spyOn(console, "warn").mockImplementation(() => undefined));
   afterEach(() => vi.restoreAllMocks());
 

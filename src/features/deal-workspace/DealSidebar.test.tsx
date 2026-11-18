@@ -5,7 +5,6 @@ import { afterEach, beforeAll, expect, it, vi } from "vitest";
 import { DealSidebar } from "./DealSidebar";
 import { hide, makeWorkspace, showAll } from "./dealSidebarFixtures";
 
-// Radix Popover (labels + participants in the Summary action list) needs these jsdom shims.
 beforeAll(() => {
   Element.prototype.scrollIntoView = vi.fn();
   Element.prototype.hasPointerCapture = vi.fn(() => false);
@@ -17,9 +16,6 @@ beforeAll(() => {
   };
 });
 
-// LabelRow (inside the Summary section) calls the deal-update action, reads the csrf cookie, and
-// refreshes the router. Mock all three at the module boundary (mirrors ComposeBar.test.tsx) so the
-// sidebar renders purely; the editing test asserts the action is called with the CAS precondition.
 type UpdateResultLike =
   | { ok: true; deal: { id: string; updatedAt: string } }
   | { ok: false; error: { id: string } };
@@ -33,9 +29,6 @@ const updateDealAction = vi.fn((...args: unknown[]): Promise<UpdateResultLike> =
 vi.mock("@/features/deals/updateAction", () => ({
   updateDealAction: (...args: unknown[]) => updateDealAction(...args),
 }));
-// OrgBlock (inside the Organization section) calls updateOrgAction for each firmographic field;
-// PersonBlock calls updatePersonAction for first/last/phone/email. Both mocked at the module
-// boundary the same way as updateDealAction above.
 type OrgUpdateResultLike =
   | { ok: true; value: { id: string } }
   | { ok: false; error: { id: string } };
@@ -54,8 +47,6 @@ vi.mock("@/features/contacts/actions", () => ({
 vi.mock("@/utils/csrfCookie", () => ({ readCsrfToken: () => "csrf" }));
 const refresh = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh }) }));
-// ParticipantsControl (inside the Summary action list) queries the deal's participants and the
-// org's people via tRPC; stub both so the sidebar renders purely.
 const participantRows: unknown[] = [];
 vi.mock("@/lib/trpc-client", () => ({
   trpc: {
@@ -105,9 +96,7 @@ it("opens every section by default (section content is visible without a click)"
       baseCurrency="USD"
     />,
   );
-  // Source content (defaults to collapsed before this change).
   expect(screen.getByText("Channel ID")).toBeInTheDocument();
-  // Overview content (also defaulted collapsed).
   expect(screen.getByText("Deal age")).toBeInTheDocument();
 });
 
@@ -121,7 +110,6 @@ it("omits the Summary section when summary is hidden", () => {
     />,
   );
   expect(screen.queryByText("Summary")).not.toBeInTheDocument();
-  // Source/Overview have no block id and always render.
   expect(screen.getByText("Source")).toBeInTheDocument();
 });
 
@@ -148,7 +136,7 @@ it("renders org firmographics and saves an edit via updateOrgAction", async () =
       baseCurrency="USD"
     />,
   );
-  expect(screen.getByText("Industry")).toBeInTheDocument(); // firmographic row present
+  expect(screen.getByText("Industry")).toBeInTheDocument();
   expect(screen.getByText("Website")).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "Edit Website" }));
   fireEvent.change(screen.getByLabelText("editor-website"), { target: { value: "new.com" } });
@@ -184,7 +172,6 @@ it("renders first/last name and saves via updatePersonAction", async () => {
 });
 
 it("renders the Participants section (person links + View All) only when participants exist", () => {
-  // Zero participants: no section (matches PD's zero-state; the Summary CTA is the entry point).
   const { unmount } = render(
     <DealSidebar
       workspace={makeWorkspace()}

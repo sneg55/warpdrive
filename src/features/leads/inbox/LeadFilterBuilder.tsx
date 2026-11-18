@@ -16,19 +16,12 @@ import type { LeadConditionInput } from "../schemas";
 import { leadRowsToCondition } from "./leadFilterRows";
 
 interface LeadFilterBuilderProps {
-  // Assignable users, offered as the value dropdown for an Owner condition.
   users: ReadonlyArray<{ id: string; name: string }>;
-  // Called with the compiled lead condition (null clears it) on Apply/Clear.
   onApply: (condition: LeadConditionInput | null) => void;
   activeCount: number;
-  // The condition currently applied to the inbox, so reopening the builder edits that filter
-  // rather than clearing it, and an "any condition" filter is never shown back as "all".
   appliedCondition?: LeadConditionInput | null;
 }
 
-// Inline ad-hoc condition builder for the Leads Inbox, matching the People/Orgs experience. Feeds
-// the shared ConditionRowsBuilder the lead field catalog and compiles the raw rows into a condition
-// the server read (lead.list) re-validates and compiles to allow-listed SQL.
 export function LeadFilterBuilder({
   users,
   onApply,
@@ -40,9 +33,7 @@ export function LeadFilterBuilder({
   const catalogNames = (trpc.labels.listByTarget.useQuery({ target: "lead" }).data ?? []).map(
     (l) => l.name,
   );
-  // Union in the names leads actually carry: a label visible on the list must be filterable.
   const appliedNames = trpc.labels.appliedNames.useQuery({ target: "lead" }).data ?? [];
-  // leads.labels stores the label NAME, so the option value is the name, not a catalog id.
   const labelOptions: SelectOption[] = mergeLabelOptions(catalogNames, appliedNames).map(
     (name) => ({
       value: name,

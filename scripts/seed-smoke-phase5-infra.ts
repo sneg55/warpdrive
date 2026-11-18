@@ -1,10 +1,3 @@
-/**
- * scripts/seed-smoke-phase5-infra.ts
- *
- * Infrastructure seeders: Db type, settings, permission sets, visibility groups, users.
- * All functions are idempotent.
- */
-
 import type { Pool } from "pg";
 
 export type Db = {

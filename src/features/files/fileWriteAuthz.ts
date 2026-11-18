@@ -8,11 +8,6 @@ import type { PermSetUser } from "@/features/permissions/effective";
 import type { VisiblePersonOrOrg } from "@/features/permissions/types";
 import { canSeeEmailParent } from "./fileAuthz";
 
-// F18: attaching a file to an entity requires canSee AND that entity's write/upload
-// capability (ops spec C2 step 2), not read visibility alone: a read-only user who can see
-// a record must NOT be able to attach arbitrary files to it. can() already subsumes canSee
-// for record-scoped actions, so the per-entity capability check IS the combined gate.
-// Downloads stay read-only (canActorAccessParent); only the upload/confirm paths use this.
 export async function canActorModifyParent(
   db: Db,
   actor: PermSetUser,
@@ -31,8 +26,6 @@ export async function canActorModifyParent(
     case "activity":
       return canModifyActivity(db, actor, entityId, signal);
     case "email_message":
-      // No distinct email write capability exists; the mailbox-privacy canSeeEmail gate is
-      // the binding rule for attaching to a thread the actor can see (kept from the read path).
       return canSeeEmailParent(db, actor, entityId, signal);
     default:
       return false;
@@ -49,8 +42,6 @@ async function canModifyDeal(
     .select({ deal: deals, vg: pipelines.visibilityGroupId })
     .from(deals)
     .innerJoin(pipelines, eq(deals.pipelineId, pipelines.id))
-    // Archived-pipeline deals are hidden from every read, so files cannot be attached to
-    // them either (F24). The is_archived filter makes such a deal look absent.
     .where(and(eq(deals.id, dealId), isNull(deals.deletedAt), eq(pipelines.isArchived, false)));
   signal.throwIfAborted();
   if (row === undefined) return false;
@@ -114,7 +105,6 @@ async function canModifyActivity(
   signal.throwIfAborted();
   if (activity === undefined) return false;
   const vis = await resolveActivityVisibility(db, activity, signal);
-  // A null record means the dominant parent is missing/deleted: not modifiable.
   if (vis === null) return false;
   return can(actor, "activity.edit", vis);
 }

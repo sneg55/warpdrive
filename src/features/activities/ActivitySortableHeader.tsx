@@ -3,8 +3,6 @@ import type React from "react";
 import type { ColumnSort } from "@/components/data-table/useColumnSort";
 import type { ActivitySortField } from "./schemas";
 
-// Extracted from ActivitiesTable to keep it under the project's file-size budget (mirrors
-// PeopleTable's SortableHeader/SortGlyph, applied to the Activities table's sort fields).
 function SortGlyph({ dir }: { dir: "asc" | "desc" | null }): React.ReactNode {
   if (dir === null) return null;
   return (

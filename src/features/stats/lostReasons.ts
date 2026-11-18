@@ -1,8 +1,3 @@
-// Why deals were lost in the range, by count and value.
-// Two write paths land a reason: MarkLostDialog sets lost_reason_id, while the deal-update
-// API accepts free text in lost_reason. Rows are keyed on the id when there is one and fall
-// back to the text, so a typed reason is not silently filed under "no reason".
-// Windows on lost_time, and applies dealVisibilityClause.
 import { sql } from "drizzle-orm";
 import type { Db } from "@/db/client";
 import { dealVisibilityClause } from "@/features/deals/visibility";

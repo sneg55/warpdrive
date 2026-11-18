@@ -40,10 +40,6 @@ interface Props {
   assignableUsers: AssignableUser[];
 }
 
-// View + edit a single team: rename, change manager, and add/remove members (roster pre-loaded).
-// Mirrors the visibility-group detail pattern (server-loaded data, local pending/error state, a
-// server action per save, router refresh/back on success). Reuses setTeamMembersAction (full
-// replace) for membership and the new updateTeamAction for name/manager.
 export function TeamEditClient({
   teamId,
   name: initialName,
@@ -62,8 +58,6 @@ export function TeamEditClient({
     { value: MANAGER_NONE_VALUE, label: T.managerNone },
     ...assignableUsers.map((u) => ({ value: u.id, label: u.name })),
   ];
-  // Options for the member picker must include any current member who is no longer assignable
-  // (e.g. deactivated), so their chip still renders with a name instead of a bare id.
   const memberOptions = useMemo(() => {
     const byId = new Map(assignableUsers.map((u) => [u.id, { value: u.id, label: u.name }]));
     for (const m of members)

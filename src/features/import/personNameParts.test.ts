@@ -1,6 +1,3 @@
-// A CSV that carries "First name" / "Last name" instead of one full-name column is the ordinary
-// shape of an exported contact list, so the picker offers both and the display name is derived
-// from them when the file has no name column of its own.
 import { describe, expect, it } from "vitest";
 import { ENTITY_FIELDS } from "./importFields";
 import { applyMapping, validateMappedRow } from "./mapRow";

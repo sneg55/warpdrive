@@ -84,7 +84,6 @@ export function ParticipantsDialog({
                         })
                       : "-"}
                   </td>
-                  {/* formatUserName: demo/seed users carry their email as name; render "Demo2", not the email. */}
                   <td className="py-2 pr-3">
                     {p.ownerName !== null ? formatUserName(p.ownerName) : "-"}
                   </td>

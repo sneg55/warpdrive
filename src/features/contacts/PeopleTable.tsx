@@ -18,12 +18,10 @@ export interface PeopleListRow {
   phone: string | null;
   orgId: string | null;
   orgName: string | null;
-  // Won+lost deal count (Closed deals column); server-computed via a batched deal-count join.
   closedDeals: number;
   customFields: Record<string, unknown>;
 }
 
-// Raw persons.list row shape the load-more query returns (a subset of Person plus closedDeals).
 export interface RawPersonRow {
   id: string;
   name: string;
@@ -56,7 +54,6 @@ export interface PeopleTableProps {
   allSelected: boolean;
   onToggleRow: (id: string) => void;
   onToggleAll: () => void;
-  // Ordered visible columns (Name pinned first) + the Customize-columns cog rendered by PeopleList.
   visibleColumns: readonly PeopleColumn[];
   columnsMenu?: React.ReactNode;
   currency?: string;
@@ -96,9 +93,6 @@ function SortableHeader({
   );
 }
 
-// Presentational people table: header select-all + sortable Name/Email headers, and a
-// per-row checkbox. Extracted from PeopleList (the data/fetch container) to keep both files
-// under the project's file-size budget, mirroring LeadsTable/LeadsInbox.
 function renderPersonCell(
   col: PeopleColumn,
   row: PeopleListRow,

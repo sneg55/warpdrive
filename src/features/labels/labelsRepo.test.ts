@@ -26,12 +26,10 @@ afterAll(async () => {
 });
 
 it("creates a label and lists it by target", async () => {
-  // Unique name so the assertion is independent of the seeded Hot/Warm/Cold catalog (migration 0046).
   const r = await createLabel(h.db, { target: "deal", name: "DealOnlyZ", color: "red" }, sig());
   expect(r.ok).toBe(true);
   const dealLabelsList = await listLabels(h.db, { target: "deal" }, sig());
   expect(dealLabelsList.map((l) => l.name)).toContain("DealOnlyZ");
-  // A person-target list must not include the deal-only label.
   const personList = await listLabels(h.db, { target: "person" }, sig());
   expect(personList.map((l) => l.name)).not.toContain("DealOnlyZ");
 });
@@ -45,9 +43,6 @@ it("renames and recolors a label", async () => {
   expect(recolored.ok && recolored.value.color).toBe("magenta");
 });
 
-// Entities store the label NAME, and the chip resolver matches the catalog by name, so a rename
-// that only touches the catalog row silently unresolves every record still carrying the old
-// string: the chip goes gray and the label filter stops matching it.
 it("rewrites the applied name on records when a label is renamed", async () => {
   const u = await seedUser(h.db);
   const r = await createLabel(h.db, { target: "person", name: "OldName", color: "blue" }, sig());
@@ -111,9 +106,6 @@ it("blocks deleting a label applied to a record", async () => {
   }
 });
 
-// Production applies labels by writing the NAME into the entity's text[] column, not by inserting
-// a join row (see personsRepo/leadUpdate). The guard must see that usage, otherwise Settings
-// deletes a label that records still display and leaves orphan strings behind.
 it("blocks deleting a label applied through the entity labels array", async () => {
   const u = await seedUser(h.db);
   const r = await createLabel(
@@ -134,7 +126,6 @@ it("blocks deleting a label applied through the entity labels array", async () =
   }
 });
 
-// Usage is per target: the same string on a person must not protect an organization label.
 it("counts array usage only within the label's own target", async () => {
   const u = await seedUser(h.db);
   const r = await createLabel(
@@ -151,8 +142,6 @@ it("counts array usage only within the label's own target", async () => {
   expect(del.ok).toBe(true);
 });
 
-// resolveLabelChips matches the catalog case-insensitively ("hot" resolves to "Hot"), so the
-// guard has to use the same matching or it under-counts legacy lowercase applications.
 it("counts array usage case-insensitively", async () => {
   const u = await seedUser(h.db);
   const r = await createLabel(h.db, { target: "person", name: "Casing", color: "teal" }, sig());
@@ -165,7 +154,6 @@ it("counts array usage case-insensitively", async () => {
   expect(del.ok).toBe(false);
 });
 
-// Feeds the filter menus, so it has to report what records CARRY, catalogued or not.
 it("lists applied names for a target, deduped, catalogued or not", async () => {
   const u = await seedUser(h.db);
   await h.db.insert(persons).values([

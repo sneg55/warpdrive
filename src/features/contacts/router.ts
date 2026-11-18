@@ -47,8 +47,6 @@ export const contactsRouter = router({
       return attachRefLabels(ctx.db, ctx.actor, "person", res, signal);
     }),
 
-  // Full visible {id,name} sets (no pagination cap) for the Add deal/lead comboboxes, which need
-  // every option both to select and to run the duplicate-name check.
   personOptions: protectedProcedure.query(({ ctx }) =>
     listPersonOptions(ctx.db, toContactActor(ctx.actor), AbortSignal.timeout(10_000)),
   ),
@@ -118,8 +116,6 @@ export const contactsRouter = router({
       return attachRefLabels(ctx.db, ctx.actor, "organization", res, signal);
     }),
 
-  // Merged Focus/History feed (Wave 3, Task 21): activities + notes + change-log events
-  // for a single person or organization, visibility-gated the same way getPerson/getOrg are.
   contactTimeline: protectedProcedure
     .input(
       z.object({
@@ -137,8 +133,6 @@ export const contactsRouter = router({
       ),
     ),
 
-  // Per-contact activity stats for the detail "Overview" section (CO-2): counts-by-type +
-  // last-activity/inactive-days, visibility-gated through listActivitiesForEntity.
   activityStats: protectedProcedure
     .input(
       z.object({
@@ -156,16 +150,12 @@ export const contactsRouter = router({
       ),
     ),
 
-  // Related organizations panel (Wave 3, Task 23): both directions of organization_relations
-  // for a single org, visibility-gated the same way getOrg is.
   relatedOrgs: protectedProcedure
     .input(z.object({ orgId: z.string().uuid() }))
     .query(({ ctx, input }) =>
       listRelatedOrgs(ctx.db, ctx.actor, input.orgId, AbortSignal.timeout(10_000)),
     ),
 
-  // Followers control (Wave 3, Task 24): self-follow state + follower list for a person or
-  // organization, visibility-gated the same way contactTimeline/relatedOrgs are.
   contactFollowers: protectedProcedure
     .input(
       z.object({
@@ -183,9 +173,6 @@ export const contactsRouter = router({
       ),
     ),
 
-  // Per-contact engagement timeline (CO-4): activities rolled up per visible person/org, bucketed
-  // by month across a period window, for the Pipedrive-style engagement grid. Owner = assignee
-  // filter; type = activity-type key; entity picks person vs organization lanes.
   engagementTimeline: protectedProcedure
     .input(
       z.object({
@@ -209,16 +196,11 @@ export const contactsRouter = router({
       ),
     ),
 
-  // Cross-contact activity timeline (Wave 3, Task 22): recent contact-linked activity across
-  // every visible person/org, newest first, paginated by a due-date cursor.
   contactsFeed: protectedProcedure
     .input(
       z.object({
         limit: z.number().int().min(1).max(100).default(50),
         before: z.string().datetime().nullable().default(null),
-        // Compound cursor tiebreaker (see contactsFeed.ts): ORDER BY breaks ties on dueAt with
-        // asc(id), so pagination must too, or rows sharing an exact due_at at a page boundary
-        // get skipped.
         beforeId: z.string().uuid().nullable().default(null),
       }),
     )

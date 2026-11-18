@@ -6,10 +6,6 @@ import { seedUser } from "@/db/testing/factories";
 import { createOrg, updateOrg } from "./orgsRepo";
 import { type ContactActor, createPerson, updatePerson } from "./personsRepo";
 
-// Codex finding F2: updatePerson/updateOrg gated on canSee ONLY, never on the
-// contact.edit capability (an ownership-scoped flag, permissions spec §3.3). A user
-// with read visibility but no edit capability could modify a visible contact.
-
 type Db = Parameters<Parameters<typeof withTestDb>[0]>[0];
 
 function actor(id: string, flags: PermissionFlagKey[]): ContactActor {
@@ -24,7 +20,6 @@ function actor(id: string, flags: PermissionFlagKey[]): ContactActor {
 }
 
 async function seedAllVisible(db: Db): Promise<void> {
-  // "all" level => a created record is visible to every user (so a non-owner can see it).
   await db.insert(settings).values({
     id: true,
     baseCurrency: "USD",
@@ -47,7 +42,6 @@ describe("contact edit authorization", () => {
       );
       if (created.ok === false) throw new Error(`setup: ${created.error.message}`);
 
-      // `other` can SEE the person (all-level) but has no contact.edit flag.
       const r = await updatePerson(
         db,
         actor(other.id, []),

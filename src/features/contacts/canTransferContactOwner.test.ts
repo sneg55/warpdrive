@@ -3,10 +3,6 @@ import type { PermSetUser } from "@/features/permissions/effective";
 import type { VisiblePersonOrOrg } from "@/features/permissions/types";
 import { canTransferContactOwner } from "./resolveOwnerUpdate";
 
-// codex final review P2: the owner dropdown must not appear for a user who can reassign owner
-// (deal.changeOwner) but cannot edit the contact (contact.edit), because updatePerson/updateOrg
-// reject at the contact.edit gate first, so the control would silently do nothing.
-
 function user(flags: string[]): PermSetUser {
   return {
     id: "u1",

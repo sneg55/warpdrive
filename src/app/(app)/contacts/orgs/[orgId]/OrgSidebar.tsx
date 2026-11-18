@@ -23,10 +23,6 @@ const sections = CONTACT_SIDEBAR_STRINGS.sections;
 
 type RelatedOrg = React.ComponentProps<typeof RelatedOrgsPanel>["related"];
 
-// Org detail sidebar (CO-2): Summary / Details / Related organizations / Stats are collapsible
-// sections with the shared section header menu (pencil reveals empty fields), matching the deal
-// sidebar. Stats keeps the Open-deals count; the activity Overview widget renders below it (PD
-// shows Overview on org detail as well as person).
 export function OrgSidebar({
   org,
   defs,
@@ -87,7 +83,6 @@ export function OrgSidebar({
         </FieldRow>
       </CollapsibleSection>
 
-      {/* CO-2 / spec B2: PD shows an activity Overview on org detail too, not just person. */}
       <ContactOverviewSection entityType="organization" entityId={org.id} />
 
       <CollapsibleSection

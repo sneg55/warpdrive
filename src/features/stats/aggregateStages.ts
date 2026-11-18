@@ -1,8 +1,3 @@
-// Merging per-pipeline stage rows for the "All pipelines" view.
-//
-// Stage identity is per pipeline, so there is nothing to join on except position. Rows are
-// merged by `order`, and a position keeps its name only when every contributing pipeline
-// agrees on it; otherwise the position itself is the only honest label left.
 import type { StageConversionRow, StageSum } from "@/types/stats";
 
 function positionLabel(order: number): string {
@@ -40,15 +35,11 @@ export function aggregateStageConversion(
     const reached = bucket?.reached ?? 0;
     const dwell = bucket?.dwell ?? [];
     return {
-      // No single stage owns this row, so the position is its identity.
       stageId: positionLabel(order),
       name: mergedName(bucket?.names ?? new Set(), order),
       order,
       reached,
       conversion: base > 0 ? reached / base : 0,
-      // A median cannot be rebuilt from a set of medians. With one contributor there is
-      // nothing to rebuild, so its value carries through; with more, the honest answer is
-      // that we do not know.
       medianDaysInStage: dwell.length === 1 ? (dwell[0] ?? null) : null,
     };
   });

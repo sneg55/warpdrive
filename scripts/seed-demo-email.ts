@@ -1,11 +1,3 @@
-/**
- * scripts/seed-demo-email.ts
- *
- * Per-user email fixtures: one connected account, threads, and inbound/outbound
- * messages. Idempotency is handled upstream by wipeDemo (accounts are deleted
- * before reseeding), so inserts here are plain (no ON CONFLICT).
- */
-
 import { formatUserName } from "@/features/identity/formatUserName";
 import { pick, type Rng, randInt } from "./seed-demo-data";
 import type { Db } from "./seed-smoke-phase5-infra";
@@ -25,11 +17,8 @@ const SUBJECTS = [
 
 const DAY_MS = 86_400_000;
 
-// Follow-up statuses + labels (migration 0033); a subset of threads carry these so
-// the inbox follow-up filters and label chips have data.
 const FOLLOW_UP_OPTS = ["waiting", "replied", "closed"] as const;
 const THREAD_LABELS = ["important", "to_do", "later"] as const;
-// Inbound-attachment fixtures (migration 0032): filename + mime pairs.
 const ATTACHMENTS: readonly (readonly [string, string])[] = [
   ["Proposal.pdf", "application/pdf"],
   ["Contract.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"],
@@ -58,12 +47,6 @@ type ThreadCtx = {
   rng: Rng;
 };
 
-// Inserts `n` alternating inbound/outbound messages into one thread starting at
-// `baseMs`; returns the sent_at (ms) of the last message for last_message_at.
-// Demo only: turn "ethan.fischer78@apexlabs.com" into "Ethan Fischer" so the seeded inbox shows
-// sender display names (Pipedrive parity), matching what a real From header carries. Reuses the
-// app's formatUserName (title-cases the local part) after stripping the digits demo emails append.
-// Real sync stores the actual From display name; this just gives the demo realistic data.
 function displayNameFromEmail(email: string): string | null {
   const at = email.indexOf("@");
   const local = at > 0 ? email.slice(0, at) : email;
@@ -96,8 +79,6 @@ async function insertMessages(
         `demo-${ctx.userKey}-m${startIdx + k}`,
         inbound ? "inbound" : "outbound",
         inbound ? ctx.counterEmail : ctx.userEmail,
-        // Inbound: the counterparty's display name (parity). Outbound: null (from is the user;
-        // the reader shows it as "Sent" and falls back to the address).
         inbound ? displayNameFromEmail(ctx.counterEmail) : null,
         JSON.stringify(to),
         k === 0 ? ctx.subject : `Re: ${ctx.subject}`,
@@ -108,8 +89,6 @@ async function insertMessages(
         lastSentMs / 1000,
       ],
     );
-    // ~35% of inbound messages carry attachments so the message view and the
-    // inbound-attachment download path have data.
     if (msg && inbound && ctx.rng() < 0.35) {
       await insertAttachments(db, ctx, msg.id, startIdx + k);
     }
@@ -117,7 +96,6 @@ async function insertMessages(
   return lastSentMs;
 }
 
-// Inserts 1-2 attachment rows for one inbound message.
 async function insertAttachments(
   db: Db,
   ctx: ThreadCtx,
@@ -143,7 +121,6 @@ async function insertAttachments(
   }
 }
 
-// Picks a follow-up status (~30%) and 1-2 labels (~25%) for one thread.
 function threadAttrs(rng: Rng): { followUp: string | null; labels: string[] } {
   const followUp = rng() < 0.3 ? pick(rng, FOLLOW_UP_OPTS) : null;
   const labels: string[] = [];
@@ -155,8 +132,6 @@ function threadAttrs(rng: Rng): { followUp: string | null; labels: string[] } {
   return { followUp, labels };
 }
 
-// Marks ~60% of the mailbox owner's own threads read so the inbox shows a
-// realistic read/unread mix (unread threads render bold).
 async function maybeMarkRead(
   db: Db,
   rng: Rng,
@@ -189,8 +164,6 @@ export async function seedUserEmails(db: Db, args: UserEmailArgs): Promise<numbe
     const inThread = Math.min(count - msgIdx, randInt(rng, 1, 4));
     const subject = pick(rng, SUBJECTS);
     const base = Date.now() - (threadIdx + 1) * 7 * DAY_MS;
-    // ~40% of threads are linked to a deal (populating the deal Email tab); ~20%
-    // are private (visible only to the mailbox owner) vs shared with the team.
     const dealId = dealIds.length > 0 && rng() < 0.4 ? pick(rng, dealIds) : null;
     const visibility = rng() < 0.2 ? "private" : "shared";
     const { followUp, labels } = threadAttrs(rng);

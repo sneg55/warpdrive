@@ -7,17 +7,12 @@ describe("actionErrorContent", () => {
     expect(actionErrorContent("E_NOT_A_REAL_ID").title).toBe("Couldn't complete that action");
   });
 
-  // Convert-to-deal with no pipeline at all is a setup problem the user can fix themselves, and the
-  // generic "something went wrong, please refresh" copy sends them in circles: refreshing never
-  // helps. Naming the cause is the whole difference between a dead end and a next step.
   it("tells the user to create a pipeline when convert has no target", () => {
     const content = actionErrorContent(ERROR_IDS.LEAD_CONVERT_NO_PIPELINE);
     expect(content.title).not.toBe("Couldn't complete that action");
     expect(content.body).toMatch(/pipeline/i);
   });
 
-  // A rejected saved filter is a fixable mistake in one condition, so the copy points at the
-  // condition values instead of sending the user to refresh a page that fails the same way.
   it("tells the user which part of a rejected filter to fix", () => {
     const content = actionErrorContent(ERROR_IDS.DEAL_FILTER_INVALID);
     expect(content.title).not.toBe("Couldn't complete that action");

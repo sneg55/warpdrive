@@ -1,6 +1,3 @@
-// Pipedrive-parity next-activity cell state, computed against the client clock so the row reflects
-// the viewer's local day. 'none' -> warning icon + "No activity"; 'overdue' -> red; 'today'/
-// 'upcoming' -> the date. Server filters use the same buckets (leadListInput nextActivity).
 export type NextActivityState = "none" | "overdue" | "today" | "upcoming";
 
 export function nextActivityState(at: Date | string | null, now: Date): NextActivityState {

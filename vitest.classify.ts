@@ -1,30 +1,13 @@
 import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 
-// A test file is "integration" if it needs a container runtime, directly or via a *.test-helpers
-// file that does. Everything else is a "unit" test that runs with NO container.
-//
-// The marker is conservative (any harness/helper reference => integration), so a DB test can never
-// land in the container-less unit lane; new DB tests classify automatically since they import the
-// harness. This split lets `test:unit` run with no Docker, which is what makes it runnable on the
-// self-hosted k8s-prod pool.
-//
-// The last alternative matches direct testcontainers use. Without it a file that builds its own
-// container instead of going through the shared harness (src/db/migrate.test.ts did) silently lands
-// in the unit lane, where it only passes because the runner image happens to ship Docker.
 const DB_MARKER =
   /@\/test\/db|@\/db\/testing|makeTestDb|withTestDb|test-helpers|testHarness|@testcontainers\//;
 
-// Walk the repo (skipping node_modules and dot-dirs) so root-level meta-tests like
-// eslint.config.test.ts are classified too, matching the old project-wide glob.
 function collectTests(dir: string, acc: string[] = []): string[] {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) {
-      // Skip node_modules and dot-dirs (.git/.next/...); dot-FILES like .env.example.test.ts stay.
-      // Skip the `site` and `docs-site` sub-apps too: each is a self-contained package with its own
-      // config and module resolution, so sweeping them into this project resolves imports against
-      // the wrong root and breaks collection. They run via `pnpm -C <dir> test`.
       if (
         entry.name === "node_modules" ||
         entry.name === "site" ||

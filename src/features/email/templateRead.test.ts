@@ -1,5 +1,3 @@
-// templateRead.test.ts: real-DB tests for getTemplate (Task 4.1)
-// RED: fails until getTemplate is implemented in emailReads.ts
 import { randomUUID } from "node:crypto";
 import { sql } from "drizzle-orm";
 import { describe, expect, it } from "vitest";

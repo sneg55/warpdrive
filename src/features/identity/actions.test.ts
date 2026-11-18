@@ -2,8 +2,6 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 import { CSRF_COOKIE } from "@/features/auth/csrf";
 import { ok } from "@/types/result";
 
-// Per-test cookie/header stores. next/headers is mocked below to read from them so
-// guardCsrf can be exercised exactly as it runs inside a server action.
 const headerStore = new Map<string, string>();
 const cookieStore = new Map<string, string>();
 
@@ -69,8 +67,6 @@ describe("guardCsrf", () => {
 });
 
 describe("mutating action CSRF enforcement", () => {
-  // A bad CSRF token is rejected BEFORE any service/db call: the action short-circuits at
-  // guardCsrf, so createContext/db are never reached and no row is written.
   test("createTeamAction rejects a missing CSRF token without writing", async () => {
     cookieStore.set(CSRF_COOKIE, VALID_TOKEN);
     setSameOriginHeaders();

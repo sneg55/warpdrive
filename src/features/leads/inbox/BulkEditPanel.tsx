@@ -12,8 +12,6 @@ export interface BulkEditPanelProps {
   archived: boolean;
   assignableUsers: { id: string; name: string }[];
   onApply: (change: Change) => void;
-  // Distinct callback (not a bulkUpdateLeadsInput.change field): converts the whole selection to
-  // deals via bulkConvertLeadsAction. Only rendered in the non-archived inbox view.
   onConvert: () => void;
   converting?: boolean;
   applying?: boolean;
@@ -48,8 +46,6 @@ function Menu({
 
 const ITEM = "block w-full rounded px-2 py-1.5 text-left text-sm hover:bg-accent";
 
-// Bulk-edit toolbar shown while the selection is non-empty. Each control maps to a single
-// bulkUpdateLeadsAction change set (owner / label set-or-clear / archive-restore / delete).
 export function BulkEditPanel({
   count,
   archived,

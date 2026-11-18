@@ -7,18 +7,12 @@ interface Props {
   onChange: (v: string) => void;
 }
 
-// Base for the generated video-call link. This is a plain token-based URL stored on the activity,
-// NOT a Google Meet / Zoom OAuth integration (out of scope): we mint an opaque room token so the
-// link is unique and shareable without any external provider.
 const VIDEO_CALL_LINK_BASE = "https://meet.warpdrive.app/";
 
 function generateVideoCallLink(): string {
   return `${VIDEO_CALL_LINK_BASE}${crypto.randomUUID()}`;
 }
 
-// Video-call link field (Pipedrive parity, B3). With no link yet, offers a generate action; once
-// generated the link is shown with a remove control. The URL string is bound to the composer form
-// and submitted with the activity.
 export function VideoCallField({ value, onChange }: Props): React.ReactNode {
   if (value === "") {
     return (

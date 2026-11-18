@@ -14,8 +14,6 @@ vi.mock("@/lib/trpc-client", () => ({
 vi.mock("@/features/activities/AddActivityModal", () => ({
   AddActivityModal: () => <div data-testid="add-activity-modal" />,
 }));
-// Stand-in for the filter bar: one control that turns a type filter on, which is all this test
-// needs to reach the awkward state (a filter is active and the window is empty).
 vi.mock("./CalendarFilterBar", () => ({
   CalendarFilterBar: (p: {
     onChange: (f: { ownerId: null; typeKey: string; done: "all" }) => void;
@@ -71,8 +69,6 @@ it("blames the filter when the window held activities it excluded", () => {
   expect(screen.getByRole("status")).toHaveTextContent(STRINGS.calendar.emptyFilteredBody);
 });
 
-// Step to a far-future week with any filter on and the app used to state that the window does
-// have activities. It does not, and the sentence was simply false.
 it("does not claim an empty window holds activities just because a filter is on", () => {
   renderCalendar([]);
   fireEvent.click(screen.getByRole("button", { name: "filter-calls" }));

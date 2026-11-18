@@ -1,5 +1,4 @@
 // @vitest-environment jsdom
-// src/components/ui/Select.test.tsx
 import "@testing-library/jest-dom/vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { renderToString } from "react-dom/server";
@@ -43,11 +42,6 @@ describe("Select", () => {
     expect(screen.getByTestId("call-icon")).toBeInTheDocument();
   });
 
-  // Radix reserves value="" internally to mean "nothing selected, show the placeholder".
-  // Many callers pass a real option like { value: "", label: "None" } (priority, org, owner,
-  // source channel, default visibility), so when "" IS the selected value, Radix shows the
-  // placeholder text instead of that option's label, and swallows re-selecting it. Opening the
-  // dropdown must show and let you choose that option; the trigger must reflect its label.
   it("shows the empty-value option's label on the trigger, not the placeholder", () => {
     const onChange = vi.fn();
     const emptyOptions = [
@@ -72,8 +66,6 @@ describe("Select", () => {
     expect(onChange).toHaveBeenCalledWith("");
   });
 
-  // Radix portals the selected item's text into the trigger from an effect, so the server HTML
-  // (and the first client paint) left an empty box on the board sort and the timeline range.
   it("paints the selected label in the server HTML", () => {
     const html = renderToString(
       <Select value="a" onChange={() => {}} options={options} ariaLabel="Type" />,
@@ -81,8 +73,6 @@ describe("Select", () => {
     expect(html).toContain("Call");
   });
 
-  // The EMPTY_SENTINEL that lets value: "" be a real option also means Radix's internal value is
-  // never empty, so Radix's own placeholder never fires. The trigger has to render it itself.
   it("shows the placeholder when the value is empty and no option matches it", () => {
     render(
       <Select
@@ -96,8 +86,6 @@ describe("Select", () => {
     expect(screen.getByLabelText("Type")).toHaveTextContent("Sort by");
   });
 
-  // Options that arrive async (the dashboard pipeline picker) leave the value pointing at nothing
-  // for the first render, which used to paint an empty box.
   it("shows the placeholder when the value matches no option yet", () => {
     render(
       <Select

@@ -1,5 +1,3 @@
-// "or" widens the leads list and "and" narrows it. Only real Postgres proves the fold, since a
-// mocked query would happily return whatever the fixture said regardless of the operator.
 import { describe, expect, it } from "vitest";
 import { leads } from "@/db/schema/leads";
 import { withTestDb } from "@/db/testing";
@@ -69,8 +67,6 @@ describe("listLeads with a filter combinator", () => {
   });
 });
 
-// "is any of": the names travel as one bound text[], so only a real server proves the cast and the
-// case-insensitive comparison hold together.
 describe("listLeads with a multi-value labels condition", () => {
   function labelArgs(op: "eq" | "neq", value: string[]) {
     return {
@@ -85,7 +81,6 @@ describe("listLeads with a multi-value labels condition", () => {
   }
 
   async function seedLabelled(db: TestDb, ownerId: string): Promise<void> {
-    // "hot" is stored lowercase the way the label backfill leaves a legacy value.
     const rows: Array<[string, string[]]> = [
       ["Hot lead", ["hot"]],
       ["Warm lead", ["Warm"]],

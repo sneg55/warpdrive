@@ -8,10 +8,6 @@ import { LinkExistingCombobox } from "../LinkExistingCombobox";
 
 const S = STRINGS.inbox;
 
-// Hydration-safe "on the client yet" flag. getServerSnapshot returns false, so the server HTML and
-// the first client render agree; the client then swaps to true on the next render. Used to gate a
-// pipeline-query-dependent `disabled` attribute so it never differs between server and client at
-// hydration time (a setState-in-effect mount flag is banned by the react-hooks lint rule).
 const subscribeNoop = (): (() => void) => () => {};
 function useIsClient(): boolean {
   return useSyncExternalStore(
@@ -28,11 +24,6 @@ interface ComposeLinkSidebarProps {
   onUnlink: () => void;
 }
 
-// Compose-time deal link picker (Pipedrive parity). Unlike SidebarLinkPanel (which mutates an
-// EXISTING thread's link immediately via linkThread), there is no thread yet at compose time: this
-// is a controlled component that only lifts the chosen dealId/title up to ComposePageClient state.
-// The page then passes it into Composer as linkDealId, and the send path (useComposerSend.ts,
-// send.ts) links the new outbound thread to that deal, re-verifying visibility server-side.
 export function ComposeLinkSidebar({
   dealId,
   dealTitle,
@@ -94,8 +85,6 @@ export function ComposeLinkSidebar({
             setDealModalOpen(false);
             onLink(id, title);
           }}
-          // The unsent email + just-picked link are local state only: never navigate away from
-          // the composer, even when the user's "open details after create" preference is on.
           suppressDetailNav
         />
       )}

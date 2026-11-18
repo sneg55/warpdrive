@@ -14,7 +14,6 @@ type Row = {
   lastMessageAt: string | null;
 };
 
-// Fixed clock so the date-range presets are deterministic.
 const NOW = new Date("2026-07-11T00:00:00Z");
 
 const rows: Row[] = [
@@ -24,7 +23,7 @@ const rows: Row[] = [
     labels: ["important"],
     hasAttachment: true,
     unread: true,
-    lastMessageAt: "2026-07-08T00:00:00Z", // 3 days ago
+    lastMessageAt: "2026-07-08T00:00:00Z",
   },
   {
     id: "b",
@@ -32,7 +31,7 @@ const rows: Row[] = [
     labels: ["to_do", "later"],
     hasAttachment: false,
     unread: false,
-    lastMessageAt: "2026-06-20T00:00:00Z", // 21 days ago
+    lastMessageAt: "2026-06-20T00:00:00Z",
   },
   {
     id: "c",
@@ -40,7 +39,7 @@ const rows: Row[] = [
     labels: [],
     hasAttachment: true,
     unread: false,
-    lastMessageAt: null, // never
+    lastMessageAt: null,
   },
   {
     id: "d",
@@ -48,7 +47,7 @@ const rows: Row[] = [
     labels: ["later"],
     hasAttachment: false,
     unread: true,
-    lastMessageAt: "2026-05-01T00:00:00Z", // 71 days ago
+    lastMessageAt: "2026-05-01T00:00:00Z",
   },
 ];
 
@@ -89,12 +88,10 @@ describe("filterByAttributes", () => {
   });
 
   it("a null lastMessageAt fails any active date filter", () => {
-    // Thread c has an attachment but a null lastMessageAt, so it drops under a date preset.
     expect(ids({ ...NO_ATTRIBUTE_FILTER, hasAttachment: true, dateRange: "30d" })).toEqual(["a"]);
   });
 
   it("ANDs the quick-filters together", () => {
-    // Unread AND within 7 days: only a (d is unread but 71 days old).
     expect(ids({ ...NO_ATTRIBUTE_FILTER, unreadOnly: true, dateRange: "7d" })).toEqual(["a"]);
   });
 });

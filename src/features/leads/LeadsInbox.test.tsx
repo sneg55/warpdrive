@@ -5,7 +5,6 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 beforeAll(() => {
-  // Radix DropdownMenu (the per-row actions menu) needs these in jsdom.
   Element.prototype.scrollIntoView = vi.fn();
   Element.prototype.hasPointerCapture = vi.fn(() => false);
   Element.prototype.releasePointerCapture = vi.fn();
@@ -16,8 +15,6 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
-// The shared app-wide error reporter (mounted in the (app) shell). Mocked so a mutation's
-// else-branch report is observable without rendering the provider.
 const reportError = vi.fn();
 vi.mock("@/components/shell/ActionErrorProvider", () => ({
   useActionError: () => reportError,
@@ -32,7 +29,6 @@ vi.mock("next/navigation", () => ({
 vi.mock("@/lib/trpc-client", () => ({
   trpc: {
     lead: { list: { useQuery: (...a: unknown[]) => listQuery(...a) } },
-    // Ungated: every user gets the full active-user list so owner filtering runs server-side.
     identity: { assignableUsers: { useQuery: () => ({ data: [] }) } },
     customFields: { listDefs: { useQuery: () => ({ data: [], isLoading: false }) } },
     labels: {
@@ -41,7 +37,6 @@ vi.mock("@/lib/trpc-client", () => ({
           data: [{ id: "l1", target: "lead", name: "Hot", color: "red", order: 0 }],
         }),
       },
-      // Names leads actually carry, unioned into the label filter alongside the catalog.
       appliedNames: { useQuery: () => ({ data: [] }) },
     },
     useUtils: () => ({
@@ -86,7 +81,6 @@ describe("LeadsInbox", () => {
   it("renders the default table columns and a lead row with its label chip", () => {
     listQuery.mockReturnValue({ data: { rows: [LEAD], total: 1, refLabels: REF_LABELS }, refetch });
     render(<LeadsInbox />);
-    // Scope header assertions to the table (some labels, e.g. "Next activity", also name a filter).
     const table = within(screen.getByRole("table"));
     for (const col of [
       "Title",
@@ -100,7 +94,6 @@ describe("LeadsInbox", () => {
     }
     expect(screen.getByText("Acme lead")).toBeInTheDocument();
     expect(screen.getAllByText("Hot").some((el) => el.tagName === "SPAN")).toBe(true);
-    // Inbox/Archive toggle moved into the action-bar icon group.
     expect(screen.getByRole("button", { name: "Inbox" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Archive" })).toBeInTheDocument();
   });
@@ -119,7 +112,6 @@ describe("LeadsInbox", () => {
   });
 
   it("shows the server total in the header count, not just the loaded page size", () => {
-    // rows is capped at the page limit; the header must reflect the full server total.
     listQuery.mockReturnValue({
       data: { rows: [LEAD], total: 250, refLabels: REF_LABELS },
       refetch,
@@ -145,10 +137,8 @@ describe("LeadsInbox", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /load more/i }));
 
-    // Second page is appended (first-page rows remain visible).
     expect(await screen.findByText("Lead B0")).toBeInTheDocument();
     expect(screen.getByText("Lead A0")).toBeInTheDocument();
-    // All 3 of 3 loaded: the affordance disappears.
     expect(screen.queryByRole("button", { name: /load more/i })).not.toBeInTheDocument();
   });
 
@@ -191,8 +181,6 @@ describe("LeadsInbox", () => {
     await waitFor(() => {
       expect(bulkConvertLeadsAction).toHaveBeenCalledTimes(1);
     });
-    // A total failure must read as an error, not a silent no-op: the selection stays and the
-    // list is not refetched as if the batch had succeeded.
     expect(await screen.findByRole("alert")).toHaveTextContent(/permission/i);
     expect(screen.getByText("1 selected")).toBeInTheDocument();
     expect(refetch).not.toHaveBeenCalled();
@@ -212,7 +200,6 @@ describe("LeadsInbox", () => {
     await waitFor(() => {
       expect(bulkUpdateLeadsAction).toHaveBeenCalledTimes(1);
     });
-    // A permission/session failure must not be a silent no-op.
     await waitFor(() => expect(reportError).toHaveBeenCalledWith("E_PERM_001"));
     expect(refetch).not.toHaveBeenCalled();
   });

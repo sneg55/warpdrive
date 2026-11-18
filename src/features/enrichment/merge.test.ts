@@ -184,9 +184,6 @@ describe("mergeCandidates", () => {
   });
 });
 
-// A person's emails are a set, not a single value. Comparing a provider address against the
-// primary alone made an address already held as a secondary look like an overwrite of the primary,
-// and a cached run kept proposing it forever while the write silently no-opped.
 describe("mergeCandidates with a set-valued target", () => {
   const EMAIL: ResolvedMapping[] = [
     {
@@ -231,9 +228,6 @@ describe("mergeCandidates with a set-valued target", () => {
   });
 });
 
-// A target can hold something the actor is not allowed to see: a person linked to an organization
-// outside their visibility. Reading that as an empty field checks the row by default and the apply
-// silently moves the link to a company they picked without ever knowing one was there.
 describe("mergeCandidates occupied targets", () => {
   const MAPPING = [
     {

@@ -5,11 +5,8 @@ import { VALUELESS_OPS } from "@/constants/filterOps";
 import { ConditionValue, type ConditionValueInput } from "./ConditionValue";
 import type { RowValue } from "./rowValue";
 
-// Re-exported so the consumers that import the row types from here keep resolving.
 export type { ConditionValueInput } from "./ConditionValue";
 
-// One selectable field: its key, its human label, the operator keys valid for it, and how its value
-// is entered. Op keys map to labels via the opLabels prop.
 export interface ConditionFieldOption {
   field: string;
   label: string;
@@ -17,27 +14,21 @@ export interface ConditionFieldOption {
   input: ConditionValueInput;
 }
 
-// A compiled-but-still-raw condition. Callers coerce/validate into their own definition shape
-// (numbers, dates) when they receive it. A multi-select field carries a list of picked values,
-// which is how one condition means "is any of".
 export interface RawCondition {
   field: string;
   op: string;
   value: RowValue;
 }
 
-// A raw condition while it is being edited: the id is the React key, and is dropped on apply.
 export interface ConditionRow extends RawCondition {
   id: string;
 }
 
 interface ConditionRowsProps {
   fields: readonly ConditionFieldOption[];
-  // opKey -> human label (shared across entities; superset is fine).
   opLabels: Record<string, string>;
   rows: ConditionRow[];
   onRowsChange: (rows: ConditionRow[]) => void;
-  // Show the all/any combinator selector, once there is more than one row.
   supportsCombinator?: boolean;
   combinator: "and" | "or";
   onCombinatorChange: (c: "and" | "or") => void;
@@ -50,9 +41,6 @@ const COMBINATOR_OPTIONS: SelectOption[] = [
   { value: "or", label: "any condition" },
 ];
 
-// The condition list body: combinator selector, one row per condition (field / operator / value /
-// remove), and "+ Add condition". Fully controlled, so both the ad-hoc filter popover and the
-// saved-filter modal can host it with their own chrome and footer.
 export function ConditionRows({
   fields,
   opLabels,

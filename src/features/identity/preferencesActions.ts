@@ -81,8 +81,6 @@ export async function setLeadsViewAction(
   return { ok: true };
 }
 
-// The deals board toolbar view (owner filter, sort, applied filter). Written whole each time
-// because the jsonb shallow merge replaces the nested object rather than merging into it.
 export async function setBoardViewAction(
   input: unknown,
   csrfToken: string | null = null,
@@ -94,9 +92,6 @@ export async function setBoardViewAction(
   return { ok: true };
 }
 
-// Generic list-table column-order persist. `view` selects which top-level ui key is written
-// (dealsListView / peopleView / orgsView), each a distinct key so concurrent writes to different
-// lists never lost-update one another via the jsonb shallow merge.
 export async function setColumnViewAction(
   input: { view: ColumnViewName; columns: string[] },
   csrfToken: string | null = null,
@@ -109,8 +104,6 @@ export async function setColumnViewAction(
   return { ok: true };
 }
 
-// Day / Night / System. Its own top-level ui key, so the jsonb shallow merge cannot lost-update a
-// sibling preference. The client mirrors the same value into the wd_appearance cookie.
 export async function setAppearanceAction(
   input: { appearance: Appearance },
   csrfToken: string | null = null,
@@ -133,8 +126,6 @@ export async function setScheduleFollowUpAfterWonAction(
   return { ok: true };
 }
 
-// Personal daily activity target. Informational: it colors the day dots in activity date
-// pickers and never blocks a create.
 export async function setDailyActivityTargetAction(
   input: { target: number },
   csrfToken: string | null = null,
@@ -146,9 +137,6 @@ export async function setDailyActivityTargetAction(
   return { ok: true };
 }
 
-// Generic boolean Interface-flag persist. `key` is validated against the whitelist enum so a
-// client cannot write an arbitrary ui key; each flag is its own top-level ui key, so the jsonb
-// shallow merge never lost-updates a sibling flag.
 export async function setUiFlagAction(
   input: { key: UiFlagKey; value: boolean },
   csrfToken: string | null = null,
@@ -160,8 +148,6 @@ export async function setUiFlagAction(
   return { ok: true };
 }
 
-// "Open details view after creating a new item", written whole each time because the jsonb
-// shallow merge replaces the nested object rather than merging into it.
 export async function setOpenDetailsAfterCreateAction(
   input: { leadDeal: boolean; person: boolean; org: boolean },
   csrfToken: string | null = null,

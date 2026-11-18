@@ -16,8 +16,6 @@ interface ReorderControlsProps {
   onMoveDown: () => void;
 }
 
-// Shared reorder affordance for compact settings rows. The visible controls stay small while the
-// non-overlapping pseudo-element targets preserve a 40px hit area.
 export function ReorderControls({
   canMoveUp,
   canMoveDown,

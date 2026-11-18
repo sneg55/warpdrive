@@ -2,9 +2,6 @@
 import type React from "react";
 import { cn } from "@/lib/utils";
 
-// One activity-composer field row with Pipedrive's leading-icon gutter (the "7-icon left rail"):
-// a fixed icon column on the left, the field on the right. `iconAlign="top"` keeps the icon at the
-// top of taller controls (note, guests, links); the default centers it against a single-line field.
 export function ComposerFieldRow({
   icon,
   children,

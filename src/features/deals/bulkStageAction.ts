@@ -13,9 +13,6 @@ export type BulkStageResult =
   | { ok: true; rows: BulkRowResult[] }
   | { ok: false; error: { id: string } };
 
-// CSRF-guarded bulk stage action.
-// guardCsrf is called FIRST: no DB work happens before CSRF is verified.
-// Per-row authorization is enforced inside bulkUpdateStage (two-stage visibility + can check).
 export async function bulkStageAction(
   input: BulkStageInput,
   csrfToken: string | null = null,

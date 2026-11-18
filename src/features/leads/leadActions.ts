@@ -23,11 +23,8 @@ import { leadVisibilityClause } from "./visibility";
 
 type Db = NodePgDatabase<typeof schema>;
 
-// Leads share the deal creation trust boundary (owner override, group defaulting).
 export type LeadSession = EntityCreateSession;
 
-// A lead may only reference a person/org the creator can actually see; otherwise a client could
-// attach a lead to (and probe the existence of) hidden contacts. Mirrors createDeal's gate.
 async function assertLeadReferences(
   db: Db,
   session: LeadSession,
@@ -86,7 +83,6 @@ export async function createLead(
   );
   if (!customFields.ok) return customFields;
 
-  // Visibility derived server-side from the deal default (leads share the deal visibility policy).
   const [cfg] = await db.select().from(settings).where(eq(settings.id, true));
   const level = (cfg?.defaultVisibilityLevels.deal ?? "owner") as "owner" | "group" | "all";
   let visibilityGroupId: string | null = null;
@@ -133,7 +129,6 @@ export async function archiveLead(
   const input = leadArchiveInput.parse(raw);
   signal.throwIfAborted();
 
-  // Only a lead visible to the actor can be archived (404-on-invisible: do not leak existence).
   const [visible] = await db
     .select({ id: leads.id })
     .from(leads)

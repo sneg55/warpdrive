@@ -1,5 +1,3 @@
-// Shared seed helpers for the stats integration tests. Each test file previously carried its
-// own copy; new metric tests share these so a schema change lands in one place.
 import { AppError, ERROR_IDS } from "@/constants/errorIds";
 import * as schema from "@/db/schema";
 import type { PermSetUser } from "@/features/permissions/effective";
@@ -37,8 +35,6 @@ export async function seedUser(
   return user;
 }
 
-// Seeds a pipeline with `stageCount` ordered stages so funnel/stage tests have somewhere to move
-// deals through. Stages come back in order.
 export async function seedPipeline(h: TestDb, stageCount = 1) {
   const [pipeline] = await h.db
     .insert(schema.pipelines)

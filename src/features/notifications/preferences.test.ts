@@ -5,9 +5,6 @@ import { withTestDb } from "@/db/testing";
 import { seedUser } from "@/db/testing/factories";
 import { getPreferences, resolveDelivery, setPreference } from "./preferences";
 
-// Expected email default per type, written out literally rather than imported from the
-// constant it guards: importing DEFAULT_EMAIL_BY_TYPE here would make the test tautological.
-// High-signal, low-volume types are on; per-event and per-edit firehoses are off.
 const EXPECTED_EMAIL_DEFAULT: Record<NotificationType, boolean> = {
   mention: true,
   comment_reply: true,
@@ -29,7 +26,6 @@ describe("notification preferences", () => {
 
       const prefs = await getPreferences(db, alice.id, sig);
 
-      // All types must be present.
       for (const t of NOTIFICATION_TYPES) {
         expect(prefs[t], `missing key: ${t}`).toBeDefined();
       }
@@ -58,7 +54,6 @@ describe("notification preferences", () => {
 
       const prefs = await getPreferences(db, alice.id, sig);
       expect(prefs.mention).toEqual({ inApp: false, email: true });
-      // Other types should still be defaults.
       expect(prefs.activity_reminder).toEqual({ inApp: true, email: true });
     });
   });
@@ -69,7 +64,6 @@ describe("notification preferences", () => {
       const sig = new AbortController().signal;
 
       await setPreference(db, alice.id, "deal_won", { inApp: true, email: true }, sig);
-      // Second call for same (user, type): must not throw.
       await setPreference(db, alice.id, "deal_won", { inApp: false, email: false }, sig);
 
       const prefs = await getPreferences(db, alice.id, sig);
@@ -93,8 +87,6 @@ describe("notification preferences", () => {
       const alice = await seedUser(db);
       const sig = new AbortController().signal;
 
-      // An on-by-default type and an off-by-default type, so a single blanket
-      // default cannot satisfy both.
       expect(await resolveDelivery(db, alice.id, "comment_reply", sig)).toEqual({
         inApp: true,
         email: true,

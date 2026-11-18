@@ -8,7 +8,6 @@ beforeAll(() => {
   Element.prototype.scrollIntoView = vi.fn();
   Element.prototype.hasPointerCapture = vi.fn(() => false);
   Element.prototype.releasePointerCapture = vi.fn();
-  // cmdk (Combobox, used inside ActivityComposerInline) observes list size; jsdom has none.
   global.ResizeObserver = class {
     observe = vi.fn();
     unobserve = vi.fn();
@@ -103,7 +102,6 @@ describe("SharedComposeBar (Pipedrive default-state model)", () => {
     const tabs = screen.getAllByRole("tab");
     expect(tabs.map((t) => t.textContent)).toEqual(["Notes", "Activity"]);
     expect(tabs[0]).toHaveAttribute("aria-selected", "true");
-    // The collapsed prompt is the note prompt, matching PD's "Take a note..." default state.
     expect(screen.getByRole("button", { name: "Take a note..." })).toBeInTheDocument();
   });
 

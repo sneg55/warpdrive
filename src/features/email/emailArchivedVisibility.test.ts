@@ -1,7 +1,3 @@
-// Codex finding F23: canSeeLinkedDeal joined the linked deal to its pipeline but did not
-// reject archived pipelines. Because canSeeEmail allows a shared thread when the actor can
-// see the linked deal, a thread linked to an archived-pipeline deal could still expose email
-// contents to non-owners who no longer see that deal anywhere else.
 import { describe, expect, it } from "vitest";
 import { deals } from "@/db/schema";
 import { withTestDb } from "@/db/testing";

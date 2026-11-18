@@ -1,5 +1,3 @@
-// AttachmentList: shows confirmed uploads with a remove control per item.
-
 export interface AttachedFile {
   fileId: string;
   filename: string;

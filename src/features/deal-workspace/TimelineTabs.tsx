@@ -14,9 +14,6 @@ const VIEWS: { key: TimelineView; label: string }[] = [
   { key: "history", label: "History" },
 ];
 
-// Focus vs History switch (Pipedrive parity): Focus surfaces what still needs
-// action, History is the read-only log. Sits above whatever the caller renders
-// for the active view (the History side nests its own per-type filter tabs).
 export function TimelineTabs({ view, onView, children }: TimelineTabsProps): React.ReactNode {
   return (
     <Tabs value={view} onValueChange={(v) => onView(v as TimelineView)}>

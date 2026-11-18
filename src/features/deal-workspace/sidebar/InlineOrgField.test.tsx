@@ -36,11 +36,9 @@ describe("InlineOrgField", () => {
       "href",
       "/contacts/orgs/o1",
     );
-    // The name is not itself a click-to-edit target; the editor appears only after the pencil.
     expect(screen.queryByLabelText("Organization")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Edit Organization" }));
     expect(screen.getByLabelText("Organization")).toBeInTheDocument();
-    // Dirty-gated: nothing chosen yet, so Save is disabled (PD: no autosave).
     expect(screen.getByRole("button", { name: "Save" })).toBeDisabled();
   });
 
@@ -86,7 +84,6 @@ describe("InlineOrgField", () => {
     fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
     expect(updateDealAction).not.toHaveBeenCalled();
     expect(createOrgAction).not.toHaveBeenCalled();
-    // Back to the view state (link visible again).
     expect(screen.getByRole("link", { name: "North Labs" })).toBeInTheDocument();
   });
 });

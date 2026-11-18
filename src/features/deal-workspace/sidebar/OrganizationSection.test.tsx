@@ -4,10 +4,7 @@ import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 import type { Organization } from "@/db/schema";
 
-// Stub the heavy field-grid block and the labels control so this test isolates the section's own
-// wiring decision: does it render the (opt-in) labels control, with the right entity + labels?
 vi.mock("./OrgBlock", () => ({ OrgBlock: () => <div data-testid="org-block" /> }));
-// The header's enrichment button asks tRPC whether a provider is connected; nothing is here.
 vi.mock("@/lib/trpc-client", () => ({
   trpc: {
     enrichment: { status: { useQuery: () => ({ data: { ready: false, providers: [] } }) } },

@@ -10,7 +10,6 @@ import { OPEN_SEARCH_EVENT } from "./events";
 import { useActiveIndex } from "./useActiveIndex";
 import { useSearchHotkey } from "./useSearchHotkey";
 
-// Route map for each entity kind. Verified against real app routes (Task 15).
 const ROUTES: Record<"deal" | "person" | "organization" | "lead", (id: string) => string> = {
   deal: (id) => `/deals/${id}`,
   person: (id) => `/contacts/people/${id}`,
@@ -18,15 +17,10 @@ const ROUTES: Record<"deal" | "person" | "organization" | "lead", (id: string) =
   lead: (id) => `/leads/${id}`,
 };
 
-// Stable empty-results fallback, module-level so its reference never changes
-// across renders (a fresh object each render would defeat the useActiveIndex
-// memoization and reset logic even when there is genuinely no data yet).
 const EMPTY_RESULTS: SearchResults = { deals: [], people: [], organizations: [], leads: [] };
 
 const SEARCH_ERROR = "Couldn't run that search. Try again.";
 
-// -- SearchResultsList --
-// Pure presentational component: no tRPC, no hooks, safe to test in jsdom.
 export function SearchResultsList({
   results,
   activeId,
@@ -121,9 +115,6 @@ function Section({
   );
 }
 
-// -- CommandPalette --
-// Overlay that owns open/close state, the hotkey, and the window event listener.
-// Mount once in the app layout so it is always available.
 export function CommandPalette() {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
@@ -131,21 +122,17 @@ export function CommandPalette() {
   const inputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
-  // 150ms debounce on the query string.
   useEffect(() => {
     const id = setTimeout(() => setDebounced(q), 150);
     return () => clearTimeout(id);
   }, [q]);
 
-  // Focus the input whenever the palette opens.
   useEffect(() => {
     if (open) {
       inputRef.current?.focus();
     }
   }, [open]);
 
-  // Listen for the named custom event so the top-bar trigger can open us
-  // without sharing state or context.
   useEffect(() => {
     const handler = () => setOpen(true);
     window.addEventListener(OPEN_SEARCH_EVENT, handler);
@@ -157,9 +144,6 @@ export function CommandPalette() {
   const typed = q.trim().length > 0;
   const searched = debounced.trim().length > 0;
   const { data, error } = trpc.search.query.useQuery({ q: debounced }, { enabled: searched });
-  // A query in flight has not yet said the customer is absent, and "No organizations" read that way
-  // is how a duplicate record gets created. Nothing zero-result renders until data arrives, and a
-  // debounce still pending counts as in flight.
   const failed = error != null;
   const pending = typed && !failed && (data === undefined || q.trim() !== debounced.trim());
 
@@ -209,15 +193,11 @@ export function CommandPalette() {
                 moveUp();
               } else if (e.key === "Enter") {
                 e.preventDefault();
-                // `flat` still holds the last resolved query while a refinement is in flight, and
-                // those rows are behind the skeleton. Acting on one navigates somewhere unseen.
                 const sel = pending || failed ? undefined : flat[active];
                 if (sel !== undefined) handleSelect(sel.kind, sel.r);
               }
             }}
             placeholder={STRINGS.search.placeholder}
-            // Suppress the native type=search clear "x": the Dialog already renders a close X, so
-            // the browser's clear button made two X's cluster at the top-right (keep one).
             className="w-full bg-transparent text-sm outline-none [&::-webkit-search-cancel-button]:appearance-none"
             aria-label="Search"
           />

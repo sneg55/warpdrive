@@ -6,9 +6,6 @@ import { readCsrfToken } from "@/utils/csrfCookie";
 
 const PERSIST_DEBOUNCE_MS = 500;
 
-// Debounced persist of a list table's visible-column order to user_preferences (best-effort). Skips
-// the initial mount (no write for the seeded order), and flushes a still-pending write on unmount so
-// a reorder just before navigating away is saved, not dropped. Shared by deals list / people / orgs.
 export function usePersistColumns(view: ColumnViewName, order: readonly string[]): void {
   const mounted = useRef(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);

@@ -25,7 +25,6 @@ it("seeds the 6 system activity types", async () => {
 });
 
 it("inserts an activity with an owner and assignee, defaulting done to false", async () => {
-  // owner_id and assignee_id are NOT NULL FKs to users; seed a real user first.
   const [u] = await h.db
     .insert(users)
     .values({ email: "a@test.com", name: "A", googleSub: "sub-a" })

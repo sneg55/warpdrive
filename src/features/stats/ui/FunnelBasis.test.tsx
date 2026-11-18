@@ -10,9 +10,6 @@ import { STRINGS } from "@/constants/strings";
 import type { StageConversionRow } from "@/types/stats";
 import { FunnelWidget } from "./widgets";
 
-// The funnel counts a cohort (deals created in the range, narrowed by owner scope); the board
-// shows every open deal whoever created it and whenever. The two disagreeing is correct, and
-// unexplained it reads as a broken widget, so the basis has to be on screen.
 const ROWS: StageConversionRow[] = [
   {
     stageId: "s1",
@@ -45,8 +42,6 @@ describe("FunnelWidget basis", () => {
     expect(screen.queryByText(STRINGS.dashboard.funnelBasisMe)).toBeNull();
   });
 
-  // A stage at 0 is exactly the reading the basis line exists to explain, so it must be stated
-  // beside the zeros rather than only when there is something to show.
   it("keeps stating its basis when later stages read zero", () => {
     render(<FunnelWidget data={ROWS} ownerScope={{ kind: "me" }} />);
     expect(screen.getByRole("progressbar", { name: "Contact Made" })).toHaveAttribute(

@@ -76,8 +76,6 @@ describe("publishBoardEvent (integration)", () => {
     const { db } = testDb;
     const channel = dealMovedChannel("pipe-42");
 
-    // Capture pg_notify payload by listening on the connection before publish.
-    // We use a raw pool client to LISTEN so we can observe the NOTIFY.
     const client = await testDb.pool.connect();
     await client.query(`LISTEN "${channel.replace(/"/g, '""')}"`);
 

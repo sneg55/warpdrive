@@ -1,5 +1,3 @@
-// SubjectRow: inline subject field with divider-row styling (no boxed border).
-
 interface SubjectRowProps {
   value: string;
   onChange: (value: string) => void;

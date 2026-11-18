@@ -30,8 +30,6 @@ export function GoalsTable({ goals, assigneeNames, onChanged, onEdit }: Props): 
     setPendingDelete(null);
     setError(null);
     startTransition(async () => {
-      // A dead session or a stale CSRF token fails here. Refreshing without saying so leaves
-      // the row on screen with no explanation, which reads as the button being broken.
       const r = await deleteGoalAction(id, readCsrfToken());
       if (!r.ok) {
         setError(S.goalSaveFailed);

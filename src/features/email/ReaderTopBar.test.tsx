@@ -20,8 +20,6 @@ type Neighbors = {
 let neighborsData: Neighbors = null;
 const invalidateAll = vi.fn();
 const inv = () => ({ invalidate: invalidateAll });
-// Separate spies: the record timelines read the message-level keys, so a delete has to invalidate
-// those and not the retired thread-summary ones.
 const invalidateDealMessages = vi.fn();
 const invalidateContactMessages = vi.fn();
 vi.mock("@/lib/trpc-client", () => ({
@@ -121,12 +119,9 @@ it("renders no position nav for a non-owner (neighbors null)", () => {
 it("deletes to Gmail Trash after confirming, then returns to the inbox", async () => {
   render(<ReaderTopBar threadId="t1" archived={false} canManage />);
   screen.getByRole("button", { name: "Delete" }).click();
-  // Confirm in the AlertDialog (role=alertdialog, its Action button).
   const confirm = await screen.findByRole("button", { name: /move to trash/i });
   confirm.click();
   await waitFor(() => expect(trashMock).toHaveBeenCalledWith("csrf", { threadId: "t1" }));
-  // REPLACE (not push) so the deleted reader route is not left in history; caches invalidated
-  // (feeds + the reader's thread.get) so Back re-fetches instead of showing the trashed thread.
   await waitFor(() => expect(replace).toHaveBeenCalledWith("/inbox"));
   expect(push).not.toHaveBeenCalled();
   expect(invalidateAll).toHaveBeenCalled();
@@ -160,9 +155,7 @@ it("groups Archive and Delete together on the left, not pushed to the far right 
   render(<ReaderTopBar threadId="t1" archived={false} canManage />);
   const archive = screen.getByRole("button", { name: "Archive" });
   const del = screen.getByRole("button", { name: "Delete" });
-  // PD groups the reader actions top-left; WD previously pushed Archive right with ml-auto.
   expect(archive.className).not.toMatch(/ml-auto/);
-  // Archive + Delete share one action group wrapper (grouped per PD), distinct from the Back link.
   const group = archive.closest("[data-reader-actions-group]");
   expect(group).not.toBeNull();
   expect(del.closest("[data-reader-actions-group]")).toBe(group);

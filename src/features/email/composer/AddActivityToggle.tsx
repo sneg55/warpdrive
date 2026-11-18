@@ -1,6 +1,3 @@
-// AddActivityToggle: footer checkbox that (when checked) causes a successful
-// email send to log a deal-linked activity. Only rendered in deal context.
-
 import { ToggleField } from "@/components/ui/ToggleField";
 import { Tip } from "@/components/ui/tooltip";
 import { COMPOSER_STRINGS } from "./composer.constants";

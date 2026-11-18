@@ -1,10 +1,3 @@
-// Deal counters for the dashboard: added, won, lost, and an open snapshot.
-// Each counter windows on the column that records its own event. dealUpdate.ts stamps
-// won_time/lost_time on the status transition, so a closed deal always carries the date it
-// closed. Open deals have no close date, so they are a resting-state snapshot rather than a
-// windowed count.
-// Always applies dealVisibilityPredicate via dealVisibilityClause (requires
-// FROM deals d JOIN pipelines p ON p.id = d.pipeline_id).
 import { type SQL, sql } from "drizzle-orm";
 import type { Db } from "@/db/client";
 import { dealVisibilityClause } from "@/features/deals/visibility";
@@ -13,7 +6,6 @@ import { ownerFilterClause } from "@/features/stats/ownerIds";
 import { withinLocalDays } from "@/lib/localDayRange";
 import type { DashboardFilters, DealCounters, MoneyBucket } from "@/types/stats";
 
-// Build a DealVisibilitySession from a PermSetUser (same shape, different names).
 function toSession(actor: PermSetUser) {
   return {
     userId: actor.id,

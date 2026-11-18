@@ -83,8 +83,6 @@ describe("parseRetryAfter", () => {
     expect(parseRetryAfter("-10", NOW)).toBeUndefined();
   });
 
-  // A delay past the Date range makes toISOString throw RangeError, which would turn a handled
-  // throttle into an unhandled exception and defeat the graceful degradation this exists for.
   it("ignores a delay beyond the representable date range", () => {
     expect(parseRetryAfter("99999999999999999999", NOW)).toBeUndefined();
     expect(() =>

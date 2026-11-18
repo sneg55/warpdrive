@@ -13,13 +13,10 @@ interface Option {
 
 export interface NewDealButtonProps {
   pipelineId: string;
-  // Pipelines with their stages, so the modal can offer a pipeline select + stage chevron.
   pipelines: Array<Option & { stages: Option[] }>;
   baseCurrency?: string;
 }
 
-// "+ Deal" button: opens the Add deal dialog. (The caret split-menu was dropped: its only item
-// was "New deal", identical to the primary button.) On create, invalidates the board query.
 export function NewDealButton({
   pipelineId,
   pipelines,

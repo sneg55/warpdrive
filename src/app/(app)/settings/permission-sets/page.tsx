@@ -25,7 +25,6 @@ export default async function PermissionSetsPage(): Promise<ReactNode> {
     return <p className="text-sm text-red-600">{STRINGS.settings.requiresAdmin}</p>;
   }
   const rows = await listPermissionSets(db, AbortSignal.timeout(5000));
-  // Serializable projection for the client editor (flags is a plain JSONB object).
   const sets = rows.map((ps) => ({ id: ps.id, name: ps.name, flags: ps.flags }));
   return (
     <SettingsPage>

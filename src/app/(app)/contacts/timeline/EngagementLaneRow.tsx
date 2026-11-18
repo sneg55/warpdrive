@@ -9,9 +9,6 @@ function contactHref(entity: ContactEntity, id: string): string {
   return entity === "person" ? `/contacts/people/${id}` : `/contacts/orgs/${id}`;
 }
 
-// One contact's lane: a leading name/link cell, then one cell per month holding that month's
-// activity markers (an ActivityTypeIcon per activity, labelled by its subject). A month with no
-// activity for this contact renders an empty cell so the columns stay aligned to the axis.
 export function EngagementLaneRow({
   lane,
   months,

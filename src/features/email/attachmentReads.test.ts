@@ -1,4 +1,3 @@
-// Integration test; real DB (per CLAUDE.md, no mocked database).
 import { sql } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import { withTestDb } from "@/db/testing";

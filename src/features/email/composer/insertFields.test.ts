@@ -1,5 +1,3 @@
-// insertFields.test.ts: unit tests for the insertFields catalogue (Task 4.4)
-// Item 10a: use exported INSERT_FIELD_LABELS constants instead of hardcoded strings.
 import { describe, expect, it } from "vitest";
 import { INSERT_FIELD_LABELS, insertFields } from "./insertFields";
 
@@ -71,7 +69,6 @@ describe("insertFields - deal context", () => {
       dealTitle: "My Deal",
     };
     const fields = insertFields(minimalContext);
-    // dealTitle should appear, but person/org fields should not (no data)
     expect(fields.find((f) => f.label === INSERT_FIELD_LABELS.DEAL_TITLE)).toBeDefined();
     expect(fields.find((f) => f.label === INSERT_FIELD_LABELS.FIRST_NAME)).toBeUndefined();
     expect(fields.find((f) => f.label === INSERT_FIELD_LABELS.ORG_NAME)).toBeUndefined();

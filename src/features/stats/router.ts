@@ -1,8 +1,3 @@
-// Stats tRPC router: dashboard procedure.
-// Security gate: resolves effective ownerScope server-side (never trusts client claim), and
-// runs every stage-based query behind visiblePipelines so a restricted pipeline's stage names
-// never reach a user who cannot see that pipeline. That applies to the "All pipelines"
-// aggregate as much as to a single selected pipeline.
 import { AppError, ERROR_IDS } from "@/constants/errorIds";
 import { listTeams } from "@/features/identity/teams.service";
 import { listAssignableUsers } from "@/features/identity/users.service";
@@ -24,12 +19,10 @@ import { wonTrend } from "@/features/stats/wonTrend";
 import { protectedProcedure, router } from "@/server/trpc/trpc";
 import { dashboardInput } from "./schemas";
 
-// Module-local abort-signal factory: mirrors the pattern in notifications/router.ts.
 const SIG = (): AbortSignal => AbortSignal.timeout(15_000);
 
 export const statsRouter = router({
   dashboard: protectedProcedure.input(dashboardInput).query(async ({ ctx, input }) => {
-    // Trust boundary: the client cannot widen its own owner scope.
     const effectiveOwnerScope = ownerScope(ctx.actor, input.ownerScope);
     const signal = SIG();
     const requested = input.pipelineId;

@@ -46,8 +46,6 @@ export interface GmailClient {
     signal: AbortSignal;
   }): Promise<Result<{ dataBase64: string }, AppError>>;
 
-  // includeSpamTrash: messages.list omits Spam and Trash unless this is set, so even an explicit
-  // `q: "in:spam"` comes back empty without it. Only the spam sweep needs it.
   listMessages(a: {
     q?: string;
     pageToken?: string;
@@ -57,17 +55,12 @@ export interface GmailClient {
 
   getProfile(a: { signal: AbortSignal }): Promise<Result<{ historyId: string }, AppError>>;
 
-  // Move a whole conversation to Gmail Trash (P4). POST threads/{id}/trash. Unlike the local
-  // Archive flag this is a real Gmail mutation, so it lives on the client, not just in our DB.
   trashThread(a: {
     threadId: string;
     signal: AbortSignal;
   }): Promise<Result<{ id: string }, AppError>>;
 }
 
-// Shared fetch wrapper: validates the response through the given Zod schema
-// exactly once. Returns err(AppError) on non-OK status or parse failure.
-// AbortError from fetch propagates unwrapped (never converted to Result).
 async function gmailFetch<T>(
   url: string,
   init: RequestInit,
@@ -193,8 +186,6 @@ export function createGmailClient(accessToken: string): GmailClient {
         `${API}/threads/${threadId}/trash`,
         { method: "POST", headers: auth },
         {
-          // Gmail returns the trashed thread resource; we only need it succeeded. Fall back to the
-          // requested id if the body omits it.
           parse(u) {
             const raw = u as { id?: string };
             return { id: typeof raw.id === "string" ? raw.id : threadId };

@@ -4,8 +4,6 @@ import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { CustomFieldDef } from "@/types/customFields";
 
-// The Details block composes several field controls that pull router/context; stub them so this
-// test isolates the block's own empty-vs-populated branching.
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: () => {} }) }));
 vi.mock("./InlineCustomField", () => ({ InlineCustomField: () => null }));
 vi.mock("./FieldRow", () => ({

@@ -48,8 +48,6 @@ beforeEach(async () => {
   await h.db.execute(
     sql`TRUNCATE visibility_group_members, visibility_groups, sessions, users, permission_sets, settings, audit_events RESTART IDENTITY CASCADE`,
   );
-  // Bootstrap seed data must already exist: inviteUser reads it via readSeedHandles and never
-  // creates it (an admin capable of inviting can only exist once bootstrap has already run).
   await h.db.insert(permissionSets).values([
     { name: "Regular", flags: REGULAR_DEFAULT_FLAGS, isDefault: true },
     { name: "Admin", flags: ADMIN_DEFAULT_FLAGS, isDefault: false },
@@ -78,7 +76,6 @@ describe("inviteUser", () => {
     expect(u!.invitedAt).not.toBeNull();
     expect(u!.isAdmin).toBe(false);
 
-    // Auto-joined Everyone, same as a real first login (ops spec E6).
     const [everyone] = await h.db.select().from(visibilityGroups);
     const membership = await h.db
       .select()

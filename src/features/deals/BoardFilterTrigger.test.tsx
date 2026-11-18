@@ -22,9 +22,6 @@ const AD_HOC: FilterDefinition = {
   conditions: [{ field: "title", op: "contains", value: "Acme" }],
 };
 
-// The board's filter survives a reload, so the trigger is the only thing on screen that can
-// explain why a rep is looking at 2 of 33 deals. Reading a bare "Filter" while a filter is
-// applied is the whole bug.
 describe("board filter trigger", () => {
   it("reads plain Filter when nothing is applied", () => {
     render(<BoardFilterMenu savedFilters={[ROTTING]} />);

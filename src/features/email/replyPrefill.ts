@@ -1,8 +1,3 @@
-// Pure recipient/subject/body derivation for the three reader compose actions
-// (Reply, Reply all, Forward). No React, no I/O: ReaderActions calls this to build the
-// Composer `prefill` prop. Kept pure so the recipient math (self-exclusion, dedup,
-// subject prefixing) is unit-testable without mounting anything.
-
 export type ReplyMode = "reply" | "replyAll" | "forward";
 
 export interface ReplyPrefillSourceMessage {
@@ -20,10 +15,6 @@ export interface ReplyPrefill {
   bodyHtml: string;
 }
 
-// Minimal escaper for the plain-text values (an email address) we splice into the
-// forwarded-message header we build below. The quoted body itself (msg.bodyHtml) is
-// already sanitized upstream (sanitizeInboundHtml in emailReads.ts); this only guards
-// the header line we construct ourselves so it can never become an HTML injection sink.
 function escapeHtml(s: string): string {
   return s.replace(/[&<>"']/g, (c) => {
     const map: Record<string, string> = {
@@ -37,15 +28,12 @@ function escapeHtml(s: string): string {
   });
 }
 
-// Adds prefix unless the subject already starts with it (case-insensitive), so
-// replying/forwarding repeatedly never stacks "Re: Re:" or "Fwd: Fwd:".
 function withSubjectPrefix(subject: string | null, prefix: string): string {
   const base = (subject ?? "").trim();
   if (base.toLowerCase().startsWith(prefix.toLowerCase())) return base;
   return `${prefix} ${base}`.trim();
 }
 
-// Case-insensitive dedup that keeps the first-seen casing.
 function dedupe(emails: string[]): string[] {
   const seen = new Set<string>();
   const out: string[] = [];

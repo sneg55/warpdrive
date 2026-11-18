@@ -37,10 +37,6 @@ export async function setMappingAction(
   if (!can(actor, "data.import")) return { ok: false, error: { id: ERROR_IDS.PERM_DENIED } };
 
   const { batchId, mapping } = setMappingInput.parse(input);
-  // Ownership + legal-state gate: only a freshly prepared batch (mapping_ready) may accept a
-  // mapping. Re-mapping a "ready" batch is rejected: validateBatch only re-checks pending/
-  // invalid rows, so already-"valid" rows would keep the old mapping's data and commit stale
-  // values. The wizard never re-maps, so mapping_ready is the only legal state here.
   const owned = await loadOwnedBatch(db, toImportActor(actor), batchId, SIG());
   if (!owned.ok) return { ok: false, error: { id: owned.error.id } };
   if (owned.value.status !== "mapping_ready") {
@@ -64,16 +60,11 @@ export async function commitBatchAction(
   if (!can(actor, "data.import")) return { ok: false, error: { id: ERROR_IDS.PERM_DENIED } };
 
   const { batchId } = batchIdInput.parse(input);
-  // Ownership + state gate BEFORE enqueue: the commit job runs as the batch creator, so
-  // without this any data.import user could trigger commit of another user's ready batch.
-  // loadOwnedBatch enforces caller == owner (or admin); status must be "ready" (validated).
   const owned = await loadOwnedBatch(db, toImportActor(actor), batchId, SIG());
   if (!owned.ok) return { ok: false, error: { id: owned.error.id } };
   if (owned.value.status !== "ready") {
     return { ok: false, error: { id: ERROR_IDS.IMPORT_BAD_STATE } };
   }
-  // Commit runs in a background job (import.commit); the wizard follows progress over
-  // realtime and reads the exact split via import.getResult once terminal.
   await enqueueCommitJob(batchId, SIG());
   return { ok: true, value: { imported: 0, skipped: 0, invalid: 0 } };
 }

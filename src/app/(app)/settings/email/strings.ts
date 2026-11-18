@@ -1,6 +1,3 @@
-// Co-located copy for the Email templates + signatures settings page. Kept out of the global
-// src/constants/strings.ts so that shared file stays within its size budget; this page is the
-// only consumer. The nav label reuses the existing STRINGS.settings.emailTemplates.
 export const EMAIL_SETTINGS_STRINGS = {
   description: "Manage reusable templates and signatures for outgoing email.",
   templates: "Templates",
@@ -21,7 +18,6 @@ export const EMAIL_SETTINGS_STRINGS = {
   edit: "Edit",
   delete: "Delete",
   empty: "Nothing here yet.",
-  // T2 search + T4 management-table columns and bulk controls.
   searchTemplates: "Search templates",
   createdOnHeader: "Created",
   ownerHeader: "Owner",

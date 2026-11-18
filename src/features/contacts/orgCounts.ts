@@ -7,25 +7,17 @@ import type { ContactActor } from "./personsRepo";
 
 export interface OrgCounts {
   peopleCounts: Map<string, number>;
-  // Pipedrive's org list shows Closed deals (won+lost) and Open deals as separate columns, so the
-  // per-org deal count is bucketed by status rather than returned as a single all-status total.
   closedDealCounts: Map<string, number>;
   openDealCounts: Map<string, number>;
 }
 
-// Deal statuses that count as "closed" (won+lost), mirroring the People-list Closed-deals column.
 const CLOSED_STATUSES = new Set(["won", "lost"]);
 
 interface PeopleCountsResult {
   peopleCounts: Map<string, number>;
-  // personId -> orgId, for every non-deleted person on a page org, regardless of person
-  // visibility. dealsForOrg traces participant deals through this same unfiltered set (only
-  // the deal's own canSee decides countability), so the deal-count pass reuses it as-is.
   personIdToOrgId: Map<string, string>;
 }
 
-// canSee-gated people count per org (mirrors listPeopleForOrg's filter), plus the
-// personId -> orgId map the deal-count pass needs to trace participant-derived deals.
 async function peopleCountsForOrgs(
   db: Db,
   actor: ContactActor,
@@ -57,7 +49,6 @@ async function peopleCountsForOrgs(
   return { peopleCounts, personIdToOrgId };
 }
 
-// dealId -> the set of page-org ids reached via a participant belonging to that org.
 async function participantDealOrgIds(
   db: Db,
   personIdToOrgId: Map<string, string>,
@@ -84,9 +75,6 @@ async function participantDealOrgIds(
   return dealIdToOrgIds;
 }
 
-// dealsForOrg-style aggregation, batched: a deal counts toward an org if the deal's own
-// orgId matches, OR one of its participants belongs to that org (dealIdToOrgIds). Each
-// candidate deal is canSee-gated once, then credited to every page-org it matched.
 async function dealCountsForOrgs(
   db: Db,
   actor: ContactActor,
@@ -98,9 +86,6 @@ async function dealCountsForOrgs(
   const dealIdToOrgIds = await participantDealOrgIds(db, personIdToOrgId, signal);
   const participantDealIds = [...dealIdToOrgIds.keys()];
 
-  // Narrowed to id + orgId (the org-match columns) + status (closed/open bucketing) plus the
-  // VisibleDealFields set toVisibleDeal reads, instead of the full deals row, since this runs on
-  // every org-list load.
   const dealRows = await db
     .select({
       id: deals.id,
@@ -117,7 +102,6 @@ async function dealCountsForOrgs(
     .where(
       and(
         isNull(deals.deletedAt),
-        // Archived-pipeline deals are hidden from every read (F7/F15/F16/F21-F24).
         eq(pipelines.isArchived, false),
         or(
           inArray(deals.orgId, orgIds),
@@ -143,9 +127,6 @@ async function dealCountsForOrgs(
   return { closed, open };
 }
 
-// Batched, visibility-gated People/Deal counts for a page of organizations. Three queries
-// total regardless of page size, so listOrgs never fans out to N per-row queries (one
-// dealsForOrg-style call per org would be an N+1).
 export async function orgCounts(
   db: Db,
   actor: ContactActor,

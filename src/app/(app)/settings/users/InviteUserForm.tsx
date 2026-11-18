@@ -28,9 +28,6 @@ const T = {
   copied: "Copied",
 } as const;
 
-// warpdrive has no outbound email/invite delivery: inviteUser only pre-authorizes the email for
-// Google SSO adoption on first login. So we never silently imply an email was sent. Instead we
-// surface the shareable sign-in link (the app login URL) for the admin to pass along themselves.
 function noEmailNotice(name: string, email: string): string {
   return `No email is sent automatically. Share the sign-in link below with ${name} (${email}), who signs in with Google using that address.`;
 }
@@ -69,9 +66,7 @@ export function InviteUserForm({ onInvited }: Props): React.ReactElement {
   const [isAdmin, setIsAdmin] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
-  // Per-field validation, shown inline instead of the browser's own validation bubble.
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>(NO_FIELD_ERRORS);
-  // Set on a successful invite so we can surface the no-email notice + shareable link.
   const [invited, setInvited] = useState<{ name: string; email: string } | null>(null);
   const { status: copyStatus, copy } = useCopyToClipboard();
 

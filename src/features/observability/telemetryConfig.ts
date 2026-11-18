@@ -4,8 +4,6 @@ export interface TelemetryClientConfig {
   release: string;
   commit: string;
   disabled: boolean;
-  // Forwarding console.warn/error to PostHog is off by default (per the design spec); the
-  // operator opts in via TELEMETRY_CONSOLE_FORWARDING because it widens the event surface.
   consoleForwarding: boolean;
 }
 

@@ -6,7 +6,6 @@ import { DragDropZones, zoneToStatus, zoneTransition } from "./DragDropZones";
 
 afterEach(cleanup);
 
-// useDroppable needs a DndContext; the real Board renders the bar inside its own context.
 function wrap(active: boolean) {
   return render(
     <DndContext>
@@ -26,7 +25,6 @@ describe("DragDropZones", () => {
     for (const label of ["Lost", "Won", "Move"]) {
       expect(screen.getByText(label)).not.toBeNull();
     }
-    // Delete is deliberately not a drag target (deletion is a confirmed menu action).
     expect(screen.queryByText("Delete")).toBeNull();
     expect(screen.getByRole("region", { name: "Deal drop actions" })).not.toBeNull();
   });
@@ -34,7 +32,6 @@ describe("DragDropZones", () => {
   it("maps the won/lost zones to a deal status and other targets to null", () => {
     expect(zoneToStatus("deal-zone-won")).toBe("won");
     expect(zoneToStatus("deal-zone-lost")).toBe("lost");
-    // Move is not a status transition; neither is a stage id.
     expect(zoneToStatus("deal-zone-move")).toBeNull();
     expect(zoneToStatus("aaaaaaaa-0000-0000-0000-000000000001")).toBeNull();
   });

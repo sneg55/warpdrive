@@ -1,8 +1,3 @@
-// Sent and Archive loaded every thread in the mailbox, like the Inbox used to. Unlike the Inbox
-// they are owner-scoped in SQL (a.user_id = actor.id) with no post-query visibility filter, so a
-// plain keyset LIMIT is exact: no chunked scan, no short pages.
-//
-// Real Postgres via Testcontainers (no DB mocking, see CLAUDE.md).
 import { sql } from "drizzle-orm";
 import { afterAll, beforeAll, expect, it } from "vitest";
 import type { AuthUser } from "@/features/permissions/types";
@@ -110,8 +105,6 @@ it("reports no next cursor when the last page exactly fills the limit", async ()
   const page = await listArchivedThreads(h.db, me.actor, sig(), { limit: 2, cursor: null });
 
   expect(page.threads).toHaveLength(2);
-  // A limit-sized page must not claim there is more when the mailbox is exhausted, otherwise
-  // "Load more" appears and then yields nothing.
   expect(page.nextCursor).toBeNull();
 });
 

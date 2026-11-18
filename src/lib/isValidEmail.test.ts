@@ -1,10 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { isValidEmail } from "./isValidEmail";
 
-// isValidEmail replaces a client-side `z.string().email()` check in the email composer's
-// RecipientField, so zod no longer has to ship in the client bundle for one boolean. These
-// cases pin the behavior we relied on: a well-formed address with a dotted domain passes;
-// missing local part, missing/undotted domain, whitespace, and double @ all fail.
 describe("isValidEmail", () => {
   it("accepts a plain address", () => {
     expect(isValidEmail("user@example.com")).toBe(true);

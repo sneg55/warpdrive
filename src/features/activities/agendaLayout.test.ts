@@ -8,8 +8,6 @@ import {
 } from "./agendaLayout";
 import type { CalendarActivity } from "./calendar";
 
-// Local-time constructor: placeBlock reads local hours, so the fixtures must be built in the same
-// frame or the expected topPx would depend on the machine's timezone.
 function at(hour: number, minute = 0): Date {
   return new Date(2026, 7, 24, hour, minute);
 }
@@ -39,8 +37,6 @@ describe("splitAllDay", () => {
   });
 
   it("keeps an untimed activity out of the hour grid rather than pinning it to midnight", () => {
-    // An all-day activity is stored at midnight, so left in the grid it renders as a 00:00 block
-    // with the whole day empty beneath it.
     const a = activity({ id: "a", allDay: true, dueAt: at(0), durationMinutes: null });
     expect(splitAllDay([a]).timed).toEqual([]);
   });
@@ -85,7 +81,6 @@ describe("layoutTimed", () => {
   });
 
   it("reuses a freed lane inside one cluster instead of narrowing every activity in it", () => {
-    // b and c do not overlap each other, so the cluster is two lanes wide, not three.
     const { placements: out } = layoutTimed([
       activity({ id: "a", dueAt: at(9), durationMinutes: 120 }),
       activity({ id: "b", dueAt: at(9, 30), durationMinutes: 30 }),
@@ -99,7 +94,6 @@ describe("layoutTimed", () => {
   });
 
   it("treats a duration-less activity as its minimum visible block when deciding overlap", () => {
-    // Both render as half-hour blocks at 12:36, so they collide on screen and must share the width.
     const { placements: out } = layoutTimed([
       activity({ id: "a", dueAt: at(12, 36), durationMinutes: null }),
       activity({ id: "b", dueAt: at(12, 36), durationMinutes: null }),
@@ -118,8 +112,6 @@ describe("layoutTimed", () => {
 
 describe("layoutTimed overflow", () => {
   it("stops narrowing past the lane cap and collapses the rest into one overflow block", () => {
-    // Five activities at the same minute would each be a fifth of a ~200px column: too narrow to
-    // read one word, which is what made a busy day unreadable.
     const items = ["a", "b", "c", "d", "e"].map((id) => activity({ id, dueAt: at(9) }));
     const { placements, overflows } = layoutTimed(items);
     expect(placements.map((p) => p.activity.id)).toEqual(["a"]);
@@ -128,8 +120,6 @@ describe("layoutTimed overflow", () => {
   });
 
   it("marks the surviving chip as sharing its row with a more-chip", () => {
-    // 30% of a 180px column is 54px, which clips "+5 more" to "+5 ...". The renderer needs to know
-    // which chips sit beside a more-chip so it can give that chip a pixel floor.
     const items = ["a", "b", "c"].map((id) => activity({ id, dueAt: at(9) }));
     const { placements } = layoutTimed(items);
     expect(placements[0]?.overflowing).toBe(true);
@@ -149,8 +139,6 @@ describe("layoutTimed overflow", () => {
   });
 
   it("spans the overflow block over the hidden activities it stands for", () => {
-    // a holds the one visible lane 09:00-13:00; b, c and d are pushed into the more-chip, which
-    // therefore has to cover 09:00 to 13:00, not just b's own hour.
     const items = [
       activity({ id: "a", dueAt: at(9), durationMinutes: 240 }),
       activity({ id: "b", dueAt: at(9), durationMinutes: 240 }),

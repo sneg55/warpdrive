@@ -4,8 +4,6 @@ import { users } from "./identity";
 
 export const mentionSourceEnum = pgEnum("mention_source", MENTION_SOURCES);
 
-// @-mentions extracted from notes/comments. Polymorphic source (no FK): source
-// names the kind, sourceId the row. Drives mention notifications in Phase 5.
 export const mentions = pgTable(
   "mentions",
   {
@@ -20,7 +18,6 @@ export const mentions = pgTable(
       .references(() => users.id),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
-  // Index: fetch a user's mentions for their notification inbox.
   (t) => [index("mentions_mentioned_user_idx").on(t.mentionedUserId)],
 );
 

@@ -1,8 +1,5 @@
 import { STRINGS } from "@/constants/strings";
 
-// Which empty the inbox is showing. "filtered" must never be worded like "none": a filter that
-// excludes everything is not the same fact as an inbox nobody has written to yet, and the two
-// have different exits (clear the filter vs create a lead).
 type LeadsEmptyKind = "none" | "none-archived" | "filtered";
 
 export interface LeadsEmpty {

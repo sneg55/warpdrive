@@ -22,7 +22,6 @@ describe("CompanyGeneralClient", () => {
   it("renders the base currency read-only", () => {
     render(<CompanyGeneralClient companyName="Acme" baseCurrency="EUR" />);
     expect(screen.getByText("EUR")).toBeInTheDocument();
-    // No editable currency control.
     expect(screen.queryByLabelText("Base currency")).toBeNull();
   });
 

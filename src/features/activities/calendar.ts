@@ -18,48 +18,24 @@ export interface CalendarActivity {
   id: string;
   subject: string;
   dueAt: Date;
-  // No time was set; the editor must not echo the stored midnight back.
   allDay: boolean;
-  // Explicit multi-day end (Pipedrive parity, B3). Null/undefined for a single-day activity. When
-  // set, the calendar range + day grouping treat the activity as spanning [dueAt, endAt] so it shows
-  // on every covered day, not just its start day.
   endAt?: Date | null;
   durationMinutes: number | null;
   typeKey: string;
   done: boolean;
-  // Completion timestamp (time of doing it). Optional: only the history-card builders
-  // (listActivitiesForEntity, leadTimeline) select it; calendarRange leaves it undefined.
   doneAt?: Date | null;
   dealId: string | null;
-  // Parent title from the deletedAt-filtered join: a null title against a non-null dealId means the
-  // deal is soft-deleted, so a chip must neither name it nor link to it. Optional because only
-  // calendarRange selects it; the history-card builders leave it undefined.
   dealTitle?: string | null;
-  // The other primary parent (activities.lead_id, mutually exclusive with deal_id). Same rules.
   leadId?: string | null;
   leadTitle?: string | null;
   personId: string | null;
   orgId: string | null;
   overdue: boolean;
-  // Assigned user id (Pipedrive's "Owner" filter is really the assignee); powers the calendar
-  // owner filter (AC1). Optional like note/location: only calendarRange populates it; the other
-  // CalendarActivity builders (forEntity, leadTimeline) leave it undefined.
   assigneeId?: string | null;
-  // Assigned user's display name for the history-card footer (what Pipedrive shows as the
-  // activity's owner); the edit composer's assignee picker must agree with it. null only when
-  // the assignee row is unresolved (should not happen: assignee_id is NOT NULL).
   ownerName: string | null;
-  // Optional: only populated by listActivitiesForEntity (deal history card).
-  // calendarRange's CalendarRow/toCalendarActivity don't select these yet, so they
-  // stay undefined there; keeping them optional avoids forcing that builder to change.
   note?: string | null;
   location?: string | null;
-  // Video call link attached in the composer. Optional: only the history-card builders
-  // (listActivitiesForEntity, leadTimeline) select it; calendarRange leaves it undefined.
   videoCallUrl?: string | null;
-  // Resolved display names of the linked person/org, so the history card can link
-  // the record's NAME instead of the literal type word. Optional (only forEntity
-  // selects them); null when there is no link or the linked record is soft-deleted.
   personName?: string | null;
   orgName?: string | null;
 }
@@ -75,9 +51,6 @@ interface CalendarRow {
   dealId: string | null;
   personId: string | null;
   orgId: string | null;
-  // Link-safe ids from the deletedAt-filtered joins: null when the linked person/org is soft-
-  // deleted, so a deal-dominant activity never renders a link to a deleted secondary contact whose
-  // detail page 404s. The raw personId/orgId above stay for buildActivityVisibility.
   personVisibleId: string | null;
   orgVisibleId: string | null;
   dealTitle: string | null;
@@ -101,8 +74,6 @@ interface CalendarRow {
   assigneeId: string | null;
 }
 
-// Which linked parents the actor may be told about. Seeing the activity comes from its dominant
-// parent, which grants nothing about the secondary records hanging off it.
 interface LinkGates {
   lead: boolean;
   person: boolean;
@@ -148,7 +119,6 @@ function toCalendarActivity(
     typeKey: row.typeKey,
     done: row.done,
     dealId: row.dealId,
-    // The deal is the dominant parent, so seeing the activity already means seeing the deal.
     dealTitle: row.dealTitle,
     leadId: gates.lead ? row.leadVisibleId : null,
     leadTitle: gates.lead ? row.leadTitle : null,
@@ -162,11 +132,6 @@ function toCalendarActivity(
   };
 }
 
-// In-range, non-deleted activities the actor can see. Parent visibility columns are pulled in the
-// same joined query (soft-deleted parents excluded by the join predicate) and parentless-activity
-// participants are batched, so visibility resolves in memory via buildActivityVisibility, the same
-// path the Activities table uses. Sharing that resolver keeps the calendar from ever diverging from
-// the list (or from completeActivity's per-activity gate).
 export async function calendarRange(
   db: Db,
   actor: PermSetUser,
@@ -228,9 +193,6 @@ export async function calendarRange(
       organizations,
       and(eq(organizations.id, activities.orgId), isNull(organizations.deletedAt)),
     )
-    // Overlap, not point-in-range: an activity intersects [from, to] when it starts on or before
-    // `to` AND its end (explicit endAt, else its own dueAt) is on or after `from`. This keeps a
-    // multi-day activity visible on every range its span touches, not only its start day.
     .where(
       and(
         isNull(activities.deletedAt),
@@ -244,7 +206,6 @@ export async function calendarRange(
 
   const out: CalendarActivity[] = [];
   for (const row of rows) {
-    // Defensive: between excludes null dueAt, but skip explicitly before getTime().
     if (row.dueAt === null) continue;
     const vis = buildActivityVisibility(row, participantsByActivity.get(row.id) ?? []);
     if (vis === null || !canSee(actor, vis)) continue;

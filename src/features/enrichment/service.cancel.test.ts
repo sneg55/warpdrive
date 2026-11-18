@@ -51,7 +51,6 @@ async function seedOrg() {
   return row;
 }
 
-// Never answers, so only the caller's signal can end the call.
 function hanging(onCall: () => void) {
   const answer = (): Promise<ProviderOutcome> => {
     onCall();
@@ -65,8 +64,6 @@ function hanging(onCall: () => void) {
 }
 
 describe("runEnrichment cancellation", () => {
-  // A cancelled click recorded as provider timeouts leaves an all-failed run in the cache, and the
-  // next click replays that outage instead of calling out.
   it("persists nothing when the caller cancels mid fan-out", async () => {
     await connect("apollo");
     await connect("rocketreach");

@@ -1,8 +1,5 @@
 "use client";
 
-// SaveAsTemplateDialog: saves the composer's current subject + body as a PRIVATE template.
-// Sharing is managed later in Settings, so there is no share toggle here (isShared: false).
-// A failed save surfaces through the app-wide ActionError modal, never a silent no-op.
 import { useState } from "react";
 import { useActionError } from "@/components/shell/ActionErrorProvider";
 import { Button } from "@/components/ui/Button";
@@ -22,8 +19,6 @@ import { readCsrfToken } from "@/utils/csrfCookie";
 interface SaveAsTemplateDialogProps {
   subject: string;
   bodyHtml: string;
-  // Controlled mode: when `open`/`onOpenChange` are supplied (e.g. opened from the template
-  // dropdown footer), the default "Save as template" trigger button is omitted.
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
 }

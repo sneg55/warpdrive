@@ -1,12 +1,3 @@
-// Integration test for registerAllJobs wiring. Uses a real Postgres container
-// (via withTestDb) so the email_accounts SELECT inside registerEmailJobs does not
-// throw; an empty table returns 0 rows and 0 enqueues, which is the expected
-// behavior on a fresh installation with no connected mailboxes.
-//
-// The prod db singleton (src/db/client.ts) is redirected to the test container
-// via vi.mock so registerEmailJobs's internal SELECT hits a real Postgres with
-// the proper schema, not the placeholder URL from vitest.setup.ts.
-
 import { describe, expect, it, vi } from "vitest";
 import {
   PGBOSS_QUEUE_EMAIL_SEND,
@@ -20,16 +11,9 @@ import { seedUser } from "@/db/testing/factories";
 import { makeTestDb } from "@/test/db";
 import { registerAllJobs } from "./worker";
 
-// ---------------------------------------------------------------------------
-// Redirect the prod db singleton to the test container.
-// This is NOT mocking the DB: it is a real Postgres connection, just pointed at
-// the test container instead of the placeholder URL from vitest.setup.ts.
-// ---------------------------------------------------------------------------
 const testDbHolder: { db: Awaited<ReturnType<typeof makeTestDb>> | null } = { db: null };
 
 vi.mock("@/db/client", () => {
-  // Lazily return the live db from the test container. testDbHolder.db is set
-  // before any test calls registerEmailJobs, so the module factory can read it.
   return {
     get db() {
       if (testDbHolder.db === null) throw new Error("testDbHolder.db not initialized");
@@ -42,11 +26,6 @@ vi.mock("@/db/client", () => {
   };
 });
 
-// ---------------------------------------------------------------------------
-// Recording fake boss: captures createQueue/work/send/schedule calls for assertion.
-// Methods return Promise<void> explicitly (no async keyword) to satisfy
-// @typescript-eslint/require-await while still matching the PgBoss interface.
-// ---------------------------------------------------------------------------
 interface QueueRecord {
   name: string;
 }
@@ -112,8 +91,6 @@ describe("registerAllJobs", () => {
       expect(scheduled).toBeDefined();
       expect(scheduled?.cron).toBe("0 * * * *");
 
-      // The release-check job is enabled in the test env (DISABLE_UPDATE_CHECK unset), so its
-      // queue is created and scheduled alongside the reaper.
       expect(queueNames).toContain(PGBOSS_QUEUE_RELEASE_CHECK);
       expect(fakeBoss.schedules.some((s) => s.name === PGBOSS_QUEUE_RELEASE_CHECK)).toBe(true);
 

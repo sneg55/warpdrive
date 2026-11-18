@@ -45,7 +45,6 @@ it("reports busy inside an activity window and free outside it", async () => {
   const [type] = await ctx.db.select().from(activityTypes).where(eq(activityTypes.key, "call"));
   if (!type) throw new Error("activity type 'call' not found");
 
-  // A 10:00-10:30 activity (assigned to the user by default: assigneeId falls back to actor.id).
   await createActivity(
     ctx.db,
     actor,

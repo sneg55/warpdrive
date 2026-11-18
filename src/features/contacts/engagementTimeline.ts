@@ -1,15 +1,3 @@
-// Per-contact engagement timeline (CO-4): the Pipedrive "how recently have I engaged each
-// contact" view. Unlike contactsFeed (a flat, day-grouped per-activity list) this rolls activities
-// up PER CONTACT, bucketed by month across a period window, for the person/org engagement grid.
-//
-// Visibility is a TWO-layer gate. (1) The lane CONTACT is gated in SQL: laneVisibilityPredicate is
-// pushed into the WHERE clause so the raw-scan row cap (limit) counts only activities on contacts
-// the actor can see. Without it, a restricted actor with more than `maxRows` newer in-period
-// activities they cannot see would fill the cap with invisible rows and starve older visible lanes,
-// returning an empty/incomplete timeline. (2) buildActivityVisibility/canSee still authorizes each
-// ACTIVITY in-process under dominant-parent precedence (deal > person > org), and laneContactVisible
-// re-checks the contact, as defense-in-depth. The entity filter guarantees a person or org FK is
-// set, so an activity here is never "parentless" (NO_PARTICIPANTS).
 import { and, desc, eq, gte, isNotNull, isNull, lt, type SQL, sql } from "drizzle-orm";
 import type { Db } from "@/db/client";
 import { activities, activityTypes, deals, organizations, persons, pipelines } from "@/db/schema";
@@ -22,16 +10,10 @@ export type ContactEntity = "person" | "organization";
 
 export interface EngagementTimelineOptions {
   entity: ContactEntity;
-  // Number of month buckets ending in `now`'s month (Pipedrive's "3 months back").
   monthsBack: number;
-  // Assignee filter (Pipedrive's "Owner" filter is really the assignee), or null for everyone.
   ownerId: string | null;
-  // Activity-type key filter (call/meeting/...), or null for all types.
   typeKey: string | null;
-  // Period anchor; defaults to the current time. Injectable so tests are deterministic.
   now?: Date;
-  // Raw-scan row cap. Defaults to MAX_ROWS; injectable so tests can prove the period window keeps
-  // the cap from being starved by out-of-window rows.
   maxRows?: number;
 }
 
@@ -46,24 +28,17 @@ interface EngagementMarker {
 export interface EngagementLane {
   contactId: string;
   contactName: string;
-  // monthKey ("2026-05") -> that month's markers, oldest-first. Only months with activity appear.
   byMonth: Record<string, EngagementMarker[]>;
   total: number;
-  // Most-recent marker's due time, for lane ordering.
   lastActivityMs: number;
 }
 
 export interface EngagementTimeline {
-  // Ordered ascending month keys spanning the period (left-to-right axis).
   months: string[];
-  // Lanes, most-recently-engaged contact first.
   lanes: EngagementLane[];
 }
 
 const NO_PARTICIPANTS: string[] = [];
-// Safety cap: an engagement rollup wants every activity in the window, but an unbounded scan is a
-// footgun. Ordered dueAt DESC so, if a tenant ever exceeds this in one period, the most recent
-// activity is what survives. Documented as an MVP bound in implementation-notes.
 const MAX_ROWS = 5000;
 
 function monthKey(y: number, mZeroBased: number): string {
@@ -85,7 +60,6 @@ function periodStart(now: Date, monthsBack: number): Date {
   return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - (monthsBack - 1), 1));
 }
 
-// The joined columns buildActivityVisibility + the contact-identity resolution below both read.
 type EngagementRow = Awaited<ReturnType<typeof selectRows>>[number];
 
 interface ResolvedRow {
@@ -95,10 +69,6 @@ interface ResolvedRow {
   marker: EngagementMarker;
 }
 
-// SQL lane-contact visibility (layer 1, see the module header). A NULL pipeline gate collapses
-// dealVisibilityPredicate to the universal person/org record-visibility rule (mirror of canSee);
-// contacts have no pipeline restriction. Same reuse pattern as search/query.ts. Pushed into the
-// WHERE so the row cap counts only rows on contacts the actor can see.
 function laneVisibilityPredicate(entity: ContactEntity, actor: PermSetUser): SQL {
   const ctx = {
     userId: actor.id,
@@ -118,9 +88,6 @@ function laneVisibilityPredicate(entity: ContactEntity, actor: PermSetUser): SQL
   });
 }
 
-// Layer-2 gate (see the module header): is the lane CONTACT itself visible to the actor on its own
-// person/org record, independent of how the activity was authorized. null level means the contact
-// row is missing/soft-deleted (LEFT JOIN), so not visible.
 function laneContactVisible(
   row: EngagementRow,
   entity: ContactEntity,
@@ -146,9 +113,6 @@ function laneContactVisible(
   });
 }
 
-// Filter + project one row into a lane entry, or null when it is out of window / the activity is
-// hidden / the lane contact is hidden or soft-deleted. Pulled out of engagementTimeline to keep
-// that function under the cognitive-complexity budget.
 function resolveRow(
   row: EngagementRow,
   entity: ContactEntity,
@@ -163,7 +127,6 @@ function resolveRow(
   const contactId = entity === "person" ? row.personVisibleId : row.orgVisibleId;
   const contactName = entity === "person" ? row.personName : row.orgName;
   if (contactId === null || contactName === null) return null;
-  // Layer-2: never emit a lane for a contact the actor cannot see on its own record.
   if (!laneContactVisible(row, entity, actor)) return null;
   return {
     contactId,
@@ -254,9 +217,6 @@ export async function engagementTimeline(
   const months = monthKeysForPeriod(now, opts.monthsBack);
   const monthSet = new Set(months);
   const start = periodStart(now, opts.monthsBack);
-  // The period always ends in `now`'s month, so the exclusive upper bound is the first day of the
-  // month AFTER it. Bounding both edges in SQL keeps out-of-window (e.g. far-future) rows from
-  // consuming the row cap before in-window rows are reached, then getting dropped in grouping.
   const end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
 
   const entityFk =
@@ -266,7 +226,6 @@ export async function engagementTimeline(
     entityFk,
     gte(activities.dueAt, start),
     lt(activities.dueAt, end),
-    // Lane-contact visibility in SQL, so the row cap counts only visible-contact rows.
     laneVisibilityPredicate(opts.entity, actor),
   ];
   if (opts.ownerId !== null) preds.push(eq(activities.assigneeId, opts.ownerId));
@@ -282,7 +241,6 @@ export async function engagementTimeline(
     addToLane(laneMap, resolved, row.dueAt.getTime());
   }
 
-  // Rows arrive dueAt DESC; each month's markers get reversed to oldest-first for the axis.
   const lanes = [...laneMap.values()].sort((a, b) => b.lastActivityMs - a.lastActivityMs);
   for (const lane of lanes) {
     for (const k of Object.keys(lane.byMonth)) lane.byMonth[k]?.reverse();

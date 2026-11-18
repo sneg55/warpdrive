@@ -1,5 +1,3 @@
-// Apollo's wire contract. Both endpoints read their inputs from the query string, so a lookup
-// sent anywhere else reaches Apollo as a call with nothing to match on and comes back empty.
 import { afterEach, describe, expect, it, vi } from "vitest";
 import orgMatch from "./__fixtures__/apollo-org-match.json";
 import personMatch from "./__fixtures__/apollo-person-match.json";
@@ -61,8 +59,6 @@ describe("matchPerson request", () => {
     expect(sentQuery(spy)).toMatchObject({ id: "67a1d66a7a510b000111acdb" });
   });
 
-  // api_search obfuscates surnames, so a name-only match returns a different person with the
-  // masked string baked into their name. The id is the only thing that identifies the row picked.
   it("still sends the id when the surname it carries is obfuscated", async () => {
     const spy = stubFetch(body(personMatch));
     await apolloProvider.matchPerson(
@@ -82,7 +78,6 @@ describe("matchPerson request", () => {
     });
   });
 
-  // A body would be ignored, and carrying one hides which half of the request Apollo actually read.
   it("sends no request body at all", async () => {
     const spy = stubFetch(body(personMatch));
     await apolloProvider.matchPerson(FULL_LOOKUP, API_KEY, signal());

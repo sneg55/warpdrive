@@ -1,5 +1,4 @@
 // @vitest-environment jsdom
-// src/components/ui/Popover.test.tsx
 import "@testing-library/jest-dom/vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeAll, describe, expect, it, vi } from "vitest";

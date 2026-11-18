@@ -7,10 +7,6 @@ import { listActivityRows } from "./activityRows";
 import { actor, callTypeId, minimalActivityInput, noFilter, sig } from "./activityRowsTestHelpers";
 import { createActivity } from "./repo";
 
-// Split out from activityRows.test.ts (same pattern as activityRows.sort.test.ts): each of the
-// non-done filter predicates in activityFilterPredicates (ownerId, from/to, typeKey) needs its own
-// non-null case to actually exercise the branch, not just the always-null path the other suites use.
-
 async function typeIdByKey(db: Parameters<typeof callTypeId>[0], key: string): Promise<string> {
   const [t] = await db.select().from(activityTypes).where(eq(activityTypes.key, key));
   if (t === undefined) throw new Error(`activity type '${key}' not seeded`);
@@ -38,8 +34,6 @@ describe("listActivityRows filter predicates", () => {
         sig(),
       );
 
-      // Admin actor so both rows are visible regardless of the filter: any narrowing below is
-      // the ownerId predicate itself, not a visibility side effect.
       const rows = await listActivityRows(
         db,
         actor(admin.id, true),
@@ -58,8 +52,6 @@ describe("listActivityRows filter predicates", () => {
       const typeId = await callTypeId(db);
       const from = "2026-07-10";
       const to = "2026-07-12";
-      // Mirror the production code's own boundary construction (new Date(`${d}T00:00:00`)) so the
-      // comparison is exact regardless of the machine's local timezone.
       const lowerMs = new Date(`${from}T00:00:00`).getTime();
       const upperMs = new Date(`${to}T23:59:59`).getTime();
 
@@ -98,7 +90,6 @@ describe("listActivityRows filter predicates", () => {
 
       const rows = await listActivityRows(db, actor(u.id), { ...noFilter, from, to }, sig());
       const subjects = rows.map((r) => r.subject);
-      // Boundaries included (gte/lte), one tick outside on either side excluded.
       expect(subjects).toContain("At lower boundary");
       expect(subjects).toContain("At upper boundary");
       expect(subjects).not.toContain("Just before window");

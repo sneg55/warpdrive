@@ -9,9 +9,6 @@ const OFF: Omit<VersionStatus, "current" | "disabled"> = {
   checkedAt: null,
 };
 
-// Derive the client payload from the running version and the cached release row.
-// Disabled or no-row => no release data. Otherwise compute updateAvailable, which is
-// null for non-semver (dev) builds where a comparison is meaningless.
 export function computeStatus(
   current: string,
   row: ReleaseRow | null,

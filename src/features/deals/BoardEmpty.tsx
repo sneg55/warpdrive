@@ -16,14 +16,9 @@ import {
 interface BoardEmptyProps {
   kind: Exclude<BoardEmptyKind, "none">;
   onClearFilters: () => void;
-  // The toolbar's own add-deal control, so the empty pipeline offers the same button rather than a
-  // second, different one.
   addSlot: React.ReactNode;
 }
 
-// The board with nothing on it. Which sentence is true depends on why it is empty, so a filter
-// that excluded everything never reads as an empty pipeline, and a state that could be either
-// claims neither and offers both ways out.
 export function BoardEmpty({ kind, onClearFilters, addSlot }: BoardEmptyProps): React.ReactNode {
   const clearFilters = (
     <Button size="sm" variant="outline" onClick={onClearFilters}>

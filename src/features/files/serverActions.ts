@@ -11,19 +11,11 @@ import { confirmUpload, requestDownload, requestUpload } from "./actions";
 import type { RequestUploadInput } from "./schemas";
 import { makeStorageClient, type PresignedPost } from "./storage";
 
-// Client-callable server actions for the presigned-upload handshake.
-//
-// Auth comes from the server session (never trusted from the client), and, as in every other
-// mutation family, the double-submit CSRF token is checked before anything else. A server action is
-// a public POST endpoint: authentication alone would still let a cross-site page drive this
-// handshake on behalf of a logged-in user.
-
 const CSRF_FAIL = (): Result<never, AppError> =>
   err(new AppError(ERROR_IDS.PERM_DENIED, "csrf check failed", {}));
 const UNAUTH = (): Result<never, AppError> =>
   err(new AppError(ERROR_IDS.PERM_DENIED, "unauthenticated", {}));
 
-// Cheap token check first, then the more expensive context build (which hydrates the actor).
 async function guardedActor(csrfToken: string | null): Promise<Result<PermSetUser, AppError>> {
   const csrf = await guardCsrf(csrfToken);
   if (!csrf.ok) return CSRF_FAIL();

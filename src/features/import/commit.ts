@@ -18,10 +18,6 @@ export type { ImportActor } from "./commitHelpers";
 
 type ClaimedRow = { id: string; mapped: MappedRow };
 
-// Retry-safe commit of a single validated import row. claim + dedup + create/
-// update + finalize all run in ONE transaction: a failure rolls back the whole
-// row commit, and the atomic claim makes a retry an idempotent no-op rather than
-// a double-create.
 export async function commitRow(
   db: Db,
   actor: ImportActor,
@@ -55,7 +51,6 @@ export async function commitRow(
     };
     if (ctx.source === "pipedrive") await lockImportMutation(tx, signal);
 
-    // 1. Atomic claim: valid -> importing, or reclaim a stale importing past lease.
     const lease = new Date(Date.now() - IMPORTING_LEASE_MS);
     const claimed = await tx.execute(sql`
       UPDATE import_rows SET status = 'importing', claimed_at = now()
@@ -65,8 +60,6 @@ export async function commitRow(
     `);
 
     if (claimed.rows.length === 0) {
-      // Already imported/skipped/held by a live lease: read back the terminal
-      // status (idempotent no-op, the heart of retry safety).
       const [existing] = await tx.select().from(importRows).where(sql`${importRows.id} = ${rowId}`);
       if (existing === undefined) {
         return err(new AppError(ERROR_IDS.IMPORT_ROW_GONE, "row gone", { rowId }));
@@ -82,8 +75,6 @@ export async function commitRow(
     if (first === undefined) {
       return err(new AppError(ERROR_IDS.IMPORT_ROW_GONE, "claim returned no row", { rowId }));
     }
-    // Upgrade in place: a row validated before cross-entity mapping holds a flat mapped object and
-    // is already "valid", so nothing else would ever convert it.
     const mapped = upgradeMappedRow(first.mapped);
 
     return commitClaimedRow(tx, actor, ctx, rowId, target, dedupMode, mapped, signal);

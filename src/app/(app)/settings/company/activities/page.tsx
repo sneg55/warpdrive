@@ -8,7 +8,6 @@ import { ActivityTypesClient } from "./ActivityTypesClient";
 
 export const metadata = { title: STRINGS.settings.activities };
 
-// Company settings > Activities tab (spec 6.2): activity-type catalog CRUD.
 export default async function ActivitiesPage(): Promise<ReactNode> {
   const { actor } = await createContext();
   if (actor === null || (actor.type !== "admin" && !actor.flags.has(PERMISSION_FLAGS.MANAGE))) {

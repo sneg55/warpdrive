@@ -22,14 +22,6 @@ import { LeadSummaryEditPanel } from "./LeadSummaryEditPanel";
 
 const NONE: ReadonlySet<string> = new Set();
 
-// Lead detail sidebar (mirrors DealSidebar but reads a LeadDetail; deal-specific stage fields are
-// dropped). Summary's Value/Owner/Expected-close rows are the click-to-edit LeadSummaryEditPanel
-// (Wave 2 parity with the deal workspace); owners is the assignable-users list for the Owner
-// picker. The Person/Organization sections reuse the deal sidebar's PersonBlock/OrgBlock so the
-// lead surfaces the linked contact's full field set (email/phone, website/firmographics/address),
-// matching Pipedrive's lead page rather than showing name alone. person/org are the fully-loaded
-// records (null when unlinked or soft-deleted); hidden*Fields are the Settings > Data fields
-// built-in hides, threaded through so the lead drops the same rows the contact detail pages do.
 export function LeadSidebar({
   lead,
   owners,

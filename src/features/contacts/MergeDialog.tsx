@@ -1,8 +1,4 @@
 "use client";
-// Shared survivor/merge-partner dialog for organization and person records. The
-// only client-supplied field the merge action trusts is the survivor's own name
-// (fieldChoicesSchema strips everything else), so this dialog picks a partner and
-// a survivor and sends an empty fieldChoices; the survivor keeps its name.
 import type React from "react";
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
@@ -19,8 +15,6 @@ type Option = { id: string; name: string };
 export interface MergeDialogProps {
   kind: "org" | "person";
   current: Option;
-  // Receives the survivor id: the current record may itself be merged away, so the
-  // caller navigates to the survivor rather than refreshing a now-deleted URL.
   onMerged: (survivorId: string) => void;
   onClose?: () => void;
 }

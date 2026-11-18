@@ -23,9 +23,6 @@ function renderFooter(overrides: Partial<Parameters<typeof ComposerFooter>[0]> =
   );
 }
 
-// Mark-as-done is the same checkbox-plus-label control as the email composer's add-as-activity, so
-// it takes the same treatment: the visible text is part of the hit area and the whole control
-// fills on hover.
 describe("deal-workspace ComposerFooter mark-as-done", () => {
   it("toggles when the visible label text is clicked", async () => {
     const user = userEvent.setup();

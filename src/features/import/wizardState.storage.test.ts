@@ -16,6 +16,5 @@ it("walks upload -> preparing -> map via the server-parse actions", () => {
   expect(s.step).toBe("map");
   expect(s.headers).toEqual(["Name", "Email"]);
   expect(s.totalRows).toBe(5);
-  // prepared initializes an unmapped column per header so MapStep can render.
   expect(Object.keys(s.columns)).toEqual(["Name", "Email"]);
 });

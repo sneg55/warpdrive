@@ -4,9 +4,6 @@ import { DetailDrawer } from "@/features/navigation/DetailDrawer";
 import { DetailDrawerPreviewSkeleton } from "@/features/navigation/DetailDrawerPreviewSkeleton";
 import { LeadDetailView } from "../../../../leads/[leadId]/LeadDetailView";
 
-// A lead is the other primary parent an activity can have (activities.lead_id, mutually exclusive
-// with deal_id), so the Activities list needs its own interceptor for it: the Leads inbox's @modal
-// slot only intercepts navigations that start inside /leads.
 export default async function InterceptedLeadPage({
   params,
 }: {

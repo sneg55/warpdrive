@@ -66,7 +66,6 @@ it("does NOT count a hidden candidate (preserves 404-on-invisible)", async () =>
     const importer = actorFor((await seedUser(db)).id);
     const other = actorFor((await seedUser(db)).id);
 
-    // owner-level person owned by `other`: importer cannot see it.
     await createPerson(
       db,
       other,
@@ -87,7 +86,7 @@ it("does NOT count a hidden candidate (preserves 404-on-invisible)", async () =>
       { emails: [{ label: "work", value: "dup@a.com", primary: true }] },
       signal,
     );
-    expect(r.outcome).toBe("none"); // hidden candidate not surfaced
+    expect(r.outcome).toBe("none");
   });
 });
 

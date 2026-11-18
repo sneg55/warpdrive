@@ -33,8 +33,6 @@ describe("DetailDrawer", () => {
       </DetailDrawer>,
     );
     const dialog = screen.getByRole("dialog");
-    // Width scales with the viewport (vw units) and lifts the generic Sheet's max-w-3xl (768px)
-    // cap to a wider one so the drawer does not read as narrow on large screens.
     expect(dialog.className).toMatch(/w-\[\d+vw\]/);
     expect(dialog.className).not.toContain("max-w-3xl");
     expect(dialog.className).toContain("max-w-[1280px]");
@@ -47,7 +45,6 @@ describe("DetailDrawer", () => {
       </DetailDrawer>,
     );
     const dialog = screen.getByRole("dialog");
-    // The lead drawer opts into PD's wider (~75vw) footprint; the default person/org width is unchanged.
     expect(dialog.className).toContain("w-[75vw]");
     expect(dialog.className).not.toContain("w-[66vw]");
   });
@@ -63,9 +60,6 @@ describe("DetailDrawer", () => {
   });
 
   it("lets nested detail content dismiss the drawer through the close context", () => {
-    // A record deleted from inside the drawer has to dismiss it. Detail content cannot do that with
-    // router.push: that is a soft navigation, and Next keeps the previously active @modal slot, so
-    // the drawer would stay open on a record that no longer exists.
     function DeleteAction(): React.ReactNode {
       const close = useDetailDrawerClose();
       return (

@@ -1,5 +1,4 @@
 // @vitest-environment jsdom
-// src/components/ui/MultiCombobox.test.tsx
 import "@testing-library/jest-dom/vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
@@ -9,7 +8,6 @@ beforeAll(() => {
   Element.prototype.scrollIntoView = vi.fn();
   Element.prototype.hasPointerCapture = vi.fn(() => false);
   Element.prototype.releasePointerCapture = vi.fn();
-  // cmdk observes its list's size to manage height; jsdom has no ResizeObserver.
   global.ResizeObserver = class {
     observe = vi.fn();
     unobserve = vi.fn();
@@ -27,8 +25,6 @@ describe("MultiCombobox", () => {
     { value: "kai", label: "Kai Carter" },
   ];
 
-  // The chip row is the one buttonVariants consumer that wraps its content, so it has to opt back
-  // out of the base button's nowrap. A long guest name would otherwise run past the field edge.
   it("lets a long chip label wrap instead of overflowing the field", () => {
     render(
       <MultiCombobox
@@ -66,7 +62,6 @@ describe("MultiCombobox", () => {
         ariaLabel="Participants"
       />,
     );
-    // Popover is closed, so the only "Mia Silva" text is the chip.
     expect(screen.getByText("Mia Silva")).toBeInTheDocument();
   });
 

@@ -53,10 +53,6 @@ it("appends a change log entry and lists newest first", async () => {
   });
 });
 
-// Regression: node-postgres already JSON.parses jsonb columns, and drizzle's
-// PgJsonb.mapFromDriverValue re-parses any string it receives. Without reading
-// the jsonb columns as text (see listChangeLog), a numeric-looking STRING like
-// a deal's "2000.00" would come back as the number 2000, losing precision.
 it("round-trips a numeric-looking jsonb string without collapsing it to a number", async () => {
   await withTestDb(async (db) => {
     const signal = new AbortController().signal;
@@ -155,7 +151,6 @@ it("resolves stageId change old/new ids to stage names in the read layer", async
       .returning();
     if (deal === undefined) throw new Error("deal seed failed");
 
-    // Mirrors what changeStage writes: field "stageId", ids in old/new.
     await db.transaction(async (tx) => {
       await recordChange(
         tx,

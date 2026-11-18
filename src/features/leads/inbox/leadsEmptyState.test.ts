@@ -3,8 +3,6 @@ import { STRINGS } from "@/constants/strings";
 import { leadsEmptyState } from "./leadsEmptyState";
 
 describe("leadsEmptyState", () => {
-  // "Nothing here yet" and "your filter excluded everything" are different facts and need
-  // different exits: one adds a lead, the other clears the filter.
   it("separates an empty inbox from a filter that matched nothing", () => {
     expect(leadsEmptyState({ archived: false, hasFilter: false }).kind).toBe("none");
     expect(leadsEmptyState({ archived: false, hasFilter: true }).kind).toBe("filtered");
@@ -20,9 +18,6 @@ describe("leadsEmptyState", () => {
     expect(leadsEmptyState({ archived: true, hasFilter: true }).kind).toBe("filtered");
   });
 
-  // The inbox reads its counts through the filter, so it cannot tell "the filter hid your leads"
-  // from "you have no leads and a filter happens to be on". The wording has to hold in both, and
-  // it used to open by stating that every lead is still there.
   it("states nothing about how many leads exist in the filtered wording", () => {
     const body = leadsEmptyState({ archived: false, hasFilter: true }).body;
     expect(body).not.toMatch(/still (here|holds)|does have|every lead is/i);

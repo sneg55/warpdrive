@@ -12,9 +12,6 @@ interface ActivitiesTableHeadProps {
   onToggleAll: () => void;
 }
 
-// The Activities table's <thead>, extracted from ActivitiesTable to keep it under the
-// project's file-size budget. Column order and labels are Pipedrive parity (Task 8's
-// Duration/Assignee columns, Task 9's sortable Duration).
 export function ActivitiesTableHead({
   effective,
   onSort,

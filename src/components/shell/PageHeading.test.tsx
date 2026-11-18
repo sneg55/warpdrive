@@ -9,9 +9,7 @@ describe("PageHeading", () => {
   it("renders the title as an h1 at the display size and 450 weight", () => {
     render(<PageHeading title="People" />);
     const h1 = screen.getByRole("heading", { level: 1, name: "People" });
-    // The named display size, so a page title cannot be sized by guess.
     expect(h1.className).toContain("text-display");
-    // PD's title weight is ~450 (lighter than semibold/600). Pin it so it cannot drift heavy again.
     expect(h1.className).toContain("font-[450]");
     expect(h1.className).not.toContain("font-semibold");
   });
@@ -30,11 +28,9 @@ describe("PageHeading", () => {
         title="People"
       />,
     );
-    // The parent crumb is a link.
     expect(screen.getByRole("link", { name: "Contacts" }).getAttribute("href")).toBe(
       "/contacts/people",
     );
-    // The last crumb is the current page: marked for assistive tech, not a link.
     const nav = screen.getByRole("navigation", { name: "Breadcrumb" });
     const current = nav.querySelector('[aria-current="page"]');
     expect(current?.textContent).toBe("People");

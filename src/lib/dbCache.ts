@@ -1,11 +1,5 @@
 import type { Db } from "@/db/client";
 
-// A tiny cross-request cache for near-static per-instance data (custom-field defs, the settings
-// singleton). It keys on the Db instance via a WeakMap so per-test databases never share entries
-// (integration tests each get a fresh Db, and prod uses one shared pool-backed Db). A short TTL
-// bounds staleness even if an invalidation is missed (e.g. a server module duplicated across
-// bundle layers reading a different Db copy); mutations call invalidate() for instant coherence in
-// the common single-instance case.
 interface Entry<V> {
   value: V;
   expires: number;

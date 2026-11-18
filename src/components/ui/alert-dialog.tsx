@@ -3,11 +3,6 @@ import * as AlertDialogPrimitive from "@radix-ui/react-alert-dialog";
 import { forwardRef } from "react";
 import { cn } from "@/lib/utils";
 
-// shadcn (new-york) AlertDialog wrapper over @radix-ui/react-alert-dialog. The SANCTIONED primitive
-// for a destructive confirmation: unlike Dialog it uses role="alertdialog", does not dismiss on
-// outside-click, and focuses the Cancel action, so a stray click cannot confirm. Escape still
-// dismisses (verified in-browser), which is safe: it lands on Cancel, never on the action.
-// See CLAUDE.md "Use the design system, never reinvent".
 export const AlertDialog = AlertDialogPrimitive.Root;
 export const AlertDialogTrigger = AlertDialogPrimitive.Trigger;
 const AlertDialogPortal = AlertDialogPrimitive.Portal;

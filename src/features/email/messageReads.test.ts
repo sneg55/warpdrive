@@ -1,5 +1,3 @@
-// Integration tests for the single-message read. Real Postgres via withTestDb. An invisible
-// message is indistinguishable from a missing one (404-on-invisible), matching getThread.
 import { sql } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import type { PermissionFlagKey } from "@/constants/permissionFlags";

@@ -1,7 +1,3 @@
-// getLeadRelations: loads the full linked person + organization records for the lead sidebar's
-// Person/Organization blocks (PD parity: the lead surfaces the contact's whole field set, not just
-// the name). Soft-deleted contacts are treated as absent so the sidebar never renders a dangling
-// link, mirroring the deal workspace's summaryRepo.
 import { describe, expect, it } from "vitest";
 import { leads } from "@/db/schema/leads";
 import { organizations } from "@/db/schema/organizations";

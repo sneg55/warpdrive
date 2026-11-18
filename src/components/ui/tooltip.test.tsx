@@ -15,8 +15,6 @@ describe("Tip", () => {
         </Tip>
       </TooltipProvider>,
     );
-    // The trigger (with its aria-label) is always in the DOM; the content only
-    // portals in on hover/focus, so we assert the trigger, not the tip text.
     expect(screen.getByRole("button", { name: "Attach a file" })).toBeInTheDocument();
   });
 });

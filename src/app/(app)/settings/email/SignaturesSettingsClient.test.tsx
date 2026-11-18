@@ -31,7 +31,6 @@ describe("SignaturesSettingsClient", () => {
         ]}
       />,
     );
-    // "Default" (exact) matches only the badge, not the "Set as default" button text.
     expect(screen.getByText("Default")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /set as default.*Personal/i })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /set as default.*Work/i })).not.toBeInTheDocument();
@@ -45,7 +44,6 @@ describe("SignaturesSettingsClient", () => {
     await user.click(screen.getByRole("button", { name: "Save" }));
     expect(createSignatureAction).not.toHaveBeenCalled();
     expect(await screen.findByRole("alert")).toHaveTextContent(/name/i);
-    // The message clears once the user starts typing a name.
     await user.type(screen.getByLabelText(/name/i), "Work");
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });

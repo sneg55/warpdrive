@@ -70,12 +70,10 @@ function nth(items: HTMLElement[], index: number): HTMLElement {
   return found as HTMLElement;
 }
 
-// Remove keeps its label while a mutation is in flight, so the cards are told apart by DOM order.
 function removeButton(index: number): HTMLElement {
   return nth(screen.getAllByRole("button", { name: S.remove }), index);
 }
 
-// Saving the first card's key is the mutation an admin is most likely to interrupt.
 function startSave(): void {
   fireEvent.change(nth(screen.getAllByLabelText(S.apiKeyLabel), 0), {
     target: { value: "sk-replacement-key" },

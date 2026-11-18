@@ -8,7 +8,7 @@ export function installConsoleForwarding(): () => void {
   const originalWarn = console.warn;
   const originalError = console.error;
   const seen = new Set<string>();
-  let inForward = false; // prevents recursion if capture's fail-open calls console.warn
+  let inForward = false;
 
   function forward(level: "warn" | "error", args: unknown[]): void {
     if (inForward) return;

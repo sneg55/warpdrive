@@ -3,17 +3,12 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { nextCursorIndex } from "./rowCursor";
 import { isOverlayOpen, isTypingTarget } from "./shortcutTarget";
 
-// Enter belongs to whatever the user has focused; only a keypress with nothing interactive focused
-// should reach the row cursor.
 const INTERACTIVE = "a,button,input,select,textarea,[role='button'],[role='link'],[tabindex]";
 
 function ownsEnter(target: EventTarget | null): boolean {
   return target instanceof HTMLElement && target.closest(INTERACTIVE) !== null;
 }
 
-// Pipedrive's j/k list browsing: j moves the cursor down a row, k up, Enter opens the row under it.
-// `count` is the number of rows currently listed; the cursor clamps when that shrinks under it, so
-// a filter change never leaves it pointing past the end.
 export function useRowCursor(count: number, onActivate: (index: number) => void): number | null {
   const [index, setIndex] = useState<number | null>(null);
   const activate = useRef(onActivate);

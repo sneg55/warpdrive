@@ -1,7 +1,3 @@
-// changeOwner: permission-gated deal owner reassignment for the deal header.
-// loadEditableDeal enforces edit access; a SECOND gate (deal.changeOwner) is required
-// because reassigning ownership is a stronger capability than editing fields. Mirrors the
-// create path's owner-override gate (resolveOwnerId) so ownership can never be spoofed.
 import { and, eq, sql } from "drizzle-orm";
 import { CHANGE_FIELD_OWNER_ID } from "@/constants/changeLogFields";
 import { AppError, ERROR_IDS } from "@/constants/errorIds";
@@ -29,7 +25,6 @@ export async function changeOwner(
   if (editable.ok === false) return editable;
   const { deal, pipelineVisibilityGroupId } = editable.value;
 
-  // Ownership reassignment gate: same capability the create path honors for owner override.
   if (!can(actor, "deal.changeOwner", toVisibleDeal(deal, pipelineVisibilityGroupId))) {
     return err(
       new AppError(ERROR_IDS.PERM_DENIED, "Not permitted to change this deal's owner", {
@@ -40,7 +35,6 @@ export async function changeOwner(
   }
   signal.throwIfAborted();
 
-  // The new owner must exist and be active (no reassigning to a disabled account).
   const [target] = await db
     .select({ id: users.id })
     .from(users)

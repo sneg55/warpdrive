@@ -28,12 +28,10 @@ describe("labelsForEntities / setEntityLabels", () => {
       const map1 = await labelsForEntities(db, "deal", [deal.id], signal);
       expect((map1.get(deal.id) ?? []).map((l) => l.name).sort()).toEqual(["ColdX", "HotX"]);
 
-      // Replacing with a subset drops the removed link.
       await setEntityLabels(db, "deal", deal.id, [hot.id], signal);
       const map2 = await labelsForEntities(db, "deal", [deal.id], signal);
       expect((map2.get(deal.id) ?? []).map((l) => l.name)).toEqual(["HotX"]);
 
-      // Clearing removes all links.
       await setEntityLabels(db, "deal", deal.id, [], signal);
       const map3 = await labelsForEntities(db, "deal", [deal.id], signal);
       expect(map3.get(deal.id) ?? []).toEqual([]);
@@ -41,8 +39,6 @@ describe("labelsForEntities / setEntityLabels", () => {
   });
 });
 
-// Writers hold label NAMES (the entity's text[] column is what every read path renders), so the
-// name-based wrapper is what keeps the join rows in step with that array.
 describe("syncEntityLabelNames", () => {
   it("links names to their catalog rows, matching case-insensitively", async () => {
     await withTestDb(async (db) => {

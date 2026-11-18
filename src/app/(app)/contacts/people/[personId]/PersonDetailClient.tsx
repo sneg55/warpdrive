@@ -10,8 +10,6 @@ import { PersonDetailHeader } from "../../ContactDetailHeader";
 import { ContactTimelinePanel, FilesPanel, TabStrip } from "../../contactDetail.shared";
 import { PersonSidebar } from "./PersonSidebar";
 
-// No page-level Email tab: linked mail is now a card in the Activity timeline, reachable under
-// its Email filter, the way the deal workspace shows it.
 type Tab = "activity" | "files";
 
 const TAB_LABELS: Record<Tab, string> = {
@@ -54,8 +52,6 @@ export function PersonDetailClient({
 
   function onMerged(survivorId: string): void {
     setMerging(false);
-    // If this record was merged away, its own URL now 404s (loader filters deletedAt),
-    // so navigate to the survivor. If it survived, a refresh picks up the merged data.
     if (survivorId === person.id) router.refresh();
     else router.push(`/contacts/people/${survivorId}`);
   }

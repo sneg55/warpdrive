@@ -20,14 +20,9 @@ interface ContactActionsMenuProps {
   entityId: string;
   canMerge: boolean;
   canDelete: boolean;
-  // Opens the existing MergeDialog owned by the detail client (kept there so this menu stays a
-  // trigger, not a second dialog host).
   onMerge: () => void;
 }
 
-// Header overflow (ellipsis) menu for a person/org detail (Pipedrive parity, CO-3): Copy link,
-// Merge duplicates (permission-gated), Delete (permission-gated). Each item is backed by a real
-// action; delete confirms via the shadcn ConfirmDialog, then routes back to the list.
 export function ContactActionsMenu({
   entityType,
   entityId,
@@ -69,8 +64,6 @@ export function ContactActionsMenu({
         )}
       </DropdownMenuContent>
 
-      {/* Sibling of the menu content, not a child of it: the menu unmounts its items on select,
-          which would take the dialog with it. */}
       <ConfirmDialog
         open={confirmingDelete}
         onOpenChange={setConfirmingDelete}

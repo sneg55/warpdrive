@@ -36,7 +36,6 @@ export const auditTargetEnum = pgEnum("audit_target", [
   "organization",
 ]);
 
-// Singleton: exactly one row, guarded by CHECK (id = true).
 export const settings = pgTable(
   "settings",
   {
@@ -68,7 +67,6 @@ export const labels = pgTable("labels", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-// audit_events: security-relevant changes (permission sets, groups, pipeline restriction, user roles).
 export const auditEvents = pgTable(
   "audit_events",
   {

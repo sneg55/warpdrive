@@ -5,7 +5,6 @@ import { withTestDb } from "@/db/testing";
 import { seedPipelineWithStages, seedUser } from "@/db/testing/factories";
 import { resolveAndStoreMentions } from "./resolve";
 
-// Insert a deal with the given visibility level owned by ownerId.
 async function seedDeal(
   db: Parameters<Parameters<typeof withTestDb>[0]>[0],
   ownerId: string,
@@ -30,7 +29,6 @@ describe("resolveAndStoreMentions", () => {
     await withTestDb(async (db) => {
       const author = await seedUser(db);
       const target = await seedUser(db);
-      // all-visibility deal: target CAN see it
       const dealId = await seedDeal(db, author.id, "all");
       const sig = new AbortController().signal;
 
@@ -47,14 +45,12 @@ describe("resolveAndStoreMentions", () => {
       expect(r.ok).toBe(true);
       if (r.ok === true) expect(r.value.created).toBe(1);
 
-      // Assert the mentions row was stored.
       const mentionRows = await db
         .select()
         .from(mentions)
         .where(sql`mentioned_user_id = ${target.id}::uuid`);
       expect(mentionRows).toHaveLength(1);
 
-      // Assert a notification was actually created.
       const notifRows = await db
         .select()
         .from(notifications)
@@ -97,7 +93,6 @@ describe("resolveAndStoreMentions", () => {
       const dealId = await seedDeal(db, author.id, "all");
       const sig = new AbortController().signal;
 
-      // UUID that does not exist in the database.
       const ghostId = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
 
       const r = await resolveAndStoreMentions(db, {
@@ -110,7 +105,6 @@ describe("resolveAndStoreMentions", () => {
         signal: sig,
       });
 
-      // Must succeed (not error) and report 0 created.
       expect(r.ok).toBe(true);
       if (r.ok === true) expect(r.value.created).toBe(0);
 
@@ -126,7 +120,6 @@ describe("resolveAndStoreMentions", () => {
     await withTestDb(async (db) => {
       const author = await seedUser(db);
       const inactive = await seedUser(db, { isActive: false });
-      // all-visibility deal: inactive user could otherwise see it
       const dealId = await seedDeal(db, author.id, "all");
       const sig = new AbortController().signal;
 
@@ -143,14 +136,12 @@ describe("resolveAndStoreMentions", () => {
       expect(r.ok).toBe(true);
       if (r.ok === true) expect(r.value.created).toBe(0);
 
-      // No mention row for an inactive user.
       const mentionRows = await db
         .select()
         .from(mentions)
         .where(sql`mentioned_user_id = ${inactive.id}::uuid`);
       expect(mentionRows).toHaveLength(0);
 
-      // No notification either.
       const notifRows = await db
         .select()
         .from(notifications)
@@ -163,7 +154,6 @@ describe("resolveAndStoreMentions", () => {
     await withTestDb(async (db) => {
       const author = await seedUser(db);
       const target = await seedUser(db);
-      // owner-level visibility: only author can see this deal, target CANNOT
       const dealId = await seedDeal(db, author.id, "owner");
       const sig = new AbortController().signal;
 
@@ -177,18 +167,15 @@ describe("resolveAndStoreMentions", () => {
         signal: sig,
       });
 
-      // resolveAndStoreMentions reports 0 created (the fanOut suppressed the notification).
       expect(r.ok).toBe(true);
       if (r.ok === true) expect(r.value.created).toBe(0);
 
-      // The mentions row IS stored (we record the intent) but NO notification row exists.
       const mentionRows = await db
         .select()
         .from(mentions)
         .where(sql`mentioned_user_id = ${target.id}::uuid`);
       expect(mentionRows).toHaveLength(1);
 
-      // SECURITY assertion: zero notification rows for the target.
       const notifRows = await db
         .select()
         .from(notifications)

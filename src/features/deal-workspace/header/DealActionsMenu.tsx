@@ -22,17 +22,12 @@ import { readCsrfToken } from "@/utils/csrfCookie";
 import { ConvertToLeadDialog } from "./ConvertToLeadDialog";
 import { MergeDealDialog } from "./MergeDealDialog";
 
-// Which confirm flow (its own Dialog) is currently open, if any.
 type Flow = "convert" | "merge" | "delete" | null;
 
 interface DealActionsMenuProps {
   dealId: string;
-  // The deal's pipeline: scopes the merge picker to same-pipeline candidates.
   pipelineId: string;
-  // CAS precondition for delete: the deal's updatedAt ISO string.
   expectedUpdatedAt: string;
-  // Whether the actor holds deal.delete (own/any) for this deal. Server-enforced in deleteDeal;
-  // this only hides the item so a user without the capability is not offered an action that 403s.
   canDelete: boolean;
   archived: boolean;
 }
@@ -77,8 +72,6 @@ export function DealActionsMenu({
       reportError(r.error.id);
       return;
     }
-    // Opened as a slide-over, the deal has a list behind it to return to, and pushing would be a
-    // soft navigation that leaves the slot rendering the deal just deleted.
     if (closeDrawer !== null) closeDrawer();
     else router.push("/pipeline");
   }
@@ -109,8 +102,6 @@ export function DealActionsMenu({
         )}
       </DropdownMenuContent>
 
-      {/* Mount each flow only while active: MergeDealDialog issues a tRPC query on render, so
-          keeping it unmounted until opened avoids requiring a tRPC provider just to show the menu. */}
       {flow === "convert" && (
         <ConvertToLeadDialog
           dealId={dealId}

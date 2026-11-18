@@ -53,8 +53,6 @@ describe("processSendAttempt concurrency", () => {
         )
       ).rows[0] as { message_id_header: string };
 
-      // Worker A's sendRaw is deferred: we hold it open to model "mid network send".
-      // resolve is assigned synchronously by the Promise executor before use.
       let releaseSend!: () => void;
       const sendGate = new Promise<void>((resolve) => {
         releaseSend = resolve;
@@ -62,18 +60,15 @@ describe("processSendAttempt concurrency", () => {
       const fakeA = new FakeGmailClient();
       fakeA.sendRaw = async (a) => {
         fakeA.calls.push({ method: "sendRaw", args: a });
-        await sendGate; // block until the test releases it
+        await sendGate;
         return ok({ id: "gmail-A", threadId: "t1" });
       };
 
-      // Worker B sees the same row already stamped (A stamps before sendRaw) and
-      // reconciles: its search finds the accepted message.
       const fakeB = new FakeGmailClient();
       fakeB.searchHits.set(header.message_id_header, {
         messages: [{ id: "gmail-found", threadId: "t1" }],
       });
 
-      // Start A; it claims, stamps send_started_at, then blocks inside sendRaw.
       const aPromise = processSendAttempt(db, {
         accountId: acct,
         idempotencyKey: KEY,
@@ -81,13 +76,11 @@ describe("processSendAttempt concurrency", () => {
         storage: new FakeStorageClient(),
         signal: newSignal(),
       });
-      // Wait until A has actually entered sendRaw (so the row is stamped).
       for (let i = 0; i < 100 && fakeA.calls.length === 0; i++) {
         await new Promise((r) => setTimeout(r, 5));
       }
       expect(fakeA.calls.filter((c) => c.method === "sendRaw")).toHaveLength(1);
 
-      // B runs concurrently against the stamped row and reconciles (no send).
       const rB = await processSendAttempt(db, {
         accountId: acct,
         idempotencyKey: KEY,
@@ -100,12 +93,9 @@ describe("processSendAttempt concurrency", () => {
       const rA = await aPromise;
       expect(rA.ok).toBe(true);
 
-      // Exactly ONE sendRaw across both workers (B reconciled, never sent).
       expect(fakeB.calls.filter((c) => c.method === "sendRaw")).toHaveLength(0);
       expect(fakeA.calls.filter((c) => c.method === "sendRaw")).toHaveLength(1);
 
-      // Final row is sent with a single-valued gmail id (whichever markSent won; the
-      // hardened guard makes the loser a no-op, never an overwrite).
       const finalRow = (
         await db.execute(
           sql`SELECT status, gmail_message_id FROM email_send_attempts WHERE id=${attemptId}`,
@@ -127,15 +117,11 @@ describe("processSendAttempt concurrency", () => {
       const attemptId = e.ok ? e.value.attemptId : "";
       const signal = newSignal();
 
-      // Construct the precise divergent state the id-equality clause guards: an id is
-      // already adopted while status is still 'sending' (a partial/raced prior write).
-      // The status clause alone would NOT protect this; only the id-equality clause does.
       await db.execute(sql`
         UPDATE email_send_attempts
         SET status='sending', gmail_message_id='gmail-first' WHERE id=${attemptId}
       `);
 
-      // A markSent carrying a DIFFERENT id must be a no-op (no silent overwrite).
       await markSent(db, attemptId, "gmail-second", signal);
       const row = (
         await db.execute(
@@ -143,9 +129,8 @@ describe("processSendAttempt concurrency", () => {
         )
       ).rows[0] as { status: string; gmail_message_id: string | null };
       expect(row.gmail_message_id).toBe("gmail-first");
-      expect(row.status).toBe("sending"); // untouched
+      expect(row.status).toBe("sending");
 
-      // markSent with the SAME id is allowed and finalizes the row to sent.
       await markSent(db, attemptId, "gmail-first", signal);
       const again = (
         await db.execute(

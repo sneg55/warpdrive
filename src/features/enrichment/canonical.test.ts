@@ -51,7 +51,6 @@ describe("default built-in mappings", () => {
       const entity = canonicalKey.startsWith("org.") ? "organization" : "person";
       const importFields = ENTITY_FIELDS[entity].map((f) => f.field);
       const builtinKeys = BUILTIN_FIELDS[entity].map((f) => f.key);
-      // Address leaves live only in the import catalogue; everything else is a built-in field.
       const known = builtinKeys.includes(target) || importFields.includes(target);
       expect(known, `${canonicalKey} -> ${target}`).toBe(true);
     }

@@ -7,8 +7,6 @@ export interface ParsedAttachment {
   gmailAttachmentId: string;
 }
 
-// A Gmail part is a real attachment when it carries a non-empty filename and a
-// body.attachmentId (inline images without a filename are skipped). Recurses parts.
 export function extractAttachments(payload: GmailPart | undefined): ParsedAttachment[] {
   if (payload === undefined) return [];
   const out: ParsedAttachment[] = [];

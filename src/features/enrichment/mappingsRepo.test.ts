@@ -45,8 +45,6 @@ describe("upsertMapping: canonical key must belong to the entity", () => {
     );
     expect(r.ok).toBe(false);
     expect(!r.ok && r.error.id).toBe(ERROR_IDS.ENRICH_MAPPING_INVALID);
-    // The table is not empty (the migration seeds defaults), so assert the refusal itself: the
-    // cross-entity key must not have been written.
     const keys = (await listMappings(h.db, "organization", signal)).map((m) => m.canonicalKey);
     expect(keys).not.toContain("person.title");
   });

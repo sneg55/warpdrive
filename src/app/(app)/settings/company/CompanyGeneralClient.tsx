@@ -14,7 +14,6 @@ interface Props {
   baseCurrency: string;
 }
 
-// General tab (spec 6.1): editable company name + read-only base currency (currencies out of scope).
 export function CompanyGeneralClient(props: Props): React.ReactNode {
   const router = useRouter();
   const [companyName, setCompanyName] = useState(props.companyName);

@@ -1,6 +1,3 @@
-// Promoting an enriched address end to end. What matters against a real database is that
-// updatePerson's re-derivation lands on the promoted address, that nothing is deleted, and that
-// the change log names the address the promotion displaced rather than reporting an append.
 import { and, eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import * as schema from "@/db/schema";
@@ -77,9 +74,6 @@ async function readPerson(id: string) {
   return row;
 }
 
-// Every person write carries the whole emails array so a primary held only in the column survives
-// the re-derivation. That array is validated, so an address the record already held used to fail
-// the patch and lock the person out of enrichment entirely, not just out of email enrichment.
 describe("applyEnrichment on a person holding a broken address", () => {
   it("writes an unrelated field even though the stored address is not an address", async () => {
     const orgName = `Company-${uniq()}`;
@@ -102,8 +96,6 @@ describe("applyEnrichment on a person holding a broken address", () => {
 
     const after = await readPerson(person.id);
     expect(after?.orgId).toBe(org?.id);
-    // The address it could not vouch for is still there. Enrichment does not delete what it
-    // cannot validate.
     expect(after?.emails.map((e) => e.value)).toEqual(["broken@"]);
   });
 
@@ -176,8 +168,6 @@ describe("applyEnrichment promoting an address", () => {
     expect(logged?.newValue).toEqual({ value: NEW_EMAIL, providers: ["apollo"] });
   });
 
-  // A plain add replaced nothing, so naming a previous value would make the timeline read as if
-  // the address the person still holds had been taken away.
   it("names no previous value for a plain add", async () => {
     const person = await seedPerson({
       primaryEmail: "old@company.com",

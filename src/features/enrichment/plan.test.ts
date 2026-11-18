@@ -113,8 +113,6 @@ describe("planOrgUpdate", () => {
     expect(r.ok && r.value.customEntries).toEqual([{ key: "description", value: "Makes anvils" }]);
   });
 
-  // The whole customFields object never travels in the patch: updateOrg would run it past the
-  // active-definition schema and strip the values of archived fields nobody selected.
   it("leaves custom fields out of the patch so untouched keys cannot be stripped", () => {
     const r = planOrgUpdate(
       [{ canonicalKey: "org.description", value: "Makes anvils" }],
@@ -220,8 +218,6 @@ describe("planPersonUpdate", () => {
   });
 });
 
-// mappingsRepo only lets a number-valued canonical key reach a numeric/monetary custom field and a
-// string-valued one reach text/large_text/autocomplete, so the plan must write that exact shape.
 describe("custom field value coercion", () => {
   const REVENUE_MAPPINGS: ResolvedMapping[] = [custom("org.annualRevenue", "def-rev")];
   const REVENUE_CURRENT = {

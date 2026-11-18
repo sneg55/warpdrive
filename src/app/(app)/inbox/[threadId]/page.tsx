@@ -17,9 +17,6 @@ export default async function InboxThreadPage({
   if (ctx.actor === null) {
     redirect("/login");
   }
-  // Prefetch the thread server-side so the reader paints immediately instead of waiting on a
-  // client round trip. Best-effort: on any error (not found / no access) fall back to the client
-  // fetch, which renders the same not-found / error state.
   let initialThread: RouterOutputs["email"]["thread"]["get"] | undefined;
   try {
     initialThread = await createCaller(ctx).email.thread.get({ threadId, allowRemote: false });

@@ -1,6 +1,4 @@
 // @vitest-environment jsdom
-// Wiring test: a widget that no page renders is not shipped. This mounts the Performance page
-// with a full payload and asserts the trend and the funnel's basis actually reach the screen.
 import "@testing-library/jest-dom/vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -39,8 +37,6 @@ const dashboardData = {
   activitiesByType: [],
   lostReasons: [],
   stageSums: [],
-  // The server narrows a regular user's "all" request to "me"; the funnel line must follow the
-  // resolved value, not the one the client asked for.
   effectiveOwnerScope: { kind: "me" } as const,
 };
 

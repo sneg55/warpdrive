@@ -26,8 +26,6 @@ export type LeadActionResult<T = undefined> =
   | { ok: true; value: T }
   | { ok: false; error: { id: string } };
 
-// Resolve the current actor into a LeadSession, or an auth/csrf failure result. Trust-boundary
-// fields (owner, visibility) are derived server-side inside the pure actions from this session.
 async function authorize(
   csrfToken: string | null,
 ): Promise<{ ok: true; session: LeadSession } | { ok: false; error: { id: string } }> {

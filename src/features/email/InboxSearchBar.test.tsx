@@ -9,8 +9,6 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-// A2 (Pipedrive parity): the search is a collapsed icon by default and expands to an input on
-// activation, instead of a persistent full-width field.
 describe("InboxSearchBar collapse (A2)", () => {
   it("renders collapsed as a search icon button by default (no input shown)", () => {
     render(<InboxSearchBar onQuery={() => {}} />);

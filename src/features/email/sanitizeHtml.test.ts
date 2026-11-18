@@ -48,9 +48,6 @@ describe("sanitizeAuthorHtml", () => {
     expect(out).not.toMatch(/<script/i);
   });
 
-  // Spec 6.5: inline styles from font-family/font-size/color TipTap extensions
-  // must survive sanitisation so formatted email bodies render correctly.
-
   it("preserves font-family and color inline styles on span", () => {
     const out = sanitizeAuthorHtml('<span style="font-family:Arial;color:#ff0000">hi</span>');
     expect(out).toContain("font-family");
@@ -66,7 +63,6 @@ describe("sanitizeAuthorHtml", () => {
   it("strips disallowed CSS property position:fixed from style attribute", () => {
     const out = sanitizeAuthorHtml('<span style="position:fixed;color:red">x</span>');
     expect(out).not.toContain("position");
-    // Allowed property should still survive
     expect(out).toContain("color");
   });
 
@@ -137,10 +133,6 @@ describe("sanitizeInboundHtml", () => {
     expect(out).not.toMatch(/data:/i);
   });
 
-  // Codex finding F34: SAFE_URI allowed root-relative "/..." and inbound only stripped
-  // absolute http(s) img src. A hostile email with a root-relative image auto-fires an
-  // app-origin GET (e.g. /auth/logout) when the body renders in the srcDoc iframe, a
-  // CSRF-style same-origin request that survived the remote-content block.
   it("strips root-relative img src so no app-origin GET fires (allowRemote false)", () => {
     const out = sanitizeInboundHtml('<img src="/auth/logout">', { allowRemote: false });
     expect(out).not.toContain("/auth/logout");

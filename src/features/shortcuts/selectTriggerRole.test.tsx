@@ -11,8 +11,6 @@ beforeAll(() => {
 });
 afterEach(cleanup);
 
-// Guards against the real component rather than a hand-written role="combobox" stand-in: Radix
-// drives the trigger with printable-key type-ahead, so a bare shortcut letter must not escape it.
 describe("the project's Select trigger", () => {
   test("counts as a typing target", () => {
     const { container } = render(

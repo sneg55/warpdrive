@@ -38,22 +38,11 @@ export interface AddDealModalProps {
   pipelineId: string;
   pipelines: PipelineOption[];
   baseCurrency?: string;
-  // Optional initial stage (per-stage "+" add button). Defaults to the pipeline's first stage.
   stageId?: string;
-  // Optional initial title (inbox sidebar seeds this from the thread subject). Locks title autofill.
   prefillTitle?: string;
   prefillPerson?: Option;
   onClose: () => void;
-  // Receives the new deal's id and (validated, post-trim) title so a caller can auto-link and
-  // display it without a second fetch (inbox sidebar, compose-time link sidebar); existing
-  // callers that pass a zero-arg refresh handler stay assignable (a function may ignore
-  // trailing parameters).
   onCreated: (id: string, title: string) => void;
-  // Skip the "jump to /deals/:id after create" navigation even when the user's
-  // openDetailsAfterCreate.leadDeal preference is on. Defaults to false so every existing
-  // caller keeps navigating. Set true by callers whose surface would be abandoned by a
-  // full-page nav away, e.g. the inbox compose link sidebar (ComposeLinkSidebar): the deal
-  // link is only local state there until the email is sent, so navigating away loses it.
   suppressDetailNav?: boolean;
 }
 
@@ -95,7 +84,6 @@ export function AddDealModal(props: AddDealModalProps): React.ReactNode {
 
   const peopleQ = trpc.contacts.personOptions.useQuery();
   const orgsQ = trpc.contacts.orgOptions.useQuery();
-  // Manager-only lists: on a 403 the data stays undefined and the field is hidden.
   const usersQ = trpc.identity.listUsers.useQuery(undefined, { retry: false });
   const groupsQ = trpc.identity.listVisibilityGroups.useQuery(undefined, { retry: false });
   const dealFieldsQ = trpc.customFields.listDefs.useQuery({ target: "deal" });
@@ -104,15 +92,10 @@ export function AddDealModal(props: AddDealModalProps): React.ReactNode {
 
   const set = (patch: Partial<AddDealState>): void => setState((s) => ({ ...s, ...patch }));
 
-  // Autofill the title from the chosen person/org ("{name} deal") until the user edits it
-  // themselves. Mirrors the derived value into state so submit uses it. `titleEdited` locks it once
-  // the user types their own title.
   const people = peopleQ.data ?? [];
   const orgs = orgsQ.data ?? [];
-  // A prefilled title (inbox subject) counts as user-set, so the person/org autofill never clobbers it.
   const [titleEdited, setTitleEdited] = useState(hasPrefillTitle);
   const derivedTitle = deriveEntityTitle(state, orgs, people, "deal", autoPrefixLeadDealTitles);
-  // Derived during render: an effect would paint the stale title for a frame, then correct it.
   if (!titleEdited && state.title !== derivedTitle) {
     setState((s) => (s.title === derivedTitle ? s : { ...s, title: derivedTitle }));
   }
@@ -139,8 +122,6 @@ export function AddDealModal(props: AddDealModalProps): React.ReactNode {
     setPending(true);
     try {
       const csrf = readCsrfToken();
-      // Validate the deal fields BEFORE creating any inline org/person, so an invalid deal (e.g.
-      // blank title) can never leave an orphaned org/person behind or duplicate one on retry.
       const parsed = parseNewDeal(
         {
           title: state.title,

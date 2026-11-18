@@ -38,8 +38,6 @@ async function readProvider(provider: "apollo") {
 }
 
 describe("recordOutcome credential binding", () => {
-  // A lookup in flight when an admin pastes a replacement key produced its answer with the old
-  // credential. Writing that answer onto the row badges or cools down a key it never touched.
   it("does not badge a key that replaced the one the call used", async () => {
     await setProviderKey(h.db, "apollo", "key-one", SIG());
     const stale = await credentialFor("apollo");
@@ -95,9 +93,6 @@ describe("recordOutcome credential binding", () => {
 });
 
 describe("setProviderEnabled", () => {
-  // The credential check and the write have to be one statement. Between a check that saw a key
-  // and an unconditional upsert, a Remove key can land and leave an enabled row with no key: the
-  // fan-out then dials a provider that cannot authenticate, and the settings switch reads as on.
   it("refuses to enable a provider whose key was removed", async () => {
     await setProviderKey(h.db, "apollo", "key-six", SIG());
     await clearProviderKey(h.db, "apollo", SIG());

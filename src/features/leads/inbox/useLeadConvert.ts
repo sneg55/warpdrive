@@ -14,7 +14,6 @@ export interface UseLeadConvertDeps {
 export interface UseLeadConvertResult {
   convertError: string | null;
   clearConvertError: () => void;
-  // Which lead (or the whole selection) the custom-field dialog is open for; null when closed.
   convertTarget: LeadRow | "bulk" | null;
   setConvertTarget: (target: LeadRow | "bulk" | null) => void;
   bulkConvertPending: boolean;
@@ -22,8 +21,6 @@ export interface UseLeadConvertResult {
   convertRow: (row: LeadRow, customFields?: Record<string, unknown>) => Promise<boolean>;
 }
 
-// Lead -> deal conversion for the inbox: the single-row path, the bulk path, their in-flight
-// guards, and the one error banner both report through.
 export function useLeadConvert({
   refetch,
   clearSelection,
@@ -40,8 +37,6 @@ export function useLeadConvert({
     customFields: Record<string, unknown> = {},
   ): Promise<boolean> {
     if (ids.length === 0) return false;
-    // In-flight guard: a rapid double-click must not fire two overlapping batches (mirrors
-    // convertRow's converting ref for the single-lead button).
     if (bulkConverting.current) return false;
     bulkConverting.current = true;
     setBulkConvertPending(true);
@@ -53,8 +48,6 @@ export function useLeadConvert({
         await refetch();
         return true;
       }
-      // Systemic failure (e.g. PERM_DENIED, no resolvable pipeline): surface it like convertRow
-      // does and do NOT clear the selection or refetch as if the batch had succeeded.
       setConvertError(convertErrorMessage(r.error.id));
       return false;
     } finally {
@@ -67,8 +60,6 @@ export function useLeadConvert({
     row: LeadRow,
     customFields: Record<string, unknown> = {},
   ): Promise<boolean> {
-    // In-flight guard: a rapid double-click must not fire two convert calls (the second would
-    // race to a confusing "already converted"/stale-CAS banner even though the first succeeded).
     if (converting.current) return false;
     converting.current = true;
     setConvertError(null);
@@ -81,8 +72,6 @@ export function useLeadConvert({
         goToDeal(r.value.dealId);
         return true;
       }
-      // Stale CAS / already-converted / permission denied: show copy and refetch so the row
-      // reflects the current server state (e.g. it now renders as "Converted").
       setConvertError(convertErrorMessage(r.error.id));
       await refetch();
       return false;

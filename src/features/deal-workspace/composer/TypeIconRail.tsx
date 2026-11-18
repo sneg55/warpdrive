@@ -9,9 +9,6 @@ interface TypeOption {
   name: string;
 }
 
-// Activity-type selector row (Pipedrive parity): one icon+label button per type (Call/Meeting/
-// Task/Deadline/Email/Lunch/Ping), matching PD's labeled button group in the activity form. The
-// selected type is highlighted; the name is a visible label AND the button's accessible name.
 export function TypeIconRail({
   types,
   value,

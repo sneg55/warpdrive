@@ -7,9 +7,6 @@ import { createCaller } from "@/server/trpc/root";
 
 export const metadata = { title: STRINGS.nav.pipeline };
 
-// The primary nav links to /pipeline, but a board is always scoped to a specific
-// pipeline (/pipeline/[id]). Land the section root on the user's first visible
-// pipeline so the nav item never 404s.
 export default async function PipelineIndexPage(): Promise<React.ReactNode> {
   const ctx = await createContext();
   if (ctx.actor === null) {
@@ -19,8 +16,6 @@ export default async function PipelineIndexPage(): Promise<React.ReactNode> {
   const pipelines = await caller.pipeline.list();
   const first = pipelines[0];
   if (first === undefined) {
-    // A manager with no visible pipelines gets a create CTA (fresh install / no default seeded);
-    // a non-manager genuinely has nothing to act on, so keep the plain message.
     const canManage =
       ctx.actor.type === "admin" || ctx.actor.flags.has(PERMISSION_FLAGS.PIPELINE_MANAGE);
     return (

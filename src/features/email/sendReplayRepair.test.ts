@@ -19,10 +19,6 @@ async function seedAccount(db: TestDb, ownerId: string, email: string): Promise<
   ).id;
 }
 
-// Insert an email_send_attempts row directly, standing in for an attempt Gmail already
-// accepted (status='sent', gmail_message_id set) but whose local copy was never stored
-// (crash between markSent and storeOutboundCopy). ensureLocalCopyForReplay is what a
-// replay of this attempt runs to repair it.
 async function seedSentAttempt(
   db: TestDb,
   args: { accountId: string; gmailMessageId: string; payload: SendPayload },
@@ -56,10 +52,6 @@ async function threadDealId(
   return row?.deal_id ?? null;
 }
 
-// P2 fix: the stored send payload carries the composer's explicit linkDealId/linkPersonId
-// (see send.ts's enqueueSend call and workerSendCrm.ts's performWorkerSendCrm), but the
-// replay-repair path used to call storeOutboundCopy without a `link`, so a repaired thread
-// lost the composer's explicit deal/person link even though it was sitting in the payload.
 describe("ensureLocalCopyForReplay", () => {
   it("links the repaired thread to the deal recorded in the stored payload's linkDealId", async () => {
     await withTestDb(async (db) => {
@@ -81,7 +73,6 @@ describe("ensureLocalCopyForReplay", () => {
         accountId: acctId,
         gmailMessageId,
         payload: {
-          // Recipient does not match any contact/deal, so a link can only come from linkDealId.
           to: ["stranger@nowhere.com"],
           subject: "Hi",
           html: "<p>hi</p>",

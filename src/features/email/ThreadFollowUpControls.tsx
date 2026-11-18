@@ -11,11 +11,8 @@ import { setFollowUpStatusAction, setThreadLabelsAction } from "./threadAttribut
 
 interface ThreadFollowUpControlsProps {
   threadId: string;
-  // null = unset (never persisted as the literal "none"); the Select still needs a
-  // concrete value, so it displays "none" without writing it until the user picks something.
   followUpStatus: string | null;
   labels: string[];
-  // Called after either action succeeds, so the parent can refetch the thread.
   onChanged: () => void;
 }
 
@@ -24,10 +21,6 @@ const STATUS_OPTIONS: SelectOption[] = MAIL_FOLLOW_UP_STATUS.map((s) => ({
   label: STRINGS.inbox.followUpStatusNames[s],
 }));
 
-// Reader follow-up controls (B1): a status Select plus the mail-label catalog picker (U6). Applied
-// labels render as chips; the picker adds/removes them (searchable, inline "+ Add label"). Both
-// persist via owner-scoped server actions. Split out of ThreadPane to keep that file under the
-// line-count target.
 export function ThreadFollowUpControls({
   threadId,
   followUpStatus,

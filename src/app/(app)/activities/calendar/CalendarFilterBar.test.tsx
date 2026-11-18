@@ -21,8 +21,6 @@ const types = [
 
 describe("CalendarFilterBar", () => {
   it("sizes the owner and status pickers instead of letting them span the page", () => {
-    // Both primitives default to w-full. Dropped into a bare flex row with no width of their own,
-    // each claimed a whole line and wrapped, so two one-word pickers rendered full-bleed, stacked.
     render(
       <CalendarFilterBar
         filter={NO_CALENDAR_FILTER}

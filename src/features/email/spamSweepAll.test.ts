@@ -7,9 +7,6 @@ import { seedAgenticMailbox } from "./agentic.test-helpers";
 import { FakeGmailClient } from "./gmailFake";
 import { sweepAllMailboxes } from "./spamSweepAll";
 
-// The sweep is an operator-run repair across every mailbox, so one broken account (revoked token,
-// Gmail outage) must not decide the fate of the others: it is reported and the run continues.
-
 type TestDb = Parameters<Parameters<typeof withTestDb>[0]>[0];
 const newSignal = (): AbortSignal => new AbortController().signal;
 

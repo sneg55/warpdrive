@@ -36,7 +36,6 @@ it("returns only ready files for the given entity, newest first", async () => {
         uploadedBy: user.id,
         createdAt: new Date("2026-07-02T00:00:00Z"),
       },
-      // Pending (uploading) row for the same entity: must be excluded.
       {
         entityType: "deal",
         entityId,
@@ -47,7 +46,6 @@ it("returns only ready files for the given entity, newest first", async () => {
         status: "uploading",
         uploadedBy: user.id,
       },
-      // Ready row for a DIFFERENT entityId: must be excluded.
       {
         entityType: "deal",
         entityId: otherEntityId,
@@ -58,7 +56,6 @@ it("returns only ready files for the given entity, newest first", async () => {
         status: "ready",
         uploadedBy: user.id,
       },
-      // Ready row for a different entityType, same id: must be excluded.
       {
         entityType: "person",
         entityId,
@@ -74,7 +71,6 @@ it("returns only ready files for the given entity, newest first", async () => {
     const result = await listFilesForEntity(db, "deal", entityId, signal);
 
     expect(result.map((f) => f.filename)).toEqual(["newer.pdf", "older.pdf"]);
-    // Projection excludes storage internals.
     const first = result[0];
     expect(first).toMatchObject({
       filename: "newer.pdf",

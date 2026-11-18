@@ -1,7 +1,4 @@
 "use client";
-// Shared building blocks for the person and organization detail pages. Extracted so
-// PersonDetailClient and OrgDetailClient each stay under the 200-line file budget and
-// the tab strip / placeholder copy cannot drift between the two pages.
 import type React from "react";
 import { bucketByType } from "@/app/(app)/deals/[dealId]/tabs";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -21,8 +18,6 @@ import { trpc } from "@/lib/trpc-client";
 import { ContactHistoryTabs } from "./ContactHistoryTabs";
 
 const EMPTY_CLASS = "text-sm text-muted-foreground";
-// Threads link to person_id (and deal_id), never to an organization, so an org's Email filter
-// states the reason instead of implying the record merely has no mail yet.
 const ORG_EMAIL_EMPTY = "Email is tracked on people, not organizations.";
 const EMAIL_LOAD_ERROR = "Couldn't load emails for this contact. Please try again.";
 
@@ -54,7 +49,6 @@ export function TabStrip<T extends string>({
   );
 }
 
-// Generic list panel: renders an empty-state line or maps each item to a <li>.
 export function ListPanel<T>({
   items,
   empty,
@@ -75,11 +69,6 @@ export function ListPanel<T>({
   );
 }
 
-// Merged Focus/History feed (Wave 3, Task 21): replaces the old per-type read-only
-// Activities/Notes/Changelog tabs with one interleaved timeline, reusing the deal
-// workspace's Focus/History split (Task 17) so the contact page and the deal workspace
-// read identically. Self-contained: owns its own query and mark-done invalidation, so
-// PersonDetailClient/OrgDetailClient just mount it, no data plumbing required.
 export function ContactTimelinePanel({
   entityType,
   entityId,
@@ -88,8 +77,6 @@ export function ContactTimelinePanel({
   entityId: string;
 }): React.ReactNode {
   const utils = trpc.useUtils();
-  // Called unconditionally and merely disabled for an organization: a hook may not sit behind a
-  // branch, and this panel serves both entity types.
   const emailQuery = trpc.email.listMessagesForContact.useQuery(
     { personId: entityId },
     { enabled: entityType === "person" },
@@ -105,14 +92,11 @@ export function ContactTimelinePanel({
   const { pinned, focus, history } = partitionFocusHistory(items);
   const historyByType = bucketByType(history);
 
-  // Every badge counts off the History bucket (completed activities only): open activities live
-  // in Focus, so a badge must match what its tab's list actually shows.
   const fileCount = trpc.files.listForEntity.useQuery({ entityType, entityId }).data?.length;
   const counts = countHistoryTabs(historyByType, fileCount);
 
   function onActivityChanged(): void {
     void utils.contacts.contactTimeline.invalidate({ entityType, entityId });
-    // Overview counts + inactive-days derive from activities, so keep them in sync on complete/edit.
     void utils.contacts.activityStats.invalidate({ entityType, entityId });
   }
 
@@ -127,8 +111,6 @@ export function ContactTimelinePanel({
   const emailScope =
     entityType === "person" ? ({ kind: "person", personId: entityId } as const) : undefined;
 
-  // S1: Focus and History are stacked, always-visible sections (not a toggle), mirroring the
-  // deal page so the two read identically. CO-1: History gets the deal page's per-type filter row.
   return (
     <div className="space-y-6">
       {emailQuery.isError && (

@@ -19,10 +19,6 @@ it("hydrates an import actor from a userId, null for unknown", async () => {
   });
 });
 
-// Regression: when the org's default deal/lead visibility is "group", commitLead/commitDeal call
-// resolveVisibilityGroup, which rejects with E_PERM_003 unless the actor carries a primary group.
-// The background import actor must therefore load the user's REAL primaryVisibilityGroupId, not a
-// hardcoded null, or every lead/deal import fails for a user whose primary group is set.
 it("carries the user's real primary visibility group into the import actor", async () => {
   await withTestDb(async (db) => {
     const [group] = await db

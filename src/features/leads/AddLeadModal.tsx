@@ -56,12 +56,10 @@ export function AddLeadModal({
 
   const set = (patch: Partial<AddLeadState>): void => setState((s) => ({ ...s, ...patch }));
 
-  // Autofill the lead title from the chosen person/org ("{name} lead") until the user edits it.
   const people = peopleQ.data ?? [];
   const orgs = orgsQ.data ?? [];
   const [titleEdited, setTitleEdited] = useState(false);
   const derivedTitle = deriveEntityTitle(state, orgs, people, "lead", autoPrefixLeadDealTitles);
-  // Derived during render: an effect would paint the stale title for a frame, then correct it.
   if (!titleEdited && state.title !== derivedTitle) {
     setState((s) => (s.title === derivedTitle ? s : { ...s, title: derivedTitle }));
   }
@@ -71,8 +69,6 @@ export function AddLeadModal({
     setPending(true);
     try {
       const csrf = readCsrfToken();
-      // Validate the lead fields BEFORE creating any inline org/person, so an invalid lead (e.g.
-      // blank title) can never leave an orphaned org/person behind or duplicate one on retry.
       const parsed = parseNewLead({
         title: state.title,
         value: state.value,
@@ -146,8 +142,6 @@ export function AddLeadModal({
         return;
       }
       onClose();
-      // "Open details view after creating a new item" (personal preference): leads share the
-      // lead/deal flag with deals. Otherwise the caller's onCreated handles the refresh.
       if (openDetailsAfterCreate.leadDeal) router.push(`/leads/${result.value.id}`);
     } finally {
       setPending(false);

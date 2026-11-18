@@ -8,8 +8,6 @@ import { getBatch, listRows } from "./batch";
 import { toImportActor } from "./importActor";
 import { getBatchResult, listBatches } from "./results";
 
-// Every import read requires data.import, not just authentication: listRows exposes raw CSV
-// row data, so a user whose data.import was revoked must not keep reading batches.
 const importProcedure = protectedProcedure.use(({ ctx, next }) => {
   if (!can(ctx.actor, "data.import")) {
     throw new TRPCError({ code: "FORBIDDEN", message: ERROR_IDS.PERM_DENIED });

@@ -1,6 +1,3 @@
-// The user-visible stepper for the import wizard. The reducer runs 6 internal states
-// (upload -> preparing -> map -> validating -> preview -> commit), but two of those are
-// transient background phases; the header only ever shows the 4 steps a user acts on.
 import { IMPORTER_STRINGS } from "@/constants/importerStrings";
 import { assertNever } from "@/types/result";
 import type { WizardStep } from "./wizardState";
@@ -17,9 +14,6 @@ export const WIZARD_DISPLAY_STEPS: readonly WizardDisplayStep[] = [
   { key: "commit", label: IMPORTER_STRINGS.stepCommit },
 ];
 
-// Which display step the wizard is currently on. preparing folds into Upload (we are still
-// processing the just-uploaded file) and validating folds into Map columns (it is the map
-// step's Continue doing its background work), so the stepper never lands on an invisible state.
 export function activeDisplayStep(step: WizardStep): number {
   switch (step) {
     case "upload":

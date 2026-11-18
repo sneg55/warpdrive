@@ -67,8 +67,6 @@ it("isMappingComplete requires a column mapped to the required name field", () =
   expect(isMappingComplete(s)).toBe(true);
 });
 
-// Regression: isMappingComplete must generalize per-target (title for deal/lead, subject for
-// activity), not hardcode "name" (which does not even appear in STANDARD_IMPORT_FIELDS.deal).
 it("isMappingComplete requires the target's own required field, not a hardcoded 'name'", () => {
   let s = wizardReducer(initialWizardState(), { type: "setTarget", target: "deal" });
   s = wizardReducer(s, {
@@ -126,8 +124,6 @@ it("reset returns to the initial state", () => {
   expect(s).toEqual(initialWizardState());
 });
 
-// The prepare job stores the file's first rows on the batch. Carry them into wizard state so the
-// map step can show example values under each column, the way Pipedrive does.
 it("prepared keeps the preview rows so the map step can sample them", () => {
   const s = wizardReducer(initialWizardState(), {
     type: "prepared",

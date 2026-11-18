@@ -51,7 +51,6 @@ describe("activityVisibilityFromParents", () => {
   });
 
   it("does not fall through to the person when the dominant deal parent is gone", () => {
-    // dealId set + person present, but the deal is missing -> hidden, NOT person-visible.
     const v = activityVisibilityFromParents({
       ...base,
       dealId: "d1",

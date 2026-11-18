@@ -10,9 +10,6 @@ interface Params {
   endTime: string;
 }
 
-// Live Free/Busy signal for the composer: queries whether the assignee is already booked in the
-// activity's [start, end] window. The window is the composed start (dueAt) to the composed end
-// (endAt when a multi-day end date is set, else the start again). Disabled until a start exists.
 export function useComposerAvailability({
   ownerId,
   startDate,

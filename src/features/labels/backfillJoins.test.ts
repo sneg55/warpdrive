@@ -1,12 +1,3 @@
-// Migration 0060 repairs what 0046 left behind: 0046 seeded the catalog for deal/person/org and
-// backfilled their join tables, but skipped the 'lead' target entirely (the enum value had just
-// been added and Postgres forbids using it in the same transaction), and no writer has kept the
-// join tables in step since. So records can carry label names that exist in no catalog row.
-//
-// The test executes the REAL migration file against seeded pre-migration state rather than
-// reimplementing its SQL, which is the only way to prove the shipped statements do the work. The
-// migration is idempotent, so re-running it on the already-migrated template is exactly what a
-// deploy does to a live database.
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { sql } from "drizzle-orm";
@@ -32,7 +23,6 @@ describe("migration 0060: label join backfill", () => {
   it("adopts an applied name that has no catalog row, and links it", async () => {
     await withTestDb(async (db) => {
       const u = await seedUser(db);
-      // Written straight to the column, the way every pre-0060 writer did.
       const [lead] = await db
         .insert(leads)
         .values({
@@ -77,7 +67,6 @@ describe("migration 0060: label join backfill", () => {
             where ll."lead_id" = ${lead.id}`,
       );
       expect(rows.rows).toEqual([{ name: "Working" }]);
-      // No second catalog row was invented for the differently-cased application.
       const catalog = await db.execute(
         sql`select count(*)::int as n from "labels" where "target" = 'lead' and lower("name") = 'working'`,
       );
@@ -111,7 +100,6 @@ describe("migration 0060: label join backfill", () => {
           sql`insert into "labels" ("target", "name", "color", "order") values ('lead', 'dupe', 'blue', 1)`,
         ),
       ).rejects.toThrow();
-      // The same name under a different target is still fine.
       await db.execute(
         sql`insert into "labels" ("target", "name", "color", "order") values ('deal', 'Dupe', 'red', 9)`,
       );

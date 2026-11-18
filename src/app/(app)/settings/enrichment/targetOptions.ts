@@ -21,8 +21,6 @@ export type MappingTarget =
   | { kind: "builtin"; key: string }
   | { kind: "custom"; fieldDefId: string };
 
-// One <Select> offers built-in and custom targets side by side, so each option value carries its
-// own kind. The server action re-validates whatever comes back through it.
 export const NOT_MAPPED_VALUE = "";
 const BUILTIN_PREFIX = "builtin:";
 const CUSTOM_PREFIX = "custom:";
@@ -49,9 +47,6 @@ export interface CustomFieldTargetDef {
   type: string;
 }
 
-// Mirrors the type gate in features/enrichment/mappingsRepo, which is the authority: a save that
-// disagrees with this list is rejected there with ENRICH_MAPPING_INVALID.
-
 function customOptionsFor(canonicalKey: string, defs: CustomFieldTargetDef[]): SelectOption[] {
   const valueType = valueTypeOf(canonicalKey);
   const accepted = valueType === "number" ? NUMBER_TARGET_TYPES : STRING_TARGET_TYPES;
@@ -76,8 +71,6 @@ function currentValue(mapping: ResolvedMapping | undefined): string {
     : encodeTarget({ kind: "custom", fieldDefId: mapping.targetFieldDefId });
 }
 
-// A target holds at most one canonical key: mappingsRepo refuses a claimed one and two partial
-// unique indexes back that up, so the owner of each claimed target is tracked by encoded value.
 function ownersByTarget(mappings: ResolvedMapping[]): Map<string, string> {
   const owners = new Map<string, string>();
   for (const mapping of mappings) {
@@ -87,8 +80,6 @@ function ownersByTarget(mappings: ResolvedMapping[]): Map<string, string> {
   return owners;
 }
 
-// One row per canonical key of the entity, whether or not it is mapped: an unmapped key is a
-// choice an admin has to be able to see and make, not a row that disappears.
 export function buildMappingRows(
   entity: EnrichEntity,
   builtinOptions: SelectOption[],
@@ -98,14 +89,10 @@ export function buildMappingRows(
 ): MappingRow[] {
   const byKey = new Map(mappings.map((m) => [m.canonicalKey, m]));
   const owners = ownersByTarget(mappings);
-  // A built-in hidden in Settings > Data fields is not offered: enrichment does not write it
-  // (mappingsRepo drops the mapping), so mapping onto it would be a menu entry that does nothing.
   const offered = builtinOptions.filter(
     (o) => !isImportFieldHidden(o.value.slice(BUILTIN_PREFIX.length), hiddenBuiltins),
   );
   return canonicalKeysFor(entity).map((canonicalKey) => {
-    // Same rules the save applies, so the menu cannot offer a target that would then be refused:
-    // the type gate, then every target another row already claims.
     const compatible = [
       ...offered
         .filter((o) => builtinAcceptsCanonical(o.value.slice(BUILTIN_PREFIX.length), canonicalKey))

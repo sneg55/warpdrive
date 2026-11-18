@@ -217,8 +217,6 @@ describe("partitionFocusHistory", () => {
       ],
     );
     const { pinned, focus, history } = partitionFocusHistory(items);
-    // The pinned note floats to its own bucket (rendered above Focus); the plain note stays in
-    // History. A pinned note is never duplicated across buckets.
     expect(pinned.map((i) => i.id)).toEqual(["pinned-note"]);
     expect(focus.map((i) => i.id)).toEqual(["open"]);
     expect(history.map((i) => i.id)).toEqual(["plain-note"]);

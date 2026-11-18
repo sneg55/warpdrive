@@ -22,7 +22,6 @@ export async function GET(
   if (!can(actor, "data.import")) return new NextResponse("Forbidden", { status: 403 });
 
   const [batch] = await db.select().from(importBatches).where(eq(importBatches.id, batchId));
-  // Owner or admin, matching loadOwnedBatch (the tRPC read surfaces admins can already reach).
   if (batch === undefined || (batch.createdBy !== actor.id && actor.type !== "admin")) {
     return new NextResponse("Not found", { status: 404 });
   }

@@ -25,8 +25,6 @@ type DefResult = { ok: true; value: CustomFieldDef } | { ok: false; error: { id:
 type VoidResult = { ok: true } | { ok: false; error: { id: string } };
 
 const renameSchema = z.object({ id: z.string().uuid(), name: z.string().trim().min(1).max(255) });
-// Bounded: a tenant never has hundreds of custom fields, so cap the array to keep the reorder
-// transaction (one UPDATE per id) from being driven arbitrarily long by a crafted request.
 const reorderSchema = z.object({ orderedIds: z.array(z.string().uuid()).max(200) });
 const addOptionSchema = z.object({
   id: z.string().uuid(),
@@ -39,7 +37,6 @@ const renameOptionSchema = z.object({
 });
 const archiveOptionSchema = z.object({ id: z.string().uuid(), optionId: z.string().min(1) });
 
-// The ACTION layer enforces the metadata.manage gate: the repo functions are ungated.
 async function gateMetadata(
   csrfToken: string | null,
 ): Promise<{ ok: true } | { ok: false; error: { id: string } }> {
@@ -155,8 +152,6 @@ export async function archiveOptionAction(
   return { ok: true, value: result.value };
 }
 
-// Hide or unhide a built-in field. The repo rejects locked/unknown keys (E_CF_005/E_CF_006);
-// the action layer enforces the same metadata.manage gate as the def actions.
 export async function setBuiltinFieldHiddenAction(
   input: z.input<typeof setBuiltinHiddenSchema>,
   csrfToken: string | null = null,

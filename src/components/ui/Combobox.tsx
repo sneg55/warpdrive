@@ -22,11 +22,7 @@ interface ComboboxProps {
   options: ComboboxOption[];
   ariaLabel: string;
   placeholder?: string;
-  // Optional actions rendered below the option list (e.g. "Save as template" / "Manage templates").
-  // Receives a `close` callback so an action can dismiss the popover.
   footer?: (close: () => void) => React.ReactNode;
-  // Overrides on the trigger, mirroring Select's triggerClassName. The trigger defaults to w-full,
-  // which a caller in a flex row has to be able to override.
   triggerClassName?: string;
   disabled?: boolean;
   search?: { value: string; onChange: (query: string) => void };
@@ -55,7 +51,6 @@ function groupOptions(options: ComboboxOption[]): ComboboxGroup[] {
   return groups;
 }
 
-// Searchable single-select with avatars (owner/assignee picker). Popover + cmdk.
 export const Combobox = forwardRef<HTMLButtonElement, ComboboxProps>(function Combobox(
   {
     value,

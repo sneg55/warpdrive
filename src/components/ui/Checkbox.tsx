@@ -7,19 +7,12 @@ import { cn } from "@/lib/utils";
 interface CheckboxProps {
   checked: boolean | "indeterminate";
   onCheckedChange: (v: boolean) => void;
-  // Accessible name. The box renders no text of its own, so a caller that wants a VISIBLE label
-  // passes `id` too and renders its own <label htmlFor>.
   label: string;
   id?: string;
   disabled?: boolean;
   className?: string;
 }
 
-// Branded checkbox (Radix), the design-system replacement for native <input type=checkbox>.
-// Supports the "indeterminate" (mixed) state used by table select-all headers. Token-styled to
-// match the rest of the UI: on = primary fill with a check, indeterminate = primary fill with a
-// minus. `onCheckedChange` collapses Radix's boolean|"indeterminate" to a plain boolean at the
-// one boundary callers observe (a click on an indeterminate box resolves to checked=true).
 export function Checkbox({
   checked,
   onCheckedChange,

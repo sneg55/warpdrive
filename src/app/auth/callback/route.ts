@@ -1,13 +1,3 @@
-/**
- * /auth/callback: OAuth2 callback from Google.
- *
- * Security invariants (ops spec A0, E6):
- * 1. State cookie vs query-param comparison (login-CSRF protection).
- * 2. Real ID token signature verification via jose + Google JWKS (signature + iss + aud + exp).
- * 3. upsertUserOnLogin wrapped in try/catch; infra failures redirect, never 500.
- * 4. Session cookie set with httpOnly/secure/sameSite on success.
- */
-
 import { createRemoteJWKSet } from "jose";
 import { cookies } from "next/headers";
 import { type NextRequest, NextResponse } from "next/server";
@@ -27,7 +17,6 @@ const PKCE_COOKIE = "wd_oauth_pkce_verifier";
 const GOOGLE_JWKS_URL = "https://www.googleapis.com/oauth2/v3/certs";
 const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 
-// Resolved once at module load; jose caches and refreshes the key set internally.
 const googleJwks = createRemoteJWKSet(new URL(GOOGLE_JWKS_URL));
 
 const tokenResponseSchema = z.object({
@@ -49,7 +38,6 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   const code = searchParams.get("code");
   const stateParam = searchParams.get("state");
 
-  // 1. State cookie check (login-CSRF protection).
   const stateCookie = jar.get(STATE_COOKIE)?.value ?? null;
   const nonceCookie = jar.get(NONCE_COOKIE)?.value ?? null;
   const pkceVerifier = jar.get(PKCE_COOKIE)?.value ?? null;
@@ -69,13 +57,11 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     return loginError("state mismatch");
   }
 
-  // Clear one-time cookies immediately after validating state.
   jar.delete(STATE_COOKIE);
   jar.delete(NONCE_COOKIE);
   jar.delete(PKCE_COOKIE);
   jar.delete(LOGIN_RETURN_COOKIE);
 
-  // 2. Exchange code for tokens at Google's token endpoint.
   let idToken: string;
   try {
     const tokenRes = await fetch(GOOGLE_TOKEN_URL, {
@@ -102,8 +88,6 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     throw e;
   }
 
-  // 3. THE single ID-token verification path (signature + iss + aud + exp via jose, then
-  //    email_verified/nonce/hd). Same function the security tests exercise; do not inline here.
   const verifyResult = await verifyGoogleIdToken(idToken, {
     getKey: googleJwks,
     clientId: env.GOOGLE_OAUTH_CLIENT_ID,
@@ -114,7 +98,6 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   if (verifyResult.ok === false) return loginError("id token verification failed");
   const identity = verifyResult.value;
 
-  // 4. Upsert user, create session, set session cookie.
   try {
     const upsertResult = await upsertUserOnLogin(db, identity, signal);
     if (upsertResult.ok === false) return loginError("user upsert failed");
@@ -126,7 +109,6 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     const csrfToken = mintCsrfToken();
     const res = NextResponse.redirect(new URL(returnPath, env.BASE_URL));
     res.cookies.set(SESSION_COOKIE, sid, { ...sessionCookieOptions(), expires: expiresAt });
-    // Double-submit CSRF token: httpOnly false so client JS can read it for form submissions.
     res.cookies.set(CSRF_COOKIE, csrfToken, {
       httpOnly: false,
       secure: true,

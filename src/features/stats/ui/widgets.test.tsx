@@ -24,15 +24,12 @@ describe("stats widgets", () => {
         }}
       />,
     );
-    // The Won label comes from STRINGS.dashboard.won
     expect(screen.getByText(STRINGS.dashboard.won)).toBeInTheDocument();
-    // The count 12 must appear
     expect(screen.getByText("12")).toBeInTheDocument();
   });
 
   it("renders activities completed vs scheduled", () => {
     render(<ActivitiesWidget data={{ completed: 88, added: 120, scheduled: 102, undated: 0 }} />);
-    // Both counts must appear (they may be part of a larger string)
     expect(screen.getByText(/88/)).toBeInTheDocument();
     expect(screen.getByText(/102/)).toBeInTheDocument();
   });
@@ -84,12 +81,10 @@ describe("stats widgets", () => {
       />,
     );
     expect(screen.getAllByRole("progressbar")).toHaveLength(2);
-    // F5-4: renders the stage NAME carried on the row, never a raw stage id.
     expect(screen.getByText("Lead")).toBeInTheDocument();
     expect(screen.getByText("Won")).toBeInTheDocument();
   });
 
-  // A heading over dead space reads as a broken page. Every panel that can be empty says why.
   it("explains an empty funnel instead of rendering a bare heading", () => {
     render(<FunnelWidget data={[]} ownerScope={{ kind: "me" }} />);
     expect(screen.getByText(STRINGS.dashboard.emptyFunnel)).toBeInTheDocument();
@@ -105,8 +100,6 @@ describe("stats widgets", () => {
     expect(screen.getByText(STRINGS.dashboard.emptyLostReasons)).toBeInTheDocument();
   });
 
-  // Free-text reasons all carry a null id, so keying on the id alone collided and React
-  // reconciled the wrong row when counts reordered.
   it("renders several free-text lost reasons as distinct rows", () => {
     render(
       <LostReasonsWidget
@@ -131,8 +124,6 @@ describe("stats widgets", () => {
     expect(screen.getByText(STRINGS.dashboard.lostReasonUnspecified)).toBeInTheDocument();
   });
 
-  // The bar is the only thing a reader compares across rows, so it must encode the money, not
-  // the count. Three reasons that each cost one deal drew three identical full-width bars.
   it("scales lost-reason bars by value, not by deal count", () => {
     render(
       <LostReasonsWidget
@@ -165,8 +156,6 @@ describe("stats widgets", () => {
     expect(screen.getByText("$43,000")).toBeInTheDocument();
   });
 
-  // Count and money sat in one justify-between row, so four rows put their counts at four
-  // different x positions and the money read as the lesser number.
   it("right-aligns both numeric columns of deal performance and keeps the money at full weight", () => {
     render(
       <DealPerformanceWidget
@@ -188,8 +177,6 @@ describe("stats widgets", () => {
     expect(value.className).not.toContain("text-muted-foreground");
   });
 
-  // Seeded and same-day deals sit under half a day, and Math.round turned that into "0 days",
-  // which reads as an instant sale rather than "too short to measure".
   it("does not report a sub-day stage dwell time as zero days", () => {
     render(
       <FunnelWidget
@@ -254,8 +241,6 @@ describe("Scoreboard", () => {
     expect(screen.getByText(`12 ${STRINGS.dashboard.days}`)).toBeInTheDocument();
   });
 
-  // A rate of zero and a period where nothing closed are different facts, so they must not
-  // render the same.
   it("renders a dash, not a zero, when a metric has no data", () => {
     render(
       <Scoreboard
@@ -270,8 +255,6 @@ describe("Scoreboard", () => {
     expect(screen.getAllByText(STRINGS.dashboard.noValue).length).toBeGreaterThanOrEqual(3);
   });
 
-  // "0 days" claims deals close the instant they are created. The measurable fact is that the
-  // cycle is shorter than the unit this tile reports in.
   it("does not report a sub-day median sales cycle as zero days", () => {
     render(
       <Scoreboard

@@ -14,8 +14,6 @@ const PHONE_LABELS = ["Work", "Mobile", "Home", "Other"] as const;
 const EMAIL_LABELS = ["Work", "Home", "Other"] as const;
 
 interface AddDealPersonColumnProps {
-  // Right column captures contact details for a NEW person only; disabled when an existing person
-  // is selected (their details already live on the person record).
   disabled: boolean;
   phones: ContactPoint[];
   emails: ContactPoint[];
@@ -23,8 +21,6 @@ interface AddDealPersonColumnProps {
   onEmails: (next: ContactPoint[]) => void;
 }
 
-// The PERSON column of the Add deal dialog (Pipedrive): repeatable phone and email rows, each with
-// a type label. Only meaningful when creating a new person inline.
 export function AddDealPersonColumn({
   disabled,
   phones,
@@ -77,7 +73,6 @@ function ContactRows({
       <span className="mb-1 block font-medium">{kind}</span>
       <div className="flex flex-col gap-2">
         {rows.map((row, idx) => (
-          // Positional rows for an ephemeral create form.
           // biome-ignore lint/suspicious/noArrayIndexKey: positional contact rows
           <div key={idx} className="flex items-center gap-2">
             <Input
@@ -90,8 +85,6 @@ function ContactRows({
               placeholder={kind === "Phone" ? "+1 555 0100" : "name@company.com"}
               className="min-w-0 flex-1 disabled:bg-muted disabled:opacity-60"
             />
-            {/* Select has no disabled prop (primitive is not modified for this sweep); a
-                pointer-events-none wrapper reproduces the disabled input's read-only behavior. */}
             <div className={disabled ? "pointer-events-none opacity-60" : undefined}>
               <Select
                 ariaLabel={`${kind} ${idx + 1} type`}

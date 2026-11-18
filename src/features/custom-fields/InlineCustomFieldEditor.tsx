@@ -9,8 +9,6 @@ import { useInlineEditField } from "@/features/inline-edit/useInlineEditField";
 import type { CustomFieldDef } from "@/types/customFields";
 import { CustomFieldDetail, CustomFieldFormControl, isCustomFieldValueEmpty } from "./render";
 
-// Shared custom-field interaction used by deal, person, and organization rows. Persistence stays
-// with the owning entity wrapper; this component owns only the common display/edit state machine.
 export function InlineCustomFieldEditor({
   def,
   value,

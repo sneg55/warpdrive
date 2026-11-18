@@ -18,8 +18,6 @@ export interface OrgsListRow {
   openDeals: number;
 }
 
-// Compact one-line address for the list row (e.g. "Austin, US"), not the full structured
-// address (street/region/postal/coords) shown on the org detail page.
 function formatAddress(address: Record<string, unknown> | null): string {
   if (address === null) return "";
   const parts = [address.city, address.country].filter(
@@ -75,9 +73,6 @@ function SortableHeader({
   );
 }
 
-// Presentational organizations table: header select-all + a sortable Name header, and a
-// per-row checkbox. Extracted from OrgsList (the data/fetch container) to keep both files
-// under the project's file-size budget, mirroring PeopleTable/PeopleList.
 function renderOrgCell(col: OrgColumn, row: OrgsListRow, currency: string): React.ReactNode {
   if (col.customField !== undefined) {
     return (

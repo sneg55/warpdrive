@@ -1,9 +1,3 @@
-// Activity counters for the dashboard. Each counter windows on the column that records its
-// own event: completed on done_at (repo.ts stamps it on the done transition), added on
-// created_at, scheduled on due_at. Activities with no due date can be in no window at all,
-// so they are reported as `undated` rather than silently dropped from every count.
-// Visibility follows the activity's DOMINANT parent (deal > person > org > parentless), not
-// the deal alone: an activity on a private person is as invisible as one on a private deal.
 import { type SQL, sql } from "drizzle-orm";
 import type { Db } from "@/db/client";
 import type { PermSetUser } from "@/features/permissions/effective";

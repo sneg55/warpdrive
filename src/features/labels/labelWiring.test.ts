@@ -1,7 +1,3 @@
-// The join tables (deal_labels/person_labels/org_labels/lead_labels) were schema-only: every
-// writer wrote the entity's `labels` text[] and nothing ever inserted a join row, so the catalog
-// had no referential link to what records actually carried. These tests pin the invariant from
-// the OUTSIDE, through the real write paths, so a new writer that forgets to sync fails here.
 import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import { dealLabels, leadLabels, orgLabels, personLabels } from "@/db/schema/labels";
@@ -50,7 +46,6 @@ function session(userId: string, extra: Partial<LeadSession> = {}): LeadSession 
   };
 }
 
-// The names linked to an entity, read back through the join table.
 async function linkedNames(
   db: Db,
   join: typeof leadLabels | typeof dealLabels | typeof personLabels | typeof orgLabels,

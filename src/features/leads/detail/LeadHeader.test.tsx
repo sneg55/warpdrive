@@ -8,7 +8,6 @@ import { DetailDrawerCloseContext } from "@/features/navigation/detailDrawerClos
 import type { LeadDetail } from "../leadRepo";
 
 beforeAll(() => {
-  // Radix DropdownMenu (the "More lead actions" overflow menu) needs these in jsdom.
   Element.prototype.scrollIntoView = vi.fn();
   Element.prototype.hasPointerCapture = vi.fn(() => false);
   Element.prototype.releasePointerCapture = vi.fn();
@@ -24,8 +23,6 @@ const push = vi.fn();
 const refresh = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push, refresh }) }));
 vi.mock("@/utils/csrfCookie", () => ({ readCsrfToken: () => "csrf" }));
-// The Leads inbox list is a tRPC query rather than part of the route payload, so a delete has to
-// invalidate it explicitly (LeadsInbox's own bulk delete calls refetch() for the same reason).
 const invalidateLeadList = vi.fn(async () => {});
 const customFieldDefsByTarget: Record<string, unknown[]> = {};
 vi.mock("@/lib/trpc-client", () => ({
@@ -48,15 +45,11 @@ vi.mock("../leadServerActions", () => ({
   updateLeadAction: vi.fn(),
 }));
 
-// The shared app-wide error reporter (mounted in the (app) shell). Mocked so a mutation's
-// else-branch report is observable without rendering the provider.
 const reportError = vi.fn();
 vi.mock("@/components/shell/ActionErrorProvider", () => ({
   useActionError: () => reportError,
 }));
 
-// LeadHeader resolves its label chips through a trpc-backed hook; stub it so the header renders
-// without a tRPC provider (this test is about the mutation error-surfacing, not label rendering).
 vi.mock("@/features/labels/useLabelChipResolver", () => ({
   useLabelChipResolver: () => () => [],
 }));
@@ -77,9 +70,7 @@ const LEAD = {
 describe("LeadHeader PD lead-drawer parity", () => {
   it("does not render the owner in the header (PD shows owner as a sidebar field, not a header badge)", () => {
     render(<LeadHeader lead={LEAD} />);
-    // Owner lives in the Summary sidebar row, so the header must not duplicate it.
     expect(screen.queryByText("Nick")).not.toBeInTheDocument();
-    // The primary title still renders.
     const heading = screen.getByRole("heading", { name: "Acme lead" });
     expect(heading).toHaveClass("text-display");
     const titleRow = heading.closest("header")?.firstElementChild;
@@ -217,9 +208,6 @@ describe("LeadHeader delete dismissal", () => {
     );
 
     await waitFor(() => expect(closeDrawer).toHaveBeenCalledTimes(1));
-    // router.push("/leads") is a soft navigation, so Next would keep the already-active @modal slot
-    // and leave the drawer open on the deleted lead. A second Delete from that stale drawer then
-    // re-renders the missing record into notFound() and blows the page away.
     expect(push).not.toHaveBeenCalled();
   });
 

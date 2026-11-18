@@ -43,8 +43,6 @@ it("creates a person via the repo and reads it back via the router", async () =>
   const actor = makeActor(user);
   const caller = makeCaller(ctx.db, actor);
 
-  // Use the repo directly for create: actions require guardCsrf cookies/headers
-  // infrastructure that is not available in the test container environment.
   const created = await createPerson(
     ctx.db,
     toContactActor(actor),
@@ -67,7 +65,6 @@ it("throws NOT_FOUND through tRPC for a person the caller cannot see", async () 
   const owner = await seedUser(ctx.db);
   const ownerActor = makeActor(owner);
 
-  // Owner-level visibility (settings empty fallback): only the owner can see it.
   const hidden = await createPerson(
     ctx.db,
     toContactActor(ownerActor),
@@ -80,7 +77,6 @@ it("throws NOT_FOUND through tRPC for a person the caller cannot see", async () 
   const outsiderActor = makeActor(outsider);
   const outsiderCaller = makeCaller(ctx.db, outsiderActor);
 
-  // unwrap maps the 404-on-invisible Result error to a TRPCError with code NOT_FOUND.
   await expect(outsiderCaller.contacts.getPerson({ id: hidden.value.id })).rejects.toSatisfy(
     (e) => e instanceof TRPCError && e.code === "NOT_FOUND",
   );
@@ -121,8 +117,6 @@ it("contactFollowers reports self-follow state and an empty result for a hidden 
   expect(after.isFollowedBySelf).toBe(true);
   expect(after.followers.map((f) => f.id)).toContain(user.id);
 
-  // Owner-level visibility (settings empty fallback): an outsider cannot see it, so the
-  // gated query must not leak follower existence.
   const hidden = await createPerson(
     ctx.db,
     toContactActor(actor),
@@ -146,8 +140,6 @@ it("contactsFeed resolves its zod defaults and hides an activity on an unseen co
   const [type] = await ctx.db.select().from(activityTypes).where(eq(activityTypes.key, "call"));
   if (type === undefined) throw new Error("activity type 'call' not seeded");
 
-  // "all" visibility so the outsider caller below can see it; createPerson's owner-level
-  // default would make this test indistinguishable from the "hidden" contact.
   const [visible] = await ctx.db
     .insert(persons)
     .values({ name: "Feed Visible", ownerId: owner.id, visibilityLevel: "all" })
@@ -178,7 +170,6 @@ it("contactsFeed resolves its zod defaults and hides an activity on an unseen co
   const outsider = await seedUser(ctx.db);
   const outsiderCaller = makeCaller(ctx.db, makeActor(outsider));
 
-  // No explicit limit/before: the zod defaults (limit 50, before null) must still resolve.
   const rows = await outsiderCaller.contacts.contactsFeed({});
   const subjects = rows.map((r) => r.subject);
   expect(subjects).toContain("Feed visible call");

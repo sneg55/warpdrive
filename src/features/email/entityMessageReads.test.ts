@@ -1,5 +1,3 @@
-// Integration tests for the message-level record reads. Real Postgres via withTestDb.
-// Visibility runs through the same canSeeEmail rule the Inbox and the thread reads use.
 import { sql } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import type { PermissionFlagKey } from "@/constants/permissionFlags";
@@ -27,7 +25,6 @@ function callerFor(db: TestDb, actor: PermSetUser) {
   return createCaller({
     db,
     session: { userId: actor.id, sessionId: "test-session" },
-    // Context actor carries display fields (used only by the app shell); placeholders here.
     actor: { ...actor, name: "Test User", email: "test@example.com", avatarUrl: null },
   });
 }

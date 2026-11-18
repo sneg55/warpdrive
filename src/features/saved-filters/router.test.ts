@@ -1,5 +1,4 @@
 // @vitest-environment node
-// Integration tests for the saved-filters tRPC router against real Postgres (no DB mocks).
 import { describe, expect, it } from "vitest";
 import type { PermissionFlagKey } from "@/constants/permissionFlags";
 import { settings } from "@/db/schema/system";

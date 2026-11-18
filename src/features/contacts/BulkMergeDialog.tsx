@@ -10,17 +10,11 @@ type Record = { id: string; name: string };
 
 export interface BulkMergeDialogProps {
   kind: "org" | "person";
-  // Exactly the two records selected in the list. The survivor is picked between them; the other is
-  // merged away. Only the survivor's own name is trusted server-side (fieldChoices is empty).
   records: [Record, Record];
-  // Receives the survivor id (the list should clear its selection and refresh).
   onMerged: (survivorId: string) => void;
   onClose: () => void;
 }
 
-// List-level merge for a preselected pair of person/organization records (Pipedrive merges pairs).
-// Unlike the detail-page MergeDialog (one `current` record + candidate lookup), both records are
-// already chosen, so this only asks which one survives, then reuses the same merge actions.
 export function BulkMergeDialog({
   kind,
   records,

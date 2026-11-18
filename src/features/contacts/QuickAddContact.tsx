@@ -13,16 +13,12 @@ const S = STRINGS.contacts;
 
 interface QuickAddContactProps {
   kind: "person" | "org";
-  // Optional overrides used by the inbox sidebar's create-and-auto-link flow: relabel the trigger,
-  // seed the name/email from the thread's sender, and hand back the new id so the caller can link.
   triggerLabel?: string;
   prefillName?: string;
   prefillEmail?: string;
   onCreated?: (id: string) => void;
 }
 
-// Contact-list and embedded quick-add triggers now open the same rich entity-create variants used
-// by the global "+" menu. There is no separate name-only dialog to drift from the Add lead shell.
 export function QuickAddContact({
   kind,
   triggerLabel,

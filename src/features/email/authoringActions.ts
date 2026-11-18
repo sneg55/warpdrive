@@ -26,16 +26,12 @@ const templateInput = z.object({
   isShared: z.boolean(),
 });
 
-// Signature name caps at 40 chars for Pipedrive parity (S1); the client mirrors the cap + hint.
 const signatureInput = z.object({
   name: z.string().min(1).max(40),
   bodyHtml: z.string(),
   isDefault: z.boolean(),
 });
 
-// Bound the bulk arrays so an authenticated caller cannot force thousands of per-row updates or
-// blow past Postgres's bind-parameter limit. 500 is far above any real template count. IDs are
-// deduplicated so a repeated id cannot inflate the work.
 const boundedIds = z
   .array(z.string().uuid())
   .max(500)
@@ -53,19 +49,12 @@ const templatePatch = z.object({
 });
 const updateTemplateInput = z.object({ id: z.string().uuid(), patch: templatePatch });
 const idInput = z.object({ id: z.string().uuid() });
-// Note: no .max(40) on the patch name (unlike create). A signature created before the S1 cap can
-// have a longer name; the edit form resends that name on every save, so capping here would lock the
-// user out of editing legacy signatures. New input is bounded by the client's maxLength=40 instead.
 const signaturePatch = z.object({
   name: z.string().min(1).optional(),
   bodyHtml: z.string().optional(),
   isDefault: z.boolean().optional(),
 });
 const updateSignatureInput = z.object({ id: z.string().uuid(), patch: signaturePatch });
-
-// Each wrapper: CSRF first (before any DB/actor work), then the actor from the trusted
-// context (NEVER client input for ownerId/userId), then Zod-validate. canShare is
-// derived from the actor's flags; the service stays capability-agnostic.
 
 export async function createTemplateAction(
   csrfToken: string | null,
@@ -82,7 +71,6 @@ export async function createTemplateAction(
       new AppError("E_GMAIL_010", "invalid template input", { issues: parsed.error.issues }),
     );
   }
-  // Admins bypass the flag (they carry no explicit flags), matching the saved-filter share gate.
   const canShare = ctx.actor.type === "admin" || ctx.actor.flags.has("filter.share");
   return toClientResult(
     await createTemplate(db, { ownerId: ctx.actor.id, canShare, ...parsed.data }, SIG()),
@@ -145,7 +133,6 @@ export async function updateTemplateAction(
       new AppError("E_GMAIL_010", "invalid template input", { issues: parsed.error.issues }),
     );
   }
-  // Admins bypass the flag (they carry no explicit flags), matching the saved-filter share gate.
   const canShare = ctx.actor.type === "admin" || ctx.actor.flags.has("filter.share");
   return toClientResult(
     await updateTemplate(

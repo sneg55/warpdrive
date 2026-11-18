@@ -13,12 +13,6 @@ interface AvailabilityQuery {
   to: Date;
 }
 
-// Read-only Free/Busy signal (Pipedrive parity, B3): the windows in [from, to] during which the
-// given user is already booked by another activity assigned to them. NOT a scheduling engine, and
-// deliberately coarse: it exposes only busy spans, never activity details. An activity's end is
-// its explicit end_at, else due_at + durationMinutes, else due_at itself. Scoped to the user's own
-// assignments (deletedAt null); finer per-record visibility is intentionally not applied because
-// only busy/free (no content) is returned. Overlap uses half-open bounds (start < to, end > from).
 export async function getBusyWindows(
   db: Db,
   query: AvailabilityQuery,

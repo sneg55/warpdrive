@@ -5,10 +5,6 @@ import { withTestDb } from "@/db/testing";
 import { seedUser } from "@/db/testing/factories";
 import { assertMailboxOwner, getActorMailbox, getActorMailboxStatus } from "./mailboxOwnership";
 
-// Codex finding F5: the send action must confirm mailbox ownership BEFORE any token
-// decrypt/refresh side effect. assertMailboxOwner returns the SAME error for a missing
-// account and a non-owned account (no existence probing), and the address when owned.
-
 async function seedAccount(
   db: Parameters<typeof seedUser>[0],
   userId: string,

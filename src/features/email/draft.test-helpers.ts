@@ -4,8 +4,6 @@ import type { withTestDb } from "@/db/testing";
 import { seedPipelineWithStages } from "@/db/testing/factories";
 import type { AuthUser } from "@/features/permissions/types";
 
-// Seeds shared by the draft-link tests (draftLinks + draftEntityReads), which both need a mailbox
-// and a deal/person to link a draft to.
 export type TestDb = Parameters<Parameters<typeof withTestDb>[0]>[0];
 
 export const actorOf = (id: string): AuthUser => ({

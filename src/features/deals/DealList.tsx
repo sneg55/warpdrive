@@ -20,21 +20,12 @@ export interface DealListProps {
   total: number;
   totalValue: string;
   stages: DealListStage[];
-  // Resolves true when the move actually landed, false when it failed. DealList clears the row
-  // selection only on true, so a failed move keeps the selection instead of falsely signalling
-  // success (the selection vanishing was read as "it worked" even when the server rejected it).
   onBulkStage: (dealIds: string[], toStageId: string) => Promise<boolean>;
   onBulkArchive?: (dealIds: string[]) => Promise<boolean>;
-  // Ordered visible columns (from useColumns/DEAL_LIST_COLUMNS). Title is always first (pinned).
   visibleColumns: readonly ColumnDef[];
-  // The Customize-columns cog, rendered by the stateful client above the table.
   columnsMenu?: React.ReactNode;
   onUnarchive?: (dealId: string) => Promise<boolean>;
-  // What to show in place of the rows when there are none. With nothing filtered the table goes
-  // with them: a header, a select-all, a gear and a "0 deals" footer over zero rows is machinery.
   empty?: React.ReactNode;
-  // Whether any filter narrows this view. A filtered-to-nothing list keeps its columns, since
-  // they are still the view the user built.
   filtered?: boolean;
   currency: string;
 }
@@ -45,23 +36,16 @@ export function DealList(props: DealListProps) {
   const { visibleColumns, columnsMenu, empty, filtered = false } = props;
   const { editCell } = useInlineEdit(pipelineId);
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  // Which row's title is in inline-edit mode. Pipedrive opens the deal on title
-  // click, so edit is behind an explicit control rather than the cell itself.
   const [editingId, setEditingId] = useState<string | null>(null);
-  // Cap how many rows are painted to the DOM. Filtering, sorting, selection, and the footer
-  // totals all operate over the full `rows`/`total` above, so this bounds render cost only: a
-  // pipeline with hundreds of deals no longer mounts every <tr> up front.
   const rowWindow = useRenderWindow(rows, RENDER_WINDOW_STEP);
 
   function saveTitle(row: DealListRow, value: string) {
     setEditingId(null);
     const next = value.trim();
-    // Reject empty/whitespace (would blank the deal name) and over-long (server caps title at 255).
     if (next === "" || next === row.title || next.length > MAX_TITLE_LEN) return;
     editCell({ dealId: row.id, field: "title", value: next, expectedUpdatedAt: row.updatedAt });
   }
 
-  // Map stage id -> human name so the table shows the stage, not a raw uuid.
   const stageNameById = new Map(stages.map((s) => [s.id, s.name]));
 
   const allIds = rows.map((r) => r.id);

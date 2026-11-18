@@ -4,8 +4,6 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-li
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { STRINGS } from "@/constants/strings";
 
-// Typed so `mockResolvedValueOnce({ ok: false, ... })` typechecks alongside the default
-// ok:true resolution; the runtime values match the action's Result shape exactly.
 type Res = { ok: true; value: { threadId: string } } | { ok: false; error: string };
 const markReadMock = vi.fn<() => Promise<Res>>(() =>
   Promise.resolve({ ok: true, value: { threadId: "t1" } }),
@@ -27,11 +25,8 @@ vi.mock("./threadAttributesActions", () => ({
   setFollowUpStatusAction: (...a: unknown[]) => setFollowUpStatusMock(...(a as [])),
   setThreadLabelsAction: (...a: unknown[]) => setThreadLabelsMock(...(a as [])),
 }));
-// B2: ThreadPane mounts ThreadPrivacyToggle, which imports this server-action module; stub it so
-// these tests load. Toggle show/hide + failure surfacing live in ThreadPane.privacy.test.tsx.
 vi.mock("./threadVisibilityActions", () => ({ setThreadVisibilityAction: vi.fn() }));
 vi.mock("@/utils/csrfCookie", () => ({ readCsrfToken: () => "csrf" }));
-// The reader now renders ReaderTopBar (Back + Archive), which uses the Next router.
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
 vi.mock("./ReaderTopBar", () => ({ ReaderTopBar: () => null }));
 
@@ -74,7 +69,6 @@ vi.mock("@/lib/trpc-client", () => ({
   trpc: {
     mailLabels: { list: { useQuery: () => ({ data: [] }) } },
     email: { thread: { get: { useQuery: () => ({ data: threadData, refetch: vi.fn() }) } } },
-    // Sidebar SidebarLinkPanel loads pipelines (Add-new-deal) + the global search (owner-only).
     pipeline: { list: { useQuery: () => ({ data: [] }) } },
     search: { query: { useQuery: () => ({ data: undefined }) } },
     useUtils: () => ({
@@ -107,8 +101,6 @@ describe("ThreadPane", () => {
     expect(markReadMock).toHaveBeenCalledTimes(1);
     expect(markReadMock).toHaveBeenCalledWith("csrf", { threadId: "t1" });
 
-    // Force a second effect pass with the SAME threadId (e.g. a Composer send triggering
-    // refetch()). The once-guard must still hold: no second call.
     rerender(<ThreadPane threadId="t1" trackingBadge={null} />);
     expect(markReadMock).toHaveBeenCalledTimes(1);
   });
@@ -121,8 +113,6 @@ describe("ThreadPane", () => {
   });
 
   it("invalidates the inbox list (not just the unread count) after marking read on open", async () => {
-    // Regression: the opened row's unread dot/bold is read from the cached inbox.list query, so
-    // invalidating only unreadCount leaves it looking unread. Mirror mark-unread: invalidate both.
     render(<ThreadPane threadId="t1" trackingBadge={null} />);
     await waitFor(() => expect(invalidateUnreadCount).toHaveBeenCalledTimes(1));
     expect(invalidateInboxList).toHaveBeenCalledTimes(1);
@@ -130,7 +120,6 @@ describe("ThreadPane", () => {
 
   it("clicking Mark as unread calls markThreadUnreadAction and invalidates list + count", async () => {
     render(<ThreadPane threadId="t1" trackingBadge={null} />);
-    // Let the mark-read-on-open effect settle so its invalidation isn't counted as the click's.
     await waitFor(() => expect(invalidateUnreadCount).toHaveBeenCalledTimes(1));
     invalidateUnreadCount.mockClear();
 
@@ -143,7 +132,6 @@ describe("ThreadPane", () => {
   it("shows an inline error and skips invalidation when marking unread fails", async () => {
     markUnreadMock.mockResolvedValueOnce({ ok: false, error: "boom" });
     render(<ThreadPane threadId="t1" trackingBadge={null} />);
-    // Let the mark-read-on-open effect settle so its invalidations aren't mistaken for the click.
     await waitFor(() => expect(invalidateUnreadCount).toHaveBeenCalledTimes(1));
     invalidateUnreadCount.mockClear();
     invalidateInboxList.mockClear();
@@ -207,8 +195,6 @@ describe("ThreadPane", () => {
       },
     ] as never;
     render(<ThreadPane threadId="t1" trackingBadge={null} />);
-    // "Scrape.do Team" also appears in the sidebar primary-contact card (it is the first sender),
-    // so scope the message-header assertion to the presence of at least one occurrence.
     expect(screen.getAllByText("Scrape.do Team").length).toBeGreaterThan(0);
     expect(screen.getByText("bare@example.com")).toBeInTheDocument();
     threadData.messages = [];
@@ -256,7 +242,6 @@ describe("ThreadPane", () => {
       },
     ] as never;
     render(<ThreadPane threadId="t1" trackingBadge={null} />);
-    // Scope to the header row: the counterparty also renders in the sidebar card (else matches twice).
     const recipientsRow = screen.getByText("To:").closest("div") as HTMLElement;
     expect(within(recipientsRow).getByText("client@acme.com")).toBeInTheDocument();
     expect(within(recipientsRow).getByText("cc@acme.com")).toBeInTheDocument();
@@ -264,8 +249,6 @@ describe("ThreadPane", () => {
   });
 
   it("hides the label / follow-up controls on a thread the user cannot compose to", () => {
-    // A non-owned but viewable thread rejects attribute mutations server-side (F5-7): gate the
-    // controls behind canCompose so we never offer a clickable control the backend will reject.
     threadData.canCompose = false;
     render(<ThreadPane threadId="t1" trackingBadge={null} />);
     expect(screen.queryByLabelText(STRINGS.inbox.followUpStatusLabel)).not.toBeInTheDocument();

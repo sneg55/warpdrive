@@ -27,23 +27,19 @@ interface PipelineOption extends Option {
 interface AddDealLeftColumnProps {
   state: AddDealState;
   set: (patch: Partial<AddDealState>) => void;
-  // Title edits go through this (not set) so the modal can stop autofilling once the user types.
-  // Optional: falls back to a plain title patch when a caller does not need the edit signal.
   onTitleChange?: (value: string) => void;
   people: Option[];
   initialPerson?: Option;
   orgs: Option[];
   pipelines: PipelineOption[];
-  stages: Option[]; // stages of the currently selected pipeline
-  owners: Option[] | null; // null hides the owner select (actor cannot reassign)
-  groups: Option[] | null; // null hides the visible-to select
+  stages: Option[];
+  owners: Option[] | null;
+  groups: Option[] | null;
   baseCurrency: string;
   organizationCustomFields?: React.ReactNode;
   dealCustomFields?: React.ReactNode;
 }
 
-// Left column of the Add deal dialog (Pipedrive field order): contact/org, title, value, pipeline,
-// stage, label, close date, owner, source, visibility. Purely presentational.
 export function AddDealLeftColumn(props: AddDealLeftColumnProps): React.ReactNode {
   const {
     state,

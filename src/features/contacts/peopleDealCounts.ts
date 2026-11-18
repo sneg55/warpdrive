@@ -5,13 +5,8 @@ import { toVisibleDeal } from "@/features/deals/dealAuth";
 import { canSee } from "@/features/permissions/canSee";
 import type { ContactActor } from "./personsRepo";
 
-// Deal statuses that count as "closed" for the People-list Closed-deals column (Pipedrive counts
-// both won and lost). Open deals are excluded.
 const CLOSED_STATUSES = ["won", "lost"] as const;
 
-// dealId -> the set of page-person ids reached via a participant row. Mirrors orgCounts'
-// participantDealOrgIds: a deal counts toward a person if the deal's own person_id matches OR the
-// person is a participant on it.
 async function participantDealPersonIds(
   db: Db,
   personIds: string[],
@@ -35,9 +30,6 @@ async function participantDealPersonIds(
   return byDeal;
 }
 
-// Batched, visibility-gated count of closed (won+lost) deals per person for a page of people. Two
-// queries total regardless of page size (participants, then the candidate deals), so the People
-// list never fans out to N per-row queries. Modeled on orgCounts.dealCountsForOrgs.
 export async function closedDealCountsForPeople(
   db: Db,
   actor: ContactActor,
@@ -66,7 +58,6 @@ export async function closedDealCountsForPeople(
     .where(
       and(
         isNull(deals.deletedAt),
-        // Archived-pipeline deals are hidden from every read (matches orgCounts).
         eq(pipelines.isArchived, false),
         inArray(deals.status, CLOSED_STATUSES),
         or(

@@ -5,11 +5,6 @@ import { withTestDb } from "@/db/testing";
 import { seedPipelineWithStages, seedUser } from "@/db/testing/factories";
 import { createDeal } from "./dealActions";
 
-// Deal-create authorization (permissions spec §5): deal.create is a global capability,
-// AND the target pipeline must be unrestricted OR the actor must be a member of its
-// visibility group. Neither gate existed before; a user could inject a deal into a
-// restricted pipeline they cannot see by submitting a known/stale pipeline+stage UUID.
-
 function regular(userId: string) {
   return {
     userId,
@@ -72,7 +67,6 @@ describe("createDeal authorization", () => {
       await seedDefaultSettings(db);
       const u = await seedUser(db);
       const groupId = await seedGroup(db);
-      // Pipeline restricted to `groupId`; user u is NOT a member.
       const p = await seedPipelineWithStages(db, ["S1"], { visibilityGroupId: groupId });
       const r = await createDeal(
         db,

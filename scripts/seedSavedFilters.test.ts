@@ -2,10 +2,6 @@ import { describe, expect, it } from "vitest";
 import { analyzeSavedFilter } from "./auditConfig";
 import { buildSavedFilterSeeds } from "./seed-demo-collab";
 
-// Guards the silent-no-op class: a seeded saved filter whose stored definition uses keys the
-// FilterDefinition schema strips parses to a degenerate/empty filter and narrows nothing. Every
-// seeded definition must be conformant (analyzeSavedFilter returns null: not invalid, lossy, or
-// degenerate).
 describe("buildSavedFilterSeeds", () => {
   const userIds = ["11111111-1111-1111-1111-111111111111", "22222222-2222-2222-2222-222222222222"];
 

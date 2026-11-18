@@ -25,7 +25,7 @@ it("no-ops on a terminal batch (a stale validate retry must not regress it to re
     await handleValidateJob(db, { data: { batchId: b!.id } }, AbortSignal.timeout(5000));
 
     const [after] = await db.select().from(importBatches).where(eq(importBatches.id, b!.id));
-    expect(after?.status).toBe("completed"); // not regressed to "ready"
+    expect(after?.status).toBe("completed");
   });
 });
 

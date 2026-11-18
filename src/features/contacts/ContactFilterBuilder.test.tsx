@@ -3,14 +3,10 @@ import "@testing-library/jest-dom/vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-// Catalogs keyed by target so a test can prove the builder queries "person" vs "organization":
-// each target's catalog carries a name the other one does not.
 const CATALOG: Record<string, Array<{ id: string; name: string }>> = {
   person: [{ id: "l1", name: "Hot" }],
   organization: [{ id: "l2", name: "Partner" }],
 };
-// "hot" is the catalog's "Hot" under case-insensitive matching, so it must not become a second
-// option; "high priority" is applied-only and still has to be selectable.
 const APPLIED: Record<string, string[]> = {
   person: ["high priority", "hot"],
   organization: [],

@@ -1,6 +1,3 @@
-// U4 (D1): Sent and Archive folder rows must lead with the correspondent (the counterparty),
-// exactly like the Inbox projection, never with the mailbox owner's own address. Kept in its own
-// file so folderReads.test.ts stays under the 300-line cap.
 import { sql } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import { withTestDb } from "@/db/testing";
@@ -17,8 +14,6 @@ const actorOf = (id: string): AuthUser => ({
   groupIds: new Set(),
 });
 
-// Owner mailbox address matches seedAccount's default (o@gunsnation.com), so the owner is "me"
-// and the counterparty is any other address.
 async function seedAccount(db: TestDb, ownerId: string): Promise<string> {
   const acct = (
     await db.execute(

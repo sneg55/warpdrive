@@ -1,9 +1,3 @@
-// U5 inbox filter predicates: each new PD filter (Shared, Private, Tracked emails, To: me, From an
-// existing contact, Linked with an open deal) must narrow listInbox at the SQL boundary, and must
-// compose with the client-side attribute filters (e.g. Unread + Shared). These filters are ADDITIVE
-// narrowing on top of the owner-scoping WHERE (a.user_id = actor), which stays untouched.
-//
-// Real Postgres via Testcontainers (no DB mocking, see CLAUDE.md).
 import { randomUUID } from "node:crypto";
 import { sql } from "drizzle-orm";
 import { afterAll, beforeAll, expect, it } from "vitest";
@@ -83,10 +77,6 @@ async function seedMessage(
   );
 }
 
-// Mirrors a real newly-composed tracked send: the send attempt carries thread_id=NULL (no local
-// thread exists at enqueue), the message row is created with the thread_id, and backfillTokens then
-// links the token to that message. So the token reaches the thread ONLY via message_id, never via
-// the attempt's thread_id. A predicate that joins on attempt.thread_id misses this (codex P1).
 async function seedTrackingToken(threadId: string, accountId: string): Promise<void> {
   const attempt = (
     await h.db.execute(

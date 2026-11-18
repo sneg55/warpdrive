@@ -5,7 +5,6 @@ import { midpoint } from "./boardPosition";
 import { moveDealAction } from "./moveAction";
 import type { DealMoveInput } from "./schemas";
 
-// Named constant so every consumer uses the same key shape.
 export const BOARD_QUERY_KEY = (pipelineId: string) => ["board", pipelineId] as const;
 
 export function useDealMove(pipelineId: string) {
@@ -39,10 +38,6 @@ export function useDealMove(pipelineId: string) {
     },
 
     onSettled: (result, _err, _input, ctx) => {
-      // E_DEAL_002 (stale precondition) is a non-throwing ok:false result, not
-      // an exception, so it arrives here via onSettled rather than onError.
-      // Roll back the optimistic patch so the card snaps to its prior position,
-      // then invalidate so the next fetch reconciles with the server.
       if (result !== undefined && result.ok === false && ctx?.previous !== undefined) {
         client.setQueryData(key, ctx.previous);
       }

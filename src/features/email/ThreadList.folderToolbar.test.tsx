@@ -1,9 +1,4 @@
 // @vitest-environment jsdom
-// U4 (D2): non-Inbox folders keep a filter/search toolbar (Pipedrive parity) instead of an empty
-// header. Warpdrive had shown the toolbar row only on the Inbox. Sent/Archive get a Refresh control
-// (the attribute/quick filters stay Inbox-only: Sent/Archive rows do not project unread/attachment,
-// so applying those filters would wrongly hide every row). Own file to keep ThreadList.test.tsx
-// under the 300-line cap; mirrors that file's trpc mock.
 import "@testing-library/jest-dom/vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";

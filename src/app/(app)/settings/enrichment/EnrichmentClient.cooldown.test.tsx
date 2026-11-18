@@ -127,7 +127,6 @@ describe("EnrichmentClient cooldown clock", () => {
       await vi.advanceTimersByTimeAsync(5 * 60_000);
     });
 
-    // The cooldown a connection test just recorded, arriving through router.refresh.
     const until = new Date("2026-08-24T09:06:00Z");
     rerender(clientWith([throttled("apollo", "Apollo", until)]));
     expect(screen.getByText(S.statusQuota(hhmm(until)))).toBeInTheDocument();

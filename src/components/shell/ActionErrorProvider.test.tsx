@@ -19,7 +19,6 @@ function Trigger({ errorId }: { errorId?: string }): React.ReactNode {
 
 it("provides a no-op reporter outside any provider (no crash)", async () => {
   const user = userEvent.setup();
-  // Rendered with NO provider: useActionError falls back to the no-op default.
   render(<Trigger errorId={ERROR_IDS.PERM_DENIED} />);
   await user.click(screen.getByRole("button", { name: "go" }));
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();

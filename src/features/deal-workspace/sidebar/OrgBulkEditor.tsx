@@ -5,8 +5,6 @@ import { InlineEditFooter } from "@/features/inline-edit/InlineEditFooter";
 import { saveErrorMessage } from "@/features/inline-edit/saveError";
 import { BulkEditRow } from "./BulkEditRow";
 
-// The change shape OrgBlock.save accepts (kept in sync). All optional so the bulk save sends only
-// the fields the user actually changed.
 export interface OrgBulkChange {
   name?: string;
   domain?: string | null;
@@ -29,7 +27,6 @@ interface OrgBulkEditorProps {
   };
   save: (change: OrgBulkChange) => Promise<{ ok: boolean; errorId?: string }>;
   onExit: () => void;
-  // Built-in field keys hidden in Settings > Data fields; a hidden firmographic is not offered here.
   hidden?: ReadonlySet<string>;
 }
 
@@ -47,8 +44,6 @@ const textOrNull = (v: string): string | null => (v.trim() === "" ? null : v.tri
 const addrStr = (a: Record<string, unknown> | null, k: string): string =>
   typeof a?.[k] === "string" ? a[k] : "";
 
-// Rebuild the address object from its edited parts, or undefined if nothing changed. Keeps only
-// non-empty parts and preserves any lat/lng the geocoder set.
 function addressChange(
   addr: Record<string, string>,
   original: Record<string, unknown> | null,
@@ -64,10 +59,6 @@ function addressChange(
   return out;
 }
 
-// Section bulk editor for the Organization block: every firmographic + the address parts open at
-// once behind a single Save. Mounted only while the section is in bulk mode. Save sends one
-// updateOrgAction with just the changed fields; the address is rebuilt from its parts (preserving
-// lat/lng) only if any part changed.
 export function OrgBulkEditor({
   org,
   save,

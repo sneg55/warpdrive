@@ -21,7 +21,6 @@ export async function getPreferences(
   signal.throwIfAborted();
   if (row === undefined) return { ...PREFERENCES_DEFAULT, ui: {} };
 
-  // Never trust the columns: parse jsonb + text, fall back on invalid stored values.
   const ui = uiSchema.safeParse(row.ui);
   const density = densitySchema.safeParse(row.density);
   return {
@@ -48,9 +47,6 @@ export async function setPreferences(
 ): Promise<void> {
   signal.throwIfAborted();
   const uiPatch = patch.ui ?? {};
-  // Merge the jsonb bag server-side (Postgres `||` shallow concat) so concurrent writes
-  // to different ui keys cannot lost-update each other. Only the keys named in `patch`
-  // touch timezone/density, so a ui-only write never resets the profile scalars.
   const setClause = {
     ui: sql`${userPreferences.ui} || ${JSON.stringify(uiPatch)}::jsonb`,
     ...("timezone" in patch ? { timezone: patch.timezone ?? null } : {}),

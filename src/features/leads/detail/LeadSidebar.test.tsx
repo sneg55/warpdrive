@@ -25,7 +25,6 @@ const updateLeadAction = vi.hoisted(() =>
   ),
 );
 vi.mock("@/features/leads/leadServerActions", () => ({ updateLeadAction }));
-// PersonBlock/OrgBlock (reused from the deal sidebar) save through these actions.
 vi.mock("@/features/contacts/actions", () => ({
   updatePersonAction: vi.fn(() => Promise.resolve({ ok: true, value: {} })),
   updateOrgAction: vi.fn(() => Promise.resolve({ ok: true, value: {} })),
@@ -106,8 +105,6 @@ const baseLead: LeadDetail = {
 };
 
 it("uses the shared Pipedrive field tokens (small, medium, right-aligned label)", () => {
-  // Shared FieldRow token unified in the A3 sidebar pass: 12px / medium (500) / right-aligned,
-  // matching the deal + person + org sidebars that render the same component.
   render(<LeadSidebar lead={baseLead} owners={[]} person={null} org={null} />);
   const label = screen.getByText("Channel ID");
   expect(label.className).toContain("text-xs");
@@ -116,10 +113,6 @@ it("uses the shared Pipedrive field tokens (small, medium, right-aligned label)"
 });
 
 it("gives each section a kebab options menu but no misleading edit pencil", () => {
-  // CO-2: LeadSidebar sections get the section kebab (Customize fields) + the hide-empty funnel.
-  // The old "Edit {section}" pencil was removed: it only re-showed funnel-hidden fields (a
-  // duplicate of the funnel toggle) while its label implied a section edit mode, so it read as a
-  // dead control. Editing is via clicking a field inline or the header Edit button.
   render(<LeadSidebar lead={baseLead} owners={[]} person={null} org={null} />);
   const summary = within(screen.getByRole("region", { name: "Summary" }));
   expect(summary.queryByRole("button", { name: /Edit Summary section/i })).not.toBeInTheDocument();
@@ -132,13 +125,10 @@ it("the Source section's hide-empty-fields funnel hides blank Channel ID row", (
   expect(sourceSection.getByText("Channel ID")).toBeInTheDocument();
   fireEvent.click(sourceSection.getByRole("button", { name: "Hide empty fields" }));
   expect(sourceSection.queryByText("Channel ID")).not.toBeInTheDocument();
-  // Origin is never value-less; it always stays.
   expect(sourceSection.getByText("Origin")).toBeInTheDocument();
 });
 
 it("renders the linked person's contact fields (email) via the shared Person block", () => {
-  // Parity with Pipedrive's lead sidebar: the Person section surfaces the linked person's
-  // email/phone, not just the name, by reusing the deal sidebar's PersonBlock.
   render(<LeadSidebar lead={baseLead} owners={[]} person={basePerson} org={null} />);
   const personSection = within(screen.getByRole("region", { name: "Person" }));
   expect(personSection.getByText("Jane Roe")).toBeInTheDocument();
@@ -165,8 +155,6 @@ it("no Person section when the lead has no linked (or a soft-deleted) person", (
 });
 
 it("renders the linked org's website and firmographics via the shared Org block", () => {
-  // The reported gap: PD shows the org's Website (and other firmographics) on the lead page; we
-  // only showed Name. Reusing the deal sidebar's OrgBlock brings full parity.
   render(<LeadSidebar lead={baseLead} owners={[]} person={null} org={baseOrg} />);
   const orgSection = within(screen.getByRole("region", { name: "Organization" }));
   expect(orgSection.getByText("Acme Corp")).toBeInTheDocument();
@@ -188,7 +176,6 @@ it("honors hidden built-in org fields (Settings > Data fields)", () => {
   );
   const orgSection = within(screen.getByRole("region", { name: "Organization" }));
   expect(orgSection.queryByText("Website")).not.toBeInTheDocument();
-  // A non-hidden firmographic still renders.
   expect(orgSection.getByText("Industry")).toBeInTheDocument();
 });
 

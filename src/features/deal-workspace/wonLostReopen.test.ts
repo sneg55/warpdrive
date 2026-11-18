@@ -1,5 +1,3 @@
-// Integration tests for reopenDeal (won/lost back to open recovery). Real Postgres via
-// Testcontainers. No database mocking: mock/prod divergence hides broken queries (see CLAUDE.md).
 import { and, eq } from "drizzle-orm";
 import { afterAll, beforeAll, expect, it } from "vitest";
 import { wsChannel } from "@/constants/wsChannels";
@@ -20,7 +18,6 @@ afterAll(async () => {
   await h.close();
 });
 
-// Admin PermSetUser: admin bypass keeps these tests focused on reopen logic, not permission wiring.
 function makeActor(userId: string): PermSetUser {
   return { id: userId, type: "admin", isActive: true, groupIds: new Set(), flags: new Set() };
 }
@@ -53,9 +50,6 @@ it("reopenDeal: returns a won deal to open and clears wonTime", async () => {
 });
 
 it("reopenDeal: a non-owner follower receives a deal_followed_update notification", async () => {
-  // Mirrors reopenDealAction: reopenDeal then notifyOnDealUpdate({ status: "open" }), which routes
-  // to the followed-update fan-out (not won/lost). Guards the P2 review finding that reopening must
-  // notify followers like the other status transitions do.
   const owner = await seedUser(h.db);
   const follower = await seedUser(h.db);
   const pipe = await seedPipelineWithStages(h.db, ["Qualified"]);
@@ -100,9 +94,6 @@ it("reopenDeal: a non-owner follower receives a deal_followed_update notificatio
 });
 
 it("reopenDeal: publishes on the pipeline channel so an open board refetches", async () => {
-  // The board subscribes only to pipeline:<id> (useBoardRealtime), so a reopened deal must bump the
-  // pipeline channel or it will not reappear on an open board until a manual refresh. Mirrors
-  // deleteDeal's dual publish.
   const user = await seedUser(h.db);
   const pipe = await seedPipelineWithStages(h.db, ["Qualified"]);
   const [deal] = await h.db

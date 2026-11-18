@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import type { GmailMessage } from "./gmailSchemas";
 import { parseGmailMessage } from "./mimeParse";
 
-// Minimal Gmail message with the given header set, enough for parseGmailMessage.
 function msgWithHeaders(headers: { name: string; value: string }[]): GmailMessage {
   return {
     id: "m1",
@@ -46,8 +45,6 @@ describe("parseGmailMessage From-header parsing", () => {
   });
 
   it("normalizes participants to bare addresses so contact matching succeeds", () => {
-    // A real Gmail From/To carries display names; participants (used for contact linking,
-    // matched against persons.primary_email) must be bare addresses, not "Name <email>".
     const parsed = parseGmailMessage(
       msgWithHeaders([
         { name: "From", value: '"Scrape.do Team" <support@scrape.do>' },
@@ -57,7 +54,6 @@ describe("parseGmailMessage From-header parsing", () => {
     expect(parsed.participants).toContain("support@scrape.do");
     expect(parsed.participants).toContain("nick@gunsnation.com");
     expect(parsed.participants).toContain("billing@acme.com");
-    // The raw "Name <email>" form must not leak into participants.
     expect(parsed.participants.some((p) => p.includes("<"))).toBe(false);
   });
 
@@ -68,7 +64,6 @@ describe("parseGmailMessage From-header parsing", () => {
         { name: "To", value: '"Doe, John" <john@x.com>, jane@y.com' },
       ]),
     );
-    // The quoted "Doe, John" comma must not tear the address apart into a junk participant.
     expect(parsed.toEmails).toEqual(["john@x.com", "jane@y.com"]);
     expect(parsed.participants).not.toContain('"Doe');
   });

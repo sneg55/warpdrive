@@ -3,8 +3,6 @@ import "@testing-library/jest-dom/vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-// SidebarLinkPanel is exercised in its own test; here we only assert the sidebar renders it with
-// the thread's link context, so stub it to echo the props we care about.
 const linkPanelProps = vi.fn();
 vi.mock("./SidebarLinkPanel", () => ({
   SidebarLinkPanel: (props: Record<string, unknown>) => {

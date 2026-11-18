@@ -24,8 +24,6 @@ const { customFieldDefs, personOptions } = vi.hoisted(() => ({
   },
 }));
 
-// tRPC hooks the modal reads. listUsers / listVisibilityGroups return empty so the manager-only
-// fields stay hidden (the 403 path).
 vi.mock("@/lib/trpc-client", () => ({
   trpc: {
     contacts: {
@@ -107,22 +105,14 @@ describe("AddDealModal", () => {
     expect(screen.getByLabelText("Organization")).toBeInTheDocument();
     expect(screen.getByLabelText("Deal title")).toBeInTheDocument();
     expect(screen.getByLabelText("Pipeline")).toBeInTheDocument();
-    // Stage chevron radios.
     expect(screen.getByRole("radio", { name: "Qualified" })).toBeInTheDocument();
-    // Right column person contact rows.
     expect(screen.getByLabelText("Phone 1")).toBeInTheDocument();
     expect(screen.getByLabelText("Email 1")).toBeInTheDocument();
-    // Manager-only fields hidden (no users/groups).
     expect(screen.queryByLabelText("Owner")).toBeNull();
     expect(screen.queryByLabelText("Visible to")).toBeNull();
   });
 
   it("lets both grid columns shrink so the body never scrolls horizontally", () => {
-    // The two-column body is a grid whose tracks default to minmax(auto, fr): without min-w-0
-    // on each child, the columns refuse to shrink below their content and the dialog gets a
-    // horizontal scrollbar (the PERSON column clipped past the right edge). min-w-0 lets the
-    // fr tracks resolve to the container width. jsdom has no layout engine, so this asserts the
-    // structural guard that the browser confirmed removes the overflow.
     renderModal();
     const dialog = screen.getByRole("dialog", { name: "Add deal" });
     const grid = dialog.querySelector<HTMLElement>(".grid");
@@ -231,7 +221,6 @@ describe("AddDealModal", () => {
     const { onCreated } = renderModal();
     fireEvent.change(screen.getByLabelText("Deal title"), { target: { value: "Big deal" } });
     fireEvent.click(screen.getByLabelText("Expected close date"));
-    // findByText: the calendar is a next/dynamic chunk that loads on open.
     fireEvent.click(await screen.findByText("15"));
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
     await waitFor(() =>
@@ -252,10 +241,8 @@ describe("AddDealModal", () => {
 
   it("does not create an inline org/person when the deal is invalid (no orphans)", async () => {
     renderModal();
-    // Commit a brand-new org via the combobox (type + blur reconciles to create-new).
     fireEvent.change(screen.getByLabelText("Organization"), { target: { value: "Brand New Org" } });
     fireEvent.blur(screen.getByLabelText("Organization"));
-    // The org autofills the title; clear it so the deal is invalid (blank title) again.
     fireEvent.change(screen.getByLabelText("Deal title"), { target: { value: "" } });
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
     expect(await screen.findByRole("alert")).toHaveTextContent(/title/i);
@@ -280,15 +267,11 @@ describe("AddDealModal", () => {
 
   it("links a newly-created person to the org chosen in the same modal (even without blurring first)", async () => {
     renderModal();
-    // Type a new inline person + org and click Save WITHOUT blurring the fields first (the real
-    // scenario: the combobox must commit the typed text on change, not only on blur, or the person
-    // is created with no org).
     fireEvent.change(screen.getByLabelText("Contact person"), { target: { value: "Test User" } });
     fireEvent.change(screen.getByLabelText("Organization"), { target: { value: "Acme Corp" } });
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
 
     await waitFor(() => expect(createPersonAction).toHaveBeenCalledTimes(1));
-    // The created org's id ("onew") must be threaded into the person create so they are linked.
     expect(createPersonAction).toHaveBeenCalledWith(
       expect.objectContaining({ name: "Test User", orgId: "onew" }),
       "csrf",

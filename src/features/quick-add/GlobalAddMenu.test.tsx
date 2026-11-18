@@ -4,7 +4,6 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
-// Radix DropdownMenu relies on pointer-capture + scrollIntoView, which jsdom lacks.
 beforeAll(() => {
   Element.prototype.scrollIntoView = vi.fn();
   Element.prototype.hasPointerCapture = vi.fn();
@@ -51,9 +50,7 @@ describe("GlobalAddMenu", () => {
     for (const label of ["Lead", "Deal", "Activity", "Person", "Organization"]) {
       expect(screen.getByRole("menuitem", { name: new RegExp(label) })).toBeInTheDocument();
     }
-    // Deal is enabled when a pipeline exists.
     expect(screen.getByRole("menuitem", { name: /Deal/ })).not.toHaveAttribute("data-disabled");
-    // Shortcut hints present.
     expect(screen.getByText("D")).toBeInTheDocument();
     expect(screen.getByText("L")).toBeInTheDocument();
     expect(screen.getByText("A")).toBeInTheDocument();
@@ -94,8 +91,6 @@ describe("GlobalAddMenu", () => {
     expect(screen.getByRole("menuitem", { name: /Deal/ })).toHaveAttribute("data-disabled");
   });
 
-  // A loading or errored pipeline query (data still undefined) must not read as "no pipelines":
-  // that false negative left Deal permanently disabled on fresh installs where a pipeline exists.
   it("keeps the Deal entry enabled while the pipeline list is loading or errored", async () => {
     const user = userEvent.setup();
     useQuery.mockReturnValue({ data: undefined, isSuccess: false });

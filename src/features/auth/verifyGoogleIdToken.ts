@@ -1,20 +1,8 @@
-/**
- * The SINGLE Google ID token verification path (used by /auth/callback in production
- * AND by the security tests). Do not re-implement jwtVerify elsewhere.
- *
- * 1. Verifies signature against the injected JWKS key-getter (real key check via jose).
- * 2. Enforces iss, aud, exp (jose).
- * 3. Validates the decoded claims (email_verified, nonce, hd) against injected values.
- *
- * The key-getter is injectable so the route passes a remote JWKS and tests pass a
- * local fake JWKS, both exercising the exact same verification code.
- */
 import { type JWTVerifyGetKey, errors as joseErrors, jwtVerify } from "jose";
 import { err, ok, type Result } from "@/types/result";
 import { idTokenClaimsSchema } from "./schemas";
 
 export interface VerifyGoogleIdTokenDeps {
-  // Resolved JWKS key-getter: createRemoteJWKSet(...) or createLocalJWKSet(...).
   getKey: JWTVerifyGetKey;
   clientId: string;
   nonce: string;
@@ -49,8 +37,6 @@ export async function verifyGoogleIdToken(
 
   deps.signal.throwIfAborted();
 
-  // Single authority for claim checks. aud/iss are already enforced by jose above;
-  // here we own email_verified, nonce, and hd against the injected workspace domain.
   const parsed = idTokenClaimsSchema.safeParse(payload);
   if (!parsed.success) return err("rejected");
   const c = parsed.data;

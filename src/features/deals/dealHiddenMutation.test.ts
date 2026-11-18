@@ -1,8 +1,3 @@
-// Codex finding F16: loadEditableDeal (the single shared edit gate for updateDeal and
-// moveDeal) selected a deal by id with NO deletedAt filter and loaded the pipeline without
-// checking is_archived. A user with a stale id and edit permission could therefore mutate
-// soft-deleted deals or deals in an archived pipeline that all normal reads already hide,
-// drifting board/status state outside any visible UI flow. All three cases must 404.
 import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import { deals } from "@/db/schema/deals";

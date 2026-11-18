@@ -12,11 +12,6 @@ import type { LabelTarget } from "@/constants/labelColors";
 import { LABEL_DOT_CLASSES } from "@/constants/labelColors";
 import { trpc } from "@/lib/trpc-client";
 
-// Catalog-driven "Add labels" dropdown (Pipedrive parity). A dropdown list of every label the
-// workspace has defined for this target (managed in Settings > Company > Labels): each row is a
-// checkbox item with a color dot, and a "Create new label" item links to the settings page.
-// Replaces the old hard-coded 3-label LabelToggle. Selection is stored by label name; membership
-// is matched case-insensitively so legacy lowercase keys still toggle.
 const LABELS_SETTINGS_HREF = "/settings/company/labels";
 
 interface CatalogLabelPickerProps {
@@ -58,7 +53,6 @@ export function CatalogLabelPicker({
               key={label.id}
               redactLabel
               checked={isActive(label.name)}
-              // Keep the menu open while toggling several labels in a row.
               onSelect={(e) => e.preventDefault()}
               onCheckedChange={() => toggle(label.name)}
             >

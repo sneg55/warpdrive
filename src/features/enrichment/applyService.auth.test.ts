@@ -110,8 +110,6 @@ async function readRun(id: string) {
 }
 
 describe("applyEnrichment authorization", () => {
-  // Answering "that value was not in the run" to somebody who cannot see the record tells them
-  // what the run holds. Both requests have to fail the same way, on the record, not on the guess.
   it("answers a caller who cannot see the record the same way whether or not the value is backed", async () => {
     const org = await seedOrg({ visibilityLevel: "owner" });
     const run = await seedRun("organization", org.id, [APOLLO({ "org.industry": "Aerospace" })]);
@@ -150,8 +148,6 @@ describe("applyEnrichment authorization", () => {
     expect((await readRun(run.id))?.appliedAt).toBeNull();
   });
 
-  // The planner keeps the last value for a scalar target while the change log looks the key up
-  // with `find`, so a duplicate writes one value and records another.
   it("rejects two selections naming the same canonical key", async () => {
     const org = await seedOrg();
     const run = await seedRun("organization", org.id, [
@@ -186,8 +182,6 @@ describe("applyEnrichment authorization", () => {
     expect((await readRun(run.id))?.appliedAt).toBeNull();
   });
 
-  // A company name matching no single organization writes nothing. Stamping the run anyway makes
-  // the audit claim an apply that never touched the record.
   it("does not stamp the run when every selection came back unresolved", async () => {
     const person = await seedPerson();
     const run = await seedRun("person", person.id, [
@@ -205,8 +199,6 @@ describe("applyEnrichment authorization", () => {
     expect((await readRun(run.id))?.appliedAt).toBeNull();
   });
 
-  // An admin repointing a canonical key does not touch the record, so the compare-and-swap still
-  // passes while the row the user reviewed as a gap now names a populated field somewhere else.
   it("rejects an apply once the canonical key it reviewed points at another target", async () => {
     const org = await seedOrg();
     const run = await seedRun("organization", org.id, [APOLLO({ "org.industry": "Aerospace" })]);

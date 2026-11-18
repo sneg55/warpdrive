@@ -178,8 +178,6 @@ describe("runEnrichment", () => {
     );
   });
 
-  // Without this the footer shows two sources and no hint a third exists, which reads as the
-  // whole picture rather than a degraded one.
   it("still lists a provider it skipped for a cooldown", async () => {
     await connect("apollo");
     await connect("rocketreach", {
@@ -217,7 +215,6 @@ describe("runEnrichment", () => {
       .from(schema.enrichmentProviders)
       .where(eq(schema.enrichmentProviders.provider, "apollo"));
     expect(row?.throttledUntil?.toISOString()).toBe("2026-08-24T13:00:00.000Z");
-    // A cooldown must never switch a provider off: the admin owns that toggle.
     expect(row?.enabled).toBe(true);
   });
 

@@ -1,8 +1,3 @@
-// The other party in a thread, used to prefill the sidebar "Create new contact" flow. Mirrors the
-// inbox list's SQL correspondent rule (inboxList.ts) on the client: prefer an inbound sender (the
-// counterparty wrote it), else the first recipient of an outbound message that is not the mailbox
-// owner. Never leads with the owner's own address, so a sent-only thread prefills the recipient
-// rather than creating a contact for the current user.
 interface CounterpartyMessage {
   direction: string;
   fromEmail: string;

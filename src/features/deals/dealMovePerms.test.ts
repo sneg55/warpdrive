@@ -1,5 +1,3 @@
-// dealMovePerms.test.ts: permission enforcement + realtime event tests for moveDeal.
-// CAS + stage-validation tests live in dealMove.test.ts.
 import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import { channelVersions } from "@/db/schema/realtime";
@@ -33,7 +31,6 @@ describe("moveDeal: permissions", () => {
       );
       if (created.ok === false) throw new Error(`createDeal failed: ${created.error.message}`);
 
-      // other user has no deal.edit_* flag; deal is "all" visibility so it is visible
       const r = await moveDeal(
         db,
         noEditSession(other.id),
@@ -49,7 +46,6 @@ describe("moveDeal: permissions", () => {
 
       expect(r.ok).toBe(false);
       if (r.ok === true) return;
-      // Visible but no edit flag -> PERM_DENIED
       expect(r.error.id).toBe("E_PERM_001");
     });
   });
@@ -72,7 +68,6 @@ describe("moveDeal: permissions", () => {
       );
       if (created.ok === false) throw new Error(`createDeal failed: ${created.error.message}`);
 
-      // other has deal.edit_own but is not the owner
       const r = await moveDeal(
         db,
         regularSession(other.id),
@@ -109,7 +104,6 @@ describe("moveDeal: permissions", () => {
       );
       if (created.ok === false) throw new Error(`createDeal failed: ${created.error.message}`);
 
-      // owner has deal.edit_own and IS the owner
       const r = await moveDeal(
         db,
         regularSession(owner.id),
@@ -131,7 +125,6 @@ describe("moveDeal: permissions", () => {
 
   it("returns E_DEAL_001 when user cannot see the deal (404-on-invisible)", async () => {
     await withTestDb(async (db) => {
-      // owner-level default: only owner can see the deal
       await seedSettings(db, "owner");
       const owner = await seedUser(db);
       const stranger = await seedUser(db);
@@ -148,7 +141,6 @@ describe("moveDeal: permissions", () => {
       );
       if (created.ok === false) throw new Error(`createDeal failed: ${created.error.message}`);
 
-      // stranger with edit_own cannot see this deal (visibility: owner, ownerId: owner)
       const r = await moveDeal(
         db,
         regularSession(stranger.id),
@@ -164,7 +156,6 @@ describe("moveDeal: permissions", () => {
 
       expect(r.ok).toBe(false);
       if (r.ok === true) return;
-      // Not visible -> 404-on-invisible
       expect(r.error.id).toBe("E_DEAL_001");
     });
   });

@@ -12,14 +12,10 @@ export interface SweepDeps {
 export interface MailboxSweepResult {
   email: string;
   ok: boolean;
-  // Conversations hidden by this sweep (0 when the mailbox failed).
   hidden: number;
   errorId: string | null;
 }
 
-// Run the spam sweep across every connected mailbox. One mailbox's failure (revoked token, Gmail
-// outage) is recorded and the run continues: this is an operator repair over independent accounts,
-// so aborting the batch on the first bad one would leave the rest unrepaired for no reason.
 export async function sweepAllMailboxes(
   db: Db,
   deps: SweepDeps,

@@ -5,11 +5,6 @@ interface MessageTrackingHistoryProps {
   tracking: TrackingEvent[];
 }
 
-// Persisted per-message open/click summary (source of record): "Opened N times" /
-// "Clicked N times" under an outbound message, derived from ThreadMessage.tracking.
-// Renders nothing when the message has no history yet. This is separate from the
-// transient WS trackingBadge shown in the thread header, which only nudges for the
-// current session and disappears on reload; this component survives it.
 export function MessageTrackingHistory({ tracking }: MessageTrackingHistoryProps): React.ReactNode {
   if (tracking.length === 0) return null;
 

@@ -3,8 +3,6 @@ import { env } from "@/config/env";
 import { AppError, ERROR_IDS } from "@/constants/errorIds";
 import { err, ok, type Result } from "@/types/result";
 
-// Presigned uploads/downloads expire after 5 minutes. Short-lived by design:
-// the URL is handed to a browser that uses it immediately.
 const PRESIGN_TTL_SECONDS = 300;
 
 export interface PresignedPost {
@@ -18,17 +16,7 @@ export interface ObjectMetadata {
   contentType: string | undefined;
 }
 
-/**
- * Storage boundary. Every method takes a required AbortSignal to match the
- * project convention even though the minio v8 SDK cannot itself be cancelled:
- * we guard with signal.throwIfAborted() before and after each call so an already
- * obsolete request never issues, and a cancelled caller never observes a stale
- * result. Operational failures are returned as Result, not thrown.
- */
 export interface StorageClient {
-  // maxBytes caps the POST content-length policy. Defaults to env.MAX_FILE_BYTES; callers with a
-  // tighter limit (e.g. avatars at 2 MB) pass it so the storage layer, not just a client-side or
-  // confirm-time check, rejects oversize uploads.
   presignPost(
     objectKey: string,
     contentType: string,
@@ -41,16 +29,12 @@ export interface StorageClient {
     displayFilename: string,
     signal: AbortSignal,
   ): Promise<Result<string, AppError>>;
-  // Server-side copy. Used at confirm to move a validated object to an immutable key
-  // the uploader's presigned POST can never target (F33).
   copyObject(
     sourceKey: string,
     destKey: string,
     signal: AbortSignal,
   ): Promise<Result<void, AppError>>;
   deleteObject(key: string, signal: AbortSignal): Promise<Result<void, AppError>>;
-  // Fetch the raw bytes of an object. Used at send-time to inline attachments into
-  // the MIME message. Never used for presigned download URLs served to browsers.
   getObjectBytes(key: string, signal: AbortSignal): Promise<Result<Buffer, AppError>>;
 }
 
@@ -68,7 +52,6 @@ function buildS3Client(): Minio.Client {
   });
 }
 
-// AbortError must propagate untouched; only operational failures become Result.
 function storageErr(
   cause: unknown,
   message: string,
@@ -152,7 +135,6 @@ class S3StorageClient implements StorageClient {
   ): Promise<Result<void, AppError>> {
     signal.throwIfAborted();
     try {
-      // CopyConditions left empty: an unconditional server-side copy within the bucket.
       await this.client.copyObject(
         env.S3_BUCKET,
         destKey,

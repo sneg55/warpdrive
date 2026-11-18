@@ -45,8 +45,6 @@ describe("mergeCandidates, replacing a broken value", () => {
     expect(field?.defaultSelected).toBe(false);
   });
 
-  // The stored primary is what the merge reads for a set target, so a broken primary has to reach
-  // the dialog even though adding an address is never itself an overwrite.
   it("flags a broken primary on a set target without calling the add an overwrite", () => {
     const [field] = mergeCandidates(
       [outcome({ "person.email": "nick@company.com" })],
@@ -59,10 +57,6 @@ describe("mergeCandidates, replacing a broken value", () => {
   });
 });
 
-// A field with a validity rule applies it to what the providers offer, not only to what the record
-// holds. person.email can be mapped to a scalar custom field, and that route reaches the write
-// through custom-field validation, which has no notion of an address: nothing downstream would
-// catch a malformed value there.
 describe("mergeCandidates, a provider value that breaks the field's rule", () => {
   it("does not offer a proposed value that is not an address", () => {
     const fields = mergeCandidates(
@@ -119,8 +113,6 @@ describe("mergeCandidates, promotable targets", () => {
     expect(field?.supportsPrimary).toBe(false);
   });
 
-  // Nothing is promoted behind the user's back: the choice defaults to adding alongside, and only
-  // a primary that is already broken makes promotion the opening position.
   it("defaults to adding alongside, and to promoting when the primary is broken", () => {
     const [alongside] = mergeCandidates(
       [outcome({ "person.email": "nick@company.com" })],

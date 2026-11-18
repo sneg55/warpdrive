@@ -6,7 +6,6 @@ import { afterEach, beforeAll, expect, it, vi } from "vitest";
 import { ERROR_IDS } from "@/constants/errorIds";
 
 beforeAll(() => {
-  // Radix DropdownMenu (in CatalogLabelPicker) reaches for these jsdom-missing APIs.
   Element.prototype.scrollIntoView = vi.fn();
   Element.prototype.hasPointerCapture = vi.fn(() => false);
   Element.prototype.releasePointerCapture = vi.fn();

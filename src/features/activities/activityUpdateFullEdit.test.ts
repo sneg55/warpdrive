@@ -111,7 +111,6 @@ it("edits participants, guests, video call, and the deal link in one update", as
     .where(eq(activityGuests.activityId, activityId));
   expect(guests.map((g) => g.personId)).toEqual([guest.id]);
 
-  // Relinking moves the activity: deal A no longer has a next activity, deal B now does.
   const [a] = await db
     .select({ next: deals.nextActivityAt })
     .from(deals)

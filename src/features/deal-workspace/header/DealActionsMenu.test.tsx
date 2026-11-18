@@ -19,7 +19,6 @@ const duplicateDealAction = vi.hoisted(() =>
 vi.mock("@/features/deal-workspace/actions", () => ({ deleteDealAction }));
 vi.mock("@/features/deals/archiveActions", () => ({ archiveDealAction }));
 vi.mock("@/features/deal-workspace/duplicateDealAction", () => ({ duplicateDealAction }));
-// The confirm dialogs own their own logic/tests; here we only assert the menu opens each flow.
 vi.mock("./ConvertToLeadDialog", () => ({
   ConvertToLeadDialog: ({ open }: { open: boolean }) =>
     open ? <div data-testid="convert-dialog" /> : null,
@@ -49,8 +48,6 @@ import { DealActionsMenu } from "./DealActionsMenu";
 
 const writeText = vi.fn(() => Promise.resolve());
 
-// userEvent.setup() installs its own navigator.clipboard stub, so any test whose component reads
-// navigator.clipboard must (re)define the mock AFTER setup(). Hence this helper, not a beforeEach.
 function mockClipboard(): void {
   Object.defineProperty(navigator, "clipboard", {
     configurable: true,
@@ -157,14 +154,12 @@ it("Merge opens the merge picker dialog", async () => {
   expect(screen.getByTestId("merge-dialog")).toBeTruthy();
 });
 
-// Opens the menu and picks "Delete deal", returning the confirmation surface it raises.
 async function openDeleteConfirm(user: ReturnType<typeof userEvent.setup>): Promise<HTMLElement> {
   await user.click(screen.getByRole("button", { name: "Deal actions" }));
   await user.click(screen.getByRole("menuitem", { name: "Delete deal" }));
   return await screen.findByRole("alertdialog");
 }
 
-// The destructive confirm is the shadcn AlertDialog, never the browser's window.confirm chrome.
 it("Delete deal raises an in-app confirm dialog, not a native browser confirm", async () => {
   const nativeConfirm = vi.spyOn(window, "confirm");
   const user = userEvent.setup();
@@ -190,8 +185,6 @@ it("confirming the dialog calls deleteDealAction and returns to the pipeline", a
 });
 
 it("dismisses the drawer instead of pushing when the deal is open as a slide-over", async () => {
-  // Pushing here is a soft navigation, and Next renders a parallel slot's previously active state
-  // on one, so the drawer would stay open on the deal that was just deleted.
   const close = vi.fn();
   const user = userEvent.setup();
   render(
@@ -252,13 +245,10 @@ it("surfaces the error when Delete is denied (no silent swallow)", async () => {
   expect(push).not.toHaveBeenCalled();
 });
 
-// PERMISSIONS-05: the destructive item must not render for a user without deal.delete, so they
-// are never offered an action that the server would reject.
 it("hides Delete deal when canDelete is false", async () => {
   const user = userEvent.setup();
   render(<DealActionsMenu {...props} canDelete={false} />);
   await user.click(screen.getByRole("button", { name: "Deal actions" }));
   expect(screen.queryByRole("menuitem", { name: "Delete deal" })).toBeNull();
-  // The non-destructive items still render.
   expect(screen.getByRole("menuitem", { name: "Copy link" })).toBeTruthy();
 });

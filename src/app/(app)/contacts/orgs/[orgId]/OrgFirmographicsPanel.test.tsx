@@ -113,7 +113,6 @@ describe("OrgFirmographicsPanel", () => {
       industry: null,
       annualRevenue: null,
       linkedinUrl: null,
-      // employeeCount intentionally omitted, simulating a row fetched without the column.
     };
     render(<OrgFirmographicsPanel org={orgMissingKey as never} onSaved={vi.fn()} />);
     expect(screen.queryByText("undefined")).not.toBeInTheDocument();

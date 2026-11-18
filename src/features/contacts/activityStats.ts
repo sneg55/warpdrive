@@ -1,9 +1,3 @@
-// Per-contact activity stats for the person/org detail "Overview" section (CO-2). Reuses
-// listActivitiesForEntity so the counts stay visibility-consistent with the Activity feed, then
-// folds them into totals + per-type counts + a last-activity/inactive-days pair. The inactive-days
-// math mirrors dealOverview.ts (calendar-day count), but is activity-scoped: with no completed
-// activity there is nothing to date from, so lastActivityAt/inactiveDays are null (no createdAt
-// fallback).
 import type { Db } from "@/db/client";
 import type { CalendarActivity } from "@/features/activities/calendar";
 import { listActivitiesForEntity } from "@/features/activities/forEntity";
@@ -12,10 +6,8 @@ import { assertReferenceVisible } from "@/features/permissions/referenceCheck";
 import { calendarDaysBetween } from "@/lib/calendarDays";
 import { toRefActor } from "./actorAdapters";
 
-// Pipedrive's Overview shows up to this many "Most active users".
 const MAX_ACTIVE_USERS = 3;
 
-// Stats for a contact the actor cannot see: never leak counts/last-activity for a hidden record.
 const HIDDEN_STATS: ContactActivityStats = {
   total: 0,
   done: 0,
@@ -30,14 +22,9 @@ export interface ContactActivityStats {
   total: number;
   done: number;
   open: number;
-  // typeKey -> count, over every activity (done or open).
   byType: Record<string, number>;
-  // Owners ranked by activity count, descending (PD's "Most active users"). Unowned activities
-  // are excluded. Capped to the top MAX_ACTIVE_USERS.
   mostActiveUsers: Array<{ name: string; count: number }>;
-  // Most recent DONE activity's due date, or null when none is completed.
   lastActivityAt: Date | null;
-  // Whole days since lastActivityAt, or null when there is no completed activity.
   inactiveDays: number | null;
 }
 
@@ -87,9 +74,6 @@ export async function activityStats(
   signal: AbortSignal,
 ): Promise<ContactActivityStats> {
   signal.throwIfAborted();
-  // Gate on entity visibility first (mirrors contactTimeline): activities can be visible via a
-  // dominant parent, so listActivitiesForEntity alone could disclose aggregate counts + last
-  // activity for a contact the actor cannot open.
   const visible = await assertReferenceVisible(
     db,
     toRefActor(actor),

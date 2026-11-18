@@ -51,7 +51,6 @@ describe("AgendaDayColumn", () => {
   });
 
   it("clamps a late block's height to the remaining hours instead of overflowing past midnight", () => {
-    // 23:00 + 120min naturally spans 2 hour-lanes, but only 1 hour remains before midnight.
     renderColumn([mk("late", new Date(2026, 6, 15, 23, 0), 120)]);
     const chip = screen.getByRole("button", { name: "Activity late" });
     expect(chip.parentElement?.style.height).toBe(`${HOUR_HEIGHT_PX}px`);
@@ -86,16 +85,12 @@ describe("AgendaDayColumn", () => {
   });
 
   it("gives the more-chip a pixel floor so the count itself is never what gets clipped", () => {
-    // 30% of a 180px column is 54px, which rendered "+5 more" as "+5 ...".
     renderColumn(fiveAtNine());
     const block = screen.getByRole("button", { name: "Show 4 more activities" }).parentElement;
     expect(block).toHaveClass("w-[min(max(30%,5rem),60%)]", "right-0");
   });
 
   it("caps the more-chip so a narrow column cannot starve the chip beside it", () => {
-    // Without the 60% ceiling the 5rem floor outgrows a narrow column: the more-chip spills over
-    // the neighbour and the surviving chip collapses to nothing, hiding an activity that is not in
-    // the more-chip's own list.
     renderColumn(fiveAtNine());
     const block = screen.getByRole("button", { name: "Show 4 more activities" }).parentElement;
     expect(block?.className).toContain(",60%)]");
@@ -129,8 +124,6 @@ describe("AgendaDayColumn", () => {
   });
 
   it("puts the activities ahead of the empty hour lanes in the tab order", () => {
-    // The lanes are an affordance; the activities are the content. Rendered lanes-first, a keyboard
-    // user walked 24 empty hours before reaching anything real.
     renderColumn([mk("real", new Date(2026, 6, 15, 14, 0), 60)]);
     const chip = screen.getByRole("button", { name: "Activity real" });
     const firstSlot = screen.getByRole("button", { name: "Add activity on 2026-07-15 at 00:00" });

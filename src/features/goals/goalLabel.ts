@@ -7,8 +7,6 @@ const ACTION_WORD: Record<GoalAction, string> = {
   completed: "completed",
 };
 
-// A goal has no name of its own; what it measures is its name. "Deal value won, monthly"
-// says more than any label a user would have typed.
 export function goalLabel(goal: {
   subject: GoalSubject;
   action: GoalAction;

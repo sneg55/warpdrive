@@ -20,8 +20,6 @@ import { SidebarFieldRow } from "./SidebarFieldRow";
 
 const NONE: ReadonlySet<string> = new Set();
 
-// Mirror the rows PersonBlock renders for a linked person, honouring the same Settings > Data
-// fields hides so the empty panel does not offer a row the populated one suppresses.
 function emptyRows(hidden: ReadonlySet<string>): string[] {
   return ["Name"]
     .concat(hidden.has("firstName") ? [] : ["First name"])
@@ -30,13 +28,6 @@ function emptyRows(hidden: ReadonlySet<string>): string[] {
     .concat(hidden.has("emails") ? [] : ["Email"]);
 }
 
-// The deal sidebar's Person node. A linked person renders the shared PersonSection unchanged; a
-// person-less deal still renders the panel (Pipedrive keeps it on screen either way) with empty
-// rows, and the pencil opens an editor that links an existing contact or creates one.
-//
-// The panel used to be dropped entirely when the deal had no person, which both contradicted the
-// Manage-sidebar-sections toggle the user had switched on and left no way to attach a person to an
-// existing deal at all: personId was only ever settable from the Add deal modal.
 export function DealPersonSection({
   person,
   dealId,

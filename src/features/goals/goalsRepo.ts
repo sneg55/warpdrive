@@ -83,9 +83,6 @@ export async function goalAssigneeNames(
   return new Map([...userRows, ...teamRows].map((r) => [r.id, r.name]));
 }
 
-// assignee_id points at users or teams depending on assignee_kind, so it can carry no foreign
-// key and nothing stops a goal being created against an id that does not exist. Such a goal
-// would sit on the settings screen forever, unfulfillable and attributed to nobody.
 export async function assigneeExists(
   db: Db,
   kind: GoalInput["assigneeKind"],
@@ -121,8 +118,6 @@ export async function updateGoal(
   return row ?? null;
 }
 
-// Soft delete: a goal that has been reported against stays resolvable, and the row keeps the
-// history of what the target used to be.
 export async function deleteGoal(db: Db, id: string, signal: AbortSignal): Promise<boolean> {
   signal.throwIfAborted();
   const rows = await db

@@ -1,14 +1,3 @@
-/**
- * /auth/dev-login: strictly-dev-only synthetic login route.
- *
- * Security invariants:
- * 1. Returns HTTP 404 unless env.NODE_ENV !== "production" AND ALLOW_FIRST_LOGIN_ADMIN is true.
- *    The env.ts boundary already rejects ALLOW_FIRST_LOGIN_ADMIN=true in production,
- *    so this flag cannot be set in a production build.
- * 2. Never disclosed in production: 404 (not 403) to avoid existence leakage.
- * 3. Uses the SAME upsertUserOnLogin + createSession path as the real OAuth callback.
- */
-
 import { cookies } from "next/headers";
 import { type NextRequest, NextResponse } from "next/server";
 import { env } from "@/config/env";
@@ -18,7 +7,7 @@ import { devLoginCore } from "@/features/auth/devLogin";
 import { SESSION_COOKIE, sessionCookieOptions } from "@/features/auth/session";
 
 const CSRF_COOKIE_OPTIONS = {
-  httpOnly: false, // must be readable by JS for double-submit
+  httpOnly: false,
   secure: true,
   sameSite: "lax" as const,
   path: "/",
@@ -39,8 +28,6 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   });
 
   if (!result.ok) {
-    // Guard fired (disabled) or bad input: return 404 regardless of reason
-    // to avoid disclosing route existence in production.
     return new NextResponse(null, { status: 404 });
   }
 

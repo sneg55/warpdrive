@@ -16,8 +16,6 @@ import { can } from "@/features/permissions/can";
 import { readBaseCurrency } from "@/features/settings/readBaseCurrency";
 import { DealWorkspaceClient } from "./DealWorkspaceClient";
 
-// Shared deal-workspace loader. Exported so the full page ([dealId]/page.tsx), the intercepted
-// slide-over drawer, and generateMetadata all share one cached read. Mirrors OrgDetailView.
 export const loadDeal = cachedDetailLoad((ctx, actor, dealId) =>
   getWorkspace(ctx.db, actor, dealId, AbortSignal.timeout(10_000)),
 );
@@ -31,8 +29,6 @@ export async function DealDetailView({ dealId }: { dealId: string }): Promise<Re
     notFound();
   }
 
-  // None of these reads depend on each other, only on the already-loaded deal and actor, so they
-  // are issued together rather than one round trip at a time.
   const [
     mailbox,
     prefs,
@@ -45,15 +41,10 @@ export async function DealDetailView({ dealId }: { dealId: string }): Promise<Re
   ] = await Promise.all([
     getActorMailbox(db, loaded.actor.id, AbortSignal.timeout(10_000)),
 
-    // Hidden deal-block ids persist per user in user_preferences.ui.dealHeaderBlocks (spec 0).
     getPreferencesForActor(db, loaded.actor.id),
 
     readBaseCurrency(db, AbortSignal.timeout(8000)),
 
-    // Owner-reassignment options come from Unit 0's non-privileged listAssignableUsers
-    // (active users projected to { id, name }); unlike listUsers it is not MANAGE-gated, so any
-    // actor holding deal.changeOwner can populate the picker. Called directly on the loaded db
-    // to avoid rebuilding the request context (the tRPC caller would re-hydrate the session).
     listAssignableUsers(db, AbortSignal.timeout(5000)),
 
     listOrgOptions(
@@ -62,10 +53,6 @@ export async function DealDetailView({ dealId }: { dealId: string }): Promise<Re
       AbortSignal.timeout(5000),
     ),
 
-    // Feeds the sidebar Person panel's suggestions, so a deal with no contact person can link an
-    // existing one (matched on name, email, or phone) instead of duplicating them. Skipped
-    // entirely when the deal already has a person: that panel renders the linked contact and
-    // never opens the editor, so scanning every visible person would be pure cost.
     loaded.value.person === null
       ? listPersonMatchCandidates(
           db,
@@ -74,8 +61,6 @@ export async function DealDetailView({ dealId }: { dealId: string }): Promise<Re
         )
       : Promise.resolve([]),
 
-    // Built-in fields hidden in Settings > Data fields, so the sidebar Organization/Person
-    // sections drop the same rows the standalone detail pages do (bucketed per entity).
     listHiddenBuiltins(db, AbortSignal.timeout(10_000)),
 
     resolveCustomFieldRefLabelsFor(
@@ -103,12 +88,8 @@ export async function DealDetailView({ dealId }: { dealId: string }): Promise<Re
     ),
   ]);
 
-  // getWorkspace already read the pipeline row for its own visibility gate and hands back the
-  // group, so this builds the same VisibleDeal without a second query for that row.
   const visibleDeal = toVisibleDeal(loaded.value.deal, loaded.value.pipelineVisibilityGroupId);
   const canChangeOwner = can(loaded.actor, "deal.changeOwner", visibleDeal);
-  // Delete is gated on deal.delete (own/any), independent of edit; hide the menu item when the
-  // actor lacks it. deleteDeal re-checks server-side, so this is UX only, not the security boundary.
   const canDelete = can(loaded.actor, "deal.delete", visibleDeal);
 
   return (

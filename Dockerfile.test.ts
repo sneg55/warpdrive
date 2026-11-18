@@ -1,11 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-// The build stamp reaches the running app through three files that know nothing about each other:
-// the workflow passes the SHA as a build arg, the Dockerfile declares it in the stage that runs
-// `next build` (prerendered pages read it then) and in the runtime stage (dynamic pages read it at
-// request time), and src/config/env.ts defaults it to "". Any one of them dropping out is silent:
-// the app boots fine and just reports an empty commit, which is how prod ran unstamped.
 const dockerfile = readFileSync(new URL("./Dockerfile", import.meta.url), "utf8");
 const workflow = readFileSync(new URL("./.github/workflows/deploy.yml", import.meta.url), "utf8");
 

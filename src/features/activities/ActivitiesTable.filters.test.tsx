@@ -1,8 +1,4 @@
 // @vitest-environment jsdom
-// Filter-toolbar wiring extracted from ActivitiesTable.test.tsx to keep both files under the
-// project's file-size budget: this file owns "does a toolbar interaction re-query listRows with
-// the right ActivityListFilter", while ActivitiesTable.test.tsx owns rendering, the edit modal,
-// and ActivitiesTable.selection.test.tsx owns selection/bulk actions.
 import "@testing-library/jest-dom/vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
@@ -13,7 +9,6 @@ vi.mock("next/navigation", () => ({
 }));
 
 beforeAll(() => {
-  // Radix Select + the Combobox/DatePicker popovers (ActivitiesFilters) need these in jsdom.
   Element.prototype.scrollIntoView = vi.fn();
   Element.prototype.hasPointerCapture = vi.fn(() => false);
   Element.prototype.releasePointerCapture = vi.fn();
@@ -175,7 +170,6 @@ describe("ActivitiesTable filter toolbar", () => {
     useQuery.mockReturnValue({ data: [row({})], refetch });
     render(<ActivitiesTable currentUserId="me" />);
     fireEvent.click(screen.getByLabelText("From"));
-    // findByText: the calendar is a next/dynamic chunk that loads on open.
     fireEvent.click(await screen.findByText("15"));
     expect(useQuery).toHaveBeenLastCalledWith(
       expect.objectContaining({ from: expect.any(String) }),

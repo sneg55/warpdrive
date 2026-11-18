@@ -4,9 +4,6 @@ import { DetailDrawer } from "@/features/navigation/DetailDrawer";
 import { DetailDrawerPreviewSkeleton } from "@/features/navigation/DetailDrawerPreviewSkeleton";
 import { PersonDetailView } from "../../../../../contacts/people/[personId]/PersonDetailView";
 
-// An activity with no deal falls back to the contact it hangs off, so the Activities list needs its
-// own interceptor for the person route: the People list's @modal slot only intercepts navigations
-// that start inside /contacts/people.
 export default async function InterceptedPersonPage({
   params,
 }: {

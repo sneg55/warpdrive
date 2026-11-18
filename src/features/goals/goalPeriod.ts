@@ -1,7 +1,3 @@
-// Goal period arithmetic. Periods are anchored on the goal's start date, not the calendar:
-// a quarterly goal starting 2026-02-01 runs Feb to Apr, not Jan to Mar.
-// Dates are ISO YYYY-MM-DD throughout; all arithmetic is UTC so a viewer's timezone can
-// never shift which period a date falls in.
 import type { GoalInterval } from "@/constants/goals";
 
 export interface GoalPeriod {
@@ -23,8 +19,6 @@ function addDays(d: Date, days: number): Date {
   return new Date(d.getTime() + days * MS_PER_DAY);
 }
 
-// Adding months clamps to the last valid day: from the 31st, one month on is the 28th, 29th
-// or 30th. Rolling into the next month instead would leave gaps between consecutive periods.
 function addMonths(d: Date, months: number): Date {
   const year = d.getUTCFullYear();
   const month = d.getUTCMonth() + months;
@@ -46,14 +40,11 @@ function monthsPerPeriod(interval: GoalInterval): number {
   }
 }
 
-// Index of the period containing `on`, counting from the start date.
 function periodIndex(interval: GoalInterval, start: Date, on: Date): number {
   if (interval === "weekly") {
     return Math.floor((on.getTime() - start.getTime()) / (7 * MS_PER_DAY));
   }
   const step = monthsPerPeriod(interval);
-  // Walk forward rather than computing from month deltas: clamping makes period boundaries
-  // non-uniform, so counting is the only way to stay consistent with periodStart below.
   let i = 0;
   while (addMonths(start, (i + 1) * step).getTime() <= on.getTime()) i += 1;
   return i;
@@ -65,8 +56,6 @@ function periodStart(interval: GoalInterval, start: Date, index: number): Date {
     : addMonths(start, index * monthsPerPeriod(interval));
 }
 
-// The period a goal is in on a given day, or null when that day is outside the goal's life.
-// `endsOn` null means open-ended.
 export function currentPeriod(
   interval: GoalInterval,
   startsOn: string,
@@ -84,16 +73,11 @@ export function currentPeriod(
   const from = periodStart(interval, start, index);
   const nextFrom = periodStart(interval, start, index + 1);
   let to = addDays(nextFrom, -1);
-  // A goal that ends mid-period is clipped, so its target is not judged against days it was
-  // never meant to cover.
   if (end !== null && to.getTime() > end.getTime()) to = end;
 
   return { start: format(from), end: format(to) };
 }
 
-// Share of the period that has been used up, counting the current day as spent. Day one of a
-// 31-day month is 1/31, not 0, so pace is meaningful from the first day rather than dividing
-// by zero.
 export function elapsedFraction(period: GoalPeriod, on: string): number {
   const start = parse(period.start).getTime();
   const end = parse(period.end).getTime();

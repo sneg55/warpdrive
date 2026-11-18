@@ -9,8 +9,6 @@ interface ResolvedIds {
   dealId: string | null;
 }
 
-// Explicit composer context (visibility-checked) wins; fall back to recipient-based resolution
-// for whatever the composer did not pin. Mirrors the outbound thread-link resolution.
 async function resolveIds(
   db: Db,
   args: {
@@ -47,7 +45,6 @@ const put = (ctx: Record<string, string>, key: string, value: string | number | 
   if (value !== null) ctx[key] = String(value);
 };
 
-// Load {{person.*}} tokens; returns the person's org_id (or null) so the caller can resolve the org.
 async function loadPerson(
   db: Db,
   personId: string,
@@ -76,7 +73,6 @@ async function loadPerson(
   return p.org_id;
 }
 
-// Load {{deal.*}} tokens; returns the deal's org_id (or null).
 async function loadDeal(
   db: Db,
   dealId: string,
@@ -90,17 +86,10 @@ async function loadDeal(
   signal.throwIfAborted();
   if (d === undefined) return null;
   put(ctx, "deal.title", d.title);
-  // Postgres returns a numeric column as e.g. "25000.00"; normalize away insignificant
-  // decimals so {{deal.value}} reads "25000" rather than "25000.00".
   put(ctx, "deal.value", d.value === null ? null : String(Number(d.value)));
   return d.org_id;
 }
 
-// Build the merge-field context for an outbound send: resolve the recipient's person and the
-// linked deal/org, then expose their values under the {{person.*}} / {{deal.*}} / {{org.*}}
-// tokens that applyMergeFields substitutes. Every id is visibility-scoped to the sender (never a
-// raw client FK). Missing fields are simply absent, so applyMergeFields renders them as "" rather
-// than leaking a raw {{token}} to the recipient.
 export async function buildMergeContext(
   db: Db,
   args: {

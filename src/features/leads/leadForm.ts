@@ -17,16 +17,12 @@ export interface NewLeadFields {
   visibilityGroupId?: string | null;
 }
 
-// Validate the Add lead form into a LeadCreateInput. Trust-boundary fields (visibility) are derived
-// server-side; ownerId is honored server-side only for actors with deal.changeOwner.
 export function parseNewLead(fields: NewLeadFields): ParseLeadResult {
   const title = fields.title.trim();
   if (title === "") return { ok: false, error: "Title is required" };
 
   const money = parseMoneyValue(fields.value);
   if (!money.ok) return money;
-  // Labels are user-managed catalog names now (not a fixed key set), so accept any provided value
-  // and just dedupe.
   const labels = [...new Set(fields.labels ?? [])];
   const channelRaw = orNull(fields.sourceChannel);
   const sourceChannel = channelRaw !== null && isSourceChannelKey(channelRaw) ? channelRaw : null;

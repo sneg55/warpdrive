@@ -12,7 +12,6 @@ import { readCsrfToken } from "@/utils/csrfCookie";
 import { FieldRow } from "./FieldRow";
 import { refreshQuietly } from "./sidebarEditors";
 
-// The editable text parts of a structured address, in display order.
 const ADDRESS_PARTS = [
   { key: "street", label: "Street" },
   { key: "city", label: "City" },
@@ -32,8 +31,6 @@ function toDraft(address: Record<string, unknown> | null): AddressDraft {
   return d;
 }
 
-// Merge the draft parts back into an address object: keep only non-empty parts, and preserve any
-// non-text keys (lat/lng) the geocoder may have set so editing the text does not drop coordinates.
 function draftToAddress(
   draft: AddressDraft,
   original: Record<string, unknown> | null,
@@ -48,9 +45,6 @@ function draftToAddress(
   return out;
 }
 
-// Deal-sidebar Organization address: a single "Address" row that opens a composite editor (the
-// five text parts, one Save) rather than a per-part row explosion. Saves through updateOrgAction
-// (org has no CAS precondition) and refreshes only after a committed write.
 export function OrgAddressField({
   orgId,
   address,
@@ -71,7 +65,6 @@ export function OrgAddressField({
       readCsrfToken(),
     );
     if (!r.ok) return err(r.error.id);
-    // Refresh only after a committed write; never let a refresh failure mask the success.
     refreshQuietly(router);
     return ok(r.value);
   }

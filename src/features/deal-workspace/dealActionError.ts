@@ -1,9 +1,5 @@
 import { ERROR_IDS } from "@/constants/errorIds";
 
-// User-facing copy for a failed deal action (stage change, label edit, inline field save) that
-// would otherwise be swallowed silently. Keyed by AppError id (src/constants/errorIds.ts); an
-// unlisted id or a rejected promise with no id falls back to the generic entry. Mirrors the
-// inline saveError map but returns a title+body pair for a modal instead of one inline line.
 export interface DealActionErrorContent {
   title: string;
   body: string;

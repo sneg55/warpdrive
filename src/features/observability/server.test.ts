@@ -29,8 +29,6 @@ it("captureServerError extracts the AppError id", () => {
 });
 
 it("captureServerError redacts emails from the exception payload itself", () => {
-  // posthog-node builds $exception_list from the raw error, bypassing the ctx-prop scrub, so the
-  // error handed to captureException must already have its message redacted.
   captureServerError("u1", new Error("sync failed for jane@acme.com"));
   const passed = captureExceptionFn.mock.calls[0]?.[0] as Error;
   expect(passed.message).toBe("sync failed for [email]");

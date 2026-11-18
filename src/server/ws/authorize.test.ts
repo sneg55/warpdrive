@@ -40,7 +40,6 @@ beforeEach(async () => {
   sessionId = s!.id;
 });
 
-// Helper: seed a pipeline + stage, return their ids.
 async function seedPipelineStage(db: typeof h.db, opts?: { visibilityGroupId?: string }) {
   const [pipe] = await db
     .insert(pipelines)
@@ -85,10 +84,6 @@ describe("ws authorize", () => {
     expect((await authorizeSubscribe(h.db, conn, `user:${userId}`, SIG())).ok).toBe(true);
     expect((await authorizeSubscribe(h.db, conn, "user:someone-else", SIG())).ok).toBe(false);
   });
-
-  // Deal-channel authorization tests live in authorizeDeal.test.ts (file-size split).
-
-  // ---- pipeline channel authorization ----
 
   test("pipeline: regular user can subscribe to a non-restricted pipeline (null group)", async () => {
     const { pipelineId } = await seedPipelineStage(h.db);

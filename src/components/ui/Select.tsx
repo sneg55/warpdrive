@@ -8,9 +8,6 @@ export interface SelectOption {
   value: string;
   label: string;
   icon?: React.ReactNode;
-  // Heading this option sits under. Consecutive options sharing a group render inside one
-  // RadixSelect.Group with a sticky label, which is how the import map step separates
-  // "Lead" fields from "Organization" fields in one picker.
   group?: string;
 }
 
@@ -20,28 +17,12 @@ interface SelectProps {
   options: SelectOption[];
   ariaLabel: string;
   placeholder?: string;
-  // Override/extend the trigger classes (twMerge dedupes), e.g. to drop the border and bg when
-  // the select is composed inside a larger segmented control.
   triggerClassName?: string;
-  // Custom content to show in the trigger instead of the selected option's label (e.g. a
-  // static icon for a compact icon-only trigger). Radix's SelectValue portals the selected
-  // item's label into the trigger only when it has no children of its own, so passing
-  // children here switches the trigger to always showing this content regardless of
-  // selection. Omitting it (the default for all existing callers) keeps the label portal,
-  // so behavior is unchanged.
   triggerContent?: React.ReactNode;
-  // Native hover tooltip on the trigger, for icon-only triggers that need a title alongside
-  // ariaLabel (mirrors the title on other icon-only controls). Omitted by default.
   triggerTitle?: string;
   disabled?: boolean;
 }
 
-// Radix reserves value="" on RadixSelect.Item/Root to mean "nothing selected, show the
-// placeholder": when the controlled value is "", it shows the placeholder text instead of the
-// matching option's label, and swallows re-selecting that option. Many callers pass a real
-// business option with value: "" (priority "None", org "No organization", owner "Me", ...), so
-// we map "" to this internal sentinel wherever Radix sees a value, and decode it back to "" at
-// the one boundary callers observe (onChange). No real option value should ever equal this.
 const EMPTY_SENTINEL = "__empty__";
 
 function toInternal(value: string): string {
@@ -58,8 +39,6 @@ interface OptionSection {
   options: SelectOption[];
 }
 
-// Collapse the flat option list into consecutive runs sharing a `group`. Ungrouped options render
-// without a heading, so a caller that never sets `group` gets exactly the previous markup.
 function groupOptions(options: SelectOption[]): OptionSection[] {
   const sections: OptionSection[] = [];
   for (const option of options) {
@@ -123,10 +102,6 @@ function SelectSection({
   );
 }
 
-// Radix fills the trigger by portaling the selected item's text into it from an effect, and it
-// only shows its own `placeholder` when its internal value is empty, which EMPTY_SENTINEL makes
-// impossible. So the trigger renders its own content: the matched option's label, or the
-// placeholder when the value matches nothing (unset, or options still loading).
 function triggerLabel(
   options: SelectOption[],
   value: string,
@@ -137,8 +112,6 @@ function triggerLabel(
   return <span className="text-muted-foreground">{placeholder}</span>;
 }
 
-// Branded single-select (Radix), the design-system replacement for a native
-// <select>. Supports an optional leading icon per option (activity type picker).
 export function Select({
   value,
   onChange,

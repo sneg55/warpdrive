@@ -42,8 +42,6 @@ const ADDRESS_FIELDS = [
   ["country", "Country"],
 ] as const;
 
-// Compatibility entry point for the global quick-add menu. List and embedded surfaces use the
-// explicit variants below so their intent is visible without branching props at the call site.
 export function GlobalContactModal(props: GlobalContactModalProps): React.ReactNode {
   const { kind, ...modalProps } = props;
   return kind === "person" ? (
@@ -61,8 +59,6 @@ export function OrganizationCreateModal(props: ContactCreateModalProps): React.R
   return <ContactCreateModal kind="org" {...props} />;
 }
 
-// Person and organization creation now use the same dialog frame as Add lead/Add deal. The two
-// variants share persistence and navigation behavior but compose their own field columns.
 function ContactCreateModal({
   kind,
   onClose,
@@ -95,8 +91,6 @@ function ContactCreateModal({
   const orgOptions = orgQ.data ?? [];
 
   async function submit(): Promise<void> {
-    // The ref closes the same-tick window before React commits pending=true. This keeps Enter and
-    // the Save button on the same guarded path and prevents duplicate creates on rapid input.
     if (submitting.current || pending || customFieldsQ.isLoading) return;
     const trimmed = name.trim();
     if (trimmed === "") {

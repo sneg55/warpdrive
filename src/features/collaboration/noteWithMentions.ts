@@ -7,12 +7,8 @@ import { err, ok, type Result } from "@/types/result";
 import { createNote } from "./notesRepo";
 import type { NoteCreateInput } from "./notesSchemas";
 
-// source constant for note mentions
-const NOTE_SOURCE = MENTION_SOURCES[0]; // "note"
+const NOTE_SOURCE = MENTION_SOURCES[0];
 
-// Creates a note and best-effort fires mention notifications for any @[Name](userId) tokens.
-// If the note creation fails the whole operation fails. If mention resolution fails (non-abort),
-// the note is still committed and the error is warned but not propagated.
 export async function createNoteWithMentions(
   db: Db,
   actor: AuthUser,
@@ -35,7 +31,6 @@ export async function createNoteWithMentions(
   });
 
   if (!mentionResult.ok) {
-    // Best-effort: the note is already committed. Log and continue.
     console.warn(
       `createNoteWithMentions: mention resolution failed [${mentionResult.error.id}]: ${mentionResult.error.message}`,
     );

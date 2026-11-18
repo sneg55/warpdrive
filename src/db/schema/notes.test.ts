@@ -12,7 +12,6 @@ afterAll(async () => {
 });
 
 it("attaches a note to a deal polymorphically and threads a comment", async () => {
-  // notes are polymorphic: entity_id is a plain uuid with NO FK, so no deal seed needed.
   const [u] = await h.db
     .insert(users)
     .values({ email: "n@test.com", name: "N", googleSub: "sub-n" })

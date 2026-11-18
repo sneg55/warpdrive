@@ -1,6 +1,3 @@
-// Board and list reads behind the deal visibility predicate.
-// All queries JOIN pipelines (alias p) so dealVisibilityClause can reference
-// p.visibility_group_id; none leak hidden deals into counts or totals.
 import { sql } from "drizzle-orm";
 import type { DealStatus } from "@/constants/dealStatus";
 import { filterToSql } from "@/features/saved-filters/filterAst";
@@ -10,8 +7,6 @@ import type { DbOrTx } from "@/server/realtime/channelVersions";
 import type { DealVisibilitySession } from "@/types/session";
 import { dealVisibilityClause } from "./visibility";
 
-// Raw pg returns timestamptz columns as strings; the SELECT aliases below map to
-// this shape before coercion. Card type promises Date, so normalize once here.
 interface RawCard
   extends Omit<BoardCard, "nextActivityAt" | "lastActivityAt" | "stageEnteredAt" | "updatedAt"> {
   nextActivityAt: string | null;
@@ -46,41 +41,26 @@ export interface BoardCard {
   title: string;
   value: string | null;
   status?: DealStatus;
-  // Label keys (hot/warm/cold); resolved to name+color at the card boundary.
-  // Optional like the other join-provided display fields so hand-built fixtures need not set it.
   labels?: string[];
   stageId: string;
   boardPosition: string;
   ownerId: string;
   personId: string | null;
   orgId: string | null;
-  // Resolved display names (LEFT JOINed by the board/list reads). Optional so hand-built
-  // fixtures need not set them; null when the related row is absent.
   ownerName?: string | null;
-  // The owner's uploaded photo (users.avatar_url), so the card avatar shows the real picture
-  // instead of only initials. Null/absent when the owner has no avatar.
   ownerAvatarUrl?: string | null;
   personName?: string | null;
   orgName?: string | null;
   nextActivityAt: Date | null;
-  // Subject of the soonest open, dated activity (the row that drives nextActivityAt), so the card's
-  // next-action badge tooltip can name the action. Null when nothing is scheduled. Optional/absent
-  // on hand-built fixtures and on reads that do not join it (only the board read populates it).
   nextActivityTitle?: string | null;
   lastActivityAt: Date | null;
-  // Date-only column (YYYY-MM-DD): kept as the raw string so the list can format it in local time
-  // without a UTC off-by-one. Optional so hand-built fixtures need not set it.
   expectedCloseDate?: string | null;
   stageEnteredAt: Date;
-  // deal's updated_at: used as the compare-and-swap precondition for optimistic updates.
   updatedAt: Date;
 }
 
 export type DealListCard = BoardCard & { customFields: Record<string, unknown> };
 
-// Returns open, non-deleted, visible cards for the pipeline ordered by
-// (stageId, boardPosition). Owner/person/org are returned as IDs only;
-// name resolution is Phase 3.
 export async function getBoardColumns(
   db: DbOrTx,
   session: DealVisibilitySession,
@@ -143,13 +123,10 @@ export async function getBoardColumns(
     ORDER BY d.stage_id, d.board_position
   `);
   signal.throwIfAborted();
-  // Drizzle's db.execute returns { rows: unknown[] } for raw SQL with string timestamps.
   const rows = (result as unknown as { rows: RawCard[] }).rows;
   return { cards: rows.map(normalizeCard) };
 }
 
-// Per-stage value sums (data-model spec §13). Visibility predicate is injected
-// via the same JOIN + WHERE so hidden deals are excluded from both count and sum.
 export async function getStageSums(
   db: DbOrTx,
   session: DealVisibilitySession,
@@ -182,9 +159,6 @@ export async function getStageSums(
   return rows;
 }
 
-// Paginated deal list behind the visibility predicate.
-// total and totalValue are computed over the FULL filtered set, not just the page,
-// so the footer is always accurate regardless of offset/limit.
 export async function listDeals(
   db: DbOrTx,
   session: DealVisibilitySession,
@@ -224,10 +198,6 @@ export async function listDeals(
       AND ${filterClause}
   `;
 
-  // The page query and the full-set aggregate are independent and both derive from `base`,
-  // so run them concurrently. On a pooled read connection (the only caller path) this is two
-  // parallel round trips instead of two serial ones; on a single tx connection node-postgres
-  // queues them, so it is never worse.
   const [rowsRes, aggRes] = await Promise.all([
     db.execute(sql`
       SELECT

@@ -1,5 +1,3 @@
-// A saved view exists for people, orgs and leads too, so every action has to work off the row's
-// own target entity instead of assuming the deal field allow-list.
 import { describe, expect, it } from "vitest";
 import { settings } from "@/db/schema/system";
 import { withTestDb } from "@/db/testing";

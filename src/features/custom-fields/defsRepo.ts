@@ -7,10 +7,6 @@ import { createDbCache } from "@/lib/dbCache";
 import type { CustomFieldDef, CustomFieldOption } from "@/types/customFields";
 import { err, ok, type Result } from "@/types/result";
 
-// Custom-field defs change only when an admin edits Settings > Data fields, yet they are read on
-// every entity create/update validation and every list render. Cache them per Db instance so those
-// hot reads stop re-scanning custom_field_defs; every mutation below invalidates the Db's entry,
-// and the short TTL self-heals if an invalidation is ever missed.
 const defsCache = createDbCache<CustomFieldDef[]>(10_000);
 
 function defsCacheKey(target: CustomFieldTarget, includeArchived: boolean): string {
@@ -72,8 +68,6 @@ export async function listDefs(
     .select()
     .from(customFieldDefs)
     .where(where)
-    // Stable tiebreak on id: newly created defs all start at order 0 until reordered, and a
-    // partial reorder can leave duplicate order values, so id keeps the list deterministic.
     .orderBy(asc(customFieldDefs.order), asc(customFieldDefs.id));
   const defs = rows.map(toDef);
   defsCache.set(db, key, defs);
@@ -143,8 +137,6 @@ export async function archiveDef(
   return ok(toDef(row));
 }
 
-// Renames a def. Only `name` is written: `key` is immutable because entity
-// custom_fields jsonb stores values under it. `updatedAt` fires via $onUpdate.
 export async function updateDefName(
   db: Db,
   input: { id: string; name: string },
@@ -165,9 +157,6 @@ export async function updateDefName(
   return ok(toDef(row));
 }
 
-// Sets the important + show-in-add-form placement flags for a def. Both are written together
-// (never independently) so the client always sends the full pair and a stale read of one flag
-// can't clobber the other. Ungated: the metadata.manage check happens in the action layer.
 export async function setDefFlags(
   db: Db,
   input: { id: string; isImportant: boolean; showInAddForm: boolean },
@@ -188,8 +177,6 @@ export async function setDefFlags(
   return ok(undefined);
 }
 
-// Writes the order column to match the given id order, in a single transaction
-// so the list never observes a half-applied reorder. Ids not present are no-ops.
 export async function reorderDefs(
   db: Db,
   orderedIds: string[],

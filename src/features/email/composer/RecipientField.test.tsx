@@ -76,7 +76,6 @@ describe("RecipientField", () => {
     const input = screen.getByRole("combobox");
     fireEvent.change(input, { target: { value: "ali" } });
     await waitFor(() => screen.getByText("Alice"));
-    // Selection uses onMouseDown+preventDefault (not onClick) so blur doesn't race.
     fireEvent.mouseDown(screen.getByText("Alice"));
     expect(onChange).toHaveBeenCalledTimes(1);
     expect(onChange).toHaveBeenCalledWith(["alice@x.com"]);
@@ -135,7 +134,7 @@ describe("RecipientField", () => {
     render(<RecipientField label="To" values={[]} onChange={onChange} />);
     const input = screen.getByRole("combobox");
     const tab = fireEvent.keyDown(input, { key: "Tab" });
-    expect(tab).toBe(true); // not prevented
+    expect(tab).toBe(true);
     expect(onChange).not.toHaveBeenCalled();
   });
 

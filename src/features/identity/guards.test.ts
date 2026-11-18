@@ -113,6 +113,6 @@ describe("identity self-escalation guards (permissions spec 5.2)", () => {
     expect(
       canDeactivateUser(mgr(), { targetUserId: "other", targetIsAdmin: false, activeAdminCount: 2 })
         .ok,
-    ).toBe(false); // not admin
+    ).toBe(false);
   });
 });

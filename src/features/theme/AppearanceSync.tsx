@@ -8,8 +8,6 @@ import {
   readAppearanceCookie,
 } from "./appearance";
 
-// Keeps "System" live app-wide: the inline no-flash script settles the theme at first paint, this
-// re-settles it when the OS flips while the tab stays open. Renders nothing.
 export function AppearanceSync(): React.ReactNode {
   useEffect(() => {
     if (typeof matchMedia !== "function") return undefined;

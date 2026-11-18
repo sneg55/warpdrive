@@ -38,7 +38,6 @@ it("invalidates activities.listRows so a mounted Activities table refetches", as
 it("invalidates every dayLoad input, not one assignee or month", async () => {
   const { result } = renderHook(() => useInvalidateActivityLists());
   await result.current();
-  // No filter argument: a create can move load onto a month or an assignee this picker never read.
   expect(invalidateDayLoad).toHaveBeenCalledWith();
 });
 

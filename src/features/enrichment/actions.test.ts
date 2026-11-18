@@ -1,6 +1,4 @@
 // @vitest-environment node
-// Boundary tests for the record-side enrichment actions. A server action is a public endpoint, so
-// what is asserted here is that a bad caller or bad input never reaches the service layer.
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { CSRF_COOKIE } from "@/features/auth/csrf";
 
@@ -95,8 +93,6 @@ describe("enrichRecordAction", () => {
     expect(service.runEnrichment).toHaveBeenCalledOnce();
   });
 
-  // The dialog needs the resume time and the per-provider reasons to explain a degraded run, so
-  // the context has to survive the action boundary rather than collapsing to a bare id.
   test("carries the error context back to the caller", async () => {
     setSameOrigin();
     service.runEnrichment.mockResolvedValueOnce({
@@ -147,8 +143,6 @@ describe("applyEnrichmentAction", () => {
     expect(apply.applyEnrichment).not.toHaveBeenCalled();
   });
 
-  // The dialog echoes back the mapping targets it was shown. Without it the server cannot tell
-  // that an admin repointed a canonical key while the review was open.
   test("requires the mapping fingerprint the review was built from", async () => {
     setSameOrigin();
     const r = await applyEnrichmentAction(

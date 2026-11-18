@@ -42,9 +42,6 @@ describe("LostReasonsClient", () => {
     expect(screen.getByText("Too expensive")).toBeInTheDocument();
   });
 
-  // SETTINGS-08: after an add/rename/archive the handler calls router.refresh(), which re-runs the
-  // server component and passes fresh props. The list must re-seed from those props without a hard
-  // reload. Simulate the refreshed props via rerender.
   it("re-seeds the list when refreshed props arrive (add)", () => {
     const { rerender } = render(<LostReasonsClient rows={ROWS} />);
     rerender(<LostReasonsClient rows={[...ROWS, { id: "b", name: "Chose a competitor" }]} />);
@@ -89,8 +86,6 @@ describe("LostReasonsClient surfaces failed mutations", () => {
     });
     render(<LostReasonsClient rows={ROWS} />);
     fireEvent.click(screen.getByRole("button", { name: S.rename }));
-    // Two inputs share the "Lost reason" label (the row editor and the add field); the row editor
-    // renders first, so target index 0.
     fireEvent.change(first(screen.getAllByLabelText(S.lostReasonName), "lost-reason input"), {
       target: { value: "Renamed" },
     });

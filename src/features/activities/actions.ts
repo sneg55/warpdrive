@@ -46,7 +46,6 @@ export async function completeActivityAction(
   const { actor } = await createContext();
   if (actor === null) return { ok: false, error: { id: ERROR_IDS.AUTH_SESSION_DEAD } };
 
-  // Record-scoped: completeActivity gates via can(actor, "activity.complete", vis).
   const result = await completeActivity(db, actor, input.id, input.done, SIG());
   if (!result.ok) return { ok: false, error: { id: result.error.id } };
   return { ok: true, value: { id: result.value.id } };
@@ -62,7 +61,6 @@ export async function editActivityAction(
   const { actor } = await createContext();
   if (actor === null) return { ok: false, error: { id: ERROR_IDS.AUTH_SESSION_DEAD } };
 
-  // Record-scoped: updateActivity gates via can(actor, "activity.edit", vis).
   const result = await updateActivity(db, actor, input, SIG());
   if (!result.ok) return { ok: false, error: { id: result.error.id } };
   return { ok: true, value: { id: result.value.id } };
@@ -78,7 +76,6 @@ export async function deleteActivityAction(
   const { actor } = await createContext();
   if (actor === null) return { ok: false, error: { id: ERROR_IDS.AUTH_SESSION_DEAD } };
 
-  // Record-scoped: deleteActivity gates via can(actor, "activity.delete", vis).
   const result = await deleteActivity(db, actor, input.id, SIG());
   if (!result.ok) return { ok: false, error: { id: result.error.id } };
   return { ok: true, value: { id: result.value.id } };

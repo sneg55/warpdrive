@@ -20,16 +20,10 @@ export interface SectionHeaderMenuItem {
 
 interface SectionHeaderMenuProps {
   sectionLabel: string;
-  // The pencil renders only when onEdit is provided. Contact/lead sidebars omit it (the funnel
-  // toggle already reveals empties and inline field-click handles editing), so they show only the
-  // kebab; the deal sidebar still passes onEdit for its reveal-empties pencil.
   onEdit?: () => void;
   menuItems: SectionHeaderMenuItem[];
-  // Enrichment: the button renders only when a caller supplies a handler, so an install with no
-  // connected provider keeps the header it had before the feature existed.
   onFillGaps?: () => void;
   fillGapsBusy?: boolean;
-  // Set means the button is disabled and the text explains it in a tooltip.
   fillGapsDisabledReason?: string;
 }
 
@@ -56,7 +50,6 @@ function FillGapsButton({
     </button>
   );
   if (fillGapsDisabledReason === undefined) return button;
-  // A disabled button swallows pointer events, so the tooltip needs a wrapper that still gets them.
   return (
     <Tip label={fillGapsDisabledReason}>
       <span className="inline-flex">{button}</span>

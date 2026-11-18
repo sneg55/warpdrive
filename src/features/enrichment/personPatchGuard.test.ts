@@ -15,8 +15,6 @@ describe("parsePersonPatch", () => {
     expect(parsePersonPatch(ID, { emails: [point("also-broken@")] }, ["broken@"]).ok).toBe(false);
   });
 
-  // The plan folds an address before deciding it is already on the record. If this fold differed,
-  // a value the run supplied could arrive spelled like a stored one and skip the address rule.
   it("folds case and surrounding space the same way the plan does", () => {
     expect(parsePersonPatch(ID, { emails: [point("Broken@")] }, [" broken@ "]).ok).toBe(true);
   });

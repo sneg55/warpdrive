@@ -18,9 +18,6 @@ import { LinkedDealRow } from "../../LinkedDealRow";
 
 const sections = CONTACT_SIDEBAR_STRINGS.sections;
 
-// Person detail sidebar (CO-2): the Contact block is a CollapsibleSection with the shared section
-// header menu (pencil reveals empty fields, kebab customizes fields), matching the deal sidebar.
-// Adds a person Overview section sourced from contacts.activityStats.
 export function PersonSidebar({
   person,
   orgName,

@@ -1,5 +1,3 @@
-// RED-first security test: verify user A cannot see user B's owner-only deal.
-// The security assertion MUST fail if dealVisibilityClause is removed from the query.
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { AppError, ERROR_IDS } from "@/constants/errorIds";
 import * as schema from "@/db/schema";
@@ -19,7 +17,6 @@ afterAll(async () => {
   await h.close();
 });
 
-// Build a PermSetUser for a DB user row.
 function toActor(user: typeof schema.users.$inferSelect): PermSetUser {
   return {
     id: user.id,
@@ -107,14 +104,11 @@ describe("dealPerformance", () => {
     expect(Number(result.won.value)).toBeGreaterThanOrEqual(150);
   });
 
-  // SECURITY: user A must NOT see user B's owner-only deals in performance counts.
-  // If dealVisibilityClause is removed from the query, B's deal leaks into A's stats.
   it("SECURITY: owner-only deal is invisible to a third party", async () => {
     const alice = await seedUser();
     const bob = await seedUser();
     const { pipeline, stage } = await seedPipeline();
 
-    // Bob's won deal: visibilityLevel 'owner' means only Bob can see it.
     await h.db.insert(schema.deals).values({
       title: "Bob secret won",
       status: "won",
@@ -133,7 +127,6 @@ describe("dealPerformance", () => {
       new AbortController().signal,
     );
 
-    // Alice must see 0 won deals in this pipeline (Bob's is owner-only).
     expect(aliceResult.won.count).toBe(0);
     expect(Number(aliceResult.won.value)).toBe(0);
   });
@@ -143,7 +136,6 @@ describe("dealPerformance", () => {
     const bob = await seedUser();
     const { pipeline, stage } = await seedPipeline();
 
-    // Alice's open deal (visible to all).
     await h.db.insert(schema.deals).values({
       title: "Alice open",
       status: "open",
@@ -153,7 +145,6 @@ describe("dealPerformance", () => {
       ownerId: alice.id,
       visibilityLevel: "all",
     });
-    // Bob's open deal (also visible to all).
     await h.db.insert(schema.deals).values({
       title: "Bob open",
       status: "open",
@@ -171,7 +162,6 @@ describe("dealPerformance", () => {
       new AbortController().signal,
     );
 
-    // Alice's me-scope: only her own deal (200), not Bob's (300).
     expect(Number(aliceResult.open.value)).toBe(200);
   });
 });

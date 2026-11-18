@@ -29,8 +29,6 @@ export interface ImportWizardProps {
   dealDefs: CustomFieldDef[];
   activityDefs: CustomFieldDef[];
   leadDefs: CustomFieldDef[];
-  // Hidden built-in fields per entity (settings > Data fields). Arrays over the wire; the map step
-  // turns them into Sets. Optional so callers/tests without the data still render every field.
   hiddenBuiltins?: Partial<Record<MappableEntity, readonly string[]>>;
 }
 
@@ -70,8 +68,6 @@ export function ImportWizard(props: ImportWizardProps): React.ReactNode {
     defs,
   };
 
-  // Persist the mapping then hand off to the background validate job; the wizard waits on
-  // the "validating" step for the batch to reach "ready".
   async function saveAndValidate(): Promise<void> {
     if (state.batchId === null) return;
     setBusy(true);
@@ -88,7 +84,6 @@ export function ImportWizard(props: ImportWizardProps): React.ReactNode {
     dispatch({ type: "goto", step: "validating" });
   }
 
-  // Enqueue the background commit job; the commit step follows progress and reads the split.
   async function commit(): Promise<void> {
     if (state.batchId === null) return;
     setBusy(true);

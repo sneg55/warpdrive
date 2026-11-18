@@ -1,7 +1,3 @@
-// Deal participant linking (M:N person<->deal) + org/person deal aggregation.
-// Mutations reuse loadEditableDeal (single deal-auth authority). Reads reuse
-// toVisibleDeal + canSee so the pipeline-restriction hard gate always runs (a raw
-// deal-row spread would omit pipelineVisibilityGroupId and leak restricted deals).
 import { and, eq, inArray, isNull, or } from "drizzle-orm";
 import { CHANGE_FIELD_PARTICIPANT } from "@/constants/changeLogFields";
 import type { AppError } from "@/constants/errorIds";
@@ -16,7 +12,6 @@ import { assertReferenceVisible } from "@/features/permissions/referenceCheck";
 import { ok, type Result } from "@/types/result";
 import type { DealVisibilitySession } from "@/types/session";
 
-// Build the DealVisibilitySession assertReferenceVisible expects from a PermSetUser.
 function toRefActor(actor: PermSetUser): DealVisibilitySession {
   return {
     userId: actor.id,
@@ -37,11 +32,9 @@ export async function addParticipant(
   signal: AbortSignal,
 ): Promise<Result<void, AppError>> {
   return db.transaction(async (tx) => {
-    // 404 DEAL_NOT_FOUND / 403 PERM_DENIED, with a correctly-built VisibleDeal.
     const editable = await loadEditableDeal(tx, actor, dealId, signal);
     if (editable.ok === false) return editable;
 
-    // Person must be visible to the actor too (CONTACT_NOT_FOUND if hidden).
     const personRef = await assertReferenceVisible(
       tx,
       toRefActor(actor),
@@ -50,8 +43,6 @@ export async function addParticipant(
     );
     if (personRef.ok === false) return personRef;
 
-    // .returning() distinguishes a real insert from the idempotent conflict no-op, so a
-    // double-add logs nothing. recordChange runs on tx (atomic with the link).
     const inserted = await tx
       .insert(dealParticipants)
       .values({ dealId, personId, role })
@@ -86,8 +77,6 @@ export async function removeParticipant(
     const editable = await loadEditableDeal(tx, actor, dealId, signal);
     if (editable.ok === false) return editable;
 
-    // .returning() distinguishes a real delete from remove-when-absent, so an unlink of a
-    // non-participant logs nothing.
     const deleted = await tx
       .delete(dealParticipants)
       .where(and(eq(dealParticipants.dealId, dealId), eq(dealParticipants.personId, personId)))
@@ -132,7 +121,6 @@ export async function dealsForPerson(
     .where(
       and(
         isNull(deals.deletedAt),
-        // Archived-pipeline deals are hidden from every read (F7/F15/F16/F21-F24).
         eq(pipelines.isArchived, false),
         or(
           eq(deals.personId, personId),
@@ -153,7 +141,6 @@ export async function dealsForOrg(
 ): Promise<Deal[]> {
   signal.throwIfAborted();
 
-  // People belonging to the org -> the deals they participate in (data-model §6).
   const orgPersonIds = (
     await db
       .select({ id: persons.id })
@@ -178,7 +165,6 @@ export async function dealsForOrg(
     .where(
       and(
         isNull(deals.deletedAt),
-        // Archived-pipeline deals are hidden from every read (F7/F15/F16/F21-F24).
         eq(pipelines.isArchived, false),
         or(
           eq(deals.orgId, orgId),

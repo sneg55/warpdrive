@@ -9,9 +9,6 @@ afterEach(cleanup);
 import { INLINE_CONTROL_SURFACE } from "@/components/ui/inlineControlSurface";
 import { VisibilityControl } from "./VisibilityControl";
 
-// C1: the composer visibility control is now interactive (a shadcn DropdownMenu offering
-// Private / Shared), not a read-only label and not a native <select>. It reflects the current
-// value and reports a change via onChange so the composer can thread it into the send payload.
 describe("VisibilityControl", () => {
   it("shows the shared label when value is shared", () => {
     render(<VisibilityControl value="shared" onChange={vi.fn()} />);
@@ -41,8 +38,6 @@ describe("VisibilityControl", () => {
     expect(onChange).toHaveBeenCalledWith("shared");
   });
 
-  // The picker is the reference for every inline control that pairs a box with visible text, so it
-  // must draw its hover surface from the shared token rather than a copy that can drift.
   it("draws its hover surface from the shared inline-control token", () => {
     render(<VisibilityControl value="shared" onChange={vi.fn()} />);
     expect(screen.getByRole("button", { name: /visibility/i })).toHaveClass(

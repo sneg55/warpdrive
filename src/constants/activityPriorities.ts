@@ -1,6 +1,3 @@
-// Activity priorities (Pipedrive Low/Medium/High). Stored on activities.priority as the key; the
-// UI resolves the key to a display name and color. Keys are the trust boundary: only these are
-// accepted when creating an activity.
 export const ACTIVITY_PRIORITIES = {
   low: { name: "Low", color: "#64748b" },
   medium: { name: "Medium", color: "#f59e0b" },

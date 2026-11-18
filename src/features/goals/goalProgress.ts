@@ -1,5 +1,3 @@
-// One goal's standing on a given day: what it has booked in the current period, against its
-// target, plus whether that is ahead of or behind the clock.
 import type { Db } from "@/db/client";
 import type { Goal } from "@/db/schema/goals";
 import type { PermSetUser } from "@/features/permissions/effective";
@@ -18,8 +16,6 @@ export interface GoalProgress {
   pace: number | null;
 }
 
-// Null when `on` falls outside the goal's life: a goal that has not started or has ended has
-// no current period, which is different from one sitting at zero.
 export async function goalProgress(
   db: Db,
   actor: PermSetUser,

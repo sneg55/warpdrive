@@ -9,8 +9,6 @@ vi.mock("../folderActions", () => ({
   saveDraftAction: (...a: unknown[]) => saveMock(...(a as [])),
   deleteDraftAction: (...a: unknown[]) => deleteMock(...(a as [])),
 }));
-// Runtime args are captured by the wrapper above; the mock's own type is arg-less, so read
-// the recorded calls through an unknown[][] view to index the input payload.
 const saveCalls = (): unknown[][] => saveMock.mock.calls;
 vi.mock("@/utils/csrfCookie", () => ({ readCsrfToken: () => "csrf" }));
 const captureExceptionMock = vi.fn();
@@ -62,13 +60,11 @@ describe("useDraftAutosave", () => {
   });
 
   it("does not reset the debounce on a re-render that changes no tracked field", async () => {
-    // The 1.5s timer must count from the last EDIT, not the last render. An unrelated re-render
-    // (a background query refetch, sibling state change) must not restart it.
     const props = { ...base(), subject: "Hi" };
     const { rerender } = renderHook((p) => useDraftAutosave(p), { initialProps: props });
-    await vi.advanceTimersByTimeAsync(1000); // 1000 < 1500: not yet fired
-    rerender({ ...props }); // same field values, fresh object literal
-    await vi.advanceTimersByTimeAsync(1000); // total 2000: the original timer must have fired at 1500
+    await vi.advanceTimersByTimeAsync(1000);
+    rerender({ ...props });
+    await vi.advanceTimersByTimeAsync(1000);
     expect(saveMock).toHaveBeenCalledTimes(1);
   });
 
@@ -79,10 +75,10 @@ describe("useDraftAutosave", () => {
     );
     const props = { ...base(), subject: "Hi" };
     const { rerender } = renderHook((p) => useDraftAutosave(p), { initialProps: props });
-    await vi.advanceTimersByTimeAsync(1600); // first tick fires; the save hangs (in flight)
+    await vi.advanceTimersByTimeAsync(1600);
     expect(saveMock).toHaveBeenCalledTimes(1);
     rerender({ ...props, subject: "Hi there" });
-    await vi.advanceTimersByTimeAsync(1600); // second tick sees a save in flight and skips
+    await vi.advanceTimersByTimeAsync(1600);
     expect(saveMock).toHaveBeenCalledTimes(1);
     release();
   });

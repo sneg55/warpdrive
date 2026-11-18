@@ -10,7 +10,6 @@ describe("InlineFieldShell (PD view-state mechanism)", () => {
   it("renders the value as plain selectable text, not a button", () => {
     render(<InlineFieldShell label="Value" editing={false} onStartEdit={vi.fn()} value="$1,500" />);
     expect(screen.getByText("$1,500")).toBeInTheDocument();
-    // The value itself must not be a click-to-edit target (PD: only the pencil edits).
     expect(screen.getByText("$1,500").closest("button")).toBeNull();
   });
 
@@ -45,8 +44,6 @@ describe("InlineFieldShell (PD view-state mechanism)", () => {
   it("keeps the pencil keyboard-reachable: hidden via opacity (stays in tab order), revealed on focus", () => {
     render(<InlineFieldShell label="Value" editing={false} onStartEdit={vi.fn()} value="$1,500" />);
     const pencil = screen.getByRole("button", { name: "Edit Value" });
-    // visibility:hidden/display:none would drop the button from the tab order and the
-    // accessibility tree (codex P2); opacity keeps it focusable, focus-visible reveals it.
     expect(pencil).not.toHaveClass("invisible");
     expect(pencil.className).toContain("opacity-0");
     expect(pencil.className).toContain("focus-visible:opacity-100");

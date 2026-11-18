@@ -1,8 +1,4 @@
 // @vitest-environment jsdom
-// Selection + bulk-action behavior extracted from ActivitiesTable.test.tsx to keep both files
-// under the project's file-size budget: this file owns row/select-all checkboxes and the bulk
-// action bar, while ActivitiesTable.test.tsx owns rendering and the edit modal, and
-// ActivitiesTable.filters.test.tsx owns the filter toolbar's re-query wiring.
 import "@testing-library/jest-dom/vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
@@ -114,7 +110,6 @@ describe("ActivitiesTable selection and bulk actions", () => {
   it("selecting a row's checkbox (distinct from Done) reveals the bulk action bar", () => {
     useQuery.mockReturnValue({ data: [row({})], refetch });
     render(<ActivitiesTable currentUserId="me" />);
-    // Done and Select are two independent checkboxes on the same row.
     expect(screen.getByRole("checkbox", { name: "Complete Call Jane" })).not.toBeChecked();
     fireEvent.click(screen.getByRole("checkbox", { name: "Select Call Jane" }));
     expect(screen.getByText("1 selected")).toBeInTheDocument();

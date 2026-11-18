@@ -1,9 +1,3 @@
-// Merged Focus/History feed for a person or organization detail page (Wave 3, Task 21).
-// Unions that contact's activities, notes, and change-log events through the same
-// buildHistoryTimeline model the deal workspace uses (Task 17), so the contact page
-// renders with the identical Focus/History split and card styling. No stage or
-// "created" anchor here: contacts have neither a pipeline stage nor a synthesized
-// creation card in the design, only the three read boundaries below.
 import type { Db } from "@/db/client";
 import { listActivitiesForEntity } from "@/features/activities/forEntity";
 import { listChangeLogForViewer } from "@/features/collaboration/changeLog";
@@ -23,9 +17,6 @@ export interface ContactTimelineResult {
 
 const EMPTY: ContactTimelineResult = { items: [] };
 
-// Feed for a single person or organization, gated by the same canSee check the
-// getPerson/getOrg loaders use: an actor who cannot see the contact gets an empty
-// feed (never leak activity/note/change-log existence for a hidden record).
 export async function contactTimeline(
   db: Db,
   actor: PermSetUser,
@@ -43,9 +34,6 @@ export async function contactTimeline(
   if (!visible.ok) return EMPTY;
   signal.throwIfAborted();
 
-  // Visibility-consistent with the rest of the contact page: the same
-  // listActivitiesForEntity forEntity.ts uses for the deal/person/org activity list,
-  // so an activity hidden from this actor there stays hidden here too.
   const activityItems = await listActivitiesForEntity(db, actor, entityType, entityId, signal);
   signal.throwIfAborted();
 

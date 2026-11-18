@@ -23,7 +23,6 @@ export interface ListPeopleResult {
   total: number;
 }
 
-// Map a sort field to its ORDER BY column. Extend here as more People-list columns become sortable.
 function personSortColumn(field: PersonBuiltinSortField) {
   switch (field) {
     case "name":
@@ -50,10 +49,6 @@ async function personOrderBy(
   return dir === "desc" ? desc(col) : asc(col);
 }
 
-// Global people list for the contacts nav. Persons carry JS-side visibility (canSee), consistent
-// with listPeopleForOrg, so we fetch non-deleted rows ordered by name, filter to the visible set,
-// and paginate that set. total is the visible count (what the UI pages over), NOT the raw row
-// count, so an actor never learns how many hidden people exist.
 export async function listPeople(
   db: Db,
   actor: ContactActor,
@@ -67,8 +62,6 @@ export async function listPeople(
 ): Promise<ListPeopleResult> {
   signal.throwIfAborted();
 
-  // Server-side condition filter (AND-ed after the not-deleted guard, BEFORE the JS visibility
-  // filter so an actor never learns hidden rows exist). Null when no conditions were given.
   const filterSql =
     opts.filter !== undefined
       ? compileContactFilter(opts.filter, PERSON_FILTER_CONFIG, PERSON_COLUMN_SQL)
@@ -80,16 +73,11 @@ export async function listPeople(
     .select()
     .from(persons)
     .where(whereClause)
-    // id is the unique tiebreaker: the sort column is non-unique, and load-more issues a separate
-    // offset query per page, so equal-value rows straddling a boundary can dup or skip without a
-    // stable secondary sort.
     .orderBy(await personOrderBy(db, opts.sort, signal), persons.id);
   signal.throwIfAborted();
 
   const visible = rows.filter((row) => canSee(actor, toVisibleRecord(row)));
   const page = visible.slice(opts.offset, opts.offset + opts.limit);
-  // Closed-deals count is computed only for the returned page (not the whole visible set), so the
-  // extra deal/participant queries scale with the page, not the org's entire contact list.
   const closedCounts = await closedDealCountsForPeople(
     db,
     actor,

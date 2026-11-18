@@ -11,9 +11,6 @@ import type { BuiltinRow } from "./types";
 
 const S = STRINGS.settings;
 
-// One built-in field in the Data fields list. Locked identity fields render as a labelled,
-// badge-only row (no toggle). Everything else gets a single Hidden switch wired to the gated
-// action; a failure surfaces through the shared error reporter (never silent).
 export function BuiltinFieldRow({
   entity,
   row,

@@ -8,11 +8,6 @@ import { loadContactActor } from "./actorAdapters";
 import { createPerson } from "./personsRepo";
 import { personCreateInput } from "./schemas";
 
-// Regression: the interactive create-person/org path built its ContactActor via toContactActor,
-// which hardcoded primaryVisibilityGroupId to null. When the org's default person visibility is
-// "group", deriveContactVisibility rejects with E_PERM_003 unless the actor carries a primary
-// group, so every contact create would fail (dormant while the default is "all"). The create path
-// must load the user's real group via loadContactActor. Same class as the import-actor bug.
 it("loadContactActor carries the user's real primary visibility group", async () => {
   await withTestDb(async (db) => {
     const [group] = await db

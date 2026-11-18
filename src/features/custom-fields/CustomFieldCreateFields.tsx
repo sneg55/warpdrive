@@ -6,9 +6,6 @@ import { CustomFieldFormControl, isCustomFieldValueEmpty } from "./render";
 
 export type CustomFieldValues = Record<string, unknown>;
 
-// Important fields are required during creation and therefore always belong on the add form.
-// Show-in-add-form fields are visible but optional. Keeping the rule here gives every create
-// surface the same behavior.
 export function addFormCustomFieldDefs(defs: CustomFieldDef[]): CustomFieldDef[] {
   return defs.filter(
     (def) => def.archivedAt === null && (def.isRequired || def.isImportant || def.showInAddForm),
@@ -46,8 +43,6 @@ export function firstMissingImportantField(
   );
 }
 
-// Submit only fields that belong to this create form and contain a value. This prevents hidden
-// metadata from being posted and avoids asking the type validator to parse optional blank values.
 export function customFieldCreatePayload(
   defs: CustomFieldDef[],
   values: CustomFieldValues,

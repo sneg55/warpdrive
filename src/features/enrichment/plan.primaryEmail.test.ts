@@ -1,7 +1,3 @@
-// persons.primary_email is a column of its own and is not guaranteed to appear in the emails
-// array (scripts/seed-smoke.ts and an import both produce that shape). updatePerson re-derives
-// the primary from whatever array the patch carries, so a patch built from the array alone would
-// replace the person's existing primary address with the enriched one.
 import { describe, expect, it } from "vitest";
 import { planPersonUpdate } from "./plan";
 import type { ResolvedMapping } from "./types";
@@ -110,9 +106,6 @@ const COMPANY: ResolvedMapping[] = [
 ];
 const PICK_ACME = [{ canonicalKey: "person.companyName", value: "Acme" }];
 
-// updatePerson re-derives primary_email from whatever emails array the patch carries, and falls
-// back to the row's array when the patch has none. A record whose primary lives only in the column
-// therefore loses it on ANY person write, so the caller gets the folded array to send with one.
 describe("planPersonUpdate resolvedEmails", () => {
   it("carries the standalone primary even when no email was selected", () => {
     const r = planPersonUpdate(PICK_ACME, COMPANY, {

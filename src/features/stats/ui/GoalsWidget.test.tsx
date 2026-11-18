@@ -48,8 +48,6 @@ function countGoal(target: string, actual: string): GoalWithProgress {
 afterEach(cleanup);
 
 describe("GoalsWidget", () => {
-  // The link is most useful exactly when there are no goals, so an empty state that swallows
-  // it leaves an admin with nowhere to go.
   it("still offers the setup link when there are no goals", () => {
     render(<GoalsWidget data={[]} currency="USD" canManage />);
     expect(screen.getByText(STRINGS.dashboard.emptyGoals)).toBeInTheDocument();
@@ -58,8 +56,6 @@ describe("GoalsWidget", () => {
     ).toBe("/settings/goals");
   });
 
-  // "Set up goals" was bare text on a bare sentence: nothing said what a goal is, and nothing
-  // marked the words as something you could click.
   it("explains what a goal is and gives the link a button affordance", () => {
     render(<GoalsWidget data={[]} currency="USD" canManage />);
     expect(screen.getByRole("status")).toHaveTextContent(STRINGS.dashboard.emptyGoalsBody);

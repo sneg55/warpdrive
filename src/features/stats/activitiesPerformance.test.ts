@@ -1,6 +1,3 @@
-// activitiesPerformance security test. Covers the highest-residual-risk code:
-// the d2/p2 correlated sub-select that applies the deal visibility predicate.
-// Non-vacuous: dropping the sub-select predicate makes both counts 1.
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { AppError, ERROR_IDS } from "@/constants/errorIds";
 import * as schema from "@/db/schema";
@@ -79,7 +76,6 @@ const BASE_FILTERS: DashboardFilters = {
 };
 
 describe("activitiesPerformance", () => {
-  // SECURITY: an activity linked to another user's owner-only deal must be invisible.
   it("SECURITY: activity on an owner-only deal is excluded from a third party's counts", async () => {
     const owner = await seedUser();
     const thirdParty = await seedUser();
@@ -99,7 +95,6 @@ describe("activitiesPerformance", () => {
       .returning();
     if (!deal) throw new AppError(ERROR_IDS.DB_INSERT_FAILED, "deal: no rows");
 
-    // Activity linked to the owner-only deal, due inside the window, assigned to owner.
     await h.db.insert(schema.activities).values({
       typeId: type.id,
       subject: "secret call",
@@ -116,7 +111,6 @@ describe("activitiesPerformance", () => {
       new AbortController().signal,
     );
 
-    // Third party cannot see the owner-only deal, so its activity contributes nothing.
     expect(result.scheduled).toBe(0);
     expect(result.completed).toBe(0);
   });
@@ -160,9 +154,6 @@ describe("activitiesPerformance", () => {
       },
     ]);
 
-    // Scope to this test's pipeline: the shared test DB also holds the SECURITY
-    // test's activity, and this user is an admin (sees all deals), so without a
-    // pipeline filter that activity would leak into the count.
     const result = await activitiesPerformance(
       h.db,
       toActor(user),
@@ -170,7 +161,6 @@ describe("activitiesPerformance", () => {
       new AbortController().signal,
     );
 
-    // scheduled is open-only now, so the done call is not double-counted in it.
     expect(result.scheduled).toBe(1);
     expect(result.completed).toBe(1);
   });

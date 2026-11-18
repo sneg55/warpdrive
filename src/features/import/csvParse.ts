@@ -1,14 +1,8 @@
-// RFC-4180-ish CSV parser. Client-side only: turns an uploaded file's text into
-// headers + header-keyed row objects. Handles quoted fields, escaped double-quotes
-// (""), embedded commas/newlines, and CRLF or LF endings. Import files are small
-// enough to parse fully in memory (no streaming).
 export interface ParsedCsv {
   headers: string[];
   rows: Record<string, string>[];
 }
 
-// Mutable tokenizer state. Split out of the main loop so each step handler stays
-// under the cognitive-complexity budget.
 interface ParseState {
   records: string[][];
   record: string[];
@@ -27,7 +21,6 @@ function endRecord(st: ParseState): void {
   st.record = [];
 }
 
-// Consume one character while inside a quoted field; return chars consumed.
 function stepQuoted(st: ParseState, text: string, i: number): number {
   const ch = text[i];
   if (ch === '"') {
@@ -42,7 +35,6 @@ function stepQuoted(st: ParseState, text: string, i: number): number {
   return 1;
 }
 
-// Consume one character while outside quotes; return chars consumed.
 function stepUnquoted(st: ParseState, text: string, i: number): number {
   const ch = text[i];
   if (ch === '"') {
@@ -65,20 +57,16 @@ function stepUnquoted(st: ParseState, text: string, i: number): number {
   return 1;
 }
 
-// Tokenize the whole text into an array of records, each a list of raw field values.
 function splitRecords(text: string): string[][] {
   const st: ParseState = { records: [], record: [], field: "", inQuotes: false };
   let i = 0;
   while (i < text.length) {
     i += st.inQuotes ? stepQuoted(st, text, i) : stepUnquoted(st, text, i);
   }
-  // Flush a trailing record only if the last line had content (no phantom blank row).
   if (st.field !== "" || st.record.length > 0) endRecord(st);
   return st.records;
 }
 
-// A record is "blank" when it is a single cell that is empty or whitespace-only (an empty
-// physical line, or a space/tab-only line that spreadsheet exports often leave trailing).
 function isBlank(record: string[]): boolean {
   return record.length === 1 && (record[0] ?? "").trim() === "";
 }

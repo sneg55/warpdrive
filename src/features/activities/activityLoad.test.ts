@@ -15,7 +15,6 @@ describe("activityLoadLevel", () => {
   });
 
   it("puts the 0.6 boundary itself in 'near', not 'light'", () => {
-    // 0.6 * 5 = 3 exactly: the light band is open at the top.
     expect(activityLoadLevel(3, 5)).toBe("near");
   });
 
@@ -31,17 +30,14 @@ describe("activityLoadLevel", () => {
   });
 
   it("handles a target whose 0.6 share is not a whole number", () => {
-    // 0.6 * 3 = 1.8
     expect(activityLoadLevel(1, 3)).toBe("light");
     expect(activityLoadLevel(2, 3)).toBe("near");
     expect(activityLoadLevel(3, 3)).toBe("full");
-    // 0.6 * 7 = 4.2
     expect(activityLoadLevel(4, 7)).toBe("light");
     expect(activityLoadLevel(5, 7)).toBe("near");
   });
 
   it("still separates the bands at the smallest allowed target", () => {
-    // 0.6 * 1 = 0.6, so no count can land in "light".
     expect(activityLoadLevel(1, 1)).toBe("full");
   });
 

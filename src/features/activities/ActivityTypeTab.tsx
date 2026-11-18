@@ -3,7 +3,6 @@ import type React from "react";
 import { cn } from "@/lib/utils";
 import { ActivityTypeIcon } from "./ActivityTypeIcon";
 
-// Extracted from ActivitiesTable to keep it under the project's file-size budget.
 export function ActivityTypeTab({
   active,
   value,

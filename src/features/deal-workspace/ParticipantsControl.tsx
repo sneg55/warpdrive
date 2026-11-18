@@ -5,8 +5,6 @@ import { useState } from "react";
 import { ParticipantsDialog } from "./ParticipantsDialog";
 import { useParticipants } from "./useParticipants";
 
-// Summary-row participants trigger (Pipedrive parity): "+ Participants" while the deal has none,
-// then an "N participants" count-link. Either opens the participants table dialog.
 export function ParticipantsControl({
   dealId,
   orgId,

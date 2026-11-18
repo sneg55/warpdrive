@@ -5,7 +5,6 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 beforeAll(() => {
-  // Radix DropdownMenu reaches for these browser APIs jsdom does not implement.
   Element.prototype.scrollIntoView = vi.fn();
   Element.prototype.hasPointerCapture = vi.fn(() => false);
   Element.prototype.releasePointerCapture = vi.fn();
@@ -49,7 +48,6 @@ describe("CatalogLabelPicker", () => {
 
   it("marks an applied label checked (case-insensitively) and removes it when toggled off", async () => {
     const onChange = vi.fn();
-    // Stored as a legacy lowercase key; it must still register as the active "Hot" item.
     render(<CatalogLabelPicker target="person" value={["hot"]} onChange={onChange} />);
     await openMenu();
     const hot = screen.getByRole("menuitemcheckbox", { name: /Hot/ });

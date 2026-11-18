@@ -1,8 +1,6 @@
 import type React from "react";
 import { AttributionLine } from "./AttributionLine";
 
-// "Deal created" anchor (synthesized from deal.createdAt, decision 1). A titled
-// line plus the shared attribution, matching Pipedrive's create event.
 export function CreatedCard({
   at,
   actorName,

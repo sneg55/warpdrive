@@ -9,17 +9,12 @@ import { readCsrfToken } from "@/utils/csrfCookie";
 import { useComposeInitialFocus } from "./useComposeInitialFocus";
 
 interface Props {
-  // Every ComposeScope maps to a valid notes entity type (see noteEntityType in
-  // composeScope.ts), so this is never null.
   entityType: EntityType;
   entityId: string;
   onNoteCreated: () => void;
-  // Collapses the editor back to its prompt row (Pipedrive behavior).
   onCancel?: () => void;
 }
 
-// Notes tab body: inline textarea + Save/Cancel, split out of SharedComposeBar to
-// keep that file small.
 export function ComposeNoteTab({
   entityType,
   entityId,

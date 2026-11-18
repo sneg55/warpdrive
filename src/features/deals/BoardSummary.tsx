@@ -10,30 +10,20 @@ interface BoardSummaryProps {
 }
 
 const SHOW_TOTAL_KEY = "wd.board.showTotal:v1";
-// Legacy unversioned key, read once as a fallback so an existing choice survives the version bump.
 const SHOW_TOTAL_KEY_LEGACY = "wd.board.showTotal";
 
-// Pipedrive hides the total value by default and shows only the deal count, with an info button
-// to reveal the total. The preference sticks per browser via localStorage. Starts hidden on the
-// server render and hydrates from storage in an effect to avoid an SSR/client mismatch.
 export function BoardSummary(props: BoardSummaryProps): React.ReactNode {
   const { totalValue, dealCount } = props;
   const [showTotal, setShowTotal] = useState(false);
 
   useEffect(() => {
-    // Guarded: some environments (test jsdom) expose a partial localStorage without getItem.
     try {
-      // localStorage does not exist on the server, so reading it during render would break
-      // hydration. Runs once on mount; the cascading render it costs is the price of correctness.
-
       const stored =
         globalThis.localStorage.getItem(SHOW_TOTAL_KEY) ??
         globalThis.localStorage.getItem(SHOW_TOTAL_KEY_LEGACY);
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- hydration-safe mount read
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       if (stored === "1") setShowTotal(true);
-    } catch {
-      // no stored preference available; stay hidden
-    }
+    } catch {}
   }, []);
 
   function toggle(): void {
@@ -41,9 +31,7 @@ export function BoardSummary(props: BoardSummaryProps): React.ReactNode {
       const next = !v;
       try {
         globalThis.localStorage.setItem(SHOW_TOTAL_KEY, next ? "1" : "0");
-      } catch {
-        // preference not persisted; still toggles for this session
-      }
+      } catch {}
       return next;
     });
   }

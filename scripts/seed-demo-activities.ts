@@ -1,12 +1,3 @@
-/**
- * scripts/seed-demo-activities.ts
- *
- * Demo pipeline + stages, activity types, and per-deal activities. Each deal
- * gets 1..15 activities (a mix of completed-in-the-past and scheduled-in-the-
- * future); afterwards the deal's denormalized last_activity_at / next_activity_at
- * are recomputed from its activities.
- */
-
 import { at, pick, type Rng, randInt } from "./seed-demo-data";
 import type { Db } from "./seed-smoke-phase5-infra";
 
@@ -36,11 +27,6 @@ const DAY_MS = 86_400_000;
 export async function ensureDemoPipeline(
   db: Db,
 ): Promise<{ pipelineId: string; stageIds: string[] }> {
-  // `pipelines` has no unique constraint on name, so we canonicalize by hand:
-  // keep the oldest "Demo Sales" (or create one), then drop every pipeline that
-  // holds no deals at all. That dedupes extra Demo Sales copies from prior runs
-  // and clears old empty pipelines (BD, Acme BD, ...) while keeping smoke/phase5
-  // fixtures that still have deals. Stages cascade-delete with their pipeline.
   let [p] = await db.q<{ id: string }>(
     `SELECT id FROM pipelines WHERE name = 'Demo Sales' ORDER BY created_at ASC LIMIT 1`,
   );
@@ -54,8 +40,6 @@ export async function ensureDemoPipeline(
     `DELETE FROM pipelines WHERE id <> $1 AND id NOT IN (SELECT DISTINCT pipeline_id FROM deals)`,
     [p.id],
   );
-  // /pipeline redirects to the lowest-order pipeline: pin Demo Sales to 0 so the
-  // board opens on the demo dataset, and push kept fixtures behind it.
   await db.q(`UPDATE pipelines SET "order" = 100 WHERE id <> $1`, [p.id]);
   await db.q(`UPDATE pipelines SET "order" = 0 WHERE id = $1`, [p.id]);
   const stageIds: string[] = [];
@@ -76,8 +60,6 @@ export async function ensureDemoPipeline(
     if (!row) throw new Error(`stage insert failed: ${name}`);
     stageIds.push(row.id);
   }
-  // Enable rotting on every stage so deals sitting past this many days flag as
-  // rotting (buildDeals ages ~30% of deals well beyond it).
   await db.q(`UPDATE stages SET rotting_days = 14 WHERE pipeline_id = $1`, [p.id]);
   return { pipelineId: p.id, stageIds };
 }
@@ -103,7 +85,6 @@ export async function ensureActivityTypes(db: Db): Promise<string[]> {
 
 type DealRef = { id: string; ownerId: string; personId: string; orgId: string };
 
-// Insert 1..15 activities for one deal, then update its denormalized activity times.
 async function seedDealActivities(
   db: Db,
   deal: DealRef,
@@ -115,19 +96,15 @@ async function seedDealActivities(
   let lastDoneMs: number | null = null;
   let nextDueMs: number | null = null;
   for (let k = 0; k < count; k += 1) {
-    // ~50% done (past), and of the open ones ~40% are overdue (past due) so the
-    // demo shows Pipedrive's red "overdue" state; the rest are future-scheduled.
     const roll = rng();
     const done = roll < 0.5;
     const overdue = !done && roll < 0.7;
     const offsetDays = randInt(rng, 1, 30);
     const dueMs =
       done || overdue ? Date.now() - offsetDays * DAY_MS : Date.now() + offsetDays * DAY_MS;
-    // ~10% of open activities are undated to-dos (no due time).
     const undated = !done && rng() < 0.1;
     if (done) lastDoneMs = Math.max(lastDoneMs ?? 0, dueMs);
     else if (!undated) nextDueMs = nextDueMs === null ? dueMs : Math.min(nextDueMs, dueMs);
-    // ~40% carry a duration (meetings/calls); the rest are point-in-time.
     const duration = rng() < 0.4 ? randInt(rng, 1, 8) * 15 : null;
     await db.q(
       `INSERT INTO activities
@@ -177,8 +154,6 @@ export async function insertActivities(
   return total;
 }
 
-// Activities not tied to any deal: some are person-only, some org-only, some are
-// pure to-dos with no links. Demonstrates the standalone-activity list/calendar.
 export async function seedStandaloneActivities(
   db: Db,
   rng: Rng,

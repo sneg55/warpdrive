@@ -73,10 +73,6 @@ describe("deleteOrg", () => {
     });
   });
 
-  // Critical (Task 19's Codex-caught gap, mirrored here): contact.delete is a distinct,
-  // admin-configurable permission from contact.edit (REGULAR_DEFAULT_FLAGS grants
-  // contact.edit_own but intentionally withholds every delete flag). An owner who can see
-  // and edit their own org must NOT get delete for free just because the record is visible.
   it("denies the owner from deleting their own visible org when they lack a delete flag", async () => {
     await withTestDb(async (db) => {
       const signal = new AbortController().signal;
@@ -89,7 +85,6 @@ describe("deleteOrg", () => {
       );
       if (created.ok === false) throw new Error(`setup: ${created.error.message}`);
 
-      // Owner can see (owns) and can edit (edit_own), but was never granted a delete flag.
       const r = await deleteOrg(
         db,
         actor(owner.id, ["contact.edit_own"]),

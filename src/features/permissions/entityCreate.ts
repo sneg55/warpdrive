@@ -8,8 +8,6 @@ import { mayTransferOwner, toTransferActor } from "./mayTransferOwner";
 
 type Db = NodePgDatabase<typeof schema>;
 
-// Shared session shape for entity creation (deals, leads). Structurally identical trust-boundary
-// context so the ownership/visibility derivation cannot drift between entities.
 export interface EntityCreateSession {
   userId: string;
   isAdmin: boolean;
@@ -40,9 +38,6 @@ export async function resolveOwnerId(
   return ok(target.id);
 }
 
-// Resolve the visibility group for a group-level entity: a client hint (only if the actor is a
-// member) > the actor's primary group > reject. Pure; both createDeal and createLead call it so the
-// group-defaulting rule stays identical.
 export function resolveVisibilityGroup(
   session: EntityCreateSession,
   requestedGroupId: string | undefined,

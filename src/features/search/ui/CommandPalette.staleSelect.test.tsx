@@ -46,18 +46,14 @@ function type(input: HTMLElement, text: string, settleDebounce: boolean): void {
   }
 }
 
-// Enter used to act on whatever the last resolved query returned. Once the results for a stale
-// query are hidden behind the skeleton, acting on them navigates somewhere the user cannot see.
 describe("CommandPalette stale selection", () => {
   it("does not navigate to a result that is hidden behind the searching skeleton", () => {
     vi.useFakeTimers();
     useQueryMock.mockReturnValue({ data: ACME, error: null });
     const input = open();
     type(input, "Acme", true);
-    // The result is on screen and selectable at this point.
     expect(screen.getByText("Acme Inc")).toBeInTheDocument();
 
-    // Refine the query. The debounce has not fired, so "Acme Inc" is now behind a skeleton.
     type(input, "Acme W", false);
     expect(screen.queryByText("Acme Inc")).toBeNull();
 

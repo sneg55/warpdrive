@@ -26,14 +26,9 @@ const S = STRINGS.settings;
 const ROW_BUTTON =
   "relative h-auto px-0 py-0 text-xs font-medium text-muted-foreground hover:bg-transparent hover:text-foreground after:absolute after:left-0 after:top-1/2 after:h-10 after:w-full after:-translate-y-1/2 after:content-['']";
 
-// Lost reasons tab (spec 6.3): archive is a soft-delete; historical deals keep their reason.
 export function LostReasonsClient({ rows: initial }: { rows: LostReasonRow[] }): React.ReactNode {
   const router = useRouter();
   const reportError = useActionError();
-  // Re-seeds from refreshed server props: add/rename/archive call router.refresh(), which re-runs
-  // the server component with fresh rows. Without this the list stays frozen until a hard reload
-  // (SETTINGS-08). Re-seeding during render avoids the stale-then-correct double render an effect
-  // would cause; `initial` comes from a server component, so its identity only changes on refresh.
   const [rows, setRows] = useSyncedState(initial);
   const [addName, setAddName] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);

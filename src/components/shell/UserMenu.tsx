@@ -16,12 +16,6 @@ import { useAppearanceChoice } from "@/features/theme/useAppearanceChoice";
 import { avatarColorClass, initials } from "@/lib/avatar";
 import { cn } from "@/lib/utils";
 
-// Top-right account menu (Pipedrive convention): an avatar button that opens a small dropdown
-// with Settings and Log out. Built on the shadcn DropdownMenu primitive (focus trap, keyboard
-// nav, portal). The actor carries no display name, so the avatar is a person glyph tinted
-// deterministically by userId. Log out is a plain anchor (GET /auth/logout) so Next never
-// prefetches it; Settings is a client-side Link. Both render via asChild so the menu item
-// semantics wrap the navigation element.
 export function UserMenu({
   userId,
   userName,
@@ -30,14 +24,10 @@ export function UserMenu({
 }: {
   userId: string;
   userName?: string;
-  // The signed-in user's uploaded photo (users.avatar_url). When set, the button shows the photo
-  // instead of the deterministic initials/glyph so a user actually sees the avatar they set.
   avatarUrl?: string | null;
-  // The account's stored theme, so the menu opens on the choice already in effect.
   appearance?: Appearance;
 }): React.ReactNode {
   const hasPhoto = avatarUrl !== undefined && avatarUrl !== null && avatarUrl !== "";
-  // Held here rather than in the menu content, which Radix unmounts on close.
   const appearanceChoice = useAppearanceChoice(appearance);
   return (
     <DropdownMenu>
@@ -47,7 +37,6 @@ export function UserMenu({
           aria-label="Account menu"
           className={cn(
             "flex h-8 w-8 items-center justify-center overflow-hidden rounded-full text-xs font-semibold transition-transform active:scale-[0.96]",
-            // Skip the tinted background when a photo fills the circle.
             hasPhoto
               ? "outline outline-1 -outline-offset-1 outline-black/10 dark:outline-white/10"
               : avatarColorClass(userName !== undefined && userName !== "" ? userName : userId),

@@ -203,15 +203,11 @@ describe("contactsFeed", () => {
         dueAt: new Date("2026-07-01T10:00:00.000Z"),
       });
 
-      // outsider is not a member of the pipeline's restricted group, so the deal-dominant
-      // gate must hide this activity even though the tagged person is visible to everyone.
       const outsiderRows = await contactsFeed(db, actor(outsider.id), { limit: 50 }, sig());
       expect(outsiderRows.map((r) => r.subject)).not.toContain(
         "Deal-scoped call, also tags a visible person",
       );
 
-      // A member of the pipeline group (here, the owner, who created the deal in that group's
-      // pipeline) still sees it.
       const ownerRows = await contactsFeed(
         db,
         actor(owner.id, [pipeGroup.id]),

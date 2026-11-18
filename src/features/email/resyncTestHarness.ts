@@ -2,14 +2,10 @@ import { sql } from "drizzle-orm";
 import type { withTestDb } from "@/db/testing";
 import type { GmailMessage } from "./gmailSchemas";
 
-// Shared test harness for the resync (ops-B3 gap recovery) suites. Co-located with
-// the feature; imported by resync.test.ts and resyncCoverage.test.ts.
-
 export type TestDb = Parameters<Parameters<typeof withTestDb>[0]>[0];
 
 export const newSignal = (): AbortSignal => new AbortController().signal;
 
-// Build a minimal full GmailMessage with a text/plain body and the given sender.
 export function msg(id: string, threadId: string, from: string): GmailMessage {
   return {
     id,

@@ -3,7 +3,6 @@ import { calendarDaysBetween } from "./calendarDays";
 
 describe("calendarDaysBetween", () => {
   it("counts crossed date boundaries, not elapsed 24h periods", () => {
-    // ~1.75 * 24h elapsed, but two calendar days crossed.
     const from = new Date(2026, 6, 10, 15, 0, 0);
     const to = new Date(2026, 6, 12, 9, 0, 0);
     expect(calendarDaysBetween(from, to)).toBe(2);

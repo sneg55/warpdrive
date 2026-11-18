@@ -5,12 +5,6 @@ import { setBoardViewAction } from "@/features/identity/preferencesActions";
 import { readCsrfToken } from "@/utils/csrfCookie";
 import { type BoardViewPref, type BoardViewState, toBoardViewPref } from "./boardView";
 
-// Best-effort, debounced persistence of the board toolbar view to user_preferences. Skips the
-// initial render (the server already seeded it) and flushes a pending write on unmount so a choice
-// made just before navigating away is not dropped. The effect depends on the individual view
-// values, not the wrapping object, so an unrelated board re-render never schedules a write.
-// A view preference is best-effort: the board keeps working on the choice in memory, so a failed
-// write must not surface as an unhandled rejection.
 function persist(pref: BoardViewPref): void {
   void setBoardViewAction(pref, readCsrfToken()).catch(() => {});
 }

@@ -3,9 +3,6 @@ import type { OutcomeKind } from "./types";
 const THROTTLE_FALLBACK_MS = 15 * 60 * 1000;
 const QUOTA_COOLDOWN_MS = 24 * 60 * 60 * 1000;
 
-// Credit exhaustion has no agreed status code across the three vendors, so the body is the only
-// signal. Matching on wording is crude; it is bounded by only ever running on a 4xx we would
-// otherwise have called a provider_error, so a false positive costs a longer cooldown, not data.
 const QUOTA_HINTS = ["credit", "quota exceeded", "insufficient funds", "out of balance"];
 
 const ENTITLEMENT_HINTS = [
@@ -26,8 +23,6 @@ export interface StatusClassification {
   retryAfterIso?: string;
 }
 
-// Retry-After is either a delay in seconds or an HTTP date (RFC 9110). A past or unparseable
-// value yields undefined so the caller falls back rather than storing a deadline already elapsed.
 export function parseRetryAfter(raw: string | null, now: Date = new Date()): string | undefined {
   if (raw === null) return undefined;
   const trimmed = raw.trim();
@@ -43,9 +38,6 @@ export function parseRetryAfter(raw: string | null, now: Date = new Date()): str
   return isoOrUndefined(asDate.getTime(), now);
 }
 
-// A header can name a delay past the representable Date range; toISOString would throw RangeError
-// there and turn a handled throttle into an unhandled exception. Out of range reads as "no usable
-// value", so the caller falls back to its own cooldown.
 function isoOrUndefined(ms: number, now: Date): string | undefined {
   if (!Number.isFinite(ms) || ms <= now.getTime()) return undefined;
   const at = new Date(ms);
@@ -90,8 +82,6 @@ export function classifyStatus(
     }
   }
 
-  // Message names the status only. The body can echo request headers, and an API key must never
-  // reach a log line, a run row, or the dialog footer.
   return { kind: "provider_error", message: `Provider returned ${status}` };
 }
 

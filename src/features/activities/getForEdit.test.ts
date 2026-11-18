@@ -116,7 +116,6 @@ it("normalizes a legacy display-name priority ('Low') to the enum key ('low') so
   const [type] = await db.select().from(activityTypes).where(eq(activityTypes.key, "call"));
   if (!type) throw new Error("no call type");
 
-  // Insert directly with the legacy display-name value (bypassing createActivity's enum).
   const [row] = await db
     .insert(activities)
     .values({

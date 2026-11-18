@@ -1,8 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { parseNotifyPayload } from "./payload";
 
-// The PUBLISHED payload (what pg_notify carries) has NO seq: the WS server stamps
-// a per-socket seq at send time (ops spec A4).
 const base = {
   v: 1,
   type: "deal_moved",

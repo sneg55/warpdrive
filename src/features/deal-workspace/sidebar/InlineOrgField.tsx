@@ -15,18 +15,12 @@ interface OrgRef {
   name: string;
 }
 
-// A pending organization choice made in the editor but not yet saved. PD's inline edit commits only
-// via Save (no autosave), so the select-or-create combobox writes into this draft and Save persists
-// it: pick an existing org, create a new one by name, clear the link, or leave it unchanged.
 type Draft =
   | { kind: "unchanged" }
   | { kind: "existing"; id: string }
   | { kind: "new"; name: string }
   | { kind: "clear" };
 
-// The deal Summary's Organization row, inline-editable like Value/Expected-close-date. The name is a
-// record link (navigates); hovering reveals the pencil, which swaps in an EntityCombobox that
-// searches existing organizations OR creates a new one, committed through the Cancel/Save footer.
 export function InlineOrgField({
   dealId,
   expectedUpdatedAt,
@@ -51,15 +45,11 @@ export function InlineOrgField({
     setEditing(true);
   }
 
-  // Save is enabled only when the draft names a real change (PD dirty-gate): a different existing
-  // org, a non-empty new name, or clearing an org that is currently set.
   const dirty =
     (draft.kind === "existing" && draft.id !== (org?.id ?? null)) ||
     (draft.kind === "new" && draft.name.trim() !== "") ||
     (draft.kind === "clear" && org !== null);
 
-  // Turn the draft into the orgId to persist, creating the org first when the user typed a new name.
-  // Returns { errorId } if the create fails so save() can surface the reason without persisting.
   async function resolveOrgId(): Promise<string | null | { errorId: string }> {
     if (draft.kind === "existing") return draft.id;
     if (draft.kind === "clear") return null;
@@ -70,7 +60,7 @@ export function InlineOrgField({
       );
       return r.ok ? r.value.id : { errorId: r.error.id };
     }
-    return org?.id ?? null; // unchanged: unreachable while dirty-gated, kept total.
+    return org?.id ?? null;
   }
 
   async function save(): Promise<void> {

@@ -20,7 +20,6 @@ vi.stubGlobal(
   "fetch",
   vi.fn(() => Promise.resolve({ ok: true } as Response)),
 );
-// The realtime hook opens a WebSocket; stub it so the wait steps render without one.
 vi.mock("@/features/import/useImportProgress", () => ({
   useImportProgress: () => ({ processed: 0, total: 0, status: null }),
 }));
@@ -48,7 +47,6 @@ const actions = vi.hoisted(() => ({
 }));
 vi.mock("@/features/import/actions", () => actions);
 
-// The prepare wait polls getBatch; return a parsed batch so it advances to the map step.
 vi.mock("@/lib/trpc-client", () => ({
   trpc: {
     import: {
@@ -82,7 +80,6 @@ it("uploads via the presign handshake, then advances to the map step", async () 
 
   await waitFor(() => expect(actions.requestImportUploadAction).toHaveBeenCalledOnce());
   expect(actions.confirmImportUploadAction).toHaveBeenCalledWith("b1", "csrf");
-  // prepare wait sees mapping_ready and hands the server-parsed header to the map step.
   await waitFor(() => expect(screen.getByLabelText("Maps to: name")).toBeInTheDocument());
 });
 

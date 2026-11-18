@@ -24,9 +24,6 @@ function buildSet(change: BulkUpdateLeadsInput["change"]): Record<string, unknow
   return set;
 }
 
-// bulkUpdateLeads: apply one field-change set across many lead ids, each gated by
-// leadVisibilityClause. Ids the actor cannot see are silently skipped and counted (batch semantics,
-// per the Result-types rule: one invisible id must not abandon the rest). Returns {updated, skipped}.
 export async function bulkUpdateLeads(
   db: Db,
   session: LeadSession,

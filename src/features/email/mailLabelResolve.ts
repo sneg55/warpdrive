@@ -1,12 +1,6 @@
 import type { LabelColor } from "@/constants/labelColors";
 import { LABEL_COLOR_CLASSES } from "@/constants/labelColors";
 
-// Turns the keys stored on a thread (email_threads.labels text[]) into renderable chips, sourcing
-// the display name + color from the user-managed mail-label catalog. Matching is case-insensitive
-// on the key so the legacy follow-up tokens (important/to_do/later) resolve against the seeded
-// built-ins. A stored key with no catalog match is skipped (a stray token never renders an
-// unstyled chip), preserving the previous ThreadLabelChips behavior. Client-safe.
-
 export interface MailCatalogEntry {
   key: string;
   name: string;
@@ -21,11 +15,6 @@ export interface ResolvedMailLabel {
 
 export type MailLabelIndex = Map<string, MailCatalogEntry>;
 
-// key -> entry index, memoized on the catalog array identity. The inbox renders one
-// ThreadLabelChips per row and each resolves against the same catalog; React Query hands every row
-// the same array reference, so all rows share one index built once rather than rebuilding it per
-// thread (O(threads * catalog) -> O(catalog) once + O(applied) per row). The WeakMap lets a
-// superseded catalog (a later fetch returns a new array) be garbage-collected.
 const indexCache = new WeakMap<MailCatalogEntry[], MailLabelIndex>();
 
 export function buildMailLabelIndex(catalog: MailCatalogEntry[]): MailLabelIndex {
@@ -37,7 +26,6 @@ export function buildMailLabelIndex(catalog: MailCatalogEntry[]): MailLabelIndex
   return byKey;
 }
 
-// Resolve against a prebuilt index (the hot path: called once per thread row).
 function resolveMailLabelChipsWith(
   index: MailLabelIndex,
   appliedKeys: string[],

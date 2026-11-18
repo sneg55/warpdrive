@@ -10,10 +10,6 @@ import type { DbOrTx } from "@/server/realtime/channelVersions";
 import { publishBoardEvent } from "@/server/realtime/events";
 import { err, ok, type Result } from "@/types/result";
 
-// Soft-delete a deal. loadEditableDeal 404s on invisible/already-deleted and enforces
-// deal.edit; deal.delete is a distinct withheld flag, so it is checked on top (mirrors how
-// deletePerson layers contact.delete over visibility). Backfills the delete path that the
-// existing but unused deal.delete flag always implied.
 export async function deleteDeal(
   db: DbOrTx,
   actor: PermSetUser,

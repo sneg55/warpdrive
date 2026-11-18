@@ -6,8 +6,6 @@ export interface ParsedMessage {
   gmailMessageId: string;
   threadId: string;
   fromEmail: string;
-  // Display name from the From header ("Scrape.do Team" in `"Scrape.do Team" <support@scrape.do>`),
-  // null when the From is a bare address. Used to show the sender name in the inbox list + reader.
   fromName: string | null;
   toEmails: string[];
   ccEmails: string[];
@@ -23,10 +21,6 @@ export interface ParsedMessage {
 
 type GmailPart = NonNullable<GmailMessage["payload"]>;
 
-// Parse one RFC 5322 mailbox ("Name <email>", "<email>", or bare "email") into its display
-// name and bare address. The address is what we match contacts on and fall back to for display;
-// the name is what the list/reader shows. Bodies of the header are trimmed; a quoted name is
-// unquoted. No angle brackets means the whole value is the address (name null).
 export function parseAddress(raw: string): { name: string | null; email: string } {
   const value = raw.trim();
   const open = value.lastIndexOf("<");
@@ -34,8 +28,6 @@ export function parseAddress(raw: string): { name: string | null; email: string 
   if (open !== -1 && close > open) {
     const email = value.slice(open + 1, close).trim();
     let namePart = value.slice(0, open).trim();
-    // Unwrap a quoted-string display name and RFC 5322-unescape its contents ("John \"JD\" Doe"
-    // -> John "JD" Doe) so the shown name has no stray backslashes or quotes.
     if (namePart.startsWith('"') && namePart.endsWith('"') && namePart.length >= 2) {
       namePart = namePart.slice(1, -1).replace(/\\(.)/g, "$1");
     }
@@ -45,9 +37,6 @@ export function parseAddress(raw: string): { name: string | null; email: string 
   return { name: null, email: value };
 }
 
-// Split an RFC 5322 address-list header on the commas that separate mailboxes, NOT the commas
-// inside a quoted display name ("Doe, John" <j@x.com>). A naive split(",") tears that name apart
-// and yields a junk participant. Only commas outside double-quotes are separators.
 function splitAddressList(value: string): string[] {
   const parts: string[] = [];
   let start = 0;
@@ -64,8 +53,6 @@ function splitAddressList(value: string): string[] {
   return parts;
 }
 
-// Split an address-list header ("a@x.com, b@y.com") into trimmed, non-empty BARE addresses,
-// dropping any display names so participant matching compares plain addresses.
 export function splitAddresses(value: string | undefined): string[] {
   if (value === undefined) return [];
   return splitAddressList(value)
@@ -73,7 +60,6 @@ export function splitAddresses(value: string | undefined): string[] {
     .filter((a) => a.length > 0);
 }
 
-// Case-insensitive header lookup; Gmail header names are not normalized.
 function header(headers: GmailPart["headers"], name: string): string | undefined {
   if (headers === undefined) return undefined;
   const lower = name.toLowerCase();
@@ -83,7 +69,6 @@ function header(headers: GmailPart["headers"], name: string): string | undefined
   return undefined;
 }
 
-// Decode a base64url part body. Returns null for an absent body.
 function decodeBody(part: GmailPart): string | null {
   const data = part.body?.data;
   if (data === undefined) return null;
@@ -95,8 +80,6 @@ interface Bodies {
   text: string | null;
 }
 
-// Walk the MIME tree depth-first, capturing the first text/html and text/plain
-// bodies. A part with no explicit mimeType but a body is treated as text.
 function collectBodies(part: GmailPart, acc: Bodies): void {
   const mime = part.mimeType ?? "";
   if (mime === "text/html" && acc.html === null) {
@@ -113,9 +96,6 @@ function collectBodies(part: GmailPart, acc: Bodies): void {
   }
 }
 
-// Decode a Gmail message into the structured shape the sync layer stores. Guards
-// every optional/indexed field (noUncheckedIndexedAccess). Bodies are stored raw;
-// sanitization happens at render time, not here.
 export function parseGmailMessage(msg: GmailMessage): ParsedMessage {
   const payload = msg.payload;
   const headers = payload?.headers;

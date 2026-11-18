@@ -5,10 +5,6 @@ import { activities } from "@/db/schema/activities";
 import { type ActivityType, activityTypes } from "@/db/schema/activityTypes";
 import { err, ok, type Result } from "@/types/result";
 
-// Activity-type catalog CRUD (settings spec 6.2). Admin gating lives in typeActions.ts;
-// these repo functions take no actor. Enable/disable is a soft archive (archivedAt) because
-// activities reference the row via type_id and must never dangle.
-
 export async function listTypes(
   db: Db,
   opts: { activeOnly?: boolean },
@@ -29,8 +25,6 @@ export async function createType(
   signal: AbortSignal,
 ): Promise<Result<ActivityType, AppError>> {
   signal.throwIfAborted();
-  // Pre-check the unique key (two names can slugify to the same key) so a duplicate returns a
-  // clean error instead of an uncaught unique-violation, mirroring createDef's CF_KEY_EXISTS.
   const [existing] = await db
     .select({ id: activityTypes.id })
     .from(activityTypes)

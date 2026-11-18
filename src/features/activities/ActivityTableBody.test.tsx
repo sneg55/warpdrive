@@ -38,7 +38,6 @@ describe("ActivityTableBody loading state", () => {
     renderBody({ loadPending: true, loadFailed: false });
     expect(screen.getByRole("status", { name: /loading activities/i })).toBeInTheDocument();
     expect(screen.queryByText(/No activities in this view/)).toBeNull();
-    // More than one placeholder row, so the table does not collapse and jump when data lands.
     expect(screen.getAllByRole("row").length).toBeGreaterThan(1);
   });
 

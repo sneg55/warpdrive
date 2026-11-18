@@ -58,7 +58,6 @@ describe("softDisconnectMailbox", () => {
       const u = await seedUser(db);
       const id = await seedConnectedAccount(db, u.id, "rep@example.com");
       await softDisconnectMailbox(db, id, new AbortController().signal);
-      // Mirror exchangeAndBind's upsert: the same user reconnecting rebinds the same address.
       const r = await db.execute(sql`
         INSERT INTO email_accounts (user_id, email_address, refresh_token_enc, status)
         VALUES (${u.id}, 'rep@example.com', decode('feedface', 'hex'), 'connected')

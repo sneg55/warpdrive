@@ -23,8 +23,6 @@ interface Option {
 interface AddLeadLeftColumnProps {
   state: AddLeadState;
   set: (patch: Partial<AddLeadState>) => void;
-  // Title edits go through this (not set) so the modal can stop autofilling once the user types.
-  // Optional: falls back to a plain title patch when a caller does not need the edit signal.
   onTitleChange?: (value: string) => void;
   people: Option[];
   orgs: Option[];
@@ -35,8 +33,6 @@ interface AddLeadLeftColumnProps {
   leadCustomFields?: React.ReactNode;
 }
 
-// Left column of the Add lead dialog (Pipedrive): contact/org, title, value, label, owner, close
-// date, source, visibility. No pipeline/stage (leads live outside pipelines). Presentational.
 export function AddLeadLeftColumn(props: AddLeadLeftColumnProps): React.ReactNode {
   const {
     state,

@@ -4,10 +4,6 @@ import { makeTestDb } from "@/test/db";
 import { getPreferencesForActor } from "./preferencesForActor";
 import { setPreferences } from "./preferencesRepo";
 
-// getPreferencesForActor is the React.cache-wrapped reader the (app) layout and the list pages
-// share so preferences are read once per render pass instead of once per component. Outside an RSC
-// request scope cache() is a pass-through, so this test can only assert behavior parity with the
-// raw repo read (the dedup itself is a React.cache guarantee, exercised in the running app).
 let h: Awaited<ReturnType<typeof makeTestDb>>;
 const sig = () => new AbortController().signal;
 beforeAll(async () => {

@@ -16,8 +16,6 @@ import type { CustomFieldDef } from "@/types/customFields";
 import { readCsrfToken } from "@/utils/csrfCookie";
 import { findPersonMatches, type PersonMatchReason } from "./personMatch";
 
-// Why a suggestion showed up, in the user's terms. An email or phone is effectively an identity, so
-// say so plainly rather than the vaguer "similar contact" the create comboboxes use for names.
 const REASON_TEXT: Record<PersonMatchReason, string> = {
   email: "already has this email",
   phone: "already has this phone",
@@ -37,9 +35,6 @@ function fullName(d: Draft): string {
   return [d.firstName.trim(), d.lastName.trim()].filter((s) => s !== "").join(" ");
 }
 
-// The editor behind the pencil on a person-less deal. Every keystroke is checked against the
-// visible people so an existing contact can be linked instead of duplicated; Save falls through to
-// creating one only when the user did not take a suggestion.
 export function PersonLinkEditor({
   dealId,
   expectedUpdatedAt,
@@ -61,8 +56,6 @@ export function PersonLinkEditor({
   const [values, setValues] = useState<CustomFieldValues>({});
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // A create that succeeded before its deal link failed must not create a second person when the
-  // user hits Save again; reuse the one already committed.
   const createdId = useRef<string | null>(null);
   const ids = { first: useId(), last: useId(), phone: useId(), email: useId() };
 
@@ -93,13 +86,9 @@ export function PersonLinkEditor({
     if (ok) onDone();
   }
 
-  // Create-then-link. The deal link only happens once the person exists, so a failed create cannot
-  // leave the deal pointing at nothing.
   async function save(): Promise<void> {
     const name = fullName(draft);
     if (name === "") return;
-    // createPerson validates important/required person fields server-side, so catch it here and
-    // name the field rather than surfacing a bare E_CF_003 (mirrors ConvertLeadDialog).
     const missing = firstMissingImportantField(customFieldDefs, values);
     if (missing !== null) {
       setError(`${missing.name} is required`);
@@ -107,7 +96,6 @@ export function PersonLinkEditor({
     }
     setError(null);
     setPending(true);
-    // Retry after a failed link: the person exists already, so go straight back to linking it.
     if (createdId.current !== null) {
       const relinked = await linkDeal(createdId.current);
       setPending(false);

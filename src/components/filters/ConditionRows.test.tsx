@@ -70,7 +70,6 @@ describe("ConditionRows", () => {
     renderRows([row()]);
     const input = screen.getByLabelText("Condition 1 value");
     expect(input.tagName).toBe("INPUT");
-    // The wrapper's focus ring is what a bare <input> did not have.
     expect(input).toHaveClass("focus-visible:ring-ring/50");
   });
 
@@ -141,12 +140,10 @@ describe("ConditionRows", () => {
     ]);
   });
 
-  // "is any of" is one condition holding several labels, so the row value has to be a list.
   it("renders a design-system multi-select for a multiselect field, not a native one", () => {
     const { container } = renderRows([row({ field: "labels", op: "eq", value: ["Hot"] })]);
     expect(container.querySelector("select")).toBeNull();
     expect(screen.getByLabelText("Condition 1 value").tagName).toBe("BUTTON");
-    // The already-picked value shows as a chip.
     expect(screen.getByText("Hot")).toBeInTheDocument();
   });
 
@@ -165,9 +162,6 @@ describe("ConditionRows", () => {
     expect(onRowsChange).toHaveBeenCalledWith([expect.objectContaining({ id: "r2" })]);
   });
 
-  // The Select trigger is w-full, so as a flex item it claims the whole row and min-width:auto
-  // stops it shrinking. Two of them then push the value control past the container edge. jsdom
-  // does no layout, so the shrink classes are the only thing a test can hold here.
   it("lets the field and operator selects shrink instead of claiming the row", () => {
     renderRows([row()]);
     expect(screen.getByLabelText("Condition 1 field")).toHaveClass("min-w-0", "flex-[3]");

@@ -16,10 +16,6 @@ interface SignatureDropdownProps {
   onChange: (id: string) => void;
 }
 
-// Toolbar signature picker: an icon button that opens a menu of "None" + each signature.
-// Rendered as a composer toolbar control (next to SaveAsTemplateDialog) so it is always
-// present, even before any signature exists, offering "None" as the explicit empty choice.
-// value "" means no signature.
 export function SignatureDropdown({
   signatures,
   value,

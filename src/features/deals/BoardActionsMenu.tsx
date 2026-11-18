@@ -14,9 +14,6 @@ interface BoardActionsMenuProps {
   pipelineId: string;
 }
 
-// Board actions overflow (Pipedrive ellipsis). Seeded with actions that already have a home:
-// edit pipeline, and bulk-select via the List view (which already supports multi-select).
-// Intended future entries: export deals, import, board settings (add when those features exist).
 export function BoardActionsMenu(props: BoardActionsMenuProps): React.ReactNode {
   const { pipelineId } = props;
 

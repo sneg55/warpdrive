@@ -6,7 +6,6 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-// The cache keys on the Db instance; tests pass plain objects cast to Db as distinct keys.
 const asDb = (o: object): Db => o as unknown as Db;
 
 describe("createDbCache", () => {

@@ -1,5 +1,3 @@
-// Notification kinds delivered in-app. The notifications FEATURE lands in Phase 5;
-// this constant exists now because the activity-reminder job (Phase 3) writes rows.
 export const NOTIFICATION_TYPES = [
   "mention",
   "activity_assigned",

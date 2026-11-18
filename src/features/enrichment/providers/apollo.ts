@@ -17,8 +17,6 @@ const PERSON_URL = "https://api.apollo.io/api/v1/people/match";
 const ORG_URL = "https://api.apollo.io/api/v1/organizations/enrich";
 const KEY_HEADER = "x-api-key";
 
-// Messages reach the dialog footer and the run row, so they name the failure and nothing else:
-// never the key, the request headers, or the response body.
 const MESSAGE_BAD_BODY = "Provider response was not readable";
 const MESSAGE_TIMEOUT = "Provider timed out";
 const MESSAGE_UNREACHABLE = "Provider was unreachable";
@@ -42,7 +40,6 @@ function parseJson(text: string): Json | undefined {
   }
 }
 
-// Drops blanks so a whitespace-only lookup value never becomes a search term Apollo has to honour.
 function compact(input: Record<string, string | undefined>): Record<string, string> {
   const out: Record<string, string> = {};
   for (const [key, value] of Object.entries(input)) {
@@ -52,14 +49,10 @@ function compact(input: Record<string, string | undefined>): Record<string, stri
   return out;
 }
 
-// The canonical guard is the whole contract with the merge step: a key outside CANONICAL_FIELDS
-// has no mapping row and would be written nowhere, so it is dropped here rather than carried.
 function put(fields: Fields, key: string, value: string | number | undefined): void {
   if (value !== undefined && isCanonicalKey(key)) fields[key] = value;
 }
 
-// Apollo gives a profile URL where the vocabulary wants the bare handle. A path-less URL yields
-// the host, which is never a handle, so anything still carrying a dot is rejected.
 function twitterHandle(value: unknown): string | undefined {
   const raw = pickString(value);
   if (raw === undefined) return undefined;
@@ -138,8 +131,6 @@ function outcomeOf(fields: Fields, sourceId: unknown, headers: Headers): Provide
   return { provider: PROVIDER, kind: "ok", candidate, ...reported };
 }
 
-// An abort is the caller cancelling and is rethrown; every other failure is an outcome value, so
-// one dead provider never abandons the rest of the fan-out.
 async function call(
   url: string,
   apiKey: string,
@@ -167,16 +158,11 @@ async function call(
   }
 }
 
-// reveal_phone_number is never set: it would make the call asynchronous and require a public
-// webhook, and phone numbers are out of scope, so any phone Apollo volunteers is dropped above.
 async function matchPerson(
   input: PersonLookup,
   apiKey: string,
   signal: AbortSignal,
 ): Promise<ProviderOutcome> {
-  // people/match is a POST that reads its inputs from the query string, not from a body: Apollo
-  // documents every one of them as a query parameter. Sent as JSON they are ignored, and the call
-  // returns `person: null` for a lookup that would otherwise have matched.
   const query = new URLSearchParams({
     ...compact({
       id: input.providerRef,

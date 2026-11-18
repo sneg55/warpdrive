@@ -14,8 +14,6 @@ const CHIPS: { key: ActivityDatePreset; label: string }[] = [
   { key: "todo", label: "To-do" },
 ];
 
-// Quick time-preset chips for the activities list (A1). Each sets the filter's date range;
-// the chip matching the current range is highlighted. `now` is injectable for testing.
 export function ActivityPresetChips({
   from,
   to,

@@ -13,7 +13,6 @@ import { COMPOSER_STRINGS } from "./composer.constants";
 describe("AddActivityToggle", () => {
   it("renders a toggle button with an info tooltip container", () => {
     render(<AddActivityToggle checked={false} onChange={vi.fn()} />);
-    // The toggle should be present as a checkbox
     const toggle = screen.getByRole("checkbox", { name: /add as activity/i });
     expect(toggle).toBeInTheDocument();
     expect(toggle).not.toBeChecked();
@@ -34,15 +33,10 @@ describe("AddActivityToggle", () => {
 
   it("renders an info tooltip element", () => {
     render(<AddActivityToggle checked={false} onChange={vi.fn()} />);
-    // Info tooltip should be present (a title attribute or aria-label on an info icon)
     const infoEl = screen.getByLabelText(/activity will be logged/i);
     expect(infoEl).toBeInTheDocument();
   });
 
-  // Item 7: the design-system Checkbox primitive (a Radix role="checkbox" button)
-  // carries its own accessible name via aria-label, and the visible text sits beside
-  // it. The checkbox must resolve to exactly one control named by that label, with no
-  // duplicate/ambiguous naming.
   it("(item 7) checkbox is named by its design-system aria-label with visible text alongside", () => {
     render(<AddActivityToggle checked={false} onChange={vi.fn()} />);
     const checkboxes = screen.getAllByRole("checkbox", { name: /add as activity/i });
@@ -50,9 +44,6 @@ describe("AddActivityToggle", () => {
     expect(screen.getByText(/add as activity/i)).toBeInTheDocument();
   });
 
-  // Reported: "add as activity should act the same way as visible to everyone on hover". The
-  // visibility picker is one control whose text is part of the hit area and whose whole surface
-  // fills on hover; this toggle rendered inert text beside a bare box.
   it("toggles when the visible label text is clicked", async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();

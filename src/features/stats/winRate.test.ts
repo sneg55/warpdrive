@@ -16,8 +16,6 @@ describe("winRate", () => {
     expect(winRate(bucket(0), bucket(4))).toBe(0);
   });
 
-  // A rate of zero and "nobody closed anything" are different facts and must not render
-  // the same, so no-closed-deals returns null rather than 0.
   test("is null when no deal closed in the period", () => {
     expect(winRate(bucket(0), bucket(0))).toBeNull();
   });

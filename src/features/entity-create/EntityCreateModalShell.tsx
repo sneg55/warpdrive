@@ -5,7 +5,6 @@ import { EntityCreateDialogShell } from "@/features/entity-create/EntityCreateDi
 
 export interface EntityCreateModalShellProps {
   title: string;
-  // The entity-specific fields (deal has pipeline/stage; lead does not) render in the left column.
   leftColumn: React.ReactNode;
   personMode: "existing" | "new";
   phones: ContactPoint[];
@@ -20,8 +19,6 @@ export interface EntityCreateModalShellProps {
   onClose: () => void;
 }
 
-// Deal/lead specialization of the shared create-dialog frame. Their entity-specific fields stay
-// on the left and the reusable inline-person fields stay on the right.
 export function EntityCreateModalShell(props: EntityCreateModalShellProps): React.ReactNode {
   const {
     title,
@@ -49,7 +46,6 @@ export function EntityCreateModalShell(props: EntityCreateModalShellProps): Reac
       onSubmit={onSubmit}
       onClose={onClose}
     >
-      {/* min-w-0 lets both fr tracks shrink to the dialog instead of overflowing it. */}
       <div className="min-w-0">{leftColumn}</div>
       <div className="min-w-0">
         <AddDealPersonColumn

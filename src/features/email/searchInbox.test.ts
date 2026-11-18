@@ -95,8 +95,6 @@ describe("searchInbox", () => {
         VALUES (${thread}, ${acctId}, 'm1', 'inbound', 'support@scrape.do', 'Scrape.do Team', 'hello there', now())
       `);
 
-      // The name lives in from_name (from_email is the bare address), so searching the display
-      // name must still find the thread.
       const results = await searchInbox(
         db,
         { actor: actorOf(owner.id), q: "Scrape.do Team" },
@@ -146,10 +144,6 @@ describe("searchInbox", () => {
     });
   });
 
-  // Regression (codex review, P2 quick-filters): search results feed the same ThreadList as the
-  // inbox, where the Has attachment / Unread only filters read InboxThread.hasAttachment / .unread.
-  // If searchInbox does not project these, toInboxThread defaults both to false and toggling either
-  // filter drops every search result. Mirror listInbox's projection.
   it("projects unread and hasAttachment so the client quick-filters work over search results", async () => {
     await withTestDb(async (db) => {
       const owner = await seedUser(db, { email: "o@gunsnation.com" });
@@ -166,7 +160,6 @@ describe("searchInbox", () => {
         INSERT INTO email_message_attachments (message_id, account_id, gmail_attachment_id, filename, mime_type, size_bytes)
         VALUES (${msg.id}, ${acctId}, 'att1', 'q3.pdf', 'application/pdf', 1024)
       `);
-      // No email_thread_reads row for the owner: the thread is unread.
 
       const results = await searchInbox(db, { actor: actorOf(owner.id), q: "budget" }, SIG());
       expect(results).toHaveLength(1);
@@ -175,10 +168,6 @@ describe("searchInbox", () => {
     });
   });
 
-  // Regression (codex review, P2 quick-filters): when the search box is active, ThreadList shows
-  // email.search results, so the active quick-filter must narrow the SAME way it narrows the inbox
-  // feed. searchInbox reuses quickFilterPredicate, so filter="private" must drop a shared match even
-  // when its subject/body matches the query.
   it("filter=private excludes a shared thread that matches the query", async () => {
     await withTestDb(async (db) => {
       const owner = await seedUser(db, { email: "o@gunsnation.com" });
@@ -221,7 +210,6 @@ describe("searchInbox", () => {
       const acctId = await seedAccount(db, owner.id);
       const thread = await seedThread(db, acctId, "t1", "Budget review");
       await seedMessage(db, thread, acctId, "m1", "alice@x.com", "budget numbers");
-      // Reader row postdates last_message_at, so the thread reads as read.
       await db.execute(sql`
         INSERT INTO email_thread_reads (thread_id, user_id, read_at)
         VALUES (${thread}, ${owner.id}, now() + interval '1 minute')

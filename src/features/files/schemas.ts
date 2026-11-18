@@ -3,7 +3,6 @@ import { env } from "@/config/env";
 import { FILE_ENTITY_TYPE } from "@/constants/fileEntityTypes";
 import { ALLOWED_CONTENT_TYPES } from "./contentTypes";
 
-// requestUpload boundary: validated exactly once at entry, trusted thereafter.
 export const requestUploadInput = z.object({
   entityType: z.enum(FILE_ENTITY_TYPE),
   entityId: z.string().uuid(),

@@ -6,8 +6,6 @@ import { seedPipelineWithStages, seedUser } from "@/db/testing/factories";
 import type { AuthUser } from "@/features/permissions/types";
 import { getFeed, getUnreadCount, markAllRead, markRead } from "./feed";
 
-// Convert a raw users row (isAdmin: boolean) to an AuthUser for feed functions.
-// No group memberships; tests that need group membership must add them separately.
 function toAuthUser(row: Awaited<ReturnType<typeof seedUser>>): AuthUser {
   return {
     id: row.id,
@@ -17,7 +15,6 @@ function toAuthUser(row: Awaited<ReturnType<typeof seedUser>>): AuthUser {
   };
 }
 
-// Insert a deal with owner-level visibility owned by the given user.
 async function seedOwnerDeal(
   db: Parameters<Parameters<typeof withTestDb>[0]>[0],
   ownerId: string,
@@ -36,7 +33,6 @@ async function seedOwnerDeal(
   return row.id;
 }
 
-// Insert a deal with all-level visibility owned by the given user.
 async function seedAllDeal(
   db: Parameters<Parameters<typeof withTestDb>[0]>[0],
   ownerId: string,
@@ -55,20 +51,14 @@ async function seedAllDeal(
   return row.id;
 }
 
-// SECURITY: core red-first test. A notification addressed to alice referencing a deal
-// owned by bob with owner-only visibility (alice cannot see it) must be ABSENT from
-// getFeed and excluded from getUnreadCount. Its payload ('leaky title') must not appear.
 describe("notification feed read-time filtering", () => {
   it("hides a notification whose referenced deal the viewer cannot see", async () => {
     await withTestDb(async (db) => {
       const aliceRow = await seedUser(db);
       const bobRow = await seedUser(db);
       const alice = toAuthUser(aliceRow);
-      // Bob owns the deal with owner-only visibility. Alice cannot see it.
       const dealId = await seedOwnerDeal(db, bobRow.id);
 
-      // Insert a stale notification directly (bypassing the producer's gate) to
-      // simulate visibility changing after the row was written.
       await db.insert(notifications).values({
         userId: alice.id,
         type: "deal_followed_update",
@@ -81,9 +71,7 @@ describe("notification feed read-time filtering", () => {
       const ctrl = new AbortController();
       const feed = await getFeed(db, alice, 50, ctrl.signal);
 
-      // SECURITY assertion: the row must not appear at all.
       expect(feed.find((n) => n.entityId === dealId)).toBeUndefined();
-      // The leaky payload must not be present in any returned item.
       const leaky = feed.find(
         (n) =>
           typeof n.payload === "object" &&
@@ -92,7 +80,6 @@ describe("notification feed read-time filtering", () => {
           n.payload.title === "leaky title",
       );
       expect(leaky).toBeUndefined();
-      // Unread count must also exclude the hidden row.
       expect(await getUnreadCount(db, alice, ctrl.signal)).toBe(0);
     });
   });
@@ -101,7 +88,6 @@ describe("notification feed read-time filtering", () => {
     await withTestDb(async (db) => {
       const aliceRow = await seedUser(db);
       const alice = toAuthUser(aliceRow);
-      // Alice owns the deal (owner visibility): she can see it.
       const dealId = await seedAllDeal(db, aliceRow.id);
 
       await db.insert(notifications).values({
@@ -148,10 +134,8 @@ describe("notification feed read-time filtering", () => {
       const bobRow = await seedUser(db);
       const alice = toAuthUser(aliceRow);
       const bob = toAuthUser(bobRow);
-      // All-visibility deal so both users have access if they had notifications.
       const dealId = await seedAllDeal(db, bobRow.id);
 
-      // Insert bob's notification directly.
       const [bobNotif] = await db
         .insert(notifications)
         .values({
@@ -166,10 +150,8 @@ describe("notification feed read-time filtering", () => {
       if (bobNotif === undefined) throw new Error("bob notification insert failed");
 
       const ctrl = new AbortController();
-      // Alice tries to mark bob's notification read: the user_id guard must block it.
       await markRead(db, alice, bobNotif.id, ctrl.signal);
 
-      // Bob's row must still be unread.
       expect(await getUnreadCount(db, bob, ctrl.signal)).toBe(1);
     });
   });

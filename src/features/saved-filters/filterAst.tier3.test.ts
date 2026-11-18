@@ -1,5 +1,3 @@
-// Tier 3: the combinator folds the user conditions, and the rotting narrowing stays outside that
-// group. Compile-shape only; the DB-side proof lives in deals/dealRepo.combinator.test.ts.
 import { PgDialect } from "drizzle-orm/pg-core";
 import { describe, expect, it } from "vitest";
 import { ERROR_IDS } from "@/constants/errorIds";
@@ -31,7 +29,6 @@ describe("filterToSql combinator", () => {
     );
   });
 
-  // A definition saved before the combinator existed carries no key, and must keep meaning AND.
   it("joins with AND when the combinator key is absent", () => {
     expect(emit({ conditions: TWO }).sql).toBe(`(d.title ILIKE '%' || $1 || '%' AND d.value > $2)`);
   });
@@ -44,8 +41,6 @@ describe("filterToSql combinator", () => {
 });
 
 describe("filterToSql rotting narrowing under a combinator", () => {
-  // rotting is a narrowing, not a user condition: folded into an OR group it would widen the
-  // result past the narrowing and return deals that are not rotting at all.
   it("ANDs rotting outside the OR group", () => {
     expect(emit({ combinator: "or", conditions: TWO, rotting: true }).sql).toBe(
       `(d.title ILIKE '%' || $1 || '%' OR d.value > $2) AND ${ROTTING}`,
@@ -73,7 +68,6 @@ describe("filterToSql multi-value label conditions", () => {
   it("compiles eq over a list to a case-insensitive membership test", () => {
     const q = emit({ conditions: [{ field: "labels", op: "eq", value: ["Hot", "Warm"] }] });
     expect(q.sql).toBe(MULTI);
-    // One bound array parameter, so no label name is ever interpolated into the statement.
     expect(q.params).toEqual([["Hot", "Warm"]]);
   });
 
@@ -91,8 +85,6 @@ describe("filterToSql multi-value label conditions", () => {
     expect(q.sql).not.toContain("DROP TABLE");
   });
 
-  // Zod rejects an empty list, so one arriving here means the boundary was bypassed. Compiling it
-  // would produce a condition that can never match, which reads as a filter that ate every row.
   it("rejects an empty list rather than compiling a condition that matches nothing", () => {
     expect(() => emit({ conditions: [{ field: "labels", op: "eq", value: [] }] })).toThrow(
       expect.objectContaining({ id: ERROR_IDS.DEAL_FILTER_INVALID }),

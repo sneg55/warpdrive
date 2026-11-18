@@ -28,15 +28,9 @@ export interface StageColumnMenuProps {
   onToggleCollapse: () => void;
 }
 
-// P1: the per-column "Actions" menu Pipedrive reveals on stage-header hover. Warpdrive column
-// headers previously had no per-column control. The column-scoped actions that make sense here:
-// add a deal preset to this stage, jump to the stage editor, and collapse/expand the lane. The
-// add-deal item reuses AddDealModal (same path as StageAddButton's ghost button at the lane foot).
 export function StageColumnMenu(props: StageColumnMenuProps): React.ReactNode {
   const { pipelineId, stageId, stageName, pipelines, baseCurrency } = props;
   const { collapsed, onToggleCollapse } = props;
-  // Stage name is folded into the trigger's accessible name so screen-reader users know which
-  // column's actions they are opening (multiple identical "Stage actions" triggers otherwise).
   const triggerLabel = `Stage actions: ${stageName}`;
   const qc = useQueryClient();
   const [addOpen, setAddOpen] = useState(false);

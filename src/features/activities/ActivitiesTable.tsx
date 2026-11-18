@@ -26,13 +26,8 @@ import { useActivityBulkActions } from "./useActivityBulkActions";
 import { useActivityListFilter } from "./useActivityListFilter";
 import { useActivityRowComplete } from "./useActivityRowComplete";
 
-// Stable module reference: passed as useColumnSort's fallback, so `effective` only changes
-// reference when the sort state itself changes (see PeopleList for the same concern).
 const DEFAULT_SORT: ColumnSort<ActivitySortField> = { field: "dueAtIso", dir: "asc" };
 
-// Total <th>/<td> columns in the table (select, Done, Subject, Deal, Priority, Contact, Email,
-// Phone, Organization, Due, Duration, Assignee): drives the empty-state and day-header colSpans
-// so neither has to be kept in sync by hand when a column is added.
 const ACTIVITY_TABLE_COLUMN_COUNT = 12;
 
 interface ActivitiesTableProps {
@@ -64,14 +59,7 @@ export function ActivitiesTable({
   const promptAfterDone = useFollowUpAfterDone();
   const rows = useMemo(() => rowsQ.data ?? [], [rowsQ.data]);
   const rowComplete = useActivityRowComplete(rows, rowsQ.refetch);
-  // Cap how many rows are painted; the count header, select-all, and bulk actions all operate
-  // over the full `rows` set, so this bounds render cost only. listRows is pagination-free, so
-  // without this the default open-activities view mounts every row at once.
   const rowWindow = useRenderWindow(rows, RENDER_WINDOW_STEP);
-  // A transient batched-401 (the F5-1 class) leaves data undefined AND isError=true. Painting that
-  // as the empty state makes a recoverable failure look like a genuinely empty to-do list with no
-  // way back, so we branch loading/error/empty explicitly (only when we have no rows to fall back
-  // on). See ACTIVITIES-01.
   const loadFailed = rowsQ.isError === true && rows.length === 0;
   const loadPending = rowsQ.isPending === true && rows.length === 0;
   const visibleIds = rows.map((r) => r.id);
@@ -94,16 +82,8 @@ export function ActivitiesTable({
     [ownersQ.data],
   );
 
-  // Day-grouping (Pipedrive parity) only makes sense when the effective sort is by due date:
-  // grouping a non-date sort (duration/priority/subject) would render the sorted order
-  // non-monotonically across day buckets, defeating the sort the user just asked for. So a
-  // non-date column sort renders a flat list instead; the default (or explicit dueAtIso) sort
-  // keeps the day headers.
   const groupByDay = effective.field === "dueAtIso";
 
-  // A row points at work on a record, so opening it opens that record's drawer: the deal, or the
-  // contact the activity hangs off when there is no deal. Seeding the preview first lets the
-  // drawer paint a titled skeleton while the server component streams in.
   const openRow = useCallback(
     (row: ActivityTableRow) => {
       const target = activityRowTarget(row);
@@ -117,8 +97,6 @@ export function ActivitiesTable({
     [router, setPreview],
   );
 
-  // j/k walks the painted rows, Enter opens the one under the cursor (Pipedrive list parity).
-  // Indexed over rowWindow.visible because day grouping preserves that order.
   const cursor = useRowCursor(rowWindow.visible.length, (i) => {
     const target = rowWindow.visible[i];
     if (target !== undefined) openRow(target);
@@ -143,7 +121,6 @@ export function ActivitiesTable({
   return (
     <div className="flex h-full flex-col p-4">
       <div className="mb-3 flex flex-wrap items-center gap-3">
-        {/* View toggle: List (active) vs Calendar. */}
         <div className="inline-flex rounded-md border bg-card p-0.5 text-sm">
           <span className="rounded-sm bg-accent px-2 py-1 font-medium text-accent-foreground">
             List

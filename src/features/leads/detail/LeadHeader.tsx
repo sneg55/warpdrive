@@ -22,8 +22,6 @@ import {
   updateLeadAction,
 } from "../leadServerActions";
 
-// Lead detail header: title, owner, labels, and the Convert / Archive / overflow actions. Mutations
-// go through the lead server actions (CSRF + Result + CAS for convert) then navigate or refresh.
 export function LeadHeader({ lead }: { lead: LeadDetail }): React.ReactNode {
   const router = useRouter();
   const reportError = useActionError();
@@ -110,11 +108,6 @@ export function LeadHeader({ lead }: { lead: LeadDetail }): React.ReactNode {
       reportError(r.error.id);
       return;
     }
-    // From the intercepted slide-over, router.push("/leads") is a soft navigation, and Next renders
-    // a parallel slot's previously active state on a soft navigation. The drawer would stay open on
-    // the lead we just deleted, so the delete reads as a no-op and a second Delete re-renders the
-    // missing lead into LeadDetailView's notFound(). Dismiss the drawer instead; only the standalone
-    // page (deep link / hard load), which has no drawer, navigates.
     await leaveForList();
   }
 
@@ -123,8 +116,6 @@ export function LeadHeader({ lead }: { lead: LeadDetail }): React.ReactNode {
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
           <EditableHeading title={lead.title} label="lead title" onCommit={updateTitle} />
-          {/* Owner is not duplicated here: PD's lead drawer shows it only as a sidebar field
-              (Summary > Owner), so the header carries just labels + archived state. */}
           <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground empty:hidden">
             {labels.map((label) => (
               <span

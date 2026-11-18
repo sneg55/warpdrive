@@ -1,6 +1,4 @@
 // @vitest-environment node
-// Integration tests for the stats tRPC router (dashboard procedure).
-// Real Postgres via withTestDb; no DB mocks.
 
 import { sql } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
@@ -11,8 +9,6 @@ import { seedPipelineWithStages, seedUser } from "@/db/testing/factories";
 import type { HydratedActor } from "@/server/hydrateActor";
 import { createCaller } from "@/server/trpc/root";
 
-// Build a HydratedActor-compatible actor from a seeded user row (name/avatar are placeholders;
-// the stats procedures use only the permission-relevant fields).
 function makeActor(
   u: { id: string; isAdmin: boolean; isActive: boolean },
   flags: PermissionFlagKey[] = [],
@@ -35,20 +31,16 @@ describe("stats tRPC router", () => {
       const userRow = await seedUser(db, { isAdmin: false });
       const actor = makeActor(userRow);
 
-      // Seed a pipeline with one stage.
       const { pipeline, stages } = await seedPipelineWithStages(db, ["Qualify"]);
       const stage = stages[0];
       if (!stage) throw new Error("no stage");
 
-      // Seed settings.default_pipeline_id so we can pass explicit pipelineId in the call.
-      // (The test passes pipelineId explicitly anyway, but insert settings to ensure the row exists.)
       await db.execute(sql`
         INSERT INTO settings (id, default_pipeline_id)
         VALUES (true, ${pipeline.id})
         ON CONFLICT (id) DO UPDATE SET default_pipeline_id = EXCLUDED.default_pipeline_id
       `);
 
-      // Seed a won deal owned by the actor with all-visibility so it is always visible.
       await db.execute(sql`
         INSERT INTO deals (title, pipeline_id, stage_id, owner_id, visibility_level, status, won_time)
         VALUES ('Won deal', ${pipeline.id}, ${stage.id}, ${userRow.id}::uuid, 'all', 'won', '2026-06-01')
@@ -67,9 +59,7 @@ describe("stats tRPC router", () => {
         to: "2026-12-31",
       });
 
-      // A regular user without stats.viewOthers must be downgraded to 'me'.
       expect(out.effectiveOwnerScope).toEqual({ kind: "me" });
-      // The actor's own won deal must be counted.
       expect(out.dealPerformance.won.count).toBe(1);
     });
   });
@@ -79,7 +69,6 @@ describe("stats tRPC router", () => {
       const userRow = await seedUser(db, { isAdmin: false });
       const actor = makeActor(userRow);
 
-      // Create a visibility group and a pipeline restricted to it (actor is NOT a member).
       const groupRow = (
         await db.execute(sql`
           INSERT INTO visibility_groups (name) VALUES ('restricted-group') RETURNING id
@@ -97,7 +86,6 @@ describe("stats tRPC router", () => {
         actor,
       });
 
-      // Expect an AppError with E_STATS_001 because the pipeline is restricted.
       await expect(
         caller.stats.dashboard({
           pipelineId: pipeline.id,
@@ -114,7 +102,6 @@ describe("stats tRPC router", () => {
       const adminRow = await seedUser(db, { isAdmin: true });
       const actor = makeActor(adminRow);
 
-      // Restricted pipeline (admin bypasses restriction).
       const groupRow = (
         await db.execute(sql`
           INSERT INTO visibility_groups (name) VALUES ('admin-test-group') RETURNING id
@@ -132,7 +119,6 @@ describe("stats tRPC router", () => {
         actor,
       });
 
-      // Admin should NOT throw.
       const out = await caller.stats.dashboard({
         pipelineId: pipeline.id,
         ownerScope: { kind: "me" },
@@ -154,7 +140,6 @@ describe("stats tRPC router", () => {
       const s2 = p2.stages[0];
       if (!s1 || !s2) throw new Error("no stage");
 
-      // One won deal in EACH pipeline, both visible to the actor.
       await db.execute(sql`
         INSERT INTO deals (title, pipeline_id, stage_id, owner_id, visibility_level, status, value, won_time)
         VALUES ('Won 1', ${p1.pipeline.id}, ${s1.id}, ${userRow.id}::uuid, 'all', 'won', 100, '2026-06-01')
@@ -170,7 +155,6 @@ describe("stats tRPC router", () => {
         actor,
       });
 
-      // Omit pipelineId => "All pipelines": Deal Performance must SUM both pipelines.
       const out = await caller.stats.dashboard({
         ownerScope: { kind: "me" },
         from: "2026-01-01",
@@ -179,8 +163,6 @@ describe("stats tRPC router", () => {
 
       expect(out.dealPerformance.won.count).toBe(2);
       expect(out.dealPerformance.won.value).toBe("300.00");
-      // Both pipelines have one stage at position 0, and they are named differently, so the
-      // merged row falls back to the position label rather than picking one pipeline's name.
       expect(out.funnel).toHaveLength(1);
       expect(out.funnel[0]?.name).toBe("Stage 1");
     });
@@ -197,7 +179,6 @@ describe("stats tRPC router", () => {
       const archivedStage = archived.stages[0];
       if (!liveStage || !archivedStage) throw new Error("no stage");
 
-      // One won deal in a LIVE pipeline and one in an ARCHIVED pipeline, both visible.
       await db.execute(sql`
         INSERT INTO deals (title, pipeline_id, stage_id, owner_id, visibility_level, status, value, won_time)
         VALUES ('Live won', ${live.pipeline.id}, ${liveStage.id}, ${userRow.id}::uuid, 'all', 'won', 100, '2026-06-01')
@@ -213,8 +194,6 @@ describe("stats tRPC router", () => {
         actor,
       });
 
-      // "All pipelines": only the live pipeline's deal should count (archived pipelines are
-      // hidden from the dropdown and rejected individually, so they must not inflate the aggregate).
       const out = await caller.stats.dashboard({
         ownerScope: { kind: "me" },
         from: "2026-01-01",
@@ -231,7 +210,6 @@ describe("stats tRPC router", () => {
       const adminRow = await seedUser(db, { isAdmin: true });
       const actor = makeActor(adminRow);
 
-      // Public (null group) but archived pipeline: must be treated as not visible.
       const { pipeline } = await seedPipelineWithStages(db, ["Stage X"], {
         isArchived: true,
       });
@@ -253,9 +231,6 @@ describe("stats tRPC router", () => {
     });
   });
 
-  // SECURITY: "All pipelines" now aggregates the funnel across pipelines instead of returning
-  // an empty one. Stage names are pipeline metadata, so the aggregate has to run behind the
-  // same visibility gate the single-pipeline path uses.
   it("(d) 'All pipelines' never surfaces stage names from a restricted pipeline", async () => {
     await withTestDb(async (db) => {
       const userRow = await seedUser(db, { isAdmin: false });
@@ -268,10 +243,6 @@ describe("stats tRPC router", () => {
       ).rows[0] as { id: string } | undefined;
       if (!groupRow) throw new Error("visibility_group insert failed");
 
-      // The restricted pipeline is DEEPER than the visible one on purpose. Merging by stage
-      // position hides a name whenever a visible pipeline also occupies that position, so a
-      // shallow restricted pipeline would make this test pass for the wrong reason. Position 2
-      // here can only come from the restricted pipeline, so its name leaks if the gate goes.
       await seedPipelineWithStages(db, ["Open"]);
       await seedPipelineWithStages(db, ["Intake", "Review", "Secret Diligence"], {
         visibilityGroupId: groupRow.id,
@@ -292,7 +263,6 @@ describe("stats tRPC router", () => {
 
       const names = out.funnel.map((f) => f.name).join("|");
       expect(names).not.toContain("Secret Diligence");
-      // And the restricted pipeline contributes no positions at all.
       expect(out.funnel).toHaveLength(1);
     });
   });

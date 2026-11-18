@@ -1,9 +1,3 @@
-// notifyWiring.test.ts: integration tests proving notification adapters are called
-// from deal update and move actions.
-//
-// RED: these tests assert notifications rows are written after calling the domain
-// write fns. They fail until notifyOnDealUpdate / notifyOnDealMove helpers are
-// extracted and wired in the action files.
 import { sql } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import { dealFollowers, notifications } from "@/db/schema";
@@ -65,7 +59,6 @@ describe("notifyOnDealUpdate: deal_won", () => {
       expect(r.ok).toBe(true);
       if (!r.ok) return;
 
-      // Wire: notifyOnDealUpdate fires the right adapter. This is what the action calls.
       await notifyOnDealUpdate(db, {
         deal: r.value,
         input: { status: "won" },

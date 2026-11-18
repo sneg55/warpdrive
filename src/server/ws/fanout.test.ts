@@ -1,16 +1,9 @@
-// Per-recipient fan-out authorization (ops spec A3, Codex finding F4). Channel
-// membership is a coarse gate; before writing any deal-naming event to a socket the
-// server must re-evaluate canSee(subscriber, deal) LIVE and drop the event entirely
-// (no payload AND no seq advance) when the recipient cannot see that deal. Visibility
-// is live: a deal owned by another user must never leak on a shared pipeline channel.
-
 import { sql } from "drizzle-orm";
 import { describe, expect, test } from "vitest";
 import { deals } from "@/db/schema/deals";
 import { seedPipelineWithStages } from "@/db/testing/factories";
 import { authed, h, nextMessage, otherUserId, userId } from "./testHarness.test";
 
-// Publish a deal-naming event (deal_moved) on an arbitrary channel with a chosen dealId.
 async function publishDealMoved(channel: string, dealId: string): Promise<void> {
   const event = {
     v: 1,
@@ -55,7 +48,6 @@ async function seedDeal(
 describe("ws per-recipient fan-out", () => {
   test("drops a deal_moved event for a deal the subscriber cannot see", async () => {
     const { pipelineId, stageId } = await seedPipe();
-    // Deal owned by ANOTHER user at owner-level: userId cannot see it.
     const hiddenDealId = await seedDeal(pipelineId, stageId, otherUserId, "1000");
 
     const ws = await authed();
@@ -98,14 +90,12 @@ describe("ws per-recipient fan-out", () => {
     await nextMessage(ws, "subscribed");
 
     const eventP = nextMessage(ws, "event");
-    // Hidden first (must be dropped, no seq advance), then visible.
     await publishDealMoved(`pipeline:${pipelineId}`, hiddenDealId);
     await new Promise((r) => setTimeout(r, 150));
     await publishDealMoved(`pipeline:${pipelineId}`, visibleDealId);
     const evt = await eventP;
     const inner = evt.event as { seq: number; data: { dealId: string } };
     expect(inner.data.dealId).toBe(visibleDealId);
-    // seq stayed at 0 because the suppressed event never advanced it.
     expect(inner.seq).toBe(0);
   });
 });

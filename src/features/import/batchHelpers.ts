@@ -8,9 +8,6 @@ import type { ImportActor } from "./commit";
 import { IMPORT_TARGETS } from "./importFields";
 import type { ImportTarget } from "./wizardState";
 
-// Ownership-load a batch: a batch you do not own is indistinguishable from absent
-// (404-on-invisible). Admins bypass the ownership check. The single authority for
-// the IMPORT_BATCH_NOT_FOUND rule so every service entry point gates identically.
 export async function loadOwnedBatch(
   db: Db,
   actor: ImportActor,
@@ -25,8 +22,6 @@ export async function loadOwnedBatch(
   return ok(batch);
 }
 
-// Narrow the table's text target_entity to a known ImportTarget. A stored value outside this
-// set is a data invariant violation (nothing but the app itself writes this column).
 export function narrowTarget(target: string): ImportTarget {
   if ((IMPORT_TARGETS as readonly string[]).includes(target)) return target as ImportTarget;
   throw new AppError(ERROR_IDS.DB_INVARIANT, "import batch has an unknown target", { target });

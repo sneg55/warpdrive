@@ -11,10 +11,6 @@ export type DedupResult =
   | { outcome: "one"; candidateId: string }
   | { outcome: "ambiguous"; count: number };
 
-// Visibility-scoped dedup: matches a mapped import row against existing records,
-// then filters to those the importer canSee. A hidden candidate is never
-// surfaced, preserving 404-on-invisible (a duplicate the actor cannot see is
-// treated as "no duplicate", not leaked via the import flow).
 export async function findCandidates(
   db: DbOrTx,
   actor: AuthUser,
@@ -63,10 +59,6 @@ export async function findCandidates(
   return resolve(visible.map((r) => r.id));
 }
 
-// Match a person by NAME, visibility-scoped. The person TARGET's dedup key is deliberately the
-// primary email (a name is not identifying enough to merge contacts on). But a deal row's related
-// Person group may legitimately carry only a name, and without this a re-import of the same file
-// would create a fresh person every time instead of linking the one already there.
 export async function findPersonByName(
   db: DbOrTx,
   actor: AuthUser,

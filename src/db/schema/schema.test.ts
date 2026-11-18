@@ -76,8 +76,6 @@ describe("identity schema", () => {
 });
 
 describe("activities single-parent constraint", () => {
-  // An activity links at most one primary parent (deal XOR lead), enforced by the
-  // check constraint num_nonnulls(deal_id, lead_id) <= 1.
   test("rejects a row that sets both deal_id and lead_id", async () => {
     const [u] = await h.db
       .insert(users)
@@ -91,7 +89,6 @@ describe("activities single-parent constraint", () => {
       .insert(leads)
       .values({ title: "L", ownerId: u!.id, visibilityLevel: "all" })
       .returning();
-    // Seed a REAL deal so the rejection is unambiguously the CHECK, not a dangling FK.
     const pipe = await seedPipelineWithStages(h.db, ["Lead"]);
     const [deal] = await h.db
       .insert(deals)
@@ -114,7 +111,6 @@ describe("activities single-parent constraint", () => {
         dealId: deal!.id,
         leadId: lead!.id,
       }),
-      // Both FKs are valid, so the only possible violation is the single-parent CHECK.
     ).rejects.toThrow();
   });
 

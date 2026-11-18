@@ -7,18 +7,12 @@ import type { Deal } from "@/db/schema";
 import type { CalendarActivity } from "@/features/activities/calendar";
 import { WorkspaceTabs } from "./tabs";
 
-// tRPC is a network boundary here; stub the two queries WorkspaceTabs reads. The fixture data
-// (one note, one stage-change changelog entry) lets the supplementary tests below exercise
-// count badges, stage-name resolution, and the created anchor, none of which the brief's own
-// "shows Focus and History at once" assertions depend on. Notes are a mutable holder so a test
-// can seed a pinned note without a per-test module mock.
 const noteState = vi.hoisted(() => ({
   notes: [{ id: "n1", body: "hi", createdAt: new Date("2026-07-01T00:00:00Z"), pinned: false }],
 }));
 vi.mock("@/lib/trpc-client", () => ({
   trpc: {
     intercom: { list: { useQuery: () => ({ data: undefined }) } },
-    // ActivityCard (rendered in the Focus/History feeds) reads useUtils for its optimistic mark-done.
     useUtils: () => ({
       activities: { listForEntity: { setData: () => {}, invalidate: () => {} } },
       email: {
@@ -114,19 +108,14 @@ it("shows Focus and History at once with no toggle", () => {
       createdActorName="Nick"
     />,
   );
-  // Both section headings render together (stacked, not toggled).
   expect(screen.getByRole("heading", { name: /Focus/ })).toBeInTheDocument();
   expect(screen.getByRole("heading", { name: /History/ })).toBeInTheDocument();
-  // The History Email sub-tab is reachable immediately (no Focus/History toggle to click first).
   expect(screen.getByRole("tab", { name: /Email/ })).toBeInTheDocument();
-  // The old Focus/History toggle tablist is gone.
   expect(screen.queryByRole("tablist", { name: /Timeline view/ })).not.toBeInTheDocument();
 });
 
 describe("WorkspaceTabs", () => {
   it("Activities badge counts only the completed activities shown in History, not the unfiltered total", () => {
-    // 3 open (Focus-bound) + 1 completed (History-bound): the badge above the
-    // single-item History list must read (1), not the raw activities.length of 4.
     render(
       <WorkspaceTabs
         deal={deal}
@@ -148,10 +137,8 @@ describe("WorkspaceTabs", () => {
 
   it("resolves stageId changelog ids to names and synthesizes a Deal created anchor", () => {
     renderTabs();
-    // Stage change renders as an inline event row with resolved names, not raw ids.
     expect(screen.getByText("Stage: Demo → Proposal")).toBeInTheDocument();
     expect(screen.queryByText("stage-proposal")).not.toBeInTheDocument();
-    // Lazy "Deal created" anchor from deal.createdAt.
     expect(screen.getByText("Deal created")).toBeInTheDocument();
   });
 
@@ -191,15 +178,12 @@ describe("WorkspaceTabs", () => {
     const focusSection = within(screen.getByRole("region", { name: "focus" }));
     const historySection = within(screen.getByRole("region", { name: "history" }));
 
-    // renderTabs()'s single activity is open (done: false), so it's Focus-bound.
     expect(focusSection.getByText("Call")).toBeInTheDocument();
     expect(focusSection.queryByText("Deal created")).not.toBeInTheDocument();
     expect(focusSection.queryByText("hi")).not.toBeInTheDocument();
 
-    // History (default tab "all") is unaffected by Focus and still shows the rest of the log.
     expect(historySection.getByText("Deal created")).toBeInTheDocument();
     expect(historySection.getByText("hi")).toBeInTheDocument();
-    // The open activity lives in Focus, so History's Activities tab carries no badge at all.
     expect(historySection.getByRole("tab", { name: "Activities" })).toBeInTheDocument();
     expect(historySection.queryByRole("tab", { name: "Activities (1)" })).not.toBeInTheDocument();
   });
@@ -215,14 +199,12 @@ describe("WorkspaceTabs", () => {
       },
     ];
     renderTabs();
-    // The pinned note renders in its own Pinned region (above Focus), not in Focus or History.
     const pinnedSection = within(screen.getByRole("region", { name: "pinned" }));
     expect(pinnedSection.getByText("keep me on top")).toBeInTheDocument();
     const focusSection = within(screen.getByRole("region", { name: "focus" }));
     expect(focusSection.queryByText("keep me on top")).not.toBeInTheDocument();
     const historySection = within(screen.getByRole("region", { name: "history" }));
     expect(historySection.queryByText("keep me on top")).not.toBeInTheDocument();
-    // The unpinned note still lives in History, and the Notes badge counts only that one.
     expect(historySection.getByText("hi")).toBeInTheDocument();
     expect(historySection.getByRole("tab", { name: "Notes (1)" })).toBeInTheDocument();
   });

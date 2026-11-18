@@ -40,8 +40,6 @@ export function normalizeDealSidebarSections(
   const normalized: DealSidebarSectionPreference[] = [];
   for (const section of input) {
     if (DEAL_SIDEBAR_SECTION_IDS.includes(section.id) && !seen.has(section.id)) {
-      // Summary is non-hideable: it hosts the only "Manage sidebar sections" trigger, so hiding it
-      // would leave the manager (and any other hidden section) unreachable.
       const visible = section.id === "summary" ? true : section.visible;
       normalized.push({ id: section.id, visible });
       seen.add(section.id);

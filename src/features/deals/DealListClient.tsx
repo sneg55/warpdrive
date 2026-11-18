@@ -37,7 +37,6 @@ import { useBoardView } from "./useBoardView";
 import { useDealListActions } from "./useDealListActions";
 import { useDealListRefLabels } from "./useDealListRefLabels";
 
-// Stable empty array: a new [] each render would churn the useMemo dependencies below.
 const EMPTY_ROWS: never[] = [];
 
 type PipelineOption = { id: string; name: string; stages: Array<{ id: string; name: string }> };
@@ -48,7 +47,6 @@ type InitialData = Omit<
 > & {
   pipelines: PipelineOption[];
   baseCurrency?: string;
-  // Seeded from user_preferences.ui.dealsListView (server); falls back to catalog defaults.
   initialColumns?: string[];
   customFieldDefs?: CustomFieldDef[];
   refLabels?: CustomFieldRefLabels;
@@ -60,8 +58,6 @@ type InitialData = Omit<
 
 interface DealListClientProps {
   initial: InitialData;
-  // "archived" swaps the view switcher to the Archive tab and swaps the bulk stage move for
-  // a per-row Unarchive control; the default list keeps its move-to-stage bulk action.
   variant?: "list" | "archived";
 }
 
@@ -71,10 +67,6 @@ export interface DealListFooter {
   filtered: boolean;
 }
 
-// Decide what the list footer reports. With no client-side (owner) filter active the footer must
-// reflect the server's true pipeline totals, which can exceed the loaded page and which the server
-// already scopes to any active saved filter. With a client-side filter active it reflects only the
-// narrowed subset and is flagged so the UI can label the count as filtered rather than the whole set.
 export function resolveDealListFooter(args: {
   filtered: boolean;
   serverTotal: number;
@@ -151,10 +143,7 @@ export function DealListClient({
     placeholderData: keepPreviousData,
     staleTime: 5_000,
   });
-  // Undefined only for the first render of a filtered key before its fetch resolves (initialData is
-  // withheld for filtered keys); fall back to empty rows / server totals until the data arrives.
   const data = listQuery.data;
-  // Stable identity while data is absent, so the useMemos below do not rebuild every render.
   const rows = data?.rows ?? EMPTY_ROWS;
   const refLabels = useDealListRefLabels(
     initial.refLabels,
@@ -168,11 +157,6 @@ export function DealListClient({
     return sortRows(filtered, sortKey, sortDirection, initial.customFieldDefs ?? []);
   }, [rows, selectedOwnerId, sortKey, sortDirection, initial.customFieldDefs]);
 
-  // The client-side owner filter is the only thing that narrows the loaded rows past what the server
-  // already returned (the saved filter is applied server-side, so listQuery.data.total already
-  // reflects it). When that owner filter is off, the footer should show the server's true totals;
-  // when it is on, it shows the narrowed subset and is labelled so the count is not read as the whole
-  // pipeline. Value tracks the same set as the count so the two numbers never disagree.
   const clientFiltered = selectedOwnerId !== null;
   const shownTotalValue = useMemo(
     () => String(shownRows.reduce((s, r) => s + (r.value !== null ? Number(r.value) : 0), 0)),
@@ -186,15 +170,10 @@ export function DealListClient({
     filteredValue: shownTotalValue,
   });
 
-  // Any narrowing at all, server-side or client-side.
   const anyFilter = clientFiltered || savedFilter !== null || inlineDefinition !== null;
-  // What this view held before any filter narrowed it: the SSR page reads deal.list with no
-  // definition, and the live query only carries an unfiltered total while nothing is applied.
   const unfilteredTotal = isUnfiltered
     ? (data?.total ?? initial.total)
     : (initial.unfilteredTotal ?? initial.total);
-  // A filter can only be to blame for an empty view if there was something for it to exclude.
-  // Without this an empty pipeline plus any active filter read as "the pipeline still holds deals".
   const emptiedByFilter = anyFilter && unfilteredTotal > 0;
   const addDeal = (
     <NewDealButton pipelineId={pipelineId} pipelines={pipelines} baseCurrency={baseCurrency} />
@@ -239,8 +218,6 @@ export function DealListClient({
               onSelectFilter={setSavedFilter}
               appliedDefinition={inlineDefinition}
               onApplyDefinition={setInlineDefinition}
-              // The list keeps its own ad-hoc Filter builder, so this menu is the saved-filter
-              // picker and the badge stays on the builder.
               triggerLabel="Saved filters"
             />
           </>

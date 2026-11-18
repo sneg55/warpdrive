@@ -3,8 +3,6 @@ import "@testing-library/jest-dom/vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-// LinkExistingCombobox stubbed to a button that emits a fixed (id, label) pair, mirroring the
-// SidebarLinkPanel.test.tsx fixture for the same component.
 vi.mock("../LinkExistingCombobox", () => ({
   LinkExistingCombobox: (props: {
     kind: "person" | "deal";
@@ -17,7 +15,6 @@ vi.mock("../LinkExistingCombobox", () => ({
   ),
 }));
 
-// AddDealModal stubbed so its onCreated (new deal id + title) can be fired directly once opened.
 vi.mock("@/features/deals/AddDealModal", () => ({
   AddDealModal: (props: { onCreated: (id: string, title: string) => void }) => (
     <button
@@ -30,7 +27,6 @@ vi.mock("@/features/deals/AddDealModal", () => ({
   ),
 }));
 
-// Pipeline list is controllable per test so the no-pipeline (button disabled) path is exercised.
 let pipelineData: { id: string; name: string; stages: { id: string; name: string }[] }[] = [
   { id: "pl1", name: "Sales", stages: [{ id: "s1", name: "New" }] },
 ];
@@ -94,7 +90,6 @@ describe("ComposeLinkSidebar", () => {
       <ComposeLinkSidebar {...baseProps} dealId="d1" dealTitle="Big Deal" onUnlink={onUnlink} />,
     );
     expect(screen.getByText("Big Deal")).toBeInTheDocument();
-    // No picker or create control once a deal is linked.
     expect(screen.queryByTestId("pick-deal")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /unlink/i }));

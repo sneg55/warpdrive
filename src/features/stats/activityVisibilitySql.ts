@@ -1,10 +1,3 @@
-// SQL mirror of activityVisibilityFromParents: an activity is visible through its DOMINANT
-// parent, in the order deal > person > org > parentless. Checking only the deal branch and
-// waving through everything with a null deal_id admits activities hanging off a private
-// person or organization, and every parentless activity in the workspace.
-//
-// A set parent id whose row is missing (soft-deleted, or an archived pipeline) means not
-// visible, which the EXISTS form gives for free.
 import { type SQL, sql } from "drizzle-orm";
 import type { PermSetUser } from "@/features/permissions/effective";
 import { dealVisibilityPredicate, type VisibilityCtx } from "@/features/permissions/sql";
@@ -20,8 +13,6 @@ function toVisibilityCtx(actor: PermSetUser): VisibilityCtx {
   };
 }
 
-// Contacts carry the same four visibility columns as deals but sit in no pipeline, so the
-// pipeline gate is fed NULL and never fires.
 function contactCols(alias: string) {
   return {
     ownerId: sql.raw(`${alias}.owner_id`),
@@ -40,7 +31,6 @@ const DEAL_COLS_D2 = {
   pipelineVisibilityGroupId: sql`p2.visibility_group_id`,
 } as const;
 
-// `alias` is the activities table alias in the calling query.
 export function activityVisibilityPredicate(actor: PermSetUser, alias: string): SQL {
   const ctx = toVisibilityCtx(actor);
   const a = (col: string) => sql.raw(`${alias}.${col}`);

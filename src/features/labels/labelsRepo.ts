@@ -6,10 +6,6 @@ import { type Label, labels } from "@/db/schema/system";
 import { err, ok, type Result } from "@/types/result";
 import { labelArraySource, labelJoin } from "./labelJoins";
 
-// Label catalog CRUD (settings spec 6.4). Labels are per target (deal|person|organization) and
-// are applied to records through the deal_labels/person_labels/org_labels join tables, so delete
-// is guarded: a label still applied to any record is blocked (surface the count).
-
 export async function listLabels(
   db: Db,
   opts: { target?: LabelTarget },
@@ -24,9 +20,6 @@ export async function listLabels(
   return rows;
 }
 
-// Distinct label names currently applied to records of this target, read from the entity's
-// `labels` text[] (the column the list cells and board cards render). Used to union real usage
-// into the filter menus so a chip on screen is always something you can filter by.
 export async function listAppliedLabelNames(
   db: Db,
   target: LabelTarget,
@@ -78,9 +71,6 @@ export async function renameLabel(
     if (row === undefined) {
       return err(new AppError(ERROR_IDS.LABEL_NOT_FOUND, "label not found", input));
     }
-    // Records carry the name, not the id, and the chip resolver matches by name. Rewriting the
-    // catalog row alone would unresolve every record still holding the old string: gray chip, and
-    // the label filter stops matching it. Rewrite the applied arrays in the same transaction.
     const src = labelArraySource(before.target);
     await tx
       .update(src.table)
@@ -127,12 +117,6 @@ export async function reorderLabels(
   return ok(true);
 }
 
-// How many records still carry this label. Counts the entity's `labels` text[] (the column every
-// read path renders from) rather than the join row alone: a join row is only half the picture, and
-// counting it alone let Settings delete a label that records were still displaying, leaving orphan
-// strings that render gray and are missing from every picker. Matching is case-insensitive to
-// agree with resolveLabelChips, and scoped to the label's own target so the same string on a deal
-// does not protect a person label.
 async function countLabelUsage(
   db: Db,
   label: { id: string; target: LabelTarget; name: string },
@@ -149,8 +133,6 @@ async function countLabelUsage(
     .select({ n: sql<number>`count(distinct ${j.entityCol})::int` })
     .from(j.table)
     .where(eq(j.labelCol, label.id));
-  // The join row and the array entry describe the same application, so take the larger of the two
-  // rather than summing (which would double-count every correctly-wired record).
   return Math.max(arrayRow?.n ?? 0, joinRow?.n ?? 0);
 }
 

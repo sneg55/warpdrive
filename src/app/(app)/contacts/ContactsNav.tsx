@@ -26,9 +26,6 @@ const ITEMS = [
   },
 ] as const;
 
-// Contacts vertical sub-sidebar (IA1): People / Organizations / Timeline as a left secondary rail.
-// Its rows share the Settings secondary-nav component so icons, active treatment, and spacing stay
-// identical. Active when the path is within the section (covers list and detail routes).
 export function ContactsNav(): React.ReactNode {
   const pathname = usePathname();
   return (

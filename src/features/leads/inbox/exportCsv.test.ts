@@ -38,8 +38,6 @@ describe("leadRowsToCsv", () => {
     const evil: LeadRow = { ...row, title: '=HYPERLINK("http://evil","x")', ownerName: "@cmd" };
     const csv = leadRowsToCsv([evil], cols, "USD");
     const dataLine = csv.split("\n")[1] ?? "";
-    // A leading apostrophe forces the spreadsheet to treat the cell as text, not a formula.
-    // The title also contains a comma/quote so it is RFC-4180 quoted around the neutralized value.
     expect(dataLine.includes("'=HYPERLINK")).toBe(true);
     expect(dataLine.endsWith("'@cmd")).toBe(true);
   });

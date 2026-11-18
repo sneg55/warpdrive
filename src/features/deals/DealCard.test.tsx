@@ -72,9 +72,7 @@ describe("DealCard", () => {
       />,
     );
     const avatar = screen.getByRole("img", { name: "owner: Ada King" });
-    // Two-letter initials, not a single first char.
     expect(avatar.textContent).toBe("AK");
-    // A palette swatch (bg-*-100), not the muted bg-secondary.
     expect(avatar.className).toMatch(/bg-\w+-100/);
     expect(avatar.className).not.toContain("bg-secondary");
   });
@@ -96,7 +94,6 @@ describe("DealCard", () => {
     const img = screen.getByRole("img", { name: "owner: Ada King" });
     expect(img.tagName).toBe("IMG");
     expect(img.getAttribute("src")).toBe("/api/users/u1/avatar?v=1");
-    // No initials span when a photo is shown.
     expect(img.textContent).toBe("");
   });
 
@@ -150,7 +147,6 @@ describe("DealCard", () => {
         now={new Date("2026-06-10T00:00:00Z")}
       />,
     );
-    // Primary (bold) line is the deal title; the gray description is "org, person".
     expect(screen.getByText("Acme renewal")).toBeTruthy();
     expect(screen.getByText("Acme Inc, Jane Roe")).toBeTruthy();
   });
@@ -170,7 +166,6 @@ describe("DealCard", () => {
     );
     expect(screen.getByText("Acme renewal")).toBeTruthy();
     expect(screen.getByText("Acme Inc")).toBeTruthy();
-    // No trailing comma when the person is absent.
     expect(screen.queryByText(/Acme Inc,/)).toBeNull();
   });
 
@@ -204,7 +199,6 @@ describe("DealCard", () => {
         now={new Date("2026-06-10T00:00:00Z")}
       />,
     );
-    // Value is rendered as formatted currency (whole dollars), not the raw decimal string.
     expect(screen.getByText("$25,000")).toBeTruthy();
     expect(screen.getByText("Hot")).toBeTruthy();
   });
@@ -239,7 +233,6 @@ describe("DealCard", () => {
         now={new Date("2026-06-10T00:00:00Z")}
       />,
     );
-    // The deal title is the always-visible primary line; the "org, person" description is hidden.
     expect(screen.getByText("Acme renewal")).toBeTruthy();
     expect(screen.queryByText("Acme Inc, Jane Roe")).toBeNull();
   });

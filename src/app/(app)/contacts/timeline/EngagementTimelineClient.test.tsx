@@ -107,7 +107,6 @@ describe("EngagementTimelineClient", () => {
     render(<EngagementTimelineClient />);
     expect(screen.getByText("Alice")).toBeInTheDocument();
     expect(screen.getByText("Bob")).toBeInTheDocument();
-    // Each marker is labelled by its activity subject.
     expect(screen.getByLabelText("Call Alice")).toBeInTheDocument();
     expect(screen.getByLabelText("Meet Alice")).toBeInTheDocument();
     expect(screen.getByLabelText("Call Bob")).toBeInTheDocument();

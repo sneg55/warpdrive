@@ -1,7 +1,6 @@
 "use client";
 import type React from "react";
 
-// The inbox's paging affordance, rendered only while pages remain.
 export function LeadsLoadMore({ onClick }: { onClick: () => void }): React.ReactNode {
   return (
     <div className="mt-3 flex justify-center">

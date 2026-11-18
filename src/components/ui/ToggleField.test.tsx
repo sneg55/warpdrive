@@ -9,9 +9,6 @@ afterEach(cleanup);
 import { INLINE_CONTROL_SURFACE } from "./inlineControlSurface";
 import { ToggleField } from "./ToggleField";
 
-// A control paired with a visible text label must behave like the composer's visibility picker:
-// the label is part of the hit area and the whole control (box + text) takes the hover surface,
-// rather than the box alone being clickable next to inert text.
 describe("ToggleField", () => {
   it("toggles a checkbox when the visible label text is clicked", async () => {
     const user = userEvent.setup();

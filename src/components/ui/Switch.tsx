@@ -7,15 +7,11 @@ interface SwitchProps {
   checked: boolean;
   onCheckedChange: (v: boolean) => void;
   label: string;
-  // Optional id so a visible <label htmlFor> can forward clicks to this control
-  // (restores click-to-toggle on the label text without a wrapping <label>).
   id?: string;
   disabled?: boolean;
   className?: string;
 }
 
-// Shadcn-style Radix switch. Radix owns keyboard handling, form behavior, and disabled semantics;
-// the track and thumb stay token-styled for the app's compact settings rows.
 export function Switch({
   checked,
   onCheckedChange,

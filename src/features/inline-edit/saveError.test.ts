@@ -4,7 +4,6 @@ import { saveErrorMessage } from "./saveError";
 
 describe("saveErrorMessage", () => {
   it("explains a permission denial instead of the generic message", () => {
-    // E_PERM_001 is what updatePerson/updateOrg return when contact.edit is denied.
     expect(saveErrorMessage("E_PERM_001")).toMatch(/permission/i);
     expect(saveErrorMessage("E_PERM_001")).not.toBe(SAVE_ERROR_MESSAGE);
   });

@@ -6,8 +6,6 @@ import type { Deal } from "@/db/schema";
 import type { CalendarActivity } from "@/features/activities/calendar";
 import { WorkspaceTabs } from "./tabs";
 
-// Separate from tabs.test.tsx because the badge assertions need a populated Email and Files
-// read, which the timeline tests there deliberately leave empty.
 vi.mock("@/lib/trpc-client", () => ({
   trpc: {
     intercom: { list: { useQuery: () => ({ data: undefined }) } },
@@ -39,7 +37,6 @@ vi.mock("@/lib/trpc-client", () => ({
         }),
       },
       drafts: { listForDeal: { useQuery: () => ({ data: [] }) } },
-      // EmailTimelineCard reads the body lazily; a collapsed card never fetches.
       message: { get: { useQuery: () => ({ data: undefined, isLoading: false }) } },
     },
     files: { listForEntity: { useQuery: () => ({ data: [{ id: "f1" }, { id: "f2" }] }) } },
@@ -119,7 +116,6 @@ describe("History tab counts", () => {
     expect(screen.getByRole("tab", { name: "Email (1)" })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "Files (2)" })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "Changelog (1)" })).toBeInTheDocument();
-    // All: the completed activity, the note, the email, the stage change, the created anchor.
     expect(screen.getByRole("tab", { name: "All (5)" })).toBeInTheDocument();
   });
 

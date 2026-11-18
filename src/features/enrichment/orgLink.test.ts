@@ -1,6 +1,3 @@
-// Uniqueness has to be judged among the organizations the actor can see. Returning a hidden id
-// makes updatePerson reject the whole patch through assertReferenceVisible, which loses the
-// valid selected fields too; an invisible match must read as no match instead.
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import * as schema from "@/db/schema";
 import { toContactActor } from "@/features/contacts/actorAdapters";

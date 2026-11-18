@@ -25,9 +25,9 @@ describe("tint", () => {
 
 describe("accentForOrder", () => {
   it("maps stage order onto the pipeline board's cool-to-warm ramp", () => {
-    expect(accentForOrder(0)).toBe("#94a3b8"); // slate-400
-    expect(accentForOrder(1)).toBe("#60a5fa"); // blue-400
-    expect(accentForOrder(4)).toBe("#34d399"); // emerald-400
+    expect(accentForOrder(0)).toBe("#94a3b8");
+    expect(accentForOrder(1)).toBe("#60a5fa");
+    expect(accentForOrder(4)).toBe("#34d399");
   });
 
   it("clamps orders past the ramp to the final (emerald) accent", () => {
@@ -37,8 +37,6 @@ describe("accentForOrder", () => {
 
 describe("stageSegmentStyle", () => {
   it("tints every state in the stage's own order-hue, never green or gray", () => {
-    // A middle stage (order 2 = indigo) must read indigo in ALL states, not the
-    // old uniform success-green / muted-gray. Same rgb across states = same hue.
     const hue = rgbOf(tint(accentForOrder(2), 1));
     expect(rgbOf(stageSegmentStyle(2, "future").backgroundColor)).toBe(hue);
     expect(rgbOf(stageSegmentStyle(2, "passed").backgroundColor)).toBe(hue);
@@ -63,8 +61,8 @@ describe("stageSegmentStyle", () => {
 describe("funnelClip", () => {
   it("gives the first segment a flat left edge (no left notch)", () => {
     const clip = funnelClip(true);
-    expect(clip).toContain("100% 50%"); // still points right
-    expect(clip).not.toContain(", 0.75rem 50%)"); // no left notch vertex
+    expect(clip).toContain("100% 50%");
+    expect(clip).not.toContain(", 0.75rem 50%)");
   });
 
   it("gives later segments a left notch so they interlock", () => {

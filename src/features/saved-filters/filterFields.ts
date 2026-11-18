@@ -1,8 +1,3 @@
-// Zod-free field/operator/sort allow-list for the deal saved-filter builder. Kept separate from
-// saved-filters/schemas.ts (which imports zod) so the client filter builder can import these
-// constants without pulling zod (~62 KB gzipped) into the deals/pipeline bundle.
-// saved-filters/schemas.ts re-exports these and re-validates on the server, so the client
-// dropdown and the server allow-list stay in lockstep.
 import { ARRAY_OPS, EXACT_OPS, FILTER_OP_KEYS, ORDERED_OPS, TEXT_OPS } from "@/constants/filterOps";
 
 export const FILTER_FIELDS = [
@@ -23,11 +18,6 @@ export const FILTER_OPS = FILTER_OP_KEYS;
 
 export const SORT_DIRS = ["asc", "desc"] as const;
 
-// Which operators each field's SQL column type can actually run. Enforced at the boundary so an
-// invalid pairing (e.g. ILIKE/`contains` on the numeric value or uuid ownerId column, or an
-// ordering op on an enum) is rejected instead of throwing a Postgres type error at query time,
-// which would break the entire visibility-scoped board/list read.
-// The classes come from @/constants/filterOps so deals, contacts, and leads share one vocabulary.
 export const OPS_BY_FIELD: Record<(typeof FILTER_FIELDS)[number], readonly string[]> = {
   title: TEXT_OPS,
   orgName: TEXT_OPS,
@@ -42,8 +32,6 @@ export const OPS_BY_FIELD: Record<(typeof FILTER_FIELDS)[number], readonly strin
   labels: ARRAY_OPS,
 };
 
-// Column classes that need a value check beyond the op pairing: a numeric cast, a date parse, or
-// text[] membership. Fed to the shared condition validator in src/schemas/filterCondition.ts.
 export function hasDateCondition(
   def: { conditions: readonly { field: string }[] } | null | undefined,
 ): boolean {

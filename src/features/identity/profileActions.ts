@@ -19,7 +19,6 @@ async function actorId(
   return { ok: true, id: actor.id };
 }
 
-// Editable display name (Wave 1 scope). Avatar upload is deferred to a later wave.
 export async function updateUserProfileAction(
   input: { name: string },
   csrfToken: string | null = null,

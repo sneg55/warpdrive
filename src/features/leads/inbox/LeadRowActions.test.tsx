@@ -19,9 +19,6 @@ const baseProps = {
   onChangeOwner: vi.fn(),
 };
 
-// Regression (codex P2): LeadsTable wraps each row in a <tr onClick={open}>. Radix portals the menu
-// but React events still bubble through the component tree, so opening the menu or selecting an item
-// must NOT also fire the row's navigation handler.
 it("does not bubble menu open/select to the parent row's onClick", async () => {
   const user = userEvent.setup();
   const rowClick = vi.fn();
@@ -35,11 +32,11 @@ it("does not bubble menu open/select to the parent row's onClick", async () => {
   );
 
   await user.click(screen.getByRole("button", { name: "Lead actions" }));
-  expect(rowClick).not.toHaveBeenCalled(); // opening the menu must not navigate the row
+  expect(rowClick).not.toHaveBeenCalled();
 
   await user.click(screen.getByRole("menuitem", { name: "Delete" }));
   expect(onDelete).toHaveBeenCalledTimes(1);
-  expect(rowClick).not.toHaveBeenCalled(); // selecting an item must not navigate the row
+  expect(rowClick).not.toHaveBeenCalled();
 });
 
 it("hides the Change owner submenu when there are no assignable users", async () => {

@@ -56,8 +56,6 @@ describe("readPersonCurrent", () => {
     expect(current.canonicalValues[EMAIL_KEY]).toBe("jane@acme.com");
   });
 
-  // The secondary address is the case the primary-only read got wrong: it is already on the record,
-  // so a provider returning it has nothing new to offer.
   it("counts a secondary address as already held, whatever its case", async () => {
     const emails: ContactPoint[] = [
       { label: "work", value: "jane@acme.com", primary: true },
@@ -121,9 +119,6 @@ describe("readOrgCurrent", () => {
   });
 });
 
-// A sentinel here would make a provider returning the company's real name look like an overwrite,
-// would be written into the change log as the value replaced, and would be handed to providers as
-// the company to match against.
 describe("the linked company value", () => {
   it("reports the organization's real name, not a placeholder", async () => {
     const person = await seedPerson();
@@ -141,8 +136,6 @@ describe("the linked company value", () => {
   });
 });
 
-// A person can be linked to an organization the actor is not allowed to see. The company value
-// reads as null either way, so without this the merge cannot tell that link from no link at all.
 describe("readPersonCurrent occupied targets", () => {
   it("reports the company target as occupied when the link is hidden from the actor", async () => {
     const person = await seedPerson({ orgId: (await seedHiddenOrg()).id });
@@ -185,9 +178,6 @@ async function seedHiddenOrg() {
   return row;
 }
 
-// person.companyDomain usually has no target of its own, but an admin may map it onto a real one.
-// Reading the linked organization's domain regardless made a populated target look empty, so the
-// row was checked by default and the apply overwrote it with no warning.
 describe("readPersonCurrent companyDomain with a target of its own", () => {
   const mapped = (targetKey: string): ResolvedMapping[] => [
     {

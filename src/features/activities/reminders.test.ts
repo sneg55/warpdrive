@@ -6,10 +6,6 @@ import { withTestDb } from "@/db/testing";
 import { seedPipelineWithStages, seedUser } from "@/db/testing/factories";
 import { handleReminderJob, registerReminderWorker } from "./reminders";
 
-// ---------------------------------------------------------------------------
-// handleReminderJob
-// ---------------------------------------------------------------------------
-
 it("fires a notification for an open activity and skips a completed one", async () => {
   await withTestDb(async (db) => {
     const user = await seedUser(db);
@@ -81,10 +77,6 @@ it("inserts no notification for a done activity (done-skip guard)", async () => 
   });
 });
 
-// ---------------------------------------------------------------------------
-// Notification target: the reminder must point at something the UI can open.
-// ---------------------------------------------------------------------------
-
 it("targets the activity's parent deal, not the activity id", async () => {
   await withTestDb(async (db) => {
     const user = await seedUser(db);
@@ -129,8 +121,6 @@ it("targets the activity's parent deal, not the activity id", async () => {
     const [note] = await db.select().from(notifications).where(eq(notifications.userId, user.id));
     if (note === undefined) throw new Error("no notification produced");
 
-    // Storing the activity id under entityType "activity" made the bell build /deals/<activityId>,
-    // which always rendered Not found.
     expect(note.entityType).toBe("deal");
     expect(note.entityId).toBe(deal.id);
     expect((note.payload as { activityId?: string }).activityId).toBe(activity.id);
@@ -170,10 +160,6 @@ it("leaves the target null for a parentless activity rather than pointing at the
     expect((note.payload as { activityId?: string }).activityId).toBe(activity.id);
   });
 });
-
-// ---------------------------------------------------------------------------
-// registerReminderWorker (DB-free: recording fake boss)
-// ---------------------------------------------------------------------------
 
 interface QueueRecord {
   name: string;

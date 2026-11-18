@@ -34,7 +34,6 @@ beforeEach(async () => {
   await h.db.execute(
     sql`TRUNCATE visibility_group_members, visibility_groups, team_members, teams, sessions, users, permission_sets, audit_events, settings RESTART IDENTITY CASCADE`,
   );
-  // Actors must exist as users for FK on audit + deactivation flows.
   await h.db.insert(users).values([
     { id: admin.id, email: "admin@example.com", name: "Admin", googleSub: "g-a", isAdmin: true },
     { id: manager.id, email: "mgr@example.com", name: "Mgr", googleSub: "g-m" },
@@ -88,9 +87,6 @@ describe("identity services", () => {
   });
 
   test("cannot deactivate the last remaining active admin (lockout prevention)", async () => {
-    // Two admins exist: `admin` (from beforeEach) and `admin2`. `admin2` deactivates
-    // `admin`, leaving one admin; allowed. A second deactivation that would leave zero
-    // active admins must be denied so the CRM can never lock out all admins.
     const [admin2] = await h.db
       .insert(users)
       .values({ email: "admin2@example.com", name: "Admin2", googleSub: "g-a2", isAdmin: true })
@@ -102,11 +98,8 @@ describe("identity services", () => {
       groupIds: new Set(),
       flags: new Set(),
     };
-    // First deactivation succeeds: two active admins -> one remaining.
     const first = await setUserActive(h.db, actor2, { userId: admin.id, isActive: false }, SIG());
     expect(first.ok).toBe(true);
-    // admin2 is now the sole active admin; admin (still admin actor) tries to deactivate
-    // admin2, which would leave zero active admins. Must be denied.
     const r = await setUserActive(h.db, admin, { userId: admin2!.id, isActive: false }, SIG());
     expect(r.ok).toBe(false);
   });
@@ -150,13 +143,11 @@ describe("identity services", () => {
   });
 
   test("demoting the sole active admin is denied (last-admin lockout prevention)", async () => {
-    // admin is the only active admin in beforeEach; demoting to non-admin must be denied.
     const r = await setUserAdmin(h.db, admin, { userId: admin.id, isAdmin: false }, SIG());
     expect(r.ok).toBe(false);
   });
 
   test("demoting one admin when two exist is allowed", async () => {
-    // Insert a second admin so we have two; demoting admin (not self-promoting) is allowed.
     const [admin2] = await h.db
       .insert(users)
       .values({ email: "admin2@example.com", name: "Admin2", googleSub: "g-a2b", isAdmin: true })
@@ -168,7 +159,6 @@ describe("identity services", () => {
       groupIds: new Set(),
       flags: new Set(),
     };
-    // actor2 demotes admin: two admins -> one remaining, should succeed.
     const r = await setUserAdmin(h.db, actor2, { userId: admin.id, isAdmin: false }, SIG());
     expect(r.ok).toBe(true);
   });
@@ -178,12 +168,7 @@ describe("identity services", () => {
     expect(r.ok).toBe(true);
   });
 
-  // F6: demoting EVERY active admin concurrently must not zero out admins and lock the
-  // instance. The last-admin guard must serialize under a row lock so at least one active
-  // admin always survives. Without a lock, all concurrent calls read a stale count > 1 and
-  // all proceed, leaving zero admins.
   test("concurrent demotion of all admins cannot lock out the instance", async () => {
-    // beforeEach seeds `admin` (an active admin). Add several more so the race window is wide.
     const extra = await h.db
       .insert(users)
       .values(
@@ -196,7 +181,6 @@ describe("identity services", () => {
       )
       .returning();
     const allAdminIds = [admin.id, ...extra.map((u) => u.id)];
-    // Fire one demotion per active admin, all concurrently, all acted by `admin`.
     await Promise.all(
       allAdminIds.map((id) => setUserAdmin(h.db, admin, { userId: id, isAdmin: false }, SIG())),
     );

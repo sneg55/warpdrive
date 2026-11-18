@@ -1,5 +1,3 @@
-// Integration tests for deal participant linking + org/person deal aggregation.
-// Real Postgres via Testcontainers (no DB mocking, see CLAUDE.md).
 import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, expect, it } from "vitest";
 import type { PermissionFlagKey } from "@/constants/permissionFlags";
@@ -22,9 +20,6 @@ afterAll(async () => {
   await h.close();
 });
 
-// One actor object that satisfies BOTH ContactActor (createPerson/createOrg) and
-// PermSetUser (addParticipant/dealsFor*). Admin so loadEditableDeal's admin bypass
-// grants edit, keeping the test focused on linking/aggregation, not flag wiring.
 function makeAdminActor(userId: string) {
   return {
     id: userId,
@@ -95,11 +90,9 @@ it("logs a participant add once, then a remove; idempotent repeats write nothing
     .returning();
   if (deal === undefined) throw new Error("setup: deal insert failed");
 
-  // First add logs; the idempotent second add (conflict no-op) logs nothing.
   await addParticipant(h.db, actor, deal.id, person.value.id, null, sig());
   await addParticipant(h.db, actor, deal.id, person.value.id, null, sig());
 
-  // Remove logs; the remove-when-absent second call logs nothing.
   await removeParticipant(h.db, actor, deal.id, person.value.id, sig());
   await removeParticipant(h.db, actor, deal.id, person.value.id, sig());
 
@@ -107,7 +100,6 @@ it("logs a participant add once, then a remove; idempotent repeats write nothing
     (c) => c.field === "participant",
   );
   expect(rows.length).toBe(2);
-  // Newest-first: remove (id -> null) then add (null -> id).
   expect(rows[0]?.oldValue).toBe(person.value.id);
   expect(rows[0]?.newValue).toBeNull();
   expect(rows[1]?.oldValue).toBeNull();
@@ -175,7 +167,6 @@ it("dealsForPerson excludes a linked deal the actor cannot see (canSee/toVisible
   const ownerActor = makeAdminActor(owner.id);
   const pipe = await seedPipelineWithStages(h.db, ["Lead"]);
 
-  // The person is created by (and visible to) the owner.
   const person = await createPerson(
     h.db,
     ownerActor,
@@ -184,7 +175,6 @@ it("dealsForPerson excludes a linked deal the actor cannot see (canSee/toVisible
   );
   if (person.ok === false) throw new Error("setup: createPerson failed");
 
-  // A deal owned by someone ELSE with visibilityLevel "owner" (private to its owner).
   const otherOwner = await seedUser(h.db);
   const [hiddenDeal] = await h.db
     .insert(deals)
@@ -198,11 +188,9 @@ it("dealsForPerson excludes a linked deal the actor cannot see (canSee/toVisible
     .returning();
   if (hiddenDeal === undefined) throw new Error("setup: hiddenDeal insert failed");
 
-  // Link the person to the hidden deal directly (bypass auth: we're testing the READ filter).
   const { dealParticipants } = await import("@/db/schema");
   await h.db.insert(dealParticipants).values({ dealId: hiddenDeal.id, personId: person.value.id });
 
-  // A REGULAR (non-admin) viewer who is not the owner of the hidden deal must not see it.
   const viewer = await seedUser(h.db);
   const viewerActor = {
     id: viewer.id,
@@ -217,9 +205,6 @@ it("dealsForPerson excludes a linked deal the actor cannot see (canSee/toVisible
   expect(found.map((d) => d.id)).not.toContain(hiddenDeal.id);
 });
 
-// Same archived-pipeline invariant as F7/F15/F16/F21-F24: a deal in an archived pipeline is
-// hidden from every read, so the person/org deal aggregation must exclude it even for an
-// admin (the gate is applied before canSee, like the other deal-parent helpers).
 it("dealsForPerson excludes a deal in an archived pipeline (even for admin)", async () => {
   const owner = await seedUser(h.db);
   const actor = makeAdminActor(owner.id);
@@ -295,11 +280,10 @@ it("returns enriched participant rows: org, email, phone, owner, deal counts, ne
     if (d === undefined) throw new Error("setup: deal insert failed");
     return d;
   };
-  const main = await mkDeal("Main", "open"); // participant target; counts as an open deal for Pia
-  await mkDeal("Won one", "won"); // closed
+  const main = await mkDeal("Main", "open");
+  await mkDeal("Won one", "won");
   await addParticipant(h.db, actor, main.id, person.value.id, null, sig());
 
-  // Future not-done activity for Pia -> nextActivityAt.
   const [type] = await h.db
     .insert(activityTypes)
     .values({ key: `call-${Date.now()}`, name: "Call" })
@@ -325,7 +309,7 @@ it("returns enriched participant rows: org, email, phone, owner, deal counts, ne
     phone: "555-1",
     ownerName: "Owner Olga",
     closedDeals: 1,
-    openDeals: 1, // Main (open); the won deal is the 1 closed
+    openDeals: 1,
   });
   expect(row.nextActivityAt?.toISOString()).toBe(due.toISOString());
 });
@@ -349,7 +333,6 @@ it("filters participants the actor cannot see (person-level visibility gate)", a
     sig(),
   );
   if (visible.ok === false || hidden.ok === false) throw new Error("setup: createPerson failed");
-  // deriveContactVisibility's test-DB default is owner-only, so pin each side explicitly.
   await h.db
     .update(persons)
     .set({ visibilityLevel: "all" })

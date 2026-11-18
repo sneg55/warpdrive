@@ -18,7 +18,6 @@ vi.mock("@/components/shell/ActionErrorProvider", () => ({
   useActionError: () => reportError,
 }));
 
-// LinkExistingCombobox stubbed to a button that emits a fixed id per kind (person->p1, deal->d1).
 vi.mock("./LinkExistingCombobox", () => ({
   LinkExistingCombobox: (props: {
     kind: "person" | "deal";
@@ -35,7 +34,6 @@ vi.mock("./LinkExistingCombobox", () => ({
   ),
 }));
 
-// QuickAddContact stubbed so its onCreated (new person id) can be fired directly.
 vi.mock("@/features/contacts/QuickAddContact", () => ({
   QuickAddContact: (props: { onCreated?: (id: string) => void; triggerLabel?: string }) => (
     <button type="button" data-testid="create-person" onClick={() => props.onCreated?.("np1")}>
@@ -44,7 +42,6 @@ vi.mock("@/features/contacts/QuickAddContact", () => ({
   ),
 }));
 
-// AddDealModal stubbed so its onCreated (new deal id) can be fired directly once opened.
 vi.mock("@/features/deals/AddDealModal", () => ({
   AddDealModal: (props: {
     onCreated: (id: string) => void;
@@ -152,8 +149,6 @@ describe("SidebarLinkPanel", () => {
     expect(screen.getByTestId("deal-modal-create")).toHaveAttribute("data-prefill-person", "");
   });
 
-  // A failed link (expired CSRF, record restricted/deleted before click) must surface, not no-op
-  // silently, and must not signal success via onLinked (feedback-surface-mutation-failures).
   it("surfaces a failed link and does not call onLinked", async () => {
     linkThreadMock.mockResolvedValue({ ok: false, error: { id: "E_PERM_001" } });
     const onLinked = vi.fn();

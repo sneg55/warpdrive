@@ -7,9 +7,6 @@ import { readBaseCurrency } from "@/features/settings/readBaseCurrency";
 import { createContext } from "@/server/trpc/context";
 import type { DealVisibilitySession } from "@/types/session";
 
-// GET /leads/export: stream the full server-filtered result set as CSV. The visibility gate is
-// re-applied here (never trust the client): the session is built from the authenticated actor and
-// passed to listLeadsForExport, which ANDs leadVisibilityClause into the query.
 export async function GET(req: NextRequest): Promise<Response> {
   const signal = AbortSignal.timeout(15_000);
   const { actor } = await createContext();
@@ -33,8 +30,6 @@ export async function GET(req: NextRequest): Promise<Response> {
     const rows = await listLeadsForExport(
       db,
       session,
-      // limit is required by the shared list-input shape but the export is intentionally not
-      // paginated (it returns the whole filtered, visibility-scoped set); the query ignores it.
       { filter: q.filter, offset: 0, limit: 500, sort: q.sort, filters: q.filters },
       signal,
     );
@@ -47,8 +42,6 @@ export async function GET(req: NextRequest): Promise<Response> {
       },
     });
   } catch {
-    // Query params are already validated by safeParse above, so a throw here is an internal
-    // failure (DB error or the 15s timeout), not bad input: report 500, not 400.
     return new NextResponse("Export failed", { status: 500 });
   }
 }

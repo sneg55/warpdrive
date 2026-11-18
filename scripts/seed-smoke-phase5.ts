@@ -1,18 +1,3 @@
-/**
- * scripts/seed-smoke-phase5.ts
- *
- * Idempotent fixture seeder for the Phase 5 agent-browser smoke test.
- * Run: pnpm db:seed:smoke:phase5
- *
- * Produces the Task 21 preconditions:
- *   - Users A (admin, stats.viewOthers), B (regular), C (regular, no RestrictedGroup)
- *   - "Everyone" and "RestrictedGroup" visibility groups
- *   - "Acme BD" open pipeline with deals across stages (incl. won + lost with values)
- *   - "Restricted Pipeline" visible only to RestrictedGroup (A member, C not)
- *   - Person "Acme Jane" + Org "Acme Corp" for global-search flow
- *   - Activities: 3 completed + 3 scheduled, linked to deals/assigned to A
- */
-
 import { Pool } from "pg";
 import { DATABASE_URL } from "./seed-smoke-config";
 import {
@@ -39,12 +24,10 @@ const pool = new Pool({ connectionString: DATABASE_URL });
 async function main(): Promise<void> {
   const db = makeDb(pool);
 
-  // Infrastructure
   await seedSettings(db);
   const { regularSetId, adminSetId } = await seedPermissionSets(db);
   const { everyoneGroupId, restrictedGroupId } = await seedVisibilityGroups(db);
 
-  // Users: A=admin (stats.viewOthers), B=regular, C=regular (no restricted group)
   const userAId = await upsertUser(
     db,
     "a@example.com",
@@ -70,37 +53,29 @@ async function main(): Promise<void> {
     everyoneGroupId,
   );
 
-  // Group memberships
   await addToGroup(db, userAId, everyoneGroupId);
   await addToGroup(db, userBId, everyoneGroupId);
   await addToGroup(db, userCId, everyoneGroupId);
-  // A is in RestrictedGroup; B and C are NOT
   await addToGroup(db, userAId, restrictedGroupId);
 
-  // Close bootstrap so dev-login doesn't re-elect admin
   await db.q(
     `UPDATE settings SET bootstrapped_at = now() WHERE id = true AND bootstrapped_at IS NULL`,
   );
 
-  // Activity type
   const actTypeId = await ensureActivityType(db);
 
-  // Main pipeline: all-visible, 4 stages
   const mainPipelineId = await upsertPipeline(db, "Acme BD", null);
   const stageLeadId = await upsertStage(db, mainPipelineId, "Lead", 0, 20);
   const stageQualifiedId = await upsertStage(db, mainPipelineId, "Qualified", 1, 50);
   const stageWonId = await upsertStage(db, mainPipelineId, "Won", 2, 100);
   const stageLostId = await upsertStage(db, mainPipelineId, "Lost", 3, 0);
 
-  // Restricted pipeline: only RestrictedGroup members (A) can see it
   const restrictedPipelineId = await upsertPipeline(db, "Restricted Pipeline", restrictedGroupId);
   const restrictedStageId = await upsertStage(db, restrictedPipelineId, "Stage 1", 0, 50);
 
-  // Contacts matching "Acme" for global search
   const orgId = await upsertOrg(db, "Acme Corp", userAId);
   const personId = await upsertPerson(db, "Acme Jane", "acme.jane@example.com", userAId, orgId);
 
-  // Deals in main pipeline (open, won, lost with values)
   const dealLeadId = await upsertDeal(
     db,
     "Acme Open Lead Deal",
@@ -146,7 +121,6 @@ async function main(): Promise<void> {
     orgId,
   );
 
-  // Restricted deal: title matches "Acme" but C cannot see it (flow 4b)
   await upsertRestrictedDeal(
     db,
     "Acme Restricted Deal",
@@ -156,7 +130,6 @@ async function main(): Promise<void> {
     restrictedGroupId,
   );
 
-  // Activities: 3 completed, 3 scheduled (future), linked to lead deal, assigned to A
   await upsertActivity(db, actTypeId, "Completed call 1", userAId, userAId, true, null, dealLeadId);
   await upsertActivity(db, actTypeId, "Completed call 2", userAId, userAId, true, null, dealLeadId);
   await upsertActivity(db, actTypeId, "Completed call 3", userAId, userAId, true, null, dealLeadId);

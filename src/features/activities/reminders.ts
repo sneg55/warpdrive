@@ -12,9 +12,6 @@ interface ReminderJob {
   data: { activityId: string };
 }
 
-// Enqueue an activity-reminder job to fire REMINDER_LEAD_MINUTES before dueAt.
-// No-ops when dueAt is null (undated) or no pg-boss is set (tests, scripts); in production
-// requireBoss throws rather than dropping the reminder. singletonKey dedups re-schedules.
 export async function scheduleReminder(
   activityId: string,
   dueAt: Date | null,
@@ -32,15 +29,6 @@ export async function scheduleReminder(
   );
 }
 
-// Re-read the activity at fire time and notify its assignee.
-// Skips if the activity was completed, deleted, or rescheduled away (done/missing),
-// so a stale job never produces a reminder for an activity that no longer needs one.
-//
-// Delivery goes through notifyActivityReminder rather than a direct insert. Inserting here stored
-// entityType "activity" plus the ACTIVITY id, which the feed turned into /deals/<activityId>
-// (always Not found), and it also bypassed the shared producer's visibility gate and its realtime
-// publish. The row now targets the activity's DOMINANT PARENT, a record the user can actually
-// open; the activity id stays in the payload.
 export async function handleReminderJob(
   db: Db,
   job: ReminderJob,
@@ -64,10 +52,6 @@ export async function handleReminderJob(
   });
 }
 
-// Register the pg-boss worker that processes activity-reminder jobs.
-// Follows the exact pattern in src/features/email/workerJobs.ts (job ARRAY
-// destructure). If handleReminderJob throws (DB error), the error propagates
-// so pg-boss applies its retry/backoff.
 export async function registerReminderWorker(boss: PgBoss): Promise<void> {
   await boss.createQueue(PGBOSS_QUEUE_ACTIVITY_REMINDER);
   await boss.work(PGBOSS_QUEUE_ACTIVITY_REMINDER, async ([job]: Job<{ activityId: string }>[]) => {

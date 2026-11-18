@@ -1,11 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { clientKeyFromHeaders, createRateLimiter } from "./rateLimit";
 
-// Every one of these endpoints is reachable without a session and costs a database round trip:
-// /oauth/register writes a row, /oauth/token reads and writes, the tracking pixel does both on
-// every email open, /api/health queries. Before this there was no bound of any kind on how fast
-// a stranger could drive them.
-
 describe("createRateLimiter", () => {
   test("allows requests up to the limit inside one window", () => {
     const limiter = createRateLimiter({ limit: 3, windowMs: 1_000 });
@@ -41,8 +36,6 @@ describe("createRateLimiter", () => {
     expect(limiter.check("everyone-else", 0).allowed).toBe(true);
   });
 
-  // The limiter's own state is attacker-influenced, so it must not become the memory leak it
-  // exists to prevent.
   test("evicts stale keys instead of growing without bound", () => {
     const limiter = createRateLimiter({ limit: 1, windowMs: 1_000, maxKeys: 10 });
     for (let i = 0; i < 5_000; i++) limiter.check(`ip-${i}`, i);
@@ -51,10 +44,6 @@ describe("createRateLimiter", () => {
 });
 
 describe("clientKeyFromHeaders", () => {
-  // Caddy APPENDS the real peer address to any X-Forwarded-For the client supplied. So the
-  // LAST entry is the one the proxy vouches for and every earlier entry is attacker-written.
-  // Reading the first entry (the usual mistake) would let one attacker present a fresh fake IP
-  // per request and never be limited at all.
   test("takes the last forwarded-for entry, which is the one the proxy appended", () => {
     const headers = new Headers({ "x-forwarded-for": "1.2.3.4, 203.0.113.9" });
     expect(clientKeyFromHeaders(headers)).toBe("203.0.113.9");
@@ -72,8 +61,6 @@ describe("clientKeyFromHeaders", () => {
     );
   });
 
-  // Better to lump unattributable traffic into one shared bucket than to hand every such
-  // request its own unlimited allowance.
   test("falls back to a single shared bucket when no forwarded-for is present", () => {
     expect(clientKeyFromHeaders(new Headers())).toBe("unknown");
   });

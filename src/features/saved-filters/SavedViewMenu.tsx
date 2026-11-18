@@ -20,23 +20,15 @@ import type { SavedView } from "./savedView";
 interface SavedViewMenuProps {
   views: SavedView[];
   selectedViewId: string | null;
-  // True only when the list really shows every record. An ad-hoc filter also leaves
-  // selectedViewId null, and marking "All" current then describes a list the user sees filtered.
   allRecordsActive: boolean;
-  // Copy for the row that clears the applied view, e.g. "All people".
   allLabel: string;
-  // False when the list has no conditions applied, so there is nothing worth saving as a view.
   canSave: boolean;
   onSelect: (view: SavedView | null) => void;
   onToggleFavorite: (id: string) => void;
-  // Removes an owned view, once the user has confirmed it.
   onDelete: (id: string) => void;
   onSaveCurrent: () => void;
 }
 
-// The saved-view picker shared by the People, Orgs and Leads toolbars: favourited views first,
-// then the rest, then "Save current view". A list of rows plus a create entry, so it is the
-// shadcn/Radix DropdownMenu primitive (arrow-key nav, type-ahead, focus handling).
 export function SavedViewMenu({
   views,
   selectedViewId,
@@ -80,12 +72,9 @@ export function SavedViewMenu({
               >
                 <span className="truncate">{v.name}</span>
               </DropdownMenuItem>
-              {/* Starring and deleting are both owner-scoped, so neither is offered on someone
-                  else's shared view. */}
               {v.isOwn && (
                 <DropdownMenuItem
                   aria-label={v.favorite ? "Unfavorite view" : "Favorite view"}
-                  // Starring is not picking, so the menu stays open.
                   onSelect={(e) => {
                     e.preventDefault();
                     onToggleFavorite(v.id);
@@ -114,7 +103,6 @@ export function SavedViewMenu({
         </DropdownMenuItem>
       </DropdownMenuContent>
 
-      {/* Sibling of the menu content, so a menu that closes cannot take the dialog with it. */}
       <DeleteSavedFilterConfirm
         pending={pendingDelete}
         noun="view"

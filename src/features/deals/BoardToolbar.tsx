@@ -15,30 +15,20 @@ export interface BoardToolbarProps {
   pipelines: Array<{ id: string; name: string }>;
   totalValue: string;
   dealCount: number;
-  // Which of the three views (Board | List | Archive) is active, so the switcher marks the right
-  // tab. Defaults to the board so existing board callers need no change.
   activeView?: BoardToolbarView;
   presence?: React.ReactNode;
-  // The "+ Deal" control, rendered prominently at the left like Pipedrive.
   createSlot?: React.ReactNode;
-  // The board filter dropdown (owners/filters/favorites), rendered in the right cluster.
   filterSlot?: React.ReactNode;
-  // The "Sort by" field + direction toggle, rendered right-aligned on the quick-filter row (Pipedrive).
   sortSlot?: React.ReactNode;
-  // The quick-filter condition chips row, rendered below the main toolbar row (Pipedrive).
   quickFilters?: React.ReactNode;
   canManagePipelines?: boolean;
 }
 
-// P6: a labeled segmented control (icon + text) so List/Archive read as available views, not a
-// mystery icon strip. gap-1.5 spaces the glyph from its label; text-sm keeps the strip compact.
 const ICON_BTN =
   "flex items-center justify-center gap-1.5 rounded px-2.5 py-1.5 text-sm transition-colors";
 const ACTIVE = "bg-accent text-accent-foreground font-medium";
 const IDLE = "text-muted-foreground hover:text-foreground";
 
-// The controls Pipedrive puts above the board: Board|List|Archive view toggle, add-deal, a board
-// summary with a value toggle, a styled pipeline selector, filter/sort, and an actions overflow.
 export function BoardToolbar(props: BoardToolbarProps): React.ReactNode {
   const { pipelineId, pipelines, totalValue, dealCount, activeView = "board" } = props;
   const { presence, createSlot, filterSlot, sortSlot, quickFilters, canManagePipelines } = props;

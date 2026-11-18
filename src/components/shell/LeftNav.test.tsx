@@ -5,19 +5,12 @@ import { afterEach, describe, expect, test, vi } from "vitest";
 import { DOCS_SITE_URL } from "@/constants/docs";
 import { LeftNav } from "./LeftNav";
 
-// LeftNav reads the current path via usePathname to mark the active item; mock it so the
-// component renders outside an app-router provider.
 vi.mock("next/navigation", () => ({ usePathname: () => "/pipeline" }));
 
-// The collapse preference now persists in a cookie (so the server can read it and render the
-// correct width, avoiding the reload flash). jsdom provides a working document.cookie; clear it
-// between tests. Reset to a clean jar by expiring the key.
 function clearNavCookie(): void {
   document.cookie = "wd_nav_expanded=; path=/; max-age=0";
 }
 
-// jsdom has no matchMedia; shim it so the responsive default (expanded on wide screens, collapsed
-// on small) can be exercised. `setViewport(true)` = wide (min-width query matches).
 let mediaMatches = true;
 function setViewport(wide: boolean): void {
   mediaMatches = wide;
@@ -40,10 +33,6 @@ afterEach(() => {
 
 describe("LeftNav", () => {
   test("server render honors initialExpanded so the width is correct at first paint (no reload flash)", () => {
-    // The flash was caused by the server always rendering collapsed (localStorage is not readable
-    // during SSR) and the client correcting to expanded post-mount, animating the width. With the
-    // persisted state passed in as initialExpanded, the server render already reflects it, so there
-    // is nothing to correct and nothing to animate.
     expect(renderToStaticMarkup(<LeftNav initialExpanded />)).toMatch(/w-56\b/);
     expect(renderToStaticMarkup(<LeftNav initialExpanded={false} />)).toMatch(/w-16\b/);
   });
@@ -72,8 +61,6 @@ describe("LeftNav", () => {
   test("each destination shows a decorative icon (Pipedrive-style icon+label nav)", () => {
     const { container } = render(<LeftNav />);
     const links = container.querySelectorAll("nav a");
-    // Every link carries an icon, and icons are aria-hidden so the accessible
-    // name stays the label text.
     for (const link of links) {
       expect(link.querySelector('svg[aria-hidden="true"]')).not.toBeNull();
     }
@@ -97,7 +84,6 @@ describe("LeftNav", () => {
   });
 
   test("collapses to icons and expands to full labels via a toggle button", () => {
-    // Start collapsed (small screen), then toggle expands.
     setViewport(false);
     render(<LeftNav />);
     const toggle = screen.getByRole("button", { name: "Expand sidebar" });
@@ -111,7 +97,6 @@ describe("LeftNav", () => {
   });
 
   test("an explicit expand preference overrides the small-screen default across mounts", () => {
-    // Small screen would default collapsed, but the user's stored choice wins.
     setViewport(false);
     const first = render(<LeftNav />);
     fireEvent.click(screen.getByRole("button", { name: "Expand sidebar" }));
@@ -123,7 +108,6 @@ describe("LeftNav", () => {
   });
 
   test("an explicit collapse preference overrides the wide-screen default across mounts", () => {
-    // Wide screen would default expanded, but a stored collapse choice wins.
     setViewport(true);
     const first = render(<LeftNav />);
     fireEvent.click(screen.getByRole("button", { name: "Collapse sidebar" }));
@@ -138,11 +122,8 @@ describe("LeftNav", () => {
     setViewport(false);
     const { container } = render(<LeftNav />);
     const nav = screen.getByRole("navigation", { name: "Primary" });
-    // Narrow fixed-width rail, not a wide labelled sidebar.
     expect(nav.className).toMatch(/w-16\b/);
-    // Dark rail surface.
     expect(nav.className).toMatch(/bg-(slate|zinc|neutral|gray)-9\d0/);
-    // Labels are present for a11y but visually hidden (icon-only look).
     for (const link of container.querySelectorAll("nav a")) {
       const label = link.querySelector("span.sr-only");
       expect(label).not.toBeNull();

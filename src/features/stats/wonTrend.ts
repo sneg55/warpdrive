@@ -1,6 +1,3 @@
-// Won deal count and value per month across the dashboard range. The only stats query that
-// answers "which way is this going" rather than "where does it rest right now".
-// Windows on won_time (see dealPerformance for why) and applies dealVisibilityClause.
 import { sql } from "drizzle-orm";
 import type { Db } from "@/db/client";
 import { dealVisibilityClause } from "@/features/deals/visibility";

@@ -25,9 +25,6 @@ interface SidebarLinkPanelProps {
   onLinked: () => void;
 }
 
-// Pipedrive-shaped link panel: search an existing person/deal to link, or create one prefilled from
-// the thread and auto-link the new record. Owner-gated (canEdit === canCompose); the whole panel is
-// hidden for viewers who cannot mutate the mailbox, so no control is offered that the backend rejects.
 export function SidebarLinkPanel(props: SidebarLinkPanelProps): React.ReactNode {
   const { threadId, personId, personName, dealId, dealTitle, subject } = props;
   const { primaryEmail, primaryName, canEdit, onLinked } = props;
@@ -46,8 +43,6 @@ export function SidebarLinkPanel(props: SidebarLinkPanelProps): React.ReactNode 
 
   async function link(patch: { personId: string } | { dealId: string }): Promise<void> {
     const r = await linkThread(readCsrfToken(), { threadId, ...patch });
-    // Surface a denied/expired link instead of a silent no-op, and never signal success on failure
-    // (feedback-surface-mutation-failures).
     if (r.ok) onLinked();
     else reportError(r.error.id);
   }

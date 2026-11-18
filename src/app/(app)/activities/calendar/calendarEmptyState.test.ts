@@ -2,8 +2,6 @@ import { describe, expect, it } from "vitest";
 import { calendarEmptyState } from "./calendarEmptyState";
 
 describe("calendarEmptyState", () => {
-  // A blank grid said nothing at all. Whatever it says now must not confuse "this week holds
-  // nothing" with "the filters hid everything in it".
   it("separates an empty window from a filter that matched nothing", () => {
     expect(
       calendarEmptyState({ view: "week", hasFilter: false, hasUnfilteredActivities: false }).kind,
@@ -13,8 +11,6 @@ describe("calendarEmptyState", () => {
     ).toBe("filtered");
   });
 
-  // The filtered wording states as fact that the window holds activities. A window that is
-  // genuinely empty while a filter happens to be on must not be described that way.
   it("does not blame the filter when the window holds nothing to exclude", () => {
     expect(
       calendarEmptyState({ view: "week", hasFilter: true, hasUnfilteredActivities: false }).kind,

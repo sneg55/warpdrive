@@ -56,9 +56,7 @@ describe("computeActivityStats", () => {
     expect(stats.done).toBe(2);
     expect(stats.open).toBe(1);
     expect(stats.byType).toEqual({ call: 2, meeting: 1 });
-    // Last activity = the most recent DONE activity (2026-07-02), not the open future one.
     expect(stats.lastActivityAt).toEqual(new Date("2026-07-02T10:00:00Z"));
-    // Inactive days = whole days between that and now (2026-07-09 minus 2026-07-02 = 7).
     expect(stats.inactiveDays).toBe(7);
   });
 
@@ -78,7 +76,7 @@ describe("computeActivityStats", () => {
         activity({ id: "a1", ownerName: "Ann" }),
         activity({ id: "a2", ownerName: "Ann" }),
         activity({ id: "a3", ownerName: "Bob" }),
-        activity({ id: "a4", ownerName: null }), // unowned activities are excluded
+        activity({ id: "a4", ownerName: null }),
       ],
       now,
     );

@@ -27,8 +27,6 @@ const requestImportUploadInput = z
   });
 export type RequestImportUploadInput = z.input<typeof requestImportUploadInput>;
 
-// Import CSVs get their own object namespace (not an entity attachment). buildObjectKey
-// accepts a free-form entityType string, so no coupling to the files FileEntityType enum.
 function buildImportObjectKey(batchId: string, fileId: string, filename: string): string {
   return buildObjectKey({ entityType: "import", entityId: batchId, fileId, filename });
 }
@@ -89,10 +87,6 @@ export async function confirmImportUpload(
       }),
     );
   }
-  // Copy the validated object to an immutable "confirmed/" key the uploader's still-valid
-  // presigned POST can never target, and point the batch at it. The prepare job reads only
-  // this key, so an overwrite of the original upload key after confirm (or between a parse
-  // retry's reads) cannot change or split what gets parsed (F33 TOCTOU, mirrors files).
   const confirmedKey = confirmedObjectKey(batch.s3Key);
   const copied = await args.storage.copyObject(batch.s3Key, confirmedKey, signal);
   if (!copied.ok) return copied;

@@ -99,7 +99,6 @@ describe("createLead", () => {
       expect(r.ok).toBe(false);
       if (r.ok) return;
       expect(r.error.id).toBe("E_CONTACT_001");
-      // The lead must not have been created.
       const rows = await db.select().from(leads);
       expect(rows).toHaveLength(0);
     });

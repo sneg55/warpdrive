@@ -10,13 +10,9 @@ export interface DealsEmptyProps {
   pipelineId: string;
   filtered: boolean;
   onClearFilters: () => void;
-  // The list view's real add-deal control, so the empty state offers the same button the toolbar
-  // does instead of a second, different one. The archive never shows it: nothing is created there.
   addSlot: React.ReactNode;
 }
 
-// The deals list or archive with no rows. Which sentence is true depends on why it is empty, so a
-// filter that excluded everything never reads as an empty pipeline.
 export function DealsEmpty({
   variant,
   pipelineId,

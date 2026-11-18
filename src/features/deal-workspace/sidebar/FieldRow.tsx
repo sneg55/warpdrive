@@ -2,12 +2,6 @@
 import type React from "react";
 import { useHideEmpty } from "./sectionFilter";
 
-// Shared deal/person/org field row: a two-column grid with one label token and a left-aligned
-// value column. Editable rows compose their trigger inside this renderer so alignment cannot drift.
-// `empty` marks a value-less row so the section's funnel toggle can hide it.
-// `labelAlign` controls the label column: "right" (default) hugs the value; "left" hangs the label
-// at the column start, matching Pipedrive's left-aligned Summary block (the other sidebar sections
-// keep the right-aligned default).
 export function FieldRow({
   label,
   children,
@@ -26,8 +20,6 @@ export function FieldRow({
   return (
     <div
       data-testid="field-row"
-      // py-1.5 + 20px value line = PD's 32px field-row pitch (values are plain spans now;
-      // the old whole-value edit buttons carried 4px of their own padding).
       className="grid grid-cols-[minmax(0,7rem)_1fr] items-baseline gap-3 py-1.5"
     >
       <span

@@ -1,4 +1,3 @@
-// Split out of apollo.test.ts, which is at the file-size limit.
 import { afterEach, describe, expect, it, vi } from "vitest";
 import orgMatch from "./__fixtures__/apollo-org-match.json";
 import personMatch from "./__fixtures__/apollo-person-match.json";
@@ -46,7 +45,6 @@ describe("remaining quota", () => {
     expect((await person()).quotaRemaining).toEqual({ daily: 8 });
   });
 
-  // Zero is the number an admin most needs to see, and it is the one a truthiness check loses.
   it("reports a spent window as zero rather than dropping it", async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-08-24T12:00:00.000Z"));

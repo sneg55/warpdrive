@@ -32,7 +32,6 @@ describe("goalInput", () => {
     expect(r.success).toBe(true);
   });
 
-  // An activity has no monetary value, so a value goal on one is meaningless rather than zero.
   test("rejects a value metric on an activity goal", () => {
     const r = goalInput.safeParse({
       ...base,
@@ -84,7 +83,6 @@ describe("goalInput", () => {
     expect(goalInput.safeParse({ ...base, target: "-5" }).success).toBe(false);
   });
 
-  // A count goal moves one whole deal at a time, so a fractional target can never be met.
   test("rejects a fractional target on a count goal", () => {
     const r = goalInput.safeParse({ ...base, metric: "count", target: "1.5" });
     expect(r.success).toBe(false);

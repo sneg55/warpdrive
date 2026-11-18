@@ -175,8 +175,6 @@ function person(op: ContactFilterOp, value?: string | number) {
 }
 
 describe("compileContactFilter operator depth (tier 2)", () => {
-  // A person with no email must survive "email is not x". `<>` against NULL yields NULL, which
-  // drops the row; IS DISTINCT FROM treats NULL as a distinct value and keeps it.
   it("compiles neq to IS DISTINCT FROM so a NULL column is not dropped", () => {
     const q = person("neq", "a@b.com");
     expect(q.sql).toBe(`("persons"."primary_email" IS DISTINCT FROM $1)`);
@@ -219,7 +217,6 @@ describe("compileContactFilter operator depth (tier 2)", () => {
     expect(q.params).toEqual([]);
   });
 
-  // An injection payload must land as a parameter, never as SQL text.
   it("keeps a hostile value bound for every value-taking operator", () => {
     const hostile = "%' OR 1=1 --";
     for (const op of ["contains", "notContains", "startsWith", "eq", "neq"] as ContactFilterOp[]) {
@@ -246,7 +243,6 @@ describe("contactFilter schemas on valueless operators", () => {
     ).toBe(true);
   });
 
-  // employeeCount is numeric, so a valueless op must not be dragged through the numeric parse.
   it("skips the numeric-value check for a valueless op on a numeric field", () => {
     expect(
       orgFilterSchema.safeParse({

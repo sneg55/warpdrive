@@ -1,22 +1,10 @@
-/**
- * scripts/seed-demo-graph.ts
- *
- * Contact-graph and identity fixtures introduced by Wave 3 (migrations 0035,
- * 0038, 0039): organization relations, contact followers, and a pending invited
- * user (google_sub NULL + invited_at set, i.e. invited but not yet SSO-adopted).
- */
-
 import { ORG_RELATION_TYPES, pick, type Rng, randInt } from "./seed-demo-data";
 import type { Db } from "./seed-smoke-phase5-infra";
 
-// Links a sample of orgs to a neighbor with a free-text relation label. Uses
-// distinct source/target (the table forbids self-relation) and is idempotent on
-// the (source, target) primary key. Returns the number of relations created.
 export async function seedOrgRelations(db: Db, rng: Rng, orgIds: string[]): Promise<number> {
   if (orgIds.length < 2) return 0;
   let created = 0;
   for (let i = 0; i < orgIds.length; i += 1) {
-    // ~25% of orgs get a relation to a different org.
     if (rng() >= 0.25) continue;
     const source = orgIds[i];
     let j = randInt(rng, 0, orgIds.length - 1);
@@ -33,8 +21,6 @@ export async function seedOrgRelations(db: Db, rng: Rng, orgIds: string[]): Prom
   return created;
 }
 
-// Adds 1-2 demo-user followers to a sample of persons and organizations so the
-// followers panel and the "following" filters have data. Returns rows created.
 export async function seedContactFollowers(
   db: Db,
   rng: Rng,
@@ -64,8 +50,6 @@ export async function seedContactFollowers(
   return created;
 }
 
-// A pending invited user: google_sub NULL means they have not completed SSO, and
-// invited_at drives the "Invited" state in the users settings list (migration 0035).
 export async function seedInvitedUser(
   db: Db,
   regularSetId: string,

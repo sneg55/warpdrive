@@ -11,10 +11,6 @@ import { inboxUnreadCount } from "./readState";
 import { searchInbox } from "./searchInbox";
 import { getThreadNeighbors } from "./threadNeighbors";
 
-// P4: a trashed thread (trashed_at set) must leave EVERY local view immediately, since the real
-// Gmail conversation is gone. One thread, trashed, asserted absent from inbox / sent / archive /
-// search / neighbor navigation.
-
 type TestDb = Parameters<Parameters<typeof withTestDb>[0]>[0];
 const SIG = (): AbortSignal => AbortSignal.timeout(8000);
 const actorOf = (id: string): AuthUser => ({
@@ -33,7 +29,6 @@ async function seedAccount(db: TestDb, ownerId: string): Promise<string> {
   return acct.id;
 }
 
-// A thread with one outbound sent message (so it qualifies for Sent), plus a body to match search.
 async function seedThread(
   db: TestDb,
   acctId: string,
@@ -73,7 +68,6 @@ describe("trashed thread exclusion", () => {
     await withTestDb(async (db) => {
       const owner = await seedUser(db, { email: "o@gunsnation.com" });
       const acctId = await seedAccount(db, owner.id);
-      // A trashed thread that is also archived: must show in neither folder.
       await seedThread(db, acctId, "trash", { archived: true, trashed: true });
 
       const sent = await listSentThreads(db, actorOf(owner.id), SIG());
@@ -106,7 +100,6 @@ describe("trashed thread exclusion", () => {
         { actor: actorOf(owner.id), threadId: live, folder: "inbox" },
         SIG(),
       );
-      // Only the live thread remains, so total is 1 and it has no neighbors.
       expect(out).toMatchObject({ index: 1, total: 1, prevId: null, nextId: null });
     });
   });
@@ -115,7 +108,6 @@ describe("trashed thread exclusion", () => {
     await withTestDb(async (db) => {
       const owner = await seedUser(db, { email: "o@gunsnation.com" });
       const acctId = await seedAccount(db, owner.id);
-      // Two unread threads (no read rows); trashing one must drop the badge to 1.
       await seedThread(db, acctId, "live");
       await seedThread(db, acctId, "trash", { trashed: true });
 

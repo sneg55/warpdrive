@@ -88,7 +88,6 @@ function picker(label: string): HTMLElement {
   return screen.getByRole("combobox", { name: `${S.mappingOrganization} ${label}` });
 }
 
-// Map the domain row, the write an admin is most likely to change again straight away.
 function startMapping(): void {
   fireEvent.click(picker("Website / domain"));
   fireEvent.click(screen.getByText("Domain field"));

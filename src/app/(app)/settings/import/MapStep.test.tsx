@@ -62,8 +62,6 @@ it("keeps Continue disabled until a column maps to Name", () => {
   expect(screen.getByRole("button", { name: "Continue" })).toBeEnabled();
 });
 
-// Person > Name and Organization > Name both read "Name", so two collapsed pickers on the same
-// screen looked identical while writing different records. The entity has to be on the label.
 it("names the owning entity on the collapsed picker of a mapped column", () => {
   render(<Harness onContinue={vi.fn()} />);
   chooseSelect("Maps to: Full Name", "Person[Name] *");
@@ -83,9 +81,6 @@ it("offers custom fields from the defs and calls onContinue", () => {
   expect(onContinue).toHaveBeenCalledOnce();
 });
 
-// Pipedrive shows two example values under each spreadsheet column so you can tell what a column
-// holds before mapping it (docs/parity-captures/leads-import-pd/08-map-step.png). Our prepare job
-// already stores those rows on the batch; the map step must surface them.
 function PreparedHarness(): React.ReactNode {
   const [state, dispatch] = useReducer(wizardReducer, undefined, () =>
     wizardReducer(initialWizardState(), {
@@ -110,14 +105,10 @@ it("shows the first two sample values under each CSV column", () => {
   expect(screen.getByText("Chicago Transit Authority")).toBeInTheDocument();
   expect(screen.getByText("NJ")).toBeInTheDocument();
   expect(screen.getByText("IL")).toBeInTheDocument();
-  // The third row is stored but must not be rendered.
   expect(screen.queryByText("Bay Area Rapid Transit")).not.toBeInTheDocument();
   expect(screen.queryByText("CA")).not.toBeInTheDocument();
 });
 
-// Cross-entity mapping, end to end through the real Radix picker: choosing an Organization field
-// on a LEAD import must record entity "organization", not the primary entity. This is the bug that
-// would otherwise send `url` to a nonexistent lead.domain column.
 function LeadHarness({ onMapping }: { onMapping: (m: unknown) => void }): React.ReactNode {
   const [state, dispatch] = useReducer(wizardReducer, undefined, () => {
     const s = wizardReducer(initialWizardState(), { type: "setTarget", target: "lead" });
@@ -143,7 +134,6 @@ it("maps a column to an Organization field on a lead import", () => {
   const onMapping = vi.fn();
   render(<LeadHarness onMapping={onMapping} />);
 
-  // The picker groups fields by entity; both groups are present on a lead import.
   fireEvent.click(screen.getByLabelText("Maps to: url"));
   expect(
     screen.getByRole("option", { name: "Organization[Website / domain]" }),
@@ -179,8 +169,6 @@ it("records the row-note checkbox in the mapping options", () => {
   });
 });
 
-// The Checkbox primitive renders only the box; without its own <label> a sighted user sees an
-// unlabeled control floating above the hint text.
 it("renders a visible label next to the row-note checkbox", () => {
   render(<LeadHarness onMapping={vi.fn()} />);
   const box = screen.getByRole("checkbox", { name: "Add unmapped columns as a note" });

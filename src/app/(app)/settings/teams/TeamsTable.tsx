@@ -27,8 +27,6 @@ interface Props {
   users: User[];
 }
 
-// Pure, synchronous render of the teams table. Resolves each team's managerId to the
-// user's display name so the cell never shows a raw UUID.
 export function TeamsTable({ teams, users }: Props): React.ReactElement {
   const nameById = new Map(users.map((u) => [u.id, u.name]));
   return (
@@ -44,7 +42,6 @@ export function TeamsTable({ teams, users }: Props): React.ReactElement {
           {teams.map((t) => (
             <tr key={t.id} className={SETTINGS_TABLE_ROW}>
               <td className={SETTINGS_TABLE_CELL}>
-                {/* Row opens the team's edit page (rename, change manager, edit members). */}
                 <Link
                   href={`/settings/teams/${t.id}`}
                   className="font-medium text-primary underline-offset-4 hover:underline focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"

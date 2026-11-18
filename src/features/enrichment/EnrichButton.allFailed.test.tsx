@@ -67,8 +67,6 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
-// A rejected key, a timeout, and an outage need three different reactions from the user, so
-// collapsing them into one sentence throws away the only part that says what to do.
 it("names each provider and why it failed when every provider failed", async () => {
   failsWith({ reasons: { apollo: "auth", rocketreach: "timeout", getprospect: "provider_error" } });
   await clickFillGaps();
@@ -96,7 +94,6 @@ it("renders no undefined verdict for an outcome kind it does not know", async ()
   expect(alert.textContent).not.toContain("undefined");
 });
 
-// Waiting cannot fix a key the server cannot decrypt, so this must not read as a rate limit.
 it("says a stored key needs re-entering when the server could not read one", async () => {
   enrichRecordAction.mockResolvedValue({
     ok: false,
@@ -119,9 +116,6 @@ it("names the plan when no provider's plan covers the lookup", async () => {
   expect(screen.getByRole("button", { name: S.refresh })).toBeInTheDocument();
 });
 
-// A run where every provider failed is persisted so a repeat click does not re-spend a credit, and
-// the cache replays that failure for the whole TTL. Without Refresh on an error the record is stuck
-// on it for thirty days, long after the providers came back.
 it("offers Refresh on a failure a fresh run could resolve", async () => {
   const user = userEvent.setup();
   failsWith({ reasons: { apollo: "timeout" } });

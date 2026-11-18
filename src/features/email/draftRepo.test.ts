@@ -151,8 +151,6 @@ describe("draft repository", () => {
     await withTestDb(async (db) => {
       const owner = await seedUser(db, { email: "o@gunsnation.com" });
       const acctId = await seedAccount(db, owner.id);
-      // A threadId that does not exist on this mailbox: the composite FK would raise a Postgres
-      // error, but the boundary must return a typed AppError instead of throwing.
       const res = await saveDraft(
         db,
         {
@@ -221,8 +219,6 @@ describe("draft repository", () => {
       );
       if (!created.ok) throw new Error("save failed");
 
-      // Stands in for the composer autosaving between an agent reading the draft and writing it
-      // back: a read-modify-write would replay the stale body over this.
       await db.execute(
         sql`UPDATE email_drafts SET body_html = '<p>autosaved</p>' WHERE id = ${created.value.id}`,
       );

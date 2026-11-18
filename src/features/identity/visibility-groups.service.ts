@@ -11,10 +11,6 @@ export function listVisibilityGroups(db: Db, signal: AbortSignal) {
   return db.select().from(visibilityGroups);
 }
 
-// Viewing a group's roster requires the same permissions.manage/admin gate as managing
-// groups at all (list/create); it does not use canManageGroupMembership's stricter
-// membership-mutation rules (self-membership, restricted-pipeline block), since reading
-// the roster is not a membership change.
 export async function listGroupMembers(
   db: Db,
   actor: PermSetUser,
@@ -70,9 +66,6 @@ async function actorIsMember(db: Db, groupId: string, userId: string): Promise<b
   return rows[0] !== undefined;
 }
 
-// True when the group gates at least one restricted pipeline (a pipeline whose
-// visibility_group_id points at it). Managing membership of such a group is admin-only
-// (permissions spec §5); a delegated permissions.manage holder must be blocked (F3).
 async function groupGatesRestrictedPipeline(db: Db, groupId: string): Promise<boolean> {
   const rows = await db
     .select({ id: pipelines.id })

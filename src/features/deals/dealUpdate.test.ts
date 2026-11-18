@@ -1,6 +1,3 @@
-// dealUpdate.test.ts: field updates and won/lost transition tests.
-// CAS + permissions + event tests live in dealUpdatePerms.test.ts.
-// Audit change-log tests live in dealUpdate.changeLog.test.ts.
 import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import { deals, organizations } from "@/db/schema";
@@ -44,7 +41,6 @@ describe("updateDeal: field updates", () => {
       if (def.ok === false) throw new Error("def seed failed");
       const key = def.value.key;
 
-      // Valid value for the numeric def: persisted.
       const okRes = await updateDeal(
         db,
         adminSession(u.id),
@@ -59,7 +55,6 @@ describe("updateDeal: field updates", () => {
       if (okRes.ok === false) return;
       expect((okRes.value.customFields as Record<string, unknown>)[key]).toBe(4200);
 
-      // Unknown key: rejected, nothing written.
       const unknown = await updateDeal(
         db,
         adminSession(u.id),
@@ -74,7 +69,6 @@ describe("updateDeal: field updates", () => {
       if (unknown.ok === true) return;
       expect(unknown.error.id).toBe("E_CF_003");
 
-      // Wrong type (string for a numeric def): rejected.
       const wrongType = await updateDeal(
         db,
         adminSession(u.id),
@@ -87,7 +81,6 @@ describe("updateDeal: field updates", () => {
       );
       expect(wrongType.ok).toBe(false);
 
-      // The stored value is still the valid 4200 (no corruption from the rejected writes).
       const [row] = await db.select().from(deals).where(eq(deals.id, deal.id));
       expect((row?.customFields as Record<string, unknown>)[key]).toBe(4200);
     });
@@ -167,7 +160,6 @@ describe("updateDeal: won/lost transitions", () => {
           dealId: deal.id,
           expectedUpdatedAt: deal.updatedAt.toISOString(),
           status: "lost",
-          // no lostReason: board drag-to-Lost supplies none, must still succeed.
         },
         new AbortController().signal,
       );

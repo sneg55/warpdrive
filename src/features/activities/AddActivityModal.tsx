@@ -16,13 +16,8 @@ import { readCsrfToken } from "@/utils/csrfCookie";
 import { createActivityAction } from "./actions";
 import { useInvalidateActivityLists } from "./useInvalidateActivityLists";
 
-// Shared icon size for the composer-style field-row leading icons (matches ActivityComposerInline).
 const ICON = "h-4 w-4";
 
-// Quick-add Activity dialog (Pipedrive): type + subject + priority + due date, with optional
-// person/organization links. Wired to the CSRF-guarded createActivityAction.
-// dueAt and allDay always travel together; sending a timestamp without the flag is what made
-// a blank time read back as midnight.
 function composedDue(date: string, time: string): { dueAt: string | null; allDay: boolean } {
   const { iso, allDay } = composeDueAt(date, time);
   return { dueAt: iso, allDay };
@@ -38,13 +33,8 @@ export function AddActivityModal({
 }: {
   onClose: () => void;
   onCreated?: () => void;
-  // When set (deal detail composer), the new activity is linked to this deal.
   dealId?: string | null;
-  // When set (lead detail composer), the new activity is linked to this lead. Mutually
-  // exclusive with dealId (single-parent constraint); the two composers never set both.
   leadId?: string | null;
-  // Click-to-create prefill (calendar week agenda: clicking an empty hour lane seeds the due
-  // date/time from the clicked slot instead of leaving both blank).
   defaultDate?: string;
   defaultTime?: string;
 }): React.ReactNode {
@@ -126,9 +116,6 @@ export function AddActivityModal({
         </DialogHeader>
 
         <div className="flex flex-col gap-3 px-5 py-4 text-sm">
-          {/* Composer parity (deal page): a large subject, the type icon rail, then icon-gutter
-              field rows via ComposerFieldRow. Kept the standalone Contact person / Organization
-              pickers (the Activities page has no deal/lead context to anchor to). */}
           <input
             aria-label="Subject"
             value={subject}

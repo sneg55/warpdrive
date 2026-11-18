@@ -17,29 +17,18 @@ import { rowToView, type SavedFilterView } from "./savedFilterView";
 
 interface BoardFilterControlProps {
   owners: BoardOwner[];
-  // Pipeline stages, forwarded as the value options for a Stage condition.
   stages?: ReadonlyArray<{ id: string; name: string }>;
   selectedOwnerId: string | null;
-  // The signed-in user's id, forwarded so the owner list marks their row "(my)".
   currentUserId?: string;
   onSelectOwner: (ownerId: string | null) => void;
   selectedFilterId: string | null;
   appliedFilter?: SavedFilterView | null;
-  // Reports the saved filter to apply server-side (or null to clear).
   onSelectFilter: (filter: SavedFilterView | null) => void;
-  // The ad-hoc definition applied to the board, so the menu can say the board is filtered and
-  // the builder reopens on it instead of a blank "match all" form.
   appliedDefinition?: FilterDefinition | null;
-  // Applies the built conditions ad-hoc (null clears them).
   onApplyDefinition?: (definition: FilterDefinition | null) => void;
-  // Applied ad-hoc condition count, for the Filter trigger badge.
   activeCount?: number;
-  // Trigger copy, so the deals list (which keeps its own ad-hoc builder) can name its menu for
-  // the saved filters it actually owns.
   triggerLabel?: string;
-  // Applies an in-progress (unsaved) filter definition to the board for live preview.
   onPreviewFilter?: (definition: FilterDefinition) => void;
-  // Clears any active preview so the board reverts to the applied saved filter.
   onClearPreview?: () => void;
 }
 
@@ -61,8 +50,6 @@ export function BoardFilterControl(props: BoardFilterControlProps): React.ReactN
   const query = trpc.deal.savedFilters.useQuery(undefined, { staleTime: 10_000 });
   const [modalOpen, setModalOpen] = useState(false);
   const saved: SavedFilterView[] = (query.data ?? []).map(rowToView);
-  // The selected filter is what the board is showing, so the builder opens on it rather than on a
-  // blank "match all" form that would misreport an "any condition" filter and overwrite it.
   const selectedFilter = saved.find((f) => f.id === selectedFilterId);
   const rowsFresh = query.data !== undefined && !query.isFetching && !query.isStale;
   useEffect(() => {
@@ -77,7 +64,6 @@ export function BoardFilterControl(props: BoardFilterControlProps): React.ReactN
   async function toggleFav(id: string): Promise<void> {
     const r = await toggleFavoriteAction(id, readCsrfToken());
     if (!r.ok) reportError(r.error.id);
-    // Invalidate either way: on failure the refetch reverts the star to its persisted state.
     await utils.deal.savedFilters.invalidate();
   }
 
@@ -87,7 +73,6 @@ export function BoardFilterControl(props: BoardFilterControlProps): React.ReactN
       reportError(r.error.id);
       return;
     }
-    // Otherwise the board keeps filtering by a filter that no longer exists.
     if (selectedFilterId === id) onSelectFilter(null);
     await utils.deal.savedFilters.invalidate();
   }
@@ -126,8 +111,6 @@ export function BoardFilterControl(props: BoardFilterControlProps): React.ReactN
             onApplyDefinition === undefined
               ? undefined
               : (definition) => {
-                  // The reads resolve the ad-hoc definition ahead of the saved filter, so leaving
-                  // the selection set would show these edits while the menu named the saved row.
                   onSelectFilter(null);
                   onApplyDefinition(definition.conditions.length > 0 ? definition : null);
                   setModalOpen(false);
@@ -142,13 +125,11 @@ export function BoardFilterControl(props: BoardFilterControlProps): React.ReactN
             onSelectFilter({
               id: persisted.id,
               name: persisted.name,
-              // An update keeps the row's star; a new filter starts unstarred.
               favorite: selectedFilter?.id === persisted.id ? selectedFilter.favorite : false,
               isShared: persisted.isShared,
               isOwn: true,
               definition: persisted.definition,
             });
-            // The saved filter now drives the board; drop the transient preview.
             onClearPreview?.();
             setModalOpen(false);
           }}

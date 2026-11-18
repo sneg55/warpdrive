@@ -8,7 +8,6 @@ import { ProgressBar } from "./ProgressBar";
 
 const IMP = STRINGS.settings.importer;
 
-// The batch fields a wait step reads once its phase finishes.
 interface ReadyBatch {
   headers: string[] | null;
   previewRows: Record<string, string>[] | null;
@@ -19,15 +18,12 @@ interface ReadyBatch {
 
 export interface PhaseWaitProps {
   batchId: string;
-  // The status that signals this phase is done (prepare -> mapping_ready, validate -> ready).
   until: "mapping_ready" | "ready";
   onReady: (batch: ReadyBatch) => void;
   onError: (id: string) => void;
   label: string;
 }
 
-// Watches a batch through a background phase, showing live progress, then hands the
-// finished batch to onReady (or reports failure). Polling backs up the realtime stream.
 export function PhaseWait({
   batchId,
   until,
@@ -46,17 +42,11 @@ export function PhaseWait({
     },
   ).data;
 
-  // Mirror the polled batch into a ref (written after commit, not during render, per concurrent-
-  // safe ref rules) so the transition effect can read the full batch without depending on its
-  // identity. getBatch's data reference changes on every 1s poll tick (progress fields), but the
-  // transition should fire only when the phase status actually changes.
   const batchRef = useRef(batch);
   useEffect(() => {
     batchRef.current = batch;
   });
   useEffect(() => {
-    // Read status (the trigger) reactively; read the full batch payload from the ref so this only
-    // fires on a phase transition, not on every progress-updating poll tick.
     const status = batch?.status;
     if (status === undefined) return;
     const b = batchRef.current;

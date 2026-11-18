@@ -1,5 +1,3 @@
-// The combinator and the rotting narrowing only prove out against real Postgres: "or" widens the
-// result set, and the whole point of the rotting flag is that it must NOT widen with it.
 import { sql } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import { settings } from "@/db/schema/system";
@@ -109,8 +107,6 @@ describe("getBoardColumns with or plus the rotting narrowing", () => {
         sql`UPDATE deals SET stage_entered_at = now() - interval '30 days' WHERE id = ${ids.get("Acme rotting")}`,
       );
 
-      // Both deals match a disjunct, but only the aged one is rotting. Folding rotting into the
-      // OR would hand back "Globex big" as well.
       expect(
         await titles(db, userId, pipelineId, {
           combinator: "or",

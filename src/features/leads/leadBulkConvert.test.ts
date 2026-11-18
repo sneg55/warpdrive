@@ -112,7 +112,6 @@ describe("bulkConvertLeads", () => {
         .select()
         .from(leads)
         .where(inArray(leads.id, [hidden.id]));
-      // The invisible lead was never converted.
       expect(hiddenAfter?.convertedDealId).toBeNull();
     });
   });
@@ -124,9 +123,6 @@ describe("bulkConvertLeads", () => {
       const pipe = await seedPipelineWithStages(db, ["Qualify"]);
       await seedSettings(db, { defaultPipelineId: pipe.pipeline.id });
 
-      // Hidden is owner-only visible to `owner`, but the lead referencing it belongs to
-      // `other`: converting it hits assertConvertReferences -> CONTACT_NOT_FOUND, a
-      // per-item outcome (this lead's reference, not a batch-wide condition).
       const [hidden] = await db
         .insert(persons)
         .values({ name: "Hidden", ownerId: owner.id, visibilityLevel: "owner" })
@@ -172,8 +168,6 @@ describe("bulkConvertLeads", () => {
       const a = await insertLead(db, owner.id, { title: "A" });
       const b = await insertLead(db, owner.id, { title: "B" });
 
-      // Actor lacks deal.create: convertLead returns PERM_DENIED for every id identically, which
-      // must abort the batch rather than read as "0 converted, N skipped" (a silent no-op).
       const r = await bulkConvertLeads(
         db,
         session(owner.id, { flags: {} }),
@@ -195,8 +189,6 @@ describe("bulkConvertLeads", () => {
   it("aborts the batch when no pipeline is resolvable (systemic, not per-item)", async () => {
     await withTestDb(async (db) => {
       const owner = await seedUser(db);
-      // No pipeline seeded and no defaultPipelineId configured: every id would hit
-      // LEAD_CONVERT_NO_PIPELINE identically.
       await seedSettings(db);
 
       const a = await insertLead(db, owner.id, { title: "A" });
@@ -217,8 +209,6 @@ describe("bulkConvertLeads", () => {
   it("returns an input-invalid error instead of throwing on a malformed batch", async () => {
     await withTestDb(async (db) => {
       const owner = await seedUser(db);
-      // ids: [] fails bulkConvertLeadsInput's .min(1): safeParse must turn this into a Result
-      // error, not a thrown ZodError, per the validate-at-the-boundary rule.
       const r = await bulkConvertLeads(db, session(owner.id), { ids: [] }, sig());
       expect(r.ok).toBe(false);
       if (r.ok) return;

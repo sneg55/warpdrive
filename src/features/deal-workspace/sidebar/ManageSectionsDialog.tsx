@@ -53,7 +53,6 @@ function SectionRow({
     id: section.id,
   });
   const name = sectionName(section.id);
-  // Summary is non-hideable (it hosts the manage-sections trigger); lock its visibility toggle.
   const locked = section.id === "summary";
   const style = { transform: CSS.Transform.toString(transform), transition };
   return (
@@ -110,8 +109,6 @@ export function ManageSectionsDialog({
   const reportError = useDealActionError();
   const sensors = useSensors(useSensor(PointerSensor));
 
-  // Re-seed the draft when the dialog opens, and when the saved sections change beneath it.
-  // Adjusting during render avoids the stale-then-correct double render an effect would cause.
   const [seen, setSeen] = useState({ open, sections });
   if (seen.open !== open || seen.sections !== sections) {
     setSeen({ open, sections });
@@ -134,7 +131,7 @@ export function ManageSectionsDialog({
   }
 
   function toggle(id: DealSidebarSectionId): void {
-    if (id === "summary") return; // non-hideable: it hosts the manage-sections trigger
+    if (id === "summary") return;
     setDraft((current) =>
       current.map((section) =>
         section.id === id ? { ...section, visible: !section.visible } : section,

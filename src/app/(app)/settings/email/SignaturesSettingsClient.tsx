@@ -25,12 +25,9 @@ export function SignaturesSettingsClient({ signatures }: { signatures: Sig[] }):
   const router = useRouter();
   const reportError = useActionError();
   const [draft, setDraft] = useState<Draft | null>(null);
-  // A blank-name save used to return silently, so Save looked dead. Track the validation
-  // failure and render it on the form instead.
   const [nameError, setNameError] = useState<string | null>(null);
   const csrf = (): string | null => readCsrfToken();
 
-  // Every draft transition (open, edit, cancel) clears the stale validation message.
   function changeDraft(next: Draft | null): void {
     setDraft(next);
     if (next === null || next.name.trim() !== "") setNameError(null);

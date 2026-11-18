@@ -4,7 +4,6 @@ import { type ImportBatch, importBatches, importRows } from "@/db/schema";
 
 type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0];
 
-// Count valid vs invalid rows for the post-validate batch tally.
 export async function tallyRows(
   tx: Tx,
   batchId: string,
@@ -22,8 +21,6 @@ export async function tallyRows(
   return { valid, invalid };
 }
 
-// Recompute committed counts and set the batch terminal status from row outcomes:
-// completed (all good), partial (some imported, some not), failed (nothing imported).
 export async function finalizeBatch(db: Db, batchId: string): Promise<void> {
   const rows = await db
     .select({ status: importRows.status })

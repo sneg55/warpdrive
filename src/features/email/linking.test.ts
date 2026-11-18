@@ -13,7 +13,6 @@ function ownerAuth(id: string): AuthUser {
   return { id, type: "regular", isActive: true, groupIds: new Set<string>() };
 }
 
-// Seed a person with an external (non-workspace) primary email.
 async function seedPerson(
   db: Db,
   ownerId: string,
@@ -28,7 +27,6 @@ async function seedPerson(
   return p;
 }
 
-// Seed an open deal whose primary person is personId, on a fresh unrestricted pipeline.
 async function seedOpenDeal(
   db: Db,
   ownerId: string,
@@ -162,7 +160,6 @@ describe("resolveLink (ops B4)", () => {
         db,
         {
           owner: ownerAuth(owner.id),
-          // both addresses are @example.com (the test workspace domain).
           participants: [`${owner.email}`, "teammate@example.com"],
           fromEmail: `${owner.email}`,
         },
@@ -176,7 +173,6 @@ describe("resolveLink (ops B4)", () => {
     await withTestDb(async (db) => {
       const owner = await seedUser(db);
       const other = await seedUser(db);
-      // owner-level person owned by `other`: invisible to `owner`.
       await seedPerson(db, other.id, "hidden@acme.com", "owner");
       const out = await resolveLink(
         db,
@@ -195,8 +191,6 @@ describe("resolveLink (ops B4)", () => {
     await withTestDb(async (db) => {
       const owner = await seedUser(db);
       const other = await seedUser(db);
-      // The matched person is visible (all), but its open deal is owner-level and
-      // owned by another user, so it is hidden from the mailbox owner.
       const p = await seedPerson(db, owner.id, "jane@acme.com", "all");
       await seedOpenDeal(db, other.id, p.id, "owner");
       const out = await resolveLink(
@@ -208,7 +202,6 @@ describe("resolveLink (ops B4)", () => {
         },
         sig,
       );
-      // Person links, but the hidden deal is not surfaced as a candidate.
       expect(out).toEqual({ kind: "linked", personId: p.id, dealId: null, dealCandidates: [] });
     });
   });

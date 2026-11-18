@@ -14,12 +14,6 @@ interface ParticipantOption {
   name: string;
 }
 
-// Owner (-> assigneeId) and Guests/Participants (-> guestPersonIds) selects, split out of
-// ActivityComposerInline both to hold that file under the size target AND so the composer can
-// place them in separate icon rows (PD puts Guests high, Owner near the bottom). The visible
-// text labels are dropped; the leading icon in each ComposerFieldRow conveys the field, and the
-// select's ariaLabel keeps it accessible.
-
 export function OwnerField({
   owners,
   ownerId,

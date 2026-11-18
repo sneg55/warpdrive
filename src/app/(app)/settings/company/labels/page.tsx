@@ -8,7 +8,6 @@ import { LabelsClient } from "./LabelsClient";
 
 export const metadata = { title: STRINGS.settings.labels };
 
-// Company settings > Labels tab (spec 6.4): labels grouped by target with an enum color picker.
 export default async function LabelsPage(): Promise<ReactNode> {
   const { actor } = await createContext();
   if (actor === null || (actor.type !== "admin" && !actor.flags.has(PERMISSION_FLAGS.MANAGE))) {

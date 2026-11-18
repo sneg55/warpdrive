@@ -151,7 +151,6 @@ it("offers the Add-labels dropdown trigger, and renders active chips when set", 
   expect(screen.queryByText("Hot")).not.toBeInTheDocument();
   unmount();
 
-  // Applied by catalog name; the chip renders and the picker list stays closed until opened.
   renderList({ labels: ["Hot"] });
   expect(screen.getByText("Hot")).toBeInTheDocument();
   expect(screen.queryByRole("menuitemcheckbox")).not.toBeInTheDocument();
@@ -179,9 +178,7 @@ it("shows 'Set expected close date' as a CTA when unset, and the date when set",
 
 it("shows the participant count-link (PD parity) and opens the participants table dialog", async () => {
   renderList();
-  // One participant in the mock -> the trigger reads "1 participant", not "+ Participants".
   fireEvent.click(screen.getByRole("button", { name: "1 participant" }));
-  // Dialog table lists the participant as a person link with a remove control.
   expect(screen.getByRole("link", { name: "Ann Guest" })).toHaveAttribute(
     "href",
     "/contacts/people/p2",
@@ -290,7 +287,6 @@ it("surfaces a failed participant create inline instead of swallowing it", async
 
 it("edits the value ONLY via the pencil, with a dirty-gated Save footer (PD mechanism)", async () => {
   renderList();
-  // The value text is plain/selectable, not a click target.
   fireEvent.click(screen.getByText("$58,000"));
   expect(screen.queryByLabelText("Value")).not.toBeInTheDocument();
 
@@ -320,8 +316,6 @@ it("value editor: blur does not commit and Cancel discards (PD: only Cancel/Save
 it("close date: prompt click opens the editor; picking a day needs Save to commit", async () => {
   renderList();
   fireEvent.click(screen.getByRole("button", { name: "Set expected close date" }));
-  // Calendar opens immediately (PD behavior); picking a day only fills the draft. findByText:
-  // the calendar is a next/dynamic chunk that loads on open.
   fireEvent.click(await screen.findByText("15"));
   expect(updateDealAction).not.toHaveBeenCalled();
   fireEvent.click(screen.getByRole("button", { name: "Save" }));

@@ -1,6 +1,3 @@
-// A multi-value labels condition binds the names as one text[] parameter. Whether Postgres accepts
-// that cast, and whether the case-insensitive comparison survives it, is only answerable against a
-// real server, so every assertion here runs the compiled statement.
 import { describe, expect, it } from "vitest";
 import { settings } from "@/db/schema/system";
 import { withTestDb } from "@/db/testing";
@@ -21,8 +18,6 @@ async function seedLabelled(db: TestDb): Promise<{ userId: string; pipelineId: s
   });
   const u = await seedUser(db);
   const p = await seedPipelineWithStages(db, ["A"]);
-  // "hot" is stored lowercase the way 0046_label_backfill leaves a legacy value; the picker offers
-  // the cased catalog name.
   const seeds: Array<[string, string[]]> = [
     ["hot-deal", ["hot"]],
     ["warm-deal", ["Warm"]],

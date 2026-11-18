@@ -6,10 +6,6 @@ import { afterEach, beforeAll, expect, it, vi } from "vitest";
 import { DealSidebar } from "./DealSidebar";
 import { makeWorkspace, showAll } from "./dealSidebarFixtures";
 
-// The Summary label picker (LabelRow -> updateDealAction under the CAS precondition), split out of
-// DealSidebar.test.tsx to keep that file under the size cap. Person + Organization now render their
-// own "Add labels" pickers (ContactLabelsControl), so these tests scope the lookup to the Summary
-// section's region.
 beforeAll(() => {
   Element.prototype.scrollIntoView = vi.fn();
   Element.prototype.hasPointerCapture = vi.fn(() => false);
@@ -74,7 +70,6 @@ vi.mock("@/lib/trpc-client", () => ({
 
 afterEach(cleanup);
 
-// Open the Summary section's "Add labels" picker (not the Person/Organization ones).
 function openSummaryLabels(): HTMLElement {
   return within(screen.getByRole("region", { name: "Summary" })).getByRole("button", {
     name: /add labels/i,
@@ -100,7 +95,6 @@ it("edits labels via the catalog dropdown and calls updateDealAction with the CA
   expect(csrf).toBe("csrf");
   expect(input).toMatchObject({
     dealId: "d1",
-    // makeWorkspace().deal.updatedAt (2026-01-02T00:00:00Z) serializes to this ISO string.
     expectedUpdatedAt: "2026-01-02T00:00:00.000Z",
   });
   expect((input as { labels: string[] }).labels).toHaveLength(1);
@@ -110,7 +104,6 @@ it("edits labels via the catalog dropdown and calls updateDealAction with the CA
 it("surfaces a stale hint and refreshes when the CAS precondition fails", async () => {
   updateDealAction.mockClear();
   refresh.mockClear();
-  // E_DEAL_002 is ERROR_IDS.DEAL_PRECONDITION (the compare-and-swap failure the row must handle).
   const user = userEvent.setup();
   updateDealAction.mockResolvedValueOnce({ ok: false, error: { id: "E_DEAL_002" } });
   render(

@@ -17,8 +17,6 @@ describe("entityHref", () => {
   });
 
   it("returns null for a ref with no detail route instead of inventing one", () => {
-    // Activities and email messages have no detail page. The old email renderer pluralized the
-    // entity type into `/activitys/<id>`, which 404s.
     expect(entityHref("activity", "a1")).toBeNull();
     expect(entityHref("email_message", "m1")).toBeNull();
   });

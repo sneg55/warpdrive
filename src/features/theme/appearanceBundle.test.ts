@@ -5,9 +5,6 @@ import { APPEARANCE_DEFAULT, parseAppearance } from "./appearance";
 
 const SOURCE = readFileSync(fileURLToPath(new URL("./appearance.ts", import.meta.url)), "utf8");
 
-// AppearanceSync is mounted by the root layout, so everything this module imports ships on every
-// route. Recognising three literals must not drag zod (~62 KB gzipped) into that bundle, the same
-// trap src/lib/isValidEmail.ts exists to avoid.
 describe("appearance module weight", () => {
   it("pulls no validation library into the root client bundle", () => {
     expect(SOURCE).not.toMatch(/from ["']zod["']/);

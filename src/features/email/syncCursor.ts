@@ -5,10 +5,6 @@ import type { AuthUser } from "@/features/permissions/types";
 import type { DbOrTx } from "@/server/realtime/channelVersions";
 import { ok, type Result } from "@/types/result";
 
-// Hydrate the mailbox owner as an AuthUser for visibility scoping during sync.
-// CRITICAL: groupIds MUST come from the SAME source as hydrateActor in
-// src/server/trpc/context.ts so the owner's sync-time visibility is identical to
-// the tRPC canSee visibility. Do not invent a different group source here.
 export async function hydrateOwner(
   db: DbOrTx,
   userId: string,

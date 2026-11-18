@@ -3,11 +3,6 @@ import { anchorDate, calendarHref } from "@/features/activities/calendarView";
 import { groupMonthActivities, isSameMonth } from "@/features/activities/monthGrid";
 import { ActivityChip } from "./calendarChip";
 
-// The month display is the WAI-ARIA grid pattern (role=grid > row > columnheader/gridcell),
-// the correct semantics for a calendar date grid. Biome's a11y rules assume any grid role is
-// an interactive widget needing focus management and a semantic <table>; this is a static,
-// read-only display, so those specific rules are suppressed per element below.
-
 const WEEKDAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
 const MAX_CHIPS = 3;
 const WEEK_ROWS = [0, 1, 2, 3, 4, 5] as const;
@@ -26,7 +21,6 @@ function DayCell({
   const day = new Date(`${iso}T00:00:00.000Z`);
   const adjacent = !isSameMonth(day, anchor);
   const isToday = iso === todayIso;
-  // De-emphasised, but still readable: gray-400 on gray-50 measured under the 4.5:1 floor.
   const cellTone = adjacent ? "bg-muted/50 text-foreground/60" : "";
   const todayRing = isToday ? "ring-1 ring-primary" : "";
   const overflow = items.length - MAX_CHIPS;

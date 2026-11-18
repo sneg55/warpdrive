@@ -7,7 +7,6 @@ import { err, ok, type Result } from "@/types/result";
 
 const profileInput = z.object({ name: z.string().trim().min(1).max(255) });
 
-// Updates the actor's own display name. Wave 1 scope: name only, avatar upload deferred.
 export async function updateUserProfile(
   db: Db,
   input: { actorId: string; name: string },

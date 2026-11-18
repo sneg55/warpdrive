@@ -10,9 +10,6 @@ import {
 } from "lucide-react";
 import type React from "react";
 
-// Named wrappers over lucide so the nav's glyph vocabulary lives in one place.
-// aria-hidden keeps each link's accessible name its label text.
-
 type IconProps = { className?: string };
 
 const NAV_ICON_CLASS = "h-[18px] w-[18px] shrink-0";
@@ -25,8 +22,6 @@ export function PipelineIcon({ className }: IconProps): React.ReactNode {
   return <Kanban aria-hidden="true" className={className ?? NAV_ICON_CLASS} />;
 }
 
-// Sprout, not a funnel: the board's Filter control is lucide's funnel, and two
-// identical glyphs in one viewport would read as the same thing.
 export function LeadsIcon({ className }: IconProps): React.ReactNode {
   return <Sprout aria-hidden="true" className={className ?? NAV_ICON_CLASS} />;
 }

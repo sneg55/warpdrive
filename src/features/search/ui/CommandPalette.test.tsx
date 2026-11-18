@@ -30,9 +30,6 @@ import { OPEN_SEARCH_EVENT } from "./events";
 
 const EMPTY_RESULTS: SearchResults = { deals: [], people: [], organizations: [], leads: [] };
 
-// Sets the data the mocked trpc.search.query.useQuery hook returns on its
-// next call. The mock ignores its input args, so tests only need to control
-// the shape of the response, not the query string routing.
 function setResults(results: SearchResults) {
   useQueryMock.mockReturnValue({ data: results });
 }

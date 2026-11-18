@@ -1,11 +1,5 @@
 "use client";
 
-// InsertFieldMenu: a searchable, entity-tabbed field picker that inserts a chosen field into the
-// editor at the cursor (PD parity: PD's "Insert field" is a search box + category tabs over the
-// field list, with an "Update autofilled values" action). Built on the sanctioned Popover + cmdk
-// Command primitives (same as Combobox), NOT a hand-rolled menu. Generic over the inserted value so
-// both consumers reuse it: the composer passes resolved field VALUES, the template settings editor
-// passes {{token}} placeholders.
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "cmdk";
 import { useState } from "react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/Popover";
@@ -14,20 +8,16 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 interface InsertFieldItem {
   label: string;
   value: string;
-  // Entity the field belongs to (Person / Deal / Organization), drives the category tabs.
   category?: string;
 }
 
 interface InsertFieldMenuProps {
   items: InsertFieldItem[];
   onInsert: (value: string) => void;
-  // Trigger label; defaults to "Insert field" (Pipedrive parity copy).
   label?: string;
-  // When provided (deal context with live-resolved values), shows PD's "Update autofilled values".
   onRefresh?: () => void;
 }
 
-// Radix Tabs value can't be null, so the "All" tab uses a sentinel that no entity category matches.
 const ALL_TAB = "__all__";
 const CATEGORY_TAB =
   "rounded px-2 py-0.5 text-xs text-muted-foreground transition-colors hover:bg-accent data-[state=active]:bg-accent data-[state=active]:font-medium";
@@ -39,9 +29,7 @@ export function InsertFieldMenu({
   onRefresh,
 }: InsertFieldMenuProps): React.ReactNode {
   const [open, setOpen] = useState(false);
-  // Active category tab; null = All.
   const [tab, setTab] = useState<string | null>(null);
-  // Nothing to insert -> render no control (an empty menu is a dead affordance).
   if (items.length === 0) return null;
   const categories = [
     ...new Set(items.map((i) => i.category).filter((c): c is string => Boolean(c))),

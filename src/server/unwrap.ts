@@ -2,7 +2,6 @@ import { TRPCError } from "@trpc/server";
 import { type AppError, ERROR_IDS } from "@/constants/errorIds";
 import type { Result } from "@/types/result";
 
-// 404: record missing or invisible to the actor (404-on-invisible never leaks existence).
 const NOT_FOUND_IDS = new Set<string>([
   ERROR_IDS.CONTACT_NOT_FOUND,
   ERROR_IDS.DEAL_NOT_FOUND,
@@ -18,7 +17,6 @@ const NOT_FOUND_IDS = new Set<string>([
   ERROR_IDS.X_ACCOUNT_NOT_FOUND,
 ]);
 
-// 403: record is visible but the actor lacks permission for the action.
 const FORBIDDEN_IDS = new Set<string>([
   ERROR_IDS.PERM_DENIED,
   ERROR_IDS.PERM_SELF_ESCALATION,
@@ -27,7 +25,6 @@ const FORBIDDEN_IDS = new Set<string>([
   ERROR_IDS.CONTACT_MERGE_FORBIDDEN,
 ]);
 
-// 400: caller-fixable validation or precondition failure (bad input, not a server fault).
 const BAD_REQUEST_IDS = new Set<string>([
   ERROR_IDS.DEAL_PRECONDITION,
   ERROR_IDS.DEAL_STAGE_MISMATCH,
@@ -47,9 +44,6 @@ const BAD_REQUEST_IDS = new Set<string>([
   ERROR_IDS.X_INPUT_INVALID,
 ]);
 
-// Convert a repo Result into a value or a TRPCError. Sets are checked in order so a
-// new error id has an obvious home; anything unmapped (E_DB_*, unknown) is a real
-// server fault and surfaces as INTERNAL_SERVER_ERROR. The message stays the stable id.
 export async function unwrap<T>(result: Promise<Result<T, AppError>>): Promise<T> {
   const r = await result;
   if (r.ok) return r.value;

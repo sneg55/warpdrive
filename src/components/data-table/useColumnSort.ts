@@ -6,8 +6,6 @@ export interface ColumnSort<F extends string> {
   dir: "asc" | "desc";
 }
 
-// Header click cycles the active field asc to desc to null (default); a click on a
-// different field jumps to that field ascending. Single active sort column.
 export function cycleSort<F extends string>(
   current: ColumnSort<F> | null,
   field: F,
@@ -17,7 +15,6 @@ export function cycleSort<F extends string>(
   return null;
 }
 
-// Resolve the (possibly null) sort state to the concrete sort sent to the server.
 export function effectiveSort<F extends string>(
   sort: ColumnSort<F> | null,
   fallback: ColumnSort<F>,

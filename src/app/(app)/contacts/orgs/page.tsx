@@ -13,9 +13,6 @@ import { createCaller } from "@/server/trpc/root";
 
 export const metadata = { title: STRINGS.contacts.orgsHeading };
 
-// Contacts: a paginated, visibility-filtered list of organizations. The heading renders
-// immediately; the row data streams into the <Suspense> boundary so a navigation shows the real
-// page chrome without waiting on the list query.
 export default async function OrgsListPage(): Promise<React.ReactNode> {
   const ctx = await createContext();
   if (ctx.actor === null) {
@@ -38,8 +35,6 @@ export default async function OrgsListPage(): Promise<React.ReactNode> {
   );
 }
 
-// Data region: fetched inside the Suspense boundary so the heading above never waits on it.
-// createContext is React.cache-wrapped, so re-resolving the actor here reuses the page's work.
 async function OrgsSection({ actorId }: { actorId: string }): Promise<React.ReactNode> {
   const ctx = await createContext();
   const caller = createCaller(ctx);

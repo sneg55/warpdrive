@@ -9,9 +9,7 @@ import { makeStorageClient, type StorageClient } from "./storage";
 
 type Db = NodePgDatabase<typeof schema>;
 
-// Rows older than one hour are stale: a presigned upload that never confirmed.
 const DEFAULT_OLDER_THAN_MS = 3_600_000;
-// Bound a single reaper run so a wedged storage call cannot hang the worker.
 const REAPER_JOB_TIMEOUT_MS = 5 * 60 * 1000;
 
 export interface ReapOptions {
@@ -36,7 +34,6 @@ export async function reapStaleUploads(
   for (const row of stale) {
     const removed = await storage.deleteObject(row.s3Key, signal);
     signal.throwIfAborted();
-    // Storage failure is a value: skip this row, leave it for the next run.
     if (!removed.ok) continue;
     await db.delete(files).where(eq(files.id, row.id));
     signal.throwIfAborted();
@@ -45,8 +42,6 @@ export async function reapStaleUploads(
   return { deleted };
 }
 
-// Register the hourly reaper. NOT wired into startWorker here (that is Task 23);
-// this only defines registration, mirroring registerEmailJobs.
 export async function registerReaperJob(boss: PgBoss): Promise<void> {
   await boss.createQueue(PGBOSS_QUEUE_FILE_REAPER);
   await boss.work(PGBOSS_QUEUE_FILE_REAPER, async () => {

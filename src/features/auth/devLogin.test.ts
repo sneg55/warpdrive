@@ -1,12 +1,3 @@
-/**
- * devLogin.test.ts: TDD tests for devLoginCore.
- *
- * Test plan:
- * (a) Guard is OFF (nodeEnv=production OR allowFirstLoginAdmin=false) => returns err("disabled"), no DB write.
- * (b) Guard is ON, valid email => upserts user, returns session.
- * (c) Guard is ON, invalid email => returns err("invalid_email").
- */
-
 import { sql } from "drizzle-orm";
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from "vitest";
 import { sessions, users } from "@/db/schema";
@@ -49,7 +40,6 @@ describe("devLoginCore: production guard", () => {
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error).toBe("disabled");
 
-    // Verify no DB side-effects.
     const rows = await h.db.select().from(users);
     expect(rows).toHaveLength(0);
   });
@@ -87,12 +77,10 @@ describe("devLoginCore: valid guard enabled path", () => {
     expect(result.value.sid).toBeTruthy();
     expect(result.value.expiresAt).toBeInstanceOf(Date);
 
-    // User was actually inserted.
     const dbUsers = await h.db.select().from(users);
     expect(dbUsers).toHaveLength(1);
     expect(dbUsers[0]!.email).toBe("admin@example.com");
 
-    // Session was actually inserted.
     const dbSessions = await h.db.select().from(sessions);
     expect(dbSessions).toHaveLength(1);
     expect(dbSessions[0]!.userId).toBe(result.value.userId);

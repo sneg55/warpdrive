@@ -1,9 +1,5 @@
 import type { NotificationType } from "./notificationTypes";
 
-// Whether a notification type emails the recipient when they have set no preference.
-// On: someone is waiting on you, or the outcome is worth interrupting for. Off: the
-// per-event and per-edit types, which fire many times per record and would drown the
-// on-by-default ones. In-app delivery defaults to true for every type.
 export const DEFAULT_EMAIL_BY_TYPE: Record<NotificationType, boolean> = {
   mention: true,
   comment_reply: true,

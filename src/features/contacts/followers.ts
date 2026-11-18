@@ -1,8 +1,3 @@
-// followContact / unfollowContact: self-only follow toggle for the person/org detail header.
-// Mirrors deal-workspace/followers.ts: following requires only VISIBILITY (canSee), not
-// contact.edit, so a visible-but-not-owned contact can still be followed. Person/organization
-// visibility is already implemented by assertReferenceVisible's person/org branch, so this
-// reuses that gate directly instead of re-deriving VisiblePersonOrOrg by hand.
 import { and, eq } from "drizzle-orm";
 import type { AppError } from "@/constants/errorIds";
 import type { Db } from "@/db/client";
@@ -21,7 +16,6 @@ export interface ContactFollowersResult {
   isFollowedBySelf: boolean;
 }
 
-// Same local adapter as personsRepo.ts / contactTimeline.ts (no shared export exists yet).
 function toRefActor(actor: PermSetUser): DealVisibilitySession {
   return {
     userId: actor.id,
@@ -53,7 +47,6 @@ export async function followContact(
   const visible = await assertVisible(db, actor, entityType, entityId, signal);
   if (visible.ok === false) return visible;
 
-  // Idempotent: a second follow by the same user is a no-op (composite PK conflict).
   await db
     .insert(contactFollowers)
     .values({ entityType, entityId, userId: actor.id })
@@ -72,7 +65,6 @@ export async function unfollowContact(
   const visible = await assertVisible(db, actor, entityType, entityId, signal);
   if (visible.ok === false) return visible;
 
-  // Idempotent: unfollow-when-absent deletes zero rows and still succeeds.
   await db
     .delete(contactFollowers)
     .where(
@@ -86,10 +78,6 @@ export async function unfollowContact(
   return ok(undefined);
 }
 
-// Followers resolved to display refs (name + avatar). Ungated: this is the raw read
-// primitive the repo test exercises directly. Callers reachable from outside an
-// already-visibility-checked page (the contactFollowers router query below) must gate
-// visibility themselves, same as getContactFollowers does.
 export async function listContactFollowers(
   db: Db,
   entityType: ContactEntityType,
@@ -110,9 +98,6 @@ export async function listContactFollowers(
 
 const EMPTY_FOLLOWERS: ContactFollowersResult = { followers: [], isFollowedBySelf: false };
 
-// Gated read for the contactFollowers router query and detail-page server load: an actor who
-// cannot see the contact gets an empty result (never leak follower existence for a hidden
-// record), the same no-leak precondition contactTimeline/listRelatedOrgs use.
 export async function getContactFollowers(
   db: Db,
   actor: PermSetUser,

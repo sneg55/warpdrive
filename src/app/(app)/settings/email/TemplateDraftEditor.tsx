@@ -9,8 +9,6 @@ import { RichTextBody } from "@/features/email/composer/RichTextBodyLazy";
 import { MERGE_TOKEN_FIELDS, mergeTokenPlaceholder } from "@/features/email/mergeTokens";
 import { EMAIL_SETTINGS_STRINGS as S } from "./strings";
 
-// A template draft. Shared with the client (the parent owns the value; the editor owns the
-// insert-field cursor state so a bumped seq re-fires the {{token}} insertion in RichTextBody).
 export type TemplateDraft = {
   id?: string;
   name: string;
@@ -19,7 +17,6 @@ export type TemplateDraft = {
   isShared: boolean;
 };
 
-// T1: the Insert-field menu offers literal {{token}} placeholders (resolved per-recipient at send).
 const INSERT_ITEMS = MERGE_TOKEN_FIELDS.map((f) => ({
   label: f.label,
   value: mergeTokenPlaceholder(f.token),
@@ -35,13 +32,11 @@ export function TemplateDraftEditor({
 }: {
   draft: TemplateDraft;
   canShare: boolean;
-  // Set when a save was attempted with a blank name, so the form explains why nothing happened.
   nameError: string | null;
   onChange: (next: TemplateDraft) => void;
   onSave: () => void;
   onCancel: () => void;
 }): React.ReactNode {
-  // Bumping `seq` is what RichTextBody keys its cursor insertion on; `text` is the placeholder.
   const [insertToken, setInsertToken] = useState<{ text: string; seq: number }>({
     text: "",
     seq: 0,

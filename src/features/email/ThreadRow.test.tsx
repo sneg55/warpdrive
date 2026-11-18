@@ -15,13 +15,11 @@ vi.mock("./folderActions", () => ({
   archiveThreadAction: (...a: unknown[]) => archiveMock(...(a as [])),
   unarchiveThreadAction: (...a: unknown[]) => unarchiveMock(...(a as [])),
 }));
-// Server action pulls in db/context; mock it so the row renders in jsdom.
 const setVisibilityMock = vi.fn(() => Promise.resolve({ ok: true, value: {} }));
 vi.mock("./threadVisibilityActions", () => ({
   setThreadVisibilityAction: (...a: unknown[]) => setVisibilityMock(...(a as [])),
 }));
 vi.mock("@/utils/csrfCookie", () => ({ readCsrfToken: () => "csrf" }));
-// ThreadRow renders ThreadLabelChips, which resolves labels against the mail-label catalog.
 vi.mock("@/lib/trpc-client", () => ({
   trpc: {
     mailLabels: {
@@ -118,7 +116,6 @@ it("shows the sender display name when present (Pipedrive parity)", () => {
     />,
   );
   expect(screen.getByText("Scrape.do Team")).toBeInTheDocument();
-  // The raw address must not be shown once a name is available.
   expect(screen.queryByText("support@scrape.do")).not.toBeInTheDocument();
 });
 
@@ -164,7 +161,6 @@ it("shows an attachment indicator only when the thread has an attachment", () =>
   expect(screen.queryByLabelText("Has attachment")).not.toBeInTheDocument();
 });
 
-// U7 row visual polish (assert classes/structure, not px, since jsdom has no layout).
 describe("ThreadRow U7 visual polish", () => {
   it("renders the row date at the larger font (A14: text-sm, not text-xs)", () => {
     render(<ThreadRow {...props} thread={{ ...thread, lastMessageAt: "2026-07-02T10:00:00Z" }} />);
@@ -179,7 +175,6 @@ describe("ThreadRow U7 visual polish", () => {
     );
     const chip = screen.getByText("Important");
     const subject = screen.getByText("Hello");
-    // DOCUMENT_POSITION_FOLLOWING (4) means subject comes after the chip in document order.
     expect(chip.compareDocumentPosition(subject) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 

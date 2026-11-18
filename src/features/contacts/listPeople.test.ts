@@ -19,7 +19,6 @@ function regularActor(id: string): ContactActor {
   };
 }
 
-// Seed a person directly (bypassing createPerson) so the test controls owner + visibility.
 async function seedPerson(
   db: Parameters<Parameters<typeof withTestDb>[0]>[0],
   opts: {
@@ -49,9 +48,9 @@ describe("listPeople", () => {
       const me = await seedUser(db);
       const other = await seedUser(db);
 
-      await seedPerson(db, { name: "Anna", ownerId: me.id, visibilityLevel: "owner" }); // mine
-      await seedPerson(db, { name: "Bob", ownerId: other.id, visibilityLevel: "all" }); // public
-      await seedPerson(db, { name: "Zoe", ownerId: other.id, visibilityLevel: "owner" }); // hidden
+      await seedPerson(db, { name: "Anna", ownerId: me.id, visibilityLevel: "owner" });
+      await seedPerson(db, { name: "Bob", ownerId: other.id, visibilityLevel: "all" });
+      await seedPerson(db, { name: "Zoe", ownerId: other.id, visibilityLevel: "owner" });
 
       const res = await listPeople(db, regularActor(me.id), { offset: 0, limit: 50 }, signal);
 
@@ -67,7 +66,6 @@ describe("listPeople", () => {
       await seedPerson(db, { name: "Anna", ownerId: me.id, visibilityLevel: "all" });
       await seedPerson(db, { name: "Gone", ownerId: me.id, visibilityLevel: "all" });
       await db.update(persons).set({ deletedAt: new Date() }).where(isNull(persons.deletedAt));
-      // Re-add one live person after soft-deleting everything above.
       await seedPerson(db, { name: "Live", ownerId: me.id, visibilityLevel: "all" });
 
       const res = await listPeople(db, regularActor(me.id), { offset: 0, limit: 50 }, signal);
@@ -81,10 +79,6 @@ describe("listPeople", () => {
       const signal = new AbortController().signal;
       const me = await seedUser(db);
 
-      // Four people sharing one name straddle the page boundary. Explicit ids are inserted
-      // in reverse-id order so physical (ctid) order differs from id order: without an id
-      // tiebreaker in ORDER BY, the two independent page queries have no stable order among
-      // the equal names and can dup or skip a row between fetches.
       const ids = [
         "00000000-0000-0000-0000-0000000000a1",
         "00000000-0000-0000-0000-0000000000a2",
@@ -110,7 +104,6 @@ describe("listPeople", () => {
       const page2 = await listPeople(db, regularActor(me.id), { offset: 2, limit: 2 }, signal);
       const seen = [...page1.rows, ...page2.rows].map((r) => r.id);
 
-      // Every id exactly once (a partition of the set), in stable (name, id) order.
       expect(seen).toEqual(ids);
       expect(new Set(seen).size).toBe(ids.length);
     });
@@ -153,8 +146,6 @@ describe("listPeople", () => {
     });
   });
 
-  // Closed-deals column (CV-4): counts won+lost deals linked to the person, via the deal's own
-  // person_id OR a deal_participants row, visibility-gated, with open deals excluded.
   it("returns the count of closed (won+lost) deals per person, via person_id and participants", async () => {
     await withTestDb(async (db) => {
       const signal = new AbortController().signal;
@@ -178,7 +169,6 @@ describe("listPeople", () => {
         .returning();
       const personId = person?.id ?? "";
 
-      // Won + lost via the deal's own person_id; an open deal must NOT count.
       const dealBase = {
         pipelineId: pipeline.id,
         stageId,
@@ -190,7 +180,6 @@ describe("listPeople", () => {
         { ...dealBase, title: "Lost B", status: "lost", personId },
         { ...dealBase, title: "Open C", status: "open", personId },
       ]);
-      // A won deal linked only via a participant (no person_id) also counts.
       const [viaParticipant] = await db
         .insert(deals)
         .values({ ...dealBase, title: "Won D (participant)", status: "won", personId: null })
@@ -203,8 +192,6 @@ describe("listPeople", () => {
     });
   });
 
-  // primaryEmail is the People list's other clickable sortable header (Codex-audit gap:
-  // only name desc was covered, leaving the column's ORDER BY mapping unverified).
   it("applies a server-side sort on primaryEmail", async () => {
     await withTestDb(async (db) => {
       const signal = new AbortController().signal;

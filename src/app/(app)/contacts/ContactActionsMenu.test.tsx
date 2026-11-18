@@ -63,7 +63,6 @@ function renderMenu(onMerge = vi.fn()): void {
   );
 }
 
-// Opens the menu and picks "Delete", returning the confirmation surface it raises.
 async function openDeleteConfirm(user: ReturnType<typeof userEvent.setup>): Promise<HTMLElement> {
   await user.click(screen.getByRole("button", { name: "Contact actions" }));
   await user.click(screen.getByRole("menuitem", { name: "Delete" }));
@@ -79,7 +78,6 @@ it("invokes onMerge when permitted", async () => {
   expect(onMerge).toHaveBeenCalled();
 });
 
-// The destructive confirm is the shadcn AlertDialog, never the browser's window.confirm chrome.
 it("Delete raises an in-app confirm dialog, not a native browser confirm", async () => {
   const nativeConfirm = vi.spyOn(window, "confirm");
   const user = userEvent.setup();

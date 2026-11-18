@@ -11,8 +11,6 @@ import type { BoardOwner } from "./boardFilter";
 import type { BoardProps } from "./boardTypes";
 import type { BoardViewControls } from "./useBoardView";
 
-// An owner whose every deal is excluded is absent from `owners`, so the chip still reports the
-// board is narrowed even when the visible cards cannot name them.
 const UNNAMED_OWNER = "Unknown";
 
 interface BoardHeaderProps {
@@ -29,8 +27,6 @@ interface BoardHeaderProps {
   canManagePipelines?: boolean;
 }
 
-// Everything above the stage columns: the toolbar with its filter/sort/create slots, and the row
-// of chips naming each narrowing dimension the board currently applies.
 export function BoardHeader(props: BoardHeaderProps): React.ReactNode {
   const { pipelineId, pipelines, stages, selfActorId, owners, view, addSlot } = props;
   const { totalValue, dealCount, onPreviewFilter, canManagePipelines } = props;

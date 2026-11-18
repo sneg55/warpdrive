@@ -6,7 +6,6 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type { CalendarActivity } from "@/features/activities/calendar";
 import type { HistoryItem } from "@/features/deal-workspace/historyTimeline";
 
-// ActivityCard (rendered inside LeadTimeline) reads trpc.useUtils for its optimistic mark-done.
 vi.mock("@/lib/trpc-client", () => ({
   trpc: {
     useUtils: () => ({

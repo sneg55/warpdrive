@@ -3,7 +3,6 @@ import type { TestDb } from "@/test/db";
 import { makeTestDb } from "@/test/db";
 import { bumpChannelVersion } from "./channelVersions";
 
-// Real Postgres integration test: no mocks, real migrations (no mock/prod divergence).
 describe("bumpChannelVersion", () => {
   let testDb: TestDb;
 

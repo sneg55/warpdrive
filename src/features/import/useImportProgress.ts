@@ -14,7 +14,6 @@ export interface ImportProgress {
 
 type ProgressData = Extract<PublishedEvent, { type: "import_progress" }>["data"];
 
-// Pure reducer so the wiring hook stays untested-ok (same rationale as useInboxRealtime).
 export function reduceProgress(_prev: ImportProgress, data: ProgressData): ImportProgress {
   return { processed: data.processed, total: data.total, status: data.status };
 }

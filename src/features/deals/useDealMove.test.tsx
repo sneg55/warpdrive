@@ -11,7 +11,6 @@ import { useDealMove } from "./useDealMove";
 
 vi.mock("./moveAction");
 
-// Helper: deferred promise so tests can assert optimistic state before settling.
 function deferred<T>() {
   let resolve!: (v: T) => void;
   let reject!: (e: unknown) => void;
@@ -71,19 +70,16 @@ describe("useDealMove", () => {
       });
     });
 
-    // onMutate is async (cancelQueries), so wait for the optimistic patch to land.
     await waitFor(() => {
       expect((client.getQueryData(["board", "p1"]) as BoardData).cards[0]!.stageId).toBe("s2");
     });
 
-    // Now settle with a stale-precondition error: cache should roll back to s1.
     resolve({ ok: false, error: { id: "E_DEAL_002" } });
 
     await waitFor(() => {
       expect((client.getQueryData(["board", "p1"]) as BoardData).cards[0]!.stageId).toBe("s1");
     });
 
-    // sanity: midpoint helper imported correctly
     expect(midpoint(null, null)).toBe("1");
   });
 

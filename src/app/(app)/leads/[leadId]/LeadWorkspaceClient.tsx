@@ -17,8 +17,6 @@ const EMPTY_TIMELINE: LeadTimelineResult = { items: [], emails: [] };
 
 export interface LeadWorkspaceClientProps {
   lead: LeadDetail;
-  // Fully-loaded linked contact records + Settings > Data fields hides, threaded to the sidebar's
-  // Person/Organization blocks. null when the lead has no (or a soft-deleted) person/org.
   person: Person | null;
   org: Organization | null;
   hiddenPersonFields: ReadonlySet<string>;
@@ -29,8 +27,6 @@ export interface LeadWorkspaceClientProps {
   baseCurrency?: string;
 }
 
-// Lead detail workspace, mirroring DealWorkspaceClient: header actions, a person/value sidebar, and
-// a notes/activities/email timeline fed by the leadTimeline tRPC read.
 export function LeadWorkspaceClient({
   lead,
   person,
@@ -50,8 +46,6 @@ export function LeadWorkspaceClient({
     () => mergeSupportItems(timeline.items, support, supportScope),
     [timeline.items, support, supportScope],
   );
-  // Assignable users for the sidebar's Owner picker (LeadSummaryEditPanel); the write path
-  // (updateLead) is the real authority (deal.changeOwner), this read is deliberately ungated.
   const ownersQ = trpc.identity.assignableUsers.useQuery();
   const owners = ownersQ.data ?? [];
 
@@ -72,9 +66,6 @@ export function LeadWorkspaceClient({
           baseCurrency={baseCurrency}
         />
         <div className="min-w-0">
-          {/* Compose toolbar (Pipedrive): collapse-by-default Activity/Notes for the lead
-              scope. Email/Files stay hidden (lead has neither a mailbox thread nor a file
-              entity yet, see emailTabEnabled/fileTabEnabled in composeScope.ts). */}
           <SharedComposeBar
             scope={{
               entityType: "lead",

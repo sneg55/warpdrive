@@ -1,5 +1,4 @@
 // @vitest-environment jsdom
-// Phase 7 Send-later tests, split out of ComposerFooter.test.tsx to stay under the line cap.
 import "@testing-library/jest-dom/vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -96,7 +95,6 @@ describe("ComposerFooter Send later (Phase 7)", () => {
     );
     fireEvent.click(screen.getByRole("button", { name: /send later/i }));
     const picker = await screen.findByTestId("scheduled-at-picker");
-    // Set a future datetime value (1 hour from now)
     const future = new Date(Date.now() + 3_600_000);
     const pad = (n: number) => String(n).padStart(2, "0");
     const local = `${future.getFullYear()}-${pad(future.getMonth() + 1)}-${pad(future.getDate())}T${pad(future.getHours())}:${pad(future.getMinutes())}`;
@@ -107,7 +105,6 @@ describe("ComposerFooter Send later (Phase 7)", () => {
     const calledWith = onSendLater.mock.calls[0]?.[0] as Date;
     expect(calledWith).toBeInstanceOf(Date);
     expect(calledWith.getTime()).toBeGreaterThan(Date.now());
-    // Picker should be hidden after scheduling
     expect(screen.queryByTestId("scheduled-at-picker")).not.toBeInTheDocument();
   });
 
@@ -134,7 +131,6 @@ describe("ComposerFooter Send later (Phase 7)", () => {
     fireEvent.change(picker, { target: { value: local } });
     fireEvent.click(screen.getByRole("button", { name: /^schedule$/i }));
     expect(onSendLater).not.toHaveBeenCalled();
-    // Inline validation message, not an alert banner.
     expect(await screen.findByText(/in the future/i)).toBeInTheDocument();
   });
 

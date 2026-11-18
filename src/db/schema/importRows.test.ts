@@ -12,7 +12,6 @@ afterAll(async () => {
 });
 
 it("enforces (batch_id, row_number) uniqueness as the idempotency guard", async () => {
-  // import_batches.created_by is a NOT NULL FK to users; seed a real user first.
   const [u] = await h.db
     .insert(users)
     .values({ email: "i@test.com", name: "I", googleSub: "sub-i" })
@@ -25,7 +24,6 @@ it("enforces (batch_id, row_number) uniqueness as the idempotency guard", async 
 
   await h.db.insert(importRows).values({ batchId: batch!.id, rowNumber: 1, raw: { name: "A" } });
 
-  // A second row with the same (batch_id, row_number) must be rejected.
   await expect(
     h.db.insert(importRows).values({ batchId: batch!.id, rowNumber: 1, raw: { name: "B" } }),
   ).rejects.toThrow();

@@ -7,7 +7,6 @@ import { isUploadedAvatarUrl } from "@/features/identity/avatar/avatarStorage";
 import { err, ok, type Result } from "@/types/result";
 import { ensureSeedData, readSeedHandles } from "./seed";
 
-// Stable advisory-lock key for the bootstrap election (any fixed bigint).
 const BOOTSTRAP_LOCK_KEY = 815_274_001n;
 
 export interface VerifiedIdentity {
@@ -17,9 +16,6 @@ export interface VerifiedIdentity {
   avatarUrl: string | null;
 }
 
-// One transaction: advisory lock -> seed-if-empty -> elect-or-create -> auto-join Everyone.
-// Race-safe: pg_advisory_xact_lock serialises concurrent first logins so exactly one
-// user can be elected admin (the one matching SEED_ADMIN_EMAIL when bootstrappedAt IS NULL).
 export async function upsertUserOnLogin(
   db: Db,
   identity: VerifiedIdentity,
@@ -32,18 +28,11 @@ export async function upsertUserOnLogin(
     async (
       tx,
     ): Promise<{ kind: "ok"; userId: string; isAdmin: boolean } | { kind: "conflict" }> => {
-      // Serialize the election: two concurrent first logins cannot both self-promote.
       await tx.execute(sql`SELECT pg_advisory_xact_lock(${BOOTSTRAP_LOCK_KEY})`);
       signal.throwIfAborted();
 
-      // Primary binding is the STABLE Google subject, never the email (a Workspace address
-      // can be reassigned or recreated). Same subject re-logging in: refresh profile and
-      // email (the email may have changed in Google), never re-elect admin (F25).
       const bySub = await tx.select().from(users).where(eq(users.googleSub, identity.sub)).limit(1);
       if (bySub[0] !== undefined) {
-        // Never clobber a user-uploaded avatar with the login identity's photo (often null for dev
-        // login or a photoless Workspace account), which was wiping avatars on every re-login. A
-        // provider-sourced or absent avatar still refreshes.
         const avatarUrl = isUploadedAvatarUrl(bySub[0].avatarUrl)
           ? bySub[0].avatarUrl
           : identity.avatarUrl;
@@ -54,12 +43,6 @@ export async function upsertUserOnLogin(
         return { kind: "ok", userId: bySub[0].id, isAdmin: bySub[0].isAdmin };
       }
 
-      // No account for this subject. If the email already belongs to a DIFFERENT subject, the
-      // address was reassigned/recreated: fail closed (identity conflict), never rebind the
-      // old CRM user (and its admin state) to the new Google identity (F25). The one exception
-      // is a googleSub IS NULL placeholder: that row was created by inviteUser specifically to
-      // be claimed by whoever first signs in with this verified email (Task 11), so bind the
-      // real Google identity now instead of rejecting.
       const byEmail = await tx
         .select({ id: users.id, googleSub: users.googleSub })
         .from(users)
@@ -84,7 +67,6 @@ export async function upsertUserOnLogin(
         return { kind: "conflict" };
       }
 
-      // Check whether bootstrap is still open (bootstrappedAt IS NULL means no admin elected yet).
       const [s] = await tx
         .select({ bootstrappedAt: settings.bootstrappedAt })
         .from(settings)
@@ -117,7 +99,6 @@ export async function upsertUserOnLogin(
         throw new AppError(ERROR_IDS.DB_INVARIANT, "user insert failed");
       }
 
-      // Auto-join the Everyone group so group-level deals are visible (ops spec E6).
       await tx
         .insert(visibilityGroupMembers)
         .values({ groupId: seed.everyoneGroupId, userId: created.id })

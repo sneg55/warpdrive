@@ -14,7 +14,7 @@ describe("sendGmail (system-send primitive)", () => {
       account,
       { to: ["you@y.com"], subject: "System alert", bodyHtml: "<p>hi</p>", bodyText: "hi" },
       newSignal(),
-      { resolveClient: () => Promise.resolve(ok(fake)) }, // inject fake transport; no DB, no OAuth
+      { resolveClient: () => Promise.resolve(ok(fake)) },
     );
     expect(r.ok).toBe(true);
     if (r.ok) expect(r.value.gmailMessageId).toBe("sys-out-1");
@@ -25,8 +25,6 @@ describe("sendGmail (system-send primitive)", () => {
     const mime = Buffer.from(raw, "base64url").toString("utf8");
     expect(mime).toContain("Subject: System alert");
     expect(mime).toContain("To: you@y.com");
-    // Domain comes from env.GOOGLE_WORKSPACE_DOMAIN (example.com in the test env, per
-    // vitest.setup.ts); deriveMessageId is <accountId.idempotencyKey@domain>.
     expect(mime).toMatch(/Message-ID: <acc-1\..*@example\.com>/);
   });
 

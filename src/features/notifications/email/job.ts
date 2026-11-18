@@ -28,7 +28,6 @@ export async function runEmailNotificationJob(
 ): Promise<Result<{ sent: boolean }, AppError>> {
   signal.throwIfAborted();
 
-  // (a) Load the notification row.
   const [row] = await db
     .select()
     .from(notifications)
@@ -37,9 +36,6 @@ export async function runEmailNotificationJob(
   signal.throwIfAborted();
   if (row === undefined) return ok({ sent: false });
 
-  // Idempotency guard (F36): pg-boss is at-least-once, so a job can re-run after a crash
-  // between Gmail accepting the message and the job being acknowledged. If this row was
-  // already emailed, skip rather than send a duplicate.
   if (row.emailSentAt !== null) return ok({ sent: false });
 
   const notifRow: NotificationRow = {
@@ -54,15 +50,9 @@ export async function runEmailNotificationJob(
     createdAt: row.createdAt.toISOString(),
   };
 
-  // (b) Hydrate the recipient as an AuthUser for visibility checks. Same hydrator as the request
-  // path and the producer: the mailbox-owner one omits managedUserIds, which would make the
-  // recheck below stricter than what the recipient can actually see and silently drop the email
-  // for a team manager holding team.viewMembers.
   const recipientUser = await hydrateActor(db, notifRow.userId, signal);
-  if (recipientUser === null) return ok({ sent: false }); // recipient gone or deactivated
+  if (recipientUser === null) return ok({ sent: false });
 
-  // (c) RE-CHECK visibility at send time: the security core.
-  // A notification queued while the entity was visible may have become invisible.
   if (notifRow.entityType !== null && notifRow.entityId !== null) {
     const canSee = await canActorAccessParent(
       db,
@@ -72,17 +62,13 @@ export async function runEmailNotificationJob(
       signal,
     );
     signal.throwIfAborted();
-    if (canSee !== true) return ok({ sent: false }); // DROP: now-invisible
+    if (canSee !== true) return ok({ sent: false });
   }
 
-  // (c2) RE-CHECK the email delivery preference at send time (F35): a preference resolved at
-  // enqueue can be revoked before the job runs. If email delivery is no longer enabled for
-  // this type, drop the send.
   const delivery = await resolveDelivery(db, notifRow.userId, notifRow.type, signal);
   signal.throwIfAborted();
-  if (delivery.email !== true) return ok({ sent: false }); // DROP: opted out
+  if (delivery.email !== true) return ok({ sent: false });
 
-  // (d) Load the recipient's connected mailbox.
   const [account] = await db
     .select({
       id: emailAccounts.id,
@@ -95,7 +81,6 @@ export async function runEmailNotificationJob(
   signal.throwIfAborted();
   if (account === undefined) return ok({ sent: false });
 
-  // Check status is 'connected' (queried separately to use the typed enum column).
   const [statusRow] = await db
     .select({ status: emailAccounts.status })
     .from(emailAccounts)
@@ -104,7 +89,6 @@ export async function runEmailNotificationJob(
   signal.throwIfAborted();
   if (statusRow === undefined || statusRow.status !== "connected") return ok({ sent: false });
 
-  // (e) Load the recipient's display name.
   const [userRow] = await db
     .select({ name: users.name })
     .from(users)
@@ -113,19 +97,15 @@ export async function runEmailNotificationJob(
   signal.throwIfAborted();
   const recipientName = userRow?.name ?? "there";
 
-  // (f) Render and build the SystemMessage.
   const rendered = renderNotificationEmail(notifRow, recipientName);
   const message: SystemMessage = {
     to: [account.emailAddress],
     subject: rendered.subject,
     bodyHtml: rendered.html,
     bodyText: rendered.text,
-    // Stable key so a retry reuses the same RFC822 Message-ID (F36): a duplicate that slips
-    // through the marker race is at least dedupable by the recipient's mail client.
     idempotencyKey: notifRow.id,
   };
 
-  // (g) Send via the injected send function (defaults to production sendGmail).
   const sendFn = deps.send ?? sendGmail;
   const mailboxRow: EmailAccountRow = {
     id: account.id,
@@ -135,15 +115,6 @@ export async function runEmailNotificationJob(
   const sent = await sendFn(mailboxRow, message, signal);
   if (sent.ok !== true) return sent;
 
-  // Persist the delivery marker so a later at-least-once retry short-circuits above (F36).
-  //
-  // Accepted residual (F38): if the worker dies in the window between Gmail accepting the
-  // message above and this marker committing, a retry re-sends. This is a deliberate
-  // tradeoff, not a defect. Marking BEFORE send would instead DROP notifications on ordinary
-  // transient Gmail failures (far more common than a mid-window crash), and a full
-  // reconcile-by-Message-ID state machine is disproportionate for a notification email. The
-  // stable idempotencyKey above makes any such duplicate carry an identical RFC822
-  // Message-ID, so the recipient's mail client collapses it.
   await db
     .update(notifications)
     .set({ emailSentAt: new Date() })
@@ -152,8 +123,6 @@ export async function runEmailNotificationJob(
   return ok({ sent: true });
 }
 
-// Register the email notification worker on pg-boss.
-// Follows the exact pattern in src/features/email/workerJobs.ts.
 export async function registerEmailNotificationWorker(boss: PgBoss): Promise<void> {
   const { db } = await import("@/db/client");
 

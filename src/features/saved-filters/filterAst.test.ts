@@ -1,4 +1,3 @@
-// filterAst.test.ts: functional + security tests for filterToSql
 import { sql } from "drizzle-orm";
 import { PgDialect } from "drizzle-orm/pg-core";
 import { describe, expect, it } from "vitest";
@@ -122,8 +121,6 @@ describe("filterToSql: functional", () => {
     });
   });
 
-  // SECURITY: injection payload on a numeric field is parameterized, rejected by
-  // Postgres as a type error (not executed as SQL). Deals table must survive intact.
   it("SECURITY: injection payload in value is bound as a parameter, not executed", async () => {
     await withTestDb(async (db) => {
       await db.insert(settings).values({
@@ -141,10 +138,6 @@ describe("filterToSql: functional", () => {
       );
       if (d.ok === false) throw new Error("setup");
 
-      // The injection payload is sent as $1 (parameterized). Postgres rejects it as
-      // a non-numeric type for the `value` column, proving it never ran as SQL.
-      // If it were interpolated, the semicolon would split the statement and
-      // DROP TABLE deals would execute.
       const frag = filterToSql({
         conditions: [{ field: "value", op: "eq", value: "'; DROP TABLE deals; --" }],
       });
@@ -155,7 +148,6 @@ describe("filterToSql: functional", () => {
         `),
       ).rejects.toThrow();
 
-      // Deals table is intact.
       const count = await db.execute(sql`SELECT COUNT(*) AS n FROM deals`);
       const n = Number((count as unknown as { rows: Array<{ n: string }> }).rows[0]?.n ?? 0);
       expect(n).toBeGreaterThan(0);
@@ -213,7 +205,6 @@ describe("filterToSql: functional", () => {
       const u = await seedUser(db);
       const p = await seedPipelineWithStages(db, ["A"]);
       const stageId = p.stages[0]!.id;
-      // Stage rots after 14 days.
       await db.execute(sql`UPDATE stages SET rotting_days = 14 WHERE id = ${stageId}`);
       const rotting = await createDeal(
         db,
@@ -228,7 +219,6 @@ describe("filterToSql: functional", () => {
         new AbortController().signal,
       );
       if (rotting.ok === false || fresh.ok === false) throw new Error("setup");
-      // Age the rotting deal to 30 days in stage; fresh stays at now().
       await db.execute(
         sql`UPDATE deals SET stage_entered_at = now() - interval '30 days' WHERE id = ${rotting.value.id}`,
       );
@@ -329,7 +319,6 @@ describe("filterToSql: title + contains", () => {
   it("SECURITY: an injection payload in a contains value is a bound literal, not SQL", async () => {
     await withTestDb(async (db) => {
       const u = await seedTitles(db, ["safe deal"]);
-      // If the value were interpolated this would break out of the string or drop the table.
       const frag = filterToSql({
         conditions: [{ field: "title", op: "contains", value: "'); DROP TABLE deals; --" }],
       });
@@ -337,7 +326,6 @@ describe("filterToSql: title + contains", () => {
         SELECT d.title FROM deals d JOIN pipelines p ON p.id = d.pipeline_id
         WHERE ${dealVisibilityClause(visSession(u.id))} AND ${frag}
       `);
-      // Payload is treated as a literal search string, matches nothing, and the table survives.
       expect((res as unknown as { rows: unknown[] }).rows).toHaveLength(0);
       const still = await db.execute(sql`SELECT count(*)::int AS n FROM deals`);
       expect((still as unknown as { rows: Array<{ n: number }> }).rows[0]?.n).toBe(1);

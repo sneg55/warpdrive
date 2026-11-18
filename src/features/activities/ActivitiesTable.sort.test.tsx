@@ -1,10 +1,4 @@
 // @vitest-environment jsdom
-// Sort-header behavior extracted from ActivitiesTable.test.tsx to keep both files under the
-// project's file-size budget: this file owns the header-click-to-sort contract (which server
-// sort field/direction each header click requests) and the day-grouping reconciliation (day
-// headers only make sense for a date-ordered list), while ActivitiesTable.test.tsx owns
-// rendering, ActivitiesTable.filters.test.tsx owns the filter toolbar, and
-// ActivitiesTable.selection.test.tsx owns selection and bulk actions.
 import "@testing-library/jest-dom/vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -52,8 +46,6 @@ vi.mock("@/utils/csrfCookie", () => ({ readCsrfToken: () => "tok" }));
 
 import { ActivitiesTable } from "./ActivitiesTable";
 
-// The default (unfiltered, "open") ActivityListFilter, unchanged by these tests: only the sort
-// field/direction varies per assertion below.
 function localYmd(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
     d.getDate(),

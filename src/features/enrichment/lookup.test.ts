@@ -12,8 +12,6 @@ describe("buildPersonLookup", () => {
     expect(out.email).toBe("jane@acme.com");
   });
 
-  // An admin can map person.email onto a text custom field instead of the built-in emails target.
-  // Reading only the column left such a record with no identifier, so no provider was ever called.
   it("uses a mapped email when the person has no primary email column value", () => {
     const out = buildPersonLookup({
       name: "Jane Doe",
@@ -68,8 +66,6 @@ describe("buildPersonLookup", () => {
     expect(out.companyName).toBe("Acme Inc");
   });
 
-  // A person with a company custom field but no org link is still identifiable. Ignoring the
-  // mapped value made hasUsableIdentifier reject the record and no provider was ever called.
   it("uses a mapped company value when the person has no linked organization", () => {
     const out = buildPersonLookup({
       name: "Jane Doe",
@@ -187,8 +183,6 @@ describe("buildOrgLookup", () => {
     expect(out.domain).toBe("acme.com");
   });
 
-  // An admin may map org.domain or org.linkedinUrl onto a custom field. Reading only the columns
-  // left such an organization identified by name alone, which matches the wrong company.
   it("falls back to a mapped domain when the column is empty", () => {
     const out = buildOrgLookup({
       name: "Acme Inc",

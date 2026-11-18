@@ -2,9 +2,6 @@ import { describe, expect, it } from "vitest";
 import { z } from "zod";
 import { envSchema } from "./env";
 
-// Complete required-key base (the schema also requires the WS keys, which the
-// Phase-4 brief's sample omitted; included here so failures are attributable to
-// the assertion under test, not a missing unrelated key).
 const base = {
   GOOGLE_OAUTH_CLIENT_ID: "cid",
   GOOGLE_OAUTH_CLIENT_SECRET: "secret",

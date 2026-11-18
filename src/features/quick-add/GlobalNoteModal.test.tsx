@@ -28,10 +28,8 @@ describe("GlobalNoteModal", () => {
   it("shows a person target picker and hides the note composer until a target is chosen", () => {
     useQuery.mockReturnValue({ data: [{ id: "p1", name: "Ada" }] });
     render(<GlobalNoteModal onClose={vi.fn()} onCreated={vi.fn()} />);
-    // Dialog + target picker present.
     expect(screen.getByRole("dialog", { name: /New note/ })).toBeInTheDocument();
     expect(screen.getByLabelText("Note target person")).toBeInTheDocument();
-    // No target selected yet, so the note composer is not mounted.
     expect(screen.queryByTestId("compose-note-tab")).not.toBeInTheDocument();
   });
 });

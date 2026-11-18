@@ -8,7 +8,6 @@ import {
   InterfacePrefsProvider,
 } from "@/features/identity/InterfacePrefsProvider";
 
-// Radix Select (the Organization picker) needs these jsdom polyfills.
 beforeAll(() => {
   Element.prototype.scrollIntoView = vi.fn();
   Element.prototype.hasPointerCapture = vi.fn(() => false);

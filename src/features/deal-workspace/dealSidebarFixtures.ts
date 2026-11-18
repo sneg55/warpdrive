@@ -1,8 +1,6 @@
 import type { DealBlockId } from "@/constants/dealBlocks";
 import type { DealWorkspace } from "./summaryRepo";
 
-// Test fixtures for DealSidebar.test.tsx, extracted to keep the test file under the size cap.
-
 export type OrgFixtureOverrides = Partial<{
   domain: string | null;
   industry: string | null;
@@ -20,8 +18,6 @@ export type PersonFixtureOverrides = Partial<{
   emails: Array<{ label: string; value: string; primary?: boolean }>;
 }>;
 
-// Minimal DealWorkspace fixture: only the fields DealSidebar reads. Cast at the boundary
-// so the test does not restate the entire aggregate (DB-backed shape is covered elsewhere).
 export function makeWorkspace(
   over: Partial<DealWorkspace["deal"]> = {},
   orgOver: OrgFixtureOverrides = {},

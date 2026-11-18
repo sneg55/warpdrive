@@ -22,7 +22,6 @@ interface Reply {
   status?: number;
 }
 
-// Replies are consumed in call order, so a fall-through spends a second, distinguishable response.
 function stub(...replies: Reply[]) {
   const mock = vi.fn(() => {
     const next = replies.shift() ?? { body: {} };

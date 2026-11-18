@@ -14,7 +14,6 @@ export interface BoardViewControls extends BoardViewState {
   toggleSortDirection: () => void;
   setSavedFilter: (filter: SavedFilterView | null) => void;
   setConditions: (definition: FilterDefinition | null) => void;
-  // Resets all three narrowing dimensions at once. Sort order is not one of them, so it survives.
   clearFilters: () => void;
 }
 

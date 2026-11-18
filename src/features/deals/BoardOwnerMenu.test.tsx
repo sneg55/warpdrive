@@ -67,7 +67,6 @@ describe("BoardOwnerMenu", () => {
     const onSelectOwner = vi.fn();
     renderMenu({ selectedOwnerId: "u2", onSelectOwner });
     await user.click(screen.getByRole("button", { name: /Bob Lee/ }));
-    // The trigger reads "Owner: Bob Lee" here, so the only "Everyone" button is the row.
     fireEvent.click(screen.getByRole("button", { name: /Everyone/ }));
     expect(onSelectOwner).toHaveBeenCalledWith(null);
   });

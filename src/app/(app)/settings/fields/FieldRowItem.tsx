@@ -53,8 +53,6 @@ export function FieldRowItem({
     } else reportError(r.error.id);
   }
 
-  // Always sends the full { isImportant, showInAddForm } pair so toggling one flag can never
-  // clobber the other with a stale default.
   async function setFlags(next: { isImportant: boolean; showInAddForm: boolean }): Promise<void> {
     const r = await setDefFlagsAction({ id: row.id, ...next }, readCsrfToken());
     if (r.ok) router.refresh();

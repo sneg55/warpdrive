@@ -1,9 +1,6 @@
 "use client";
 import { useCallback, useMemo, useState } from "react";
 
-// Pure selection helpers over a set of row ids. Kept side-effect free so the reducer logic is unit
-// tested without React. The hook below wraps them with useState for the table/action bar.
-
 export function toggleSelection(selected: ReadonlySet<string>, id: string): Set<string> {
   const next = new Set(selected);
   if (next.has(id)) next.delete(id);
@@ -11,12 +8,10 @@ export function toggleSelection(selected: ReadonlySet<string>, id: string): Set<
   return next;
 }
 
-// Select-all is scoped to the currently visible rows (Pipedrive selects the page, not the DB).
 export function selectAll(ids: readonly string[]): Set<string> {
   return new Set(ids);
 }
 
-// True only when every visible id is selected (and there is at least one visible row).
 export function isAllSelected(
   selected: ReadonlySet<string>,
   visibleIds: readonly string[],

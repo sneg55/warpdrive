@@ -41,8 +41,6 @@ export function ActivitiesFilters({
     <div className="flex flex-col gap-2">
       <ActivityPresetChips from={filter.from} to={filter.to} onApply={(range) => patch(range)} />
       <div className="flex flex-wrap items-center gap-2">
-        {/* Both primitives default to w-full; with no width here each claims the whole flex line
-            and wraps, so the pickers render full-bleed and stacked. */}
         <Combobox
           ariaLabel="Owner"
           triggerClassName="w-52"

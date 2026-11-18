@@ -92,8 +92,6 @@ function renderControl(
   );
 }
 
-// The menu entry is named for what the dialog will do, so it reads "Edit filter" once a saved
-// filter the actor owns is selected.
 async function openBuilder(
   user: ReturnType<typeof userEvent.setup>,
   entry: RegExp = /Create new filter/,
@@ -178,8 +176,6 @@ describe("BoardFilterControl menu split", () => {
     );
   });
 
-  // The board reads inlineDefinition ?? savedFilter.definition, so leaving both set shows the
-  // ad-hoc edits while the menu still marks the saved row current.
   it("drops the saved selection when ad-hoc edits are applied over it", async () => {
     savedFiltersData.mockReturnValue([savedRow(OR_DEFINITION)]);
     const onSelectFilter = vi.fn();
@@ -195,9 +191,7 @@ describe("BoardFilterControl menu split", () => {
   });
 });
 
-// Opens the Filter menu, asks to delete the row and accepts the confirmation.
 async function confirmDelete(user: ReturnType<typeof userEvent.setup>): Promise<void> {
-  // The trigger names the applied filter ("Filter: Acme or Corp"), so match its prefix.
   await user.click(screen.getByRole("button", { name: /^Filter/ }));
   await user.click(screen.getByRole("menuitem", { name: "Delete Acme or Corp" }));
   const dialog = await screen.findByRole("alertdialog");

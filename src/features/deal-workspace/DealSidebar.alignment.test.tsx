@@ -17,7 +17,6 @@ vi.mock("@/features/contacts/actions", () => ({
 }));
 vi.mock("@/utils/csrfCookie", () => ({ readCsrfToken: () => "csrf" }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
-// ParticipantsControl (Summary action list) queries tRPC on render.
 vi.mock("@/lib/trpc-client", () => ({
   trpc: {
     useUtils: () => ({
@@ -106,7 +105,6 @@ function expectLabelAlign(sectionName: string, label: string, align: "left" | "r
   const labelEl = section.getByText(label);
   const row = labelEl.closest("[data-testid='field-row']");
   expect(row).not.toBeNull();
-  // The label token is the first grid child (icon + text); assert its justify/text alignment.
   const labelSpan = (row as HTMLElement).firstElementChild as HTMLElement;
   if (align === "left") {
     expect(labelSpan.className).toContain("text-left");
@@ -127,14 +125,11 @@ it("renders Summary as PD's action list (no field-label column), other sections 
     />,
   );
 
-  // Summary is an action list now (PD parity): no "Value"/"Owner" label tokens, the value
-  // renders as formatted currency, and no FieldRow grid exists inside the section.
   const summary = within(screen.getByRole("region", { name: "Summary" }));
   expect(summary.queryByText("Value")).not.toBeInTheDocument();
   expect(summary.queryByText("Owner")).not.toBeInTheDocument();
   expect(summary.getByText("$1,000")).toBeInTheDocument();
   expect(summary.queryAllByTestId("field-row")).toHaveLength(0);
-  // Every other section keeps the right-aligned label default.
   expectLabelAlign("Organization", "Deal segment", "right");
   expectLabelAlign("Person", "Name", "right");
 });

@@ -13,7 +13,7 @@ import { ok, type Result } from "@/types/result";
 
 export const dealArchiveInput = z.object({
   dealId: z.string().uuid(),
-  archived: z.boolean().default(true), // false unarchives
+  archived: z.boolean().default(true),
 });
 export type DealArchiveInput = z.infer<typeof dealArchiveInput>;
 
@@ -25,7 +25,6 @@ export async function archiveDeal(
 ): Promise<Result<Deal, AppError>> {
   const input = dealArchiveInput.parse(raw);
   return db.transaction(async (tx) => {
-    // Same choke point as move/won/lost: 404-on-invisible, else edit-permission check.
     const editable = await loadEditableDeal(tx, actor, input.dealId, signal);
     if (editable.ok === false) return editable;
 
@@ -69,9 +68,6 @@ export async function archiveDeal(
       signal,
     );
 
-    // ALSO publish on the pipeline channel: the board subscribes only to pipeline:<id>,
-    // so without this a live archive never reaches it. deal_updated maps to an invalidate
-    // in the reducer, and the board read filters archived_at, so the card drops on refetch.
     await publishBoardEvent(
       tx,
       {

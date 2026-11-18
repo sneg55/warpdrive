@@ -4,7 +4,6 @@ import * as schema from "@/db/schema";
 import { withTestDb } from "@/db/testing";
 import { seedUser } from "@/db/testing/factories";
 
-// db.execute returns { rows: unknown[] } for raw SQL (node-postgres driver), not an array.
 interface RowsResult {
   rows: Array<{ id: string }>;
 }

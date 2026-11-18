@@ -10,8 +10,6 @@ import { publishImportProgress, shouldEmit } from "./progress";
 import { type ColumnMappingInput, columnMappingSchema, mappingEntityErrors } from "./schemas";
 import type { ImportTarget } from "./wizardState";
 
-// validateBatch lives in its own module (batch.ts hit the file-size cap) but stays part of this
-// module's public surface: validateJob and the wizard pipeline import it from here.
 export { getBatch, listRows } from "./batchRead";
 export { validateBatch } from "./validateBatch";
 
@@ -21,7 +19,6 @@ export type CreateBatchArgs = {
   rows: Record<string, string>[];
 };
 
-// Create one batch + one row per CSV row in a single transaction (status pending).
 export async function createBatch(
   db: Db,
   actor: ImportActor,
@@ -41,8 +38,6 @@ export async function createBatch(
       })
       .returning({ id: importBatches.id });
     if (batch === undefined) {
-      // Programmer-unreachable: INSERT RETURNING with no row. Surface as a Result
-      // so callers never see an opaque throw.
       return ok({ batchId: "" });
     }
     if (args.rows.length > 0) {
@@ -59,7 +54,6 @@ export async function createBatch(
   });
 }
 
-// Persist the column mapping. Status stays pending. Ownership-gated.
 export async function setMapping(
   db: Db,
   actor: ImportActor,
@@ -69,8 +63,6 @@ export async function setMapping(
 ): Promise<Result<{ batchId: string }, AppError>> {
   const owned = await loadOwnedBatch(db, actor, batchId, signal);
   if (owned.ok === false) return owned;
-  // The mapping is client-supplied. Reject columns aimed at an entity this target cannot write
-  // before it is ever persisted, or commit would create related records nothing links to.
   const entityErrors = mappingEntityErrors(
     mapping,
     narrowTarget(owned.value.targetEntity),
@@ -91,8 +83,6 @@ export async function setMapping(
   return ok({ batchId });
 }
 
-// Commit every "valid" row via commitRow (each in its own tx for retry safety).
-// No outer transaction wraps the loop: row commits must land independently.
 export async function commitBatch(
   db: Db,
   actor: ImportActor,
@@ -103,20 +93,12 @@ export async function commitBatch(
   if (owned.ok === false) return owned;
   const batch = owned.value;
   const target = narrowTarget(batch.targetEntity);
-  // safeParse for the same reason as validateBatch: commit before setMapping is a
-  // caller bad-state. Return a Result rather than throwing an uncaught ZodError.
   const parsedMapping = columnMappingSchema.safeParse(batch.columnMapping);
   if (parsedMapping.success === false) {
     return err(new AppError(ERROR_IDS.IMPORT_MAPPING_MISSING, "mapping not set", { batchId }));
   }
   const mapping = parsedMapping.data;
 
-  // Atomically claim the commit. "ready" is the fresh start; "importing" is a prior attempt
-  // that crashed before finalizing, which a pg-boss retry must be able to RESUME (commitRow is
-  // per-row idempotent, and singletonKey serializes commit jobs, so no concurrent double-run).
-  // A retry that fires after the batch already finalized (completed/partial/failed) or was
-  // undone/undoing finds none of those states, claims nothing, and no-ops, so a retry never
-  // re-creates records undo deleted nor overwrites a terminal status.
   const claim = await db
     .update(importBatches)
     .set({ status: "importing" })
@@ -151,8 +133,6 @@ export async function commitBatch(
         invalid += 1;
       }
       processed += 1;
-      // Publish on db (not a tx): each commitRow already committed in its own tx, so a
-      // progress notify here has nothing to roll back.
       if (shouldEmit(processed, rows.length, lastEmitted)) {
         await publishImportProgress(
           db,
@@ -163,10 +143,6 @@ export async function commitBatch(
       }
     }
   } finally {
-    // Finalize even on a mid-commit throw/abort (e.g. IMPORT_JOB_TIMEOUT_MS) so the batch
-    // reaches a terminal status (partial when some rows imported, failed when none) instead
-    // of stranding at "importing" and looping the wizard poll forever. undo then works on the
-    // partial. The commit job does not blanket-mark "failed" for this reason.
     await finalizeBatch(db, batchId);
   }
   return ok({ imported, skipped, invalid });

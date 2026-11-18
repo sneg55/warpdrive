@@ -24,8 +24,6 @@ describe("folder action schemas", () => {
   });
 
   it("saveDraftInput accepts a partial (not-yet-valid) recipient, since a draft is in progress", () => {
-    // Autosave fires while the user is mid-typing a recipient chip; requiring a valid email
-    // here would silently drop the save. The send path validates addresses, not the draft.
     expect(
       saveDraftInput.safeParse({
         accountId: crypto.randomUUID(),

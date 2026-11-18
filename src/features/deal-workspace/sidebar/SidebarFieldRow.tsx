@@ -10,23 +10,12 @@ interface SidebarFieldRowProps {
   label: string;
   value: React.ReactNode;
   readOnly?: boolean;
-  // Render-prop editor. Receives a controlled value + setter the row owns.
   renderEditor?: (args: { draft: string; setDraft: (v: string) => void }) => React.ReactNode;
   initialDraft?: string;
-  // Optional so readOnly rows (which never render Save) don't need to pass a handler. On failure it
-  // may carry the AppError id so the row can show a specific message (e.g. permission denied).
   onSave?: (draft: string) => Promise<{ ok: boolean; errorId?: string }>;
-  // Marks a value-less row so the section's hide-empty-fields funnel can hide it (mirrors
-  // FieldRow.empty). Defaults false so a bare SidebarFieldRow always shows.
   empty?: boolean;
 }
 
-// Pipedrive-mechanism sidebar field row (see
-// docs/superpowers/specs/2026-07-08-pd-inline-edit-mechanism.md): the value is plain
-// selectable text; hovering reveals a right-edge pencil which is the ONLY way into edit
-// mode; the editor swaps in place with a right-aligned, dirty-gated Cancel/Save footer.
-// Escape/blur/outside clicks never dismiss (PD has no such gesture). Save is held open
-// on failure so the draft isn't lost.
 export function SidebarFieldRow({
   label,
   value,

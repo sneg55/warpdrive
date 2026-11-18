@@ -44,19 +44,14 @@ function rottenCard(): BoardCard {
     ownerId: "22222222-2222-2222-2222-222222222222",
     personId: null,
     orgId: null,
-    // Due three calendar days before SERVER_NOW, so it is unambiguously overdue.
     nextActivityAt: new Date("2026-08-22T09:00:00Z"),
     nextActivityTitle: "Discovery call",
     lastActivityAt: null,
-    // 37 days in stage against a 14-day threshold, so it is well past rotting.
     stageEnteredAt: new Date("2026-07-19T12:00:00Z"),
     updatedAt: new Date("2026-07-19T12:00:00Z"),
   };
 }
 
-// The server render is the user's first paint. It must not describe an overdue deal as having
-// nothing scheduled: effects have not run yet, so anything derived from a mount-only clock is
-// a factual claim made before the data exists.
 function ssr(): string {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return renderToStaticMarkup(
@@ -81,7 +76,6 @@ describe("Board first paint", () => {
     expect(html).not.toContain("No activity scheduled");
   });
 
-  // data-activity, not a colour class: this must keep holding when the palette changes.
   test("marks the badge overdue on the server render", () => {
     expect(ssr()).toContain('data-activity="overdue"');
   });

@@ -27,7 +27,6 @@ interface ProfileClientProps {
   density: "comfortable" | "compact";
 }
 
-// A small IANA subset for the dropdown; the value is stored verbatim. Full list is unnecessary.
 const TIMEZONES = [
   "UTC",
   "America/New_York",

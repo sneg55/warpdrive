@@ -21,7 +21,6 @@ describe("leadRowsToCondition", () => {
     });
   });
 
-  // A label key is a string; the row must survive compilation with its value untouched.
   it("keeps a labels row and its string value", () => {
     expect(leadRowsToCondition([{ field: "labels", op: "eq", value: " hot " }], "and")).toEqual({
       combinator: "and",
@@ -29,7 +28,6 @@ describe("leadRowsToCondition", () => {
     });
   });
 
-  // Several labels are one "is any of" condition, so the array travels whole.
   it("keeps every value of a multi-value labels row", () => {
     expect(
       leadRowsToCondition([{ field: "labels", op: "eq", value: ["hot", " cold "] }], "or"),
@@ -39,8 +37,6 @@ describe("leadRowsToCondition", () => {
     });
   });
 
-  // An empty multi-select is an unfinished row: compiling it would match nothing while the filter
-  // looked applied.
   it("drops a multi-value row with nothing picked", () => {
     expect(leadRowsToCondition([{ field: "labels", op: "eq", value: [] }], "and")).toBeNull();
   });
@@ -55,9 +51,6 @@ describe("leadRowsToCondition", () => {
     expect(leadRowsToCondition([{ field: "bogus", op: "eq", value: "x" }], "and")).toBeNull();
   });
 
-  // isEmpty takes no value, so the builder leaves the value box blank. Dropping the row would make
-  // an "is empty" filter look exactly like a filter that matched everything. The key is omitted
-  // rather than sent as "", so the client posts the shape leadConditionInput actually describes.
   it("keeps a valueless row and emits it without a value key", () => {
     expect(leadRowsToCondition([{ field: "title", op: "isEmpty", value: "" }], "and")).toEqual({
       combinator: "and",
@@ -84,7 +77,6 @@ describe("leadRowsToCondition", () => {
     });
   });
 
-  // The builder's output goes straight to lead.list, so it has to satisfy that boundary schema.
   it("emits a valueless row the lead.list boundary schema accepts", () => {
     const condition = leadRowsToCondition([{ field: "value", op: "isEmpty", value: "" }], "and");
     expect(leadConditionInput.safeParse(condition).success).toBe(true);

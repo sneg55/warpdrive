@@ -9,8 +9,6 @@ import {
   operatorsForField,
 } from "./boardQuickFilter";
 
-// This module rides into the board/pipeline client bundle via boardConditions. Its field/operator
-// unions are plain const arrays, not a zod schema, so it must not pull zod (~62 KB gzipped) in.
 describe("boardQuickFilter bundle hygiene", () => {
   it("does not import zod", () => {
     const src = readFileSync(
@@ -52,7 +50,6 @@ describe("matchesCondition", () => {
     const cond: Condition = { field: "orgName", operator: "contains", value: "apex" };
     expect(matchesCondition(card, cond)).toBe(true);
     expect(matchesCondition({ ...card, orgName: "Globex" }, cond)).toBe(false);
-    // A card with no org never matches an org filter.
     expect(matchesCondition({ ...card, orgName: null }, cond)).toBe(false);
   });
 

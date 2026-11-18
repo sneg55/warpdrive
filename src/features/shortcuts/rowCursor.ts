@@ -1,6 +1,3 @@
-// j/k row cursor arithmetic. Clamps rather than wraps: holding j should stop at the bottom of the
-// list, not silently jump back to the top.
-
 export function nextCursorIndex(
   current: number | null,
   count: number,

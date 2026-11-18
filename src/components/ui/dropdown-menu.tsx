@@ -8,10 +8,6 @@ import {
 } from "@/features/observability/menuItemTelemetry";
 import { cn } from "@/lib/utils";
 
-// shadcn (new-york) DropdownMenu wrapper over @radix-ui/react-dropdown-menu. This is the
-// SANCTIONED replacement for the hand-rolled `useMenuDismiss` + absolute-div menus: it brings
-// focus trap, keyboard nav (arrows/type-ahead/Escape), and portal for free. See CLAUDE.md
-// "Use the design system, never reinvent". A lint rule bans new hand-rolled menus.
 export const DropdownMenu = DropdownMenuPrimitive.Root;
 export const DropdownMenuTrigger = DropdownMenuPrimitive.Trigger;
 export const DropdownMenuSub = DropdownMenuPrimitive.Sub;

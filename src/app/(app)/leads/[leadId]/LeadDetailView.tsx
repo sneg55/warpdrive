@@ -11,7 +11,6 @@ import { createContext } from "@/server/trpc/context";
 import type { DealVisibilitySession } from "@/types/session";
 import { LeadWorkspaceClient } from "./LeadWorkspaceClient";
 
-// The lead read uses the same visibility session shape as the deal reads (leadVisibilityClause).
 function toSession(actor: {
   id: string;
   type: string;
@@ -29,9 +28,6 @@ function toSession(actor: {
   };
 }
 
-// Shared lead-detail loader. Exported so both the full page ([leadId]/page.tsx) and the intercepted
-// slide-over drawer (@modal/(.)[leadId]/page.tsx) render identical content, and generateMetadata can
-// reuse the load. Mirrors PersonDetailView / OrgDetailView.
 export async function loadLead(leadId: string) {
   const ctx = await createContext();
   if (ctx.actor === null) return { kind: "unauth" as const };
@@ -45,9 +41,6 @@ export async function LeadDetailView({ leadId }: { leadId: string }): Promise<Re
   if (loaded.kind === "unauth") redirect("/login");
   if (loaded.kind === "notfound") notFound();
 
-  // Load the linked person/org records and the Settings > Data fields hides so the sidebar's
-  // Person/Organization blocks render the contact's full field set (PD parity), dropping the same
-  // built-in rows the contact detail pages do. The lead visibility gate above is the authority.
   const signal = AbortSignal.timeout(10_000);
   const [
     relations,

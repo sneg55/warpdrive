@@ -13,7 +13,6 @@ afterAll(async () => {
 });
 
 it("inserts a person with labeled emails and derives a citext primary_email", async () => {
-  // organizations.owner_id is NOT NULL REFERENCES users(id), so seed a real user first.
   const [u] = await h.db
     .insert(users)
     .values({ email: "owner@test.com", name: "Owner", googleSub: "sub-test-1" })
@@ -43,7 +42,6 @@ it("inserts a person with labeled emails and derives a citext primary_email", as
 
   expect(p!.orgId).toBe(org!.id);
 
-  // citext: case-insensitive match must return 1 row even when querying lowercase.
   const found = await h.db.execute(
     sql`select id from persons where primary_email = 'jane@acme.com'`,
   );

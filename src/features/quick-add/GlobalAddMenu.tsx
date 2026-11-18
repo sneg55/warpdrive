@@ -24,8 +24,6 @@ interface Entry {
   shortcut: string;
 }
 
-// Entries in menu order (Pipedrive Lead/Deal/Activity/Person/Organization/Note/Email; Product is
-// out of scope). Note opens a target-picker modal; Email routes to the standalone compose surface.
 const ENTRIES: Entry[] = [
   { key: "lead", label: "Lead", shortcut: "L" },
   { key: "deal", label: "Deal", shortcut: "D" },
@@ -36,17 +34,11 @@ const ENTRIES: Entry[] = [
   { key: "email", label: "Email", shortcut: "E" },
 ];
 
-// The global "+" quick-add next to the search box (Pipedrive parity): opens a menu whose entries
-// launch the matching create modal from any page. Built on the shadcn DropdownMenu primitive
-// (focus trap, arrow/Escape nav, portal); the letter shortcuts (L/D/A/P/O) stay wired via an
-// onKeyDown on the content so a single keypress fires the matching modal while the menu is open.
 export function GlobalAddMenu(): React.ReactNode {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [modal, setModal] = useState<ModalKind>(null);
 
-  // No `retry: false`: a transient cold-start error must recover so the query resolves and Deal
-  // becomes createable, rather than sticking on undefined data and leaving Deal permanently gated.
   const pipelinesQ = trpc.pipeline.list.useQuery();
   const pipelines = useMemo(
     () =>
@@ -59,9 +51,6 @@ export function GlobalAddMenu(): React.ReactNode {
   );
   const firstPipelineId = pipelines[0]?.id ?? null;
 
-  // Only disable Deal once the query has actually resolved to zero pipelines. While it is loading
-  // or errored (data still undefined, and retry is off) firstPipelineId is null too, but that is
-  // not "no pipelines exist" (a fresh install has a seeded default), so Deal must stay enabled.
   const noPipelines = pipelinesQ.isSuccess && pipelines.length === 0;
 
   const isDisabled = useCallback(
@@ -73,7 +62,6 @@ export function GlobalAddMenu(): React.ReactNode {
     (entry: Entry): void => {
       if (isDisabled(entry)) return;
       setOpen(false);
-      // Email has no entity-less create modal: route to the full-pane inbox compose surface.
       if (entry.key === "email") {
         router.push("/inbox/compose");
         return;
@@ -83,8 +71,6 @@ export function GlobalAddMenu(): React.ReactNode {
     [isDisabled, router],
   );
 
-  // Pipedrive opens quick add with "." or "+". Without this the letter shortcuts below were
-  // unreachable from the keyboard, since nothing but a click could open the menu they live on.
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent): void => {
       if (e.metaKey || e.ctrlKey || e.altKey) return;

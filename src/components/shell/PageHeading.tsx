@@ -3,13 +3,9 @@ import type React from "react";
 
 export interface Crumb {
   label: string;
-  // A parent crumb links somewhere; the current (last) crumb omits href and renders as plain text.
   href?: string;
 }
 
-// Shared page heading: a Pipedrive-style breadcrumb over a 25px page title. Centralizing the title
-// size + breadcrumb here stops the per-page drift (bare 18-20px titles, no breadcrumb) the parity
-// specs flagged across settings, contacts, leads, and inbox.
 export function PageHeading({
   title,
   crumbs,
@@ -54,7 +50,6 @@ export function PageHeading({
         </nav>
       ) : null}
       <div className="flex items-center justify-between gap-3">
-        {/* Inter is a vendored variable font, so the 450 weight (lighter than semibold) resolves. */}
         <h1 className="text-display font-[450] leading-tight tracking-tight">{title}</h1>
         {actions}
       </div>

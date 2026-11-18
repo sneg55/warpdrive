@@ -1,5 +1,3 @@
-// Integration tests for mergeDeals (merge source S into target T). Real Postgres, no DB mocking.
-
 import { randomUUID } from "node:crypto";
 import { and, eq } from "drizzle-orm";
 import { afterAll, beforeAll, expect, it } from "vitest";
@@ -60,7 +58,6 @@ it("re-parents S's children to T, dedups followers, soft-deletes S, and logs the
   const target = await seedDeal(p.pipeline.id, p.stages[0]!.id, u.id, "Target");
   const source = await seedDeal(p.pipeline.id, p.stages[1]!.id, u.id, "Source");
 
-  // Child rows on the source.
   const [type] = await h.db
     .insert(activityTypes)
     .values({ key: uniq("call"), name: "Call" })
@@ -90,7 +87,6 @@ it("re-parents S's children to T, dedups followers, soft-deletes S, and logs the
     .returning();
   const personId = randomUUID();
   await h.db.insert(dealParticipants).values({ dealId: source.id, personId });
-  // A follower shared between T and S (dedup target) + a follower unique to S.
   await h.db.insert(dealFollowers).values([
     { dealId: target.id, userId: u.id },
     { dealId: source.id, userId: u.id },
@@ -112,7 +108,6 @@ it("re-parents S's children to T, dedups followers, soft-deletes S, and logs the
   expect(r.ok).toBe(true);
   if (r.ok === false) return;
 
-  // Children re-parented to T.
   const [movedAct] = await h.db.select().from(activities).where(eq(activities.id, act!.id));
   expect(movedAct?.dealId).toBe(target.id);
   const [targetAfter] = await h.db.select().from(deals).where(eq(deals.id, target.id));
@@ -129,14 +124,12 @@ it("re-parents S's children to T, dedups followers, soft-deletes S, and logs the
     .from(dealParticipants)
     .where(eq(dealParticipants.dealId, target.id));
   expect(parts.map((x) => x.personId)).toContain(personId);
-  // No participant rows left on S.
   const sParts = await h.db
     .select()
     .from(dealParticipants)
     .where(eq(dealParticipants.dealId, source.id));
   expect(sParts.length).toBe(0);
 
-  // Followers: exactly one row per user on T (shared user deduped, no PK collision), S has none.
   const tFollowers = await h.db
     .select()
     .from(dealFollowers)
@@ -149,13 +142,11 @@ it("re-parents S's children to T, dedups followers, soft-deletes S, and logs the
     .where(eq(dealFollowers.dealId, source.id));
   expect(sFollowers.length).toBe(0);
 
-  // T survives, S soft-deleted.
   const [t] = await h.db.select().from(deals).where(eq(deals.id, target.id));
   expect(t?.deletedAt).toBeNull();
   const [s] = await h.db.select().from(deals).where(eq(deals.id, source.id));
   expect(s?.deletedAt).not.toBeNull();
 
-  // Merge changelog entry on T referencing S.
   const log = await h.db
     .select()
     .from(changeLogs)
@@ -190,7 +181,6 @@ it("denies when the actor cannot edit one of the deals (E_PERM_001)", async () =
   const stranger = await seedUser(h.db);
   const p = await seedPipelineWithStages(h.db, ["A", "B"]);
   const target = await seedDeal(p.pipeline.id, p.stages[0]!.id, u.id, "T");
-  // Source owned by someone else; the actor has only edit_own so cannot edit it.
   const source = await seedDeal(p.pipeline.id, p.stages[1]!.id, stranger.id, "S");
 
   const r = await mergeDeals(

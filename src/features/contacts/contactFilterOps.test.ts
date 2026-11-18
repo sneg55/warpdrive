@@ -7,9 +7,6 @@ import { listPeople } from "./listPeople";
 import { listOrgs } from "./orgsRepo";
 import type { ContactActor } from "./personsRepo";
 
-// The tier 2 operators live or die on null handling, which only a real Postgres settles: `<>` and a
-// bare NOT ILIKE both evaluate to NULL against a NULL column, silently dropping the row.
-
 function regularActor(id: string): ContactActor {
   return {
     id,

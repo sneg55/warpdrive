@@ -3,34 +3,24 @@ import { err, ok, type Result } from "@/types/result";
 import type { GmailClient } from "./gmailClient";
 import type { GmailMessage, HistoryList, MessageList, SendResult } from "./gmailSchemas";
 
-// Programmable in-memory Gmail double. Tests inject this; the DB is NEVER faked.
-// Satisfies the identical GmailClient interface so it is a drop-in.
 export class FakeGmailClient implements GmailClient {
-  // Programmable state: set these before calling methods under test.
   historyPages: HistoryList[] = [];
   messages = new Map<string, GmailMessage>();
   searchHits = new Map<string, MessageList>();
   sendImpl: (a: { rawBase64: string; threadId?: string }) => Result<SendResult, AppError> = () =>
     ok({ id: "sent-1", threadId: "t1" });
 
-  // listMessages pages: pageToken "0","1",... indexes into this array.
-  // listMessages({}) with no pageToken uses index 0.
   listResults: MessageList[] = [];
 
-  // getProfile returns this historyId.
   profileHistoryId = "0";
 
-  // trashThread returns this result; default success. Set to an err() to exercise the failure path.
   trashImpl: (a: { threadId: string }) => Result<{ id: string }, AppError> = (a) =>
     ok({ id: a.threadId });
 
-  // getThread looks up by gmail thread id; absent ids return an empty message list.
   threads = new Map<string, { id: string; messages: { id: string; labelIds: string[] }[] }>();
 
-  // Thread ids getThread should 404 on (a purged/permanently-deleted Gmail thread).
   getThread404Ids = new Set<string>();
 
-  // Records every call received so tests can assert what was requested.
   calls: { method: string; args: unknown }[] = [];
 
   historyList(a: {

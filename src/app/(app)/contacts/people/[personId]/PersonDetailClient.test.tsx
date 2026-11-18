@@ -8,8 +8,6 @@ beforeAll(() => {
   Element.prototype.scrollIntoView = vi.fn();
   Element.prototype.hasPointerCapture = vi.fn(() => false);
   Element.prototype.releasePointerCapture = vi.fn();
-  // cmdk (Combobox, used inside the real ActivityComposerInline) observes list size; jsdom has
-  // none.
   global.ResizeObserver = class {
     observe = vi.fn();
     unobserve = vi.fn();
@@ -33,10 +31,6 @@ vi.mock("@/features/contacts/actions", () => ({
   mergeOrgsAction: vi.fn(),
 }));
 
-// The Activity tab of SharedComposeBar mounts the REAL ActivityComposerInline (not mocked) so
-// the person-scope anchor seam (dealId/leadId/personId/orgId) is actually exercised end to end,
-// not just asserted against a stub. RichTextBody (TipTap) is mocked the same way
-// ActivityComposerInline.test.tsx mocks it: a plain textarea stands in for the rich editor.
 const { createActivityAction } = vi.hoisted(() => ({
   createActivityAction: vi.fn(() => Promise.resolve({ ok: true as const })),
 }));
@@ -146,7 +140,6 @@ describe("PersonDetailClient", () => {
         baseCurrency="USD"
       />,
     );
-    // "Jane Roe" now appears twice: the header <h1> and the inline-editable Name row.
     expect(screen.getAllByText("Jane Roe").length).toBeGreaterThan(0);
     expect(screen.getByText("jane@acme.com")).toBeInTheDocument();
     expect(screen.getByText("+14155550100")).toBeInTheDocument();
@@ -161,13 +154,10 @@ describe("PersonDetailClient", () => {
     expect(screen.queryByRole("tab", { name: "Deals" })).not.toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Focus" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "History" })).toBeInTheDocument();
-    // Merge is now inside the header Options overflow (CO-3), not a standalone button.
     const user = userEvent.setup();
     await user.click(screen.getByRole("button", { name: /contact actions/i }));
     expect(screen.getByRole("menuitem", { name: /merge duplicates/i })).toBeInTheDocument();
   });
-
-  // Wave 4, Task 5: the header shows who owns the person via the shared OwnerBadge.
 
   it("renders the same complete Person section and bulk-edit action as the deal workspace", () => {
     render(
@@ -235,8 +225,6 @@ describe("PersonDetailClient composer + inline person section", () => {
     expect(
       screen.getByRole("button", { name: "Click here to add an activity..." }),
     ).toBeInTheDocument();
-    // The shared block repeats the linked display name from the header and exposes the same
-    // editable name-part fields as the deal workspace.
     expect(screen.getAllByText("Jane Roe").length).toBeGreaterThan(0);
     expect(screen.getByText("First name")).toBeInTheDocument();
   });

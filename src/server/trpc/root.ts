@@ -53,6 +53,4 @@ export const appRouter = router({
 
 export type AppRouter = typeof appRouter;
 
-// Server-side caller factory: pass a fully-formed AppContext to call procedures
-// without going through the HTTP layer. Used by server components for SSR prefetch.
 export const createCaller = appRouter.createCaller;

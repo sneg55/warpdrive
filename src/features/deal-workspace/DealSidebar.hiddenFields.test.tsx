@@ -5,7 +5,6 @@ import { afterEach, beforeAll, expect, it, vi } from "vitest";
 import { DealSidebar } from "./DealSidebar";
 import type { DealWorkspace } from "./summaryRepo";
 
-// Radix Popover / DropdownMenu need these jsdom shims (mirrors DealSidebar.orgLink.test.tsx).
 beforeAll(() => {
   Element.prototype.scrollIntoView = vi.fn();
   Element.prototype.hasPointerCapture = vi.fn(() => false);
@@ -45,8 +44,6 @@ vi.mock("@/features/deal-workspace/DealActionErrorProvider", () => ({
 
 afterEach(cleanup);
 
-// Populated firmographics + contact points, so every row renders unless the entity's hidden set
-// drops it.
 function makeWorkspace(): DealWorkspace {
   return {
     deal: {
@@ -102,13 +99,11 @@ it("drops the org and person built-in rows the hidden sets name, threaded to the
     />,
   );
 
-  // Hidden org rows are gone, non-hidden ones remain.
   expect(screen.queryByText("Industry")).not.toBeInTheDocument();
   expect(screen.queryByText("Annual revenue")).not.toBeInTheDocument();
   expect(screen.getByText("Website")).toBeInTheDocument();
   expect(screen.getByText("Number of employees")).toBeInTheDocument();
 
-  // Hidden person row is gone, non-hidden one remains.
   expect(screen.queryByText("Phone")).not.toBeInTheDocument();
   expect(screen.getByText("Email")).toBeInTheDocument();
 });

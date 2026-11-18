@@ -11,7 +11,6 @@ describe("isBlankHtml", () => {
     ["<p>&nbsp;</p>", true],
     ["<p>hi</p>", false],
     ["<p><strong>x</strong></p>", false],
-    // Void/embed elements carry content even with no text: nulling them is silent data loss.
     ['<p><img src="x"></p>', false],
     ['<img src="x">', false],
     ["<hr>", false],

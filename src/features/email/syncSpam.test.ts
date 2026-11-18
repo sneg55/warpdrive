@@ -5,15 +5,9 @@ import { FakeGmailClient } from "./gmailFake";
 import type { GmailMessage } from "./gmailSchemas";
 import { syncMailbox } from "./sync";
 
-// Sync interaction for Gmail's SPAM label. Gmail's history feed reports a spam delivery as a normal
-// messagesAdded event (the message simply carries SPAM instead of INBOX), so without this the junk
-// lands in the CRM Inbox. Spam is hidden the same way Trash is: the thread is excluded from every
-// local view, and marking it "not spam" in Gmail brings it back.
-
 type TestDb = Parameters<Parameters<typeof withTestDb>[0]>[0];
 const newSignal = (): AbortSignal => new AbortController().signal;
 
-// A minimal full GmailMessage carrying the given labels.
 function msgWithLabels(id: string, threadId: string, labelIds: string[]): GmailMessage {
   return {
     id,
@@ -54,7 +48,6 @@ async function seedThread(db: TestDb, acctId: string, hidden: boolean): Promise<
   `);
 }
 
-// trashed_at doubles as the "hidden from every local view" flag (Trash or Spam).
 async function hiddenAt(db: TestDb, acctId: string): Promise<string | null> {
   const r = (
     await db.execute(
@@ -69,7 +62,6 @@ describe("syncMailbox SPAM handling", () => {
     await withTestDb(async (db) => {
       const acctId = await seedAccount(db, "100");
       const fake = new FakeGmailClient();
-      // A spam delivery: messagesAdded, and the message carries SPAM instead of INBOX.
       fake.messages.set("m1", msgWithLabels("m1", "t1", ["SPAM"]));
       fake.threads.set("t1", { id: "t1", messages: [{ id: "m1", labelIds: ["SPAM"] }] });
       fake.historyPages = [
@@ -91,7 +83,6 @@ describe("syncMailbox SPAM handling", () => {
       await seedThread(db, acctId, false);
       const fake = new FakeGmailClient();
       fake.threads.set("t1", { id: "t1", messages: [{ id: "m1", labelIds: ["SPAM"] }] });
-      // Marking an existing conversation as spam arrives as a label change, not a new message.
       fake.historyPages = [
         {
           historyId: "150",

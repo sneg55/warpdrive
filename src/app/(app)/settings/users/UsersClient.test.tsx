@@ -49,9 +49,6 @@ const ROWS = [
 const SETS = [{ id: SET_ADMIN, name: "Admin set" }];
 
 describe("UsersClient", () => {
-  // The table is wider than the settings card at 1440px, so the action column was clipped
-  // mid-word. The scroll container must be its own element: on the card itself, overflow-x-auto
-  // sits next to the card's own overflow-hidden and which one wins is stylesheet-order luck.
   it("puts the table in a horizontal scroll container of its own", () => {
     render(<UsersClient rows={ROWS} permissionSets={SETS} viewerIsAdmin={true} />);
     const wrapper = screen.getByRole("table").parentElement;

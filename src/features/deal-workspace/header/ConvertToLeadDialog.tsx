@@ -15,8 +15,6 @@ import { convertToLeadAction } from "@/features/deal-workspace/convertToLeadActi
 import { useDealActionError } from "@/features/deal-workspace/DealActionErrorProvider";
 import { readCsrfToken } from "@/utils/csrfCookie";
 
-// Confirm dialog for "Convert to a lead". Conversion archives the deal and creates a Leads-Inbox
-// lead, so it is confirmed (not one-click) via the shadcn Dialog primitive (never window.confirm).
 export function ConvertToLeadDialog({
   dealId,
   expectedUpdatedAt,

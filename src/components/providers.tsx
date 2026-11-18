@@ -18,7 +18,6 @@ export function Providers({ children }: { children: ReactNode }): ReactNode {
   return (
     <trpc.Provider client={trpcClient} queryClient={queryClient}>
       <QueryClientProvider client={queryClient}>
-        {/* delayDuration 300ms: quick enough for hover hints, slow enough not to flash on pass-through */}
         <TooltipProvider delayDuration={300}>{children}</TooltipProvider>
       </QueryClientProvider>
     </trpc.Provider>

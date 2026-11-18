@@ -1,6 +1,3 @@
-// emailAuthoringReads.ts: template and signature read functions.
-// Split from emailReads.ts (200-line cap) to keep authoring concerns separate
-// from inbox/thread reads.
 import { sql } from "drizzle-orm";
 import { AppError, ERROR_IDS } from "@/constants/errorIds";
 import type { Db } from "@/db/client";
@@ -32,8 +29,6 @@ export interface TemplateDetail {
   bodyHtml: string;
 }
 
-// Fetch one template. Visibility: actor owns it OR it is shared. Returns sanitised bodyHtml.
-// Treats not-found and not-visible identically (E_PERM_TEMPLATE_DENIED) to avoid existence probing.
 export async function getTemplate(
   db: Db,
   args: { id: string; actor: AuthUser },
@@ -78,15 +73,10 @@ export interface SettingsTemplate {
   bodyHtml: string;
   isShared: boolean;
   isOwn: boolean;
-  // Display metadata for the management table (T4). ownerName is the author's display name (shown
-  // as "You" client-side when isOwn); the raw owner UUID is never projected.
   ownerName: string;
   createdAt: string;
 }
 
-// Templates for the settings management page: the actor's own plus any shared template.
-// Own rows first; own rows honor the manual sort_order (NULL sorts last -> name), then name.
-// bodyHtml sanitized (defense in depth, same as getTemplate).
 export async function listTemplatesForSettings(
   db: Db,
   args: { actor: AuthUser },
@@ -115,8 +105,6 @@ export async function listTemplatesForSettings(
     createdAt: string | Date;
   }[];
   signal.throwIfAborted();
-  // Strip ownerId here: isOwn is the only ownership signal the client needs, and a shared
-  // template's raw owner UUID must not leak to non-owners viewing the settings list.
   return rows.map(({ ownerId, createdAt, ...r }) => ({
     ...r,
     bodyHtml: sanitizeAuthorHtml(r.bodyHtml),

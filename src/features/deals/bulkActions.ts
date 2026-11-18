@@ -1,9 +1,3 @@
-// Bulk deal operations. Implements permissions spec §6.5 two-stage visibility:
-// 1. Gate the whole operation on bulk.edit once (deny -> err before touching any row).
-// 2. Load requested ids THROUGH the visibility predicate (missing == invisible == not_found).
-// 3. Authorize each visible survivor with the CANONICAL can(session,'deal.edit',deal),
-//    the same authority move/update use, so the deal-edit rule never drifts across actions.
-// 4. Return per-row BulkRowResult so one failure never aborts the rest.
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { AppError, ERROR_IDS } from "@/constants/errorIds";
 import { deals } from "@/db/schema/deals";
@@ -17,24 +11,16 @@ import { toVisibleDeal } from "./dealAuth";
 import type { BulkStageInput } from "./schemas";
 import { dealVisibilityClause } from "./visibility";
 
-// A row may also be reported pipeline_mismatch when toStageId belongs to a
-// different pipeline than the deal (cross-pipeline move is never applied).
 export interface BulkRowResult {
   dealId: string;
   outcome: "applied" | "skipped" | "not_found" | "errored" | "pipeline_mismatch";
 }
 
-// Build a parameterized ARRAY[id::uuid, ...] literal for use in ANY().
-// Same pattern as sql.ts buildUuidArray; avoids passing a JS array directly
-// to Drizzle raw SQL which would bind it as a record, not a uuid[].
 function uuidArraySql(ids: string[]) {
   const parts = ids.map((id) => sql`${id}::uuid`);
   return parts.reduce((acc, part) => sql`${acc}, ${part}`);
 }
 
-// Derive the visibility-predicate session from the canonical PermSetUser actor
-// (mirrors dealRouter.actorToSession). One actor type; the predicate needs the
-// array form, can() needs the actor form, so both read from the same source.
 function toVisibilitySession(session: PermSetUser): DealVisibilitySession {
   return {
     userId: session.id,
@@ -46,9 +32,6 @@ function toVisibilitySession(session: PermSetUser): DealVisibilitySession {
   };
 }
 
-// Stage-1 row: the deal columns can() needs (via toVisibleDeal) plus its pipeline's
-// visibility group, so stage 2 authorizes without re-querying. Columns are aliased to
-// camelCase in the SELECT because db.execute returns raw column names otherwise.
 interface Stage1Row {
   id: string;
   pipelineId: string;
@@ -65,7 +48,6 @@ export async function bulkUpdateStage(
   input: BulkStageInput,
   signal: AbortSignal,
 ): Promise<Result<BulkRowResult[], AppError>> {
-  // Stage 0: gate the entire operation on bulk.edit once (before touching any row).
   if (session.type !== "admin" && !session.flags.has("bulk.edit")) {
     return err(
       new AppError(ERROR_IDS.PERM_DENIED, "bulk.edit capability required", {
@@ -79,7 +61,6 @@ export async function bulkUpdateStage(
     return ok([]);
   }
 
-  // Resolve the target stage's pipeline once; every survivor must belong to it.
   const [targetStage] = await db
     .select({ id: stages.id, pipelineId: stages.pipelineId })
     .from(stages)
@@ -93,9 +74,6 @@ export async function bulkUpdateStage(
   }
   signal.throwIfAborted();
 
-  // Stage 1: load requested ids THROUGH the visibility predicate. status='open'
-  // and deleted_at IS NULL keep closed/deleted deals out of scope (they collapse
-  // to the same not_found as missing/invisible). Missing AND invisible -> no row.
   const idArraySql = uuidArraySql(input.dealIds);
   const visClause = dealVisibilityClause(toVisibilitySession(session));
   const visRes = await db.execute(sql`
@@ -125,19 +103,15 @@ export async function bulkUpdateStage(
   for (const dealId of input.dealIds) {
     const row = visibleMap.get(dealId);
     if (row === undefined) {
-      // Stage 1 miss: missing / invisible / closed / deleted -> not_found.
       results.push({ dealId, outcome: "not_found" });
       continue;
     }
 
-    // A deal must only move into a stage of its OWN pipeline.
     if (row.pipelineId !== targetStage.pipelineId) {
       results.push({ dealId, outcome: "pipeline_mismatch" });
       continue;
     }
 
-    // Stage 2: authorize the visible survivor with the CANONICAL deal-edit authority
-    // (same can() move/update use), so the rule cannot drift across actions.
     const visibleDeal = toVisibleDeal(
       {
         ownerId: row.ownerId,
@@ -148,13 +122,10 @@ export async function bulkUpdateStage(
       row.pipelineVisibilityGroupId,
     );
     if (!can(session, "deal.edit", visibleDeal)) {
-      // Visible but cannot edit -> skipped (§6.5: visible-but-unauthorized may be reported).
       results.push({ dealId, outcome: "skipped" });
       continue;
     }
 
-    // Apply: direct stage update, with defense-in-depth guards in the WHERE so a
-    // concurrently soft-deleted or cross-pipeline deal is never mutated.
     try {
       const updated = await db
         .update(deals)

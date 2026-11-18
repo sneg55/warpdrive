@@ -1,13 +1,6 @@
 import type React from "react";
 import { Skeleton } from "@/components/ui/Skeleton";
 
-// Shared loading skeletons rendered by route loading.tsx files. Each mirrors the real page's
-// header + content shape closely enough that when the server render swaps in, nothing jumps.
-// These exist so a navigation paints instantly (a Suspense fallback) instead of freezing on the
-// old page until the server finishes its data fetch. Presentational only, no data.
-
-// Page heading placeholder: a breadcrumb line, a title, and a right-aligned action button, matching
-// the shared PageHeading layout.
 function HeadingSkeleton({ action = true }: { action?: boolean }): React.ReactNode {
   return (
     <div className="mb-4">
@@ -20,12 +13,10 @@ function HeadingSkeleton({ action = true }: { action?: boolean }): React.ReactNo
   );
 }
 
-// A block of table-like rows for list pages (people, orgs, leads, activities, pipeline list).
 function RowsSkeleton({ rows = 8 }: { rows?: number }): React.ReactNode {
   return (
     <div className="flex flex-col gap-2">
       {Array.from({ length: rows }, (_, i) => (
-        // Static skeleton list: index keys are correct (no reordering, no identity).
         // biome-ignore lint/suspicious/noArrayIndexKey: static placeholder rows
         <Skeleton key={i} className="h-11 w-full" />
       ))}
@@ -33,12 +24,9 @@ function RowsSkeleton({ rows = 8 }: { rows?: number }): React.ReactNode {
   );
 }
 
-// Just the data region of a list page (toolbar + table rows), no heading. Used as the inner
-// <Suspense> fallback on list pages whose static heading renders immediately while the rows stream.
 export function ListSectionSkeleton(): React.ReactNode {
   return (
     <div className="flex flex-col gap-4" role="status" aria-busy="true" aria-label="Loading">
-      {/* Toolbar row (filter / view controls) above the table. */}
       <div className="flex items-center gap-2">
         <Skeleton className="h-8 w-20" />
         <Skeleton className="h-8 w-28" />
@@ -82,12 +70,10 @@ export function DetailPageSkeleton(): React.ReactNode {
     <main className="flex flex-col gap-4" aria-busy="true" aria-label="Loading">
       <HeadingSkeleton />
       <div className="flex flex-col gap-4 lg:flex-row">
-        {/* Left sidebar (record fields / firmographics). */}
         <div className="flex w-full flex-col gap-3 lg:w-72">
           <Skeleton className="h-40 w-full" />
           <Skeleton className="h-32 w-full" />
         </div>
-        {/* Main content column (timeline / tabs). */}
         <div className="flex flex-1 flex-col gap-3">
           <Skeleton className="h-10 w-64" />
           <RowsSkeleton rows={6} />
@@ -97,11 +83,6 @@ export function DetailPageSkeleton(): React.ReactNode {
   );
 }
 
-// Content of the record slide-over (DetailDrawer), used as the inner <Suspense> fallback on the
-// intercepted person/org/lead routes. The drawer shell renders instantly and stays mounted; only
-// this content region streams, so the drawer never re-animates.
-// `header` replaces the gray title bar when the caller already knows the record's name (the client
-// preview wrapper passes the real title so the drawer paints it instantly instead of a placeholder).
 export function DetailDrawerSkeleton({
   header,
 }: {
@@ -129,11 +110,9 @@ export function InboxSkeleton(): React.ReactNode {
     <main className="flex h-full flex-col gap-4" aria-busy="true" aria-label="Loading">
       <HeadingSkeleton action={false} />
       <div className="flex flex-1 gap-4">
-        {/* Thread list column. */}
         <div className="flex w-80 shrink-0 flex-col gap-2">
           <RowsSkeleton rows={7} />
         </div>
-        {/* Reading pane. */}
         <div className="flex-1">
           <Skeleton className="h-full min-h-64 w-full" />
         </div>
@@ -142,11 +121,6 @@ export function InboxSkeleton(): React.ReactNode {
   );
 }
 
-// In-component loading placeholders. Unlike the route skeletons above, these render inside a
-// mounted page while a client query is still pending, so a zero-result message is never painted
-// before the query has answered.
-
-// Rows for the inbox conversation list. Rendered inside the list's <ul>.
 export function ThreadRowsSkeleton({ rows = 6 }: { rows?: number } = {}): React.ReactNode {
   return (
     <li>
@@ -171,8 +145,6 @@ export function ThreadRowsSkeleton({ rows = 6 }: { rows?: number } = {}): React.
   );
 }
 
-// The four sectioned result groups of the global search palette, at their real heights so the
-// overlay does not resize when results land.
 export function SearchResultsSkeleton(): React.ReactNode {
   return (
     <div role="status" aria-busy="true" aria-label="Searching" className="py-1">
@@ -188,8 +160,6 @@ export function SearchResultsSkeleton(): React.ReactNode {
   );
 }
 
-// Placeholder rows for a table body. Returns bare <tr>s, so the caller's <thead> keeps the
-// column layout while the rows load.
 export function TableRowsSkeleton({
   columnCount,
   rows = 6,
@@ -219,8 +189,6 @@ export function TableRowsSkeleton({
   );
 }
 
-// The engagement-timeline grid: a contact column plus month tracks, inside the same bordered card
-// the real table renders in.
 export function EngagementGridSkeleton({ lanes = 6 }: { lanes?: number } = {}): React.ReactNode {
   return (
     <div
@@ -250,14 +218,12 @@ export function DashboardSkeleton(): React.ReactNode {
   return (
     <main className="flex flex-col gap-4" aria-busy="true" aria-label="Loading">
       <HeadingSkeleton action={false} />
-      {/* Stat tiles row. */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {Array.from({ length: 4 }, (_, i) => (
           // biome-ignore lint/suspicious/noArrayIndexKey: static placeholder tiles
           <Skeleton key={i} className="h-24 w-full" />
         ))}
       </div>
-      {/* Chart blocks. */}
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
         <Skeleton className="h-64 w-full" />
         <Skeleton className="h-64 w-full" />

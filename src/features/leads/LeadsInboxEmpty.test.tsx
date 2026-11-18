@@ -51,8 +51,6 @@ import { STRINGS } from "@/constants/strings";
 import { LeadsInbox } from "./LeadsInbox";
 
 describe("LeadsInbox empty states", () => {
-  // A header row, a select-all checkbox and sort controls over zero rows is machinery, not
-  // information; and the empty state has to offer the action its own sentence names.
   it("drops the table chrome on an unfiltered empty inbox and offers Add lead", () => {
     listQuery.mockReturnValue({ data: { rows: [], total: 0 }, refetch });
     render(<LeadsInbox />);
@@ -64,8 +62,6 @@ describe("LeadsInbox empty states", () => {
     expect(screen.getByTestId("add-lead-modal")).toBeInTheDocument();
   });
 
-  // An inbox with no leads at all can still have a filter on, and the inbox reads every count
-  // through that filter, so it cannot prove leads exist. The sentence must not claim they do.
   it("claims no leads exist behind the filter on an empty inbox", () => {
     listQuery.mockReturnValue({ data: { rows: [], total: 0 }, refetch });
     render(<LeadsInbox />);

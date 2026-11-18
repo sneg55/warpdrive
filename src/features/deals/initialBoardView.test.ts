@@ -76,8 +76,6 @@ it("drops a stored saved filter the actor can no longer see", async () => {
 });
 
 it("ad-hoc conditions win over the saved view, matching the client precedence", async () => {
-  // Typed as the stored pref, whose combinator zod has already filled in, not as the hand-built
-  // FilterDefinition that leaves it optional.
   const adHoc: BoardViewPrefs["conditions"] = {
     combinator: "and",
     conditions: [{ field: "title", op: "contains", value: "a" }],

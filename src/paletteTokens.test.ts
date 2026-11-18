@@ -4,12 +4,8 @@ import { describe, expect, it } from "vitest";
 
 const SRC_DIR = fileURLToPath(new URL("./", import.meta.url));
 
-// The main navigation rail is a dark slate rail in BOTH themes, so its slate scale is
-// intentional rather than an un-migrated light-only surface.
 const INTENTIONAL_FIXED_PALETTE = new Set(["components/shell/LeftNav.tsx"]);
 
-// A fixed gray-family step that does not follow the theme, captured with its whole variant chain
-// so a `dark:` anywhere in that chain reads as the deliberate escape hatch.
 const PALETTE_UTILITY = /(?:[a-z-]+:)*(?:text|bg|border)-(?:gray|slate|zinc|neutral)-\d{2,3}\b/g;
 
 function lightOnly(source: string): string[] {
@@ -47,8 +43,6 @@ describe("theme palette tokens", () => {
     expect(lightOnly('className="bg-muted dark:bg-slate-800"')).toEqual([]);
   });
 
-  // A dark variant can sit anywhere in the chain, so the escape hatch cannot be a lookbehind on
-  // the utility alone.
   it("accepts a dark variant that is not the last one in the chain", () => {
     expect(lightOnly('className="bg-muted dark:hover:bg-gray-800"')).toEqual([]);
   });

@@ -7,7 +7,6 @@ import { seedPipelineWithStages, seedUser } from "@/db/testing/factories";
 import { createDeal } from "./dealActions";
 import { getBoardColumns, getStageSums, listDeals } from "./dealRepo";
 
-// Admin session: sees all deals regardless of visibility level
 function admin(userId: string) {
   return {
     userId,
@@ -21,8 +20,6 @@ function admin(userId: string) {
   };
 }
 
-// Regular (non-admin) session with no group membership: sees only own deals
-// when default visibility is "owner"
 function ownerOnly(userId: string) {
   return {
     userId,
@@ -70,8 +67,6 @@ describe("board reads", () => {
     });
   });
 
-  // RUNTIME CONTRACT: raw pg returns timestamptz as strings; BoardCard types them
-  // as Date. Consumers call .toISOString()/.getTime() so the rows MUST be coerced.
   it("returns Date instances for timestamp columns (board)", async () => {
     await withTestDb(async (db) => {
       await db.insert(settings).values({
@@ -90,7 +85,6 @@ describe("board reads", () => {
         new AbortController().signal,
       );
       if (!created.ok) throw new Error("createDeal failed");
-      // Set a next-activity timestamp directly (createDeal does not accept it).
       const when = new Date("2026-07-01T12:00:00.000Z");
       await db.update(deals).set({ nextActivityAt: when }).where(eq(deals.id, created.value.id));
 
@@ -104,12 +98,9 @@ describe("board reads", () => {
       if (!card) throw new Error("no card");
       expect(card.updatedAt).toBeInstanceOf(Date);
       expect(card.stageEnteredAt).toBeInstanceOf(Date);
-      // Nullable activity field: Date when set
       expect(card.nextActivityAt).toBeInstanceOf(Date);
       expect(card.nextActivityAt?.getTime()).toBe(when.getTime());
-      // lastActivityAt was never set, so it must be null (not the string "null")
       expect(card.lastActivityAt).toBeNull();
-      // .toISOString() must not throw (the exact call the board page makes)
       expect(() => card.updatedAt.toISOString()).not.toThrow();
     });
   });
@@ -176,10 +167,8 @@ describe("board reads", () => {
     });
   });
 
-  // SECURITY: visibility predicate must filter hidden deals from BOTH board and sums.
   it("excludes owner-only deals from board when viewed by a different user", async () => {
     await withTestDb(async (db) => {
-      // "owner" default so deals are visible to owner only
       await db.insert(settings).values({
         id: true,
         baseCurrency: "USD",
@@ -198,7 +187,6 @@ describe("board reads", () => {
         new AbortController().signal,
       );
 
-      // viewer (different user, non-admin) must not see the deal
       const { cards } = await getBoardColumns(
         db,
         ownerOnly(viewer.id),
@@ -235,8 +223,6 @@ describe("board reads", () => {
         p.pipeline.id,
         new AbortController().signal,
       );
-      // Stage must be absent from results (GROUP BY yields no rows when predicate
-      // excludes all deals for that stage).
       const s = sums.find((r) => r.stageId === stage.id);
       expect(s).toBeUndefined();
     });
@@ -275,9 +261,7 @@ describe("board reads", () => {
         new AbortController().signal,
       );
 
-      // not in board
       expect(cards.find((c) => c.title === "Private")).toBeUndefined();
-      // not in sums (stage absent from GROUP BY result)
       expect(sums.find((r) => r.stageId === stage.id)).toBeUndefined();
     });
   });

@@ -19,7 +19,6 @@ interface EngagementTypeOption {
   name: string;
 }
 
-// Period options mirror Pipedrive's "N months back" selector.
 const PERIOD_OPTIONS = [
   { value: "3", label: "3 months back" },
   { value: "6", label: "6 months back" },
@@ -38,9 +37,6 @@ interface EngagementFiltersProps {
   types: EngagementTypeOption[];
 }
 
-// Toolbar for the engagement timeline: an entity (Person/Org) segmented toggle, a period select,
-// an owner (assignee) combobox, and the shared activity-type chip row. Every change re-derives the
-// full filter and hands it up; the client owns the state and re-queries server-side.
 export function EngagementFilters({
   filter,
   onChange,

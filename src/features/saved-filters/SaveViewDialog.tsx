@@ -17,19 +17,15 @@ import type { SavedView, SavedViewDefinition } from "./savedView";
 import type { SavedFilterTargetEntity } from "./schemas";
 import { createSavedFilterAction } from "./serverActions";
 
-// One copy for both the checkbox's accessible name and its visible <label>.
 const SHARED_LABEL = "Shared with everyone";
 
 interface SaveViewDialogProps {
   targetEntity: SavedFilterTargetEntity;
-  // The conditions currently applied to the list, persisted as the body of the new view.
   definition: SavedViewDefinition;
   onClose: () => void;
   onSaved: (view: SavedView) => void;
 }
 
-// Names the currently applied conditions and persists them as a saved view for this entity. The
-// share checkbox is gated server-side by filter.share; a denial is surfaced here, not swallowed.
 export function SaveViewDialog({
   targetEntity,
   definition,

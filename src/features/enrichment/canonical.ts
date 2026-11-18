@@ -1,7 +1,3 @@
-// The one vocabulary every enrichment provider normalises into. Admins map a canonical key to a
-// target field ONCE, not once per provider, which is what keeps the mapping UI a single list
-// instead of three; which provider supplied a value is carried on the run, not on the mapping.
-
 export type EnrichEntity = "person" | "organization";
 export type CanonicalValueType = "string" | "number";
 
@@ -86,9 +82,6 @@ export function valueTypeOf(key: string): CanonicalValueType | undefined {
   return BY_KEY.get(key)?.valueType;
 }
 
-// Seeded on first visit to the settings page. Built-ins only: they exist on every install, whereas
-// a custom field has to be created before it can be a target. Address leaves reuse the names the
-// import mapper already uses (ENTITY_FIELDS.organization), so there is only ever one address shape.
 export const DEFAULT_BUILTIN_MAPPINGS: Readonly<Record<string, string>> = {
   "org.domain": "domain",
   "org.industry": "industry",

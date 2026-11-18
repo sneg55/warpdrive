@@ -10,10 +10,6 @@ interface StageChevronProps {
   onSelect: (stageId: string) => void;
 }
 
-// Pipedrive's stage picker in the Add deal dialog: a row of interlocking chevron segments, one per
-// stage, with the chosen stage filled in the brand color. Built on the design-system RadioGroup so
-// it gets arrow-key roving + screen-reader semantics; each stage is a RadioGroupItem rendering its
-// own chevron segment (custom children, so no default radio dot).
 export function StageChevron({ stages, selectedId, onSelect }: StageChevronProps): React.ReactNode {
   return (
     <RadioGroup
@@ -24,9 +20,6 @@ export function StageChevron({ stages, selectedId, onSelect }: StageChevronProps
     >
       {stages.map((s, i) => {
         const selected = s.id === selectedId;
-        // Inherit the pipeline board's per-order hue (stageSegmentStyle) instead of a dark
-        // primary / muted-gray pair: every stage reads in its own color, and the chosen stage
-        // is emphasized with a deeper fill + bold (picker semantics, so unselected stays light).
         const fill = stageSegmentStyle(i, selected ? "current" : "future");
         return (
           <RadioGroupItem

@@ -164,8 +164,6 @@ describe("canSee matrix (permissions spec 8)", () => {
     expect(canSee(user({ groupIds: new Set([GROUP]) }), person)).toBe(true);
   });
 
-  // Team-manager view: managedUserIds (already gated on team.viewMembers at hydration) grants
-  // visibility to an owner-level record owned by a managed member.
   test("team-manager sees a managed member's owner-level record", () => {
     expect(
       canSee(user({ managedUserIds: new Set([OWNER]) }), deal({ visibilityLevel: "owner" })),

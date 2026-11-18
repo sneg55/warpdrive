@@ -8,8 +8,6 @@ export type StageChip = {
   name: string;
   current: boolean;
   passed: boolean;
-  // Days spent in this stage. Option B (no stage-transition history yet): real for the current
-  // stage, 0 for others. Accurate per-stage durations become available once moves are logged.
   days: number;
 };
 

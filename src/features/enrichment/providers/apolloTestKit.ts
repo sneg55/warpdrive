@@ -1,4 +1,3 @@
-// Stubs shared by the Apollo test files, which are split to stay under the file-size rule.
 import { vi } from "vitest";
 import { apolloProvider } from "./apollo";
 import type { OrgLookup, PersonLookup, ProviderOutcome } from "./types";

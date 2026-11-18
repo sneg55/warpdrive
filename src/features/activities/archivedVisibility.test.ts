@@ -1,8 +1,3 @@
-// Codex finding F22: resolveDealParent fetched the parent pipeline only for
-// visibilityGroupId and never checked isArchived. calendarRange, listActivitiesForEntity,
-// completeActivity, and file activity auth all trust resolveActivityVisibility, so an
-// activity whose dominant parent is a deal in an archived pipeline stayed visible and
-// mutable. It must resolve to null (hidden) like every other archived-pipeline read.
 import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import { activities, activityTypes, deals } from "@/db/schema";

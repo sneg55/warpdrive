@@ -113,12 +113,11 @@ describe("eslint custom rules", () => {
   test("import-x/no-cycle rule is configured as error", async () => {
     const eslint = new ESLint();
     const config = await eslint.calculateConfigForFile("src/features/demo/a.ts");
-    // ESLint stores severity as a number: 0=off, 1=warn, 2=error
     const rules = config.rules as Record<string, [number, ...unknown[]] | number | undefined>;
     const cycleEntry = rules["import-x/no-cycle"];
     expect(cycleEntry).toBeDefined();
     const severity = Array.isArray(cycleEntry) ? cycleEntry[0] : cycleEntry;
-    expect(severity).toBe(2); // 2 = "error"
+    expect(severity).toBe(2);
   });
 
   test("import-x/no-unresolved rule is present (off by design; TypeScript handles resolution)", async () => {
@@ -126,9 +125,8 @@ describe("eslint custom rules", () => {
     const config = await eslint.calculateConfigForFile("src/features/demo/a.ts");
     const rules = config.rules as Record<string, [number, ...unknown[]] | number | undefined>;
     const unresolvedEntry = rules["import-x/no-unresolved"];
-    // Rule must be explicitly configured (off is intentional per brief: TS catches these)
     expect(unresolvedEntry).toBeDefined();
     const severity = Array.isArray(unresolvedEntry) ? unresolvedEntry[0] : unresolvedEntry;
-    expect(typeof severity).toBe("number"); // 0=off, 1=warn, 2=error
+    expect(typeof severity).toBe("number");
   });
 });

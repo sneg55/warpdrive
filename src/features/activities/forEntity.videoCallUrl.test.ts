@@ -10,9 +10,6 @@ function makeActor(id: string): PermSetUser {
   return { id, type: "regular", isActive: true, groupIds: new Set(), flags: new Set() };
 }
 
-// Regression: the composer writes activities.video_call_url, but the read layer never selected it
-// (hardcoded null in the visibility mapper, omitted from the output projection), so a saved video
-// call link was invisible everywhere after save. listActivitiesForEntity must carry it through.
 it("surfaces the video call url for a deal activity that has one", async () => {
   await withTestDb(async (db) => {
     const signal = new AbortController().signal;

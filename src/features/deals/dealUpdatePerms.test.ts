@@ -1,5 +1,3 @@
-// dealUpdatePerms.test.ts: CAS precondition, permissions, and realtime event for updateDeal.
-// Field update and won/lost transition tests live in dealUpdate.test.ts.
 import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import { deals } from "@/db/schema/deals";
@@ -28,7 +26,6 @@ describe("updateDeal: CAS precondition", () => {
       if (r.ok === true) return;
       expect(r.error.id).toBe("E_DEAL_002");
 
-      // Confirm the deal was NOT modified (CAS atomicity: single UPDATE WHERE).
       const unchanged = await db.select().from(deals).where(eq(deals.id, deal.id));
       expect(unchanged[0]?.title).toBe("Initial");
     });

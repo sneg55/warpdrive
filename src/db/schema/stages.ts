@@ -19,7 +19,6 @@ export const stages = pgTable(
   },
   (t) => [
     index("stages_pipeline_order_idx").on(t.pipelineId, t.order),
-    // UNIQUE (id, pipeline_id) is the composite-FK target for deals.stage.
     unique("stages_id_pipeline_uq").on(t.id, t.pipelineId),
   ],
 );

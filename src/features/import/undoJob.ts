@@ -18,9 +18,6 @@ interface UndoJob {
   data: { batchId: string };
 }
 
-// Soft-delete every record the batch CREATED (status='imported' AND createdEntityId not
-// null). Rows that updated a pre-existing record carry a null createdEntityId (see
-// applyOneUpdate) and are never touched. Returns the count actually deleted, not attempted.
 export async function undoBatch(
   db: Db,
   actor: ImportActor,
@@ -41,13 +38,7 @@ export async function undoBatch(
     batchId,
     createMissingStages: false,
   };
-  // Remember the pre-undo status so we can restore it if the undo could not remove
-  // everything (e.g. the actor lacks the delete flag for some rows): the batch must not
-  // claim "undone" while created records are still live.
   const priorStatus = batchRow?.status ?? "completed";
-  // Atomically claim: undo may start only from a terminal completed/partial batch, or resume
-  // a crashed "undoing". A stale undo retry that fires after the batch is already "undone"
-  // claims nothing and no-ops here, so it never resets undoneAt or reruns deletions.
   const claim = await db
     .update(importBatches)
     .set({ status: "undoing" })
@@ -59,9 +50,6 @@ export async function undoBatch(
     )
     .returning({ id: importBatches.id });
   if (claim.length === 0) return ok({ deleted: 0 });
-  // Any row that CREATED something, whether that is its primary record or only a side effect. An
-  // "update"-mode row carries a null createdEntityId (its contact predates the import and must
-  // survive) yet may still have created an org and a note, which are this import's debris to clear.
   const rows = await db
     .select({
       id: importRows.createdEntityId,
@@ -82,16 +70,10 @@ export async function undoBatch(
         ),
       ),
     );
-  // Only rows with a primary record can contribute to the "every primary was deleted" check.
   const primaryCount = rows.filter((r) => r.id !== null).length;
 
   let processed = 0;
   let deleted = 0;
-  // Records an import created as a SIDE EFFECT of a row: the org/person it linked by
-  // find-or-create, and the row note. They must be removed too, or an undone import leaves orphan
-  // organizations, people, and notes behind. A record a row merely LINKED to carries a null id
-  // here and is never touched. Enrichment written onto a pre-existing org is likewise not
-  // reverted: undo removes what the import created, not what it edited.
   const side: SideRemoval = { attempted: 0, removed: 0 };
   let lastEmitted = 0;
   for (const row of rows) {
@@ -108,10 +90,6 @@ export async function undoBatch(
     }
   }
 
-  // Only claim "undone" when every created record was actually removed: all primary entities AND
-  // every side-effect org/person/note. If some deletions were skipped (permission denied on a row
-  // the actor cannot delete), restore the prior terminal status so history stays truthful and Undo
-  // remains available.
   const fullyUndone = deleted === primaryCount && side.removed === side.attempted;
   const finalStatus = fullyUndone ? "undone" : priorStatus;
   await db

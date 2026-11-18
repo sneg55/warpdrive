@@ -38,7 +38,6 @@ describe("listTemplatesForSettings projection (T4)", () => {
       expect(mine?.ownerName).toBe("Me Person");
       expect(typeof mine?.createdAt).toBe("string");
       expect(shared?.ownerName).toBe("Them Person");
-      // Still no raw owner UUID leak.
       expect(shared).not.toHaveProperty("ownerId");
     });
   });
@@ -50,8 +49,6 @@ describe("shared-template ordering ignores the other owner's sort_order", () => 
       const me = await seedUser(db, "viewer@x.com");
       const a = await seedUser(db, "ownerA@x.com");
       const b = await seedUser(db, "ownerB@x.com");
-      // Two SHARED templates from different owners. Owner A reorders theirs, giving "Zebra"
-      // sort_order 0; owner B's "Apple" keeps NULL. The viewer must still see Apple before Zebra.
       const zebra = await createTemplate(
         db,
         { ownerId: a, name: "Zebra", bodyHtml: "<p>z</p>", isShared: true, canShare: true },
@@ -79,7 +76,6 @@ describe("reorderTemplates (T4)", () => {
       const b = await mkTemplate(db, me, "Bravo");
       const c = await mkTemplate(db, me, "Charlie");
 
-      // Default (NULL sort_order) falls back to name ASC.
       let rows = await listTemplatesForSettings(db, { actor: { id: me } as never }, sig());
       expect(rows.map((r) => r.name)).toEqual(["Alpha", "Bravo", "Charlie"]);
 
@@ -100,7 +96,6 @@ describe("reorderTemplates (T4)", () => {
 
       const res = await reorderTemplates(db, { actorId: me, orderedIds: [theirs, mine] }, sig());
       expect(res.ok).toBe(true);
-      // Their template's sort_order must remain untouched (still NULL).
       const rows = await listTemplatesForSettings(db, { actor: { id: them } as never }, sig());
       const t = rows.find((r) => r.name === "Theirs");
       expect(t).toBeDefined();
@@ -123,7 +118,6 @@ describe("deleteTemplates (T4 bulk)", () => {
       const mineLeft = await listTemplatesForSettings(db, { actor: { id: me } as never }, sig());
       expect(mineLeft.map((r) => r.name)).not.toContain("A");
       expect(mineLeft.map((r) => r.name)).not.toContain("B");
-      // Their template survives.
       const theirLeft = await listTemplatesForSettings(db, { actor: { id: them } as never }, sig());
       expect(theirLeft.map((r) => r.name)).toContain("Theirs");
     });

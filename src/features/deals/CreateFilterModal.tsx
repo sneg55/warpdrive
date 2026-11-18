@@ -23,27 +23,17 @@ import type { SavedFilterView } from "./savedFilterView";
 
 interface CreateFilterModalProps {
   onClose: () => void;
-  // Owners on the board, used to offer a value dropdown for the Owner condition field.
   owners?: BoardOwner[];
-  // Pipeline stages, used to offer a value dropdown for the Stage condition field.
   stages?: ReadonlyArray<{ id: string; name: string }>;
-  // Applies the in-progress conditions to the board behind the modal, without persisting a filter.
   onPreview?: (definition: FilterDefinition) => void;
-  // Applies the conditions ad-hoc (kept applied after the modal closes) without persisting a saved
-  // filter. This is the PD "Filter" apply: filter now, save-as-view optional.
   onApply?: (definition: FilterDefinition) => void;
-  // Reports the persisted filter so the parent can apply + select it by its real id.
   onSave: (saved: {
     id: string;
     name: string;
     isShared: boolean;
     definition: FilterDefinition;
   }) => void;
-  // The saved filter the dialog was opened on. Owning it makes Save an update in place; someone
-  // else's shared filter can only be forked, which the title and the Save button say.
   savedFilter?: SavedFilterView;
-  // Seeds the builder from an ad-hoc definition, so reopening the board's inline filter shows the
-  // conditions and the combinator it applied instead of a blank "match all" form.
   initialDefinition?: FilterDefinition;
 }
 
@@ -63,7 +53,6 @@ export function CreateFilterModal({
   const catalogNames = (trpc.labels.listByTarget.useQuery({ target: "deal" }).data ?? []).map(
     (l) => l.name,
   );
-  // Union in what deals actually carry, so a label visible on a card is a label you can filter by.
   const appliedNames = trpc.labels.appliedNames.useQuery({ target: "deal" }).data ?? [];
   const fields = dealFilterFields({
     owners: owners.map((o) => ({ id: o.ownerId, name: o.name })),
@@ -75,21 +64,15 @@ export function CreateFilterModal({
     seedDefinition === undefined ? [blankConditionRow(fields)] : definitionToRows(seedDefinition),
   );
   const [combinator, setCombinator] = useState<"and" | "or">(seedDefinition?.combinator ?? "and");
-  // An update must not rename the filter, so it starts from the stored name. A fork keeps the
-  // condition-derived name so the copy is not indistinguishable from the original.
   const [name, setName] = useState(mode === "update" ? (savedFilter?.name ?? "") : "");
-  // Until the user types their own name, the field mirrors a name derived from the conditions.
   const [nameEdited, setNameEdited] = useState(mode === "update");
   const [isShared, setIsShared] = useState(mode === "update" && savedFilter?.isShared === true);
   const [saveError, setSaveError] = useState<ActionErrorContent | null>(null);
   const [saving, setSaving] = useState(false);
 
   const effectiveName = nameEdited ? name : describeRows(rows, fields, combinator);
-  // Caught as the user types, so a value the server would reject never costs a round trip.
   const issue = conditionRowIssue(rows, fields);
 
-  // The filter as currently edited: rows with a real value, minus incomplete ones. Shared by
-  // Save (persist) and Preview (apply live without saving).
   function buildDefinition(): FilterDefinition {
     return dealRowsToDefinition(rows, combinator) ?? { combinator, conditions: [] };
   }
@@ -153,7 +136,6 @@ export function CreateFilterModal({
             rows={rows}
             onRowsChange={(next) => {
               setRows(next);
-              // The rejected conditions are gone; keeping the old message would misread as current.
               setSaveError(null);
             }}
             combinator={combinator}

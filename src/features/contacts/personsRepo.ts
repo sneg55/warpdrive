@@ -19,14 +19,10 @@ import { resolveOwnerUpdate } from "./resolveOwnerUpdate";
 import type { PersonCreateInput, PersonUpdateInput } from "./schemas";
 import { deriveContactVisibility } from "./visibility";
 
-// ContactActor carries the actor's permission flags (extends PermSetUser) so record
-// mutation paths can enforce contact.edit, not just canSee. Dropping flags here was the
-// gap behind Codex finding F2 (a visible-but-not-editor user could edit contacts).
 export interface ContactActor extends PermSetUser {
   primaryVisibilityGroupId: string | null;
 }
 
-// Convert ContactActor to DealVisibilitySession for assertReferenceVisible.
 function toRefActor(actor: ContactActor): DealVisibilitySession {
   return {
     userId: actor.id,
@@ -38,9 +34,6 @@ function toRefActor(actor: ContactActor): DealVisibilitySession {
   };
 }
 
-// Build VisiblePersonOrOrg for canSee checks. Exported so deletePerson.ts (a separate file,
-// kept small per the file-size convention) can reuse the same canSee/contact.edit gate as
-// updatePerson without duplicating the record projection.
 export function toVisibleRecord(row: Person): VisiblePersonOrOrg {
   return {
     kind: "person",
@@ -83,9 +76,6 @@ export async function createPerson(
       if (ref.ok === false) return ref;
     }
 
-    // Derive first/last from the combined name when the caller does not supply them
-    // explicitly, so every person leaves create with non-stale firstName/lastName (the
-    // NULL-first/last state was the root cause of the Finding 1 name-overwrite bug).
     const derivedName = splitName(input.name);
 
     const [row] = await tx
@@ -134,8 +124,6 @@ export async function updatePerson(
     if (current === undefined || canSee(actor, toVisibleRecord(current)) === false) {
       return err(new AppError(ERROR_IDS.CONTACT_NOT_FOUND, "not found", { id: input.id }));
     }
-    // Edit capability gate (F2): visibility alone is not authority to mutate.
-    // contact.edit is ownership-scoped (_own requires ownership, _any is unconditional).
     if (
       authority === "requires-contact-edit" &&
       !can(actor, "contact.edit", toVisibleRecord(current))
@@ -170,19 +158,14 @@ export async function updatePerson(
       if (ref.ok === false) return ref;
     }
 
-    // Owner transfer (CO-3): gated by deal.changeOwner/admin; ignored otherwise.
     const ownerResult = await resolveOwnerUpdate(tx, actor, input.ownerId, current.ownerId, signal);
     if (ownerResult.ok === false) return ownerResult;
 
-    // See resolvePersonName's docstring for the first/last vs. name precedence rules
-    // (Finding 1: a direct `{ name }` edit must re-derive first/last, not leave them stale).
     const resolvedName = resolvePersonName(input, current);
 
     const [row] = await tx
       .update(persons)
       .set({
-        // Guard: never let a derived empty name (e.g. first/last both cleared) overwrite a
-        // real one.
         name: resolvedName.name === "" ? current.name : resolvedName.name,
         firstName: resolvedName.firstName,
         lastName: resolvedName.lastName,
@@ -192,7 +175,6 @@ export async function updatePerson(
         ownerId: ownerResult.value,
         primaryEmail: derivePrimaryEmail(resolvedEmails),
         customFields: resolvedCustomFields,
-        // Add-labels (spec B5): omitted -> leave untouched (mirrors deals' coalesce).
         labels: input.labels ?? current.labels,
       })
       .where(and(eq(persons.id, input.id), isNull(persons.deletedAt)))
@@ -208,8 +190,6 @@ export async function updatePerson(
   });
 }
 
-// The full person record plus the resolved owner display name (detail page, Wave 4 Task 5).
-// A separate type (not a Person field) because the name only exists via a join to users.
 export type PersonDetail = Person & { ownerName: string | null };
 
 export async function getPerson(
@@ -220,8 +200,6 @@ export async function getPerson(
 ): Promise<Result<PersonDetail, AppError>> {
   signal.throwIfAborted();
 
-  // A non-uuid id (a malformed [personId] path param) can never match a row; return the
-  // not-found err instead of letting Postgres reject the uuid cast and throw a 500.
   if (!isUuidParam(id)) {
     return err(new AppError(ERROR_IDS.CONTACT_NOT_FOUND, "not found", { id }));
   }
@@ -237,8 +215,3 @@ export async function getPerson(
   }
   return ok(row);
 }
-
-// listPeople (the global contacts-nav list + its Closed-deals count) lives in ./listPeople, and
-// listPersonOptions / listPeopleForOrg (lightweight picker/relation projections) live in
-// ./personOptionsRepo. Both are split out to keep this file (create/update/get) under the
-// file-size limit.

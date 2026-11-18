@@ -45,9 +45,6 @@ const answers = (id: ProviderId): EnrichmentProvider => ({
 const FLAGS: PermissionFlagKey[] = ["contact.edit_own"];
 
 describe("runEnrichment with a link the actor cannot see", () => {
-  // The company value reads as null whether the person has no organization or one outside the
-  // actor's visibility. Treating the second as a gap checks the row by default, and applying it
-  // moves the link to a company the user picked without ever knowing one was there.
   it("proposes the company as an unchecked overwrite rather than a gap", async () => {
     const [hidden] = await h.db
       .insert(schema.organizations)
@@ -85,7 +82,6 @@ describe("runEnrichment with a link the actor cannot see", () => {
     const company = result.value.fields.find((f) => f.canonicalKey === "person.companyName");
     expect(company?.isOverwrite).toBe(true);
     expect(company?.defaultSelected).toBe(false);
-    // The name itself is never disclosed, only the fact that something is there.
     expect(company?.currentValue).toBeNull();
   });
 

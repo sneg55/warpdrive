@@ -1,12 +1,3 @@
-/**
- * scripts/seed-demo-pools.ts
- *
- * Deterministic PRNG, bounds-checked helpers, static word pools, seed types, and
- * small value generators shared by the demo generators in seed-demo-data.ts.
- * No DB access. Kept separate to keep each file focused and under the size cap.
- */
-
-// mulberry32: tiny deterministic PRNG so the demo dataset is reproducible.
 export function makeRng(seed: number): () => number {
   let a = seed >>> 0;
   return () => {
@@ -19,8 +10,6 @@ export function makeRng(seed: number): () => number {
 }
 
 export type Rng = () => number;
-// Bounds-checked accessor: the lint config bans non-null assertions, so index
-// access (with noUncheckedIndexedAccess on) is narrowed through this helper.
 export function at<T>(arr: readonly T[], i: number): T {
   const v = arr[i];
   if (v === undefined) throw new Error(`index ${i} out of range (len ${arr.length})`);
@@ -132,9 +121,7 @@ export const LEAD_SRC = ["web_form", "manually_created", "import", "referral", "
 export const INDUSTRIES = ["SaaS", "Fintech", "Healthcare", "Retail", "Manufacturing", "Media"];
 export const DEAL_SOURCES = ["Inbound", "Outbound", "Referral", "Event", "Partner"];
 export const PHONE_LABELS = ["work", "mobile"] as const;
-// Firmographic pools for organization enrichment (Wave 3, migration 0037).
 export const ORG_SIZES = [8, 24, 60, 140, 380, 900, 2400, 5200] as const;
-// Free-text relation labels for organization_relations (Wave 3, Task 23).
 export const ORG_RELATION_TYPES = [
   "Partner",
   "Subsidiary",
@@ -150,8 +137,6 @@ export type OrgSeed = {
   name: string;
   domain: string;
   city: string;
-  // Firmographics (migration 0037): populated for ~85% of orgs, null for the rest
-  // so the org panel exercises both filled and empty states.
   industry: string | null;
   employeeCount: number | null;
   annualRevenue: string | null;
@@ -193,8 +178,6 @@ export type LeadSeed = {
   convert: boolean;
 };
 
-// Visibility mix: mostly shared, with a minority owner-only / group-scoped so the
-// demo exercises trust-boundary filtering when logged in as a regular rep.
 export function visibilityFor(rng: Rng): Visibility {
   const r = rng();
   return r < 0.7 ? "all" : r < 0.85 ? "owner" : "group";
@@ -204,12 +187,10 @@ export function phone(rng: Rng): string {
   return `+1-555-${randInt(rng, 100, 999)}-${randInt(rng, 1000, 9999)}`;
 }
 
-// YYYY-MM-DD `days` from today (negative = past). Uses UTC to stay deterministic.
 function isoDaysFromNow(days: number): string {
   return new Date(Date.now() + days * 86_400_000).toISOString().slice(0, 10);
 }
 
-// ~65% of deals have an expected close date: a spread of overdue, imminent, later.
 export function expectedClose(rng: Rng): string | null {
   if (rng() < 0.35) return null;
   const r = rng();

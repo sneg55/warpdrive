@@ -26,14 +26,10 @@ describe("deriveMessageId", () => {
       idempotencyKey: "k\r\nBcc: evil@x.com",
       domain: "gunsnation.com",
     });
-    // No CR/LF, no spaces, no colon from the input may leak into the id: without
-    // those, the injected "Bcc: ..." can never become a separate header. (Bare
-    // letters surviving as inert local-part text is harmless.)
     expect(id).not.toContain("\r");
     expect(id).not.toContain("\n");
     expect(id).not.toContain(" ");
     expect(id).not.toContain("Bcc:");
-    // Still a well-formed single-token id.
     expect(id.startsWith("<")).toBe(true);
     expect(id.endsWith(">")).toBe(true);
     expect(id.split("@")).toHaveLength(2);
@@ -50,7 +46,7 @@ describe("buildMime", () => {
       messageId: "<acc-1.key-1@gunsnation.com>",
     });
     expect(mime).toContain("\r\n");
-    expect(mime).not.toMatch(/[^\r]\n/); // every LF is preceded by CR
+    expect(mime).not.toMatch(/[^\r]\n/);
     expect(mime).toContain("MIME-Version: 1.0");
   });
 
@@ -83,9 +79,7 @@ describe("buildMime", () => {
     expect(boundaryMatch).not.toBeNull();
     const boundary = boundaryMatch?.[1] ?? "";
     expect(boundary.length).toBeGreaterThan(0);
-    // The boundary token must not appear inside either body.
     expect("hi".includes(boundary)).toBe(false);
-    // text/plain part precedes text/html part.
     const textIdx = mime.indexOf("text/plain");
     const htmlIdx = mime.indexOf("text/html");
     expect(textIdx).toBeGreaterThan(-1);
@@ -113,13 +107,10 @@ describe("buildMime", () => {
       html: "<p>hi</p>",
       messageId: "<m@x.com>",
     });
-    // The injected text must never begin a line (a header is "Name:" at line start).
-    // Inert single-line survival inside a value is harmless; a new header line is not.
     expect(mime).not.toMatch(/\r\nBcc:/);
     expect(mime).not.toMatch(/\r\nX-Injected:/);
     expect(mime).not.toMatch(/\r\nX-Cc-Injected:/);
     expect(mime).not.toMatch(/\r\nX-Subject-Injected:/);
-    // The header block (before the first blank line) holds exactly our header names.
     const headerBlock = mime.split("\r\n\r\n")[0] ?? "";
     const names = headerBlock
       .split("\r\n")
@@ -147,10 +138,8 @@ describe("buildMime", () => {
       html: "<p>hi</p>",
       messageId: "<m@x.com>",
     });
-    // Encoded-word form: =?UTF-8?B?...?= or =?UTF-8?Q?...?= ; no raw non-ASCII in the header.
     const subjectLine = mime.split("\r\n").find((l) => l.startsWith("Subject:")) ?? "";
     expect(subjectLine).toMatch(/=\?UTF-8\?[BQ]\?/i);
-    // The header line must be pure ASCII (no raw non-ASCII bytes).
     const allAscii = [...subjectLine].every((ch) => ch.charCodeAt(0) < 128);
     expect(allAscii).toBe(true);
   });
@@ -177,8 +166,6 @@ describe("buildMime Content-Disposition filename escaping (RFC 2183)", () => {
   });
 
   it("backslash-escapes double-quotes inside the filename so the MIME is well-formed", () => {
-    // A filename like: evil"name.pdf
-    // Must produce:    filename="evil\"name.pdf"   (the quote is backslash-escaped)
     const mime = buildMime({
       from: "a@x.com",
       to: ["b@x.com"],
@@ -190,9 +177,8 @@ describe("buildMime Content-Disposition filename escaping (RFC 2183)", () => {
       ],
     });
     const line = getDispositionLine(mime);
-    // The raw double-quote must NOT appear unescaped after filename=" (that would close the quoted-string early).
-    expect(line).not.toMatch(/filename="[^\\]"/); // no unescaped quote terminating early
-    expect(line).toContain('\\"'); // the quote is backslash-escaped
+    expect(line).not.toMatch(/filename="[^\\]"/);
+    expect(line).toContain('\\"');
   });
 
   it("strips CR/LF and other control chars from the filename (header-injection defence)", () => {
@@ -210,9 +196,7 @@ describe("buildMime Content-Disposition filename escaping (RFC 2183)", () => {
         },
       ],
     });
-    // No injected header should appear as a new MIME header line.
     expect(mime).not.toMatch(/\r\nX-Evil:/);
-    // The disposition line must still be present and not broken.
     const line = getDispositionLine(mime);
     expect(line).toContain("Content-Disposition: attachment");
   });
@@ -222,7 +206,6 @@ describe("toRawBase64", () => {
   it("round-trips: decoding base64url yields the original mime", () => {
     const original = "Subject: x\r\n\r\nbody";
     const raw = toRawBase64(original);
-    // base64url is URL-safe: no +, /, or = padding.
     expect(raw).not.toMatch(/[+/=]/);
     expect(Buffer.from(raw, "base64url").toString("utf8")).toBe(original);
   });

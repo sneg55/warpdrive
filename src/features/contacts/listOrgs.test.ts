@@ -17,7 +17,6 @@ function regularActor(id: string): ContactActor {
   };
 }
 
-// Seed an org directly so the test controls owner + visibility.
 async function seedOrg(
   db: Parameters<Parameters<typeof withTestDb>[0]>[0],
   opts: { name: string; ownerId: string; visibilityLevel: "owner" | "group" | "all" },
@@ -38,9 +37,9 @@ describe("listOrgs", () => {
       const me = await seedUser(db);
       const other = await seedUser(db);
 
-      await seedOrg(db, { name: "Acme", ownerId: me.id, visibilityLevel: "owner" }); // mine
-      await seedOrg(db, { name: "Boeing", ownerId: other.id, visibilityLevel: "all" }); // public
-      await seedOrg(db, { name: "Zeta", ownerId: other.id, visibilityLevel: "owner" }); // hidden
+      await seedOrg(db, { name: "Acme", ownerId: me.id, visibilityLevel: "owner" });
+      await seedOrg(db, { name: "Boeing", ownerId: other.id, visibilityLevel: "all" });
+      await seedOrg(db, { name: "Zeta", ownerId: other.id, visibilityLevel: "owner" });
 
       const res = await listOrgs(db, regularActor(me.id), { offset: 0, limit: 50 }, signal);
 
@@ -54,9 +53,6 @@ describe("listOrgs", () => {
       const signal = new AbortController().signal;
       const me = await seedUser(db);
 
-      // Four orgs sharing one name straddle the page boundary. Explicit ids inserted in
-      // reverse-id order so physical order differs from id order: without an id tiebreaker,
-      // the two independent page queries lack a stable order among equal names.
       const ids = [
         "00000000-0000-0000-0000-0000000000b1",
         "00000000-0000-0000-0000-0000000000b2",
@@ -101,9 +97,6 @@ describe("listOrgs", () => {
     });
   });
 
-  // The Organizations list's sortable Name header (Task 20). Descending is the case the
-  // default (ascending) query would already pass by coincidence, so it's the one worth
-  // asserting to actually exercise the ORDER BY direction.
   it("applies a server-side sort when given a sort field/direction", async () => {
     await withTestDb(async (db) => {
       const signal = new AbortController().signal;
@@ -123,8 +116,6 @@ describe("listOrgs", () => {
     });
   });
 
-  // Task 19: Address / People / Deals columns. Counts must be visibility-gated, not raw
-  // COUNTs (a naive COUNT(*) over all people/deals would leak the existence of hidden rows).
   it("returns people and deal counts per org", async () => {
     await withTestDb(async (db) => {
       const signal = new AbortController().signal;
@@ -185,7 +176,6 @@ describe("listOrgs", () => {
         .returning();
       if (org === undefined) throw new Error("setup: org insert failed");
 
-      // Visible to me (owner); the other person is owner-only and owned by someone else.
       await db.insert(persons).values([
         { name: "Mine", orgId: org.id, ownerId: me.id, visibilityLevel: "owner" },
         { name: "Theirs", orgId: org.id, ownerId: other.id, visibilityLevel: "owner" },

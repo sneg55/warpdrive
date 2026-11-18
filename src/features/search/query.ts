@@ -1,5 +1,3 @@
-// Global tsvector search across deals, persons, organizations, and leads.
-// Each section is independently visibility-gated and limited to PER_SECTION results.
 import { sql } from "drizzle-orm";
 import { AppError, ERROR_IDS } from "@/constants/errorIds";
 import type { Db } from "@/db/client";
@@ -13,8 +11,6 @@ import { orgDomainTerm } from "./domainTerm";
 
 const PER_SECTION = 8;
 
-// Build the DealVisibilitySession shape that dealVisibilityClause expects.
-// Mirrors toSession() in src/features/stats/funnel.ts exactly.
 function toSession(actor: PermSetUser) {
   return {
     userId: actor.id,
@@ -26,8 +22,6 @@ function toSession(actor: PermSetUser) {
   };
 }
 
-// Build the VisibilityCtx shape that dealVisibilityPredicate expects.
-// Mirrors toCtx() in src/features/stats/activitiesPerformance.ts exactly.
 function toCtx(actor: PermSetUser) {
   return {
     userId: actor.id,
@@ -60,14 +54,10 @@ export async function searchAll(
 
   const tsq = sql`websearch_to_tsquery('simple', ${trimmed})`;
 
-  // Organizations also index their normalised domain, so OR in the host form of the query. Both
-  // sides stay a plain GIN lookup on org_search_idx; nothing here scans.
   const domainTerm = orgDomainTerm(trimmed);
   const orgTsq =
     domainTerm === null ? tsq : sql`(${tsq} || websearch_to_tsquery('simple', ${domainTerm}))`;
 
-  // Deals: requires JOIN pipelines p so dealVisibilityClause can gate on
-  // p.visibility_group_id (pipeline restriction).
   const dealVisClause = dealVisibilityClause(toSession(actor));
   const dealResult = await db.execute(sql`
     SELECT d.id,
@@ -86,9 +76,6 @@ export async function searchAll(
 
   const ctx = toCtx(actor);
 
-  // Persons (alias pe to avoid colliding with pipeline alias p).
-  // NULL pipeline gate collapses dealVisibilityPredicate to the universal
-  // record-visibility rule (mirror of canSee); persons have no pipeline restriction.
   const personVisPred = dealVisibilityPredicate(ctx, {
     ownerId: sql`pe.owner_id`,
     visibilityLevel: sql`pe.visibility_level`,
@@ -109,9 +96,6 @@ export async function searchAll(
   `);
   signal.throwIfAborted();
 
-  // Organizations (alias o).
-  // NULL pipeline gate collapses dealVisibilityPredicate to the universal
-  // record-visibility rule (mirror of canSee); orgs have no pipeline restriction.
   const orgVisPred = dealVisibilityPredicate(ctx, {
     ownerId: sql`o.owner_id`,
     visibilityLevel: sql`o.visibility_level`,
@@ -132,8 +116,6 @@ export async function searchAll(
   `);
   signal.throwIfAborted();
 
-  // Leads (alias l). No pipeline, so the NULL pipeline gate collapses the
-  // predicate to the universal record-visibility rule (mirror of leadVisibilityClause).
   const leadVisPred = dealVisibilityPredicate(ctx, {
     ownerId: sql`l.owner_id`,
     visibilityLevel: sql`l.visibility_level`,

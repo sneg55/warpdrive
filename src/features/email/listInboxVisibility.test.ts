@@ -1,9 +1,3 @@
-// Guards the mailbox-privacy rule at the listInbox boundary. listInbox now hands canSeeEmail a
-// pre-resolved ownerUserId (projected from its email_accounts join) instead of letting it look the
-// owner up per row. That is an optimisation only: a thread in someone else's mailbox must still be
-// invisible unless it is shared AND its linked deal/person is visible to the actor.
-//
-// Real Postgres via Testcontainers (no DB mocking, see CLAUDE.md).
 import { sql } from "drizzle-orm";
 import { afterAll, beforeAll, expect, it } from "vitest";
 import type { AuthUser } from "@/features/permissions/types";
@@ -54,7 +48,6 @@ it("hides another user's private thread, and their shared thread that links to n
 
   await seedThread(alice.accountId, "alice-own-private", "private");
   await seedThread(bob.accountId, "bob-private", "private");
-  // Shared, but linked to no deal and no person, so no one but Bob can see it.
   await seedThread(bob.accountId, "bob-shared-unlinked", "shared");
 
   const subjects = (
@@ -79,10 +72,6 @@ it("shows the owner their own mailbox at any visibility", async () => {
   expect(subjects).toContain("carol-shared");
 });
 
-// The Inbox folder is PERSONAL (like Sent/Archive, which are already owner-only): it shows only
-// the actor's OWN mailbox. A colleague's shared thread stays visible on the linked deal/contact
-// record (the listMessagesForDeal / listMessagesForContact read path), never injected into
-// another user's Inbox folder.
 async function seedVisiblePersonLinkedThread(
   ownerAccountId: string,
   ownerId: string,
@@ -113,7 +102,6 @@ it("hides another user's shared thread from the personal Inbox even when its lin
 });
 
 it("shows an empty Inbox to a user who owns no mailbox, even with a visible shared thread", async () => {
-  // The evgeny case: a user with NO email_accounts row must not see another user's Inbox.
   const u = (
     await h.db.execute(
       sql`INSERT INTO users (email, name, google_sub)

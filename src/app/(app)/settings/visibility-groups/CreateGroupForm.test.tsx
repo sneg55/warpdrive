@@ -43,9 +43,6 @@ describe("CreateGroupForm", () => {
     fireEvent.click(screen.getByRole("button", { name: "Create" }));
     expect(await screen.findByRole("alert")).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText("Visibility group name"), { target: { value: "Ops" } });
-    // The alert can render one commit before the transition finishes and isPending flips back, so
-    // the button may still read "Creating..." at this point. findByRole retries until it returns to
-    // "Create" (isPending === false); a synchronous getByRole here was the flake (button not found).
     fireEvent.click(await screen.findByRole("button", { name: "Create" }));
     await waitFor(() => expect(onCreated).toHaveBeenCalled());
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();

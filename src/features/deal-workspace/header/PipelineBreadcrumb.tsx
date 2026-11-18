@@ -7,8 +7,6 @@ interface PipelineBreadcrumbProps {
   currentStageName: string | null;
 }
 
-// Pipedrive header breadcrumb: real pipeline name (links back to its board) then the current stage,
-// e.g. "Sales pipeline > Proposal Made". Replaces the old hard-coded literal "Pipeline".
 export function PipelineBreadcrumb({
   pipelineId,
   pipelineName,

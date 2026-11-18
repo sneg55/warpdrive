@@ -16,9 +16,6 @@ interface StageEditCardProps {
   dragHandle?: React.ReactNode;
 }
 
-// One stage column in the Edit Pipeline page (each stage is a card with a name and an optional
-// rotting-days threshold). Presentational: all state lives in the parent so the save-diff can
-// read a single source of truth.
 export function StageEditCard({
   row,
   index,

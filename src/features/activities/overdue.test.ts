@@ -14,8 +14,6 @@ describe("isActivityOverdue", () => {
     expect(isActivityOverdue(at("2026-08-31", "17:00"), false, false, NOON)).toBe(false);
   });
 
-  // An all-day activity is stored at midnight, so a raw instant comparison paints it red from
-  // 00:01 on the very day it is due.
   test("an all-day activity due today is not overdue", () => {
     expect(isActivityOverdue(at("2026-08-31", ""), true, false, NOON)).toBe(false);
   });

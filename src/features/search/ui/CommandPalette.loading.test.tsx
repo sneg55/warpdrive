@@ -34,8 +34,6 @@ function typeQuery(text: string): void {
   });
 }
 
-// "No organizations" for a query that has not resolved is how a rep ends up creating a duplicate
-// record. Nothing zero-result may render until the search query has actually answered.
 describe("CommandPalette loading state", () => {
   it("shows a searching skeleton, not the per-section empty copy, while the query is pending", () => {
     vi.useFakeTimers();

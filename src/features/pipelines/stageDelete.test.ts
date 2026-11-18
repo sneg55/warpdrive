@@ -72,7 +72,6 @@ describe("deleteStage", () => {
       expect(r.ok).toBe(false);
       if (r.ok === false) expect(r.error.id).toBe("E_STAGE_002");
 
-      // Stage must still be present.
       const list = await listVisiblePipelines(db, s, sig());
       const row = list.find((p) => p.id === pipeline.id);
       expect(row?.stages.some((st) => st.id === target.id)).toBe(true);

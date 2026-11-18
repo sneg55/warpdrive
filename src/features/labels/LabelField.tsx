@@ -5,10 +5,6 @@ import { trpc } from "@/lib/trpc-client";
 import { CatalogLabelPicker } from "./CatalogLabelPicker";
 import { resolveLabelChips } from "./resolveLabels";
 
-// Presentational label field: the applied labels as catalog-colored chips, followed by the
-// catalog dropdown picker. Used wherever a form edits a record's labels without its own save
-// wiring (add-deal / add-lead modals, lead sidebar). Surfaces with bespoke commit logic
-// (ContactLabelsControl, the deal-sidebar LabelRow) compose the chips + picker themselves.
 interface LabelFieldProps {
   target: LabelTarget;
   value: string[];

@@ -35,8 +35,8 @@ describe("useRenderWindow", () => {
     const { result, rerender } = renderHook(({ n }) => useRenderWindow(items(n), 50), {
       initialProps: { n: 200 },
     });
-    void act(() => result.current.showMore()); // window grows to 100
-    rerender({ n: 12 }); // e.g. a filter narrowed the set
+    void act(() => result.current.showMore());
+    rerender({ n: 12 });
     expect(result.current.visible).toHaveLength(12);
     expect(result.current.hasMore).toBe(false);
   });

@@ -13,8 +13,6 @@ import { OrgBulkEditor } from "./OrgBulkEditor";
 import { SidebarFieldRow } from "./SidebarFieldRow";
 import { refreshQuietly, textEditor } from "./sidebarEditors";
 
-// Fields the Organization sidebar block can patch. All optional so each row only sends the
-// one field it owns. Mirrors OrgFirmographicsPanel's field-to-column mapping.
 type OrgFieldChange = Partial<{
   name: string;
   domain: string | null;
@@ -37,9 +35,6 @@ function formatAddress(address: Record<string, unknown> | null): string {
   return parts.length > 0 ? parts.join(", ") : "-";
 }
 
-// Editable firmographics for the deal-sidebar Organization section. Saves through
-// updateOrgAction (org has no CAS precondition, last-write-wins) and refreshes the router
-// afterward so the next render carries the server-true values.
 export function OrgBlock({
   org,
   bulkEditing = false,
@@ -52,11 +47,7 @@ export function OrgBlock({
   org: Organization;
   bulkEditing?: boolean;
   onExitBulk?: () => void;
-  // Built-in field keys hidden in Settings > Data fields (see BUILTIN_FIELDS.organization). A hidden
-  // firmographic row is neither shown nor offered in bulk edit, mirroring the org detail page.
   hidden?: ReadonlySet<string>;
-  // Resolved label chips shown as a Labels row under Name. undefined on the deal sidebar; PD shows
-  // per-organization labels on the lead drawer.
   labels?: ResolvedLabelChip[];
   customFieldDefs?: CustomFieldDef[];
   currency?: string;
@@ -67,7 +58,6 @@ export function OrgBlock({
   async function save(change: OrgFieldChange): Promise<{ ok: boolean; errorId?: string }> {
     const r = await updateOrgAction({ id: org.id, ...change }, readCsrfToken());
     if (!r.ok) return { ok: false, errorId: r.error.id };
-    // Refresh only after a committed write, and never let a refresh failure mask that success.
     refreshQuietly(router);
     return { ok: true };
   }

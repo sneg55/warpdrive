@@ -82,7 +82,7 @@ describe("buildCustomFieldsSchema", () => {
     expect(schema.safeParse({ industry: "SaaS", junk: 1 }).success).toBe(true);
     const parsed = schema.parse({ industry: "SaaS", junk: 1 });
     expect(parsed).toEqual({ industry: "SaaS" });
-    expect(schema.safeParse({}).success).toBe(false); // required missing
+    expect(schema.safeParse({}).success).toBe(false);
   });
 
   it("ignores archived defs (their key is not validated nor required)", () => {

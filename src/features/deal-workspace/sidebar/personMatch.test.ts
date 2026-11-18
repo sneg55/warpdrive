@@ -43,8 +43,6 @@ describe("findPersonMatches", () => {
   });
 
   it("does not treat a too-short digit string as a phone match", () => {
-    // A handful of digits (an extension, a street number) would otherwise collide with any number
-    // sharing them, so short inputs must not suggest anyone.
     expect(findPersonMatches({ ...EMPTY, phone: "0134" }, OPTIONS)).toEqual([]);
   });
 

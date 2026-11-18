@@ -23,14 +23,9 @@ export interface MarkLostDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   lostReasonOptions: Array<{ id: string; name: string }>;
-  // Called after the deal is committed lost, so the parent can refresh the server-rendered state.
   onSuccess: () => void;
 }
 
-// Pipedrive-parity "Mark as Lost" modal: a centered Dialog with a searchable preset-reason picker
-// and a separate optional comment. The two coexist (a preset reason AND free-text comment can both
-// be saved), matching Pipedrive, unlike the old inline row where free text was a preset fallback.
-// A missing reason is allowed (marking lost never blocks). Errors surface via useDealActionError.
 export function MarkLostDialog({
   dealId,
   open,

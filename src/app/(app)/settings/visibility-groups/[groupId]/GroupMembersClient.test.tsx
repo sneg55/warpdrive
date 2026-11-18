@@ -8,7 +8,6 @@ beforeAll(() => {
   Element.prototype.scrollIntoView = vi.fn();
   Element.prototype.hasPointerCapture = vi.fn(() => false);
   Element.prototype.releasePointerCapture = vi.fn();
-  // cmdk observes its list's size to manage height; jsdom has no ResizeObserver.
   global.ResizeObserver = class {
     observe = vi.fn();
     unobserve = vi.fn();
@@ -62,8 +61,6 @@ describe("GroupMembersClient", () => {
   it("adds the picked user and refreshes the page", async () => {
     render(<GroupMembersClient groupId="g1" members={[ANN]} allUsers={[BOB]} />);
     fireEvent.click(screen.getByLabelText("Add member"));
-    // The picker option's accessible name doubles up the avatar's aria-label with the
-    // visible text (both say "Bob"), so match by role + visible text instead of name.
     fireEvent.click(screen.getAllByRole("option").find((o) => o.textContent?.includes("Bob"))!);
     fireEvent.click(screen.getByRole("button", { name: "Add" }));
     await waitFor(() =>

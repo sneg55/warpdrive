@@ -8,8 +8,6 @@ import type { PermSetUser } from "@/features/permissions/effective";
 import { err, ok, type Result } from "@/types/result";
 import { recordAudit } from "./audit";
 
-// Postgres unique_violation: races the pre-check when two invites of the same email land
-// concurrently (mirrors the pattern in features/email/oauth.ts).
 const PG_UNIQUE_VIOLATION = "23505";
 
 function pgErrorCode(e: unknown): string | undefined {
@@ -30,10 +28,6 @@ export interface InviteUserInput {
   isAdmin: boolean;
 }
 
-// Pre-authorizes an email for Google SSO: inserts a placeholder user row (googleSub NULL,
-// invitedAt set) that upsertUserOnLogin adopts on that email's first verified login
-// (see auth/bootstrap.ts). Gated behind permissions.manage / admin, same as the rest of
-// the users.service mutations.
 export async function inviteUser(
   db: Db,
   actor: PermSetUser,
@@ -46,8 +40,6 @@ export async function inviteUser(
     );
   }
 
-  // A MANAGE-only (non-admin) actor may invite regular users but must not be able to
-  // pre-create an admin account: that would let a non-admin escalate to admin via invite.
   if (input.isAdmin && actor.type !== "admin") {
     return err(new AppError(ERROR_IDS.PERM_DENIED, "only admins may invite admin users", {}));
   }
@@ -83,17 +75,11 @@ export async function inviteUser(
         throw new AppError(ERROR_IDS.DB_INSERT_FAILED, "invite insert returned no rows");
       }
 
-      // Auto-join the Everyone group, same as a real first login (ops spec E6), so the
-      // invited placeholder is already visibility-correct before it is ever adopted.
       await tx
         .insert(visibilityGroupMembers)
         .values({ groupId: seed.everyoneGroupId, userId: created.id })
         .onConflictDoNothing();
 
-      // Inviting a user is a privileged, security-relevant action (especially with
-      // isAdmin: true, which silently pre-authorizes a future admin account), so it must
-      // be audited like the sibling mutations in users.service.ts. Written in the same
-      // transaction as the insert: either both land or neither does.
       await recordAudit(
         tx,
         {

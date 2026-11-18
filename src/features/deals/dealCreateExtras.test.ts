@@ -61,8 +61,6 @@ describe("createDeal extras (label / source / owner override)", () => {
   });
 
   it("persists an arbitrary catalog label name (labels are no longer a fixed enum)", async () => {
-    // Labels are user-managed in the catalog, so the boundary accepts any well-formed name and
-    // stores it verbatim; the catalog UI is the control point for which names exist.
     await withTestDb(async (db) => {
       await seedSettings(db);
       const u = await seedUser(db);

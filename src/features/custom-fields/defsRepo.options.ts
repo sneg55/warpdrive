@@ -6,9 +6,6 @@ import type { CustomFieldDef, CustomFieldOption } from "@/types/customFields";
 import { err, ok, type Result } from "@/types/result";
 import { invalidateDefsCache, toDef } from "./defsRepo";
 
-// Read-modify-write of the options jsonb in one transaction. The mutate fn returns
-// the next array; callers never remove entries (archive flags in place) so stored
-// values, which reference option ids, are never orphaned.
 async function writeOptions(
   db: Db,
   id: string,

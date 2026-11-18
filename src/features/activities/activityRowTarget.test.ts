@@ -40,8 +40,6 @@ describe("activityRowTarget", () => {
   });
 
   it("opens the lead when the activity belongs to one", () => {
-    // activities.lead_id and deal_id are mutually exclusive (activity_single_parent), so a lead
-    // activity has no deal; it must not fall through to the lead's own contact.
     const t = activityRowTarget(
       row({ leadId: "l1", leadTitle: "Acme inbound", personId: "p1", personName: "Jane Roe" }),
     );

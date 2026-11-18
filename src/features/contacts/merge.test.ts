@@ -119,7 +119,6 @@ it("FIX 1: strips injected non-allowlisted fields from fieldChoices", async () =
       {
         survivorId: survivor.value.id,
         mergedId: dup.value.id,
-        // Inject privilege-escalation / corruption fields: must be stripped.
         fieldChoices: {
           name: "X",
           ownerId: "00000000-0000-0000-0000-000000000000",
@@ -146,7 +145,6 @@ it("FIX 2: returns 404 (E_CONTACT_001) for a record the actor cannot see", async
     const other = await seedUser(db);
     const otherActor = regularActor(other.id);
 
-    // owner-visibility persons owned by `owner`, invisible to `other`.
     const survivor = await createPerson(
       db,
       ownerActor,
@@ -168,7 +166,6 @@ it("FIX 2: returns 404 (E_CONTACT_001) for a record the actor cannot see", async
       signal,
     );
     expect(r.ok).toBe(false);
-    // 404-on-invisible, NOT 403.
     if (r.ok === false) expect(r.error.id).toBe("E_CONTACT_001");
   });
 });

@@ -38,8 +38,6 @@ export function GoalsClient({
     const r = await updateGoalAction(id, draft, readCsrfToken());
     return { ok: r.ok, errorId: r.ok ? undefined : r.error.id };
   }
-  // One lookup for both kinds: a goal's assignee is a user or a team, never both, so their ids
-  // cannot collide in one map.
   const assigneeNames = Object.fromEntries(
     [...users, ...teams].map((o) => [o.id, o.name] as const),
   );

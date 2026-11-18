@@ -1,9 +1,5 @@
 import type { BoardCard } from "./dealRepo";
 
-// Given the destination stage's ORDERED cards and the index at which a card is
-// dropped, return the two neighbor boardPosition values to feed midpoint().
-// dropIndex is in the range 0..cardsInStage.length (inclusive at both ends).
-// Pure: no side effects, no I/O.
 export function resolveNeighbors(
   cardsInStage: BoardCard[],
   dropIndex: number,

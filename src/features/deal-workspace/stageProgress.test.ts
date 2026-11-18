@@ -19,8 +19,7 @@ describe("stage progress", () => {
     expect(p.chips.map((c) => c.current)).toEqual([false, true, false]);
     expect(p.chips.map((c) => c.passed)).toEqual([true, false, false]);
     expect(p.daysInStage).toBe(6);
-    expect(p.rotting).toBe(true); // 6 > 3
-    // Option B: real days for the current stage, 0 for the others.
+    expect(p.rotting).toBe(true);
     expect(p.chips.map((c) => c.days)).toEqual([0, 6, 0]);
   });
 });

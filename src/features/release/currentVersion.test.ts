@@ -10,7 +10,6 @@ describe("currentVersion", () => {
   });
 
   it("resolves to the package.json version when APP_VERSION is unstamped (test env)", () => {
-    // vitest.setup provides no APP_VERSION, so it defaults to "" and the package.json wins.
     expect(getCurrentVersion()).toBe(readPackageVersion());
   });
 });

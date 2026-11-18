@@ -11,7 +11,6 @@ beforeAll(() => {
   Element.prototype.scrollIntoView = vi.fn();
   Element.prototype.hasPointerCapture = vi.fn(() => false);
   Element.prototype.releasePointerCapture = vi.fn();
-  // cmdk (Combobox) observes its list's size to manage height; jsdom has no ResizeObserver.
   global.ResizeObserver = class {
     observe = vi.fn();
     unobserve = vi.fn();
@@ -44,7 +43,7 @@ describe("ActivitiesFilters", () => {
     render(
       <ActivitiesFilters filter={baseFilter} onChange={onChange} owners={owners} types={types} />,
     );
-    fireEvent.click(screen.getByRole("button", { name: "Site visit" })); // custom type tab
+    fireEvent.click(screen.getByRole("button", { name: "Site visit" }));
     expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({ typeKey: "custom1" }));
   });
 
@@ -76,10 +75,10 @@ describe("ActivitiesFilters", () => {
     const allButtons = screen.getAllByRole("button", { name: "All" });
     expect(allButtons).toHaveLength(2);
 
-    fireEvent.click(allButtons[1] as HTMLElement); // the custom type tab keyed "all"
+    fireEvent.click(allButtons[1] as HTMLElement);
     expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({ typeKey: "all" }));
 
-    fireEvent.click(allButtons[0] as HTMLElement); // the synthetic "All types" tab
+    fireEvent.click(allButtons[0] as HTMLElement);
     expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({ typeKey: null }));
   });
 
@@ -109,7 +108,6 @@ describe("ActivitiesFilters", () => {
       <ActivitiesFilters filter={baseFilter} onChange={onChange} owners={owners} types={types} />,
     );
     fireEvent.click(screen.getByLabelText("From"));
-    // findByText: the calendar is a next/dynamic chunk that loads on open.
     fireEvent.click(await screen.findByText("15"));
     expect(onChange).toHaveBeenLastCalledWith(
       expect.objectContaining({ from: expect.any(String) }),

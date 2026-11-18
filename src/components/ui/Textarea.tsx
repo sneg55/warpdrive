@@ -1,10 +1,6 @@
 import { forwardRef } from "react";
 import { cn } from "@/lib/utils";
 
-// shadcn (new-york) Textarea wrapper. Sanctioned multi-line text-entry control, matching the
-// Input token scale (rounded-md = --radius). Presentational text entry, so no Radix primitive
-// applies (unlike select/checkbox/radio); this is the standard wrapper to use instead of a
-// bare <textarea>.
 export const Textarea = forwardRef<HTMLTextAreaElement, React.ComponentPropsWithoutRef<"textarea">>(
   ({ className, ...props }, ref) => (
     <textarea

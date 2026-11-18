@@ -22,12 +22,6 @@ interface ContactFollowersButtonProps {
   isFollowedBySelf: boolean;
 }
 
-// Followers control for the person/org detail header (Wave 3, Task 24), cloned from
-// deal-workspace/header/FollowersButton.tsx: a count button that opens a menu listing
-// follower avatars + names, with a Follow/Following toggle for the viewer. router.refresh()
-// re-runs the detail page's server load (which recomputes followers/isFollowedBySelf via
-// getContactFollowers, the same read boundary summaryRepo.ts uses for deals) so the
-// server-rendered props flow back down with the fresh state.
 export function ContactFollowersButton({
   entityType,
   entityId,

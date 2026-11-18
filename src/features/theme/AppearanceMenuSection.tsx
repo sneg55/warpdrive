@@ -23,12 +23,6 @@ const ICONS: Record<Appearance, typeof Sun> = {
 
 const SECTION_LABEL = "Appearance";
 
-// Menu rows rather than a segmented control: DropdownMenuRadioItem is what a menu offers for a
-// one-of-three choice, and a Radix RadioGroup nested here would run its own roving focus inside
-// the menu's, so the arrow keys would fight.
-//
-// The choice is passed in, not created here: Radix unmounts menu content on close, so a hook
-// owned by this component would reseed from the server prop every time the menu reopens.
 export function AppearanceMenuSection({ choice }: { choice: AppearanceChoice }): React.ReactNode {
   return (
     <>

@@ -72,7 +72,6 @@ describe("convertLead", () => {
       expect(deal?.title).toBe("Big deal");
       expect(deal?.value).toBe("9000.00");
       expect(deal?.pipelineId).toBe(pipe.pipeline.id);
-      // First stage = lowest order.
       expect(deal?.stageId).toBe(pipe.stages[0]!.id);
       expect(deal?.ownerId).toBe(owner.id);
 
@@ -112,7 +111,6 @@ describe("convertLead", () => {
         .insert(persons)
         .values({ name: "Hidden", ownerId: owner.id, visibilityLevel: "owner" })
         .returning();
-      // Lead is visible to `other` (all), but its person is owner-only.
       const lead = await insertLead(db, other.id, { personId: hidden!.id });
 
       const r = await convertLead(
@@ -124,16 +122,10 @@ describe("convertLead", () => {
       expect(r.ok).toBe(false);
       if (r.ok) return;
       expect(r.error.id).toBe("E_CONTACT_001");
-      // No deal created.
       expect(await db.select().from(deals)).toHaveLength(0);
     });
   });
 
-  // Deleting a contact leaves every lead that referenced it with a dangling person_id: nothing
-  // unlinks them. The lead sidebar already treats such a contact as absent (leadRepo filters
-  // deletedAt), so convert must not be the one place that treats it as a blocking reference, which
-  // left the lead permanently unconvertible behind a generic error. A HIDDEN contact is a different
-  // case entirely and still blocks, per the test above.
   it("converts a lead whose linked person was deleted, dropping the dead link", async () => {
     await withTestDb(async (db) => {
       const owner = await seedUser(db);

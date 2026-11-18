@@ -18,8 +18,6 @@ interface StageAddButtonProps {
   baseCurrency?: string;
 }
 
-// Ghost "+" at the bottom of a stage column (Pipedrive). Opens the Add deal dialog preset to this
-// column's stage; on create, invalidates the board query so the new card appears in this column.
 export function StageAddButton(props: StageAddButtonProps): React.ReactNode {
   const { pipelineId, stageId, pipelines, baseCurrency } = props;
   const qc = useQueryClient();

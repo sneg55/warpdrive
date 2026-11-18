@@ -1,7 +1,3 @@
-// leadUpdate.ts: compare-and-swap field update (Title / Value / Owner / Expected close / Labels)
-// for the lead detail workspace. Mirrors updateDeal's single-UPDATE-WHERE CAS; owner reassignment
-// is gated a second time by deal.changeOwner (mirrors bulkUpdateLeads), same as every other
-// owner-touching write in this feature.
 import { and, eq, isNull, sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { AppError, ERROR_IDS } from "@/constants/errorIds";
@@ -103,8 +99,6 @@ export async function updateLead(
     customFields = validated.value;
   }
 
-  // Load under the visibility gate (404-on-invisible): an invisible lead must not leak existence
-  // via a distinguishable CAS-mismatch response.
   const [visible] = await db
     .select({ id: leads.id })
     .from(leads)
@@ -120,8 +114,6 @@ export async function updateLead(
 
   const patch = buildPatch(input, customFields, new Date());
 
-  // Atomic CAS: single UPDATE WHERE id=:id AND date_trunc('milliseconds', updated_at)=:expected.
-  // 0 rows means a concurrent write won; we write nothing.
   const updated = await db
     .update(leads)
     .set(patch)
@@ -144,8 +136,6 @@ export async function updateLead(
     );
   }
 
-  // Keep the catalog links in step with the array we just wrote (only when labels were part of
-  // this patch: an unrelated field edit must not touch the links).
   if (patch.labels !== undefined) {
     await syncEntityLabelNames(db, "lead", row.id, patch.labels, signal);
   }

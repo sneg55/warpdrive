@@ -19,8 +19,6 @@ const followUpStatusInput = z.object({
 
 const threadLabelsInput = z.object({
   threadId: z.string().uuid(),
-  // Mail-label catalog keys (U6): built-in tokens or custom slugs, not a fixed enum. Dedupe so
-  // repeated picks (e.g. a double-click race) persist the label once instead of storing it twice.
   labels: z
     .array(z.string().trim().min(1).max(120))
     .transform((labels: string[]) => Array.from(new Set(labels))),

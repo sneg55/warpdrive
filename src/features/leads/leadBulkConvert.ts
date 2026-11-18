@@ -11,17 +11,6 @@ import { leadVisibilityClause } from "./visibility";
 
 type Db = NodePgDatabase<typeof schema>;
 
-// bulkConvertLeads: convert many leads to deals in one call, reusing convertLead's per-lead CAS
-// lock, already-converted rejection, and hidden-reference checks unchanged (no logic duplicated
-// here). For each id, the lead's current updatedAt is read fresh right before converting, so an
-// earlier conversion within the same batch cannot stale-lock a later one.
-//
-// LEAD_ALREADY_CONVERTED, LEAD_NOT_FOUND (stale CAS / vanished between the pre-check and
-// convertLead), and CONTACT_NOT_FOUND (this lead's own person/org reference is missing or
-// hidden from the actor) are genuinely per-item outcomes: they say something about THIS lead,
-// not about the batch. Every other error (PERM_DENIED, LEAD_CONVERT_NO_PIPELINE, etc.) would
-// affect every remaining id identically, so it aborts the whole batch instead of being folded
-// into "skipped": a total failure must not read back as a silent partial success.
 export async function bulkConvertLeads(
   db: Db,
   session: LeadSession,
@@ -48,7 +37,6 @@ export async function bulkConvertLeads(
       .where(and(eq(leads.id, id), isNull(leads.deletedAt), leadVisibilityClause(session)));
     signal.throwIfAborted();
     if (lead === undefined) {
-      // Not visible, soft-deleted, or already gone: skip, do not call convertLead.
       skipped += 1;
       continue;
     }
@@ -76,7 +64,6 @@ export async function bulkConvertLeads(
       skipped += 1;
       continue;
     }
-    // Systemic: abandon the batch and surface the error as-is (do not silently swallow it).
     return err(r.error);
   }
 

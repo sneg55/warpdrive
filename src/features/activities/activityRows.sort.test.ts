@@ -77,7 +77,6 @@ describe("listActivityRows ordering", () => {
         field: "priority",
         dir: "asc",
       });
-      // Alphabetical on the raw key ("high" < "low"), nulls sort last (Postgres ASC default).
       expect(rows.map((r) => r.subject)).toEqual(["High one", "Low one", "No priority"]);
     });
   });
@@ -106,7 +105,6 @@ describe("listActivityRows ordering", () => {
       });
       expect(asc.map((r) => r.subject)).toEqual(["Short one", "Long one", "No duration"]);
 
-      // Postgres's DESC default is NULLS FIRST (the mirror image of ASC's NULLS LAST above).
       const desc = await listActivityRows(db, actor(u.id), noFilter, sig(), {
         field: "duration",
         dir: "desc",

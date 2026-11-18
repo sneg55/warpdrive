@@ -75,8 +75,6 @@ function run(orgId: string, resolve: (id: ProviderId) => EnrichmentProvider, ref
 }
 
 describe("runEnrichment rate limiting", () => {
-  // The dialog maps ALL_FAILED to a generic outage and drops the deadline, so a first attempt
-  // where everyone hits a limit has to read as throttled, not as an outage.
   it("reports throttling, with the resume time, when every first attempt is rate limited", async () => {
     await connect("apollo");
     await connect("getprospect");
@@ -96,8 +94,6 @@ describe("runEnrichment rate limiting", () => {
     );
   });
 
-  // A run that reached the provider and timed out locally has already spent its credit. Not
-  // persisting it means the next ordinary click spends another one.
   it("persists a run even when nobody answered, so a retry does not dial out again", async () => {
     await connect("apollo");
     const org = await seedOrg();
@@ -126,8 +122,6 @@ describe("runEnrichment rate limiting", () => {
     expect(called).toBe(false);
   });
 
-  // A provider that cannot use the identifiers this record has will say the same thing tomorrow,
-  // so a resume time is a false deadline.
   it("does not claim a rate limit when the only provider could not use the lookup", async () => {
     await connect("apollo");
     const org = await seedOrg();
@@ -140,8 +134,6 @@ describe("runEnrichment rate limiting", () => {
     expect(result.ok === false && result.error.context?.earliestRetryIso).toBe(null);
   });
 
-  // The cooling provider can still answer later, so the resume time is real even though the one
-  // provider that did run cannot use this record.
   it("still reports throttling when a cooldown is mixed with an unsupported lookup", async () => {
     await connect("apollo");
     await connect("getprospect", {

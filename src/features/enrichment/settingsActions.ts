@@ -23,8 +23,6 @@ export type TestProviderActionResult =
 const providerId = z.enum(ENRICHMENT_PROVIDER_IDS);
 const entity = z.enum(["person", "organization"]);
 
-// Configuring enrichment is an administrative act: the credential is company-wide and every user
-// spends against it, so the gate is admin, not a per-record edit right.
 async function guardAdmin() {
   const { actor } = await createContext();
   if (actor === null) return { ok: false as const, error: { id: ERROR_IDS.AUTH_SESSION_DEAD } };
@@ -139,9 +137,6 @@ export async function setCacheTtlAction(
   return { ok: true };
 }
 
-// Verifies a stored key by making one real lookup against a well-known public domain. There is no
-// free ping endpoint on any of the three, so this spends one credit; the settings copy says so.
-// Only the outcome kind and the allowance counts are reported, never the provider's payload.
 export async function testProviderAction(
   raw: unknown,
   csrfToken: string | null = null,

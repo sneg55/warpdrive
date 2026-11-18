@@ -9,10 +9,6 @@ import { err, ok, type Result } from "@/types/result";
 import { recomputeDealActivityDates } from "./nextActivity";
 import { resolveActivityVisibility } from "./visibility";
 
-// Soft-delete: mirrors completeActivity's gate order (load -> visibility 404 -> permission 403 ->
-// mutate), but gates on "activity.delete" instead of "activity.complete". Unlike edit/complete,
-// delete has no assignee exception (see can.ts): only the owner (with activity.delete_own/_any)
-// or an admin may delete.
 export async function deleteActivity(
   db: Db,
   actor: PermSetUser,
@@ -32,7 +28,6 @@ export async function deleteActivity(
     const vis = await resolveActivityVisibility(tx, current, signal);
 
     if (vis === null || !canSee(actor, vis)) {
-      // Invisible: return 404-on-invisible, not 403.
       return err(new AppError(ERROR_IDS.ACTIVITY_NOT_FOUND, "activity not found", { id }));
     }
 

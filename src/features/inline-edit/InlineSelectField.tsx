@@ -13,16 +13,11 @@ interface InlineSelectFieldProps {
   options: SelectOption[];
   onSave: InlineSaveFn<string>;
   placeholder?: string;
-  // Custom view-mode rendering for the current value (e.g. an OwnerBadge with avatar), in place of
-  // the plain option label. Falls back to the option's label when omitted.
   renderValue?: (value: string) => React.ReactNode;
 }
 
 const DEFAULT_PLACEHOLDER = "+ Add";
 
-// PD-mechanism select field. Verified live (source-channel field): PD selects do NOT autosave
-// on pick; the option lands in the editor's draft and the dirty-gated Save footer commits it,
-// identical to text fields. Only Cancel/Save close the editor.
 export function InlineSelectField({
   label,
   value,

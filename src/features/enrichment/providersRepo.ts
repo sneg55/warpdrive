@@ -1,5 +1,3 @@
-// Provider credentials, the admin's toggles, and the runtime's throttle state. API keys are
-// AES-256-GCM at rest and leave this module in plaintext only on the way to a provider client.
 import { and, eq, isNotNull } from "drizzle-orm";
 import { AppError, ERROR_IDS } from "@/constants/errorIds";
 import type { Db } from "@/db/client";
@@ -14,7 +12,6 @@ const DEFAULT_CACHE_TTL_DAYS = 30;
 
 export { DEFAULT_CACHE_TTL_DAYS };
 
-// What the settings page is allowed to see: no key material, only the trailing hint.
 export interface ProviderView {
   provider: ProviderId;
   enabled: boolean;
@@ -29,8 +26,6 @@ export interface ProviderView {
 export interface UsableProvider {
   provider: ProviderId;
   apiKey: string;
-  // The stored ciphertext this key came from. recordOutcome writes only against it, so an answer
-  // produced by a credential an admin has since replaced cannot badge or cool down the new one.
   credential: Buffer;
 }
 
@@ -61,21 +56,16 @@ export async function listProviders(db: Db, signal: AbortSignal): Promise<Provid
   signal.throwIfAborted();
   const rows = await db.select().from(enrichmentProviders);
   const byId = new Map(rows.map((r) => [r.provider, r]));
-  // A provider with no row is simply unconfigured, and the page still has to list all three.
   return ENRICHMENT_PROVIDER_IDS.map((provider) => {
     const row = byId.get(provider);
     return row === undefined ? { provider, ...UNCONFIGURED } : toView(row);
   });
 }
 
-// Enabled, credentialled, and not sitting out a cooldown. Throttled providers drop out here rather
-// than at the call site, so a fan-out never spends a request it already knows will 429.
 export async function listUsableProviders(
   db: Db,
   now: Date,
   signal: AbortSignal,
-  // The settings page tests a key BEFORE switching the provider on, so that one caller needs the
-  // decrypt path without the enabled filter.
   opts: { ignoreEnabled?: boolean } = {},
 ): Promise<UsableProvider[]> {
   signal.throwIfAborted();
@@ -89,8 +79,6 @@ export async function listUsableProviders(
     if (row.apiKeyEncrypted === null) continue;
     if (row.throttledUntil !== null && row.throttledUntil > now) continue;
     const decrypted = decryptToken(row.apiKeyEncrypted);
-    // A key we cannot decrypt is a server-side key problem, not a provider problem. Dropping this
-    // one provider degrades the fan-out instead of failing it.
     if (!decrypted.ok) continue;
     usable.push({
       provider: row.provider,
@@ -111,7 +99,6 @@ export async function setProviderKey(
   const trimmed = plaintext.trim();
   const encrypted = encryptToken(trimmed);
   const hint = trimmed.slice(-KEY_HINT_LENGTH);
-  // A new key clears the rejected badge and any cooldown: both describe the credential it replaces.
   const fresh = {
     apiKeyEncrypted: encrypted,
     apiKeyHint: hint,
@@ -144,9 +131,6 @@ export async function setProviderEnabled(
   signal: AbortSignal,
 ): Promise<Result<void, AppError>> {
   signal.throwIfAborted();
-  // Enabling a provider with no credential would put it in every fan-out only to fail on auth.
-  // The check is the WHERE of the write, not a read before it: between a read that saw a key and
-  // an unconditional upsert, a Remove key can land and leave an enabled row with none.
   if (enabled) {
     const [row] = await db
       .update(enrichmentProviders)
@@ -172,8 +156,6 @@ export async function setProviderEnabled(
   return ok(undefined);
 }
 
-// The runtime's half of the row: cooldowns and the rejected badge. It never touches `enabled`,
-// because a temporary 429 must not silently disconnect a provider an admin switched on.
 export async function recordOutcome(
   db: DbOrTx,
   outcome: ProviderOutcome,
@@ -202,8 +184,6 @@ function patchFor(outcome: ProviderOutcome, now: Date): ProviderPatch | null {
     case "ok":
     case "no_match": {
       const patch: ProviderPatch = { lastOkAt: now, needsAttention: false };
-      // Apollo reports remaining quota on a successful call, so a provider can hand us a cooldown
-      // without ever returning a 429.
       if (outcome.retryAfterIso !== undefined) {
         patch.throttledUntil = new Date(outcome.retryAfterIso);
         patch.throttleReason = "throttled";

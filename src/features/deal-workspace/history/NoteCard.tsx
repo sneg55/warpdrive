@@ -29,10 +29,6 @@ import { readCsrfToken } from "@/utils/csrfCookie";
 import { AttributionLine } from "./AttributionLine";
 import { NoteComments } from "./NoteComments";
 
-// Note card (Pipedrive parity): pale-amber body + attribution, with an always-visible
-// inline Pin and a "…" menu (Edit, Delete). Edit swaps the body for a textarea; Delete
-// opens a shadcn confirm Dialog. Pin/edit/delete are optimistic where cheap and call
-// onChanged to invalidate the notes query on success.
 export function NoteCard({
   id,
   body,
@@ -63,11 +59,11 @@ export function NoteCard({
     if (busy) return;
     const next = !isPinned;
     setBusy(true);
-    setPinned(next); // optimistic
+    setPinned(next);
     const res = await togglePinAction({ noteId: id, pinned: next }, readCsrfToken());
     if (res.ok) onChanged?.();
     else {
-      setPinned(!next); // roll back the optimistic pin
+      setPinned(!next);
       reportError(res.error.id);
     }
     setBusy(false);

@@ -9,7 +9,6 @@ import { type AccessToken, ensureAccessToken } from "./tokens";
 
 type TestDb = Parameters<Parameters<typeof withTestDb>[0]>[0];
 
-// Seed a connected account holding an encrypted refresh token. Returns the account id.
 async function seedAccount(db: TestDb, email = "a@example.com"): Promise<string> {
   const uRes = await db.execute(
     sql`INSERT INTO users (email, name, google_sub) VALUES (${email},'A',${`sub-${email}`}) RETURNING id`,
@@ -55,7 +54,6 @@ describe("ensureAccessToken", () => {
         },
       });
       expect(r.ok).toBe(true);
-      // The refresh callback received the decrypted refresh token, not ciphertext.
       expect(seenRefresh).toBe("refresh-1");
       if (r.ok) {
         expect(r.value.token).toBe("new-at");
@@ -101,7 +99,6 @@ describe("ensureAccessToken", () => {
       });
       expect(r.ok).toBe(false);
       if (!r.ok) expect(r.error.id).toBe("E_GMAIL_001");
-      // Account stays connected with its token intact: the caller retries later.
       const row = (
         await db.execute(sql`SELECT status, refresh_token_enc FROM email_accounts WHERE id=${id}`)
       ).rows[0] as { status: string; refresh_token_enc: Buffer | null };
@@ -113,7 +110,6 @@ describe("ensureAccessToken", () => {
   it("propagates a decrypt failure WITHOUT disconnecting (server-side key/data error, not revocation)", async () => {
     await withTestDb(async (db) => {
       const id = await seedAccount(db);
-      // Corrupt the stored blob so decryptToken fails the auth-tag check.
       await db.execute(
         sql`UPDATE email_accounts SET refresh_token_enc=${randomBytes(40)} WHERE id=${id}`,
       );
@@ -123,7 +119,6 @@ describe("ensureAccessToken", () => {
       });
       expect(r.ok).toBe(false);
       if (!r.ok) expect(r.error.id).toBe("E_GMAIL_005");
-      // Decrypt failure must NOT disconnect: it is a key/data problem, not a revocation.
       const row = (
         await db.execute(sql`SELECT status, refresh_token_enc FROM email_accounts WHERE id=${id}`)
       ).rows[0] as { status: string; refresh_token_enc: Buffer | null };
@@ -145,8 +140,6 @@ describe("ensureAccessToken", () => {
         },
       });
       expect(r.ok).toBe(true);
-      // The new ciphertext must decrypt to the rotated value. A second ensureAccessToken
-      // proves it: with no cache it decrypts the stored token and hands it to refresh.
       let seenRefresh: string | undefined;
       const r2 = await ensureAccessToken(db, {
         accountId: id,

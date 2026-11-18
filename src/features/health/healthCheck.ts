@@ -2,10 +2,6 @@ import { sql } from "drizzle-orm";
 import type { Db } from "@/db/client";
 import { err, ok, type Result } from "@/types/result";
 
-// Liveness + DB-reachability probe for the container healthcheck. Runs the cheapest
-// possible round-trip (SELECT 1) so "is the app truly up" answers on the database, not
-// just "port 3000 accepts connections". Returns a Result rather than throwing: the route
-// maps ok -> 200 and err -> 503, and a probe must never crash the process it guards.
 export async function checkHealth(db: Db, signal?: AbortSignal): Promise<Result<true, string>> {
   try {
     signal?.throwIfAborted();

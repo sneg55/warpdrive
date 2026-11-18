@@ -6,7 +6,6 @@ import { afterEach, beforeAll, expect, it, vi } from "vitest";
 import { DealSidebar } from "./DealSidebar";
 import type { DealWorkspace } from "./summaryRepo";
 
-// Radix Popover / DropdownMenu need these jsdom shims (mirrors DealSidebar.test.tsx).
 beforeAll(() => {
   Element.prototype.scrollIntoView = vi.fn();
   Element.prototype.hasPointerCapture = vi.fn(() => false);
@@ -47,7 +46,6 @@ vi.mock("@/lib/trpc-client", () => ({
     enrichment: { status: { useQuery: () => ({ data: { ready: false, providers: [] } }) } },
     deal: { participants: { useQuery: () => ({ data: [] }) } },
     contacts: { listPeopleForOrg: { useQuery: () => ({ data: [] }) } },
-    // The sidebar's LabelRow reads the label catalog (added by the label-catalog merge).
     labels: { listByTarget: { useQuery: () => ({ data: [] }) } },
   },
 }));

@@ -1,6 +1,3 @@
-// An inbound email that lands on a deal-linked thread must notify the deal owner and its
-// followers. Until this exists, the only trace of the arrival is the email_arrived realtime
-// event, which is scoped to the mailbox owner's socket and leaves no row behind.
 import { sql } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import { withTestDb } from "@/db/testing";
@@ -50,8 +47,6 @@ interface Seeded {
   dealId: string;
 }
 
-// A mailbox owner who also owns an open deal whose primary person is CONTACT_EMAIL, so
-// resolveLink auto-links an inbound message from that address to the deal.
 async function seed(db: TestDb, dealVisibility: "owner" | "all" = "owner"): Promise<Seeded> {
   const user = await seedUser(db, { email: OWNER_EMAIL });
   const acct = (
@@ -231,9 +226,6 @@ describe("inbound email on a deal-linked thread", () => {
     });
   });
 
-  // Gmail history replays messages we SENT as messagesAdded, and applyMessageIds writes every
-  // one of them with direction 'inbound'. Without a sender check, every reply you send from the
-  // CRM or from Gmail notifies you about your own mail.
   it("does not notify for a message sent from the mailbox's own address", async () => {
     await withTestDb(async (db) => {
       const s = await seed(db);
@@ -269,7 +261,6 @@ describe("inbound email on a deal-linked thread", () => {
       await applyMessageIds(args, ["m1"]);
       await applyMessageIds(args, ["m2"]);
 
-      // Only the contact's message notifies; our own reply on the same thread does not.
       expect(await notificationsFor(db, s.ownerId)).toHaveLength(1);
     });
   });

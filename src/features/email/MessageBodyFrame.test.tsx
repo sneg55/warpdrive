@@ -5,11 +5,6 @@ import { afterEach, describe, expect, it } from "vitest";
 
 afterEach(cleanup);
 
-// Security + layout contract: email HTML is rendered inside a sandboxed iframe. The sandbox
-// grants allow-same-origin ONLY (never allow-scripts): with scripts disabled no code can
-// execute, so a sanitizer miss still cannot reach the app, cookies, or session. same-origin
-// is required so onLoad can read the laid-out document height and size the frame to its
-// content instead of collapsing to a fixed default.
 import { MessageBodyFrame } from "./MessageBodyFrame";
 
 describe("MessageBodyFrame", () => {
@@ -38,7 +33,6 @@ describe("MessageBodyFrame", () => {
     );
     const iframe = container.querySelector("iframe");
     if (iframe === null) throw new Error("no iframe");
-    // jsdom cannot lay out iframes, so drive the handler with a mocked contentDocument.
     Object.defineProperty(iframe, "contentDocument", {
       configurable: true,
       value: { body: { scrollHeight: 742 } },

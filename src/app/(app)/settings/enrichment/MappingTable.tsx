@@ -30,7 +30,6 @@ export function MappingTable({
   title: string;
   rows: MappingRow[];
   hasCustomFields: boolean;
-  // Canonical keys whose target is being written right now.
   busyKeys: ReadonlySet<string>;
   onSelect: (canonicalKey: string, value: string) => void;
 }): React.ReactNode {

@@ -15,8 +15,6 @@ vi.mock("@/features/activities/actions", () => ({
 }));
 vi.mock("@/utils/csrfCookie", () => ({ readCsrfToken: () => "csrf" }));
 
-// ActivityCard optimistically updates the listForEntity cache (instant Focus->History move) and
-// invalidates it to reconcile / roll back.
 const setData = vi.fn();
 const invalidate = vi.fn();
 vi.mock("@/lib/trpc-client", () => ({
@@ -31,7 +29,6 @@ vi.mock("@/lib/trpc-client", () => ({
   },
 }));
 
-// Failed completions surface the shared error modal instead of reverting silently.
 const reportError = vi.fn();
 vi.mock("@/features/deal-workspace/DealActionErrorProvider", () => ({
   useDealActionError: () => reportError,
@@ -117,8 +114,6 @@ describe("ActivityCard", () => {
   });
 
   it("renders without crashing when ownerName is undefined (not just null)", () => {
-    // Some CalendarActivity builders omit ownerName entirely, so it arrives undefined; the meta
-    // line must not call formatUserName(undefined) and throw.
     render(<ActivityCard activity={makeActivity({ ownerName: undefined })} at={AT} />);
     expect(screen.getByText("Discovery call")).toBeInTheDocument();
   });
@@ -132,7 +127,6 @@ describe("ActivityCard", () => {
     );
     const completed = screen.getByTestId("activity-completed");
     expect(completed).toHaveTextContent(/Completed/i);
-    // A time component (h:mm) must be present, not just a date.
     expect(completed.textContent ?? "").toMatch(/\d{1,2}:\d{2}/);
   });
 
@@ -153,13 +147,11 @@ describe("ActivityCard", () => {
   it("optimistically flips the activity's done in the listForEntity cache (instant move)", async () => {
     render(<ActivityCard activity={makeActivity()} at={AT} onChanged={vi.fn()} />);
     fireEvent.click(screen.getByRole("checkbox", { name: /mark as done/i }));
-    // The deal cache is updated immediately (before the server round-trip resolves).
     await waitFor(() => expect(setData).toHaveBeenCalled());
     const dealCall = setData.mock.calls.find(
       (c) => (c[0] as { entityType?: string }).entityType === "deal",
     );
     expect(dealCall?.[0]).toMatchObject({ entityType: "deal", entityId: "d1" });
-    // Applying the optimistic updater to the current list flips this activity to done.
     const updater = dealCall?.[1] as (rows: CalendarActivity[]) => CalendarActivity[];
     const next = updater([makeActivity()]);
     expect(next[0]?.done).toBe(true);
@@ -174,7 +166,6 @@ describe("ActivityCard", () => {
     render(<ActivityCard activity={makeActivity()} at={AT} onChanged={vi.fn()} />);
     fireEvent.click(screen.getByRole("checkbox", { name: /mark as done/i }));
     await waitFor(() => expect(reportError).toHaveBeenCalledWith("E_PERM_001"));
-    // Rollback: the optimistic cache change is reconciled by refetching the deal list.
     expect(invalidate).toHaveBeenCalledWith(
       expect.objectContaining({ entityType: "deal", entityId: "d1" }),
     );
@@ -213,8 +204,6 @@ describe("ActivityCard", () => {
     const { container } = render(
       <ActivityCard activity={makeActivity({ typeKey: "call" })} at={AT} />,
     );
-    // The card leads with the type glyph. Target it by ActivityTypeIcon's own size classes:
-    // the overflow-menu kebab is also a lucide svg, so fill="none" no longer distinguishes them.
     expect(container.querySelector("svg.lucide-phone.h-4.w-4.shrink-0")).not.toBeNull();
   });
 
@@ -258,9 +247,7 @@ describe("ActivityCard", () => {
     const { container } = render(
       <ActivityCard activity={makeActivity({ location: "", note: "" })} at={AT} />,
     );
-    // The guard handles null AND "": an empty-string note/location must render nothing.
     expect(screen.queryByText("HQ")).not.toBeInTheDocument();
-    // No stray empty div for the note (only the footer <p> lives in the text container).
     expect(container.querySelector("[data-empty-note]")).toBeNull();
     const emptyDivs = Array.from(container.querySelectorAll("div")).filter(
       (d) => d.children.length === 0 && d.textContent === "",

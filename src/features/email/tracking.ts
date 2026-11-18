@@ -14,15 +14,10 @@ export interface MintResult {
   linkTokens: LinkToken[];
 }
 
-// Unguessable opaque token: 18 random bytes -> base64url. The URL token is the only
-// lookup key, so an attacker cannot enumerate rows.
 function newToken(): string {
   return randomBytes(18).toString("base64url");
 }
 
-// Open-redirect guard: only http(s) links may ever be stored as a redirect target.
-// A javascript:, data:, or other-scheme link is skipped at mint time so it can never
-// become a click destination.
 function isSafeHttpUrl(raw: string): boolean {
   try {
     const u = new URL(raw);
@@ -32,8 +27,6 @@ function isSafeHttpUrl(raw: string): boolean {
   }
 }
 
-// Mint tracking rows for a send (message_id NULL until backfillTokens runs after the
-// send reconciles). trackOpens/trackLinks are independent: false mints nothing for that type.
 export async function mintTokensForSend(
   db: Db,
   args: {
@@ -61,7 +54,7 @@ export async function mintTokensForSend(
   const linkTokens: LinkToken[] = [];
   if (args.trackLinks) {
     for (const original of args.links) {
-      if (!isSafeHttpUrl(original)) continue; // skip unsafe schemes
+      if (!isSafeHttpUrl(original)) continue;
       const token = newToken();
       await db.execute(sql`
         INSERT INTO email_tracking_tokens (token, send_attempt_id, recipient, kind, target_url)
@@ -75,7 +68,6 @@ export async function mintTokensForSend(
   return { openToken, linkTokens };
 }
 
-// Pure: inject the open pixel and rewrite each known href to the click URL. No DB.
 export function rewriteBody(args: {
   html: string;
   openToken: string | null;
@@ -84,7 +76,6 @@ export function rewriteBody(args: {
   let out = args.html;
   for (const { original, token } of args.linkTokens) {
     const clickUrl = `${env.BASE_URL}/t/click/${token}`;
-    // Replace the href value only (quoted), leaving the rest of the anchor intact.
     out = out.split(`href="${original}"`).join(`href="${clickUrl}"`);
     out = out.split(`href='${original}'`).join(`href='${clickUrl}'`);
   }
@@ -95,7 +86,6 @@ export function rewriteBody(args: {
   return out;
 }
 
-// Record an open (best-effort). The caller always returns the pixel.
 export async function recordOpen(
   db: Db,
   token: string,
@@ -105,8 +95,6 @@ export async function recordOpen(
   await recordEvent(db, token, userAgent, "open", signal);
 }
 
-// Record a click (best-effort) and return the STORED target_url for the redirect.
-// Never reads a destination from the request. Unknown token -> null.
 export async function recordClick(
   db: Db,
   token: string,
@@ -117,13 +105,6 @@ export async function recordClick(
   return row?.target_url ?? null;
 }
 
-// Redirect-only path: resolve the STORED target without writing an event.
-//
-// Used when /t/click is over its rate limit. Refusing the request outright is not an option
-// there, because a real recipient clicking a real link must still reach the real destination;
-// what can be dropped under load is the expensive half (transaction, event insert, NOTIFY,
-// notification write). Same open-redirect guarantee as recordClick: the destination comes from
-// the stored row, which was validated http(s) at mint time, never from the request.
 export async function resolveClickTarget(
   db: Db,
   token: string,
@@ -133,7 +114,6 @@ export async function resolveClickTarget(
   return row?.target_url ?? null;
 }
 
-// After the send reconciles, attach the real message to every token for the attempt.
 export async function backfillTokens(
   db: Db,
   args: { sendAttemptId: string; messageId: string; signal: AbortSignal },
@@ -145,7 +125,6 @@ export async function backfillTokens(
   args.signal.throwIfAborted();
 }
 
-// Disable all tokens for an attempt: future hits record no event but still redirect.
 export async function disableTokens(
   db: Db,
   sendAttemptId: string,

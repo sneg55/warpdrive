@@ -1,5 +1,3 @@
-// signatureRead.test.ts: real-DB tests for listSignatures returning bodyHtml (Task 4.1)
-// RED: fails until listSignatures returns bodyHtml
 import { sql } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import { withTestDb } from "@/db/testing";
@@ -92,7 +90,6 @@ describe("listSignatures (with bodyHtml)", () => {
 
       const sigs = await listSignatures(db, { actor }, AbortSignal.timeout(5000));
 
-      // Default comes first (ORDER BY is_default DESC)
       const first = sigs[0];
       expect(first).toBeDefined();
       if (first === undefined) return;
@@ -104,7 +101,6 @@ describe("listSignatures (with bodyHtml)", () => {
     await withTestDb(async (db) => {
       const actor = await seedUser(db);
       const other = await seedUser(db);
-      // Seed a sig for actor AND one for the other user
       const actorSigId = await seedSignature(db, { userId: actor.id, name: "Actor sig" });
       await seedSignature(db, { userId: other.id, name: "Other user sig" });
       const actorObj = {
@@ -116,7 +112,6 @@ describe("listSignatures (with bodyHtml)", () => {
 
       const sigs = await listSignatures(db, { actor: actorObj }, AbortSignal.timeout(5000));
 
-      // Actor sees only their own signature, not the other user's
       expect(sigs.length).toBe(1);
       expect(sigs[0]?.id).toBe(actorSigId);
     });

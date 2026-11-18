@@ -4,8 +4,6 @@ import { cleanup, fireEvent, render, screen, within } from "@testing-library/rea
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 beforeAll(() => {
-  // ActivityComposerInline (rendered for real below, un-mocked) uses cmdk/Radix pieces that
-  // reach for browser APIs jsdom does not implement.
   Element.prototype.scrollIntoView = vi.fn();
   Element.prototype.hasPointerCapture = vi.fn(() => false);
   Element.prototype.releasePointerCapture = vi.fn();
@@ -173,7 +171,6 @@ describe("OrgDetailClient", () => {
     );
   });
 
-  // Wave 4, Task 5: the header shows who owns the org via the shared OwnerBadge.
   it("inline-saves the Organization section's Name through updateOrgAction", async () => {
     const { updateOrgAction } = await import("@/features/contacts/actions");
     render(<OrgDetailClient org={org as never} defs={[]} canMerge={true} baseCurrency="USD" />);
@@ -189,11 +186,6 @@ describe("OrgDetailClient", () => {
   });
 });
 
-// Task 14 reviewer directive: exercise the REAL (unmocked) composer path for this scope and
-// assert a created activity's payload carries this entity's own id in the field that matches
-// its scope, and none of the sibling entity id fields. Mirrors DealWorkspaceClient's coverage,
-// generalized to org: orgId is set, dealId/leadId/personId are all null (an org has no
-// deal/lead/person parent implied by ComposeScope alone).
 describe("OrgDetailClient composer seam", () => {
   it("creates an activity anchored to this org's orgId, not a dealId/leadId/personId", async () => {
     const { container } = render(
@@ -223,7 +215,6 @@ describe("OrgDetailClient composer seam", () => {
         entityId: "o1",
       }),
     );
-    // codex P2: the Overview stats must refresh on a new activity, not just the timeline.
     expect(invalidateActivityStats).toHaveBeenCalledWith({
       entityType: "organization",
       entityId: "o1",

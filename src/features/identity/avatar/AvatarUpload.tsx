@@ -19,9 +19,6 @@ interface AvatarUploadProps {
   avatarUrl: string | null;
 }
 
-// Profile avatar control: shows the current avatar (or colored initials) and drives the
-// presigned-upload handshake (request -> POST bytes -> confirm) with a client-side size/type
-// guard mirroring the server. Kept small; the handshake logic is the same shape as AttachButton.
 export function AvatarUpload({ name, avatarUrl }: AvatarUploadProps): React.ReactNode {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);

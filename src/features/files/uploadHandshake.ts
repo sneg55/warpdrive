@@ -4,15 +4,9 @@ import { ATTACH_MAX_FILE_BYTES, FILE_ATTACHMENTS_STRINGS } from "./fileAttachmen
 import type { FileEntityType } from "./listFilesForEntity";
 import { confirmUploadAction, requestUploadAction } from "./serverActions";
 
-// Allowed MIME types as a plain Set for O(1) lookup (mirrors AttachButton).
 const ALLOWED_TYPES = new Set<string>(ALLOWED_CONTENT_TYPES);
 const MAX_MB = Math.round(ATTACH_MAX_FILE_BYTES / 1024 / 1024);
 
-// Run the presigned-upload handshake for one file: client-side size/type guard
-// (mirrors AttachButton), request a presigned POST, POST the bytes to storage,
-// then confirm server-side. Returns null on success or a user-facing error string.
-// Kept as a plain async function (no React) so the component stays small and the
-// handshake is independently testable.
 export async function uploadOneFile(
   file: File,
   entityType: FileEntityType,
@@ -25,9 +19,6 @@ export async function uploadOneFile(
     return FILE_ATTACHMENTS_STRINGS.unsupportedType(file.name);
   }
 
-  // Wrap the network + action calls: fetch REJECTS (does not return {ok:false}) on a network
-  // drop / CORS failure, and an action could throw; both must surface as a user-facing error
-  // string rather than an unhandled rejection that leaves the upload silently doing nothing.
   try {
     const csrfToken = readCsrfToken();
     const requested = await requestUploadAction(csrfToken, {

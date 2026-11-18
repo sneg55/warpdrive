@@ -46,7 +46,6 @@ it("no-ops on an already-undone batch and preserves undoneAt (stale retry)", asy
 
     const [after] = await db.select().from(importBatches).where(eq(importBatches.id, b!.id));
     expect(after?.status).toBe("undone");
-    // undoneAt is preserved, not clobbered to null by the stale retry.
     expect(after?.undoneAt?.toISOString()).toBe(when.toISOString());
   });
 });
@@ -54,8 +53,6 @@ it("no-ops on an already-undone batch and preserves undoneAt (stale retry)", asy
 it("does NOT delete a pre-existing record that update-mode only edited (null createdEntityId)", async () => {
   await withTestDb(async (db) => {
     const user = await seedUser(db, { isAdmin: true });
-    // preexisting = a record that existed before the import; an update-mode row edited it, so
-    // its import row carries a null createdEntityId. created = a record the import created.
     const [preexisting] = await db
       .insert(persons)
       .values({ name: "Preexisting", ownerId: user.id, visibilityLevel: "owner" })
@@ -94,8 +91,8 @@ it("does NOT delete a pre-existing record that update-mode only edited (null cre
 
     const [c] = await db.select().from(persons).where(eq(persons.id, created!.id));
     const [p] = await db.select().from(persons).where(eq(persons.id, preexisting!.id));
-    expect(c?.deletedAt).not.toBeNull(); // created record removed
-    expect(p?.deletedAt).toBeNull(); // pre-existing record untouched
+    expect(c?.deletedAt).not.toBeNull();
+    expect(p?.deletedAt).toBeNull();
   });
 });
 
@@ -140,7 +137,6 @@ it("removes an organization the lead import created as a side effect, on undo", 
     const user = await seedUser(db, { isAdmin: true });
     const actor = adminActorFor(user.id);
 
-    // Commit a lead row that find-or-creates a brand-new org while linking.
     const [batch] = await db
       .insert(importBatches)
       .values({ targetEntity: "lead", filename: "l.csv", status: "completed", createdBy: user.id })
@@ -173,7 +169,6 @@ it("removes an organization the lead import created as a side effect, on undo", 
 
     await handleUndoJob(db, { data: { batchId: batch!.id } }, signal);
 
-    // Both the lead AND the org it created are removed: no orphan org left behind.
     const [orgAfter] = await db
       .select()
       .from(organizations)
@@ -187,8 +182,6 @@ it("removes an organization the lead import created as a side effect, on undo", 
   });
 });
 
-// A row note is created by the import, so undo must remove it too. A note left pointing at a
-// soft-deleted lead is exactly the debris createdNoteId exists to prevent.
 it("removes the note a lead import created, on undo", async () => {
   await withTestDb(async (db) => {
     const signal = AbortSignal.timeout(10_000);
@@ -233,8 +226,6 @@ it("removes the note a lead import created, on undo", async () => {
   });
 });
 
-// The counterpart to the created-org test: an org the row merely LINKED to predates the import
-// and must survive undo, along with any enrichment written onto it.
 it("leaves a pre-existing organization and its enrichment alone, on undo", async () => {
   await withTestDb(async (db) => {
     const signal = AbortSignal.timeout(10_000);
@@ -269,7 +260,6 @@ it("leaves a pre-existing organization and its enrichment alone, on undo", async
       .returning();
     await commitRow(db, actor, row!.id, "lead", "skip", signal);
 
-    // The row linked rather than created, so nothing is tracked for undo.
     const [committed] = await db.select().from(importRows).where(eq(importRows.id, row!.id));
     expect(committed?.createdOrgId).toBeNull();
 
@@ -277,14 +267,10 @@ it("leaves a pre-existing organization and its enrichment alone, on undo", async
 
     const [orgAfter] = await db.select().from(organizations).where(eq(organizations.id, seeded.id));
     expect(orgAfter?.deletedAt).toBeNull();
-    // Enrichment is not reverted: undo removes what the import created, not what it edited.
     expect(orgAfter?.domain).toBe("preexisting.example");
   });
 });
 
-// Undo walks rows outside one transaction. If the actor cannot delete the primary record, its note
-// must survive: removing the note off a still-live imported lead would be data loss with nothing
-// undone in exchange.
 it("keeps the row note when the primary record cannot be deleted", async () => {
   await withTestDb(async (db) => {
     const signal = AbortSignal.timeout(10_000);
@@ -307,7 +293,6 @@ it("keeps the row note when the primary record cannot be deleted", async () => {
       .returning();
     await commitRow(db, adminActor, row!.id, "lead", "skip", signal);
 
-    // A different regular user, owning nothing and holding no flags, cannot remove the lead.
     const other = await seedUser(db, { email: "other@example.com" });
     const powerless: ImportActor = {
       id: other.id,
@@ -324,15 +309,11 @@ it("keeps the row note when the primary record cannot be deleted", async () => {
     const [note] = await db.select().from(notes).where(eq(notes.body, "keep me"));
     expect(note?.deletedAt).toBeNull();
 
-    // Nothing was undone, so the batch keeps its prior terminal status and Undo stays available.
     const [after] = await db.select().from(importBatches).where(eq(importBatches.id, batch!.id));
     expect(after?.status).toBe("completed");
   });
 });
 
-// An "update"-mode row finalizes with a null createdEntityId (it edited a pre-existing contact,
-// which undo must never delete) but it may still have CREATED an org and a note. Those are the
-// import's own debris and undo has to remove them, even though there is no primary to delete.
 it("removes the org and note an update-mode row created, though it deletes no primary", async () => {
   await withTestDb(async (db) => {
     const signal = AbortSignal.timeout(10_000);
@@ -386,7 +367,6 @@ it("removes the org and note an update-mode row created, though it deletes no pr
 
     await undoBatch(db, actor, batch!.id, signal);
 
-    // The pre-existing person survives; the org and note this import created do not.
     const [person] = await db.select().from(persons).where(eq(persons.id, existing.value.id));
     expect(person?.deletedAt).toBeNull();
     const [org] = await db
@@ -399,8 +379,6 @@ it("removes the org and note an update-mode row created, though it deletes no pr
   });
 });
 
-// A retry after a crash mid-undo: the primary is already soft-deleted, so its delete authority
-// reports failure. The remaining side effects must still be cleaned rather than stranded forever.
 it("cleans side effects on a retry whose primary was already deleted", async () => {
   await withTestDb(async (db) => {
     const signal = AbortSignal.timeout(10_000);
@@ -427,7 +405,6 @@ it("cleans side effects on a retry whose primary was already deleted", async () 
       .returning();
     await commitRow(db, actor, row!.id, "lead", "skip", signal);
 
-    // Simulate the crash: the primary was deleted, nothing else was.
     const [lead] = await db.select().from(leads).where(eq(leads.title, "Crashed lead"));
     await db.update(leads).set({ deletedAt: new Date() }).where(eq(leads.id, lead!.id));
 
@@ -443,9 +420,6 @@ it("cleans side effects on a retry whose primary was already deleted", async () 
   });
 });
 
-// An update-mode person row can match an existing contact AND create a new org for it, linking the
-// live person to that org. Undo deletes the created org; the person survives, so its orgId would
-// point at a soft-deleted org unless undo also clears the reference.
 it("clears a live person's link to an organization undo deletes", async () => {
   await withTestDb(async (db) => {
     const signal = AbortSignal.timeout(10_000);
@@ -496,7 +470,6 @@ it("clears a live person's link to an organization undo deletes", async () => {
 
     await undoBatch(db, actor, batch!.id, signal);
 
-    // The org is gone and the person no longer points at it.
     const [org] = await db
       .select()
       .from(organizations)

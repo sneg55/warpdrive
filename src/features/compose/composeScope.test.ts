@@ -9,10 +9,6 @@ import {
   noteEntityType,
 } from "./composeScope";
 
-// These mappings are what let SharedComposeBar mount on any ComposeScope
-// (deal/lead/person/org) and still route Activity/Notes/Email/Files to the
-// right entity: each scope maps to its own note/file entity type, its own
-// activity anchor (dealId vs leadId), and its own set of enabled tabs.
 describe("composeScope mappings", () => {
   it("maps org scope to the organization note/file entity", () => {
     const scope = { entityType: "org" as const, entityId: "o1" };
@@ -59,9 +55,6 @@ describe("composeScope mappings", () => {
     ).toEqual({ dealId: "d1", leadId: null, personId: "p1", orgId: "o1" });
   });
 
-  // BUG EMAIL-21: the deal composer built its context from scope WITHOUT the
-  // display values insertFields() needs, so insertFields returned [] and the
-  // "Insert field" menu was unreachable. dealComposerContext threads them through.
   it("dealComposerContext threads display values so insertFields() is non-empty", () => {
     const ctx = dealComposerContext({
       entityType: "deal",

@@ -38,7 +38,6 @@ describe("listDeals", () => {
     });
   });
 
-  // SECURITY: a hidden deal must be excluded from BOTH rows AND totals.
   it("excludes a hidden deal from rows and from the total value", async () => {
     await withTestDb(async (db) => {
       await seedOwnerOnly(db);
@@ -48,14 +47,12 @@ describe("listDeals", () => {
       const stage = p.stages[0];
       if (!stage) throw new Error("setup: no stage");
 
-      // Owner's deal: 500, not visible to viewer
       await createDeal(
         db,
         ownerOnly(owner.id),
         { title: "hidden", pipelineId: p.pipeline.id, stageId: stage.id, value: 500 },
         new AbortController().signal,
       );
-      // Viewer's own deal: 100, visible to viewer
       await createDeal(
         db,
         ownerOnly(viewer.id),
@@ -69,7 +66,6 @@ describe("listDeals", () => {
         { pipelineId: p.pipeline.id, offset: 0, limit: 50 },
         new AbortController().signal,
       );
-      // Only the visible deal counts
       expect(out.total).toBe(1);
       expect(Number(out.totalValue)).toBe(100);
       expect(out.rows.find((r) => r.title === "hidden")).toBeUndefined();

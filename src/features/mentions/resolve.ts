@@ -12,7 +12,6 @@ import { parseMentions } from "./parse";
 
 type Token = { userId: string; display: string };
 
-// Build notification inputs from surviving tokens.
 function buildInputs(
   tokens: Token[],
   args: {
@@ -33,7 +32,6 @@ function buildInputs(
   }));
 }
 
-// Dispatch email for each non-suppressed fanOut result. Returns the count of created notifications.
 async function dispatchEmails(
   db: Db,
   results: Awaited<ReturnType<typeof fanOut>>,
@@ -67,11 +65,9 @@ export async function resolveAndStoreMentions(
   try {
     args.signal.throwIfAborted();
 
-    // Parse tokens, drop self-mentions.
     const tokens = parseMentions(args.body).filter((t) => t.userId !== args.authorId);
     if (tokens.length === 0) return ok({ created: 0 });
 
-    // Validate that the remaining userIds exist and are active. Silently drop unknowns.
     const userIds = tokens.map((t) => t.userId);
     const realUsers = await db
       .select({ id: users.id })
@@ -84,7 +80,6 @@ export async function resolveAndStoreMentions(
     const realUserIds = new Set(realUsers.map((u) => u.id));
     const surviving = tokens.filter((t) => realUserIds.has(t.userId));
 
-    // Insert mention rows for all surviving users.
     await db.insert(mentions).values(
       surviving.map((t) => ({
         source: args.source,
@@ -95,15 +90,12 @@ export async function resolveAndStoreMentions(
     );
     args.signal.throwIfAborted();
 
-    // Fan out notifications; the producer visibility-checks each recipient.
     const results = await fanOut(db, buildInputs(surviving, args), args.signal);
 
-    // Enqueue email for each notification actually created (not suppressed).
     const created = await dispatchEmails(db, results, surviving, args.signal);
 
     return ok({ created });
   } catch (e) {
-    // Always rethrow AbortError; wrap everything else as an AppError.
     if (e instanceof Error && e.name === "AbortError") throw e;
     if (e instanceof AppError) return err(e);
     const msg = e instanceof Error ? e.message : String(e);

@@ -9,8 +9,6 @@ import { ImportHistory } from "./ImportHistory";
 
 export const metadata = { title: STRINGS.settings.importer.title };
 
-// Import history (settings section 10): gated on data.import. Lists the actor's past import
-// runs; the wizard itself moved to /settings/import/new.
 export default async function ImportPage(): Promise<ReactNode> {
   const { actor } = await createContext();
   if (actor === null) {

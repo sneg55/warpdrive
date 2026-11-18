@@ -139,14 +139,13 @@ it("carries the linked person and organization display names for deal-scoped act
 it("hides a linked contact's name and link when the actor cannot see that contact", async () => {
   await withTestDb(async (db) => {
     const signal = new AbortController().signal;
-    const owner = await seedUser(db, { name: "Owner" }); // owns the hidden contact + deal
-    const viewer = await seedUser(db, { name: "Viewer" }); // sees the deal, not the contact
+    const owner = await seedUser(db, { name: "Owner" });
+    const viewer = await seedUser(db, { name: "Viewer" });
     const actor = makeActor(viewer.id);
 
     const pipe = await seedPipelineWithStages(db, ["Lead"]);
     const stage = pipe.stages[0];
     if (stage === undefined) throw new Error("stage seed failed");
-    // owner-only contact owned by someone else: the viewer must not see its name.
     const [person] = await db
       .insert(persons)
       .values({ name: "Secret Contact", ownerId: owner.id, visibilityLevel: "owner" })
@@ -157,7 +156,6 @@ it("hides a linked contact's name and link when the actor cannot see that contac
       .values({ name: "Secret Org", ownerId: owner.id, visibilityLevel: "owner" })
       .returning();
     if (org === undefined) throw new Error("org seed failed");
-    // all-visible deal: the viewer CAN see the activity through the deal parent.
     const [deal] = await db
       .insert(deals)
       .values({
@@ -184,9 +182,7 @@ it("hides a linked contact's name and link when the actor cannot see that contac
     });
 
     const rows = await listActivitiesForEntity(db, actor, "deal", deal.id, signal);
-    // The activity is visible via the all-visible deal parent...
     expect(rows[0]?.subject).toBe("Discovery call");
-    // ...but the hidden contact's name and clickable link must not be disclosed.
     expect(rows[0]?.personName).toBeNull();
     expect(rows[0]?.personId).toBeNull();
     expect(rows[0]?.orgName).toBeNull();
@@ -233,12 +229,10 @@ it("nulls personId/orgId when the linked contact is soft-deleted (no dangling li
       personId: person.id,
     });
 
-    // Soft-delete the person AFTER the activity links it.
     await db.update(persons).set({ deletedAt: new Date() }).where(eq(persons.id, person.id));
 
     const rows = await listActivitiesForEntity(db, actor, "deal", deal.id, signal);
     expect(rows[0]?.subject).toBe("Call Emma");
-    // The activity still shows on the deal, but its person link is gone (person is deleted).
     expect(rows[0]?.personId).toBeNull();
   });
 });
@@ -301,8 +295,6 @@ it("re-sanitizes the note at the read boundary (strips script from raw-inserted 
     if (deal === undefined) throw new Error("deal seed failed");
     const [type] = await db.select().from(activityTypes).where(eq(activityTypes.key, "call"));
     if (type === undefined) throw new Error("type not found");
-    // Raw insert bypasses createActivity's sanitizeAuthorHtml, simulating a write path
-    // that forgot to sanitize. The read boundary must still strip the script.
     await db.insert(activities).values({
       typeId: type.id,
       subject: "Call",

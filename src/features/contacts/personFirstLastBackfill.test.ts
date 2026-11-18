@@ -8,12 +8,6 @@ import { seedUser } from "@/db/testing/factories";
 
 type Db = NodePgDatabase<typeof schema>;
 
-// The test harness migrates a shared template once, before any test-specific row exists
-// (see vitest.globalSetup.ts), so the persons table already has first_name/last_name by
-// the time a test can insert a row: the migration's own UPDATE never runs against rows
-// inserted here. Re-run the exact backfill statement from
-// drizzle/0041_mysterious_lily_hollister.sql against name-only rows to verify the
-// splitting logic itself is correct.
 async function runBackfill(db: Db): Promise<void> {
   await db.execute(sql`
     UPDATE "persons" SET
@@ -96,8 +90,6 @@ describe("person first_name/last_name backfill", () => {
     });
   });
 
-  // Finding 4: the backfill must trim, matching splitName's behavior, so leading/trailing
-  // whitespace around a legacy `name` value does not diverge from the pure-JS splitter.
   async function insertPerson(db: Db, name: string): Promise<{ id: string; ownerId: string }> {
     const owner = await seedUser(db);
     const [inserted] = await db

@@ -27,7 +27,6 @@ describe("checkRateLimit", () => {
     for (let i = 0; i < RATE_LIMITS.oauthRegister.limit; i++) {
       checkRateLimit("oauthRegister", headers);
     }
-    // Exhausting registration must not lock the same caller out of the token endpoint.
     expect(checkRateLimit("oauthToken", headers).allowed).toBe(true);
   });
 
@@ -39,7 +38,6 @@ describe("checkRateLimit", () => {
     expect(checkRateLimit("oauthRegister", headersFor("5.5.5.5")).allowed).toBe(true);
   });
 
-  // The proxy appends the true peer, so a forged prefix must not create a fresh allowance.
   test("cannot be reset by prepending a spoofed forwarded-for entry", () => {
     resetRateLimitsForTest();
     for (let i = 0; i < RATE_LIMITS.oauthRegister.limit; i++) {

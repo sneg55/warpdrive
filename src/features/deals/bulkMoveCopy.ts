@@ -1,6 +1,3 @@
-// Confirmation copy for a bulk stage move. The count and destination are stated because the
-// selection lives in a toolbar the dialog covers, and there is no undo: reversing the move is a
-// second bulk move.
 export const BULK_MOVE_DESCRIPTION =
   "The stage changes for everyone on the team. There is no undo, so moving them back is another bulk move.";
 

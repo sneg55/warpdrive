@@ -33,16 +33,13 @@ function formatSync(iso: string | null): string {
 export function EmailSyncClient({ mailbox }: { mailbox: MailboxView | null }): React.ReactNode {
   const router = useRouter();
   const [now, setNow] = useState<Date | null>(null);
-  // eslint-disable-next-line react-hooks/set-state-in-effect -- the clock is the browser's, not the request's: rendering a stall from the server time would disagree with the tab a minute later
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => setNow(new Date()), []);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const connected = mailbox !== null && mailbox.status === "connected";
   const health = mailboxDisplayHealth(mailbox, now);
 
-  // Connect a fresh mailbox or reconnect a disconnected/error one: both mint a consent URL
-  // server-side (which also sets the single-use OAuth state cookie) and hand off to Google.
-  // The OAuth callback rebinds the row, so reconnect reuses the same account, not a duplicate.
   async function startConnect(): Promise<void> {
     setPending(true);
     setError(null);
@@ -50,8 +47,6 @@ export function EmailSyncClient({ mailbox }: { mailbox: MailboxView | null }): R
       const { url } = await connectGmailStart();
       window.location.href = url;
     } catch {
-      // Minting the consent URL failed (dead session or transient error): un-stick the button
-      // and surface a retry hint rather than leaving it disabled on "Connecting..." forever.
       setPending(false);
       setError(S.actionError);
     }

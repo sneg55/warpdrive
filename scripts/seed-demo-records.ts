@@ -1,23 +1,11 @@
-/**
- * scripts/seed-demo-records.ts
- *
- * Bulk record inserts and the demo-data wipe. wipeDemo removes only rows owned
- * by the demo users (in FK-safe order), so smoke/phase5 fixtures are untouched.
- * Inserts return the generated ids so the orchestrator can wire relationships.
- */
-
 import type { DealSeed, LeadSeed, OrgSeed, PersonSeed, Visibility } from "./seed-demo-data";
 import { at } from "./seed-demo-data";
 import type { Db } from "./seed-smoke-phase5-infra";
 
-// Maps a seed Visibility to (visibility_level, visibility_group_id). Group-scoped
-// rows point at the demo "West Team" group; owner/all rows carry no group.
 function vis(v: Visibility, groupId: string): { level: Visibility; group: string | null } {
   return v === "group" ? { level: "group", group: groupId } : { level: v, group: null };
 }
 
-// Removes every demo-owned row in FK-safe order (children first). Label join
-// tables and cf-def catalogs are shared/idempotent and intentionally kept.
 export async function wipeDemo(db: Db, ownerIds: string[]): Promise<void> {
   const u = [ownerIds];
   const acct = `(SELECT id FROM email_accounts WHERE user_id = ANY($1::uuid[]))`;
@@ -25,10 +13,7 @@ export async function wipeDemo(db: Db, ownerIds: string[]): Promise<void> {
   const demoActs = `(SELECT id FROM activities WHERE owner_id = ANY($1::uuid[]))`;
   const demoNotes = `(SELECT id FROM notes WHERE author_id = ANY($1::uuid[]))`;
   const demoOrgs = `(SELECT id FROM organizations WHERE owner_id = ANY($1::uuid[]))`;
-  // Thread reads have no FK on thread_id, so they must be cleared explicitly by
-  // the demo owner (deleting the threads alone would orphan them).
   await db.q(`DELETE FROM email_thread_reads WHERE user_id = ANY($1::uuid[])`, u);
-  // Email tree. Attachments cascade on message delete; reads handled above.
   await db.q(
     `DELETE FROM email_tracking_events WHERE message_id IN
        (SELECT id FROM email_messages WHERE account_id IN ${acct})`,
@@ -40,25 +25,19 @@ export async function wipeDemo(db: Db, ownerIds: string[]): Promise<void> {
     u,
   );
   await db.q(`DELETE FROM email_send_attempts WHERE account_id IN ${acct}`, u);
-  // Drafts FK-reference the account (email_drafts_account_id_email_accounts_id_fk); they must
-  // be cleared before the account, or a re-seed aborts once any draft exists.
   await db.q(`DELETE FROM email_drafts WHERE account_id IN ${acct}`, u);
   await db.q(`DELETE FROM email_messages WHERE account_id IN ${acct}`, u);
   await db.q(`DELETE FROM email_threads WHERE account_id IN ${acct}`, u);
   await db.q(`DELETE FROM email_accounts WHERE user_id = ANY($1::uuid[])`, u);
-  // Collaboration.
   await db.q(`DELETE FROM comments WHERE note_id IN ${demoNotes}`, u);
   await db.q(`DELETE FROM mentions WHERE author_id = ANY($1::uuid[])`, u);
   await db.q(`DELETE FROM notes WHERE author_id = ANY($1::uuid[])`, u);
   await db.q(`DELETE FROM notifications WHERE user_id = ANY($1::uuid[])`, u);
   await db.q(`DELETE FROM files WHERE uploaded_by = ANY($1::uuid[])`, u);
-  // Contact followers have no FK on entity_id; clear the demo users' follows.
   await db.q(`DELETE FROM contact_followers WHERE user_id = ANY($1::uuid[])`, u);
-  // Activities + their guests/participants.
   await db.q(`DELETE FROM activity_guests WHERE activity_id IN ${demoActs}`, u);
   await db.q(`DELETE FROM activity_participants WHERE activity_id IN ${demoActs}`, u);
   await db.q(`DELETE FROM activities WHERE owner_id = ANY($1::uuid[])`, u);
-  // Deal children, then core records.
   await db.q(`DELETE FROM deal_followers WHERE deal_id IN ${demoDeals}`, u);
   await db.q(`DELETE FROM deal_participants WHERE deal_id IN ${demoDeals}`, u);
   await db.q(`UPDATE leads SET converted_deal_id = NULL WHERE owner_id = ANY($1::uuid[])`, u);
@@ -71,7 +50,6 @@ export async function wipeDemo(db: Db, ownerIds: string[]): Promise<void> {
     u,
   );
   await db.q(`DELETE FROM organizations WHERE owner_id = ANY($1::uuid[])`, u);
-  // Owner-scoped extras.
   await db.q(`DELETE FROM saved_filters WHERE owner_id = ANY($1::uuid[])`, u);
   await db.q(`DELETE FROM email_templates WHERE owner_id = ANY($1::uuid[])`, u);
   await db.q(`DELETE FROM signatures WHERE user_id = ANY($1::uuid[])`, u);

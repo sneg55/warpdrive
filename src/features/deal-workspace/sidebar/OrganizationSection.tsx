@@ -12,10 +12,6 @@ import { SectionHeaderMenu, type SectionHeaderMenuItem } from "./SectionHeaderMe
 
 const NONE: ReadonlySet<string> = new Set();
 
-// Shared Organization section for deal, lead, and organization-detail surfaces. Children let the
-// deal workspace append its own custom fields to this same card without introducing another box.
-// showLabels opts a surface into the interactive org-labels row (deal + lead drawers, where the
-// linked org has no header of its own); organization-detail leaves it off (its header owns labels).
 export function OrganizationSection({
   org,
   menuItems,

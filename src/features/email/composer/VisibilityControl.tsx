@@ -1,10 +1,5 @@
 "use client";
 
-// VisibilityControl (C1): interactive composer privacy picker. A shadcn DropdownMenu (never a
-// native <select>) offering Private / Shared. The chosen value is lifted into composer state and
-// threaded into the send payload (useComposerSend -> sendEmailInput.visibility) so the sent thread
-// lands with the visibility the author picked. Private = closed padlock; shared = open padlock.
-
 import { Lock, LockOpen } from "lucide-react";
 import type React from "react";
 import {
@@ -23,8 +18,6 @@ interface VisibilityControlProps {
   onChange: (value: EmailVisibility) => void;
 }
 
-// Closed padlock (private) or open padlock (shared), matching the ThreadPrivacyToggle glyph so the
-// compose and reader controls read as the same affordance.
 function LockGlyph({ open }: { open: boolean }): React.ReactNode {
   const Glyph = open ? LockOpen : Lock;
   return <Glyph aria-hidden="true" className="h-3.5 w-3.5 shrink-0" />;

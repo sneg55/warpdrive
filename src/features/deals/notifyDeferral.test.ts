@@ -1,11 +1,4 @@
 // @vitest-environment node
-// updateDealAction and moveDealAction awaited their notification fan-out before returning, so the
-// user's request paid for work they never see. That work runs outside the deal transaction on the
-// db singleton, which makes it a textbook next/server after() candidate.
-//
-// The distinction that matters: deferred, NOT dropped. These tests capture the after() callback
-// without running it, prove the action already resolved, then run the callback and prove the
-// notification actually fires.
 import { beforeEach, describe, expect, test, vi } from "vitest";
 
 const afterCallbacks: (() => unknown)[] = [];
@@ -59,11 +52,9 @@ describe("updateDealAction defers its notification fan-out", () => {
     const r = await updateDealAction({ dealId: "deal-1" } as never, "csrf");
 
     expect(r.ok).toBe(true);
-    // Deferred: the response is ready and the fan-out has not run yet.
     expect(notifyOnDealUpdate).not.toHaveBeenCalled();
     expect(afterCallbacks).toHaveLength(1);
 
-    // Not dropped: the scheduled work really does send the notification.
     await afterCallbacks[0]?.();
     expect(notifyOnDealUpdate).toHaveBeenCalledTimes(1);
   });

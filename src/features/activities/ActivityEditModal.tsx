@@ -37,10 +37,6 @@ export function ActivityEditModal({
   const initialParts = isoToLocalParts(activity.dueAtIso, activity.allDay);
 
   const [typeId, setTypeId] = useState(activity.typeId);
-  // Guard against ActivitiesTable.toEditable opening this modal with typeId: "" (row clicked
-  // before its own listTypes resolved). Mirrors AddActivityModal's effectiveTypeId: display-only
-  // fallback so the Select never shows blank when types are available. Save still diffs against
-  // the raw typeId, so an untouched fallback selection never gets written as a spurious patch.
   const effectiveTypeId = typeId === "" ? (types[0]?.id ?? "") : typeId;
   const [subject, setSubject] = useState(activity.subject);
   const [priority, setPriority] = useState(activity.priority ?? "");

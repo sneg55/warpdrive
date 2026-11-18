@@ -64,7 +64,6 @@ it("parses the per-entity openDetailsAfterCreate object", () => {
   expect(ui.openDetailsAfterCreate).toEqual({ leadDeal: true, person: false, org: true });
 });
 
-// The write boundary rejects a bad value; the read schema drops that one key and keeps the rest.
 it("rejects a non-boolean Interface flag on write and drops it on read", () => {
   expect(uiFlagInputSchema.safeParse({ key: "winSound", value: "yes" }).success).toBe(false);
   const ui = uiSchema.parse({ winSound: "yes", emailLinksNewTab: true });
@@ -124,9 +123,6 @@ it("drops an unparseable stored board view without losing sibling ui prefs", () 
   expect(ui.winSound).toBe(true);
 });
 
-// Prod stored a dealSidebarSections entry with a retired id ("details"). That one stale value failed
-// the whole ui parse, and getPreferences falls back to {} on failure, so every sibling preference,
-// the board view among them, silently reset on load.
 it("keeps sibling ui prefs when a stored key holds a value the schema no longer accepts", () => {
   const ui = uiSchema.parse({
     dealSidebarSections: [

@@ -4,7 +4,6 @@ import { useCallback, useState } from "react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/Popover";
 
 export interface PopMenuProps {
-  // The trigger's visible content (label text, icon, or both).
   trigger: React.ReactNode;
   triggerLabel: string;
   triggerClassName: string;
@@ -14,12 +13,6 @@ export interface PopMenuProps {
   children: (close: () => void) => React.ReactNode;
 }
 
-// Shared action-bar dropdown, built on the shadcn Popover primitive (focus management, Escape,
-// outside-click dismiss, scroll lock, and a portal for free). Popover, NOT DropdownMenu, because
-// callers pass heterogeneous form-like content (checkboxes, drag handles, plain buttons, labels),
-// not a uniform list of menu actions: a Radix menu would trap Tab and only expose registered menu
-// items to the keyboard, making that content unreachable. The render-prop API (children receive a
-// `close` to call after an action) is unchanged, so call sites do not change.
 export function PopMenu({
   trigger,
   triggerLabel,

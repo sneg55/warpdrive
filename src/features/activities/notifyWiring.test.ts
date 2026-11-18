@@ -1,8 +1,3 @@
-// notifyWiring.test.ts: integration test proving notifyActivityAssigned fires
-// after createActivity when the assignee is a different user.
-//
-// RED: fails until notifyOnActivityCreated helper is extracted and called from
-// createActivityAction.
 import { eq, sql } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import { activityTypes, notifications } from "@/db/schema";
@@ -63,7 +58,6 @@ describe("notifyOnActivityCreated: activity_assigned", () => {
       expect(result.ok).toBe(true);
       if (!result.ok) return;
 
-      // Wire: notifyOnActivityCreated fires the adapter. This is what the action calls.
       await notifyOnActivityCreated(db, {
         activity: result.value,
         actorId: actor.id,
@@ -76,17 +70,12 @@ describe("notifyOnActivityCreated: activity_assigned", () => {
     });
   });
 
-  // Codex finding F26: the notification set entityType/entityId only when dealId was present.
-  // For an activity linked ONLY to a private person (or org), that emitted an UNGATED
-  // notification carrying the activity subject, so an assignee who cannot see the parent
-  // still received its details. The notification must gate on the dominant parent entity.
   it("suppresses activity_assigned when the assignee cannot see the person-only parent", async () => {
     await withTestDb(async (db) => {
       const actor = await seedUser(db);
       const assignee = await seedUser(db);
       const personOwner = await seedUser(db);
 
-      // A private person: visible only to its owner, NOT to the assignee.
       const [person] = (
         await db.execute(
           sql`INSERT INTO persons (name, owner_id, visibility_level)
@@ -125,7 +114,6 @@ describe("notifyOnActivityCreated: activity_assigned", () => {
         signal: new AbortController().signal,
       });
 
-      // Gated on the person the assignee cannot see: no notification is produced.
       const rows = await db.select().from(notifications).where(sql`user_id = ${assignee.id}::uuid`);
       expect(rows).toHaveLength(0);
     });

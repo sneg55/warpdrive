@@ -84,8 +84,6 @@ describe("isOverlayOpen", () => {
   });
 
   test("is false for an always-mounted inline listbox (the deal stage selector)", () => {
-    // StageSelector renders role="listbox" inline on every deal workspace. Treating that as an
-    // open overlay silently killed every shortcut on those pages.
     document.body.innerHTML = '<div role="listbox" aria-label="Stage"></div>';
     expect(isOverlayOpen(document)).toBe(false);
   });

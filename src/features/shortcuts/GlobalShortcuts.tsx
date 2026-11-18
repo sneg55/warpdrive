@@ -6,8 +6,6 @@ import { NAV_ITEMS } from "@/constants/nav";
 import { navHrefForKey } from "./navShortcut";
 import { isOverlayOpen, isTypingTarget } from "./shortcutTarget";
 
-// App-wide keyboard shortcuts that belong to no single component (Pipedrive parity): the number row
-// jumps to a primary nav item. Mounted once in the app layout; renders nothing.
 export function GlobalShortcuts(): React.ReactNode {
   const router = useRouter();
 

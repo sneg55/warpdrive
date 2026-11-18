@@ -1,5 +1,3 @@
-// Folder identity for the Sales Inbox rail. The active folder lives in the URL (?folder=),
-// so this is the single parse/allow-list boundary (D3): unknown values fall back to inbox.
 export const FOLDER_KEYS = ["inbox", "drafts", "outbox", "sent", "archive"] as const;
 
 export type FolderKey = (typeof FOLDER_KEYS)[number];

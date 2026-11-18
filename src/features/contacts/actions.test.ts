@@ -1,11 +1,4 @@
 // @vitest-environment node
-// Boundary-validation tests for updatePersonAction/updateOrgAction: Wave 3 added typed
-// firmographic fields (annualRevenue regex, employeeCount int/nonnegative, max lengths) to
-// orgUpdateInput, but the actions never ran input through the schema, so a malformed value
-// reached updateOrg/updatePerson (and from there Postgres) instead of failing cleanly here.
-// Mirrors custom-fields/actions.test.ts: next/headers + context mocked so guardCsrf/permission
-// run as in production, while the repo layer is spied so no DB is touched, the point is that
-// invalid input is rejected BEFORE any repo call.
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { CSRF_COOKIE } from "@/features/auth/csrf";
 

@@ -17,8 +17,6 @@ interface BoardStagesProps {
   baseCurrency?: string;
 }
 
-// The horizontal list of stage columns. Extracted from Board so Board stays under the file-size
-// cap; purely presentational (all board state is derived by the parent and passed in).
 export function BoardStages({
   stages,
   sumsByStage,

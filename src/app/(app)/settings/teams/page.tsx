@@ -17,10 +17,6 @@ export default async function TeamsPage(): Promise<ReactNode> {
     return <p className="text-sm text-red-600">{STRINGS.settings.requiresAdmin}</p>;
   }
   const signal = AbortSignal.timeout(5000);
-  // Two user lists on purpose: the table resolves an already-set manager's NAME (which may be an
-  // inactive/soft-deleted user, so it must use the unfiltered list, or the name would show as
-  // "None"), while the create-team pickers must only offer users you can actually assign, so they
-  // use the isActive-filtered listAssignableUsers.
   const [teams, userRows, assignableUsers] = await Promise.all([
     listTeams(db, signal),
     listUsers(db, signal),

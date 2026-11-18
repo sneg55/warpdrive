@@ -10,11 +10,6 @@ import { Popover, PopoverContent, PopoverTrigger } from "./Popover";
 import { RangePresetRail } from "./RangePresetRail";
 import type { YmdRange } from "./rangePresets";
 
-// react-day-picker is a mid-weight calendar lib that only renders inside the popover, i.e. after
-// the user opens it. Code-split it so every route that merely mounts a DatePicker (deal page,
-// dashboard, inline date edits, add-deal/add-lead forms) does not ship the calendar in its initial
-// chunk. It is warmed on trigger hover/focus (preloadDayPicker) so the popover opens without a
-// load flash in the common case.
 const DayPicker = dynamic(async () => (await import("react-day-picker")).DayPicker, {
   ssr: false,
   loading: () => <div className="min-h-[18rem]" aria-hidden="true" />,
@@ -25,12 +20,6 @@ function preloadDayPicker(): void {
   dayPickerChunk ??= import("react-day-picker");
 }
 
-// react-day-picker v10's captionLayout="dropdown" defaults navEnd to Dec 31
-// of the current year when startMonth/endMonth are omitted, which caps the
-// next-month chevron and year dropdown there and makes any future date
-// unreachable. These bound the navigable range explicitly instead: far
-// enough back for historical deal/lead dates, far enough forward that the
-// year dropdown parity feature (Pipedrive) stays usable for years to come.
 const DATE_PICKER_PAST_YEARS = 100;
 const DATE_PICKER_FUTURE_YEARS = 20;
 
@@ -39,15 +28,9 @@ interface DatePickerProps {
   onChange: (v: string | null) => void;
   ariaLabel: string;
   placeholder?: string;
-  // Replaces the default bordered-button trigger styling (e.g. the deal Summary renders the
-  // trigger as a plain text/CTA row, Pipedrive-style). Also applied to the empty-state
-  // placeholder span so a CTA trigger can style "Set expected close date" as a link.
   triggerClassName?: string;
   placeholderClassName?: string;
-  // Overrides the trigger's set-value text (default MM/DD/YYYY).
   formatLabel?: (ymd: string) => string;
-  // Opens the calendar popover on mount (PD's inline date editor shows the calendar
-  // immediately when the field enters edit mode).
   defaultOpen?: boolean;
   dayAccessory?: (localYmd: string) => DayAccessory | null;
   onMonthChange?: (month: Date) => void;
@@ -55,9 +38,6 @@ interface DatePickerProps {
   onPresetRange?: (range: YmdRange) => void;
 }
 
-// Popover + react-day-picker calendar. Value/onChange use local YYYY-MM-DD so
-// this drops into the existing date inputs (composer, add-deal, add-lead) with
-// no change to their action payloads; the trigger shows MM/DD/YYYY.
 export function DatePicker({
   value,
   onChange,

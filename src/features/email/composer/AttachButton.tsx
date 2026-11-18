@@ -1,7 +1,3 @@
-// AttachButton: paperclip button that drives the presigned-upload handshake for
-// one or more files. On success calls onAttached with {fileId, filename, size}.
-// Validates content-type and size client-side before calling the server action.
-
 "use client";
 
 import { Paperclip } from "lucide-react";
@@ -17,12 +13,9 @@ interface AttachButtonProps {
   entityType: "deal" | "person" | "organization" | "activity" | "email_message";
   entityId: string;
   onAttached: (file: AttachedFile) => void;
-  // Called with true when an upload batch starts, false when it finishes (success or error).
-  // Lets the parent Composer disable Send while files are in flight.
   onUploadingChange?: (uploading: boolean) => void;
 }
 
-// Allowed MIME types as a plain Set for O(1) lookup.
 const ALLOWED_TYPES = new Set<string>(ALLOWED_CONTENT_TYPES);
 
 export function AttachButton({
@@ -53,12 +46,10 @@ export function AttachButton({
       onUploadingChange?.(false);
     }
 
-    // Reset input so the same file can be re-selected after a remove.
     if (inputRef.current !== null) inputRef.current.value = "";
   }
 
   async function uploadSingleFile(file: File): Promise<string | null> {
-    // Client-side guard: size and type before the server action.
     if (file.size > ATTACH_MAX_FILE_BYTES) {
       return `"${file.name}" is too large (max ${Math.round(ATTACH_MAX_FILE_BYTES / 1024 / 1024)} MB).`;
     }
@@ -66,7 +57,6 @@ export function AttachButton({
       return `"${file.name}" has an unsupported file type.`;
     }
 
-    // (1) Request a presigned POST from the server.
     const csrfToken = readCsrfToken();
     const requestResult = await requestUploadAction(csrfToken, {
       entityType,
@@ -80,7 +70,6 @@ export function AttachButton({
     }
     const { fileId, post } = requestResult.value;
 
-    // (2) POST the file bytes directly to storage (presigned URL).
     const form = new FormData();
     for (const [k, v] of Object.entries(post.fields)) {
       form.append(k, v);
@@ -91,7 +80,6 @@ export function AttachButton({
       return `Upload failed for "${file.name}".`;
     }
 
-    // (3) Confirm the upload server-side.
     const confirmResult = await confirmUploadAction(csrfToken, fileId);
     if (!confirmResult.ok) {
       return `Could not confirm upload for "${file.name}".`;

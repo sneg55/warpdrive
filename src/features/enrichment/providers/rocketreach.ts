@@ -23,15 +23,11 @@ const PERSON_LOOKUP_PATH = "/person/lookup";
 const CHECK_STATUS_PATH = "/person/checkStatus";
 const COMPANY_LOOKUP_PATH = "/company/lookup";
 const API_KEY_HEADER = "Api-Key";
-// Only a running search is worth polling on. Every other status is terminal ("complete", and the
-// "not queued" RocketReach documents for a search that never started), so it is classified at once.
 const IN_PROGRESS_STATUSES: readonly string[] = ["progress", "searching"];
 
-// The default flips to false on 2026-09-01, so it is sent explicitly on every call.
 const CACHED_EMAILS_PARAM = "return_cached_emails";
 
 export const ROCKETREACH_POLL_BUDGET_MS = 15_000;
-// Shorter than the poll budget, so one request that never answers cannot swallow the whole of it.
 const REQUEST_TIMEOUT_MS = 5_000;
 const FIRST_BACKOFF_MS = 500;
 const MAX_BACKOFF_MS = 2_000;
@@ -82,7 +78,6 @@ async function get(
   signal: AbortSignal,
   timeoutMs: number,
 ): Promise<Fetched> {
-  // The poll budget bounds the loop; this bounds the one request in flight inside it.
   const request = AbortSignal.any([signal, AbortSignal.timeout(timeoutMs)]);
   let status: number;
   let headers: Headers;
@@ -145,9 +140,6 @@ function personQuery(input: PersonLookup): URLSearchParams | undefined {
   const name =
     pickString(input.fullName) ??
     pickString([pickString(input.firstName), pickString(input.lastName)].join(" "));
-  // A bare name is not an identifier here: RocketReach has no domain parameter, so a name with only
-  // a company domain beside it would go out as a name alone and can return a different person
-  // entirely. It needs an employer to disambiguate, or an email or LinkedIn URL instead.
   const employer = pickString(input.companyName);
   if (name !== undefined && employer !== undefined) {
     params.set("name", name);
@@ -189,8 +181,6 @@ export async function matchPerson(
     if (id === undefined || now() - startedAt + delay >= budgetMs) break;
     await sleep(delay, signal);
     signal.throwIfAborted();
-    // The request gets whatever is left of the budget, so a late poll ends inside it rather than
-    // holding the fan-out open until the outer cancellation throws the partial candidate away.
     const remainingMs = budgetMs - (now() - startedAt);
     if (remainingMs <= 0) break;
     fetched = await get(
@@ -203,7 +193,6 @@ export async function matchPerson(
     latest = nodeOf(fetched.body) ?? latest;
   }
 
-  // Still searching here means the budget ran out; anything else is the provider's last word.
   return found(latest, personFields(latest), inProgress(latest) ? "timeout" : "no_match");
 }
 

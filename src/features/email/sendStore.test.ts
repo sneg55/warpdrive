@@ -28,7 +28,6 @@ async function seedAccount(db: TestDb, userId: string): Promise<string> {
   return r.id;
 }
 
-// A person (visible to all) plus their sole open deal, so recipient-based resolution links both.
 async function seedPersonWithOpenDeal(
   db: TestDb,
   ownerId: string,
@@ -113,7 +112,6 @@ describe("storeOutboundCopy thread linking", () => {
     await withTestDb(async (db) => {
       const owner = await seedUser(db, { email: "me@acme.com" });
       const acctId = await seedAccount(db, owner.id);
-      // Contact's email differs from the recipient, so ONLY the explicit ids can link it.
       const { personId, dealId } = await seedPersonWithOpenDeal(db, owner.id, "someone@else.com");
 
       const r = await storeOutboundCopy(db, {
@@ -144,7 +142,6 @@ describe("storeOutboundCopy thread linking", () => {
     await withTestDb(async (db) => {
       const owner = await seedUser(db, { email: "me@acme.com" });
       const acctId = await seedAccount(db, owner.id);
-      // The recipient IS this person; the deal is passed explicitly (as the deal workspace does).
       const { personId, dealId } = await seedPersonWithOpenDeal(db, owner.id, "buyer@corp.com");
 
       const r = await storeOutboundCopy(db, {
@@ -167,7 +164,7 @@ describe("storeOutboundCopy thread linking", () => {
 
       const link = await threadLink(db, acctId);
       expect(link.deal_id).toBe(dealId);
-      expect(link.person_id).toBe(personId); // filled from the recipient
+      expect(link.person_id).toBe(personId);
     });
   });
 
@@ -200,8 +197,6 @@ describe("storeOutboundCopy thread linking", () => {
       const owner = await seedUser(db, { email: "me@acme.com" });
       const acctId = await seedAccount(db, owner.id);
       const { personId } = await seedPersonWithOpenDeal(db, owner.id, "buyer@corp.com");
-      // A thread already exists for gmail thread t1 (FakeGmailClient default), manually linked
-      // to the person but NOT the deal. A reply must keep exactly that link.
       await db.execute(sql`
         INSERT INTO email_threads (gmail_thread_id, account_id, subject, person_id, last_message_at)
         VALUES ('t1', ${acctId}, 'Existing', ${personId}, now())
@@ -227,7 +222,7 @@ describe("storeOutboundCopy thread linking", () => {
 
       const link = await threadLink(db, acctId);
       expect(link.person_id).toBe(personId);
-      expect(link.deal_id).toBeNull(); // unchanged: the reply did not auto-add the deal
+      expect(link.deal_id).toBeNull();
     });
   });
 });

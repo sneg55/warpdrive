@@ -40,19 +40,11 @@ function valueInput(
 interface ContactFilterBuilderProps {
   config: ContactFilterConfig;
   fieldLabels: Record<string, string>;
-  // Called with the compiled definition (null clears the filter) when Apply/Clear is pressed.
   onApply: (def: ContactFilterDefinition | null) => void;
-  // Count of currently-applied conditions, for the trigger badge (0 hides it).
   activeCount: number;
-  // The definition currently applied to the list, so reopening the builder edits that filter
-  // rather than clearing it, and an "any condition" filter is never shown back as "all".
   appliedDefinition?: ContactFilterDefinition | null;
 }
 
-// Config-driven "Filter" builder for the contacts lists (People / Orgs). A thin adapter over the
-// shared ConditionRowsBuilder: it maps the backend ContactFilterConfig into the shared field
-// descriptors (fieldKind picks the value control: owner and label Selects, a number box, or text)
-// and compiles the raw rows back into a validated ContactFilterDefinition on Apply.
 export function ContactFilterBuilder({
   config,
   fieldLabels,
@@ -66,14 +58,11 @@ export function ContactFilterBuilder({
     label: u.name,
   }));
 
-  // The People and Orgs lists are the only callers, so the config identifies the label catalog.
   const target: LabelTarget = config === ORG_FILTER_CONFIG ? "organization" : "person";
   const catalogNames = (trpc.labels.listByTarget.useQuery({ target }).data ?? []).map(
     (l) => l.name,
   );
-  // Union in the names records actually carry: a label visible on the list must be filterable.
   const appliedNames = trpc.labels.appliedNames.useQuery({ target }).data ?? [];
-  // The labels column stores the label NAME, so the option value is the name, not a catalog id.
   const labelOptions: SelectOption[] = mergeLabelOptions(catalogNames, appliedNames).map(
     (name) => ({
       value: name,

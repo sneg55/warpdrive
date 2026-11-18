@@ -35,26 +35,15 @@ interface HistoryTypeTabsProps {
   items: Record<HistoryTab, HistoryItem[]>;
   dealId: string;
   onActivityChanged?: () => void;
-  // Forwarded to the nested HistoryFeed; not yet wired to a note-level control (Task 6).
   onNoteChanged?: () => void;
-  // Open an activity in the inline edit composer.
   onEditActivity?: (activityId: string) => void;
-  // Which record's timeline this is, for the email cards' unlink and reply.
   emailScope?: EmailCardScope;
-  // Overrides the Email tab's empty line while the linked-message read is loading or failed, so a
-  // pending or broken read never reads as "no emails linked".
   emailEmptyLabel?: string;
-  // Refetch the record's linked messages after an unlink or a sent reply.
   onEmailChanged?: () => void;
-  // Open one of the record's unsent drafts in the host's composer.
   onResumeDraft?: (draft: DraftSummary) => void;
-  // Refetch the record's drafts after one is discarded.
   onDraftChanged?: () => void;
 }
 
-// The per-type filter row that used to be the entire "History" tab bar (Wave
-// 3, Task 17: now nested under the History side of the Focus/History switch,
-// filtering the History bucket instead of the raw activities/notes/changelog).
 export function HistoryTypeTabs({
   tab,
   onTab,
@@ -81,8 +70,6 @@ export function HistoryTypeTabs({
       </TabsList>
 
       <div className="pt-4">
-        {/* History is a view of what is attached, not a compose surface: read-only so the
-            deal page shows one uploader (the compose bar's Files tab), not two. */}
         {tab === "files" && <FileAttachments entityType="deal" entityId={dealId} readOnly />}
         {tab !== "files" && (
           <HistoryFeed

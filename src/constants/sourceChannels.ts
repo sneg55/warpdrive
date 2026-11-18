@@ -1,7 +1,3 @@
-// Fixed source-channel registry (Pipedrive's "Source channel" is a dropdown, admin-defined per
-// account with no public canonical list; this is a warpdrive default). Deals and leads store a KEY
-// (e.g. "web_form") in source_channel, resolved to a display name in the UI. Mirrors DEAL_LABELS.
-// An admin-configurable list is a deferred later pass.
 export const SOURCE_CHANNELS = {
   outbound: { name: "Outbound" },
   inbound: { name: "Inbound" },

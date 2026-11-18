@@ -10,7 +10,6 @@ interface CreateFilterModalNameRowProps {
   onSharedChange: (isShared: boolean) => void;
 }
 
-// Name field + shared toggle, the row under the conditions in the filter dialog.
 export function CreateFilterModalNameRow({
   name,
   onNameChange,

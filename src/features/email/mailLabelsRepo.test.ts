@@ -67,7 +67,7 @@ describe("createMailLabel", () => {
       expect(dup.ok).toBe(true);
       if (!first.ok || !dup.ok) return;
       expect(dup.value.id).toBe(first.value.id);
-      expect(dup.value.color).toBe("teal"); // keeps the original, does not overwrite
+      expect(dup.value.color).toBe("teal");
       const count = (await listMailLabels(db, SIG())).filter((l) => l.key === "follow_up").length;
       expect(count).toBe(1);
     });
@@ -83,7 +83,6 @@ describe("findUnknownMailLabelKeys", () => {
   it("returns only keys with no catalog row, case-insensitively, and [] for empty input", async () => {
     await withTestDb(async (db) => {
       await createMailLabel(db, { name: "VIP", color: "purple" }, SIG());
-      // "IMPORTANT" (built-in, different case) and "vip" are known; "ghost" is not.
       const missing = await findUnknownMailLabelKeys(db, ["IMPORTANT", "vip", "ghost"], SIG());
       expect(missing).toEqual(["ghost"]);
       expect(await findUnknownMailLabelKeys(db, [], SIG())).toEqual([]);
@@ -125,7 +124,6 @@ describe("no data loss: legacy token labels resolve to catalog entries", () => {
     await withTestDb(async (db) => {
       const owner = await seedUser(db, { email: "o@gunsnation.com" });
       const threadId = await seedThread(db, owner.id);
-      // Simulate a pre-migration thread that stored the raw follow-up tokens.
       await db.execute(
         sql`UPDATE email_threads SET labels = ARRAY['important','to_do','later']::text[] WHERE id=${threadId}`,
       );

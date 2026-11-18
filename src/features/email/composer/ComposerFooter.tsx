@@ -1,13 +1,3 @@
-// ComposerFooter: right-aligned Discard then the Send split (Send + Send later), matching PD's
-// action-bar order (Discard sits to the left of Send).
-// Phase 7: Send later is enabled when onSendLater is provided and a send is possible;
-// clicking it opens a datetime-local picker (min = now). Choosing a strictly-future
-// time calls onSendLater(Date); a past/now time shows an inline validation message.
-// Left slot holds open-tracking and link-tracking toggles plus add-as-activity (available
-// from both deal and inbox context). The signature picker lives in the composer toolbar,
-// not here, see Composer.tsx.
-// Right cluster includes the read-only VisibilityControl.
-
 import { ChevronDown } from "lucide-react";
 import { useState } from "react";
 import { ToggleField } from "@/components/ui/ToggleField";
@@ -27,19 +17,12 @@ interface ComposerFooterProps {
   onTrackOpensChange: (v: boolean) => void;
   trackLinks: boolean;
   onTrackLinksChange: (v: boolean) => void;
-  // Available from both deal and inbox context: show add-as-activity toggle.
   showAddAsActivity?: boolean;
   addAsActivity?: boolean;
   onAddAsActivityChange?: (v: boolean) => void;
-  // Phase 7: when provided, enables the Send later button and handles scheduled send.
   onSendLater?: (scheduledAt: Date) => void;
-  // C1: interactive compose privacy. Optional (defaults to shared) so existing render sites and
-  // tests that predate the control keep working; Composer always supplies both.
   visibility?: EmailVisibility;
   onVisibilityChange?: (v: EmailVisibility) => void;
-  // Hidden on a reply to an existing thread: the send path preserves that thread's visibility, so
-  // the picker would be a no-op there (the reader's thread-privacy toggle governs instead). Defaults
-  // to shown for a new compose (codex P2).
   showVisibility?: boolean;
 }
 
@@ -64,7 +47,6 @@ export function ComposerFooter({
   const [pickerValue, setPickerValue] = useState("");
   const [pickerError, setPickerError] = useState<string | null>(null);
 
-  // Current local time formatted for a datetime-local input (min attribute floor).
   function nowLocalInput(): string {
     const d = new Date();
     const pad = (n: number): string => String(n).padStart(2, "0");
@@ -74,8 +56,6 @@ export function ComposerFooter({
   function handleSchedule(): void {
     if (!pickerValue) return;
     const d = new Date(pickerValue);
-    // Validate: chosen time must be strictly in the future. Reject past/now with an
-    // inline message (not the composer error banner).
     if (d.getTime() <= Date.now()) {
       setPickerError(COMPOSER_STRINGS.scheduledPastMessage);
       return;
@@ -88,7 +68,6 @@ export function ComposerFooter({
 
   return (
     <div className="flex items-center gap-3 flex-wrap">
-      {/* Left slot: tracking toggles + add-as-activity (available from deal and inbox context). */}
       <div className="flex items-center gap-2">
         <ToggleField
           control="switch"
@@ -110,12 +89,10 @@ export function ComposerFooter({
       </div>
 
       <div className="ml-auto flex items-center gap-2">
-        {/* Interactive privacy picker (right cluster): Private / Shared, threaded into the send. */}
         {showVisibility && (
           <VisibilityControl value={visibility} onChange={(v) => onVisibilityChange?.(v)} />
         )}
 
-        {/* Discard sits to the LEFT of the Send split to match PD's action-bar order. */}
         <button
           type="button"
           onClick={onDiscard}
@@ -127,7 +104,6 @@ export function ComposerFooter({
 
         <div className="flex flex-col items-end gap-1">
           <div className="flex items-center gap-1">
-            {/* Send split: Send (green) + Send later (enabled when onSendLater provided). */}
             <button
               type="button"
               onClick={onSend}

@@ -13,7 +13,6 @@ describe("EngagementAxis", () => {
         <EngagementAxis months={["2026-05", "2026-06", "2026-07"]} />
       </table>,
     );
-    // Past months keep their name; the last column reads Today, not the month name.
     expect(screen.getByText("May 2026")).toBeInTheDocument();
     expect(screen.getByText("Jun 2026")).toBeInTheDocument();
     expect(screen.getByText("Today")).toBeInTheDocument();

@@ -5,7 +5,6 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 afterEach(cleanup);
 
-// Minimal mocks so Composer renders in isolation (mirrors Composer.test.tsx boundaries).
 vi.mock("@/lib/trpc-client", () => ({
   trpc: {
     useUtils: () => ({ email: { templates: { list: { invalidate: () => undefined } } } }),

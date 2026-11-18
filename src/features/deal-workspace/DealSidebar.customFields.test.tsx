@@ -7,8 +7,6 @@ import type { CustomFieldDef } from "@/types/customFields";
 import { DealSidebar } from "./DealSidebar";
 import type { DealWorkspace } from "./summaryRepo";
 
-// Organization section renders one FieldRow per deal custom field def. Mocked module boundaries mirror
-// DealSidebar.test.tsx (LabelRow/OrgBlock/PersonBlock all reach these on render).
 const updateDealAction = vi.hoisted(() =>
   vi.fn(() =>
     Promise.resolve({ ok: true, deal: { id: "d1", updatedAt: "2026-01-03T00:00:00.000Z" } }),
@@ -19,7 +17,6 @@ vi.mock("@/features/contacts/actions", () => ({
   updateOrgAction: vi.fn(),
   updatePersonAction: vi.fn(),
 }));
-// ParticipantsControl (Summary action list) queries tRPC on render; stub it.
 vi.mock("@/lib/trpc-client", () => ({
   trpc: {
     useUtils: () => ({

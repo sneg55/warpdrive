@@ -1,4 +1,3 @@
-// Shared setup helpers for dealUpdate.test.ts and dealUpdatePerms.test.ts.
 import { AppError, ERROR_IDS } from "@/constants/errorIds";
 import type { withTestDb } from "@/db/testing";
 import { seedPipelineWithStages, seedUser } from "@/db/testing/factories";

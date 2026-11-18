@@ -18,8 +18,6 @@ import { SettingsCard, SettingsCardBody, SettingsCardHeader } from "../SettingsS
 
 const S = STRINGS.settings.interface;
 
-// The five scalar flags, in Pipedrive's visual order. openDetailsAfterCreate is rendered separately
-// because it is a parent switch over three per-entity children.
 const FLAG_ROWS: Array<{ key: UiFlagKey; label: string }> = [
   { key: "usPhoneFormat", label: S.usPhoneFormat },
   { key: "winSound", label: S.winSound },
@@ -47,9 +45,6 @@ function Row({
   );
 }
 
-// Interface personal preferences (Pipedrive parity). Each toggle saves optimistically: flip the
-// local state immediately, then persist; on failure revert and surface the error app-wide. No batch
-// Save button, matching the schedule-follow-up toggle that already lives on this page.
 export function InterfacePreferences({
   prefs,
   scheduleFollowUpAfterWon: initialScheduleFollowUp,
@@ -87,9 +82,6 @@ export function InterfacePreferences({
     router.refresh();
   }
 
-  // "Show add activity modal after winning a deal" (Pipedrive's first Interface toggle). Keeps its
-  // own dedicated action because the deal page reads this flag directly, not through the client
-  // provider.
   async function toggleScheduleFollowUp(next: boolean): Promise<void> {
     setScheduleFollowUp(next);
     const r = await setScheduleFollowUpAfterWonAction({ enabled: next }, readCsrfToken());
@@ -102,7 +94,6 @@ export function InterfacePreferences({
   }
 
   function failOpenDetailsWrite(revision: number, errorId?: string): void {
-    // A later queued write contains the full cumulative object and can still persist this intent.
     if (revision !== openDetailsRevisionRef.current) return;
     const persisted = persistedOpenDetailsRef.current;
     openDetailsRef.current = persisted;

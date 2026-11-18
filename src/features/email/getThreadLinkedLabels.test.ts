@@ -5,10 +5,6 @@ import { seedPipelineWithStages, seedUser } from "@/db/testing/factories";
 import type { AuthUser } from "@/features/permissions/types";
 import { getThread } from "./router";
 
-// Regression: the reader header rendered literal "Person" / "Deal" pills (the type noun) for a
-// linked thread instead of the linked record's name/title. getThread must project those labels so
-// the header can show the NAME (Pipedrive parity; the link-shows-type-noun content smell).
-
 const SIG = (): AbortSignal => AbortSignal.timeout(8000);
 
 function actorOf(id: string): AuthUser {

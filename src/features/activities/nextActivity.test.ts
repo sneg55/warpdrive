@@ -44,9 +44,6 @@ it("does not bump the deal's updatedAt CAS token when recomputing next_activity_
 
   const [after] = await db.select().from(deals).where(eq(deals.id, deal.id));
   if (after === undefined) throw new Error("deal disappeared");
-  // next_activity_at is a derived cache of the deal's activities, not an edit to the deal. Bumping
-  // updatedAt here invalidates the open editor's compare-and-swap token, so a stage change made
-  // right after adding an activity fails its CAS with "This deal changed elsewhere" (E_DEAL_002).
   expect(after.nextActivityAt?.toISOString()).toBe("2030-01-01T10:00:00.000Z");
   expect(after.updatedAt.getTime()).toBe(deal.updatedAt.getTime());
 });

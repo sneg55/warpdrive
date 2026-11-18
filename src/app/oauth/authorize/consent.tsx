@@ -7,10 +7,6 @@ interface ConsentProps {
   redirectUri: string;
 }
 
-// The host that will actually receive the authorization code. This is the one attacker-controlled
-// value on the screen a user can meaningfully check, so it is displayed rather than the name.
-// A private-use scheme (com.example.app:/cb, RFC 8252 section 7.1) has no host at all, so fall
-// back to the scheme rather than rendering an empty box that reads as a missing value.
 function redirectDisplay(redirectUri: string): string {
   try {
     const url = new URL(redirectUri);
@@ -20,17 +16,6 @@ function redirectDisplay(redirectUri: string): string {
   }
 }
 
-/**
- * OAuth consent screen.
- *
- * Approving mints a token that can read and write the entire CRM through /api/mcp, and with
- * dynamic registration open (the default, since it is what lets an MCP client self-onboard)
- * `clientName` is a string an unauthenticated stranger POSTed to /oauth/register. So the screen
- * deliberately does NOT say "Allow <name> to access warpdrive?": phrasing it that way puts the
- * product's own voice behind a name the product has not verified, which is the whole mechanism
- * of consent phishing. The name is shown as a self-reported label, the destination host is shown
- * next to it, and the user is told to deny if they did not start this.
- */
 export function Consent({ action, clientName, redirectUri }: ConsentProps): React.ReactElement {
   return (
     <main className="flex min-h-screen items-center justify-center bg-muted/30 p-6">

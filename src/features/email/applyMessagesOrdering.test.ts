@@ -1,7 +1,3 @@
-// Codex finding F30: upsertThread returned early for an existing thread and only touched
-// updated_at, never advancing last_message_at. listInbox orders by last_message_at DESC, so
-// a conversation that receives a reply stayed buried. A new message on an existing thread
-// must advance last_message_at to the newer sent time.
 import { sql } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import { withTestDb } from "@/db/testing";
@@ -66,7 +62,6 @@ describe("applyMessageIds thread ordering", () => {
         await db.execute(sql`SELECT last_message_at FROM email_threads WHERE account_id=${acctId}`)
       ).rows[0] as { last_message_at: string };
 
-      // A reply arrives on the SAME thread with a later Date.
       await applyMessageIds(
         { db, accountId: acctId, owner, provider: gmailProvider(fake), signal },
         ["m2"],

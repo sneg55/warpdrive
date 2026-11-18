@@ -85,16 +85,12 @@ describe("archive/unarchive", () => {
       const ownerActor = actorOf(owner.id);
       const viewerActor = actorOf(viewer.id);
 
-      // The Inbox folder is personal: the co-viewer never sees the owner's shared thread there,
-      // before OR after archive (it reaches them on the linked contact record instead).
       expect(
         (await listInbox(db, { actor: viewerActor, filter: "all" }, SIG())).threads,
       ).toHaveLength(0);
 
       expect((await archiveThread(db, { actor: ownerActor, threadId }, SIG())).ok).toBe(true);
 
-      // Owner archived it: gone from the owner's Inbox. archived_at is owner-local, so it does not
-      // revoke the co-viewer's read access, which flows through canSeeEmail (getThread succeeds).
       expect(
         (await listInbox(db, { actor: ownerActor, filter: "all" }, SIG())).threads,
       ).toHaveLength(0);

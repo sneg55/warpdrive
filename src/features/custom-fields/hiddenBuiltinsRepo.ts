@@ -7,9 +7,6 @@ import type { Db } from "@/db/client";
 import { hiddenBuiltinFields } from "@/db/schema";
 import { err, ok, type Result } from "@/types/result";
 
-// The set of hidden built-in field keys per entity. Built-in fields are code-defined
-// (see BUILTIN_FIELDS); this reads only the override rows and buckets them by entity, so an entity
-// with no overrides gets an empty Set (never undefined). One read per request/render.
 export async function listHiddenBuiltins(
   db: Db,
   signal: AbortSignal,
@@ -30,8 +27,6 @@ export interface SetBuiltinHiddenInput {
   hidden: boolean;
 }
 
-// Hide (insert) or unhide (delete) a built-in field. Locked identity fields and unknown keys are
-// rejected as AppErrors so a crafted request can never persist a nonsense or dangerous override.
 export async function setBuiltinFieldHidden(
   db: Db,
   input: SetBuiltinHiddenInput,

@@ -1,7 +1,5 @@
 "use client";
 
-// Dismissible error banner for the composer (send failures, upload errors, etc.).
-// Renders nothing when there is no error, so callers can mount it unconditionally.
 interface ComposerErrorAlertProps {
   error: string | null;
   onDismiss: () => void;

@@ -1,4 +1,3 @@
-// Composes a run: authorise, resolve the cache, fan out, record what each provider said, merge.
 import { AppError, ERROR_IDS } from "@/constants/errorIds";
 import type { Db } from "@/db/client";
 import type { Organization, Person } from "@/db/schema";
@@ -38,7 +37,6 @@ import { listProviders, listUsableProviders, recordOutcome } from "./providersRe
 import { findCachedRun, insertRun } from "./runsRepo";
 import type { ProposedField, ResolvedMapping } from "./types";
 
-// Bookkeeping writes run after the fan-out has possibly exhausted its own deadline.
 const BOOKKEEPING_TIMEOUT_MS = 5_000;
 
 export interface RunView {
@@ -48,8 +46,6 @@ export interface RunView {
   entityUpdatedAtIso: string;
   cached: boolean;
   createdAtIso: string;
-  // The mapping targets this view was merged against. Echoed back on apply so a repointed key
-  // cannot write somewhere the user never reviewed.
   mappingsFingerprint: string;
   fields: ProposedField[];
   outcomes: ProviderOutcome[];
@@ -67,8 +63,6 @@ function toVisible(kind: "person" | "organization", subject: Subject): VisiblePe
   };
 }
 
-// The click spends credits, so it is gated before the call, not only at apply time. contact.edit
-// is the same authority an ordinary field edit needs; enrichment adds no new permission flag.
 function authorise(
   actor: ContactActor,
   kind: "person" | "organization",
@@ -93,8 +87,6 @@ export async function runEnrichment(
   input: { entityType: EnrichEntity; entityId: string; refresh?: boolean },
   now: Date,
   signal: AbortSignal,
-  // Seam for tests only. Production always uses the real registry; a test needs to answer without
-  // a network, and stubbing global fetch would exercise the transport rather than this composition.
   resolveProvider: (id: ProviderId) => EnrichmentProvider = providerFor,
 ): Promise<Result<RunView, AppError>> {
   signal.throwIfAborted();
@@ -159,12 +151,8 @@ export async function runEnrichment(
     );
   }
 
-  // The identity this run answers for. A run researched for a former email, company or domain
-  // is a miss even inside the TTL.
   const fingerprint = lookupFingerprint(lookup);
 
-  // A cached run is replayed, not reclassified: an all-failed run has to come back as the failure
-  // it was, or a second click reports the outage as "nothing found".
   const replay = (run: {
     id: string;
     createdAt: Date;
@@ -175,8 +163,6 @@ export async function runEnrichment(
     return ok(view(run.id, run.createdAt, run.outcomes, true));
   };
 
-  // A repeat click inside the TTL reopens what the providers already said rather than buying the
-  // same answer twice.
   const cached =
     input.refresh === true ? null : await cachedRunFor(db, input, fingerprint, now, signal);
   if (cached !== null) return replay(cached);
@@ -186,13 +172,8 @@ export async function runEnrichment(
   if (usable.length === 0) {
     return err(noUsableProviderError(configured, now));
   }
-  // A provider dropped for a cooldown still has to appear in the footer. Without this the dialog
-  // shows two sources and no hint that a third exists, which reads as the whole picture.
   const skipped = skippedOutcomes(configured, usable, now);
 
-  // Read the cache once more, immediately before spending anything. Two clicks that both missed the
-  // first check can still both pay if they land within a few milliseconds of each other, a known
-  // and accepted residual; this closes the rest of the window for free.
   const raced =
     input.refresh === true ? null : await cachedRunFor(db, input, fingerprint, now, signal);
   if (raced !== null) return replay(raced);
@@ -208,8 +189,6 @@ export async function runEnrichment(
   });
   const outcomes = [...called, ...skipped];
 
-  // Bookkeeping gets its own deadline. On the shared signal, a fan-out that ran to the timeout
-  // would abort these writes and throw away the very cooldowns a 429 just told us about.
   const bookkeeping = AbortSignal.timeout(BOOKKEEPING_TIMEOUT_MS);
   const credentials = new Map(usable.map((u) => [u.provider, u.credential]));
   for (const outcome of called) {
@@ -218,9 +197,6 @@ export async function runEnrichment(
     await recordOutcome(db, outcome, credential, now, bookkeeping);
   }
 
-  // Persisted even when nobody answered. Otherwise the next ordinary click misses the cache and
-  // dials out again, and a call that reached the provider but timed out locally spends its credit
-  // on every retry. The failure outcomes are also the only record of what went wrong.
   const run = await insertRun(
     db,
     {
@@ -238,8 +214,6 @@ export async function runEnrichment(
   return ok(view(run.id, run.createdAt, outcomes, false));
 }
 
-// Exactly one of person/org is set, decided by entityType, but that is a fact about the caller
-// rather than something the types carry, so the empty case is handled instead of asserted away.
 async function readCurrent(
   db: Db,
   subject: { person: Person | null; org: Organization | null },

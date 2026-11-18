@@ -1,4 +1,3 @@
-// savedFilterActions.test.ts: CRUD + permission tests for saveFilter / listSavedFilters
 import { describe, expect, it } from "vitest";
 import { settings } from "@/db/schema/system";
 import { withTestDb } from "@/db/testing";
@@ -38,7 +37,6 @@ describe("saveFilter", () => {
       );
       expect(result.ok).toBe(false);
       if (result.ok === false) {
-        // Sharing without filter.share is a permission denial, not a "deal not found".
         expect(result.error.id).toBe("E_PERM_001");
       }
     });
@@ -129,7 +127,6 @@ describe("listSavedFilters", () => {
       const alice = await seedUser(db);
       const bob = await seedUser(db);
 
-      // Alice creates a private filter
       await saveFilter(
         db,
         filterSessionNoFlag(alice.id),
@@ -141,7 +138,6 @@ describe("listSavedFilters", () => {
         },
         new AbortController().signal,
       );
-      // Alice creates a shared filter (with flag)
       await saveFilter(
         db,
         filterSessionWithFlag(alice.id, "filter.share"),
@@ -153,7 +149,6 @@ describe("listSavedFilters", () => {
         },
         new AbortController().signal,
       );
-      // Bob creates a private filter
       await saveFilter(
         db,
         filterSessionNoFlag(bob.id),
@@ -166,7 +161,6 @@ describe("listSavedFilters", () => {
         new AbortController().signal,
       );
 
-      // Bob sees: his own private + Alice's shared
       const bobList = await listSavedFilters(
         db,
         filterSessionNoFlag(bob.id),
@@ -176,7 +170,6 @@ describe("listSavedFilters", () => {
       const bobNames = bobList.map((f) => f.name).sort();
       expect(bobNames).toEqual(["Alice shared", "Bob private"]);
 
-      // Alice sees: both her own + her shared (not Bob's private)
       const aliceList = await listSavedFilters(
         db,
         filterSessionNoFlag(alice.id),

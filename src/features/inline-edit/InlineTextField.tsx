@@ -15,10 +15,6 @@ interface InlineTextFieldProps {
 
 const DEFAULT_PLACEHOLDER = "+ Add";
 
-// PD-mechanism text field (see docs/superpowers/specs/2026-07-08-pd-inline-edit-mechanism.md):
-// plain selectable value + hover pencil; the pencil (or the empty-field prompt) opens a 32px
-// input with the Cancel/Save footer. Save is dirty-gated; Enter commits when dirty; Escape,
-// blur, and outside clicks do nothing (PD has no such dismissal).
 export function InlineTextField({
   label,
   value,

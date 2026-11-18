@@ -9,11 +9,6 @@ import { EMAIL_SYNC_STRINGS } from "./strings";
 
 export const metadata = { title: EMAIL_SYNC_STRINGS.title };
 
-// Settings > Email sync (spec section 8). A "my account" page: gated to any authenticated
-// actor (mirrors settings/profile), NOT the admin MANAGE gate used by Company pages. Shows the
-// actor's single mailbox (email_accounts.user_id is UNIQUE) with connect / reconnect /
-// disconnect controls. The org-level email tracking default lives on Company > General and is
-// intentionally NOT duplicated here.
 export default async function EmailSyncPage(): Promise<ReactNode> {
   const { actor } = await createContext();
   if (actor === null)

@@ -11,7 +11,6 @@ import type {
 
 const PROVIDER_ID = "getprospect" as const;
 
-// Confirmed against https://getprospect.readme.io/llms.txt on 2026-08-24.
 const BASE_URL = "https://api.getprospect.com";
 const EMAIL_FINDER_PATH = "/v2/email-finder";
 const EMAIL_LOOKUP_PATH = "/public/v1/email/lookup";
@@ -22,15 +21,8 @@ const EMAIL_MISS = "GetProspect does not hold that address";
 const LINKEDIN_MISS = "No contact for that LinkedIn profile";
 const MESSAGE_TIMEOUT = "Provider timed out";
 const MESSAGE_UNREACHABLE = "Provider was unreachable";
-// Documented as "entity not found" on the insights and lookup endpoints, so a miss, not an outage.
 const NOT_FOUND = 404;
 
-// Not confirmed against a live key. Correct these here rather than hunting through the file.
-// Both key header names go on every request: the OpenAPI securitySchemes names `apiKey` while the
-// vendor guide uses `X-API-Key`. An unread header costs nothing, whereas sending only the wrong
-// one 401s on a valid key and reads back as a rejected credential.
-// The email status vocabulary is documented on the insights DTO and assumed to hold on the v2
-// finder and the v1 lookup, neither of which enumerates the values its `status` can take.
 const UNVERIFIED: { apiKeyHeaders: readonly string[]; rejectedEmailStatuses: readonly string[] } = {
   apiKeyHeaders: ["apiKey", "X-API-Key"],
   rejectedEmailStatuses: ["not found", "not_found", "invalid", "blocked"],
@@ -48,8 +40,6 @@ function asObject(value: unknown): Json | undefined {
   return value as Json;
 }
 
-// The v2 finder is documented both flat and wrapped in { success, data, errors }, and the company
-// search always wraps. Accepting either shape keeps one parser for all three endpoints.
 function unwrap(body: unknown): unknown {
   const root = asObject(body);
   if (root === undefined) return body;
@@ -65,7 +55,6 @@ function candidate(fields: Fields, sourceId: string | undefined): ProviderCandid
   return sourceId === undefined ? { fields } : { fields, sourceId };
 }
 
-// A miss on either email endpoint is a 200 carrying a status and no usable address.
 function acceptedEmail(payload: Json): string | undefined {
   const email = pickString(payload.email);
   if (email === undefined) return undefined;
@@ -138,7 +127,6 @@ async function call(
       body: payload === undefined ? undefined : JSON.stringify(payload),
       signal,
     });
-    // Hand the normalisers an empty body so each reports its own no-match message.
     if (response.status === NOT_FOUND) return ok(undefined);
     const text = await response.text();
     const classified = classifyStatus(response.status, text, response.headers);
@@ -149,8 +137,6 @@ async function call(
       return err(outcome("provider_error", "Response was not readable"));
     }
   } catch (error) {
-    // An abort is the caller cancelling and is rethrown. AbortSignal.timeout rejects with a
-    // TimeoutError instead, which is a slow provider, not a dead one.
     if (error instanceof Error && error.name === "AbortError") throw error;
     if (error instanceof Error && error.name === "TimeoutError") {
       return err(outcome("timeout", MESSAGE_TIMEOUT));
@@ -164,8 +150,6 @@ function found(match: ProviderCandidate | undefined, missed: string): ProviderOu
   return { provider: PROVIDER_ID, kind: "ok", candidate: match };
 }
 
-// The finder is an email lookup, not a directory: without a name AND either a domain or a company
-// there is nothing to send, so say what is missing rather than spend a call that cannot match.
 function emailFinderParams(input: PersonLookup): Result<URLSearchParams, string> {
   const params = new URLSearchParams();
   const full = pickString(input.fullName);
@@ -190,8 +174,6 @@ async function matchPerson(
   apiKey: string,
   signal: AbortSignal,
 ): Promise<ProviderOutcome> {
-  // Email is the strongest identifier we hold, so it is spent first; the lookup confirms an
-  // address the finder can only guess at. A miss here still leaves the other two routes.
   const email = pickString(input.email);
   let missed: string | undefined;
   if (email !== undefined) {
@@ -209,8 +191,6 @@ async function matchPerson(
     if (!res.ok) return res.error;
     const byLinkedin = found(personFromContact(res.value), LINKEDIN_MISS);
     if (byLinkedin.kind === "ok") return byLinkedin;
-    // Vanity URLs go stale, so a miss here is weaker evidence than an email miss and never
-    // displaces one already recorded.
     missed ??= byLinkedin.message;
   }
   const params = emailFinderParams(input);

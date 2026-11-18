@@ -3,8 +3,6 @@ import { STRINGS } from "@/constants/strings";
 
 const A = STRINGS.board.announcements;
 
-// Screen-reader announcements for board drags (UI 9.1). Extracted from Board.tsx so the
-// component stays within the file-size budget; pure given the two name lookups.
 export function boardAnnouncements(
   cardTitleById: Map<string, string>,
   stageNameById: Map<string, string>,

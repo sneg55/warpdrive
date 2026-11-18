@@ -1,7 +1,3 @@
-// Ephemeral in-memory presence registry. Never persisted, never via NOTIFY.
-// channel -> connId -> Member tracks all active connections per channel.
-// Multiple connections for the same userId are deduplicated in snapshots.
-
 interface Member {
   userId: string;
   name: string;
@@ -20,7 +16,6 @@ export interface PresenceEvent {
 }
 
 export class PresenceRegistry {
-  // channel -> connId -> member
   private byChannel = new Map<string, Map<string, Member>>();
 
   private snapshotUsers(channel: string): PresenceUser[] {

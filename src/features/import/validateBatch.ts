@@ -11,8 +11,6 @@ import { applyMapping, validateMappedRow } from "./mapRow";
 import { publishImportProgress, shouldEmit } from "./progress";
 import { columnMappingSchema, normalizeMapping } from "./schemas";
 
-// Validate every still-pending/invalid row against the mapping + custom-field defs.
-// Row updates + batch update + counts all in one transaction; batch lands "ready".
 export async function validateBatch(
   db: Db,
   actor: ImportActor,
@@ -23,26 +21,16 @@ export async function validateBatch(
   if (owned.ok === false) return owned;
   const batch = owned.value;
   const target = narrowTarget(batch.targetEntity);
-  // safeParse: the columnMapping DB default is {} (schema requires `columns`), so a
-  // validate before setMapping is a caller bad-state, not a server fault. Result, not throw.
   const parsedMapping = columnMappingSchema.safeParse(batch.columnMapping);
   if (parsedMapping.success === false) {
     return err(new AppError(ERROR_IDS.IMPORT_MAPPING_MISSING, "mapping not set", { batchId }));
   }
-  // normalizeMapping (not the raw parse) so a batch mapped before cross-entity mapping existed,
-  // whose columns carry no `entity`, still resolves to the same destinations.
   const mapping = normalizeMapping(batch.columnMapping, target);
   const source = narrowSource(batch.source);
   const defs = target === "note" ? [] : await listDefs(db, target, {}, signal);
   signal.throwIfAborted();
 
-  // Fold the "validating" flip, row updates, and final "ready" flip into one tx so a
-  // mid-validate failure rolls back cleanly with no batch stranded in "validating".
   return db.transaction(async (tx) => {
-    // Atomically claim: validate may start only from a pre-validate state (pending is the
-    // legacy createBatch state, mapping_ready the storage flow) or resume a crashed
-    // "validating". A stale validate retry that fires after commit/terminal/undo claims
-    // nothing and no-ops, so it can never regress a committed batch back to "ready".
     const claim = await tx
       .update(importBatches)
       .set({ status: "validating" })
@@ -68,9 +56,6 @@ export async function validateBatch(
     let lastEmitted = 0;
     for (const row of rows) {
       signal.throwIfAborted();
-      // batch.headers (the CSV column order the prepare step stored) keeps a row-note's unmapped
-      // lines in column order; row.raw's own key order is unreliable once round-tripped through
-      // JSONB. Falls back to raw order for legacy batches with no stored headers.
       const mapped = applyMapping(row.raw, mapping, target, batch.headers ?? undefined);
       const r = validateMappedRow(target, mapped, defs, source);
       if (r.ok) {
@@ -86,9 +71,6 @@ export async function validateBatch(
       }
       processed += 1;
       if (shouldEmit(processed, rows.length, lastEmitted)) {
-        // Publish on `db` (the pool), NOT `tx`: a pg_notify issued inside this long
-        // transaction would be buffered until commit, so the progress bar would sit at 0
-        // for the whole validate phase and then jump. The pool connection fires it live.
         await publishImportProgress(
           db,
           { batchId, phase: "validate", processed, total: rows.length, status: "validating" },

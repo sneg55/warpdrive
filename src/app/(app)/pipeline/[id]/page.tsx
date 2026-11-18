@@ -14,9 +14,6 @@ import { readBaseCurrency } from "@/features/settings/readBaseCurrency";
 import { createContext } from "@/server/trpc/context";
 import { createCaller } from "@/server/trpc/root";
 
-// Shared per-request loader: generateMetadata (for the tab title) and the page body both call
-// this, but React.cache dedupes so createContext + the visible-pipelines read run once per
-// request instead of twice.
 const load = cache(async () => {
   const ctx = await createContext();
   if (ctx.actor === null) {
@@ -49,15 +46,6 @@ export default async function PipelineBoardPage({
   }
   const actor = ctx.actor;
 
-  // Start the heaviest query (the board cards) up front so it runs concurrently with the
-  // pipeline-list metadata read in load() instead of waiting behind it. deal.board depends only
-  // on ctx + id and carries its own visibility clause, so it is safe to fire before the
-  // resolveVisiblePipeline 404 guard below. The no-op catch keeps that guard's throw from
-  // surfacing as an unhandled rejection on the board promise if we 404 before awaiting it; the
-  // real result (and any real error) is still consumed by the Promise.all below.
-  // The cards must already carry the restored filter, or the client would render the toolbar's
-  // filter as active over unfiltered seeded cards, so the board waits on the (indexed, layout-
-  // deduped) preference read.
   const prefsPromise = getPreferencesForActor(db, actor.id);
   const viewPromise = prefsPromise.then((p) =>
     resolveInitialBoardView(p.ui, async () =>
@@ -76,7 +64,6 @@ export default async function PipelineBoardPage({
   }
   const { pipelines } = loaded;
 
-  // A nonexistent (or hidden) pipeline 404s like the entity detail routes, not a 200 soft-404.
   const pipeline = resolveVisiblePipeline(pipelines, id);
 
   const [board, baseCurrency, prefs, initialView] = await Promise.all([
@@ -86,9 +73,6 @@ export default async function PipelineBoardPage({
     viewPromise,
   ]);
 
-  // The board renders from a live TanStack Query cache seeded with these cards; per-stage
-  // counts/totals and the drag CAS precondition are derived client-side from the live cards,
-  // so no separate stageSums fetch is needed here.
   return (
     <main aria-label={`Board ${pipeline.name}`} className="h-full">
       <Board

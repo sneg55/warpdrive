@@ -78,11 +78,8 @@ export function EnrichmentClient({
   const [testResults, setTestResults] = useState<Record<string, TestVerdict | null>>({});
   const now = useCooldownClock(providers.map((p) => p.throttledUntilIso));
   const [pending, setPending] = useState<ReadonlySet<string>>(() => new Set());
-  // Canonical keys are unique across both entities, so one set covers both mapping tables.
   const [mappingPending, setMappingPending] = useState<ReadonlySet<string>>(() => new Set());
 
-  // Every mutation on this page ends here, so a failure always reaches the shared error surface
-  // instead of leaving a control that looks like it did something.
   async function run(action: Promise<ActionResult>): Promise<void> {
     try {
       const result = await action;
@@ -90,20 +87,13 @@ export function EnrichmentClient({
         reportError(result.error.id);
         return;
       }
-      // router.refresh redraws this page, not the enrichment.status query the Fill the gaps button
-      // holds for five minutes. Without this, a provider connected here stays invisible on a record,
-      // and one removed here keeps looking ready, until that cache expires.
       await utils.enrichment.status.invalidate();
       router.refresh();
     } catch {
-      // A rejected action carries no error id, so it reports as the generic "couldn't complete
-      // that action" rather than a cause the server never named.
       reportError();
     }
   }
 
-  // Two writes to one provider must not overlap: whichever the server finishes last would win,
-  // which is not necessarily the one the admin clicked last. Other providers stay clickable.
   async function runForProvider(provider: string, action: Promise<ActionResult>): Promise<void> {
     setPending((current) => new Set(current).add(provider));
     try {
@@ -113,9 +103,6 @@ export function EnrichmentClient({
     }
   }
 
-  // The test reports its verdict in place rather than through router.refresh, because the useful
-  // answer ("the key works") is not a change to any row on the page. Probes are tracked per
-  // provider: one slot would let the first probe to answer unlock a card still spending a credit.
   async function test(provider: string): Promise<void> {
     setTesting((current) => new Set(current).add(provider));
     setTestResults((current) => ({ ...current, [provider]: null }));
@@ -133,12 +120,9 @@ export function EnrichmentClient({
           notEntitled: result.notEntitled ?? null,
         },
       }));
-      // A probe can badge the key or record a cooldown, both of which the button reads.
       await utils.enrichment.status.invalidate();
       router.refresh();
     } catch {
-      // The probe can reject rather than return a verdict (RocketReach rethrows on abort, and any
-      // transport failure lands here), which is a failed action, not a provider answer.
       reportError();
     } finally {
       setTesting((current) => without(current, provider));
@@ -149,8 +133,6 @@ export function EnrichmentClient({
     setTestResults((current) => ({ ...current, [provider]: null }));
   }
 
-  // Per canonical key, for the same reason providers lock per provider: two writes to one row
-  // would let the server's last answer win rather than the admin's last choice.
   async function selectTarget(
     section: MappingSection,
     canonicalKey: string,
@@ -171,8 +153,6 @@ export function EnrichmentClient({
   }
 
   function saveTtl(): void {
-    // Number("") is 0, and 0 is a legal TTL meaning "never reuse a cached run", so a blank field
-    // has to be rejected before the conversion rather than saved as a silent opt-out.
     const raw = ttl.trim();
     const days = Number(raw);
     if (raw === "" || !Number.isInteger(days) || days < 0 || days > MAX_TTL_DAYS) {
@@ -198,8 +178,6 @@ export function EnrichmentClient({
             )
           }
           onSaveKey={(apiKey) => {
-            // A verdict describes the key that was tested. router.refresh keeps client state, so
-            // without this the card would still say "Key works" about a credential just replaced.
             forgetVerdict(view.provider);
             void runForProvider(
               view.provider,

@@ -16,15 +16,12 @@ import { err, ok, type Result } from "@/types/result";
 import { linkedParentVisible } from "./parentLinkVisibility";
 import { resolveActivityVisibility } from "./visibility";
 
-// Every field the inline composer needs to prefill an edit. Timestamps are ISO strings so the
-// client can split them into its local date/time inputs without a serialization round-trip issue.
 export interface EditableActivity {
   id: string;
   typeId: string;
   subject: string;
   priority: string | null;
   dueAt: string | null;
-  // The user set a day but no time; the composer must not echo the stored midnight back.
   allDay: boolean;
   endAt: string | null;
   durationMinutes: number | null;
@@ -93,9 +90,6 @@ async function linkNames(
   return { dealTitle, personName, orgName };
 }
 
-// Coerce a stored priority to a valid key so the edit round-trips through the update schema's enum.
-// Real (app-created) activities already store a key; legacy/seed rows that stored the display NAME
-// ("Low") are mapped back to the key ("low"), and anything unrecognized becomes null (unset).
 function normalizePriority(p: string | null): string | null {
   if (p === null) return null;
   if (isActivityPriorityKey(p)) return p;
@@ -105,9 +99,6 @@ function normalizePriority(p: string | null): string | null {
   return byName?.[0] ?? null;
 }
 
-// Loads one activity with its guest + participant sets for the edit composer. Visibility-gated:
-// returns ACTIVITY_NOT_FOUND (never 403) when the activity is missing or invisible to the actor,
-// matching updateActivity's 404-on-invisible behavior.
 export async function getActivityForEdit(
   db: DbOrTx,
   actor: PermSetUser,

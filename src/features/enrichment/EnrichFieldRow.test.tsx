@@ -122,8 +122,6 @@ it("names the value an overwrite would replace", () => {
   expect(screen.getByText(ENRICHMENT_STRINGS.dialog.overwrites("SF"))).toBeInTheDocument();
 });
 
-// A person linked to an organization outside the actor's visibility. The row must not read as an
-// empty field, and it must not name the value it cannot show either.
 it("warns that an overwrite replaces something it cannot show", () => {
   render(
     <EnrichFieldRow

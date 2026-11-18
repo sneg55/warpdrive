@@ -9,8 +9,6 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
-// useQuery is seeded with initialData by the component; mock it to hand that back synchronously so
-// the render reflects the SSR page without spinning up a QueryClientProvider.
 vi.mock("@tanstack/react-query", () => ({
   useQuery: (opts: { initialData: unknown }) => ({ data: opts.initialData }),
   useQueryClient: () => ({ invalidateQueries: vi.fn() }),
@@ -97,7 +95,6 @@ const rowU1 = {
 };
 const rowU2 = { ...rowU1, id: "d2", ownerId: "u2", ownerName: "User B", value: "5000.00" };
 
-// The SSR page loads only the first slice of rows but the server reports the true pipeline total.
 const initial = {
   pipelineId: "p1",
   stages: [{ id: "s1", name: "Qualified" }],
@@ -136,24 +133,18 @@ describe("resolveDealListFooter", () => {
 describe("DealListClient footer count", () => {
   it("shows the server pipeline total when unfiltered, not the loaded row count", () => {
     render(<DealListClient initial={initial} />);
-    // Two rows are loaded, but the honest pipeline total is 500.
     expect(screen.getByTestId("deal-list")).toHaveTextContent("total:500");
     expect(screen.getByTestId("deal-list")).toHaveTextContent("value:1000000.00");
-    // No filtered indicator while unfiltered.
     expect(screen.queryByLabelText("filtered count")).not.toBeInTheDocument();
   });
 
   it("shows the filtered count distinctly (with a filtered label) when an owner filter is active", () => {
     render(<DealListClient initial={initial} />);
     fireEvent.click(screen.getByRole("button", { name: "filter-owner-u1" }));
-    // Only User A's single deal survives the owner filter.
     expect(screen.getByTestId("deal-list")).toHaveTextContent("total:1");
-    // A distinct, unambiguous "filtered" indicator makes clear this is not the whole pipeline.
     const indicator = screen.getByLabelText("filtered count");
     expect(indicator).toHaveTextContent("1");
     expect(indicator.textContent?.toLowerCase()).toContain("filtered");
-    // The misleading whole-pipeline denominator (500) must NOT appear: the filtered subset count and
-    // the server total are computed over different bases, so "1 of 500" is meaningless.
     expect(indicator).not.toHaveTextContent("500");
   });
 });

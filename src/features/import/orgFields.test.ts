@@ -12,8 +12,6 @@ const group = {
 };
 
 describe("orgFieldPatch", () => {
-  // A newly created org has nothing to protect: take every mapped firmographic. address is
-  // excluded here because createOrg already persisted it (see the create-path suite below).
   it("takes every mapped firmographic when not restricted to blanks", () => {
     const patch = orgFieldPatch(group, null, { onlyBlank: false });
     expect(patch).toEqual({
@@ -23,7 +21,6 @@ describe("orgFieldPatch", () => {
     });
   });
 
-  // The whole point of fill-blank: a 115-row import must not silently clobber curated data.
   it("never overwrites a field the existing org already has", () => {
     const existing = {
       domain: "www.transitchicago.com",
@@ -59,7 +56,6 @@ describe("orgFieldPatch", () => {
     });
   });
 
-  // name is the find-or-create key, never a field to write back.
   it("never patches name", () => {
     expect(orgFieldPatch(group, null, { onlyBlank: false })).not.toHaveProperty("name");
     expect(orgFieldPatch(group, { domain: null }, { onlyBlank: true })).not.toHaveProperty("name");
@@ -91,9 +87,6 @@ describe("orgFieldPatch", () => {
   });
 });
 
-// createOrg persists address at creation time (it is on orgCreateInput), but firmographics are
-// not, so only they need the post-create updateOrg. Re-patching address there would force an
-// updateOrg call, and its contact.edit gate, on a row a create-only user was authorized to run.
 describe("orgFieldPatch on the create path (onlyBlank=false)", () => {
   it("excludes address, which createOrg already wrote", () => {
     const patch = orgFieldPatch(

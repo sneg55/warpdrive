@@ -24,7 +24,6 @@ describe("DetailDrawerPreviewSkeleton", () => {
     useRecordPreview.getState().setPreview({ id: "lead-OTHER", title: "Wrong Co" });
     render(<DetailDrawerPreviewSkeleton recordId="lead-1" />);
     expect(screen.queryByText("Wrong Co")).not.toBeInTheDocument();
-    // The loading region still renders (the drawer never freezes).
     expect(screen.getByRole("status")).toBeInTheDocument();
   });
 

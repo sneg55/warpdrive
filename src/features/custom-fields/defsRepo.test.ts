@@ -48,7 +48,6 @@ it("serves a cached def list within the TTL and invalidates it on a mutation", a
     const sig = (): AbortSignal => new AbortController().signal;
     const first = await listDefs(db, "deal", {}, sig());
     const second = await listDefs(db, "deal", {}, sig());
-    // Built once per (db, target) within the window, not rebuilt on every call.
     expect(second).toBe(first);
 
     const created = await createDef(
@@ -59,7 +58,6 @@ it("serves a cached def list within the TTL and invalidates it on a mutation", a
     if (created.ok === false) throw new Error("setup failed");
 
     const afterCreate = await listDefs(db, "deal", {}, sig());
-    // The mutation invalidated the cache, so the new def is visible immediately (not stale).
     expect(afterCreate).not.toBe(first);
     expect(afterCreate.find((d) => d.id === created.value.id)).toBeDefined();
   });
@@ -107,7 +105,6 @@ it("renames a def by id, changing the name but never the frozen key", async () =
     expect(renamed.ok).toBe(true);
     if (renamed.ok === true) {
       expect(renamed.value.name).toBe("Owner");
-      // key is frozen: entity values are stored under it, so it must not move.
       expect(renamed.value.key).toBe("account_owner");
     }
   });
@@ -139,11 +136,9 @@ it("reorders defs by writing the order column in a transaction", async () => {
     );
     if (a.ok === false || b.ok === false) throw new Error("setup failed");
 
-    // Both start at order 0 (schema default); put B before A.
     const r = await reorderDefs(db, [b.value.id, a.value.id], new AbortController().signal);
     expect(r.ok).toBe(true);
 
-    // listDefs sorts by order asc, so the new order is observable through it.
     const listed = await listDefs(db, "deal", {}, new AbortController().signal);
     expect(listed.map((d) => d.id)).toEqual([b.value.id, a.value.id]);
   });
@@ -172,7 +167,6 @@ it("persists the important + show-in-add-form flags", async () => {
     expect(row?.isImportant).toBe(true);
     expect(row?.showInAddForm).toBe(true);
 
-    // listDefs / toDef must project both flags too.
     const listed = await listDefs(db, "deal", {}, new AbortController().signal);
     const found = listed.find((d) => d.id === created.value.id);
     expect(found?.isImportant).toBe(true);

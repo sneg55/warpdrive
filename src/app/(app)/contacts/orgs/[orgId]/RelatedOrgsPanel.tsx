@@ -28,10 +28,6 @@ interface RelatedOrgsPanelProps {
   onChanged: () => void;
 }
 
-// "Related organizations" aside panel (Wave 3, Task 23): lists both directions of
-// organization_relations for this org, plus an org Combobox + free-text relation-type input
-// to add a new link. Mirrors OrgFirmographicsPanel's self-contained pending/error handling
-// (no shared hook: this isn't a single-field inline edit, it's an add-to-list form).
 export function RelatedOrgsPanel({
   orgId,
   related,

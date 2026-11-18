@@ -1,8 +1,3 @@
-// UI strings and the action-error mapper for the identity settings area
-// (users, teams, permission sets, visibility groups). Kept separate from the
-// large shared strings.ts to stay under the file-size limit and to co-locate
-// the raw-error -> readable-message mapping these forms share.
-
 export const IDENTITY_SETTINGS_STRINGS = {
   flagEditor: {
     global: "Global",
@@ -25,10 +20,6 @@ export const IDENTITY_SETTINGS_STRINGS = {
   },
 } as const;
 
-// Readable, user-facing copy for each distinct failure. The identity actions
-// return a plain `string` error (see Result<T, string>); we translate the known
-// internal strings into friendly messages and fall back to a generic one so no
-// raw internal wording ever leaks to the UI.
 export const IDENTITY_ERROR_MESSAGES = {
   generic: "Something went wrong. Please try again.",
   session: "Your session looks stale. Refresh the page and try again.",
@@ -44,7 +35,6 @@ export const IDENTITY_ERROR_MESSAGES = {
 
 type ErrorKey = keyof typeof IDENTITY_ERROR_MESSAGES;
 
-// Maps the raw error strings thrown by the identity guards/actions to a message key.
 const RAW_ERROR_TO_KEY: Record<string, ErrorKey> = {
   unauthorized: "permission",
   "permissions.manage required": "permission",
@@ -67,7 +57,6 @@ const RAW_ERROR_TO_KEY: Record<string, ErrorKey> = {
   "invalid input": "invalidInput",
 };
 
-// Translate an identity action error string into a readable inline-form message.
 export function identityErrorMessage(error: string): string {
   const key = RAW_ERROR_TO_KEY[error];
   return key === undefined ? IDENTITY_ERROR_MESSAGES.generic : IDENTITY_ERROR_MESSAGES[key];

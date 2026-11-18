@@ -26,8 +26,6 @@ async function seedAccount(
   return acct.id;
 }
 
-// Mailbox-visibility rules (private/shared/admin, and the personal-Inbox scoping) live in
-// emailReadsVisibility.test.ts. This file covers thread.get content projection and folder reads.
 describe("email reads", () => {
   it("thread.get returns messages newest-first with sanitized bodies", async () => {
     await withTestDb(async (db) => {
@@ -54,7 +52,7 @@ describe("email reads", () => {
       if (out.ok) {
         const m0 = out.value.messages[0];
         const m1 = out.value.messages[1];
-        expect(m0?.gmailMessageId).toBe("m2"); // newest first
+        expect(m0?.gmailMessageId).toBe("m2");
         expect(m1?.bodyHtml).not.toMatch(/<script/i);
       }
     });

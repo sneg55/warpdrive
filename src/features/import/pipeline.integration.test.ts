@@ -29,9 +29,6 @@ function storage(): StorageClient {
   return storageFor(CSV);
 }
 
-// A slice of the real BD shortlist (feed-gap-bd-shortlist.csv), same column shape. The lead
-// import maps `url` -> Title and `agency_name` -> Organization, so each row must become a lead
-// linked to a find-or-created org.
 const LEADS_CSV = [
   "agency_name,state,city,reporter_type,total_voms,posture,url",
   "New Jersey Transit Corporation,NJ,Newark,Full Reporter,3431,fails-validation,http://www.njtransit.com/",
@@ -130,7 +127,6 @@ it("imports leads from the BD shortlist and links each to a find-or-created org,
     const [batch] = await db.select().from(importBatches).where(eq(importBatches.id, batchId));
     expect(batch?.status).toBe("completed");
 
-    // Every row became a lead titled by its url and linked to an organization named by agency_name.
     const allLeads = await db.select().from(leads);
     expect(allLeads).toHaveLength(3);
     for (const lead of allLeads) expect(lead.orgId).not.toBeNull();
@@ -145,11 +141,9 @@ it("imports leads from the BD shortlist and links each to a find-or-created org,
       .where(eq(organizations.name, "New Jersey Transit Corporation"));
     expect(njLead?.orgId).toBe(njOrg?.id);
 
-    // Three distinct orgs were created (one per unique agency).
     const liveOrgs = (await db.select().from(organizations)).filter((o) => o.deletedAt === null);
     expect(liveOrgs).toHaveLength(3);
 
-    // Undo removes the leads AND the orgs the import created: nothing orphaned.
     await handleUndoJob(db, { data: { batchId } }, sig());
     const orgsAfterUndo = (await db.select().from(organizations)).filter(
       (o) => o.deletedAt === null,

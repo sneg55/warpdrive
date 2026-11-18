@@ -27,8 +27,6 @@ describe("CreatePipelineButton", () => {
   it("opens a dialog and disables submit until a name is entered", () => {
     render(<CreatePipelineButton label="Create pipeline" />);
     fireEvent.click(screen.getByRole("button", { name: "Create pipeline" }));
-    // The dialog's submit button (last "create pipeline" button = the footer one) is disabled
-    // while the name is empty, and enables once a name is entered.
     const dialogSubmit = screen.getAllByRole("button", { name: /create pipeline/i }).at(-1)!;
     expect(dialogSubmit).toBeDisabled();
     fireEvent.change(screen.getByLabelText("Pipeline name"), { target: { value: "Sales" } });
@@ -55,7 +53,6 @@ describe("CreatePipelineButton", () => {
     fireEvent.click(screen.getAllByRole("button", { name: /create pipeline/i }).at(-1)!);
     await waitFor(() => expect(screen.getByRole("alert")).toBeInTheDocument());
     expect(push).not.toHaveBeenCalled();
-    // Dialog remains open so the user can retry.
     expect(screen.getByLabelText("Pipeline name")).toBeInTheDocument();
   });
 

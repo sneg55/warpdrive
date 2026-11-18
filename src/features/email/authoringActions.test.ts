@@ -47,8 +47,6 @@ describe("template mutation actions", () => {
   });
 
   it("an admin without an explicit filter.share flag can still share a template", async () => {
-    // Admins carry an empty flags Set (hydrateActor only populates flags for non-admins), so a
-    // bare flags.has('filter.share') check would wrongly deny them. canShare must honor admin.
     vi.mocked(createContext).mockResolvedValueOnce({
       actor: { id: "admin1", type: "admin", flags: new Set<string>() },
     } as never);
@@ -130,8 +128,6 @@ describe("signature name length (S1)", () => {
   });
 
   it("updateSignatureAction still accepts a legacy name longer than 40 chars (no edit lockout)", async () => {
-    // A signature created before the S1 cap can have a >40-char name; a body-only edit resends that
-    // name in the patch and must not be rejected, or the user could never edit the signature again.
     const r = await updateSignatureAction("csrf", {
       id: "22222222-2222-4222-8222-222222222222",
       patch: { name: "y".repeat(60), bodyHtml: "<p>new</p>" },

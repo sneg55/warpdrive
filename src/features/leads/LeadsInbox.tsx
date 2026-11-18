@@ -35,9 +35,7 @@ type Filter = "inbox" | "archived";
 
 export interface LeadsInboxProps {
   baseCurrency?: string;
-  // Seeded from user_preferences.ui.leadsView (server); falls back to columns.ts defaults.
   initialView?: { columns: string[]; sort: LeadSort } | null;
-  // Whether the actor holds data.import; gates the action bar's "Import leads" link.
   canImport?: boolean;
   customFieldDefs?: CustomFieldDef[];
 }
@@ -50,11 +48,8 @@ export function LeadsInbox({
 }: LeadsInboxProps): React.ReactNode {
   const router = useRouter();
   const currency = baseCurrency ?? DEFAULT_BASE_CURRENCY;
-  // Null on the server and the first client render so SSR and hydration produce identical markup
-  // (a render-time `new Date()` differs between the two and causes a hydration mismatch). The real
-  // clock is set on mount; time-based cell colors appear one frame later. See F5-16.
   const [now, setNow] = useState<Date | null>(null);
-  // eslint-disable-next-line react-hooks/set-state-in-effect -- reading the clock during render would differ between SSR and hydration; the mount effect is the fix, not the bug
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => setNow(new Date()), []);
 
   const [filter, setFilter] = useState<Filter>("inbox");
@@ -71,7 +66,6 @@ export function LeadsInbox({
   );
   const columns = useColumns(catalog, initialView?.columns);
 
-  // Ungated: every user gets the full active-user list so owner filtering runs server-side by id.
   const usersQ = trpc.identity.assignableUsers.useQuery(undefined, { retry: false });
   const dealFieldsQ = trpc.customFields.listDefs.useQuery({ target: "deal" });
   const dealFields = dealFieldsQ.data ?? [];
@@ -144,8 +138,6 @@ export function LeadsInbox({
     setCondition(null);
   }
 
-  // Zero rows while the first page is still in flight is not an empty inbox, so the message waits
-  // for the read to land rather than accusing the user of having no leads.
   const empty =
     list.isLoading || rows.length > 0 ? null : (
       <LeadsEmpty
@@ -235,9 +227,6 @@ export function LeadsInbox({
       )}
 
       <div className="min-h-0 flex-1 overflow-auto rounded-lg border">
-        {/* Nothing exists and nothing is filtered: the header row, select-all and sort controls
-            are machinery over zero rows, so the table goes and the empty state stands alone.
-            A filtered-to-nothing list keeps its columns, since the columns are still the view. */}
         {empty !== null && !hasFilter ? (
           empty
         ) : (

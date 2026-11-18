@@ -20,7 +20,7 @@ it("addDaysUtc shifts by whole UTC days", () => {
 
 it("addMonthsUtc clamps to the last day of a shorter target month", () => {
   expect(iso(addMonthsUtc(new Date("2026-01-31T00:00:00Z"), 1))).toBe("2026-02-28");
-  expect(iso(addMonthsUtc(new Date("2024-01-31T00:00:00Z"), 1))).toBe("2024-02-29"); // leap year
+  expect(iso(addMonthsUtc(new Date("2024-01-31T00:00:00Z"), 1))).toBe("2024-02-29");
   expect(iso(addMonthsUtc(new Date("2026-03-31T00:00:00Z"), -1))).toBe("2026-02-28");
   expect(iso(addMonthsUtc(new Date("2026-06-15T00:00:00Z"), 1))).toBe("2026-07-15");
 });
@@ -32,17 +32,15 @@ it("startOfDayUtc / endOfDayUtc bound the UTC day", () => {
 });
 
 it("monthGridDays returns 42 Monday-first days containing the anchor month", () => {
-  // June 2026: June 1 is a Monday, so the grid starts on June 1.
   const days = monthGridDays(new Date("2026-06-15T00:00:00Z"));
   expect(days).toHaveLength(42);
-  expect(days[0]?.getUTCDay()).toBe(1); // Monday
+  expect(days[0]?.getUTCDay()).toBe(1);
   expect(iso(days[0] as Date)).toBe("2026-06-01");
-  expect(iso(days[41] as Date)).toBe("2026-07-12"); // trailing days into July
+  expect(iso(days[41] as Date)).toBe("2026-07-12");
   expect(days.some((d) => iso(d) === "2026-06-15")).toBe(true);
 });
 
 it("monthGridDays pads leading days from the previous month", () => {
-  // July 2026: July 1 is a Wednesday, so the grid starts Monday June 29.
   const days = monthGridDays(new Date("2026-07-10T00:00:00Z"));
   expect(iso(days[0] as Date)).toBe("2026-06-29");
   expect(days[0]?.getUTCDay()).toBe(1);

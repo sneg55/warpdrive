@@ -8,7 +8,6 @@ import type { RouterOutputs } from "@/lib/trpc-client";
 interface InboxThreadClientProps {
   threadId: string;
   selfActorId: string;
-  // Server-prefetched thread, forwarded to ThreadPane to seed the reader query.
   initialThread?: RouterOutputs["email"]["thread"]["get"];
 }
 

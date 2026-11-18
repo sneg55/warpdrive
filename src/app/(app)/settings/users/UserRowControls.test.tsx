@@ -5,7 +5,6 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { IDENTITY_ERROR_MESSAGES } from "@/constants/settingsIdentity";
 
-// Radix DropdownMenu relies on pointer-capture + scrollIntoView, which jsdom lacks.
 beforeAll(() => {
   Element.prototype.scrollIntoView = vi.fn();
   Element.prototype.hasPointerCapture = vi.fn();
@@ -76,8 +75,6 @@ function chooseSet(name: string): void {
 }
 
 describe("UserRowControls", () => {
-  // At 1440px the two inline buttons overflowed the settings card and rendered as "Deacti...".
-  // One overflow menu keeps the row inside the card at every width.
   it("collapses both actions into a single row overflow menu", async () => {
     const user = userEvent.setup();
     const { container } = render(<UserRowControls {...PROPS} />);
@@ -171,7 +168,6 @@ describe("UserRowControls", () => {
   });
 
   it("clears the error and calls onChanged when a retry succeeds", async () => {
-    // First admin toggle fails, then the active toggle (succeeds) clears the error.
     const user = userEvent.setup();
     render(<UserRowControls {...PROPS} />);
     await chooseAction(user, "Make admin");

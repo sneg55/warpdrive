@@ -4,8 +4,6 @@ import { settings } from "@/db/schema/system";
 import type { withTestDb } from "@/db/testing";
 import type { LeadSession } from "./leadActions";
 
-// Shared fixtures for the convertLead suites (leadConvert.test.ts and leadConvertPipeline.test.ts),
-// which were one file until it outgrew the size budget. Kept here so both read the same seed shape.
 type TestDb = Parameters<Parameters<typeof withTestDb>[0]>[0];
 
 export function session(userId: string, extra: Partial<LeadSession> = {}): LeadSession {

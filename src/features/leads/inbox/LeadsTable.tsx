@@ -10,9 +10,6 @@ import { LeadCell } from "./LeadCell";
 import { SourceOriginInfo } from "./SourceOriginInfo";
 import type { LeadSort } from "./useLeadSort";
 
-// The fields the drawer skeleton paints instantly while the server detail streams: the lead title,
-// with the linked person or org as the subtitle. Omit the subtitle (not set to undefined) when the
-// lead has neither, so the optional stays absent under exactOptionalPropertyTypes.
 function leadPreview(row: LeadRow): RecordPreview {
   const subtitle = row.personName ?? row.orgName;
   return subtitle !== null
@@ -25,12 +22,9 @@ export interface LeadsTableProps {
   columns: LeadColumn[];
   now: Date | null;
   currency: string;
-  // What replaces the rows when there are none. The caller owns the wording: only it knows
-  // whether the list is empty or merely filtered down to nothing.
   empty: React.ReactNode;
   sort: LeadSort;
   onSort: (field: LeadSortField) => void;
-  // Selection.
   isSelected: (id: string) => boolean;
   allSelected: boolean;
   onToggleRow: (id: string) => void;
@@ -107,12 +101,6 @@ export function LeadsTable({
           rows.map((row) => (
             <tr
               key={row.id}
-              // Seed the preview on hover as well as click: opening a lead from its row-actions menu
-              // (kebab "Open") navigates from LeadsInbox and never runs this onClick, but a mouse
-              // user hovers the row first, so the preview is already captured by the time the menu
-              // fires. Both handlers seed the same row, so the drawer paints the real name instantly
-              // regardless of which open path is used. onClick still seeds for touch taps that skip
-              // hover.
               onMouseEnter={() => setPreview(leadPreview(row))}
               onClick={() => {
                 setPreview(leadPreview(row));
@@ -121,7 +109,6 @@ export function LeadsTable({
               className="cursor-pointer border-t hover:bg-accent/40"
             >
               <td className="px-3 py-2">
-                {/* Stop the row's open-detail onClick from firing when toggling selection. */}
                 {/* biome-ignore lint/a11y/noStaticElementInteractions: wrapper only guards event bubbling */}
                 {/* biome-ignore lint/a11y/useKeyWithClickEvents: keyboard toggling is handled by the Checkbox itself */}
                 <span onClick={(e) => e.stopPropagation()}>

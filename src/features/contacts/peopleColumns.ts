@@ -2,10 +2,6 @@ import type { ColumnDef } from "@/components/data-table/columnModel";
 import { STRINGS } from "@/constants/strings";
 import type { PersonSortField } from "./schemas";
 
-// People list column catalog. Name is pinned (row link + avatar) and sortable; Email is sortable.
-// Org/Phone are plain. Closed deals (won+lost count) rides on a batched deal-count join in the list
-// query (see listPeople/peopleDealCounts). Customize columns adds reorder + hide. Offering Owner /
-// Last activity as NEW columns needs a users/activities join (CL3 follow-on), not in the catalog yet.
 export interface PeopleColumn extends ColumnDef {
   sortField?: PersonSortField;
 }

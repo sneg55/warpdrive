@@ -45,7 +45,7 @@ describe("deals schema", () => {
       h.db.insert(deals).values({
         title: "Cross-pipeline deal",
         pipelineId: a.pipeline.id,
-        stageId: b.stages[0]!.id, // stage from pipeline B, deal assigned to pipeline A
+        stageId: b.stages[0]!.id,
         ownerId: u.id,
         visibilityLevel: "all",
       }),
@@ -100,14 +100,11 @@ describe("deals schema", () => {
       })
       .returning();
 
-    // Add a follower
     await h.db.insert(dealFollowers).values({ dealId: d!.id, userId: u.id });
 
-    // Add a participant (no FK to persons yet; insert raw uuid)
     const fakePersonId = "00000000-0000-0000-0000-000000000001";
     await h.db.insert(dealParticipants).values({ dealId: d!.id, personId: fakePersonId });
 
-    // Delete the deal
     await h.db.delete(deals).where(sql`id = ${d!.id}`);
 
     const followers = await h.db.select().from(dealFollowers).where(sql`deal_id = ${d!.id}`);

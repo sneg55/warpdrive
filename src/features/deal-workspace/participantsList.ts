@@ -1,6 +1,3 @@
-// Enriched read for a deal's participants (PD-parity participants table + Summary count-link +
-// sidebar section). Split from participants.ts (mutations + org/person aggregations) to keep
-// both under the file-size cap.
 import { and, eq, inArray, isNotNull, isNull } from "drizzle-orm";
 import type { VisibilityLevel } from "@/constants/visibility";
 import type { Db } from "@/db/client";
@@ -23,8 +20,6 @@ export interface DealParticipant {
   name: string;
   isPrimary: boolean;
   isExplicit: boolean;
-  // Enriched columns for the PD-style participants table (modal): the participant's org, primary
-  // contact points, their owner, per-person open/closed deal counts, and next planned activity.
   orgName: string | null;
   primaryEmail: string | null;
   phone: string | null;
@@ -34,7 +29,6 @@ export interface DealParticipant {
   nextActivityAt: Date | null;
 }
 
-// The participant's shown phone: the primary contact point, else the first.
 function primaryPhone(phones: readonly { value: string; primary?: boolean }[]): string | null {
   const hit = phones.find((p) => p.primary === true) ?? phones[0];
   return hit?.value ?? null;
@@ -102,12 +96,6 @@ async function nextActivityByPerson(
   return earliest;
 }
 
-// List a deal's participants for the Summary count-link, the sidebar Participants section, and
-// the participants table. Double-gated: the deal itself must be visible (pipeline-restriction
-// hard gate via toVisibleDeal + canSee), and each participant PERSON is filtered by person-level
-// visibility too, so a participant link cannot leak a restricted contact's name (the recurring
-// entity-vs-activity leak class). The per-person deal COUNTS reuse dealsForPerson, so they only
-// count deals the actor can see (no count-based probing of hidden deals).
 export async function listParticipants(
   db: Db,
   actor: PermSetUser,
@@ -181,7 +169,6 @@ export async function listParticipants(
     signal,
   );
 
-  // Per-person open/closed deal counts via the visibility-gated dealsForPerson (small N).
   const out: DealParticipant[] = [];
   for (const p of visible) {
     const personDeals = await dealsForPerson(db, actor, p.personId, signal);

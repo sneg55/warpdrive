@@ -15,7 +15,6 @@ const MONTH_NAMES = [
   "Dec",
 ];
 
-// "2026-05" -> "May 2026". Falls back to the raw key if it is ever malformed.
 export function monthLabel(key: string): string {
   const [y, m] = key.split("-");
   const idx = Number(m) - 1;
@@ -24,7 +23,6 @@ export function monthLabel(key: string): string {
   return `${name} ${y}`;
 }
 
-// The month header row: a pinned "Contact" column, then one fixed-layout column per month.
 export function EngagementAxis({ months }: { months: string[] }): React.ReactNode {
   return (
     <thead>
@@ -41,8 +39,6 @@ export function EngagementAxis({ months }: { months: string[] }): React.ReactNod
             scope="col"
             className={`border-b bg-muted/40 px-3 py-2 text-center text-xs font-semibold text-muted-foreground ${i > 0 ? "border-l" : ""}`}
           >
-            {/* The period always ends at the current month, so the rightmost tick is "now": PD
-                labels it "Today" rather than repeating the month name. */}
             {i === months.length - 1 ? "Today" : monthLabel(key)}
           </th>
         ))}

@@ -34,7 +34,6 @@ it("offers the compose action it names, prefilled with the window on screen", ()
   expect(screen.getByTestId("add-activity-modal")).toHaveTextContent("2026-06-15");
 });
 
-// "Nothing is scheduled" and "your filters hid everything" need different exits.
 it("offers to clear the filters instead when a filter is what emptied the window", () => {
   const onClearFilters = vi.fn();
   render(
@@ -53,8 +52,6 @@ it("offers to clear the filters instead when a filter is what emptied the window
   expect(screen.queryByTestId("add-activity-modal")).toBeNull();
 });
 
-// A far-future week holds nothing whether or not a filter is on. Saying "this window does have
-// activities" there is simply false, which is the class of bug the empty states exist to remove.
 it("does not claim the window holds activities when it holds none", () => {
   render(
     <CalendarEmpty

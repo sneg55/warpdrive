@@ -1,4 +1,3 @@
-// Unit tests for folding linked emails into an existing record timeline. Pure, no DB.
 import { describe, expect, it } from "vitest";
 import { bucketByType } from "@/app/(app)/deals/[dealId]/tabs";
 import type { EmailTimelineMessage } from "@/features/email/entityMessageReads";

@@ -10,11 +10,7 @@ import { calendarEmptyState } from "./calendarEmptyState";
 export interface CalendarEmptyProps {
   view: CalendarViewName;
   hasFilter: boolean;
-  // Whether this window holds anything before the filter runs, so a genuinely empty window is
-  // never described as one the filters emptied.
   hasUnfilteredActivities: boolean;
-  // Seeds the composer with the window on screen, so "Add activity" from an empty June week does
-  // not create one in today's week.
   dateIso: string;
   onClearFilters: () => void;
   onCreated: () => void;

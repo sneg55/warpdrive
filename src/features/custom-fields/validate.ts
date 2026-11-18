@@ -16,7 +16,6 @@ const addressSchema = z
     lng: z.number().optional(),
   })
   .refine((a) => {
-    // country is required when any string subfield is non-empty or any numeric subfield is set.
     const hasText = [a.street, a.city, a.region, a.postal, a.country].some(
       (s) => s != null && s.length > 0,
     );
@@ -42,26 +41,22 @@ export function valueSchemaFor(def: CustomFieldDef): z.ZodTypeAny {
       return z.number().finite().multipleOf(0.01);
     case "single_option": {
       const ids = activeOptionIds(def);
-      // No active options means no value is valid: reject everything (fail-closed).
       return ids.length > 0 ? z.enum(ids as [string, ...string[]]) : z.never();
     }
     case "multi_option": {
       const ids = activeOptionIds(def);
-      // z.array(z.never()) still accepts [] (an empty multi-select is valid).
       const element = ids.length > 0 ? z.enum(ids as [string, ...string[]]) : z.never();
       return z.array(element);
     }
     case "date":
       return isoDate;
     case "date_range":
-      // Same-day-or-later end. Reversed ranges are rejected.
       return z
         .object({ start: isoDate, end: isoDate })
         .refine((r) => r.end >= r.start, "end before start");
     case "time":
       return hhmm;
     case "time_range":
-      // Assumes a same-day range: cross-midnight ranges (end < start) are intentionally rejected.
       return z
         .object({ start: hhmm, end: hhmm })
         .refine((r) => r.end >= r.start, "end before start");
@@ -100,6 +95,5 @@ export function buildCustomFieldsSchema(
     }, "required custom field is empty");
     shape[def.key] = required ? requiredBase : base.optional();
   }
-  // z.object strips unknown keys by default in Zod v4; .strip() is explicit for clarity.
   return z.object(shape).strip();
 }

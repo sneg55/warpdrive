@@ -1,9 +1,3 @@
-// FileAttachments: reusable list + upload UI for the files attached to one entity.
-// Lists confirmed files (trpc files.listForEntity) with on-demand presigned
-// download, and an upload control that runs the request -> POST -> confirm
-// handshake then refetches. Reused by the deal Files tab, contact Files panel,
-// and the compose Files dropzone.
-
 "use client";
 
 import { useRef, useState } from "react";
@@ -18,9 +12,6 @@ import { uploadOneFile } from "./uploadHandshake";
 interface FileAttachmentsProps {
   entityType: FileEntityType;
   entityId: string;
-  // readOnly renders the list + download only, dropping the upload control. Used where
-  // this panel is a view rather than a compose surface (e.g. the deal History > Files
-  // filter), so the deal page does not show two identical uploaders.
   readOnly?: boolean;
 }
 
@@ -60,8 +51,6 @@ export function FileAttachments({
     } finally {
       setBusy(false);
       if (inputRef.current !== null) inputRef.current.value = "";
-      // Refetch whenever at least one file was confirmed, INCLUDING a partial-batch failure,
-      // so already-stored files appear instead of tempting the user into a duplicate re-upload.
       if (anyConfirmed) void query.refetch();
     }
   }
@@ -73,8 +62,6 @@ export function FileAttachments({
       setError(FILE_ATTACHMENTS_STRINGS.downloadFailed);
       return;
     }
-    // Anchor click, not window.open: the URL is minted after an await, so the user gesture is
-    // gone and window.open would be popup-blocked. A programmatic anchor click is not.
     const anchor = document.createElement("a");
     anchor.href = result.value.url;
     anchor.target = "_blank";

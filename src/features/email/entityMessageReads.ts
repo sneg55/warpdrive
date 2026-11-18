@@ -4,15 +4,11 @@ import type { AuthUser } from "@/features/permissions/types";
 import { canSeeEmail } from "./emailVisibility";
 import { mailboxAccessPredicate } from "./mailboxAccess";
 
-// One linked email as the record timelines render it: everything a collapsed card shows and
-// nothing more. Bodies are deliberately absent, they load per message on expand (spec D4).
 export interface EmailTimelineMessage {
   messageId: string;
   threadId: string;
   subject: string | null;
   sentAt: string | null;
-  // Fallback ordering key when Gmail supplied no Date header, so such a message still lands
-  // in a deterministic position instead of at the epoch.
   createdAt: string;
   direction: string;
   fromEmail: string;
@@ -43,18 +39,10 @@ interface MessageRow {
   person_id: string | null;
 }
 
-// jsonb columns round-trip through the driver as `unknown`; narrow rather than trust the shape.
 function asStringArray(v: unknown): string[] {
   return Array.isArray(v) ? (v as string[]) : [];
 }
 
-// Messages on threads linked to an entity column, newest first, filtered to what the actor may
-// see. Deal and contact differ only by that column, which is a fixed identifier and never user
-// input, so interpolating it is safe; the linked value is bound.
-//
-// archived_at is deliberately NOT filtered: it is a per-owner Inbox preference, so a colleague
-// archiving a thread out of their own mailbox must not erase it from the record's history.
-// trashed_at IS filtered: it means Gmail dropped the conversation from the live mailbox.
 async function listMessagesBy(
   db: Db,
   column: "deal_id" | "person_id",
@@ -82,8 +70,6 @@ async function listMessagesBy(
   ).rows as unknown as MessageRow[];
   signal.throwIfAborted();
 
-  // Visibility is a per-thread property, so resolve it once per distinct thread rather than once
-  // per message: a long thread would otherwise re-run the same check for every message it holds.
   const byThread = new Map<string, MessageRow>();
   for (const r of rows) if (!byThread.has(r.thread_id)) byThread.set(r.thread_id, r);
   const threadIds = [...byThread.keys()];
@@ -127,7 +113,6 @@ async function listMessagesBy(
     }));
 }
 
-// Messages on threads linked to a deal. Feeds the deal workspace timeline.
 export function listMessagesForDeal(
   db: Db,
   args: { actor: AuthUser; dealId: string },
@@ -136,7 +121,6 @@ export function listMessagesForDeal(
   return listMessagesBy(db, "deal_id", args.dealId, args.actor, signal);
 }
 
-// Messages on threads linked to a person. Feeds the person detail timeline.
 export function listMessagesForContact(
   db: Db,
   args: { actor: AuthUser; personId: string },

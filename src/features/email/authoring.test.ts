@@ -40,7 +40,6 @@ describe("email authoring", () => {
       );
       expect(r.ok).toBe(false);
       if (!r.ok) expect(r.error.id.startsWith("E_PERM")).toBe(true);
-      // No row written on the rejected share.
       const n = (
         await db.execute(sql`SELECT count(*)::int AS n FROM email_templates WHERE owner_id=${u.id}`)
       ).rows[0] as { n: number };

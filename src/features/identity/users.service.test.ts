@@ -15,7 +15,6 @@ it("returns only active users, projected to id+name+avatarUrl", async () => {
     const ids = rows.map((r) => r.id);
     expect(ids).toContain(active.id);
     expect(ids).not.toContain(inactive.id);
-    // Projection is exactly { id, name, avatarUrl }, never the full user row (no email/flags leak).
     for (const r of rows) expect(Object.keys(r).sort()).toEqual(["avatarUrl", "id", "name"]);
   });
 });

@@ -36,8 +36,6 @@ function fieldsPath(entity: "deal" | "person" | "organization"): string {
   return `${FIELD_SETTINGS_PATH}?entity=${entity}`;
 }
 
-// Left sidebar of the deal detail page: collapsible Summary / Source / Person / Organization /
-// Overview sections built from the workspace aggregate. Purely presentational.
 export function DealSidebar({
   workspace,
   now,
@@ -55,13 +53,9 @@ export function DealSidebar({
   isHidden: (id: DealBlockId) => boolean;
   baseCurrency: string;
   orgOptions?: Array<{ id: string; name: string }>;
-  // Match candidates for the Person panel's link-an-existing-contact suggestions. Only loaded for
-  // a deal with no linked person, so this is empty on a deal that already has one.
   personOptions?: PersonMatchCandidate[];
   sidebarSections?: DealSidebarSectionPreference[];
   onSidebarSectionsChange?: (sections: DealSidebarSectionPreference[]) => void;
-  // Built-in field keys hidden in Settings > Data fields, per entity, so the Organization/Person
-  // sidebar sections drop the same rows the standalone detail pages do.
   hiddenOrgFields?: ReadonlySet<string>;
   hiddenPersonFields?: ReadonlySet<string>;
 }): React.ReactNode {
@@ -77,8 +71,6 @@ export function DealSidebar({
   const reportError = useDealActionError();
   const [orgDialogOpen, setOrgDialogOpen] = useState(false);
   const [manageSectionsOpen, setManageSectionsOpen] = useState(false);
-  // Which section (if any) is in bulk-edit mode: the header pencil opens every field in that
-  // section at once behind a single Save, rather than the old reveal-empties no-op.
   const [bulkSection, setBulkSection] = useState<DealSidebarSectionId | null>(null);
   const exitBulk = (): void => setBulkSection(null);
   const expectedUpdatedAt = new Date(deal.updatedAt).toISOString();
@@ -92,8 +84,6 @@ export function DealSidebar({
       { dealId: deal.id, expectedUpdatedAt, orgId },
       readCsrfToken(),
     );
-    // On failure keep the switch dialog open and surface why, rather than closing/refreshing as
-    // if the link changed (a permission/CAS denial otherwise looked like a silent success).
     if (r.ok) {
       setOrgDialogOpen(false);
       router.refresh();
@@ -115,8 +105,6 @@ export function DealSidebar({
     menuItems: SectionHeaderMenuItem[],
     opts: { bulkSectionId?: DealSidebarSectionId; noEdit?: boolean } = {},
   ): (ctx: { hideEmpty: boolean; showEmptyFields: () => void }) => React.ReactNode {
-    // Sections with editable fields (bulkSectionId set) turn the pencil into a section bulk-edit;
-    // sections without (e.g. Overview) keep the pencil as the reveal-empties toggle.
     return ({ showEmptyFields }) => (
       <SectionHeaderMenu
         sectionLabel={label}
@@ -151,8 +139,6 @@ export function DealSidebar({
       <CollapsibleSection
         key="summary"
         title={sections.summary}
-        // PD's Summary header carries ONLY the kebab: no hide-empty funnel (the action list has
-        // no empty rows) and no reveal-empties pencil.
         showFilter={false}
         headerActions={() => (
           <SectionHeaderMenu

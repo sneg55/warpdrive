@@ -15,25 +15,18 @@ import {
   toolError,
 } from "./types";
 
-// Recipients are validated as addresses here, unlike the composer's autosave (which must tolerate
-// a half-typed chip): a tool call has no partial state to preserve.
 const createDraftInput = z.object({
   to: z.array(z.string().email()).min(1).max(100),
   cc: z.array(z.string().email()).max(100).default([]),
   subject: z.string().max(2000).default(""),
-  // Plain text, converted to paragraph HTML on the way in. Agents write prose, not markup.
   body: z.string().max(100_000).default(""),
   dealId: z.string().uuid().optional(),
   personId: z.string().uuid().optional(),
   mailbox: z.string().email().optional(),
 });
 
-// Every field optional: a patch leaves what it does not name alone, so an agent revising one
-// sentence does not have to resend the recipients it never touched.
 const updateDraftInput = z.object({
   draftId: z.string().uuid(),
-  // Empty is allowed here, unlike create: an unsent draft may legitimately have its recipients
-  // cleared, and the composer persists an empty list too.
   to: z.array(z.string().email()).max(100).optional(),
   cc: z.array(z.string().email()).max(100).optional(),
   subject: z.string().max(2000).optional(),
@@ -91,8 +84,6 @@ export function registerEmailWriteTools(
         toEmails: input.to,
         ccEmails: input.cc,
       };
-      // Zod strips unknown keys, so a call carrying only draftId (or a misspelled field) would
-      // otherwise report success having changed nothing.
       if (Object.values(patch).every((v) => v === undefined))
         return toolError(
           new AppError(
@@ -117,8 +108,6 @@ export function registerEmailWriteTools(
     },
   });
 
-  // The one destructive tool in the set. A draft is the agent's own unsent text, owner-scoped and
-  // not a CRM record, so removing it destroys nothing another user can see. See server.test.ts.
   registerTool(server, registry, {
     name: "delete_email_draft",
     description:

@@ -23,10 +23,6 @@ interface Derived {
   sortedByStage: Map<string, BoardCard[]>;
 }
 
-// Board display derivations, all downstream of the client-side owner/saved-filter/quick-condition
-// narrowing. Drag math reads the raw liveCards, not these, so filtering/sorting is display-only.
-// No manual useMemo: React Compiler (enabled repo-wide) memoizes each derivation from its reactive
-// inputs, so the hand-written memos were redundant.
 export function useBoardDerived(input: DerivedInput): Derived {
   const { liveCards, stages, selectedOwnerId, conditions, sortKey, sortDirection } = input;
 

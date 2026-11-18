@@ -39,7 +39,6 @@ export function UploadStep({ state, dispatch, busy, onError }: UploadStepProps):
 
   async function onFile(file: File | undefined): Promise<void> {
     if (file === undefined) return;
-    // Guard client-side before the network round-trip; the server re-enforces MAX_FILE_BYTES.
     if (file.size > MAX_IMPORT_CSV_BYTES) {
       setFileError(IMP.fileTooLarge);
       return;

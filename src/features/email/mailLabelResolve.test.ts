@@ -31,10 +31,7 @@ describe("resolveMailLabelChips", () => {
   });
 
   it("reuses one index per catalog reference so the inbox does not rebuild it per row", () => {
-    // The inbox renders one ThreadLabelChips per thread, all sharing the same catalog array; the
-    // index must be built once and shared, not rebuilt O(threads) times.
     expect(buildMailLabelIndex(catalog)).toBe(buildMailLabelIndex(catalog));
-    // A different catalog array gets its own index.
     expect(buildMailLabelIndex(catalog)).not.toBe(buildMailLabelIndex([...catalog]));
   });
 });

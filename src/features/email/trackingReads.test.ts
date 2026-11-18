@@ -1,4 +1,3 @@
-// Integration test; real DB (per CLAUDE.md, no mocked database).
 import { sql } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import { withTestDb } from "@/db/testing";
@@ -8,8 +7,6 @@ import { trackingForMessages } from "./trackingReads";
 type TestDb = Parameters<Parameters<typeof withTestDb>[0]>[0];
 const SIG = (): AbortSignal => AbortSignal.timeout(8000);
 
-// Seed a send attempt plus a sent (outbound) message, mirroring tracking.test.ts's
-// seedAttempt so tracking events (message_id NOT NULL) can reference a real message.
 async function seedAttempt(
   db: TestDb,
 ): Promise<{ attemptId: string; accountId: string; messageId: string }> {
@@ -94,7 +91,6 @@ describe("trackingForMessages", () => {
       expect(entries).toHaveLength(3);
       expect(entries.filter((e) => e.type === "open")).toHaveLength(2);
       expect(entries.filter((e) => e.type === "click")).toHaveLength(1);
-      // Newest first: each entry's `at` is >= the next one's.
       for (let i = 0; i + 1 < entries.length; i++) {
         expect(new Date(entries[i]?.at ?? 0).getTime()).toBeGreaterThanOrEqual(
           new Date(entries[i + 1]?.at ?? 0).getTime(),

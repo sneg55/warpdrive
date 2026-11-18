@@ -21,8 +21,6 @@ async function callType(db: Parameters<Parameters<typeof withTestDb>[0]>[0]) {
   return type;
 }
 
-// The reported bug, end to end through a real database: saving with the time blank must not
-// come back as a midnight the user never chose.
 describe("an activity saved with no time", () => {
   it("round-trips to an empty time field instead of 00:00", async () => {
     await withTestDb(async (db) => {
@@ -49,7 +47,6 @@ describe("an activity saved with no time", () => {
       if (loaded.ok === false) throw new Error("getActivityForEdit failed");
       expect(loaded.value.allDay).toBe(true);
       expect(localPartsFromIso(loaded.value.dueAt, loaded.value.allDay).time).toBe("");
-      // The day itself must survive; only the invented time goes.
       expect(localPartsFromIso(loaded.value.dueAt, loaded.value.allDay).date).toBe("2026-08-31");
     });
   });

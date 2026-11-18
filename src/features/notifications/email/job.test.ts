@@ -9,7 +9,6 @@ import type { EmailAccountRow } from "@/types/email";
 import { ok } from "@/types/result";
 import { runEmailNotificationJob } from "./job";
 
-// Insert a connected email_accounts row for the given user. Returns the row.
 async function connectMailbox(
   db: Parameters<Parameters<typeof withTestDb>[0]>[0],
   userId: string,
@@ -26,7 +25,6 @@ async function connectMailbox(
   return { id: row.id, userId: row.user_id, emailAddress: row.email_address };
 }
 
-// Insert a deal and return its id. Uses raw SQL (no seedDeal factory exists).
 async function seedDeal(
   db: Parameters<Parameters<typeof withTestDb>[0]>[0],
   opts: { ownerId: string; visibilityLevel: "owner" | "all" },
@@ -47,12 +45,9 @@ async function seedDeal(
 
 describe("runEmailNotificationJob", () => {
   it("drops (no send) when the referenced deal is no longer visible to the recipient", async () => {
-    // RED: this is the security assertion. runEmailNotificationJob must NOT call send
-    // when the recipient cannot see the deal that the notification references.
     await withTestDb(async (db) => {
       const alice = await seedUser(db);
       const other = await seedUser(db);
-      // Deal owned by 'other' with owner-level visibility: alice cannot see it.
       const dealId = await seedDeal(db, { ownerId: other.id, visibilityLevel: "owner" });
       const [n] = await db
         .insert(notifications)
@@ -68,7 +63,6 @@ describe("runEmailNotificationJob", () => {
       if (n === undefined) throw new Error("notification insert failed");
 
       const calls: { acct: EmailAccountRow; msg: SystemMessage }[] = [];
-      // Fake: synchronous return wrapped in Promise.resolve; signal not needed.
       const fakeSend = (acct: EmailAccountRow, msg: SystemMessage) => {
         calls.push({ acct, msg });
         return Promise.resolve(ok({ gmailMessageId: "x" }));
@@ -84,7 +78,6 @@ describe("runEmailNotificationJob", () => {
       );
       expect(r.ok).toBe(true);
       if (r.ok === true) expect(r.value.sent).toBe(false);
-      // Security assertion: send must NOT have been called.
       expect(calls).toHaveLength(0);
     });
   }, 60_000);
@@ -92,7 +85,6 @@ describe("runEmailNotificationJob", () => {
   it("suppresses (no send) when recipient has no connected mailbox", async () => {
     await withTestDb(async (db) => {
       const alice = await seedUser(db);
-      // Deal alice owns and can see, but she has no email_accounts row.
       const dealId = await seedDeal(db, { ownerId: alice.id, visibilityLevel: "all" });
       const [n] = await db
         .insert(notifications)
@@ -127,16 +119,12 @@ describe("runEmailNotificationJob", () => {
     });
   }, 60_000);
 
-  // Codex finding F35: email delivery preference was checked only at enqueue. If the user
-  // disables email for this type after the job is queued but before it runs, the worker must
-  // re-resolve the preference at send time and drop the send.
   it("drops (no send) when the recipient has disabled email delivery for this type", async () => {
     await withTestDb(async (db) => {
       const alice = await seedUser(db);
       await connectMailbox(db, alice.id);
       const dealId = await seedDeal(db, { ownerId: alice.id, visibilityLevel: "all" });
       const signal = new AbortController().signal;
-      // Explicitly disable email for this type (simulating an opt-out after enqueue).
       await setPreference(db, alice.id, "deal_won", { inApp: true, email: false }, signal);
       const [n] = await db
         .insert(notifications)
@@ -172,7 +160,6 @@ describe("runEmailNotificationJob", () => {
       const mailbox = await connectMailbox(db, alice.id);
       const dealId = await seedDeal(db, { ownerId: alice.id, visibilityLevel: "all" });
       const signal = new AbortController().signal;
-      // Email delivery must be enabled at send time (default is off).
       await setPreference(db, alice.id, "deal_won", { inApp: true, email: true }, signal);
       const [n] = await db
         .insert(notifications)
@@ -204,9 +191,6 @@ describe("runEmailNotificationJob", () => {
     });
   }, 60_000);
 
-  // Codex finding F36: pg-boss is at-least-once. A crash or timeout after Gmail accepted the
-  // message but before the job was acknowledged retries the job. Without a persisted marker
-  // the retry sends a duplicate email. The job must skip a row it has already emailed.
   it("does not re-send when the notification was already emailed (idempotent retry)", async () => {
     await withTestDb(async (db) => {
       const alice = await seedUser(db);
@@ -223,7 +207,6 @@ describe("runEmailNotificationJob", () => {
           entityId: dealId,
           actorId: null,
           payload: {},
-          // Already emailed on a prior (acknowledged-late) attempt.
           emailSentAt: new Date(),
         })
         .returning();

@@ -8,10 +8,6 @@ function capitalize(key: string): string {
   return key.length === 0 ? key : key[0]?.toUpperCase() + key.slice(1);
 }
 
-// Person/org detail "Overview" section (CO-2), modeled on the deal sidebar's Overview + the org
-// Stats block: a compact activity summary (total + per-type counts + last-activity / inactive-days)
-// sourced from contacts.activityStats. Read-only; the per-type rows collapse the counts-by-type the
-// procedure computes into one row each.
 export function ContactOverviewSection({
   entityType,
   entityId,

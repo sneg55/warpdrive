@@ -5,10 +5,6 @@ import type { withTestDb } from "@/db/testing";
 import type { PermSetUser } from "@/features/permissions/effective";
 import type { ActivityCreateInput, ActivityListFilter } from "./schemas";
 
-// Shared fixtures for activityRows.*.test.ts: a minimal actor, an always-fresh AbortSignal,
-// the seeded "call" activity type id, and a builder for the fields every listActivityRows
-// ordering test needs but doesn't vary (no parent, no participants).
-
 export function actor(id: string, isAdmin = false): PermSetUser {
   return {
     id,
@@ -21,8 +17,6 @@ export function actor(id: string, isAdmin = false): PermSetUser {
 
 export const sig = (): AbortSignal => new AbortController().signal;
 
-// "all" (no done/date/owner narrowing): the neutral filter for tests written before Task 7 added
-// the filter param, so they keep exercising unfiltered listing/ordering behavior unchanged.
 export const noFilter: ActivityListFilter = {
   ownerId: null,
   done: "all",

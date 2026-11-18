@@ -85,7 +85,6 @@ describe("CreateFilterModal editing a saved filter", () => {
     expect(screen.queryByRole("button", { name: "Save" })).toBeNull();
   });
 
-  // Update is owner-scoped server-side, so the dialog must not offer it on someone else's filter.
   it("forks someone else's shared filter and says so", async () => {
     createSavedFilterAction.mockResolvedValue({ ok: true, value: { id: "srv-9" } });
     const onSave = vi.fn();
@@ -118,7 +117,6 @@ describe("CreateFilterModal editing a saved filter", () => {
     expect(updateSavedFilterAction).not.toHaveBeenCalled();
   });
 
-  // A rejected update has to read like the rejected create: human copy, never a bare error id.
   it("renders human copy when the update is rejected", async () => {
     updateSavedFilterAction.mockResolvedValue({ ok: false, error: { id: "E_DEAL_008" } });
     const onSave = vi.fn();
@@ -132,13 +130,11 @@ describe("CreateFilterModal editing a saved filter", () => {
     expect(onSave).not.toHaveBeenCalled();
   });
 
-  // Saving an owned filter must not rename it to a description derived from its conditions.
   it("keeps the saved filter's own name in the name field", () => {
     render(<CreateFilterModal onClose={() => {}} onSave={() => {}} savedFilter={view()} />);
     expect(screen.getByLabelText<HTMLInputElement>("Filter name").value).toBe("Acme or Corp");
   });
 
-  // Its shared flag is part of the row being updated, so it must round-trip, not reset to private.
   it("seeds the shared checkbox from the filter being edited", async () => {
     updateSavedFilterAction.mockResolvedValue({ ok: true, value: undefined });
     render(

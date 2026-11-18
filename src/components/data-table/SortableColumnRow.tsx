@@ -8,14 +8,10 @@ import type { ColumnDef } from "./columnModel";
 
 export interface SortableColumnRowProps {
   col: ColumnDef;
-  // Pinned (the row-link column): checkbox disabled, no drag handle, always checked.
   pinned: boolean;
   onToggle: (key: string) => void;
 }
 
-// One visible column row inside the DnD list: a grip handle (non-pinned), a checkbox to hide it, and
-// its header label. Reordering is driven by the parent's DndContext via useSortable's id. Generic
-// version of the leads SortableColumnItem, taking the ColumnDef directly (no catalog coupling).
 export function SortableColumnRow({
   col,
   pinned,

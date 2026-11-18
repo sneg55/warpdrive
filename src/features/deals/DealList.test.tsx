@@ -4,8 +4,6 @@ import { cleanup, fireEvent, render, screen, within } from "@testing-library/rea
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 beforeAll(() => {
-  // Radix Select (the "Move to stage" control) uses pointer capture + scrollIntoView, which jsdom
-  // does not implement. Stub them so the option list opens under fireEvent.
   Element.prototype.scrollIntoView = vi.fn();
   Element.prototype.hasPointerCapture = vi.fn(() => false);
   Element.prototype.releasePointerCapture = vi.fn();
@@ -56,8 +54,6 @@ const props = {
   currency: "USD",
 };
 
-// Drive the bulk-stage flow end to end: tick a row's checkbox, pick a stage from the Move-to-stage
-// select, then affirm the confirmation the move now goes through.
 function selectRowAndMove(stageName: string): void {
   fireEvent.click(screen.getByRole("checkbox", { name: "Select Acme renewal" }));
   fireEvent.click(screen.getByLabelText("Move to stage"));
@@ -68,7 +64,6 @@ function selectRowAndMove(stageName: string): void {
 describe("DealList", () => {
   it("opens the deal when the title is clicked (title is a link)", () => {
     render(<DealList {...props} />);
-    // Pipedrive opens the deal on title click; the title must be a real link.
     const link = screen.getByRole("link", { name: "Acme renewal" });
     expect(link).toHaveAttribute("href", "/deals/d1");
   });
@@ -89,7 +84,6 @@ describe("DealList", () => {
   });
 
   it("defaults to Pipedrive's column set: Contact person, Next activity, Expected close date visible", () => {
-    // CV-4 / spec B4: PD's deals list defaults surface these three; WD previously hid them.
     const defaults = DEAL_LIST_COLUMNS.filter((c) => c.defaultVisible === true).map((c) => c.key);
     expect(defaults).toEqual(
       expect.arrayContaining(["person", "nextActivity", "expectedCloseDate"]),
@@ -107,7 +101,6 @@ describe("DealList", () => {
     );
     expect(screen.getByRole("columnheader", { name: "Expected close date" })).toBeInTheDocument();
     const titleRow = screen.getByText("Acme renewal").closest("tr") as HTMLElement;
-    // Date-only value must render in local time (no UTC off-by-one).
     expect(within(titleRow).getByText("Aug 1, 2026")).toBeInTheDocument();
   });
 
@@ -159,7 +152,6 @@ describe("DealList", () => {
     selectRowAndMove("Proposal");
 
     await vi.waitFor(() => expect(onBulkStage).toHaveBeenCalledWith(["d1"], "s2"));
-    // Success: the selection bar (only shown when rows are selected) disappears.
     await vi.waitFor(() =>
       expect(screen.queryByRole("toolbar", { name: "Bulk actions" })).not.toBeInTheDocument(),
     );
@@ -174,15 +166,12 @@ describe("DealList", () => {
     const titleLinks = (): HTMLElement[] =>
       screen.getAllByRole("link").filter((l) => /^Deal \d+$/.test(l.textContent ?? ""));
     render(<DealList {...props} rows={many} total={60} />);
-    // Only the first window (50) of the 60 rows is mounted; the rest wait behind Show more.
     expect(titleLinks()).toHaveLength(50);
     fireEvent.click(screen.getByRole("button", { name: /show more/i }));
     expect(titleLinks()).toHaveLength(60);
     expect(screen.queryByRole("button", { name: /show more/i })).not.toBeInTheDocument();
   });
 
-  // A nine-column header, a select-all checkbox, a gear and a "0 deals - total value $0" footer
-  // over zero rows is machinery, not information.
   it("drops the whole table when nothing is there and nothing is filtered", () => {
     render(
       <DealList
@@ -202,8 +191,6 @@ describe("DealList", () => {
     expect(screen.getByText("Nothing archived")).toBeInTheDocument();
   });
 
-  // A filter narrowed the view to nothing: the columns are still the view the user built, so
-  // they stay, and the message says a filter is what emptied it.
   it("keeps the table when a filter is what emptied it", () => {
     render(
       <DealList {...props} rows={[]} total={0} totalValue="0" filtered empty={<p>No matches</p>} />,
@@ -219,7 +206,6 @@ describe("DealList", () => {
     selectRowAndMove("Proposal");
 
     await vi.waitFor(() => expect(onBulkStage).toHaveBeenCalledWith(["d1"], "s2"));
-    // Failure: selection is retained so the user can see it didn't apply and retry.
     expect(screen.getByRole("toolbar", { name: "Bulk actions" })).toBeInTheDocument();
     expect(screen.getByText("1 selected")).toBeInTheDocument();
   });

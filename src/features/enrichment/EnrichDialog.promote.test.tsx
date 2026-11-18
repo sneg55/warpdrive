@@ -95,9 +95,6 @@ it("carries a promotion the user turns on", async () => {
   ]);
 });
 
-// A target with nothing to promote must not carry the key at all: the plan reads it for every
-// selection, and a stray false would read as a deliberate "leave the primary alone" on a field
-// that has no primary.
 it("omits the flag on a target that holds one value", async () => {
   const onApply = renderDialog(
     emailField({

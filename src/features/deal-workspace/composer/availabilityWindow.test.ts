@@ -3,7 +3,6 @@ import { availabilityWindow } from "./composerHelpers";
 
 describe("availabilityWindow", () => {
   it("covers the full same-day window through the end time (not just the start instant)", () => {
-    // Same-day 10:00 to 11:00: the busy check must span to 11:00, else a 10:30 conflict reads Free.
     const w = availabilityWindow("2026-07-02", "10:00", "", "11:00");
     expect(w.from).toBe(new Date("2026-07-02T10:00").toISOString());
     expect(w.to).toBe(new Date("2026-07-02T11:00").toISOString());

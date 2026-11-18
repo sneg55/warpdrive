@@ -12,9 +12,6 @@ function stateFor(index: number, active: number): StepState {
   return "upcoming";
 }
 
-// The horizontal progress header for the import wizard (Upload -> Map columns -> Preview ->
-// Import). Completed steps show a check, the current step a filled numbered circle, upcoming
-// steps a muted outline. Mirrors Pipedrive's stepper so users always know where they are.
 export function WizardStepper({ step }: { step: WizardStep }): React.ReactNode {
   const active = activeDisplayStep(step);
   return (

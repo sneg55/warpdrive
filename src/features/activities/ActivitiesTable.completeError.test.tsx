@@ -83,9 +83,6 @@ const ROW = {
 };
 
 describe("ActivitiesTable done checkbox failure", () => {
-  // Regression: a rejected complete (E_AUTH_CSRF, a permission denial, a dead session) used to be
-  // dropped on the floor. The checkbox stayed unchecked and the user had no way to know the click
-  // never reached the database, which is how prod accumulated 74 activities and zero completions.
   it("reports the error id when marking done fails", async () => {
     complete.mockResolvedValue({ ok: false, error: { id: "E_AUTH_CSRF" } });
     useQuery.mockReturnValue({ data: [ROW], refetch });

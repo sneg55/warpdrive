@@ -11,7 +11,7 @@ it("forwards warn/error once per unique message and restores console", () => {
   const originalWarn = console.warn;
   const uninstall = installConsoleForwarding();
   console.warn("dup");
-  console.warn("dup"); // deduped
+  console.warn("dup");
   console.error("bad");
   expect(captureMock).toHaveBeenCalledTimes(2);
   expect(captureMock).toHaveBeenCalledWith("client_console", {

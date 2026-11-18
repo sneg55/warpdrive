@@ -5,14 +5,8 @@ import { ResponsiveContainer, Tooltip } from "recharts";
 import { AppError, ERROR_IDS } from "@/constants/errorIds";
 import { cn } from "@/lib/utils";
 
-// SANCTIONED recharts wrapper (shadcn `chart`). Feature code composes recharts marks inside
-// ChartContainer and never imports ResponsiveContainer or Tooltip directly.
-// Series colours are declared in the config as CSS custom properties and published as
-// `--color-<key>` on the container, so every mark follows the Day/Night tokens.
-
 export interface ChartSeries {
   label: React.ReactNode;
-  // Any CSS colour. Use a token, e.g. `hsl(var(--primary))`, never a literal hex.
   color?: string;
 }
 
@@ -77,8 +71,6 @@ interface TooltipItem {
   dataKey?: string | number;
   value?: string | number;
   color?: string;
-  // The whole row the mark was drawn from. A mark carries one number; the row usually carries the
-  // context that makes it readable, e.g. the count behind a sum.
   payload?: unknown;
 }
 
@@ -86,8 +78,6 @@ export interface ChartTooltipContentProps {
   active?: boolean;
   payload?: TooltipItem[];
   label?: string | number;
-  // Renders one series' number. Money and counts format differently, so the caller owns it; the
-  // third argument is the row the mark came from, for context the mark itself does not carry.
   formatValue?: (
     value: string | number | undefined,
     key: string,

@@ -7,7 +7,6 @@ import { DealsEmpty } from "./DealsEmpty";
 
 afterEach(cleanup);
 
-// The archive rendered a full header row, a footer and no sentence at all about what archiving is.
 it("says what the archive is and offers the way back to the board", () => {
   render(
     <DealsEmpty
@@ -26,7 +25,6 @@ it("says what the archive is and offers the way back to the board", () => {
     "href",
     "/pipeline/p1",
   );
-  // The archive is not where a deal is created, so it must not offer that.
   expect(screen.queryByRole("button", { name: "+ Deal" })).toBeNull();
 });
 

@@ -11,9 +11,6 @@ export type DerivedVisibility = {
   visibilityGroupId: string | null;
 };
 
-// Derive visibility level and group from settings for a contact entity
-// (server-side trust boundary: clients never send visibility for contacts).
-// Shared by both personsRepo and orgsRepo so the two derivations cannot diverge.
 export async function deriveContactVisibility(
   db: Db,
   actor: ContactActor,

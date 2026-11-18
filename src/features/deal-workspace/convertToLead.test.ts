@@ -1,4 +1,3 @@
-// Integration tests for convertDealToLead (deal -> lead). Real Postgres, no DB mocking.
 import { and, eq } from "drizzle-orm";
 import { afterAll, beforeAll, expect, it } from "vitest";
 import type { PermissionFlagKey } from "@/constants/permissionFlags";
@@ -51,7 +50,6 @@ it("refuses to convert an already-archived deal and creates no second lead", asy
   const u = await seedUser(h.db);
   const p = await seedPipelineWithStages(h.db, ["A"]);
   const deal = await seedDeal(p.pipeline.id, p.stages[0]!.id, u.id);
-  // Simulate a deal already closed (e.g. by a prior convert): only archivedAt is stamped.
   await h.db.update(deals).set({ archivedAt: new Date() }).where(eq(deals.id, deal.id));
   const [archived] = await h.db.select().from(deals).where(eq(deals.id, deal.id));
   if (archived === undefined) throw new Error("archived reload undefined");
@@ -93,11 +91,9 @@ it("creates a lead carrying the deal's title/value/labels, archives the deal, lo
   expect(lead.sourceChannel).toBe("inbound");
   expect(lead.ownerId).toBe(u.id);
 
-  // Deal is closed (archived), so it is no longer active.
   const [closed] = await h.db.select().from(deals).where(eq(deals.id, deal.id));
   expect(closed?.archivedAt).not.toBeNull();
 
-  // Changelog on BOTH sides.
   const dealLog = await h.db
     .select()
     .from(changeLogs)
@@ -149,7 +145,6 @@ it("denies an editor without deal.create and creates no lead / leaves the deal a
   const deal = await seedDeal(p.pipeline.id, p.stages[0]!.id, u.id);
   const before = await h.db.select({ id: leads.id }).from(leads);
 
-  // Owner has edit_own (passes the edit gate) but NOT deal.create.
   const r = await convertDealToLead(
     h.db,
     regularActor(u.id, ["deal.edit_own"]),
@@ -184,7 +179,6 @@ it("returns E_DEAL_002 on a stale CAS and does not convert", async () => {
   if (r.ok === true) return;
   expect(r.error.id).toBe("E_DEAL_002");
 
-  // The lead insert rolled back with the failed CAS (single transaction).
   const after = await h.db.select({ id: leads.id }).from(leads);
   expect(after.length).toBe(before.length);
   const [still] = await h.db.select().from(deals).where(eq(deals.id, deal.id));

@@ -4,18 +4,12 @@ import type React from "react";
 import type { DealStatus } from "@/constants/dealStatus";
 import { cn } from "@/lib/utils";
 
-// Pipedrive reveals a bottom action bar during a deal drag: Lost | Won | Move, each a dashed drop
-// target. Colors stay restrained: lost cautionary, won positive, the rest neutral. The bar only
-// exists while a drag is active (see Board's dragActive state). Delete is deliberately NOT a drag
-// target: deletion is a confirmed action on the deal/actions menu, not a drop zone.
 export const DROP_ZONES = [
   { id: "deal-zone-lost", label: "Lost", tone: "text-red-600" },
   { id: "deal-zone-won", label: "Won", tone: "text-emerald-600" },
   { id: "deal-zone-move", label: "Move", tone: "text-muted-foreground" },
 ] as const;
 
-// Maps a drop-zone id to the deal status transition it triggers, or null for zones that are
-// not a status change (Delete, Move/Convert) and for any non-zone target (a stage id).
 export function zoneToStatus(zoneId: string): "won" | "lost" | null {
   if (zoneId === "deal-zone-won") return "won";
   if (zoneId === "deal-zone-lost") return "lost";

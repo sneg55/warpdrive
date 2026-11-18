@@ -1,7 +1,3 @@
-// Pure step machine for the import wizard. The reducer enforces order (upload ->
-// map after a batch is created -> preview after validation) and translates the
-// UI's per-column choices into the backend columnMappingSchema shape via
-// buildColumnMapping. No React, no I/O: the orchestrator owns the async calls.
 import { DEFAULT_IMPORT_SOURCE, type ImportSource } from "@/constants/importSources";
 import { assertNever } from "@/types/result";
 import type { MappableEntity } from "./importFields";
@@ -12,9 +8,6 @@ import { reseed, type SuggestContext, seedColumns } from "./wizardSeed";
 export type WizardStep = "upload" | "preparing" | "map" | "validating" | "preview" | "commit";
 export type ImportTarget = "person" | "organization" | "deal" | "lead" | "activity" | "note";
 
-// One CSV column's destination: an entity, plus exactly one of a standard `field` or a custom
-// `key`. Both empty means "do not import this column". The entity is what lets one row write a
-// lead AND its organization AND a note (see importFields.TARGET_ENTITY_GROUPS).
 export interface ColumnChoice {
   entity: MappableEntity;
   field: string;
@@ -34,7 +27,6 @@ export interface WizardState {
   totalRows: number;
   dedupMode: "skip" | "update";
   columns: Record<string, ColumnChoice>;
-  // Collect every unmapped, non-empty cell into a note on the created record.
   rowNoteFromUnmapped: boolean;
   validation: { valid: number; invalid: number } | null;
 }
@@ -149,9 +141,6 @@ export function wizardReducer(state: WizardState, action: WizardAction): WizardS
   }
 }
 
-// The standard (non-custom) fields the current mapping targets, keyed "entity:field". The entity
-// has to be part of the key: Organization > Name and Person > Name are different destinations, and
-// a person import must not count the former as satisfying its required Name.
 function mappedFields(state: WizardState): Set<string> {
   const out = new Set<string>();
   for (const col of Object.values(state.columns)) {
@@ -160,10 +149,6 @@ function mappedFields(state: WizardState): Set<string> {
   return out;
 }
 
-// A mapping is complete once every REQUIRED field of the target's PRIMARY entity has a column
-// mapped to it (name for person/org, title for deal/lead, subject for activity); the map step's
-// Continue stays disabled until then. A related group's required field (Organization > Name) is
-// enforced at validate time, since the group is optional until one of its cells is filled.
 export function isMappingComplete(
   state: WizardState,
   source: ImportSource = DEFAULT_IMPORT_SOURCE,
@@ -175,8 +160,6 @@ export function isMappingComplete(
   );
 }
 
-// Project the UI choices onto the backend's columnMappingSchema, dropping columns
-// the user left unmapped so applyMapping ignores them.
 export function buildColumnMapping(state: WizardState): ColumnMapping {
   const columns: ColumnMapping["columns"] = {};
   for (const [header, choice] of Object.entries(state.columns)) {

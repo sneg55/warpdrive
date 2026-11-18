@@ -15,16 +15,13 @@ export interface LeadsActionBarProps {
   onFilter: (f: Filter) => void;
   count: number;
   baseCurrency?: string;
-  // Gates the "Import leads" link in the add-lead menu (data.import permission).
   canImport: boolean;
   onCreated: () => void;
-  // Filter state (all server-side; owner filtering is always by id, see LeadFilters).
   labelKeys: string[];
   onLabelKeys: (keys: string[]) => void;
   nextActivity: LeadNextActivityBucket | null;
   onNextActivity: (b: LeadNextActivityBucket | null) => void;
   owner: OwnerFilter;
-  // Column show/hide + drag-reorder.
   catalog: readonly LeadColumn[];
   order: readonly string[];
   visibleKeys: ReadonlySet<string>;
@@ -33,7 +30,6 @@ export interface LeadsActionBarProps {
   onExport: () => void;
   exporting: boolean;
   exportError: string | null;
-  // Inline ad-hoc condition builder, rendered alongside the fixed-chip LeadFilters (additive).
   filterBuilder?: React.ReactNode;
 }
 
@@ -73,8 +69,6 @@ function MoreActionsIcon({ exporting }: { exporting: boolean }): React.ReactNode
   );
 }
 
-// Full-width action bar (replaces the old left sub-rail). Inbox/Archive icon group, add-lead split
-// button, counter, filters, column cog, and a more-actions menu with CSV export.
 export function LeadsActionBar(props: LeadsActionBarProps): React.ReactNode {
   const { filter, onFilter, count } = props;
   return (

@@ -57,7 +57,6 @@ describe("BoardSortControl", () => {
         onToggleDirection={onToggleDirection}
       />,
     );
-    // Ascending now: the button offers to sort descending.
     const btn = screen.getByRole("button", { name: "Sort descending" });
     fireEvent.click(btn);
     expect(onToggleDirection).toHaveBeenCalledTimes(1);

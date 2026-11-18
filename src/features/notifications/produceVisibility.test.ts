@@ -7,8 +7,6 @@ import { createNotification } from "./produce";
 
 type TestDb = Parameters<Parameters<typeof withTestDb>[0]>[0];
 
-// A deal owned by ownerId that only its owner (or someone with a team-manager grant over the
-// owner) can see.
 async function seedOwnerDeal(db: TestDb, ownerId: string): Promise<string> {
   const { pipeline, stages } = await seedPipelineWithStages(db, ["Open"]);
   const stage = stages[0];
@@ -48,9 +46,6 @@ async function seedManagerOverMember(
   return { managerId: manager.id, memberId: member.id };
 }
 
-// The produce-time gate must not be stricter than the read-time one. canSee rule 4b grants a
-// manager holding team.viewMembers sight of records owned by their team members, so a producer
-// that cannot see that grant silently drops notifications the feed would have rendered.
 it("delivers to a team manager who sees the record only through team.viewMembers", async () => {
   await withTestDb(async (db) => {
     const { managerId, memberId } = await seedManagerOverMember(db, true);

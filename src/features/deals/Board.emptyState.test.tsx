@@ -124,12 +124,6 @@ function stageList(): HTMLElement | null {
   return screen.queryByRole("list", { name: "Pipeline stages" });
 }
 
-// Board filter state survives a reload, so a filter that excludes every deal can greet a rep with
-// five columns of nothing. The columns are machinery: replace them with the sentence that says why
-// the board is blank, and the control that undoes it.
-//
-// The owner picker narrows on the client, so cards the server returned prove a filter is hiding
-// them. That is the only case where the board asserts a filter is to blame.
 const OWNER_BEN: BoardViewState = {
   ownerId: BEN,
   sortKey: "title",
@@ -159,15 +153,12 @@ describe("Board with a filter that provably excludes every deal", () => {
   });
 });
 
-// A saved filter narrows server-side, so zero rows back is indistinguishable from a pipeline with
-// nothing in it. Blaming the filter would promise deals that clearing it cannot produce.
 describe("Board where the filter and an empty pipeline look the same", () => {
   test("claims neither cause and offers both ways out", () => {
     renderBoard([], ROTTING);
 
     const title = screen.getByText("Nothing to show here");
     expect(screen.queryByText("No deals match these filters")).toBeNull();
-    // Scoped to the empty state: the add-deal control also lives in the toolbar above it.
     const panel = title.parentElement;
     if (panel === null) throw new Error("empty state has no container");
     const empty = within(panel);
@@ -182,8 +173,6 @@ describe("Board where the filter and an empty pipeline look the same", () => {
   });
 });
 
-// An empty pipeline is a different sentence: nothing is being hidden, so the way out is adding a
-// deal, and the stage columns stay because they are the drop targets a first deal lands in.
 describe("Board with an empty, unfiltered pipeline", () => {
   test("says the pipeline is empty and keeps the stage columns", () => {
     renderBoard([]);
@@ -194,8 +183,6 @@ describe("Board with an empty, unfiltered pipeline", () => {
   });
 });
 
-// The owner picker is the third narrowing dimension and it lives outside the Filter menu, so
-// without a chip nothing on screen says the board is showing one person's deals.
 describe("Board applied-filter chips", () => {
   test("names the owner the board is narrowed to", () => {
     renderBoard(CARDS, { ...ROTTING, savedFilter: null, ownerId: BEN });

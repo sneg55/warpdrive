@@ -5,10 +5,6 @@ import { seedUser } from "@/db/testing/factories";
 import type { AuthUser } from "@/features/permissions/types";
 import { listInbox } from "./router";
 
-// Regression: the Inbox list "sender" column led with the LATEST message's sender, which for a
-// thread the owner sent is the owner themselves. Pipedrive leads each row with the COUNTERPARTY
-// (the other party / linked contact), so an inbox of sent mail showed "me" on every row.
-
 type TestDb = Parameters<Parameters<typeof withTestDb>[0]>[0];
 const SIG = (): AbortSignal => AbortSignal.timeout(8000);
 

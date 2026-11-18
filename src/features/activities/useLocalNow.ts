@@ -1,10 +1,6 @@
 "use client";
 import { useSyncExternalStore } from "react";
 
-// A minute-resolution clock as an external store. The week agenda needs the viewer's local time
-// for the now-line and the today column; rendering it during SSR would bake the server's clock and
-// timezone into the HTML and mismatch on hydration, so the server snapshot is null and the real
-// time arrives on subscribe. One shared timer, so every reader ticks on the same edge.
 const listeners = new Set<() => void>();
 let nowMs: number | null = null;
 let timer: ReturnType<typeof setInterval> | null = null;

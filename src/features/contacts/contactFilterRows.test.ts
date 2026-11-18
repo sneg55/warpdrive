@@ -15,8 +15,6 @@ describe("labels field metadata", () => {
     expect(ORG_FILTER_LABELS.labels).toBe("Label");
   });
 
-  // A dedicated kind so the builder renders a label picker instead of a free-text box: a raw
-  // typed string would have to match a label key exactly to ever match a row.
   it("reports the label kind so the value control is a picker, not a text box", () => {
     expect(fieldKind(PERSON_FILTER_CONFIG, "labels")).toBe("label");
     expect(fieldKind(ORG_FILTER_CONFIG, "labels")).toBe("label");
@@ -63,7 +61,6 @@ describe("rowsToDefinition", () => {
     expect(def).toBeNull();
   });
 
-  // A label key is a string, so it must survive as one: numeric coercion would send NaN to SQL.
   it("keeps a labels row's value as a string", () => {
     expect(
       rowsToDefinition(
@@ -74,7 +71,6 @@ describe("rowsToDefinition", () => {
     ).toEqual({ combinator: "and", conditions: [{ field: "labels", op: "eq", value: "hot" }] });
   });
 
-  // Several labels are one "is any of" condition, so the array travels whole.
   it("keeps every value of a multi-value labels row", () => {
     expect(
       rowsToDefinition(
@@ -88,8 +84,6 @@ describe("rowsToDefinition", () => {
     });
   });
 
-  // An empty multi-select is an unfinished row: compiling it would match nothing while the filter
-  // looked applied.
   it("drops a multi-value row with nothing picked", () => {
     expect(
       rowsToDefinition(
@@ -109,8 +103,6 @@ describe("rowsToDefinition", () => {
     expect(OP_LABELS.isNotEmpty).toBe("is not empty");
   });
 
-  // isEmpty takes no value, so the builder leaves the value box blank. Dropping the row would make
-  // an "is empty" filter look exactly like a filter that matched everything.
   it("keeps a valueless row whose value is blank", () => {
     expect(
       rowsToDefinition(

@@ -1,7 +1,4 @@
 // @vitest-environment node
-// Integration tests for the notifications tRPC router and CSRF-guarded server actions.
-// Real Postgres via withTestDb; no mocks for DB or feed functions.
-// CSRF guard tests mock next/headers (same pattern as dealActions.csrf.test.ts).
 
 import { sql } from "drizzle-orm";
 import { beforeEach, describe, expect, it, test, vi } from "vitest";
@@ -12,8 +9,6 @@ import { seedPipelineWithStages, seedUser } from "@/db/testing/factories";
 import { CSRF_COOKIE } from "@/features/auth/csrf";
 import type { HydratedActor } from "@/server/hydrateActor";
 import { createCaller } from "@/server/trpc/root";
-
-// ---- CSRF mock setup (mirrors dealActions.csrf.test.ts) ----
 
 const headerStore = new Map<string, string>();
 const cookieStore = new Map<string, string>();
@@ -29,13 +24,11 @@ vi.mock("next/headers", () => ({
     }),
 }));
 
-// Mock DB client so CSRF tests do not need a real DB connection.
 vi.mock("@/db/client", () => ({ db: {} }));
 vi.mock("@/server/trpc/context", () => ({
   createContext: vi.fn().mockResolvedValue({ actor: null, session: null, db: {} }),
 }));
 
-// Import actions AFTER mocks are in place.
 const { markReadAction, markAllReadAction, setPreferenceAction } = await import("./actions");
 
 const VALID_TOKEN = "csrf-test-token";
@@ -50,10 +43,6 @@ beforeEach(() => {
   cookieStore.clear();
 });
 
-// ---- tRPC router tests (real DB) ----
-
-// Build a HydratedActor-compatible actor from a seeded user row (name/avatar are placeholders).
-// Empty flags/groupIds sets are fine: read-feed tests do not exercise flag checks.
 function makeActor(u: { id: string; isAdmin: boolean; isActive: boolean }): HydratedActor {
   return {
     id: u.id,
@@ -67,7 +56,6 @@ function makeActor(u: { id: string; isAdmin: boolean; isActive: boolean }): Hydr
   };
 }
 
-// Insert an "all"-visibility deal owned by the given user.
 async function seedAllDeal(
   db: Parameters<Parameters<typeof withTestDb>[0]>[0],
   ownerId: string,
@@ -137,15 +125,12 @@ describe("notifications tRPC router", () => {
       });
 
       const prefs = await caller.notifications.preferences();
-      // Spot-check both sides of DEFAULT_EMAIL_BY_TYPE, so a blanket default fails here.
       expect(prefs.deal_won).toEqual({ inApp: true, email: true });
       expect(prefs.mention).toEqual({ inApp: true, email: true });
       expect(prefs.email_open).toEqual({ inApp: true, email: false });
     });
   });
 });
-
-// ---- CSRF-before-write tests (mocked DB) ----
 
 describe("notifications mutation actions: CSRF rejection before any write", () => {
   test("markReadAction rejects a null CSRF token before any DB work", async () => {
@@ -185,7 +170,6 @@ describe("notifications mutation actions: CSRF rejection before any write", () =
     setSameOrigin();
     const r = await markReadAction({ id: "00000000-0000-0000-0000-000000000001" }, VALID_TOKEN);
     expect(r.ok).toBe(false);
-    // CSRF passed; rejected at actor check.
     expect(r.ok === false && r.error.id).toBe("E_AUTH_003");
   });
 });

@@ -1,5 +1,3 @@
-// Per-type form control components for custom fields.
-// Each component is small and focused; the dispatch lives in render.widgets.tsx.
 import { Checkbox } from "@/components/ui/Checkbox";
 import { Combobox, type ComboboxOption } from "@/components/ui/Combobox";
 import { DatePicker } from "@/components/ui/DatePicker";
@@ -56,8 +54,6 @@ export function NumericControl({
       max={max}
       value={numVal(value)}
       onChange={(e) => {
-        // Commit-boundary guard: a cleared input is null (not NaN), and a value outside a
-        // configured bound (e.g. a negative on a monetary field with min=0) is not committed.
         const n = e.target.valueAsNumber;
         if (Number.isNaN(n)) {
           onChange(null);
@@ -124,9 +120,6 @@ export function RangeControl({
   );
 }
 
-// Options archived in settings are dropped from the picker so they cannot be chosen for new
-// records, but an option that is already the stored value stays visible so historical data
-// still reads correctly and can be deselected.
 function pickableOptions(def: ControlProps["def"], selectedIds: string[]) {
   return def.options.filter((o) => o.archived !== true || selectedIds.includes(o.id));
 }

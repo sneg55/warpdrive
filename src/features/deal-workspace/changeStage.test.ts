@@ -1,4 +1,3 @@
-// Integration tests for changeStage. Real Postgres via Testcontainers, no DB mocking.
 import { and, eq } from "drizzle-orm";
 import { afterAll, beforeAll, expect, it } from "vitest";
 import { changeLogs, deals } from "@/db/schema";
@@ -49,7 +48,6 @@ it("appends the deal to the bottom of a stage that already holds two deals", asy
   expect(r.ok).toBe(true);
   if (r.ok === false) return;
   expect(r.value.stageId).toBe(s1.id);
-  // Appended: strictly greater than the existing max (2) so it sorts last.
   expect(Number(r.value.boardPosition)).toBeGreaterThan(2);
   expect(r.value.stageEnteredAt.getTime()).toBeGreaterThanOrEqual(deal.stageEnteredAt.getTime());
 });

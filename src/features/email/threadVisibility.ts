@@ -9,12 +9,6 @@ import { assertMailboxOwner } from "./mailboxOwnership";
 
 export type EmailVisibility = (typeof EMAIL_VISIBILITY)[number];
 
-// Per-thread privacy write (P5). Owner-gated via assertMailboxOwner (E_PERM_001 on a non-owner),
-// so a co-viewer of a shared thread cannot flip its visibility. A thread the actor cannot see
-// (missing, or private and not theirs) returns the same not-found error as a missing id, matching
-// the 404-on-invisible pattern so the action never confirms a thread's existence to a non-owner.
-// A visible-but-not-owned (shared) thread returns the distinct owner-only E_PERM_001, since the
-// actor already knows it exists. Local only: no Gmail-side visibility concept to mirror.
 export async function setThreadVisibility(
   db: Db,
   args: { actor: AuthUser; threadId: string; visibility: EmailVisibility },

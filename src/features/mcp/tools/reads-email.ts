@@ -12,8 +12,6 @@ import {
   toolResult,
 } from "./types";
 
-// Both ids optional so the tool can be called for either record. Enforced in the handler rather
-// than with .refine(), which would make this a ZodEffects and registerTool needs a plain object.
 const recordScope = z.object({
   dealId: z.string().uuid().optional(),
   personId: z.string().uuid().optional(),

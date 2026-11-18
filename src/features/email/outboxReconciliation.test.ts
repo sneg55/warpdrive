@@ -69,8 +69,8 @@ it("sends once and a replay of a sent row does not re-send", async () => {
       signal: newSignal(),
     });
     expect(r2.ok).toBe(true);
-    if (r2.ok) expect(r2.value.status).toBe("sent"); // pure replay
-    expect(sendCount(fake)).toBe(afterFirst); // NO second send
+    if (r2.ok) expect(r2.value.status).toBe("sent");
+    expect(sendCount(fake)).toBe(afterFirst);
   });
 });
 
@@ -136,7 +136,7 @@ it("moves to needs_review when reconcile finds nothing and the window is exhaust
         SET status='sending', send_started_at=now()-interval '5 minutes', claimed_at=now()-interval '5 minutes'
         WHERE id=${attemptId}
       `);
-    const fake = new FakeGmailClient(); // no searchHits -> empty search
+    const fake = new FakeGmailClient();
 
     const r = await processSendAttempt(db, {
       accountId: acct,
@@ -144,11 +144,11 @@ it("moves to needs_review when reconcile finds nothing and the window is exhaust
       provider: gmailProvider(fake),
       storage: new FakeStorageClient(),
       signal: newSignal(),
-      windowMs: 1, // tiny window: the deadline is already in the past
+      windowMs: 1,
     });
     expect(r.ok).toBe(true);
     if (r.ok) expect(r.value.status).toBe("needs_review");
-    expect(sendCount(fake)).toBe(0); // never blind re-sent during reconcile
+    expect(sendCount(fake)).toBe(0);
     const row = (
       await db.execute(sql`SELECT status, error_id FROM email_send_attempts WHERE id=${attemptId}`)
     ).rows[0] as { status: string; error_id: string | null };

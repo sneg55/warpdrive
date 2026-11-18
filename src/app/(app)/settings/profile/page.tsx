@@ -15,8 +15,6 @@ import { ProfileClient } from "./ProfileClient";
 
 export const metadata = { title: STRINGS.settings.profile };
 
-// Personal preferences (Pipedrive "My account"): display name + avatar are editable (avatar via
-// the presigned-upload handshake); timezone + interface density persist to user_preferences.
 export default async function ProfilePage(): Promise<ReactNode> {
   const { actor } = await createContext();
   if (actor === null)
@@ -43,7 +41,6 @@ export default async function ProfilePage(): Promise<ReactNode> {
         timezone={prefs.timezone}
         density={prefs.density}
       />
-      {/* Appearance lives in the account menu, where people reach for a theme switch. */}
       <InterfacePreferences
         prefs={interfacePrefsFromUi(prefs.ui)}
         scheduleFollowUpAfterWon={prefs.ui.scheduleFollowUpAfterWon ?? false}

@@ -83,9 +83,6 @@ describe("diffStages", () => {
     expect(ops.deletes).toEqual([{ stageId: "s2", moveDealsToStageId: "s1" }]);
   });
 
-  // PIPELINES-07: a StrictMode double-invoked updater can record the same delete id twice, which
-  // makes the second deleteStageAction return STAGE_NOT_FOUND and surface a false error. diffStages
-  // must collapse duplicate ids so each stage is deleted exactly once.
   it("collapses duplicate deleted ids to a single delete", () => {
     const ops = diffStages({
       originalById: original,

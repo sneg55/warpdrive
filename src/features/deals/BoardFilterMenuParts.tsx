@@ -16,7 +16,6 @@ export function OwnerRow({
 }: {
   name: string;
   selected: boolean;
-  // Marks the row for the signed-in user so it reads as "Name (my)" (Pipedrive convention).
   isCurrentUser?: boolean;
   onClick: () => void;
 }): React.ReactNode {
@@ -38,8 +37,6 @@ export function OwnerRow({
   );
 }
 
-// One saved filter in the Filter menu: the name picks it, the star toggles the favourite and the
-// bin asks to delete it.
 export function SavedFilterItem({
   filter,
   selected,
@@ -63,13 +60,10 @@ export function SavedFilterItem({
       >
         <span className="truncate">{filter.name}</span>
       </DropdownMenuItem>
-      {/* Only the owner can toggle the favorite (it is a per-row, owner-scoped flag) or delete the
-          row, so both controls are shown only for owned filters. */}
       {filter.isOwn && (
         <DropdownMenuItem
           aria-label={filter.favorite ? "Unfavorite filter" : "Favorite filter"}
           aria-pressed={filter.favorite}
-          // Starring is not picking, so the menu stays open.
           onSelect={(e) => {
             e.preventDefault();
             onToggleFavorite?.(filter.id);

@@ -28,9 +28,6 @@ interface AppliedChip {
   onClear: () => void;
 }
 
-// The three ways a board narrows, each visible and each removable on its own. The Filter trigger
-// can name at most one of them, so without this row an owner selection or an ad-hoc definition is
-// invisible until the menu is opened.
 export function BoardFilterChips(props: BoardFilterChipsProps): React.ReactNode {
   const { ownerName, savedFilterName, conditionCount, onClearAll } = props;
   const { onClearOwner, onClearSavedFilter, onClearConditions } = props;

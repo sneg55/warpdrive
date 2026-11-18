@@ -12,7 +12,6 @@ function toStr(v: unknown): string {
   return "";
 }
 
-// Per-type label builders. Base words come from STRINGS.notifications.labels.
 const LABEL: Record<NotificationType, (p: Record<string, unknown>) => string> = {
   mention: (p) =>
     `${L.mention}${typeof p.title === "string" && p.title.length > 0 ? ` in ${p.title}` : ""}`,

@@ -116,7 +116,6 @@ it("deletes after confirming", async () => {
   render(<NoteCard {...base} onChanged={() => {}} />);
   await user.click(screen.getByRole("button", { name: /more actions/i }));
   await user.click(screen.getByRole("menuitem", { name: /delete/i }));
-  // Confirm dialog: the destructive confirm button, not the menu item.
   await user.click(screen.getByRole("button", { name: /^delete$/i }));
   expect(deleteNote).toHaveBeenCalledWith({ noteId: "n1" }, "csrf");
 });
@@ -131,7 +130,6 @@ it("surfaces the error and keeps editing open when saving an edit is denied", as
   await user.click(screen.getByRole("button", { name: /save/i }));
   await waitFor(() => expect(reportError).toHaveBeenCalledWith("E_PERM_001"));
   expect(onChanged).not.toHaveBeenCalled();
-  // The editor stays open so the edit is not silently lost.
   expect(screen.getByRole("textbox", { name: /note/i })).toBeInTheDocument();
 });
 
@@ -154,7 +152,6 @@ it("rolls back the pin and surfaces the error when pinning is denied", async () 
   const pinBtn = screen.getByRole("button", { name: /pin note/i });
   await user.click(pinBtn);
   await waitFor(() => expect(reportError).toHaveBeenCalledWith("E_PERM_001"));
-  // Optimistic pin was rolled back to the unpinned state.
   expect(screen.getByRole("button", { name: /pin note/i })).toHaveAttribute(
     "aria-pressed",
     "false",

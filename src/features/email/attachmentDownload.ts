@@ -23,16 +23,10 @@ export interface AttachmentDownload {
 
 const attachmentIdSchema = z.string().uuid();
 
-// 404-on-invisible, same discipline as canSeeEmail's other callers: a denied actor and a
-// missing/unknown attachment id return the identical error so existence is never leaked.
 function denied(): AppError {
   return new AppError(ERROR_IDS.GMAIL_ATTACHMENT_DENIED, "attachment not found", {});
 }
 
-// Resolve an inbound attachment for download: gate on the parent thread's visibility
-// (mailbox-privacy rule, same as getThread/markThreadRead), then lazily fetch the bytes
-// from Gmail through the injected client (never a live client baked into this pure logic,
-// so it stays testable with a fake). Bytes are never persisted; each download re-fetches.
 export async function resolveAttachmentDownload(
   db: Db,
   deps: AttachmentDownloadDeps,

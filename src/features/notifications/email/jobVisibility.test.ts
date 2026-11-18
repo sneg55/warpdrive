@@ -33,10 +33,6 @@ async function seedOwnerDeal(db: TestDb, ownerId: string): Promise<string> {
   return row.id;
 }
 
-// The send-time recheck must use the same visibility the feed and the producer use. Hydrating the
-// recipient without managedUserIds makes the recheck stricter than the read path, so a team
-// manager who sees the record through team.viewMembers gets the in-app notification but never the
-// email, with no error anywhere: the job just reports sent: false.
 it("emails a team manager who sees the deal only through team.viewMembers", async () => {
   await withTestDb(async (db) => {
     const [set] = await db
@@ -55,8 +51,6 @@ it("emails a team manager who sees the deal only through team.viewMembers", asyn
     await db.insert(teamMembers).values({ teamId: team.id, userId: member.id });
 
     await connectMailbox(db, manager.id);
-    // Email delivery defaults to off per type, so opt in explicitly: this test is about the
-    // visibility recheck, not the preference gate.
     await setPreference(
       db,
       manager.id,

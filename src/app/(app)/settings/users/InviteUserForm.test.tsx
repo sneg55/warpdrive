@@ -4,8 +4,6 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ERROR_IDS } from "@/constants/errorIds";
 
-// IDENTITY-02: with the action now returning a plain { error: { id } }, the form must render
-// the SPECIFIC message for that id, not the generic "Something went wrong." fallback.
 const { inviteUserAction } = vi.hoisted(() => ({ inviteUserAction: vi.fn() }));
 vi.mock("@/features/identity/actions/invite", () => ({ inviteUserAction }));
 vi.mock("@/utils/csrfCookie", () => ({ readCsrfToken: () => "tok" }));
@@ -24,8 +22,6 @@ function fillAndSubmit(): void {
 }
 
 describe("InviteUserForm inline validation", () => {
-  // A malformed email used to trigger Chrome's own "Please include an '@'" popover: OS chrome,
-  // outside the design system, and gone on the next keystroke.
   it("opts out of native browser validation", () => {
     const { container } = render(<InviteUserForm onInvited={() => {}} />);
     expect(container.querySelector("form")).toHaveAttribute("novalidate");
@@ -110,7 +106,6 @@ describe("InviteUserForm link invite (no email is sent)", () => {
     const status = await screen.findByRole("status");
     expect(status).toHaveTextContent(/no email/i);
     expect(status).toHaveTextContent(/new@example.com/);
-    // A shareable sign-in link is shown (the login URL, since access is Google SSO).
     const link = screen.getByRole("textbox", { name: /invite link/i });
     expect((link as HTMLInputElement).value).toContain("/login");
     expect(screen.getByRole("button", { name: /copy/i })).toBeInTheDocument();

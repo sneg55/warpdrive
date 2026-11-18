@@ -1,5 +1,3 @@
-// Shared test fixtures for dealMove.test.ts and dealMovePerms.test.ts.
-// Not production code; helpers only.
 import type { PermissionFlagKey } from "@/constants/permissionFlags";
 import { settings } from "@/db/schema/system";
 import type { withTestDb } from "@/db/testing";
@@ -23,7 +21,6 @@ export function regularSession(userId: string): PermSetUser {
     type: "regular",
     isActive: true,
     groupIds: new Set<string>(),
-    // deal.edit_own lets the owner move their own deals
     flags: new Set<PermissionFlagKey>(["deal.edit_own"]),
   };
 }
@@ -34,11 +31,10 @@ export function noEditSession(userId: string): PermSetUser {
     type: "regular",
     isActive: true,
     groupIds: new Set<string>(),
-    flags: new Set<PermissionFlagKey>(), // no deal.edit_* flags
+    flags: new Set<PermissionFlagKey>(),
   };
 }
 
-// Session shape for createDeal (uses CreateDealSession, not PermSetUser).
 export function createSession(userId: string) {
   return {
     userId,

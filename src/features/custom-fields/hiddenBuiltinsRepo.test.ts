@@ -18,7 +18,6 @@ it("hides then unhides a built-in field, idempotently", async () => {
     map = await listHiddenBuiltins(db, SIG());
     expect(map.organization.has("industry")).toBe(true);
 
-    // Idempotent hide (onConflictDoNothing).
     const r2 = await setBuiltinFieldHidden(
       db,
       { entity: "organization", key: "industry", hidden: true },

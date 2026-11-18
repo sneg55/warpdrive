@@ -1,5 +1,3 @@
-// Integration tests for getWorkspace (deal detail page aggregation).
-// Real Postgres via Testcontainers (no DB mocking, see CLAUDE.md).
 import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, expect, it } from "vitest";
 import type { PermissionFlagKey } from "@/constants/permissionFlags";
@@ -19,8 +17,6 @@ afterAll(async () => {
   await h.close();
 });
 
-// One actor object that satisfies BOTH ContactActor (createPerson) and AuthUser
-// (getWorkspace, which only needs canSee).
 function makeActor(userId: string) {
   return {
     id: userId,
@@ -81,7 +77,6 @@ it("returns 404-shape (E_DEAL_001) for a deal the actor cannot see", async () =>
   const actorUser = await seedUser(h.db);
   const actor = makeActor(actorUser.id);
 
-  // A deal owned by ANOTHER user with visibilityLevel "owner" (private to its owner).
   const otherUser = await seedUser(h.db);
   const pipe = await seedPipelineWithStages(h.db, ["Lead"]);
   const [hidden] = await h.db
@@ -104,8 +99,6 @@ it("returns 404-shape (E_DEAL_001) for a deal the actor cannot see", async () =>
   }
 });
 
-// F7/F9: a deal in an ARCHIVED pipeline must not open via direct workspace read, matching
-// list/board/search which hide archived pipelines.
 it("returns DEAL_NOT_FOUND for a deal in an archived pipeline", async () => {
   const u = await seedUser(h.db);
   const p = await seedPipelineWithStages(h.db, ["A"], { isArchived: true });
@@ -160,7 +153,6 @@ it("exposes pipeline name, owner avatar, and resolved followers with self flag",
   expect(r.value.followers).toHaveLength(2);
   expect(r.value.isFollowedBySelf).toBe(true);
 
-  // A viewer who is not a follower sees isFollowedBySelf === false.
   const other = await seedUser(h.db);
   const r2 = await getWorkspace(h.db, makeActor(other.id), deal.id, sig());
   expect(r2.ok).toBe(true);
@@ -177,9 +169,6 @@ it("returns a not-found err for a non-uuid dealId instead of throwing (bad [deal
   }
 });
 
-// A soft-deleted person/org is invisible everywhere else (getPerson/getOrg 404, listPeople
-// excludes). The deal workspace must treat it as absent too, otherwise DealSidebar renders a
-// live link to a contact whose detail page 404s (dangling link).
 it("omits a soft-deleted linked person (no dangling link to a 404 contact)", async () => {
   const user = await seedUser(h.db);
   const actor = makeActor(user.id);
@@ -206,7 +195,6 @@ it("omits a soft-deleted linked person (no dangling link to a 404 contact)", asy
     .returning();
   if (deal === undefined) throw new Error("setup: deal insert failed");
 
-  // Soft-delete the person AFTER linking (deleting a contact who is still on a live deal).
   await h.db.update(persons).set({ deletedAt: new Date() }).where(eq(persons.id, person.value.id));
 
   const r = await getWorkspace(h.db, actor, deal.id, sig());
@@ -252,9 +240,6 @@ it("omits a soft-deleted linked organization", async () => {
   }
 });
 
-// The deal page needs the pipeline's visibility group to build the VisibleDeal that gates the
-// owner-reassign and delete controls. getWorkspace already loads it for its own canSee check, so
-// it returns it rather than making the page re-query the same row.
 it("returns the pipeline's visibility group so callers need not re-query it", async () => {
   const user = await seedUser(h.db);
   const actor = makeActor(user.id);

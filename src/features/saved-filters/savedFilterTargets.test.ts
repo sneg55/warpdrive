@@ -1,5 +1,3 @@
-// A saved view carries the entity it belongs to, and each entity has its own field allow-list, so
-// the definition is validated against that entity rather than against the deal fields.
 import { describe, expect, it } from "vitest";
 import { savedFilterDefinitionSchema, saveFilterInput } from "./schemas";
 

@@ -45,8 +45,6 @@ describe("runSyncJob", () => {
   it("stamps last_error_id and returns err (never throws) when resolve/sync fails", async () => {
     await withTestDb(async (db) => {
       const accountId = await seedConnectedAccount(db);
-      // Injected resolver returns a transient error: runSyncJob must surface it as a
-      // Result and stamp the account, not throw.
       const r = await runSyncJob(
         db,
         { accountId, signal: SIG() },
@@ -69,7 +67,6 @@ describe("runSyncJob", () => {
     await withTestDb(async (db) => {
       const accountId = await seedConnectedAccount(db);
       const fake = new FakeGmailClient();
-      // No history pages -> syncMailbox applies nothing but succeeds and advances cursor.
       const r = await runSyncJob(
         db,
         { accountId, signal: SIG() },
@@ -79,7 +76,6 @@ describe("runSyncJob", () => {
       );
       expect(r.ok).toBe(true);
       if (r.ok) expect(r.value.applied).toBe(0);
-      // last_error_id cleared on a successful sync checkpoint.
       const row = (
         await db.execute(sql`SELECT last_error_id FROM email_accounts WHERE id=${accountId}`)
       ).rows[0] as { last_error_id: string | null };

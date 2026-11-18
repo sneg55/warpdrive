@@ -13,7 +13,6 @@ it("no-ops on a non-ready batch (pg-boss retry after terminal/undo)", async () =
   await withTestDb(async (db) => {
     const user = await seedUser(db, { isAdmin: true });
     const actor = toImportActor((await hydrateActor(db, user.id, AbortSignal.timeout(5000)))!);
-    // Batch already undone (undo deleted its records); a stray commit retry must not re-create.
     const [b] = await db
       .insert(importBatches)
       .values({
@@ -39,7 +38,7 @@ it("no-ops on a non-ready batch (pg-boss retry after terminal/undo)", async () =
     expect(r.ok && r.value).toMatchObject({ imported: 0 });
     expect(await db.select().from(persons).where(eq(persons.name, "Ghost"))).toHaveLength(0);
     const [after] = await db.select().from(importBatches).where(eq(importBatches.id, b!.id));
-    expect(after?.status).toBe("undone"); // claim failed, status untouched
+    expect(after?.status).toBe("undone");
   });
 });
 

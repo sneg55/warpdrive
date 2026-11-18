@@ -6,11 +6,6 @@ import { avatarObjectKey } from "./avatarStorage";
 
 const userId = z.string().uuid();
 
-// Fetch a user's confirmed avatar bytes + content type for inline serving. The route wrapper
-// gates on an authenticated actor (avatars are shown app-wide, so visibility is not per-viewer);
-// this resolver only enforces that userId is a uuid before deriving the key, then streams the
-// single stable per-user object. A missing object errors so the route returns 404 and the
-// Avatar component falls back to initials.
 export async function resolveAvatarBytes(
   storage: StorageClient,
   rawUserId: string,

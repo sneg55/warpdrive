@@ -78,9 +78,6 @@ const APOLLO = (fields: Record<string, string | number>): ProviderOutcome => ({
   candidate: { fields },
 });
 
-// The ordinary inline edit writes one custom field with a JSONB merge for exactly this reason
-// (see patchContactCustomField). Sending a whole snapshot through updatePerson / updateOrg runs it
-// past the active-definition schema, which strips every key that schema does not know.
 describe("applyEnrichment custom-field writes", () => {
   it("keeps an archived organization custom field that the selection never named", async () => {
     const active = await seedDef("organization");
@@ -160,9 +157,6 @@ describe("applyEnrichment custom-field writes", () => {
     expect(fields[archived.key]).toBe("kept from 2024");
   });
 
-  // The custom write happens after the built-in one. Returning an error from the transaction
-  // callback resolves it, so without an explicit rollback the built-in change commits while the
-  // caller is told nothing was applied and no change log or run stamp is written.
   it("rolls the built-in write back when a custom value is rejected", async () => {
     const active = await seedDef("organization");
     const [org] = await h.db
@@ -178,8 +172,6 @@ describe("applyEnrichment custom-field writes", () => {
       SIG(),
     );
 
-    // A text custom field caps at 255 characters. The planner does not know the target's limit,
-    // so this reaches the repo and is rejected there, after the industry column is written.
     const tooLong = "x".repeat(300);
     const run = await seedRun("organization", org.id, [
       APOLLO({ "org.industry": "Aerospace", "org.description": tooLong }),
@@ -235,9 +227,6 @@ describe("applyEnrichment custom-field writes", () => {
     expect(after?.updatedAt.toISOString()).toBe(result.value.entityUpdatedAtIso);
   });
 
-  // organizations.address is free-form jsonb and the demo seed writes `locality`. The org update
-  // schema is a plain z.object, so it strips every key it does not know and updateOrg then replaces
-  // the whole column: applying any address leaf deletes the rest.
   it("keeps an address key the update schema does not know", async () => {
     const [org] = await h.db
       .insert(schema.organizations)

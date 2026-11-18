@@ -23,13 +23,9 @@ const ICON = "h-4 w-4";
 const NO_PRIORITY_LABEL = "No priority";
 
 interface Props extends ActivityComposerProps {
-  // Collapses the composer back to its one-line prompt (Cancel button). Optional so scopes that
-  // mount the composer without a collapse affordance can omit it (defaults to a no-op).
   onCancel?: () => void;
 }
 
-// Create OR edit an activity (edit mode when `editing` is set). All state and the submit branching
-// live in useActivityComposer; this component is the field layout (PD's 7-icon rail).
 export function ActivityComposerInline(props: Props): React.ReactNode {
   const subjectRef = useComposeInitialFocus<HTMLInputElement>();
   const {
@@ -89,7 +85,6 @@ export function ActivityComposerInline(props: Props): React.ReactNode {
       />
       <TypeIconRail types={types} value={effectiveTypeId} onChange={setTypeId} />
 
-      {/* Each field sits in a ComposerFieldRow with PD's leading-icon gutter (the "7-icon rail"). */}
       <ComposerFieldRow icon={<Clock className={ICON} />}>
         <div className="flex flex-wrap items-center gap-2">
           <DateRangeRow
@@ -125,8 +120,6 @@ export function ActivityComposerInline(props: Props): React.ReactNode {
         </div>
       </ComposerFieldRow>
 
-      {/* Guests / Location / Video call are PD-style expandable link rows (progressive disclosure);
-          Guests starts open because the deal's contact is pre-selected as a participant. */}
       <ComposerFieldRow icon={<Users className={ICON} />} iconAlign="top">
         <GuestsField
           participantOptions={participantOptions}
@@ -153,8 +146,6 @@ export function ActivityComposerInline(props: Props): React.ReactNode {
         </ComposerDisclosureField>
       </ComposerFieldRow>
 
-      {/* Note: the edit surface uses the same amber tint as the Notes tab (ComposeNoteTab's
-          bg-warning/10), so switching composer tabs does not change the note background. */}
       <ComposerFieldRow icon={<StickyNote className={ICON} />} iconAlign="top">
         <div data-testid="note-surface" className="overflow-hidden rounded-md border bg-warning/10">
           <RichTextBody html={note} onChange={setNote} contentClassName="bg-transparent" />
@@ -165,7 +156,6 @@ export function ActivityComposerInline(props: Props): React.ReactNode {
         <OwnerField owners={owners} ownerId={ownerId} onOwner={setOwnerId} />
       </ComposerFieldRow>
 
-      {/* Linked deal/person/org rows sit at the bottom of the form, matching PD's arrangement. */}
       <ComposerFieldRow icon={<Link2 className={ICON} />} iconAlign="top">
         <LinkChips targets={linkTargets} value={links} onChange={setLink} />
       </ComposerFieldRow>

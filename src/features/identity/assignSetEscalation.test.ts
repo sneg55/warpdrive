@@ -6,12 +6,6 @@ import { makeTestDb, type TestDb } from "@/test/db";
 import { createPermissionSet } from "./permission-sets.service";
 import { assignPermissionSet } from "./users.service";
 
-// Codex finding F11: assignPermissionSet only checked permissions.manage + not-self. A
-// non-admin manager could ASSIGN an existing set containing high-risk flags
-// (permissions.manage, pipeline.manage, data.export, ...) to another account, escalating
-// privileges without admin approval. Granting high-risk flags is admin-only, and assigning
-// a set that carries them must follow the same policy.
-
 let h: TestDb;
 const SIG = () => AbortSignal.timeout(8000);
 const admin: PermSetUser = {

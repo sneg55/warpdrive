@@ -37,7 +37,6 @@ beforeEach(async () => {
   await h.db.execute(
     sql`TRUNCATE visibility_group_members, visibility_groups, pipelines, sessions, users, permission_sets, audit_events, settings RESTART IDENTITY CASCADE`,
   );
-  // Actors must exist as users for FK on audit flows.
   await h.db.insert(users).values([
     { id: admin.id, email: "admin@example.com", name: "Admin", googleSub: "g-a", isAdmin: true },
     { id: manager.id, email: "mgr@example.com", name: "Mgr", googleSub: "g-m" },
@@ -54,9 +53,6 @@ describe("visibility-groups service", () => {
     expect(audit.some((a) => a.action === "visibility_group.member_added")).toBe(true);
   });
 
-  // F3: a non-admin permissions.manage holder must NOT manage membership of a group that
-  // gates a restricted pipeline (permissions spec §5: those are admin-only). The service
-  // previously hardcoded groupGatesRestrictedPipeline:false with a stale "Phase 1" comment.
   test("manager cannot add a member to a group gating a restricted pipeline", async () => {
     const g = await createVisibilityGroup(h.db, admin, { name: "Restricted Pod" }, SIG());
     if (g.ok === false) throw new Error("setup: group create failed");
@@ -127,7 +123,6 @@ describe("visibility-groups service", () => {
     expect(r.value.map((m) => m.name)).toContain("Ann");
   });
 
-  // A plain regular user (no permissions.manage, not admin) must not see group rosters.
   test("an actor without permissions.manage is denied when listing group members", async () => {
     const g = await createVisibilityGroup(h.db, admin, { name: "Pod C" }, SIG());
     if (g.ok === false) throw new Error("setup: group create failed");

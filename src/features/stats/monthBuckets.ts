@@ -1,9 +1,3 @@
-// Month series for the won-deal trend, derived from the requested range rather than from the
-// rows the query returns: a month with no won deals must render a zero, not a gap.
-// String arithmetic on YYYY-MM, so no Date object can shift a bucket across a timezone.
-
-// A decade-wide range draws ticks nothing can read. Five years is the longest series the chart
-// renders; beyond that the oldest months are dropped and the SQL window follows (windowStart).
 export const MAX_TREND_MONTHS = 60;
 
 function monthIndex(month: string): number {
@@ -26,7 +20,6 @@ export function monthsInRange(from: string, to: string, max = MAX_TREND_MONTHS):
   return out;
 }
 
-// The date the SQL window should open on so it covers exactly the rendered months.
 export function windowStart(from: string, months: string[]): string | null {
   const first = months[0];
   if (first === undefined) return null;

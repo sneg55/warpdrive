@@ -19,14 +19,10 @@ export interface LeadRowActionsProps {
   onConvert: () => void;
   onArchiveToggle: () => void;
   onDelete: () => void;
-  // Users offered in the "Change owner" submenu; empty hides the option (no reachable users list).
   assignableUsers: { id: string; name: string }[];
   onChangeOwner: (ownerId: string) => void;
 }
 
-// Trailing per-row ellipsis menu (Pipedrive parity). The trigger stops propagation so opening the
-// menu never fires the row's open-detail navigation; menu items live in a portal, so their clicks
-// never bubble to the row.
 export function LeadRowActions({
   archived,
   converted,
@@ -48,14 +44,7 @@ export function LeadRowActions({
       >
         <EllipsisVertical aria-hidden="true" className="h-4 w-4" />
       </DropdownMenuTrigger>
-      <DropdownMenuContent
-        align="end"
-        className="min-w-44"
-        // The row (LeadsTable <tr>) has its own onClick to open the lead. Radix portals the menu
-        // but React events still bubble through the component tree, so without this a menu-item
-        // click would also fire the row's open-detail navigation.
-        onClick={(e) => e.stopPropagation()}
-      >
+      <DropdownMenuContent align="end" className="min-w-44" onClick={(e) => e.stopPropagation()}>
         <DropdownMenuItem onSelect={onOpen}>Open</DropdownMenuItem>
         <DropdownMenuItem onSelect={onConvert} disabled={converted}>
           {converted ? "Converted" : "Convert to deal"}

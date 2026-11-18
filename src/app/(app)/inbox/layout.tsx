@@ -5,9 +5,6 @@ import { listActorMailboxes } from "@/features/email/actorMailboxes";
 import { createContext } from "@/server/trpc/context";
 import { InboxShell } from "./InboxShell";
 
-// Persistent inbox layout: it wraps the list, reader (/inbox/[threadId]), and compose (/inbox/
-// compose) routes in one shell so the folder rail never remounts as you move between them. Mailbox
-// presence (does New email navigate or sit disabled) is read once here rather than per child route.
 export default async function InboxLayout({
   children,
 }: {

@@ -1,7 +1,5 @@
 import type { EmailVisibility } from "./threadVisibility";
 
-// One saved draft as every draft list renders it. Shared by the mailbox Drafts folder and the
-// record timelines so both read the same projection.
 export interface DraftSummary {
   id: string;
   subject: string | null;
@@ -30,7 +28,6 @@ export interface DraftRow {
   updated_at: string;
 }
 
-// jsonb columns round-trip through the driver as `unknown`; narrow rather than trust the shape.
 function asStrings(v: unknown): string[] {
   return Array.isArray(v) ? (v as string[]) : [];
 }
@@ -51,7 +48,6 @@ export function toDraftSummary(r: DraftRow): DraftSummary {
   };
 }
 
-// The column list every draft read selects, so the projection cannot drift between them.
 export const DRAFT_COLUMNS =
   "d.id, d.subject, d.body_html, d.to_emails, d.cc_emails, d.thread_id, d.account_id, " +
   "d.visibility, d.link_deal_id, d.link_person_id, d.updated_at";

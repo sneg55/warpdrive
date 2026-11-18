@@ -85,8 +85,6 @@ it("creating a dated activity sets the deal next_activity_at to the soonest open
 });
 
 it("createActivity rejects a leadId the actor cannot see (404-on-invisible)", async () => {
-  // Owner creates a private ("owner"-visibility) lead. An outsider must not be able to
-  // attach an activity to it just by knowing its id.
   const owner = await seedUser(ctx.db);
   const outsider = await seedUser(ctx.db);
   const outsiderActor = makeActor(outsider);

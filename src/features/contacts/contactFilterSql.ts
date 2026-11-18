@@ -1,12 +1,7 @@
-// The per-operator SQL branches for the contacts filter compiler, split out of contactFilter.ts to
-// keep that module at the allow-list and compile shape. Every value here is a bound parameter and
-// every operator string is a constant; see contactFilter.ts for the full invariant list.
 import { type SQL, sql } from "drizzle-orm";
 import { AppError, ERROR_IDS } from "@/constants/errorIds";
 import type { ContactFilterOp } from "./contactFilterConfig";
 
-// neq is IS DISTINCT FROM, not <>: `NULL <> 'x'` is NULL, which would drop every row whose column
-// is null from an "is not" filter.
 const OP_RAW = {
   eq: "=",
   neq: "IS DISTINCT FROM",
@@ -16,7 +11,6 @@ const OP_RAW = {
   lte: "<=",
 } as const;
 
-// A value-taking op with no value can only arrive by bypassing Zod, so it is a hard reject.
 export function requireValue(
   op: ContactFilterOp,
   value: string | number | string[] | undefined,
@@ -29,8 +23,6 @@ export function requireValue(
   return value;
 }
 
-// A scalar column cannot take a list: drizzle expands an array into a tuple, which would bind
-// `($1, $2)` where a single value belongs.
 function requireScalar(op: ContactFilterOp, value: string | number | string[]): string | number {
   if (Array.isArray(value)) {
     throw new AppError(ERROR_IDS.CONTACT_FILTER_INVALID, "List value on a scalar contacts field", {
@@ -40,8 +32,6 @@ function requireScalar(op: ContactFilterOp, value: string | number | string[]): 
   return value;
 }
 
-// An empty list compiles to a membership test that can never match, which reads as a filter that
-// silently ate every row. Zod rejects it, so one arriving here means the boundary was bypassed.
 export function requireLabelValue(
   op: ContactFilterOp,
   value: string | number | string[],
@@ -54,8 +44,6 @@ export function requireLabelValue(
   return Array.isArray(value) ? value : String(value);
 }
 
-// "Empty" depends on the column type: a text column is empty when NULL or blank, a numeric one only
-// when NULL, and a text[] one when it holds no elements.
 export function emptinessCondition(
   colSql: SQL,
   op: "isEmpty" | "isNotEmpty",
@@ -74,9 +62,6 @@ export function emptinessCondition(
     : sql`NOT (${colSql} IS NULL OR ${colSql} = '')`;
 }
 
-// Scalar (non-array) column branch. Every ILIKE wildcard is a constant and every value is bound.
-// notContains carries the NULL arm explicitly: `NULL NOT ILIKE 'x'` is NULL, so a bare NOT ILIKE
-// would drop exactly the rows a user means to keep.
 export function scalarCondition(
   colSql: SQL,
   op: ContactFilterOp,

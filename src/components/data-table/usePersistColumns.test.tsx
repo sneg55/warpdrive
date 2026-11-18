@@ -30,7 +30,6 @@ describe("usePersistColumns", () => {
   it("debounces and persists the column order after a change", () => {
     const { rerender } = render(<Harness order={["title", "org"]} />);
     rerender(<Harness order={["title", "org", "value"]} />);
-    // Not yet: still within the debounce window.
     expect(setColumnViewAction).not.toHaveBeenCalled();
     vi.advanceTimersByTime(600);
     expect(setColumnViewAction).toHaveBeenCalledWith(

@@ -1,8 +1,3 @@
-// Shared Add-deal / Add-lead form-field parsing. Both entities persist the same money and label
-// shapes, so keeping this in one place stops the two forms from drifting (e.g. one rounding money
-// differently from the other and silently failing the server's multipleOf(0.01) check).
-
-// Trim to null: blank optional strings collapse to null so an empty input never persists "".
 export function orNull(v: string | null | undefined): string | null {
   if (v === null || v === undefined) return null;
   const t = v.trim();
@@ -11,8 +6,6 @@ export function orNull(v: string | null | undefined): string | null {
 
 export type MoneyParse = { ok: true; value: number | null } | { ok: false; error: string };
 
-// Blank -> no value; otherwise a non-negative number rounded to cents (the value columns are
-// multipleOf(0.01)). Callers surface `error` as the form validation message.
 export function parseMoneyValue(raw: string): MoneyParse {
   const t = raw.trim();
   if (t === "") return { ok: true, value: null };

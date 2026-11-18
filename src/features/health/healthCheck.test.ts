@@ -18,7 +18,6 @@ it("reports ok when the database answers a trivial query", async () => {
 });
 
 it("reports not-ok (does not throw) when the database is unreachable", async () => {
-  // Take the pool down under the check so the SELECT fails for a real reason.
   const broken = await makeTestDb();
   await broken.close();
 

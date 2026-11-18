@@ -1,7 +1,5 @@
 import type { AttachmentMeta } from "./attachmentReads";
 
-// Same B/KB/MB convention as composer/AttachmentList.tsx and files/FileAttachments.tsx,
-// kept as a small local pure function so this file has no cross-feature import.
 function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
@@ -12,9 +10,6 @@ interface InboundAttachmentListProps {
   attachments: AttachmentMeta[];
 }
 
-// Chips for inbound Gmail attachments: filename + humanized size, each linking to the
-// lazy download route. Bytes are never held client-side; the route fetches from Gmail
-// on click.
 export function InboundAttachmentList({
   attachments,
 }: InboundAttachmentListProps): React.ReactNode {

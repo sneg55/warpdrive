@@ -7,8 +7,6 @@ import { createTemplate, deleteTemplate, updateTemplate } from "./authoring";
 
 type Db = Parameters<Parameters<typeof withTestDb>[0]>[0];
 
-// Local helper: seed a user and return just its id. An optional label becomes the row's
-// email (unique within a test's isolated DB); omitted, the factory auto-generates one.
 async function seedUser(db: Db, label?: string): Promise<string> {
   return (await seedUserRow(db, label !== undefined ? { email: label } : undefined)).id;
 }
@@ -77,15 +75,12 @@ describe("updateTemplate / deleteTemplate", () => {
   it("owner lacking capability can still edit an already-shared template", async () => {
     await withTestDb(async (db) => {
       const owner = await seedUser(db, "owner-keepshare@x.com");
-      // Created shared while the owner held the capability.
       const created = await createTemplate(
         db,
         { ownerId: owner, name: "Shared", bodyHtml: "<p>x</p>", isShared: true, canShare: true },
         AbortSignal.timeout(5000),
       );
       if (!created.ok) throw new Error("seed failed");
-      // Capability later revoked (canShare:false). Editing the name, the client still echoes
-      // isShared:true (the share checkbox is hidden). This is NOT an elevation, so it must succeed.
       const r = await updateTemplate(
         db,
         {

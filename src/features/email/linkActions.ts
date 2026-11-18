@@ -15,9 +15,6 @@ const linkInput = z.object({
   dealId: z.string().uuid().nullable().optional(),
 });
 
-// Thin "use server" wrapper: CSRF FIRST (before any DB/actor work), then the actor from
-// the trusted context (never client identity), Zod-validate, then delegate to the plain,
-// testable applyThreadLink for the authz + update.
 export async function linkThread(
   csrfToken: string | null,
   rawInput: unknown,

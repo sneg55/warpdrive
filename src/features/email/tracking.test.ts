@@ -14,8 +14,6 @@ import {
 type TestDb = Parameters<Parameters<typeof withTestDb>[0]>[0];
 const newSignal = (): AbortSignal => new AbortController().signal;
 
-// Seed a send attempt plus a sent message, so tracking events (message_id NOT NULL)
-// can reference a real message after backfill. Returns ids the tests need.
 async function seedAttempt(
   db: TestDb,
 ): Promise<{ attemptId: string; accountId: string; messageId: string }> {
@@ -94,7 +92,7 @@ describe("mintTokensForSend", () => {
           sql`SELECT message_id FROM email_tracking_tokens WHERE send_attempt_id=${attemptId}`,
         )
       ).rows as { message_id: string | null }[];
-      expect(rows).toHaveLength(2); // open + 1 link
+      expect(rows).toHaveLength(2);
       expect(rows.every((r) => r.message_id === null)).toBe(true);
     });
   });
@@ -111,7 +109,6 @@ describe("mintTokensForSend", () => {
         trackLinks: true,
         signal: newSignal(),
       });
-      // Only the http(s) link is tokenized; the dangerous schemes are skipped.
       expect(out.linkTokens.map((l) => l.original)).toEqual(["https://ok.com/y"]);
       const targets = (
         await db.execute(
@@ -135,7 +132,6 @@ describe("rewriteBody (pure)", () => {
     });
     expect(html).toContain("/t/click/CLK");
     expect(html).toContain("/t/open/OPEN");
-    // The original raw href is gone (replaced by the click URL).
     expect(html).not.toContain('href="https://dest.com/x"');
   });
 
@@ -181,7 +177,6 @@ describe("recordOpen / recordClick", () => {
       expect(link).toBeDefined();
       const target =
         link !== undefined ? await recordClick(db, link.token, "UA", newSignal()) : null;
-      // The redirect target is the STORED url, not anything from the request.
       expect(target).toBe("https://dest.com/x");
       expect(await eventCount(db, "click")).toBe(1);
     });
@@ -217,10 +212,6 @@ describe("recordOpen / recordClick", () => {
   });
 });
 
-// /t/click is unauthenticated and every hit costs a join, a transaction, an insert, a NOTIFY and
-// a notification write. Rate limiting it by refusing the request is not an option: a real
-// recipient clicking a real link must still land on the real destination. So the over-limit path
-// keeps the cheap lookup that makes the redirect correct and drops the expensive recording.
 describe("resolveClickTarget", () => {
   it("returns the stored target without recording an event", async () => {
     await withTestDb(async (db) => {

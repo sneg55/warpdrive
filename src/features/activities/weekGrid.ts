@@ -1,6 +1,3 @@
-// Pure week-grid helpers for the in-app calendar. UTC-based and Monday-first so the
-// grid is deterministic regardless of the server/browser timezone. Activities flagged
-// overdue are excluded from the day buckets (they live in the Overdue rail instead).
 import type { CalendarActivity } from "./calendar";
 
 function isoDay(d: Date): string {
@@ -9,7 +6,7 @@ function isoDay(d: Date): string {
 
 export function weekDays(weekOf: Date): Date[] {
   const d = new Date(Date.UTC(weekOf.getUTCFullYear(), weekOf.getUTCMonth(), weekOf.getUTCDate()));
-  const dow = d.getUTCDay(); // 0=Sun..6=Sat
+  const dow = d.getUTCDay();
   const mondayOffset = dow === 0 ? -6 : 1 - dow;
   const monday = new Date(d);
   monday.setUTCDate(d.getUTCDate() + mondayOffset);
@@ -20,9 +17,6 @@ export function weekDays(weekOf: Date): Date[] {
   });
 }
 
-// Bucket activities by UTC due-day. By default overdue items are skipped (the week view's
-// Overdue rail owned them); pass includeOverdue=true to place them on their due-day cell,
-// which the month view and navigable week grid need so historical days are not left empty.
 export function groupByDay(
   activities: CalendarActivity[],
   days: Date[],
@@ -32,8 +26,6 @@ export function groupByDay(
   for (const day of days) map.set(isoDay(day), []);
   for (const a of activities) {
     if (!includeOverdue && a.overdue === true) continue;
-    // A multi-day activity (endAt set) covers every day in [dueAt, endAt]; a single-day one covers
-    // just its own day. isoDay strings are "YYYY-MM-DD", so lexical compare is date compare.
     const startKey = isoDay(a.dueAt);
     const endKey = a.endAt != null ? isoDay(a.endAt) : startKey;
     for (const day of days) {

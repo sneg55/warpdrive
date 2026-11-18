@@ -1,9 +1,3 @@
-// What a goal has actually booked inside one period.
-//
-// Two scopes are at play and they are not the same: the goal names WHOSE work counts (a user,
-// a team's members, or everyone), while the viewer's own visibility still decides which deals
-// they are allowed to see at all. Reading a colleague's goal must never surface a deal that
-// colleague can see and the viewer cannot.
 import { sql } from "drizzle-orm";
 import type { Db } from "@/db/client";
 import type { Goal } from "@/db/schema/goals";
@@ -94,7 +88,6 @@ async function activityTotals(
   return { count: row?.count ?? 0, value: "0.00" };
 }
 
-// The booked figure for one goal in one period, as a decimal string in the goal's own metric.
 export async function goalActual(
   db: Db,
   actor: PermSetUser,

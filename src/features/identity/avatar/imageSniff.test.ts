@@ -20,7 +20,7 @@ describe("sniffImageType", () => {
     expect(sniffImageType(Buffer.from("%PDF-1.7\n..."))).toBeNull();
     expect(sniffImageType(Buffer.from("<svg xmlns=..."))).toBeNull();
     expect(sniffImageType(Buffer.from([]))).toBeNull();
-    expect(sniffImageType(Buffer.from([0x89, 0x50]))).toBeNull(); // truncated PNG
+    expect(sniffImageType(Buffer.from([0x89, 0x50]))).toBeNull();
   });
 
   it("does not treat a RIFF container that is not WEBP as an image", () => {

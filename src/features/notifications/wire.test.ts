@@ -5,7 +5,6 @@ import { withTestDb } from "@/db/testing";
 import { seedPipelineWithStages, seedUser } from "@/db/testing/factories";
 import { notifyActivityAssigned, notifyDealFollowedUpdate, notifyDealWonLost } from "./wire";
 
-// Insert a deal and return its id. visibilityLevel: 'all' means any user can see it.
 async function seedDeal(
   db: Parameters<Parameters<typeof withTestDb>[0]>[0],
   opts: { ownerId: string; visibilityLevel: "all" | "owner" },
@@ -68,7 +67,6 @@ describe("notifyDealFollowedUpdate", () => {
       const owner = await seedUser(db);
       const actor = await seedUser(db);
       const follower = await seedUser(db);
-      // owner-level visibility: only the owner can see it; follower and actor cannot
       const dealId = await seedDeal(db, { ownerId: owner.id, visibilityLevel: "owner" });
       await addFollower(db, dealId, follower.id);
 
@@ -79,7 +77,6 @@ describe("notifyDealFollowedUpdate", () => {
         signal: new AbortController().signal,
       });
 
-      // follower cannot see the deal: producer suppresses, 0 rows
       const followerRows = await db
         .select()
         .from(notifications)
@@ -131,7 +128,6 @@ describe("notifyDealWonLost", () => {
       const owner = await seedUser(db);
       const actor = await seedUser(db);
       const dealId = await seedDeal(db, { ownerId: owner.id, visibilityLevel: "all" });
-      // owner is also a follower
       await addFollower(db, dealId, owner.id);
 
       await notifyDealWonLost(db, {
@@ -145,7 +141,6 @@ describe("notifyDealWonLost", () => {
         .select()
         .from(notifications)
         .where(sql`user_id = ${owner.id}::uuid`);
-      // deduped: owner-as-follower and owner-as-owner => exactly 1 row
       expect(ownerRows).toHaveLength(1);
     });
   });

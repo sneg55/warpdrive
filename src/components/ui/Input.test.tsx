@@ -19,7 +19,6 @@ describe("Input", () => {
   it("merges a passed className with the base classes via cn", () => {
     render(<Input aria-label="Name" className="w-40" />);
     const el = screen.getByLabelText("Name");
-    // Base token class stays, and the caller's extra class is appended (not replaced).
     expect(el).toHaveClass("rounded-md");
     expect(el).toHaveClass("w-40");
   });
@@ -39,7 +38,6 @@ describe("Input", () => {
     expect(el).toHaveAttribute("type", "email");
     expect(el).toHaveAttribute("placeholder", "name@company.com");
     expect(el).toBeDisabled();
-    // onChange still fires when the field is not disabled: re-render enabled to assert wiring.
     render(<Input aria-label="Search" onChange={onChange} />);
     fireEvent.change(screen.getByLabelText("Search"), { target: { value: "acme" } });
     expect(onChange).toHaveBeenCalledTimes(1);

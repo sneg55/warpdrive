@@ -1,5 +1,3 @@
-// Shared DealWorkspace fixture for DealWorkspaceClient tests. Extracted so the test file stays
-// under the file-size limit; the shape mirrors what summaryRepo.loadDealWorkspace returns.
 export const workspace = {
   ownerName: "A.K.",
   pipelineName: "Sales pipeline",
@@ -38,11 +36,8 @@ export const workspace = {
     primaryEmail: "jane@acme.com",
     ownerId: "u1",
     orgId: "o1",
-    // Required by PersonBlock (deal-sidebar-parity, merged after this fixture was written):
-    // it maps over person.phones/emails unconditionally, so an absent array crashes the render.
     phones: [],
     emails: [],
-    // The deal/lead PersonSection labels row (ContactLabelsControl) maps over person.labels.
     labels: [],
     visibilityLevel: "owner" as const,
     visibilityGroupId: null,
@@ -56,16 +51,12 @@ export const workspace = {
     id: "o1",
     name: "Acme Inc",
     ownerId: "u1",
-    // Required by OrgBlock (deal-sidebar-parity, merged after this fixture was written): it
-    // reads org.address unconditionally (null is handled, undefined is not) plus the other
-    // firmographics fields, which are all optional-chained except address.
     address: null,
     domain: null,
     industry: null,
     employeeCount: null,
     annualRevenue: null,
     linkedinUrl: null,
-    // The deal/lead OrganizationSection labels row (ContactLabelsControl) maps over org.labels.
     labels: [],
     visibilityLevel: "owner" as const,
     visibilityGroupId: null,

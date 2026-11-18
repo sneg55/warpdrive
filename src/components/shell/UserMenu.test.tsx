@@ -4,14 +4,12 @@ import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
-// Radix DropdownMenu relies on pointer-capture + scrollIntoView, which jsdom lacks.
 beforeAll(() => {
   Element.prototype.scrollIntoView = vi.fn();
   Element.prototype.hasPointerCapture = vi.fn();
   Element.prototype.releasePointerCapture = vi.fn();
 });
 
-// Render Next's Link as a plain anchor so hrefs are assertable without an app-router context.
 vi.mock("next/link", () => ({
   default: ({ href, children, ...rest }: { href: string; children: React.ReactNode }) => (
     <a href={href} {...rest}>
@@ -42,7 +40,6 @@ describe("UserMenu", () => {
     const img = screen.getByRole("button", { name: "Account menu" }).querySelector("img");
     expect(img).not.toBeNull();
     expect(img?.getAttribute("src")).toBe("https://cdn.example/a.png");
-    // The initials fall back away once the photo is present.
     expect(screen.getByRole("button", { name: "Account menu" }).textContent).not.toContain("NS");
   });
 
@@ -52,8 +49,6 @@ describe("UserMenu", () => {
     await user.click(screen.getByRole("button", { name: "Account menu" }));
     const settings = screen.getByRole("menuitem", { name: /Settings/ });
     const logout = screen.getByRole("menuitem", { name: /Log out/ });
-    // The menu is headed "My account", so Settings lands on the signed-in user's own
-    // preferences. It used to open the company user roster, which is administration.
     expect(settings.getAttribute("href")).toBe("/settings/profile");
     expect(logout.getAttribute("href")).toBe("/auth/logout");
   });

@@ -14,16 +14,9 @@ const S = STRINGS.inbox;
 interface LinkExistingComboboxProps {
   kind: "person" | "deal";
   triggerLabel: string;
-  // label is the matched item's display name (SearchResult.primary), passed alongside id so a
-  // caller with no other way to know the record's name (e.g. the compose-time link sidebar,
-  // which has no thread row to read it back from) can render it without a second round trip.
   onPick: (id: string, label: string) => void;
 }
 
-// Search-as-you-type picker that links the thread to an existing person or deal. Backed by the
-// global search procedure (trpc.search.query), which returns results grouped by kind; this reads
-// only the group matching `kind` so the contact card never offers a deal and vice versa. Built on
-// the shadcn Popover + cmdk Command primitives (server does the filtering, so shouldFilter=false).
 export function LinkExistingCombobox({
   kind,
   triggerLabel,
@@ -33,7 +26,6 @@ export function LinkExistingCombobox({
   const [q, setQ] = useState("");
   const [debounced, setDebounced] = useState("");
 
-  // 150ms debounce so each keystroke does not fire a search request (mirrors CommandPalette).
   useEffect(() => {
     const id = setTimeout(() => setDebounced(q), 150);
     return () => clearTimeout(id);

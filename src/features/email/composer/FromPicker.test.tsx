@@ -16,8 +16,6 @@ describe("FromPicker", () => {
 
   it("renders no interactive control while single-mailbox (address is plain text)", () => {
     render(<FromPicker address="me@x.com" />);
-    // A single mailbox has nothing to switch to, so we must not render a button/combobox
-    // that looks selectable but does nothing (the dead-affordance the audit flagged).
     expect(screen.queryByRole("button")).not.toBeInTheDocument();
     expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
   });

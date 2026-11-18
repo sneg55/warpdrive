@@ -76,8 +76,6 @@ describe("filterCondition on the labels array field", () => {
   });
 });
 
-// "is any of": a labels condition may carry several names at once, which only means anything now
-// that the combinator can OR. Every other field still takes exactly one value.
 describe("filterCondition with a list of label values", () => {
   it("accepts a list on eq and on neq", () => {
     expect(
@@ -94,8 +92,6 @@ describe("filterCondition with a list of label values", () => {
     );
   });
 
-  // An empty list compiles to a condition that can never match, which reads to the user as a
-  // filter that quietly ate every row. Reject it at the boundary instead.
   it("rejects an empty list", () => {
     expect(filterCondition.safeParse({ field: "labels", op: "eq", value: [] }).success).toBe(false);
   });
@@ -119,8 +115,6 @@ describe("filterCondition with a list of label values", () => {
   });
 });
 
-// isEmpty/isNotEmpty carry no value, so the builder submits the row with the value key absent or
-// blank. Every per-field value check has to stand down for them or a complete row reads as broken.
 describe("filterCondition with a valueless operator", () => {
   it("accepts isEmpty with no value key at all", () => {
     for (const field of ["title", "orgName", "value", "expectedCloseDate", "labels"]) {

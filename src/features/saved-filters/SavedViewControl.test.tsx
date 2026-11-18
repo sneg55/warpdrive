@@ -15,8 +15,6 @@ vi.mock("@/lib/trpc-client", () => ({
 }));
 const createSavedFilterAction = vi.fn();
 const toggleFavoriteAction = vi.fn();
-// removeSavedFilterAction is stubbed even though nothing here deletes: the factory replaces the
-// whole module, so a delete added to this file would otherwise fail on an undefined import.
 vi.mock("./serverActions", () => ({
   createSavedFilterAction: (...a: unknown[]) => createSavedFilterAction(...a),
   toggleFavoriteAction: (...a: unknown[]) => toggleFavoriteAction(...a),

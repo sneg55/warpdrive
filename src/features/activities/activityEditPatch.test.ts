@@ -66,8 +66,6 @@ describe("buildActivityPatch", () => {
   });
 });
 
-// The same bug on the modal surface: an all-day activity opened from the table must seed a
-// blank time, and saving with it blank must not silently convert it to an explicit midnight.
 describe("all-day activities in the edit modal", () => {
   const allDayActivity: EditableActivity = {
     ...activity,

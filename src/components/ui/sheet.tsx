@@ -4,10 +4,6 @@ import { X } from "lucide-react";
 import { forwardRef } from "react";
 import { cn } from "@/lib/utils";
 
-// shadcn (new-york) Sheet: a side-anchored drawer over @radix-ui/react-dialog. This is the
-// SANCTIONED right-anchored overlay (Pipedrive opens person/org/lead detail as a slide-over over
-// the list). Like Dialog it brings focus trap, scroll lock, Escape-to-close, and portal for free;
-// the lint ban on hand-rolled `fixed inset-0` overlays exempts src/components/ui/**.
 export const Sheet = SheetPrimitive.Root;
 const SheetPortal = SheetPrimitive.Portal;
 
@@ -26,8 +22,6 @@ const SheetOverlay = forwardRef<
 ));
 SheetOverlay.displayName = "SheetOverlay";
 
-// Right-anchored, full-height content column. Width is capped so the list stays partly visible
-// behind the scrim (Pipedrive's overlay leaves the list context in view).
 export const SheetContent = forwardRef<
   React.ElementRef<typeof SheetPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof SheetPrimitive.Content>

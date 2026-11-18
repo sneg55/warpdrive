@@ -26,9 +26,6 @@ interface Props {
   allUsers: AssignableUser[];
 }
 
-// Member roster + add/remove for a single visibility group. Mirrors the inline-form
-// pattern used by CreateGroupForm/CreateTeamForm: local pending/error state, a server
-// action per mutation, router.refresh() to reload the server-loaded roster on success.
 export function GroupMembersClient({ groupId, members, allUsers }: Props): React.ReactElement {
   const router = useRouter();
   const [selectedUserId, setSelectedUserId] = useState("");

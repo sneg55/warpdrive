@@ -34,7 +34,6 @@ describe("createNoteWithMentions", () => {
     await withTestDb(async (db) => {
       const author = await seedUser(db);
       const mentioned = await seedUser(db);
-      // all-visibility deal: both author and mentioned user can see it
       const dealId = await seedDeal(db, author.id, "all");
       const signal = new AbortController().signal;
 
@@ -52,14 +51,12 @@ describe("createNoteWithMentions", () => {
 
       expect(r.ok).toBe(true);
 
-      // A mentions row must exist for the mentioned user.
       const mentionRows = await db
         .select()
         .from(mentions)
         .where(sql`mentioned_user_id = ${mentioned.id}::uuid`);
       expect(mentionRows).toHaveLength(1);
 
-      // A notification of type 'mention' must exist for the mentioned user.
       const notifRows = await db
         .select()
         .from(notifications)
@@ -75,7 +72,6 @@ describe("createNoteWithMentions", () => {
     await withTestDb(async (db) => {
       const author = await seedUser(db);
       const mentioned = await seedUser(db);
-      // owner-level deal: only author can see it, mentioned user CANNOT
       const dealId = await seedDeal(db, author.id, "owner");
       const signal = new AbortController().signal;
 
@@ -91,10 +87,8 @@ describe("createNoteWithMentions", () => {
         signal,
       );
 
-      // Note creation must succeed.
       expect(r.ok).toBe(true);
 
-      // NO notification row for the mentioned user (visibility suppressed it).
       const notifRows = await db
         .select()
         .from(notifications)

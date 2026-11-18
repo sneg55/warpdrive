@@ -71,7 +71,6 @@ describe("AddActivityModal", () => {
   it("renders the composer type rail plus subject/priority/due fields", () => {
     render(<AddActivityModal onClose={vi.fn()} onCreated={vi.fn()} />);
     expect(screen.getByRole("dialog", { name: "Add activity" })).toBeInTheDocument();
-    // Type is the deal-composer TypeIconRail: one labelled button per type, not a Select.
     expect(screen.getByRole("button", { name: "Call" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Meeting" })).toBeInTheDocument();
     expect(screen.getByLabelText("Subject")).toBeInTheDocument();
@@ -81,7 +80,6 @@ describe("AddActivityModal", () => {
 
   it("selects a type from the icon rail and submits that typeId", async () => {
     render(<AddActivityModal onClose={vi.fn()} onCreated={vi.fn()} />);
-    // Default (first) type is pressed until the user picks another.
     const meeting = screen.getByRole("button", { name: "Meeting" });
     expect(meeting).toHaveAttribute("aria-pressed", "false");
     fireEvent.click(meeting);
@@ -114,7 +112,6 @@ describe("AddActivityModal", () => {
     render(<AddActivityModal onClose={vi.fn()} onCreated={vi.fn()} leadId="lead-1" />);
     fireEvent.change(screen.getByLabelText("Subject"), { target: { value: "Log a call" } });
     fireEvent.click(screen.getByLabelText("Due date"));
-    // findByText: the calendar is a next/dynamic chunk that loads on open.
     fireEvent.click(await screen.findByText("10"));
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
     await waitFor(() =>
@@ -132,12 +129,10 @@ describe("AddActivityModal", () => {
   it("blocks a lead activity with no due date (leadTimeline hides undated rows)", async () => {
     render(<AddActivityModal onClose={vi.fn()} onCreated={vi.fn()} leadId="lead-1" />);
     fireEvent.change(screen.getByLabelText("Subject"), { target: { value: "Log a call" } });
-    // With a leadId and no date, Save is disabled: clicking it must not create the activity.
     expect(screen.getByRole("button", { name: "Save" })).toBeDisabled();
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
     await new Promise((r) => setTimeout(r, 0));
     expect(createActivityAction).not.toHaveBeenCalled();
-    // Non-lead callers stay unblocked with no date (GlobalAddMenu, ActivitiesTable).
     cleanup();
     render(<AddActivityModal onClose={vi.fn()} onCreated={vi.fn()} />);
     fireEvent.change(screen.getByLabelText("Subject"), { target: { value: "No date ok" } });
@@ -158,9 +153,6 @@ describe("AddActivityModal", () => {
   });
 
   it("seeds the DatePicker + TimePicker from defaultDate/defaultTime (calendar click-to-create)", () => {
-    // WeekAgendaGrid's own test mocks AddActivityModal out entirely (it only asserts the props
-    // it passes down), so this is the only place the prop -> useState -> rendered-picker wiring
-    // is actually exercised end to end.
     render(
       <AddActivityModal
         onClose={vi.fn()}

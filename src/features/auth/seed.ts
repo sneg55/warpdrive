@@ -11,7 +11,6 @@ import { ADMIN_DEFAULT_FLAGS, REGULAR_DEFAULT_FLAGS } from "@/constants/permissi
 import type * as schema from "@/db/schema";
 import { labels, permissionSets, pipelines, settings, stages, visibilityGroups } from "@/db/schema";
 
-// Transaction alias: the Drizzle tx passed from db.transaction().
 type Tx = Parameters<Parameters<NodePgDatabase<typeof schema>["transaction"]>[0]>[0];
 
 export interface SeedHandles {
@@ -20,17 +19,11 @@ export interface SeedHandles {
   adminSetId: string;
 }
 
-// Idempotent: ensures the settings singleton, default permission sets, and the "Everyone"
-// visibility group. Called only on the bootstrap branch (bootstrappedAt IS NULL) so
-// duplicate rows cannot arise from concurrent calls after bootstrap closes.
 export async function ensureSeedData(tx: Tx, signal: AbortSignal): Promise<SeedHandles> {
   signal.throwIfAborted();
 
-  // Settings singleton: id is fixed boolean true; ON CONFLICT no-op if already present.
   await tx.insert(settings).values({ baseCurrency: "USD" }).onConflictDoNothing();
 
-  // Use onConflictDoNothing + SQL re-read so this function is safe even if seed rows
-  // already exist (e.g. two new-user logins arrive before bootstrap closes).
   await tx
     .insert(permissionSets)
     .values({ name: "Regular", flags: REGULAR_DEFAULT_FLAGS, isDefault: true })
@@ -49,13 +42,9 @@ export async function ensureSeedData(tx: Tx, signal: AbortSignal): Promise<SeedH
 
   signal.throwIfAborted();
 
-  // Re-read IDs by name after upsert (works whether rows were just inserted or already existed).
   return readSeedHandles(tx, signal);
 }
 
-// Seeds the default pipeline (+ stages, +settings.default_pipeline_id) and the default label
-// sets for all four targets. Each is count-guarded (skip if any row already exists) because
-// neither pipelines nor labels has a unique key to lean on for onConflictDoNothing.
 async function seedDefaultCatalog(tx: Tx, signal: AbortSignal): Promise<void> {
   const existingPipeline = await tx.select({ id: pipelines.id }).from(pipelines).limit(1);
   if (existingPipeline[0] === undefined) {
@@ -86,7 +75,6 @@ async function seedDefaultCatalog(tx: Tx, signal: AbortSignal): Promise<void> {
   }
 }
 
-// Re-read existing seed row IDs when bootstrap is already closed (ensureSeedData not called).
 export async function readSeedHandles(tx: Tx, signal: AbortSignal): Promise<SeedHandles> {
   signal.throwIfAborted();
 

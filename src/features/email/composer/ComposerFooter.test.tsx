@@ -12,9 +12,6 @@ import { COMPOSER_STRINGS } from "./composer.constants";
 
 describe("ComposerFooter", () => {
   it("hides the privacy picker when showVisibility is false (reply to an existing thread)", () => {
-    // On a reply the send path preserves the existing thread's visibility, so the interactive
-    // compose picker is a no-op and must not be shown (codex P2). The reader's thread-privacy
-    // toggle governs an existing thread instead.
     render(
       <ComposerFooter
         canSend={true}
@@ -203,13 +200,9 @@ describe("ComposerFooter tracking toggles", () => {
     );
     const discard = screen.getByRole("button", { name: "Discard" });
     const send = screen.getByRole("button", { name: /^Send$/ });
-    // Flex row with no `order` styling, so DOM order equals visual left-to-right order.
-    // PD places Discard to the LEFT of the Send split; Send must follow Discard in the document.
     expect(discard.compareDocumentPosition(send) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
-  // The tracking toggles sit in the same bar as the visibility picker, so their visible text is
-  // part of the hit area and the whole control takes the shared hover surface too.
   it.each([
     ["Opens", "onTrackOpensChange"],
     ["Links", "onTrackLinksChange"],

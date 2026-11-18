@@ -15,8 +15,6 @@ interface PrepareJob {
   data: { batchId: string };
 }
 
-// Download the uploaded CSV, parse it server-side, insert one import_rows row per source
-// row, and store headers + a small preview for the map step. Lands the batch mapping_ready.
 export async function handlePrepareJob(
   db: Db,
   deps: { storage: StorageClient },
@@ -29,10 +27,6 @@ export async function handlePrepareJob(
     .from(importBatches)
     .where(eq(importBatches.id, job.data.batchId));
   if (batch === undefined || batch.s3Key === null) return;
-  // Idempotency: parse only a batch that has not finished preparing. "uploaded" is the fresh
-  // case; "parsing" is a prior attempt that crashed part-way, which a pg-boss retry must be
-  // able to resume. A batch already at "mapping_ready" (or later) no-ops. The row insert below
-  // is onConflictDoNothing, so resuming a half-inserted "parsing" batch never double-inserts.
   if (batch.status !== "uploaded" && batch.status !== "parsing") return;
 
   await db.update(importBatches).set({ status: "parsing" }).where(eq(importBatches.id, batch.id));
@@ -59,8 +53,6 @@ export async function handlePrepareJob(
             status: "pending" as const,
           })),
         )
-        // Idempotent on the UNIQUE(batch_id, row_number) index: a resumed "parsing" retry
-        // re-inserts the same rows without failing on a partial prior insert.
         .onConflictDoNothing();
     }
     signal.throwIfAborted();
@@ -88,8 +80,6 @@ export async function handlePrepareJob(
       signal,
     );
   } catch (e) {
-    // A parse/insert throw (or abort) must land the batch in a terminal state so the wizard's
-    // prepare wait resolves; rethrow so pg-boss applies retry/backoff.
     await db.update(importBatches).set({ status: "failed" }).where(eq(importBatches.id, batch.id));
     throw e;
   }

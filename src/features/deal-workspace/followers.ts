@@ -1,8 +1,3 @@
-// followDeal / unfollowDeal: self-only follow toggle for the deal header.
-// Following requires only VISIBILITY (canSee), not edit: a user who can see a deal may
-// follow it to receive updates. We therefore build the VisibleDeal via toVisibleDeal +
-// canSee (like getWorkspace/summaryRepo) rather than loadEditableDeal, which would wrongly
-// reject a visible-but-unowned deal. Both operations are idempotent.
 import { and, eq, isNull } from "drizzle-orm";
 import { CHANGE_FIELD_FOLLOWER } from "@/constants/changeLogFields";
 import { AppError, ERROR_IDS } from "@/constants/errorIds";
@@ -14,9 +9,6 @@ import { canSee } from "@/features/permissions/canSee";
 import type { PermSetUser } from "@/features/permissions/effective";
 import { err, ok, type Result } from "@/types/result";
 
-// Load the deal + its pipeline visibility group and confirm the actor can SEE it. Returns
-// DEAL_NOT_FOUND (404-on-invisible) for a missing, soft-deleted, archived-pipeline, or
-// invisible deal so a follow attempt cannot probe for hidden deals.
 async function assertVisible(
   db: Db,
   actor: PermSetUser,
@@ -56,8 +48,6 @@ export async function followDeal(
   if (visible.ok === false) return visible;
 
   return db.transaction(async (tx) => {
-    // Idempotent: a second follow by the same user is a no-op (composite PK conflict);
-    // .returning() lets us log only a real insert. recordChange runs on tx (atomic).
     const inserted = await tx
       .insert(dealFollowers)
       .values({ dealId, userId: actor.id })
@@ -92,8 +82,6 @@ export async function unfollowDeal(
   if (visible.ok === false) return visible;
 
   return db.transaction(async (tx) => {
-    // Idempotent: unfollow-when-absent deletes zero rows and still succeeds; .returning()
-    // lets us log only a real delete.
     const deleted = await tx
       .delete(dealFollowers)
       .where(and(eq(dealFollowers.dealId, dealId), eq(dealFollowers.userId, actor.id)))

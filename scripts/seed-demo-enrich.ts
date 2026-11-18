@@ -1,10 +1,3 @@
-/**
- * scripts/seed-demo-enrich.ts
- *
- * Post-insert enrichment that needs generated ids: label chips, lost reasons on
- * lost deals, deal participants/followers, and lead -> deal conversion.
- */
-
 import type { LabelIds } from "./seed-demo-catalog";
 import { at, type DealSeed, type LeadSeed, pick, type Rng, randInt } from "./seed-demo-data";
 import type { Db } from "./seed-smoke-phase5-infra";
@@ -76,7 +69,6 @@ export async function seedParticipantsFollowers(
 ): Promise<void> {
   for (let i = 0; i < dealIds.length; i += 1) {
     const dealId = at(dealIds, i);
-    // Owner always follows; add 0-2 more colleagues.
     await db.q(
       `INSERT INTO deal_followers (deal_id, user_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
       [dealId, at(dealOwnerIds, i)],
@@ -87,7 +79,6 @@ export async function seedParticipantsFollowers(
         [dealId, pick(rng, userIds)],
       );
     }
-    // 0-2 person participants with a role.
     for (let k = 0; k < randInt(rng, 0, 2); k += 1) {
       await db.q(
         `INSERT INTO deal_participants (deal_id, person_id, role) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING`,
@@ -101,8 +92,6 @@ export async function seedParticipantsFollowers(
   }
 }
 
-// Creates a deal from each convert=true lead, points converted_deal_id at it, and
-// archives the lead out of the inbox. Returns the number converted.
 export async function convertLeads(
   db: Db,
   rng: Rng,

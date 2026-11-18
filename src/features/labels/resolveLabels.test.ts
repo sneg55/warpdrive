@@ -14,8 +14,6 @@ describe("resolveLabelChips", () => {
   });
 
   it("matches case-insensitively so a legacy lowercase key resolves to the catalog label", () => {
-    // Existing entities stored keys like "hot"; the catalog name is "Hot". The stored string is
-    // preserved for display fidelity but the color comes from the case-insensitive catalog match.
     const chips = resolveLabelChips(catalog, ["hot"]);
     expect(chips).toEqual([{ name: "hot", classes: LABEL_COLOR_CLASSES.red }]);
   });

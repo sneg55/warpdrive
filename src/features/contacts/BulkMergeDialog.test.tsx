@@ -32,7 +32,6 @@ describe("BulkMergeDialog", () => {
       <BulkMergeDialog kind="person" records={RECORDS} onMerged={onMerged} onClose={vi.fn()} />,
     );
 
-    // Survivor defaults to the first record; confirm merges the second into it.
     fireEvent.click(screen.getByRole("button", { name: "Merge" }));
 
     await waitFor(() =>

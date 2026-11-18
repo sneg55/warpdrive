@@ -76,9 +76,6 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
-// The record sidebar is reused as the user moves between records, so a slow answer for the one just
-// closed can land after a fast answer for the one now on screen. Taking it would show the wrong
-// person's proposals and post the wrong runId on Apply.
 it("ignores an answer for a record it is no longer showing", async () => {
   const user = userEvent.setup();
   let release: (() => void) | undefined;
@@ -91,7 +88,6 @@ it("ignores an answer for a record it is no longer showing", async () => {
 
   const view = render(<Harness entityId={CLOSED} />);
   await user.click(screen.getByRole("button", { name: BUTTON }));
-  // The user gives up waiting and moves on, which is how the sidebar reaches the next record.
   await user.keyboard("{Escape}");
 
   enrichRecordAction.mockResolvedValue({ ok: true, value: runFor(SHOWING, "Live title") });
@@ -105,8 +101,6 @@ it("ignores an answer for a record it is no longer showing", async () => {
   expect(screen.getByText("Live title")).toBeInTheDocument();
 });
 
-// Closing the dialog does not cancel the fan-out. While it is still running the button has to stay
-// busy, or a second click starts another paid fan-out before the first can fill the cache.
 it("stays busy after the dialog is dismissed mid-request", async () => {
   const user = userEvent.setup();
   let release: (() => void) | undefined;
@@ -128,8 +122,6 @@ it("stays busy after the dialog is dismissed mid-request", async () => {
   expect(enrichRecordAction).toHaveBeenCalledTimes(1);
 });
 
-// An apply is as slow as the fan-out. If it lands after the sidebar has moved on, closing the
-// dialog or writing its error would hit whichever record is on screen now.
 it("does not close another record's dialog when a slow apply lands", async () => {
   const user = userEvent.setup();
   enrichRecordAction.mockResolvedValue({ ok: true, value: runFor(CLOSED, "Stale title") });
@@ -159,8 +151,6 @@ it("does not close another record's dialog when a slow apply lands", async () =>
   expect(screen.getByText("Live title")).toBeInTheDocument();
 });
 
-// A rejected action, a dropped connection or an unexpected server throw, must not leave the record
-// loading forever with its button disabled.
 it("recovers when the enrichment action rejects", async () => {
   const user = userEvent.setup();
   enrichRecordAction.mockRejectedValueOnce(new Error("connection lost"));
@@ -168,8 +158,6 @@ it("recovers when the enrichment action rejects", async () => {
   render(<Harness entityId={SHOWING} />);
   await user.click(screen.getByRole("button", { name: BUTTON }));
 
-  // The failure is reported rather than the dialog sitting on a spinner, and the button is usable
-  // again once the dialog is out of the way.
   expect(await screen.findByRole("alert")).toBeInTheDocument();
   await user.keyboard("{Escape}");
   await waitFor(() => expect(screen.getByRole("button", { name: BUTTON })).toBeEnabled());

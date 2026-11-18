@@ -7,10 +7,6 @@ afterEach(cleanup);
 import { DealCard } from "./DealCard";
 import { baseCard } from "./dealCardTestFixture";
 
-// The next-action badge: a colored circle whose color encodes urgency and whose aria-label (also the
-// hover tooltip) names the soonest action and its timing. Split out of DealCard.test.tsx to keep
-// each test file under the size limit. The fills are semantic tokens, not palette literals: white
-// on the raw red / amber / yellow measured 3.81:1, 2.13:1 and 1.57:1, and none carried a night value.
 describe("DealCard activity badge", () => {
   it("shows a red circular next-action indicator when the activity is overdue", () => {
     render(
@@ -29,7 +25,6 @@ describe("DealCard activity badge", () => {
     expect(ind.className).toContain("rounded-full");
     expect(ind.className).toContain("bg-destructive");
     expect(ind.className).toContain("text-destructive-foreground");
-    // The old text pill must be gone.
     expect(screen.queryByText("overdue")).toBeNull();
   });
 
@@ -66,18 +61,13 @@ describe("DealCard activity badge", () => {
     );
     const ind = screen.getByRole("img", { name: "No activity scheduled" });
     expect(ind.className).toContain("rounded-full");
-    // Amber attention fill with dark amber ink, no longer the muted gray dot or white on yellow.
     expect(ind.className).toContain("bg-attention");
     expect(ind.className).toContain("text-attention-foreground");
     expect(ind.className).not.toContain("bg-muted");
     expect(ind.className).not.toContain("text-white");
-    // A warning glyph, not the chevron the scheduled states use.
     expect(ind.textContent).toBe("!");
   });
 
-  // A scheduled activity is the healthy state and nothing planned is a nudge, so they cannot
-  // share a fill. They did, and a 10px chevron against a 10px "!" was the only thing telling
-  // a calm card from one that needed work.
   it("does not paint a scheduled activity in the warning fill", () => {
     render(
       <DealCard

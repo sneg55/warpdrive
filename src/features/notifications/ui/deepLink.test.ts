@@ -25,8 +25,6 @@ function item(over: {
 
 describe("notificationHref", () => {
   it("never routes an activity-scoped reminder to a deal URL", () => {
-    // Regression: reminder rows carry entityType "activity" and the ACTIVITY id, and the map
-    // built /deals/<activityId> unconditionally, which always rendered Not found.
     const href = notificationHref(
       item({ type: "activity_reminder", entityType: "activity", entityId: "a1" }),
     );
@@ -56,8 +54,6 @@ describe("notificationHref", () => {
   });
 
   it("routes an organization mention to the org page instead of the dashboard", () => {
-    // Producers store "organization" (ENTITY_TYPES); the old map compared against "org", so an
-    // org mention silently landed on "/".
     expect(
       notificationHref(item({ type: "mention", entityType: "organization", entityId: "o1" })),
     ).toBe("/contacts/orgs/o1");

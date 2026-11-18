@@ -1,10 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { isUuidParam } from "./isUuidParam";
 
-// URL path params arrive as raw strings. A detail route's [id] segment is a uuid PK, but a user can
-// type anything. This predicate is the guard that lets a repo treat a non-uuid id as "not found"
-// instead of handing it to Postgres, which rejects the uuid cast and throws (a 500 that also leaks
-// the SQL in dev). See leadRepo/getWorkspace/getPerson/getOrg.
 describe("isUuidParam", () => {
   it("accepts a canonical v4 uuid", () => {
     expect(isUuidParam("9cc84465-b904-4963-951a-6a654604ed73")).toBe(true);

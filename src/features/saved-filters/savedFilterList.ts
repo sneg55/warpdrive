@@ -6,8 +6,6 @@ import type { SavedFilterTargetEntity } from "./schemas";
 type SavedFilterRow = typeof savedFilters.$inferSelect;
 
 export type SavedFilterListItem<D> = Omit<SavedFilterRow, "definition"> & {
-  // isOwn lets the client hide the favorite star on others' shared filters (only the owner can
-  // toggle the owner-scoped favorite flag), so the star is never a dead control.
   isOwn: boolean;
   definition: D;
 };
@@ -17,9 +15,6 @@ interface SavedFilterListCtx {
   actor: { id: string; type: string; flags: Iterable<string> };
 }
 
-// One read behind every saved-view list (deal board, People, Orgs, Leads). The parser is a
-// parameter so the deal route keeps its deal-typed definition while the entity-aware route parses
-// each row against its own field allow-list.
 export async function listSavedFilterViews<D>(
   ctx: SavedFilterListCtx,
   targetEntity: SavedFilterTargetEntity,

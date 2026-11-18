@@ -4,9 +4,6 @@ import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ColumnsMenu } from "./ColumnsMenu";
-// The visible-column list is behind next/dynamic (dnd-kit). Importing it here pays the transform
-// cost during this file's import phase instead of inside a findBy* budget, where on a loaded CI
-// worker it lost the race and left the loading placeholder on screen. Unused by name on purpose.
 import "./ColumnsMenuSortableList";
 import type { ColumnDef } from "./columnModel";
 
@@ -38,10 +35,7 @@ describe("ColumnsMenu", () => {
     const user = userEvent.setup();
     setup(["title", "org"]);
     await user.click(screen.getByRole("button", { name: "Customize columns" }));
-    // Visible columns are shown. The draggable list is loaded via next/dynamic on first open,
-    // so it lands a tick after the popover's static content.
     expect(await screen.findByText("Organization")).not.toBeNull();
-    // The hidden "Value" column is offered under a Hidden group.
     expect(screen.getByText("Hidden")).not.toBeNull();
     expect(screen.getAllByText("Value").length).toBeGreaterThan(0);
   });

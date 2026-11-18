@@ -1,5 +1,3 @@
-// moveDeal: compare-and-swap stage transition with realtime event (ops spec A5).
-// Split from dealActions.ts to keep both files under 200 lines.
 import { and, eq, sql } from "drizzle-orm";
 import { BOARD_EVENT, dealMovedChannel } from "@/constants/boardChannels";
 import { AppError, ERROR_IDS } from "@/constants/errorIds";
@@ -23,12 +21,10 @@ export async function moveDeal(
   const input = dealMoveInput.parse(raw);
   signal.throwIfAborted();
 
-  // Load deal + enforce can(deal.edit) via the single shared authorization path.
   const editable = await loadEditableDeal(db, session, input.dealId, signal);
   if (editable.ok === false) return editable;
   const { deal } = editable.value;
 
-  // Validate toStageId belongs to the deal's pipeline.
   const [stage] = await db
     .select({ id: stages.id })
     .from(stages)
@@ -44,14 +40,9 @@ export async function moveDeal(
   signal.throwIfAborted();
 
   const position = midpoint(input.beforePosition, input.afterPosition);
-  // The client sends an ISO string with millisecond precision; Postgres stores
-  // microseconds. Truncate the DB timestamp to milliseconds before comparing so
-  // the CAS precondition is stable across the JS/Postgres precision boundary.
   const expectedIso = input.expectedUpdatedAt;
 
   return db.transaction(async (tx) => {
-    // Atomic CAS: single UPDATE WHERE id=:d AND date_trunc('milliseconds', updated_at)=:expected.
-    // 0 rows means a concurrent write won; we write nothing (no read-modify-write race).
     const updated = await tx
       .update(deals)
       .set({
@@ -81,9 +72,6 @@ export async function moveDeal(
       throw new AppError(ERROR_IDS.DB_INVARIANT, "moveDeal: UPDATE RETURNING produced undefined");
     }
 
-    // Audit the stage transition (deal-header history parity). Same transaction as the CAS
-    // write so the log and the move commit atomically. Skip intra-column reorders (same stage),
-    // which would otherwise log a phantom "stage X to X" change on every within-column drag.
     if (row.stageId !== deal.stageId) {
       await recordChange(
         tx,

@@ -54,7 +54,6 @@ describe("ActivityTypesClient", () => {
     expect(screen.getByText("Call")).toBeInTheDocument();
     expect(screen.getByText("Demo")).toBeInTheDocument();
     expect(screen.getByText("System")).toBeInTheDocument();
-    // Only the non-system row exposes a Delete button.
     expect(screen.getAllByRole("button", { name: "Delete" })).toHaveLength(1);
   });
 
@@ -97,8 +96,6 @@ describe("ActivityTypesClient", () => {
     );
   });
 
-  // ACTIVITIES-17: after add/rename/toggle/delete the handler calls router.refresh(), which re-runs
-  // the server component with fresh props. The list must re-seed from those props without a reload.
   it("re-seeds the list when refreshed props arrive (add)", () => {
     const { rerender } = render(<ActivityTypesClient rows={ROWS} />);
     rerender(

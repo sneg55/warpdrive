@@ -16,7 +16,6 @@ function makeActor(id: string, primaryVisibilityGroupId: string | null): Contact
   };
 }
 
-// Seed the settings singleton with group-level defaults for person + organization.
 async function seedGroupSettings(
   db: Parameters<Parameters<typeof withTestDb>[0]>[0],
 ): Promise<void> {

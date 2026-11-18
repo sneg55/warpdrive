@@ -1,4 +1,3 @@
-// Stubs shared by the RocketReach test files, which are split to stay under the file-size rule.
 import { vi } from "vitest";
 import personSearching from "./__fixtures__/rocketreach-person-searching.json";
 import { ROCKETREACH_POLL_BUDGET_MS } from "./rocketreach";
@@ -20,14 +19,12 @@ export function body(
   });
 }
 
-// Unconsumed calls keep answering "searching", which is what a budget cutoff needs.
 export function stubFetch(...responses: Response[]): Spy {
   const spy = vi.fn(() => Promise.resolve(responses.shift() ?? body(personSearching)));
   vi.stubGlobal("fetch", spy);
   return spy;
 }
 
-// Answers the given responses, then models a request that never replies: only its signal ends it.
 export function hangingFetch(...responses: Response[]): Spy {
   const spy = vi.fn((_url: URL, init: { signal: AbortSignal }) => {
     const next = responses.shift();
@@ -42,7 +39,6 @@ export function hangingFetch(...responses: Response[]): Spy {
   return spy;
 }
 
-// Virtual clock: the injected sleep advances it, so a cutoff is reached with no real waiting.
 export function opts(budgetMs = ROCKETREACH_POLL_BUDGET_MS): {
   budgetMs: number;
   slept: number[];

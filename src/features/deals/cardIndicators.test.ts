@@ -17,8 +17,6 @@ describe("activityState", () => {
   });
 
   it("today (not overdue) when due earlier the same day", () => {
-    // An activity due at 09:00 when it is now 12:00 is still 'due today', not overdue: overdue
-    // means a prior calendar day.
     expect(activityState(new Date("2026-06-29T09:00:00Z"), now)).toBe("today");
   });
 
@@ -82,18 +80,14 @@ describe("rottingState", () => {
 
   it("rotting flag agrees with the graded tint on the threshold day", () => {
     const at = (ageDays: number): Date => new Date(now.getTime() - ageDays * 86_400_000);
-    // age == R renders level 0 (no red tint), so the card must not be flagged rotting either.
     const atThreshold = rottingState(at(6), 6, now);
     expect(atThreshold.rotting).toBe(false);
     expect(atThreshold.level).toBe(0);
-    // strictly past R: both the flag and the tint turn on together.
     expect(rottingState(at(7), 6, now).rotting).toBe(true);
   });
 });
 
 describe("rottingState graded level", () => {
-  // Reference now is fixed; vary the entered-at date to hit exact ages. R=6 gives R/2=3, so the
-  // step boundaries (R, R+R/2, R+R) land on whole days: 6, 9, 12.
   const at = (ageDays: number): Date => new Date(now.getTime() - ageDays * 86_400_000);
 
   it("level 0 when no threshold", () => {

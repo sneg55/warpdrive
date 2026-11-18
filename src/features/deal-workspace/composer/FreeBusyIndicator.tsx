@@ -5,9 +5,6 @@ interface Props {
   busy: boolean;
 }
 
-// Read-only Free/Busy availability signal for the composer (Pipedrive parity, B3). Reflects a
-// precomputed busy flag (see activities/availability.getBusyWindows); it is an indicator, not a
-// scheduling control, so it renders no interactive surface.
 export function FreeBusyIndicator({ busy }: Props): React.ReactNode {
   return (
     <span

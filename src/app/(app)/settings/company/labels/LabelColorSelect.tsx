@@ -20,8 +20,6 @@ interface LabelColorSelectProps {
   onChange: (color: LabelColor) => void;
 }
 
-// One color picker for both existing-label rows and add-label forms. Keeping the options and
-// Radix Select invocation here prevents the two surfaces from drifting in menu content or style.
 export function LabelColorSelect({
   ariaLabel,
   value,

@@ -4,9 +4,6 @@ import { listDefs } from "@/features/custom-fields/defsRepo";
 import { buildCustomFieldsSchema } from "@/features/custom-fields/validate";
 import { err, ok, type Result } from "@/types/result";
 
-// Validate a contact entity's custom fields against its active defs.
-// Returns parsed.data (stripped of unknown keys) on success, E_CF_003 on failure.
-// Shared by personsRepo and orgsRepo so validation cannot diverge.
 export async function validateContactCustomFields(
   db: Db,
   entity: "person" | "organization",

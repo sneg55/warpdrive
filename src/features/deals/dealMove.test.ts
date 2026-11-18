@@ -1,5 +1,3 @@
-// dealMove.test.ts: CAS precondition + pipeline-stage validation tests.
-// Permission + event tests live in dealMovePerms.test.ts.
 import { and, eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import { changeLogs } from "@/db/schema";
@@ -48,7 +46,6 @@ describe("moveDeal: CAS + stage validation", () => {
       expect(r.value.stageId).toBe(stage1.id);
       expect(r.value.stageEnteredAt.getTime()).toBeGreaterThanOrEqual(before.getTime());
 
-      // The move must write a stageId audit-log row (deal-header history parity).
       const logs = await db
         .select()
         .from(changeLogs)
@@ -79,7 +76,7 @@ describe("moveDeal: CAS + stage validation", () => {
         adminSession(u.id),
         {
           dealId: created.value.id,
-          toStageId: stage0.id, // same stage: a reorder, not a transition
+          toStageId: stage0.id,
           beforePosition: null,
           afterPosition: null,
           expectedUpdatedAt: created.value.updatedAt.toISOString(),
@@ -158,7 +155,7 @@ describe("moveDeal: CAS + stage validation", () => {
           toStageId: stage1.id,
           beforePosition: null,
           afterPosition: null,
-          expectedUpdatedAt: "2000-01-01T00:00:00.000Z", // stale
+          expectedUpdatedAt: "2000-01-01T00:00:00.000Z",
         },
         new AbortController().signal,
       );
@@ -167,7 +164,6 @@ describe("moveDeal: CAS + stage validation", () => {
       if (r.ok === true) return;
       expect(r.error.id).toBe("E_DEAL_002");
 
-      // Confirm the deal was NOT modified (CAS atomicity: single UPDATE WHERE)
       const rows = await db.select().from(deals).where(eq(deals.id, created.value.id));
       const row = rows[0];
       expect(row?.stageId).toBe(stage0.id);
@@ -197,7 +193,7 @@ describe("moveDeal: CAS + stage validation", () => {
         adminSession(u.id),
         {
           dealId: created.value.id,
-          toStageId: stageB.id, // belongs to pipeline B, not A
+          toStageId: stageB.id,
           beforePosition: null,
           afterPosition: null,
           expectedUpdatedAt: created.value.updatedAt.toISOString(),

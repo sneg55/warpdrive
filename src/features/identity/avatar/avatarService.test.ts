@@ -13,7 +13,6 @@ const SIGNAL = (): AbortSignal => AbortSignal.timeout(5000);
 const PNG_MAGIC = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
 const pngBytes = (extra = 8): Buffer => Buffer.from([...PNG_MAGIC, ...new Array(extra).fill(0)]);
 
-// Simulate the browser's presigned POST landing real bytes at the stable upload key.
 function putUploadObject(
   storage: FakeStorageClient,
   userId: string,
@@ -59,7 +58,6 @@ describe("requestAvatarUpload", () => {
     );
     expect(r.ok).toBe(true);
     if (r.ok) expect(r.value.post.fields.key).toBe(avatarUploadKey("u1"));
-    // The storage layer, not just the client, must enforce the avatar cap.
     const presign = storage.calls.find((c) => c.method === "presignPost");
     expect(presign?.args.maxBytes).toBe(AVATAR_MAX_BYTES);
   });
@@ -85,15 +83,11 @@ describe("confirmAvatarUpload", () => {
     await withTestDb(async (db) => {
       const me = await seedUser(db);
       const storage = new FakeStorageClient();
-      // Attacker declared image/png at request (which the POST policy pins as the stored type),
-      // but the actual bytes are a PDF. Only byte-sniffing catches this.
       putUploadObject(storage, me.id, Buffer.from("%PDF-1.7\nmalicious"), "image/png");
 
       const r = await confirmAvatarUpload(db, { actor: { id: me.id }, storage }, SIGNAL());
       expect(r.ok).toBe(false);
       if (!r.ok) expect(r.error.id).toBe(ERROR_IDS.USER_AVATAR_INVALID);
-      // Validated before the copy: the upload object is removed and the confirmed key (the user's
-      // current avatar) is never written with the bad bytes.
       expect(storage.deletedKeys).toContain(avatarUploadKey(me.id));
       expect(storage.objectsByKey.has(avatarObjectKey(me.id))).toBe(false);
       const [row] = await db.select().from(users).where(eq(users.id, me.id));

@@ -9,7 +9,6 @@ import {
   revokeAllSessions,
 } from "./session";
 
-// Back-compat alias: every existing assertion below is about the COOKIE path.
 const loadLiveSession = loadLiveSessionByToken;
 
 let h: TestDb;
@@ -70,10 +69,6 @@ describe("sessions", () => {
   });
 });
 
-// The cookie value is a bearer credential: whoever holds it is the user. Storing it verbatim
-// means a database read leak, or an unencrypted backup, hands over live sessions directly. The
-// OAuth codes and refresh tokens in this same codebase are already sha256-hashed at rest; this
-// closes the inconsistency.
 describe("session token is not stored in the clear", () => {
   test("no stored column contains the cookie value", async () => {
     const created = await createSession(h.db, userId, AbortSignal.timeout(5000));
@@ -93,7 +88,6 @@ describe("session token is not stored in the clear", () => {
     const [row] = await h.db.select().from(sessions).where(eq(sessions.userId, userId));
     expect(row?.id).not.toBe(created.value.sid);
 
-    // And the internal id must NOT be accepted as a cookie.
     const loaded = await loadLiveSession(h.db, row?.id ?? "", AbortSignal.timeout(5000));
     expect(loaded.ok).toBe(false);
 
@@ -101,9 +95,6 @@ describe("session token is not stored in the clear", () => {
   });
 });
 
-// The WS heartbeat re-validates liveness from the session id carried in a ticket, never from a
-// cookie, so it needs its own lookup. Splitting the two keeps a caller from accidentally
-// authenticating an internal id as if it were a bearer token.
 describe("loadLiveSessionById", () => {
   test("loads a live session by its internal id", async () => {
     const created = await createSession(h.db, userId, AbortSignal.timeout(5000));

@@ -58,17 +58,12 @@ it("reports the promotion when the user picks it", () => {
   expect(onMakePrimaryChange).toHaveBeenCalledWith(true);
 });
 
-// The dot is a few pixels wide and the words next to it are the obvious click target. On a row
-// that opens on the promotion, text that does nothing means a user who clicks "add alongside" to
-// opt out still submits a promotion.
 it("takes the choice from a click on the option text", () => {
   const onMakePrimaryChange = renderRow(field({ defaultMakePrimary: true }), true);
   fireEvent.click(screen.getByText(S.addAlongside));
   expect(onMakePrimaryChange).toHaveBeenCalledWith(false);
 });
 
-// Same reasoning for the row's other radio group: two groups sitting inches apart must not differ
-// on whether their words are clickable.
 it("takes the contested-value pick from a click on the value text", () => {
   const onValueChange = vi.fn();
   render(
@@ -92,8 +87,6 @@ it("takes the contested-value pick from a click on the value text", () => {
   expect(onValueChange).toHaveBeenCalledWith("n.sawinyh@company.com");
 });
 
-// The row has to say why the record's own address is not worth keeping in front, or promoting
-// reads as enrichment overruling a value somebody typed on purpose.
 it("says the stored value is broken when it cannot be right", () => {
   renderRow(field({ currentInvalid: true }));
   expect(screen.getByText(S.currentInvalid("broken@"))).toBeInTheDocument();

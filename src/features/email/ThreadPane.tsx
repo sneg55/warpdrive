@@ -17,12 +17,7 @@ import { ThreadPrivacyToggle } from "./ThreadPrivacyToggle";
 
 interface ThreadPaneProps {
   threadId: string;
-  // trackingBadge: set by the parent route wrapper when a live WS email_tracking event
-  // arrives for this thread. Transient only (current session), a real-time nudge. The
-  // persisted per-message history (source of record, survives reload) is rendered per
-  // message below via MessageTrackingHistory, fed by message.tracking.
   trackingBadge: { kind: "open" | "click" } | null;
-  // Server-prefetched thread (allowRemote:false) so the reader paints without a client round trip.
   initialThread?: RouterOutputs["email"]["thread"]["get"];
 }
 
@@ -34,13 +29,9 @@ export function ThreadPane({
   const [allowRemote, setAllowRemote] = useState(false);
   const { data, refetch } = trpc.email.thread.get.useQuery(
     { threadId, allowRemote },
-    // Seed only the initial (allowRemote:false) key with the server prefetch; toggling remote
-    // images fires a fresh fetch. useInboxRealtime still invalidates on inbound events.
     { initialData: allowRemote === false ? initialThread : undefined },
   );
   const utils = trpc.useUtils();
-  // Guards mark-read-on-open to fire once per thread: re-renders (e.g. from a Composer send
-  // triggering refetch()) share the same threadId and must not re-fire the action.
   const markedReadForThreadId = useRef<string | null>(null);
   const [markUnreadError, setMarkUnreadError] = useState<string | null>(null);
 
@@ -49,11 +40,6 @@ export function ThreadPane({
     if (markedReadForThreadId.current === threadId) return;
     markedReadForThreadId.current = threadId;
     void markThreadReadAction(readCsrfToken(), { threadId }).then((res) => {
-      // Silent on failure (best-effort background call): only invalidate on success so a
-      // permission/CSRF failure doesn't mask itself behind a cache that looks refreshed.
-      // Invalidate both queries, mirroring handleMarkUnread below: ThreadRow reads its
-      // unread dot/bold from the cached inbox.list query, not unreadCount, so invalidating
-      // only unreadCount left the just-opened row looking unread in the list.
       if (res.ok) {
         void utils.email.inbox.list.invalidate();
         void utils.email.inbox.unreadCount.invalidate();
@@ -61,9 +47,6 @@ export function ThreadPane({
     });
   }, [data, threadId, utils]);
 
-  // A reply sent here and a change to the thread's linked deal/person both alter what the deal and
-  // person timelines should show, and those queries live on other routes: refetching the thread
-  // alone leaves them serving stale cards for the rest of their stale window.
   function handleThreadChanged(): void {
     invalidateRecordTimelines(utils);
     void refetch();
@@ -86,13 +69,8 @@ export function ThreadPane({
 
   const { messages, accountId, canCompose, ownerEmail, personName, dealTitle } = data;
   const inboxThread = data.thread;
-  // Newest-first order (getThread), so the first message is what Reply/Reply all/Forward
-  // should act on.
   const latestMessage = messages[0];
-  // Distinct sender addresses = the people in this conversation (Pipedrive's right sidebar).
   const participants = [...new Set(messages.map((m) => m.fromEmail).filter((e) => e !== ""))];
-  // The counterparty (never the mailbox owner) seeds the "Create new contact" prefill. Using the
-  // first sender would prefill the owner's own address on a sent-only thread (codex review).
   const counterparty = primaryCounterparty(messages, ownerEmail);
   const primaryEmail = counterparty?.email ?? null;
   const primaryName = counterparty?.name ?? null;
@@ -114,10 +92,6 @@ export function ThreadPane({
             {markUnreadError !== null && (
               <p className="text-xs text-destructive">{markUnreadError}</p>
             )}
-            {/* Owner-only thread privacy (B2). Same canCompose gate as the follow-up controls: only
-                the mailbox owner may flip visibility, and the server re-checks ownership. Reuses the
-                shared ThreadPrivacyToggle (also used per-row in ThreadList), which surfaces a failed
-                flip through the app-wide ActionError provider. */}
             {canCompose && (
               <ThreadPrivacyToggle
                 threadId={inboxThread.id}
@@ -140,7 +114,6 @@ export function ThreadPane({
               href={`/contacts/people/${inboxThread.personId}`}
               className="inline-block max-w-[12rem] truncate px-2 py-0.5 rounded-full bg-accent text-accent-foreground text-xs hover:underline"
             >
-              {/* Pipedrive labels the chip with the linked record's NAME, not the type noun. */}
               {personName ?? STRINGS.inbox.linkedPersonFallback}
             </a>
           )}
@@ -158,9 +131,6 @@ export function ThreadPane({
             </span>
           )}
         </div>
-        {/* Label + follow-up mutations are gated server-side on mailbox ownership (same predicate
-            as canCompose). Only offer the controls when the user owns the mailbox, so we never
-            present a clickable control the backend will reject (F5-7). */}
         {canCompose && (
           <div className="mt-2">
             <ThreadFollowUpControls
@@ -174,12 +144,7 @@ export function ThreadPane({
       </header>
 
       <div className="flex min-h-0 flex-1">
-        {/* Message list + composer (center); conversation context (right). */}
         <div className="flex min-w-0 flex-1 flex-col">
-          {/* B8: the reply footer lives INSIDE this scroller (as the last child of the constrained
-              column), so it flows immediately under the last message instead of floating at the page
-              bottom below a flex-1 spacer. B10: the column is width-constrained and centered, with
-              each message + the reply footer as its own bordered card. */}
           <div data-reader-scroll className="flex-1 overflow-y-auto">
             <div
               data-reader-column
@@ -194,10 +159,6 @@ export function ThreadPane({
                 />
               ))}
 
-              {/* latestMessage guard is defensive: getThread only returns threads with at least
-                  one email_messages row today, but nothing enforces that invariant at the DB
-                  level, so this avoids handing ReaderActions an undefined message if that ever
-                  changes. */}
               {canCompose && latestMessage !== undefined && (
                 <ReaderActions
                   message={latestMessage}

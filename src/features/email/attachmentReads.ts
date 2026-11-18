@@ -9,10 +9,6 @@ export interface AttachmentMeta {
   sizeBytes: number;
 }
 
-// Attachment metadata for a set of messages, keyed by messageId. Bytes are never loaded
-// here (lazy Gmail fetch happens on download, see attachmentDownload.ts). sizeBytes is a
-// bigint column; going through Drizzle's query builder (mode: "number") auto-coerces it to
-// a real number, unlike raw db.execute(sql\`...\`) which would hand back a string.
 export async function attachmentsForMessages(
   db: Db,
   messageIds: string[],

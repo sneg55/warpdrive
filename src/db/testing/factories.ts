@@ -33,7 +33,6 @@ export interface SeededPipeline {
   stages: Array<typeof schema.stages.$inferSelect>;
 }
 
-// Insert a pipeline with the given stage names (in order) and return both.
 export async function seedPipelineWithStages(
   db: Db,
   stageNames: string[],

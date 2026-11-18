@@ -1,8 +1,3 @@
-// Initials + deterministic accent for contact/owner avatars. Kept as pure
-// helpers so the visual Avatar component stays declarative and the logic is
-// unit-tested. Colors use semantic-ish Tailwind pairs (bg + text) from a fixed
-// palette; a name always maps to the same swatch.
-
 export const AVATAR_PALETTE = [
   "bg-blue-100 text-blue-700",
   "bg-emerald-100 text-emerald-700",
@@ -14,7 +9,6 @@ export const AVATAR_PALETTE = [
 
 export type AvatarColorClass = (typeof AVATAR_PALETTE)[number];
 
-// First letter of the first two words, uppercased. "?" when there is nothing.
 export function initials(name: string): string {
   const words = name.trim().split(/\s+/).filter(Boolean);
   if (words.length === 0) return "?";
@@ -24,7 +18,6 @@ export function initials(name: string): string {
     .join("");
 }
 
-// Deterministic swatch: sum char codes, modulo palette length.
 export function avatarColorClass(seed: string): AvatarColorClass {
   let sum = 0;
   for (let i = 0; i < seed.length; i++) sum += seed.charCodeAt(i);

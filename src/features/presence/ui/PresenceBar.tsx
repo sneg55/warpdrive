@@ -9,8 +9,6 @@ interface PresenceAvatarsProps {
   selfId: string;
 }
 
-// Pure presentational component: renders initials avatars for all users except
-// the viewer (selfId), collapsing overflow past 3 into a "+N" badge.
 export function PresenceAvatars({ users, selfId }: PresenceAvatarsProps): React.ReactNode {
   const others = users.filter((u) => u.userId !== selfId);
   const shown = others.slice(0, 3);
@@ -43,7 +41,6 @@ interface PresenceBarProps {
   selfId: string;
 }
 
-// Hides itself when only the current user (or nobody) is viewing.
 export function PresenceBar({ channel, selfId }: PresenceBarProps): React.ReactNode {
   const users = usePresence(channel);
   if (users.length <= 1) return null;

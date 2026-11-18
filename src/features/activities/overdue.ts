@@ -1,8 +1,3 @@
-// Whether an open activity is past due.
-//
-// An all-day activity stores local midnight as a placeholder for its day, so comparing that
-// instant to now paints it overdue from 00:01 on the very day it is due. It is late only once
-// the DAY has passed.
 export function isActivityOverdue(
   dueAt: Date | null,
   allDay: boolean,

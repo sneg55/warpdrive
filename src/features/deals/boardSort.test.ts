@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import { sortBoardCards } from "./boardSort";
 import type { BoardCard } from "./dealRepo";
 
-// Minimal BoardCard factory: only the fields a sort reads need meaningful values.
 function card(over: Partial<BoardCard>): BoardCard {
   return {
     id: "id",

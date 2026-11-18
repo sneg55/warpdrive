@@ -1,9 +1,4 @@
 // @vitest-environment jsdom
-// FormatToolbar – font family, font size, and text color controls (Spec 6.5).
-//
-// These tests verify the presence of the font/size/color selects and color input,
-// and that each control fires the correct TipTap editor command on change.
-// Tests for command wiring and URL security live in FormatToolbar.test.tsx.
 
 import "@testing-library/jest-dom/vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
@@ -11,7 +6,6 @@ import userEvent from "@testing-library/user-event";
 import type { Editor } from "@tiptap/react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
-// Radix Select (branded dropdown) needs these jsdom polyfills.
 beforeAll(() => {
   Element.prototype.scrollIntoView = vi.fn();
   Element.prototype.hasPointerCapture = vi.fn(() => false);
@@ -20,10 +14,6 @@ beforeAll(() => {
 
 afterEach(cleanup);
 
-// ---------------------------------------------------------------------------
-// Helper: find the branded Select's trigger whose aria-label contains a substring.
-// Returns the element or throws so tests fail with a clear message.
-// ---------------------------------------------------------------------------
 function getSelectByLabel(substr: string): HTMLElement {
   const match = screen
     .getAllByRole("combobox")
@@ -34,15 +24,11 @@ function getSelectByLabel(substr: string): HTMLElement {
   return match;
 }
 
-// Opens the branded Select by its trigger label, then clicks the option by its text.
 function pickOption(labelSubstr: string, optionText: string): void {
   fireEvent.click(getSelectByLabel(labelSubstr));
   fireEvent.click(screen.getByText(optionText));
 }
 
-// ---------------------------------------------------------------------------
-// Helper: build a minimal Editor stub wired to a single command.
-// ---------------------------------------------------------------------------
 function makeCommandEditor(commandName: string, runSpy: ReturnType<typeof vi.fn>): Editor {
   const focusObj: Record<string, () => { run: ReturnType<typeof vi.fn> }> = {
     [commandName]: () => ({ run: runSpy }),
@@ -54,7 +40,6 @@ function makeCommandEditor(commandName: string, runSpy: ReturnType<typeof vi.fn>
   } as unknown as Editor;
 }
 
-// Full stub – all commands resolve to the same runSpy (used for presence tests).
 function makeFullStubEditor(runSpy: ReturnType<typeof vi.fn>): Editor {
   const focus = () => ({
     toggleBold: () => ({ run: runSpy }),
@@ -84,10 +69,6 @@ function makeFullStubEditor(runSpy: ReturnType<typeof vi.fn>): Editor {
   } as unknown as Editor;
 }
 
-// ---------------------------------------------------------------------------
-// Spec 6.5: controls are present
-// ---------------------------------------------------------------------------
-
 describe("FormatToolbar – font/size/color controls present (Spec 6.5)", () => {
   it("renders a font-family select", async () => {
     const { FormatToolbar } = await import("./FormatToolbar");
@@ -108,12 +89,6 @@ describe("FormatToolbar – font/size/color controls present (Spec 6.5)", () => 
     expect(document.querySelector('input[type="color"]')).not.toBeInTheDocument();
   });
 });
-
-// ---------------------------------------------------------------------------
-// PD parity: font-family/size triggers are compact icon controls, not wide
-// "Default ▾" text comboboxes. The trigger's accessible name comes from
-// aria-label; it must never fall back to rendering the option's label text.
-// ---------------------------------------------------------------------------
 
 describe("FormatToolbar – compact icon-style font triggers (PD parity)", () => {
   it("font-family trigger is an icon control identified by aria-label, not a wide text label", async () => {
@@ -141,10 +116,6 @@ describe("FormatToolbar – compact icon-style font triggers (PD parity)", () =>
     expect(trigger.querySelector("svg")).not.toBeNull();
   });
 });
-
-// ---------------------------------------------------------------------------
-// Spec 6.5: controls fire the right editor commands
-// ---------------------------------------------------------------------------
 
 describe("FormatToolbar – font/size/color command wiring (Spec 6.5)", () => {
   it("changing font-family select calls setFontFamily on the editor chain", async () => {

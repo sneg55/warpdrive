@@ -11,15 +11,10 @@ import { formatTimelineEmailDate } from "./inboxDate";
 
 interface EmailDraftCardProps {
   draft: DraftSummary;
-  // Opens this draft in the record's composer. The host owns the composer, so the card only hands
-  // the row back. Absent on a surface with no composer, where Continue is hidden rather than inert.
   onResume?: (draft: DraftSummary) => void;
-  // Refetch the record's drafts after a discard.
   onChanged: () => void;
 }
 
-// One unsent draft as a record-timeline row, beside the sent messages it will join. Dashed
-// border and a "Draft" badge so it never reads as something already sent.
 export function EmailDraftCard({
   draft,
   onResume,

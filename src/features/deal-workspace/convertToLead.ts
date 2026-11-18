@@ -1,8 +1,3 @@
-// convertDealToLead: turn a deal back into a Leads-Inbox lead (mirror of the leads feature's
-// lead -> deal convert direction). Creates a lead carrying the deal's core fields, then CLOSES the
-// deal by archiving it (deals have no pipeline-less "converted" state, so archive is the close),
-// all in one transaction. CAS-locked on the deal's updatedAt so a stale header cannot convert a
-// concurrently-modified deal. Logs the conversion on both entities.
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { z } from "zod";
 import { BOARD_EVENT, dealChannel, dealMovedChannel } from "@/constants/boardChannels";
@@ -25,10 +20,9 @@ import { err, ok, type Result } from "@/types/result";
 
 export const convertDealToLeadInput = z.object({
   dealId: z.string().uuid(),
-  expectedUpdatedAt: z.string().datetime(), // ISO; compare-and-swap precondition on the deal
+  expectedUpdatedAt: z.string().datetime(),
 });
 
-// Thrown inside the transaction to roll back the lead insert when the deal's CAS lock loses.
 class ConvertConflict extends Error {}
 
 export async function convertDealToLead(
@@ -40,15 +34,10 @@ export async function convertDealToLead(
   const input = convertDealToLeadInput.parse(raw);
   signal.throwIfAborted();
 
-  // Visibility + edit gate on the deal (404-on-invisible, PERM_DENIED-on-unowned) so only an
-  // editor can close it. Also yields the loaded row we clone into the lead.
   const editable = await loadEditableDeal(db, actor, input.dealId, signal);
   if (!editable.ok) return editable;
   const deal = editable.value.deal;
 
-  // An already-archived deal is closed: converting again would insert a second lead for the same
-  // source (loadEditableDeal filters only deletedAt, and conversion stamps only archivedAt, so a
-  // stale header could re-run this). Refuse before touching anything.
   if (deal.archivedAt !== null) {
     return err(
       new AppError(ERROR_IDS.DEAL_PRECONDITION, "Deal already archived (cannot convert)", {
@@ -57,7 +46,6 @@ export async function convertDealToLead(
     );
   }
 
-  // Creating the lead requires the global deal.create capability (leads share it). Admin bypasses.
   if (actor.type !== "admin" && !actor.flags.has("deal.create")) {
     return err(
       new AppError(ERROR_IDS.PERM_DENIED, "deal.create capability required", { userId: actor.id }),
@@ -90,7 +78,6 @@ export async function convertDealToLead(
           sourceChannel: deal.sourceChannel,
           sourceChannelId: deal.sourceChannelId,
           ownerId: deal.ownerId,
-          // Inherit the deal's visibility so the conversion neither broadens nor narrows exposure.
           visibilityLevel: deal.visibilityLevel,
           visibilityGroupId: deal.visibilityGroupId,
           visibleToUserIds: deal.visibleToUserIds,
@@ -100,11 +87,8 @@ export async function convertDealToLead(
         throw new AppError(ERROR_IDS.DB_INSERT_FAILED, "convertDealToLead: lead insert no rows");
       }
 
-      // Deal label names carry onto the lead; the lead catalog is a separate target, so adopt what
-      // it does not already hold (mirrors convertLead in the other direction).
       await syncEntityLabelNames(tx, "lead", lead.id, deal.labels, signal);
 
-      // CAS-close the deal: archive it under the updatedAt precondition.
       const now = new Date();
       const [closed] = await tx
         .update(deals)
@@ -112,7 +96,7 @@ export async function convertDealToLead(
         .where(
           and(
             eq(deals.id, deal.id),
-            isNull(deals.archivedAt), // lose the race to a concurrent archive/convert
+            isNull(deals.archivedAt),
             sql`date_trunc('milliseconds', ${deals.updatedAt}) = ${input.expectedUpdatedAt}::timestamptz`,
           ),
         )
@@ -144,8 +128,6 @@ export async function convertDealToLead(
         signal,
       );
 
-      // Realtime: the deal is now archived (dropped from active board reads). Notify the deal
-      // channel and the pipeline channel so open views refetch.
       await publishBoardEvent(
         tx,
         {

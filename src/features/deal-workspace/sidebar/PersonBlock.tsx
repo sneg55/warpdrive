@@ -14,8 +14,6 @@ import { PersonBulkEditor } from "./PersonBulkEditor";
 import { SidebarFieldRow } from "./SidebarFieldRow";
 import { refreshQuietly, textEditor } from "./sidebarEditors";
 
-// Fields the Person sidebar block can patch. All optional so each row only sends the one
-// field it owns. Mirrors OrgBlock's field-to-column mapping.
 type PersonFieldChange = Partial<{
   firstName: string | null;
   lastName: string | null;
@@ -23,10 +21,6 @@ type PersonFieldChange = Partial<{
   emails: ContactPoint[];
 }>;
 
-// Editable identity fields for the deal-sidebar Person section. Saves through
-// updatePersonAction (person has no CAS precondition, last-write-wins) and refreshes the
-// router afterward so the next render carries the server-true values. Name stays a plain
-// link, it is not one of the editable fields.
 const NONE: ReadonlySet<string> = new Set();
 
 export function PersonBlock({
@@ -44,14 +38,8 @@ export function PersonBlock({
   bulkEditing?: boolean;
   onExitBulk?: () => void;
   onSaved?: () => void;
-  // Built-in field keys hidden in Settings > Data fields (see BUILTIN_FIELDS.person). A hidden
-  // contact-point row is neither shown nor offered in bulk edit, mirroring the person detail page.
   hidden?: ReadonlySet<string>;
-  // Lead-drawer parity: PD's lead PERSON section shows the display Name only. When set, the
-  // First name / Last name rows are dropped (deal + contact surfaces keep them).
   hideNameParts?: boolean;
-  // Resolved label chips (name + Tailwind classes) shown as a Labels row under Name. undefined on
-  // surfaces that do not surface person labels (the deal sidebar); PD shows them on the lead drawer.
   labels?: ResolvedLabelChip[];
   customFieldDefs?: CustomFieldDef[];
   currency?: string;
@@ -61,7 +49,6 @@ export function PersonBlock({
   async function save(change: PersonFieldChange): Promise<{ ok: boolean; errorId?: string }> {
     const r = await updatePersonAction({ id: person.id, ...change }, readCsrfToken());
     if (!r.ok) return { ok: false, errorId: r.error.id };
-    // Refresh only after a committed write, and never let a refresh failure mask that success.
     refreshQuietly(router);
     onSaved?.();
     return { ok: true };

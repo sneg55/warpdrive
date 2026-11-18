@@ -4,12 +4,6 @@ import { withTestDb } from "@/db/testing";
 import { FakeGmailClient } from "./gmailFake";
 import { sweepSpam } from "./spamSweep";
 
-// One-off repair for spam that synced into the CRM Inbox BEFORE spam was hidden at sync time. The
-// forward fix only reacts to history events, so a thread already sitting in the local inbox is never
-// re-examined. The sweep asks Gmail which conversations are in Spam and re-derives each one's hidden
-// state from its CURRENT labels (same whole-thread rule as the sync path), so a live conversation
-// that merely contains one spam-flagged message is left alone.
-
 type TestDb = Parameters<Parameters<typeof withTestDb>[0]>[0];
 const newSignal = (): AbortSignal => new AbortController().signal;
 
@@ -91,7 +85,6 @@ describe("sweepSpam", () => {
       });
 
       const r = await sweepSpam(db, { accountId: acctId, gmail: fake, signal: newSignal() });
-      // No local row to repair, and no wasted getThread on a thread we do not have.
       expect(r).toMatchObject({ ok: true, value: { hidden: 0 } });
       expect(fake.calls.some((c) => c.method === "getThread")).toBe(false);
     });

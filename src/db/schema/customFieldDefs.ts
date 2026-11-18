@@ -23,13 +23,9 @@ export const customFieldDefs = pgTable(
     targetEntity: customFieldTarget("target_entity").notNull(),
     type: customFieldType("type").notNull(),
     name: text("name").notNull(),
-    // Stable machine key; unique per target_entity (data-model section 10).
     key: text("key").notNull(),
     options: jsonb("options").$type<CustomFieldOption[]>().notNull().default(sql`'[]'::jsonb`),
     isRequired: boolean("is_required").notNull().default(false),
-    // Add-form flags: isImportant makes the field visible and required during entity creation;
-    // showInAddForm makes it visible but optional. Both default false so existing defs keep today's
-    // placement until an admin opts in.
     isImportant: boolean("is_important").notNull().default(false),
     showInAddForm: boolean("show_in_add_form").notNull().default(false),
     order: integer("order").notNull().default(0),

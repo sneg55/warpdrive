@@ -1,7 +1,3 @@
-// Average and median size of deals won in the range, plus how long they took to win.
-// One scan over the same set for both, since "the deals won in this period" is the only
-// population either metric cares about.
-// Windows on won_time (see dealPerformance for why), and applies dealVisibilityClause.
 import { sql } from "drizzle-orm";
 import type { Db } from "@/db/client";
 import { dealVisibilityClause } from "@/features/deals/visibility";
@@ -41,8 +37,6 @@ export async function wonDealStats(
   const pipelineClause =
     filters.pipelineId !== null ? sql`AND d.pipeline_id = ${filters.pipelineId}` : sql``;
 
-  // Every aggregate is null over an empty set, which is exactly the distinction the UI needs:
-  // "no deals won" must not render as an average of zero.
   const result = await db.execute(sql`
     SELECT
       avg(d.value)::numeric(14,2)::text AS "avgValue",

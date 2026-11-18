@@ -1,5 +1,3 @@
-// Enrichment run persistence. A run is both the cache that stops a repeat click spending credits
-// and the audit trail of what each provider actually said.
 import { and, desc, eq, gt } from "drizzle-orm";
 import { AppError, ERROR_IDS } from "@/constants/errorIds";
 import type { Db } from "@/db/client";
@@ -9,9 +7,6 @@ import type { ProviderOutcome } from "./providers/types";
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
-// `fingerprint` is the record's identity right now. A run researched for a former email, company
-// or domain answers a different question, so it is a miss even inside the TTL: the equality drops
-// the NULL fingerprints of rows written before the column existed, which is the same verdict.
 export async function findCachedRun(
   db: Db,
   entityType: EnrichEntity,
@@ -22,7 +17,6 @@ export async function findCachedRun(
   signal: AbortSignal,
 ): Promise<EnrichmentRunRow | null> {
   signal.throwIfAborted();
-  // A TTL of zero disables the cache, which is the honest reading of "never reuse".
   if (ttlDays <= 0) return null;
   const cutoff = new Date(now.getTime() - ttlDays * MS_PER_DAY);
   const [row] = await db
@@ -72,8 +66,6 @@ export async function getRun(
   return row ?? null;
 }
 
-// Merged, not replaced. A cached run can be applied in more than one pass, and overwriting would
-// leave the audit naming only the last batch while the earlier writes stayed committed.
 export async function markApplied(
   db: Db,
   runId: string,

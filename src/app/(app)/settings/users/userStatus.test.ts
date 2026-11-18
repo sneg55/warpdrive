@@ -11,7 +11,6 @@ type Row = { id: string; isActive: boolean; invitedAt: string | null };
 const active: Row = { id: "a", isActive: true, invitedAt: null };
 const invited: Row = { id: "b", isActive: true, invitedAt: "2026-07-01" };
 const deactivated: Row = { id: "c", isActive: false, invitedAt: null };
-// A deactivated user who still has a pending invite: deactivation wins.
 const deactivatedInvited: Row = { id: "d", isActive: false, invitedAt: "2026-07-01" };
 
 describe("userStatus", () => {

@@ -1,9 +1,3 @@
-// Funnel: how far the deals created in the range actually got, and how long they sat in each
-// stage. Reads the stage history dealMove writes to change_logs (entity_type 'deal', field
-// 'stageId', jsonb string values), not the deal's current stage alone.
-//
-// Windowed on created_at: a conversion rate is only meaningful over a cohort, so the range
-// selects which deals started in the period, then measures how far that cohort progressed.
 import { sql } from "drizzle-orm";
 import type { Db } from "@/db/client";
 import { dealVisibilityClause } from "@/features/deals/visibility";
@@ -122,8 +116,6 @@ export async function stageConversion(
 
   const rows = (result as unknown as { rows: Row[] }).rows;
   const first = rows[0];
-  // Conversion is measured against the first stage: every deal passes through it, so it is
-  // the only honest denominator. Zero there means zero everywhere, and the rate is 0.
   const base = first?.reached ?? 0;
   return rows.map((r) => ({
     stageId: r.stageId,

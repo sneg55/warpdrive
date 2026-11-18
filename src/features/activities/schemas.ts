@@ -11,14 +11,10 @@ export const activityCreateInput = z
       .nullable()
       .default(null),
     dueAt: z.string().datetime().nullable().default(null),
-    // True when the user gave a day but no time. See composeDueAt.
     allDay: z.boolean().default(false),
-    // Multi-day end timestamp (Pipedrive parity). Ordering vs dueAt is enforced in the repo.
     endAt: z.string().datetime().nullable().default(null),
     durationMinutes: z.number().int().positive().nullable().default(null),
     dealId: z.string().uuid().nullable().default(null),
-    // A lead-scoped activity (Leads Inbox timeline). Mutually exclusive with dealId:
-    // the activities table enforces the same single-parent (deal XOR lead) check.
     leadId: z.string().uuid().nullable().default(null),
     personId: z.string().uuid().nullable().default(null),
     orgId: z.string().uuid().nullable().default(null),
@@ -28,7 +24,6 @@ export const activityCreateInput = z
     customFields: z.record(z.string(), z.unknown()).default({}),
     note: z.string().max(50_000).nullable().default(null),
     location: z.string().trim().max(255).nullable().default(null),
-    // Generated token-based video-call link (B3); a plain URL string, no external OAuth.
     videoCallUrl: z.string().url().max(2048).nullable().default(null),
     done: z.boolean().default(false),
   })
@@ -37,11 +32,8 @@ export const activityCreateInput = z
     path: ["leadId"],
   });
 
-// z.input so callers may omit defaulted fields (priority, dueAt, arrays); createActivity parses.
 export type ActivityCreateInput = z.input<typeof activityCreateInput>;
 
-// Partial patch for editActivityAction: every field but id is optional, and the
-// refine below requires at least one field to update beyond the id.
 export const activityUpdateInput = z
   .object({
     id: z.string().uuid(),
@@ -58,9 +50,6 @@ export const activityUpdateInput = z
     location: z.string().trim().max(255).nullable().optional(),
     note: z.string().max(50_000).nullable().optional(),
     assigneeId: z.string().uuid().optional(),
-    // Full-fidelity edit (deal-workspace inline composer): the video-call link, the guest/participant
-    // sets (each replaces the whole set when provided), and re-linking the deal/person/org. Omitted
-    // fields are never touched (buildPatch + the reconcilers only act on provided keys).
     videoCallUrl: z.string().url().max(2048).nullable().optional(),
     guestPersonIds: z.array(z.string().uuid()).optional(),
     participantUserIds: z.array(z.string().uuid()).optional(),
@@ -72,7 +61,6 @@ export const activityUpdateInput = z
 
 export type ActivityUpdateInput = z.input<typeof activityUpdateInput>;
 
-// Server-driven ORDER BY for the Activities table (activities.listRows).
 const ACTIVITY_SORT_FIELDS = ["subject", "dueAtIso", "priority", "duration"] as const;
 export type ActivitySortField = (typeof ACTIVITY_SORT_FIELDS)[number];
 export const activitySortInput = z.object({

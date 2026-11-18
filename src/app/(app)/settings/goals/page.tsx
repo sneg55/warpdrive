@@ -15,8 +15,6 @@ export const metadata = { title: SETTINGS_STRINGS.goals };
 
 export default async function GoalsSettingsPage(): Promise<ReactNode> {
   const { actor, db } = await createContext();
-  // Reading a goal needs no permission; setting someone's quota is administrative, so this
-  // screen is gated even though the Performance widget is not.
   if (actor === null || !can(actor, "goals.manage")) {
     return <p className="text-sm text-red-600">{SETTINGS_STRINGS.requiresAdmin}</p>;
   }
@@ -25,8 +23,6 @@ export default async function GoalsSettingsPage(): Promise<ReactNode> {
     db.select().from(goals).where(isNull(goals.deletedAt)).orderBy(asc(goals.startsOn)),
     listAssignableUsers(db, signal),
     db.select({ id: teams.id, name: teams.name }).from(teams).orderBy(asc(teams.name)),
-    // Gated, not a raw select: a restricted pipeline's name must not reach a non-admin who
-    // happens to hold goals.manage, and an archived pipeline can never accrue progress.
     visiblePipelineOptions(db, actor, signal),
     db
       .select({ id: activityTypes.id, name: activityTypes.name })

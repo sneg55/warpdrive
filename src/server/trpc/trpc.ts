@@ -6,7 +6,6 @@ const t = initTRPC.context<AppContext>().create({ transformer: superjson });
 
 export const router = t.router;
 
-// Rejects unauthenticated / dead-session / deactivated callers (rule 0).
 export const protectedProcedure = t.procedure.use(({ ctx, next }) => {
   if (ctx.actor === null || ctx.session === null) {
     throw new TRPCError({ code: "UNAUTHORIZED", message: "E_AUTH_003" });

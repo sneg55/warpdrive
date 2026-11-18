@@ -1,6 +1,3 @@
-// Funnel security + owner-scope tests. Both assertions are non-vacuous: each
-// would become a non-zero `reached` if the visibility predicate (SECURITY) or
-// the owner filter (OWNER-SCOPE) were absent.
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { AppError, ERROR_IDS } from "@/constants/errorIds";
 import * as schema from "@/db/schema";
@@ -63,7 +60,6 @@ async function seedPipelineWith2Stages() {
 }
 
 describe("funnel", () => {
-  // SECURITY: another user's owner-only deal must not appear in a third party's funnel.
   it("SECURITY: owner-only deal from another user contributes 0 to reached", async () => {
     const owner = await seedUser();
     const thirdParty = await seedUser();
@@ -92,7 +88,6 @@ describe("funnel", () => {
     expect(s0?.reached).toBe(0);
   });
 
-  // OWNER-SCOPE: a co-worker's visibility_level='all' deal must be excluded when scope='me'.
   it("OWNER-SCOPE: co-worker's all-visible deal contributes 0 when scope is 'me'", async () => {
     const coworker = await seedUser();
     const viewer = await seedUser();
@@ -100,7 +95,6 @@ describe("funnel", () => {
     const stage0 = stages[0];
     if (!stage0) throw new AppError(ERROR_IDS.DB_INSERT_FAILED, "stage0 missing");
 
-    // Co-worker's deal is visible to everyone, but viewer queries with ownerScope='me'.
     await h.db.insert(schema.deals).values({
       title: "coworker all-visible",
       status: "open",
@@ -119,7 +113,6 @@ describe("funnel", () => {
       new AbortController().signal,
     );
     const s0 = result.find((s) => s.stageId === stage0.id);
-    // Without the owner filter this would be 1 (the deal is visible to all).
     expect(s0?.reached).toBe(0);
   });
 });

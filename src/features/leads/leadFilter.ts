@@ -1,14 +1,3 @@
-// Security-critical: compiles a leads filter AST into a Drizzle SQL fragment ANDed into the leads
-// list query. Modeled on the security-reviewed contacts filterAst (same invariants):
-//
-// 1. FIELD ALLOW-LIST: column references come from a hardcoded map. An unknown field is rejected
-//    with AppError. Field names NEVER reach SQL via interpolation.
-// 2. OPERATOR ALLOW-LIST: SQL operator strings come from a hardcoded map (sql.raw of a constant).
-// 3. VALUES PARAMETERIZED: every value goes through sql`${value}` (bound parameter). `contains`
-//    emits `ILIKE '%' || ${value} || '%'` with constant wildcards and a bound value.
-// 4. ARRAY FIELDS: a labels condition compiles to membership over unnest, with one bound name or
-//    one bound text[]; a list on any other field is rejected, since drizzle expands it to a tuple.
-// 5. NARROWS ONLY: produces an AND-able boolean predicate; the caller ANDs the visibility clause.
 import { type SQL, sql } from "drizzle-orm";
 import { AppError, ERROR_IDS } from "@/constants/errorIds";
 import {
@@ -21,7 +10,6 @@ import {
 import { leads } from "@/db/schema/leads";
 import { labelMembershipSql } from "@/features/labels/labelMembershipSql";
 import { LEAD_ARRAY_FIELDS } from "./leadFilterFields";
-// Per-operator SQL branches (null-safe neq, prefix/negated ILIKE, emptiness) live next door.
 import {
   emptinessCondition,
   requireLabelValue,
@@ -57,9 +45,6 @@ export const LEAD_FILTER_CONFIG: LeadFilterConfig = {
   numericFields: ["value"],
 };
 
-// text[] columns compare by membership: "is" means the row carries that label, "is not" means it
-// does not. Case-insensitive to match mergeLabelOptions and resolveLabelChips, which collapse case
-// variants. The unnest shape is constant and ${value} stays a bound parameter.
 function arrayCondition(
   colSql: SQL,
   op: LeadFilterOp,
@@ -72,14 +57,11 @@ function arrayCondition(
   throw new AppError(ERROR_IDS.LEAD_FILTER_INVALID, "Invalid op for a leads array field", { op });
 }
 
-// value is absent for the valueless ops (isEmpty / isNotEmpty), which compile to a NULL test.
 export type LeadFilterDefinition = {
   combinator: "and" | "or";
   conditions: Array<{ field: string; op: LeadFilterOp; value?: string | number | string[] }>;
 };
 
-// Compile a filter AST to a boolean SQL fragment (null when there are no conditions). Independently
-// safe: throws AppError for any field/op outside the allow-list even if Zod was bypassed.
 export function compileLeadFilter(def: LeadFilterDefinition, config: LeadFilterConfig): SQL | null {
   if (def.conditions.length === 0) return null;
   const parts = def.conditions.map((c) => {

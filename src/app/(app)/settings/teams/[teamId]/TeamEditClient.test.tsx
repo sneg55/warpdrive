@@ -58,8 +58,6 @@ describe("TeamEditClient", () => {
   it("pre-loads the team name and current members (view existing team)", () => {
     renderClient();
     expect(screen.getByLabelText("Team name")).toHaveValue("West Team");
-    // Alice is the manager AND a current member, so she renders in both the manager select and the
-    // members chip list (at least once each). Pre-loading the roster is the point.
     expect(screen.getAllByText("Alice").length).toBeGreaterThanOrEqual(1);
   });
 
@@ -88,7 +86,6 @@ describe("TeamEditClient", () => {
 
   it("renders the members help text from the muted token", () => {
     renderClient();
-    // The same copy also heads the card, so pin the one under the Members field.
     const help = screen
       .getAllByText("Select the users who belong to this team.")
       .find((el) => el.classList.contains("text-xs"));

@@ -21,14 +21,11 @@ function wrap(line: string, link: string): { text: string; html: string } {
   return { text, html };
 }
 
-// Per-type copy strings. No em dashes; no magic strings duplicated.
 export function renderNotificationEmail(
   row: NotificationRow,
   recipientName: string,
 ): { subject: string; text: string; html: string } {
   const base = env.BASE_URL;
-  // Never derive the path from the entity type: pluralizing it produced /activitys/<id>,
-  // /persons/<id> and /organizations/<id>, none of which are routes in this app.
   const path = entityHref(row.entityType, row.entityId);
   const link = path !== null ? `${base}${path}` : base;
 
@@ -83,7 +80,6 @@ export function renderNotificationEmail(
       break;
     }
     default: {
-      // Unknown future type: render a generic fallback. Never throw (pg-boss resilience).
       subject = "Warpdrive notification";
       line = `${recipientName}, you have a new notification.`;
     }

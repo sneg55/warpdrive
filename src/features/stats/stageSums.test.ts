@@ -1,6 +1,3 @@
-// Security test: invisible deals must be excluded from stage sums.
-// If dealVisibilityClause is removed, the owner-only deal in the SECURITY test
-// would show up in Alice's totals, causing the assertion to fail.
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { AppError, ERROR_IDS } from "@/constants/errorIds";
 import * as schema from "@/db/schema";
@@ -61,9 +58,6 @@ async function seedStage(pipelineId: string, name: string, order: number) {
 }
 
 describe("stageSums", () => {
-  // F5-4: stageSums must return the stage NAME (not just the id) so the per-stage
-  // widget renders names regardless of which pipeline is viewed. This pipeline is
-  // NOT the settings default, so a default-pipeline name map would not cover it.
   it("returns the stage name alongside the sum for a non-default pipeline", async () => {
     const admin = await seedUser({ isAdmin: true });
     const pipeline = await seedPipeline();
@@ -151,13 +145,10 @@ describe("stageSums", () => {
       EVERYONE,
       new AbortController().signal,
     );
-    // Won deal must not appear in the stage sum.
     const row = sums.find((s) => s.stageId === stage.id);
     expect(row?.dealCount ?? 0).toBe(0);
   });
 
-  // SECURITY: owner-only deal owned by another user must be excluded from Alice's totals.
-  // If the visibility predicate is removed, Alice would see Bob's deal (999.00).
   it("SECURITY: owner-only deal from another user is excluded from stage totals", async () => {
     const alice = await seedUser();
     const bob = await seedUser();
@@ -182,14 +173,10 @@ describe("stageSums", () => {
       new AbortController().signal,
     );
     const row = sums.find((s) => s.stageId === stage.id);
-    // Alice must see 0 deals: Bob's owner-only deal is invisible to her.
     expect(row?.dealCount ?? 0).toBe(0);
     expect(Number(row?.total ?? "0")).toBe(0);
   });
 
-  // OWNER SCOPE: with ownerScope='me', a regular user sees only their own deals,
-  // even when a co-worker's 'all'-visibility deal sits in the same stage.
-  // Without the owner clause this would return dealCount=2/total=300.
   it("ownerScope='me' counts only the actor's own deals in the stage", async () => {
     const alice = await seedUser();
     const bob = await seedUser();
@@ -225,7 +212,6 @@ describe("stageSums", () => {
       new AbortController().signal,
     );
     const row = sums.find((s) => s.stageId === stage.id);
-    // me-scope: only Alice's own deal is counted.
     expect(row?.dealCount).toBe(1);
     expect(Number(row?.total)).toBe(100);
   });

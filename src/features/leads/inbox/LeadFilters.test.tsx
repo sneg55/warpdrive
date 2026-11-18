@@ -4,11 +4,6 @@ import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-// A label that records carry but the catalog does not know about. The app can no longer create
-// that state (writers adopt unknown names into the catalog), but a direct database write still
-// can, and a label visible on the list has to be selectable in the filter that claims to filter it.
-// "hot" also exercises the dedupe: it is the same label as the catalog's "Hot" (every resolver
-// matches case-insensitively), so it must not show up as a second, differently-cased option.
 const appliedOnly = ["high priority", "hot"];
 
 vi.mock("@/lib/trpc-client", () => ({

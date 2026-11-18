@@ -1,5 +1,3 @@
-// Test helpers for visibility.test.ts: db harness + inline seed functions.
-// These are NOT production code; this file is only imported by test files.
 import { AppError, ERROR_IDS } from "@/constants/errorIds";
 import * as schema from "@/db/schema";
 import { makeTestDb, type TestDb } from "@/test/db";

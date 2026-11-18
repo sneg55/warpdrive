@@ -17,10 +17,6 @@ interface MultiComboboxProps {
   placeholder?: string;
 }
 
-// Searchable multi-select (participants/guests picker). Popover + cmdk, mirroring
-// Combobox but for many values: selected options render as removable chips and each
-// list row toggles membership. Chips carry their own remove buttons and live as
-// siblings of the trigger button (never nested inside it) so the markup stays valid.
 export function MultiCombobox({
   values,
   onChange,
@@ -40,8 +36,6 @@ export function MultiCombobox({
       <div
         className={cn(
           buttonVariants({ variant: "outline", size: "sm" }),
-          // whitespace-normal opts back out of the button base: this row grows to fit its chips,
-          // so a long label has to be able to break rather than push past the field edge.
           "h-auto min-h-9 w-full flex-wrap justify-start gap-1 py-1 font-normal whitespace-normal",
         )}
       >

@@ -95,8 +95,6 @@ describe("fanOut", () => {
     expect(outcomes.find((o) => o.provider === "rocketreach")?.kind).toBe("ok");
   });
 
-  // A cancelled click is not an outage. Reported as outcomes it persists an all-failed run that the
-  // next click replays out of the cache.
   it("propagates the caller's abort instead of reporting provider failures", async () => {
     const controller = new AbortController();
     const seen: AbortSignal[] = [];
@@ -200,9 +198,6 @@ describe("summariseOutcomes", () => {
     expect(summariseOutcomes([]).anySucceeded).toBe(false);
   });
 
-  // RocketReach answers with cached fields and can then hit a 429 mid-poll. That outcome keeps the
-  // throttled kind so the cooldown is recorded, so judging on kind alone would discard fields we
-  // are holding whenever that provider was the only one enabled.
   it("counts a failed provider that still returned data as an answer", () => {
     const s = summariseOutcomes([
       {
@@ -213,7 +208,6 @@ describe("summariseOutcomes", () => {
       },
     ]);
     expect(s.anySucceeded).toBe(true);
-    // It is still a failure for the footer's purposes, and its resume time still has to show.
     expect(s.reasons).toEqual({ rocketreach: "throttled" });
     expect(s.earliestRetryIso).toBe("2026-08-24T14:20:00.000Z");
   });

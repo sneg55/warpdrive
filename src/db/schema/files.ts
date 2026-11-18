@@ -22,11 +22,7 @@ export const files = pgTable(
     s3Key: text("s3_key").notNull(),
     sizeBytes: bigint("size_bytes", { mode: "number" }).notNull(),
     contentType: text("content_type").notNull(),
-    // Object ETag captured at confirm time. Downloads revalidate the live object against
-    // this so a still-valid presigned POST cannot silently overwrite a confirmed file (F31).
-    // Nullable: pre-existing rows predate the binding and skip the check.
     etag: text("etag"),
-    // uploading on row create; flips to ready after client confirms presigned upload.
     status: fileStatus("status").notNull().default("uploading"),
     uploadedBy: uuid("uploaded_by")
       .notNull()

@@ -6,8 +6,6 @@ import { seedPipelineWithStages, seedUser } from "@/db/testing/factories";
 import { createDef } from "@/features/custom-fields/defsRepo";
 import { commitRow, type ImportActor } from "./commit";
 
-// Admin bypasses createDeal's deal.create gate, keeping these tests focused on the
-// pipeline/stage-name resolution mechanics rather than permission-flag plumbing.
 function adminActorFor(id: string): ImportActor {
   return {
     id,
@@ -129,8 +127,6 @@ it("reports a deal row missing the required title as invalid (not silently dropp
   });
 });
 
-// Deal imports must retain the custom fields validated during mapping. createDeal applies the
-// current definition rules again at its trust boundary and persists the parsed values.
 it("imports and persists a mapped required deal custom field", async () => {
   await withTestDb(async (db) => {
     const signal = new AbortController().signal;

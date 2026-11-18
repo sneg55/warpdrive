@@ -5,7 +5,6 @@ import { CSRF_COOKIE, validateCsrf } from "@/features/auth/csrf";
 import type { PermSetUser } from "@/features/permissions/effective";
 import { err, type Result } from "@/types/result";
 
-// Unit-testable core: enforce actor presence, then run the body.
 export async function runWithActor<T>(
   actor: PermSetUser | null,
   body: (actor: PermSetUser) => Promise<Result<T, string>>,
@@ -14,7 +13,6 @@ export async function runWithActor<T>(
   return body(actor);
 }
 
-// Every mutating action must call this before any write (CSRF enforcement point, ops A0).
 export async function guardCsrf(headerToken: string | null): Promise<Result<true, string>> {
   const h = await headers();
   const c = await cookies();

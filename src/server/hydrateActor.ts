@@ -4,19 +4,12 @@ import type { Db } from "@/db/client";
 import { permissionSets, teamMembers, teams, users, visibilityGroupMembers } from "@/db/schema";
 import type { PermSetUser } from "@/features/permissions/effective";
 
-// A hydrated actor plus the display fields already present on the user row hydrateActor reads.
-// Exposing them here lets the app shell render the avatar from ctx.actor instead of re-reading the
-// same users row per authenticated page. HydratedActor extends PermSetUser, so every permissions
-// call site that expects a PermSetUser is unaffected.
 export interface HydratedActor extends PermSetUser {
   name: string;
   email: string;
   avatarUrl: string | null;
 }
 
-// Build a HydratedActor from a userId with no request/session context. Used by
-// createContext (request path) AND by import background jobs (no cookies available),
-// so it takes db explicitly and never imports next/headers.
 export async function hydrateActor(
   db: Db,
   userId: string,
@@ -46,9 +39,6 @@ export async function hydrateActor(
     .where(eq(visibilityGroupMembers.userId, userId));
   signal.throwIfAborted();
 
-  // Team-manager view: only when the actor holds team.viewMembers do we load the members of teams
-  // they manage. Membership in this set is what grants team-scoped visibility/edit (canSee/can),
-  // so gating it here is the single enforcement point for the view grant.
   const managedUserIds = new Set<string>();
   if (flags.has("team.viewMembers")) {
     const managedRows = await db

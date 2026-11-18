@@ -22,8 +22,6 @@ export interface BadgeProps
   extends React.ComponentProps<"span">,
     VariantProps<typeof badgeVariants> {}
 
-// shadcn-style status/metadata primitive. Badges are static labels, so unlike Button they do not
-// carry hover or press feedback.
 export function Badge({ className, variant, ...props }: BadgeProps): React.ReactNode {
   return <span className={cn(badgeVariants({ variant }), className)} {...props} />;
 }

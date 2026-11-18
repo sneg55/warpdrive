@@ -5,9 +5,6 @@ import type { ProposedField, ProposedValue, ResolvedMapping } from "./types";
 
 const URL_KEY = /(url|website|domain)$/i;
 
-// Comparison form only. Two providers spelling the same fact differently must count as agreement,
-// otherwise every merged field looks like a conflict and the dialog asks the user to arbitrate
-// between "Head of Growth" and "head of growth".
 export function normaliseForCompare(canonicalKey: string, value: string | number): string {
   if (valueTypeOf(canonicalKey) === "number") {
     const asNumber =
@@ -40,8 +37,6 @@ function collect(outcomes: readonly ProviderOutcome[], canonicalKey: string): Bu
     const key = normaliseForCompare(canonicalKey, raw);
     if (key.length === 0) continue;
     const existing = byNormalised.get(key);
-    // First spelling wins for display: the value the user sees should be a real provider value,
-    // not the lowercased comparison form.
     if (existing === undefined)
       byNormalised.set(key, { value: raw, providers: [outcome.provider] });
     else if (!existing.providers.includes(outcome.provider))
@@ -50,7 +45,6 @@ function collect(outcomes: readonly ProviderOutcome[], canonicalKey: string): Bu
   return [...byNormalised.values()];
 }
 
-// Most-backed variant first; ties break on the fixed provider order so a run is reproducible.
 function rank(a: Bucket, b: Bucket): number {
   if (a.providers.length !== b.providers.length) return b.providers.length - a.providers.length;
   return priorityOf(a.providers[0] ?? "apollo") - priorityOf(b.providers[0] ?? "apollo");
@@ -60,19 +54,11 @@ export function mergeCandidates(
   outcomes: readonly ProviderOutcome[],
   current: Readonly<Record<string, string | number | null>>,
   mappings: readonly ResolvedMapping[],
-  // Targets that hold a set rather than one value, principally a person's emails. Without these a
-  // provider returning an address the record already has as a secondary looks like an overwrite of
-  // the primary, and a cached run keeps proposing it while the write silently no-ops.
   multi: Readonly<Record<string, readonly string[]>> = {},
-  // Targets that hold something the actor may not be shown, principally a person linked to an
-  // organization outside their visibility. Reading those as empty checks the row by default and
-  // the apply moves the link without the user ever knowing one was there.
   occupied: readonly string[] = [],
 ): ProposedField[] {
   const fields: ProposedField[] = [];
 
-  // Mapping order, not provider order, so the dialog lists the same rows in the same places
-  // whichever provider happened to answer first.
   for (const mapping of mappings) {
     const buckets = collect(outcomes, mapping.canonicalKey).sort(rank);
     if (buckets.length === 0) continue;
@@ -88,11 +74,9 @@ export function mergeCandidates(
       const key = normaliseForCompare(mapping.canonicalKey, b.value);
       return !held.has(key) && (currentKey === null || key !== currentKey);
     });
-    // Every provider agrees with what is already stored: there is nothing to propose.
     if (fresh.length === 0) continue;
 
     const values: ProposedValue[] = fresh.map((b) => ({ value: b.value, providers: b.providers }));
-    // A set-valued target is added to, never replaced, so a new entry is not an overwrite.
     const taken = currentKey !== null || occupied.includes(mapping.canonicalKey);
     const isOverwrite = taken && held.size === 0;
     const supportsPrimary = held.size > 0;
@@ -107,10 +91,7 @@ export function mergeCandidates(
       isOverwrite,
       currentInvalid,
       supportsPrimary,
-      // A promotion is the user's call, except over a promoted value that is already broken.
       defaultMakePrimary: supportsPrimary && currentInvalid,
-      // Nothing that would destroy an existing value is checked by default, unless the value it
-      // would destroy cannot be right anyway.
       defaultSelected: !isOverwrite || currentInvalid,
     });
   }

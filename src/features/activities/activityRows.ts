@@ -18,13 +18,9 @@ import { linkedParentVisible } from "./parentLinkVisibility";
 import type { ActivityListFilter, ActivitySort, ActivitySortField } from "./schemas";
 import { loadParentlessParticipants } from "./visibility";
 
-// Two aliases of `users` so a single query can join both the assignee and the owner by name
-// (a row's assigneeId and ownerId can reference different users).
 const assigneeUser = alias(users, "assignee_user");
 const ownerUser = alias(users, "owner_user");
 
-// A fully-populated activities-table row (Pipedrive columns). dueAt is an ISO string so it can
-// cross the server/client boundary.
 export interface ActivityTableRow {
   id: string;
   subject: string;
@@ -32,7 +28,6 @@ export interface ActivityTableRow {
   priority: string | null;
   done: boolean;
   dueAtIso: string | null;
-  // No time was set; the list shows a date only.
   allDay: boolean;
   durationMinutes: number | null;
   location: string | null;
@@ -51,7 +46,6 @@ export interface ActivityTableRow {
   orgName: string | null;
 }
 
-// Structural contact-point shape (persons.phones jsonb) to avoid a nominal type-import mismatch.
 type Point = { value: string; primary?: boolean };
 
 function primaryPoint(points: Point[] | null): string | null {
@@ -106,9 +100,6 @@ function linkGates(actor: PermSetUser, row: LinkGateColumns): LinkGates {
   };
 }
 
-// Map a sort field to its ORDER BY column. subject is NOT NULL; dueAt/priority/duration rely on
-// Postgres's default null placement (NULLS LAST on ASC, NULLS FIRST on DESC), which matches the
-// brief's "due_at NULLS LAST" default for the (also ASC) fallback sort.
 function activitySortColumn(field: ActivitySortField): SQL {
   switch (field) {
     case "subject":
@@ -133,8 +124,6 @@ export async function listActivityRows(
   timeZone: string = FALLBACK_ZONE,
 ): Promise<ActivityTableRow[]> {
   signal.throwIfAborted();
-  // No explicit sort: due date ascending (Postgres default places NULLs last on ASC), id as a
-  // stable tiebreaker so pagination-free clients still get a deterministic row order.
   const direction = sort === undefined || sort.dir === "asc" ? asc : desc;
   const orderColumn =
     sort === undefined ? sql`${activities.dueAt}` : activitySortColumn(sort.field);
@@ -196,8 +185,6 @@ export async function listActivityRows(
     .leftJoin(assigneeUser, eq(assigneeUser.id, activities.assigneeId))
     .leftJoin(ownerUser, eq(ownerUser.id, activities.ownerId))
     .where(and(...activityFilterPredicates(filter, timeZone)))
-    // Stable server ORDER BY so this pagination-free list is deterministic across calls: the
-    // requested (or default due-date) column, then id as a tiebreaker for equal sort keys.
     .orderBy(direction(orderColumn), asc(activities.id));
   signal.throwIfAborted();
 

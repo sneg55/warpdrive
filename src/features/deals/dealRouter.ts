@@ -12,8 +12,6 @@ import { protectedProcedure, router } from "@/server/trpc/trpc";
 import type { DealVisibilitySession } from "@/types/session";
 import { getBoardColumns, getStageSums, listDeals } from "./dealRepo";
 
-// Build a DealVisibilitySession from the protected-procedure actor (mirrors
-// how pipelineRouter.ts builds its session from ctx.actor).
 export function actorToSession(actor: {
   id: string;
   type: string;
@@ -72,8 +70,6 @@ export const dealRouter = router({
         AbortSignal.timeout(10_000),
       ),
     ),
-  // Paginated flat list for the DealList view (Task 23).
-  // Returns rows, total deal count, and totalValue for the footer.
   list: protectedProcedure
     .input(
       z.object({
@@ -108,16 +104,11 @@ export const dealRouter = router({
       );
       return attachRefLabels(ctx.db, ctx.actor, "deal", result, signal);
     }),
-  // Deal participants for the Summary "+ Participants" control. Visibility is enforced in
-  // listParticipants (deal gate + per-person gate); an invisible deal returns [].
   participants: protectedProcedure
     .input(z.object({ dealId: z.string().uuid() }))
     .query(({ ctx, input }) =>
       listParticipants(ctx.db, ctx.actor, input.dealId, AbortSignal.timeout(10_000)),
     ),
-  // AST saved filters visible to the actor: own filters plus every shared one. A thin wrapper over
-  // the shared saved-view read, kept as its own route because the board's query key is load-bearing
-  // and deal-parsed so the client still receives a FilterDefinition.
   savedFilters: protectedProcedure.query(({ ctx }) =>
     listSavedFilterViews(ctx, "deal", parseSavedFilterDefinition),
   ),

@@ -19,7 +19,6 @@ function col(key: string): LeadColumn {
   return found;
 }
 
-// Minimal row; LeadCell's nextActivity column only reads nextActivityAt.
 function row(nextActivityAt: string | null): LeadRow {
   return {
     id: "l1",
@@ -43,9 +42,6 @@ describe("LeadCell nextActivity clock (F5-16)", () => {
   const overdue = "2020-01-01T00:00:00.000Z";
 
   it("renders a neutral (non-overdue) baseline when the clock is not yet set (null)", () => {
-    // On the server render and the first client render `now` is null so SSR and hydration agree;
-    // the time-based overdue color must NOT be applied yet (that is what caused the board's
-    // hydration mismatch). It must render, not crash, with no destructive color.
     const { container } = render(
       <LeadCell column={col("nextActivity")} row={row(overdue)} now={null} currency="USD" />,
     );

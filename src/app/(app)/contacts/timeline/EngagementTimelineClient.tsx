@@ -17,9 +17,6 @@ const DEFAULT_FILTER: EngagementFilter = {
 
 const LOAD_ERROR = "Couldn't load the engagement timeline. Please try again.";
 
-// Per-contact engagement timeline (CO-4): the Pipedrive-style "how recently have I engaged each
-// contact" grid. Owns the filter state and re-queries contacts.engagementTimeline server-side on
-// every change (entity/period/owner/type); there is no client-side re-filtering.
 export function EngagementTimelineClient(): React.ReactNode {
   const [filter, setFilter] = useState<EngagementFilter>(DEFAULT_FILTER);
   const dataQ = trpc.contacts.engagementTimeline.useQuery(filter);
@@ -35,8 +32,6 @@ export function EngagementTimelineClient(): React.ReactNode {
     [typesQ.data],
   );
 
-  // Three months fit the normal contacts content pane. Longer periods keep a readable per-month
-  // width and overflow only the local table viewport instead of widening the page.
   const monthCount = Math.max(dataQ.data?.months.length ?? 0, 1);
   const tableMinWidth = 220 + monthCount * 200;
 
@@ -54,8 +49,6 @@ export function EngagementTimelineClient(): React.ReactNode {
       ) : (
         <section
           aria-label="Engagement timeline grid"
-          // A focused overflow region can be scrolled with the keyboard. This is the intentional
-          // exception to the general rule against putting static containers in the tab order.
           // biome-ignore lint/a11y/noNoninteractiveTabindex: keyboard-scrollable data grid viewport
           tabIndex={0}
           className="max-w-full overflow-x-auto overscroll-x-contain rounded-lg border bg-card shadow-sm [scrollbar-gutter:stable]"

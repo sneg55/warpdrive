@@ -2,8 +2,6 @@
 import type React from "react";
 import { Button } from "@/components/ui/Button";
 
-// Generic selection-count + clear shell. Feature lists (leads, later people/orgs/
-// email/activities) pass their own action buttons as children.
 export function BulkActionBar({
   count,
   onClear,

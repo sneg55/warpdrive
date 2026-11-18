@@ -97,8 +97,6 @@ describe("updateSignature / deleteSignature", () => {
       );
       if (!mine.ok || !theirs.ok) throw new Error("seed failed");
 
-      // `me` tries to set ANOTHER user's signature as default. It must be denied AND leave
-      // my own default untouched (the demotion must not run when the target is not owned).
       const denied = await updateSignature(
         db,
         { id: theirs.value.id, userId: me, patch: { isDefault: true } },

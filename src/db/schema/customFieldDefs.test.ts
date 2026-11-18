@@ -19,7 +19,6 @@ it("enforces (target_entity, key) uniqueness", async () => {
     options: [{ id: "opt_saas", label: "SaaS" }],
   });
 
-  // Second def with the same (target_entity, key) must be rejected by the UNIQUE.
   await expect(
     h.db.insert(customFieldDefs).values({
       targetEntity: "deal",

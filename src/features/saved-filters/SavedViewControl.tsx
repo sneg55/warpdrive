@@ -12,17 +12,12 @@ import { removeSavedFilterAction, toggleFavoriteAction } from "./serverActions";
 
 interface SavedViewControlProps {
   targetEntity: SavedFilterTargetEntity;
-  // Copy for the row that clears the applied view, e.g. "All people".
   allLabel: string;
-  // Conditions the list's filter builder currently has applied, offered as the body of a new view.
   currentDefinition: SavedViewDefinition | null;
   selectedViewId: string | null;
   onSelectView: (view: SavedView | null) => void;
 }
 
-// The saved-view affordance for the People, Orgs and Leads toolbars: pick a view (or clear it),
-// star one, or save what the filter builder has applied as a new view. One control for all three,
-// entity-scoped by targetEntity.
 export function SavedViewControl({
   targetEntity,
   allLabel,
@@ -43,7 +38,6 @@ export function SavedViewControl({
   async function toggleFav(id: string): Promise<void> {
     const r = await toggleFavoriteAction(id, readCsrfToken());
     if (!r.ok) reportError(r.error.id);
-    // Invalidate either way: on failure the refetch reverts the star to its persisted state.
     await utils.savedFilters.listByTarget.invalidate({ targetEntity });
   }
 
@@ -53,7 +47,6 @@ export function SavedViewControl({
       reportError(r.error.id);
       return;
     }
-    // Otherwise the list keeps filtering by a view that no longer exists.
     if (selectedViewId === id) onSelectView(null);
     await utils.savedFilters.listByTarget.invalidate({ targetEntity });
   }

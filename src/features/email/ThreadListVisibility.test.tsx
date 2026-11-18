@@ -14,8 +14,6 @@ vi.mock("./readActions", () => ({
   markThreadUnreadAction: vi.fn(),
 }));
 
-// Owner-only privacy toggle stubbed to a button that fires onChanged, so a visibility flip can be
-// driven without opening the real Radix menu.
 vi.mock("./ThreadPrivacyToggle", () => ({
   ThreadPrivacyToggle: (props: { onChanged?: () => void }) => (
     <button type="button" data-testid="priv-toggle" onClick={() => props.onChanged?.()}>
@@ -91,9 +89,6 @@ afterEach(() => {
 });
 
 describe("ThreadList visibility invalidation", () => {
-  // Regression (codex review): a privacy flip while search results are shown left the visible rows
-  // (from the email.search cache) stale. The handler must invalidate the search query too, not just
-  // the folder feeds, so the lock reflects the write without a reload.
   it("invalidates the search query (and the feeds) when a row's privacy changes", async () => {
     render(<ThreadList folder="inbox" threads={[ownerRow]} />);
     fireEvent.click(screen.getByTestId("priv-toggle"));

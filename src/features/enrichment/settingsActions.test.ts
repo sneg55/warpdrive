@@ -1,8 +1,4 @@
 // @vitest-environment node
-// The enrichment settings actions hold a company-wide credential that every user spends against,
-// so the admin gate and the Zod boundary are the whole point of this layer. Context and
-// next/headers are mocked so guardCsrf and the gate run as in production, while the repo is spied
-// so no DB is touched: what is asserted is that a bad caller or bad input never reaches it.
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { CSRF_COOKIE } from "@/features/auth/csrf";
 

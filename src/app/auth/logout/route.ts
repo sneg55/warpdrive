@@ -1,14 +1,3 @@
-/**
- * /auth/logout: revokes the current session and clears auth cookies.
- *
- * Security invariants:
- * 1. Loads the live session from the wd_sid cookie; if none exists, still clears
- *    cookies and redirects (idempotent, no 500 on stale requests).
- * 2. Revokes ALL sessions for the user (matches offboarding-revokes-all semantic).
- * 3. Clears both wd_sid and wd_csrf cookies on the redirect response.
- * 4. Infra errors are caught; always redirect to /login (no 500 leak).
- */
-
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { env } from "@/config/env";
@@ -48,5 +37,4 @@ export async function GET(): Promise<NextResponse> {
   }
 }
 
-// Support POST as well (form-based logout buttons).
 export { GET as POST };

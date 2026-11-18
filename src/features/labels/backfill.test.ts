@@ -1,6 +1,3 @@
-// Validates the 0046 backfill migration seeded the Hot/Warm/Cold catalog for the deal/person/org
-// targets on the migrated test template, and that the new 'lead' target is usable (labels can be
-// created for it, even though the migration cannot seed it in-transaction).
 import { describe, expect, it } from "vitest";
 import { withTestDb } from "@/db/testing";
 import { createLabel, listLabels } from "./labelsRepo";

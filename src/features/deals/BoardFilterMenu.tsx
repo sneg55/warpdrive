@@ -25,32 +25,18 @@ interface BoardFilterMenuProps {
   savedFilters?: SavedFilter[];
   selectedFilterId?: string | null;
   appliedFilterName?: string;
-  // The ad-hoc definition applied to the board. It leaves selectedFilterId null too, so the
-  // "All open deals" row is current only when both are empty.
   appliedDefinition?: FilterDefinition | null;
-  // Number of applied ad-hoc conditions, for the trigger badge (0 hides it).
   activeCount?: number;
-  // Trigger copy. The deals list keeps its own ad-hoc builder, so there its menu is only the
-  // saved-filter picker and says so.
   triggerLabel?: string;
-  // True when the board is also narrowed to one owner. That picker is a separate control, so
-  // without this the trigger reads unfiltered and clearing would leave the board filtered.
   ownerFiltered?: boolean;
   onSelectFilter?: (filter: SavedFilter | null) => void;
-  // Drops any applied ad-hoc definition, so clearing leaves nothing filtering the board.
   onClearConditions?: () => void;
-  // Resets the owner picker, so "Clear filter" clears every dimension narrowing the board.
   onClearOwner?: () => void;
   onToggleFavorite?: (id: string) => void;
-  // Removes an owned saved filter, once the user has confirmed it. Omit to offer no delete.
   onDeleteFilter?: (id: string) => void;
-  // Opens the create/edit filter dialog.
   onCreateFilter?: () => void;
 }
 
-// The board toolbar's Filter control: the badge that says the board is filtered, the saved
-// filters, the create/edit entry and the action that clears the filter, in one menu. A list of
-// rows plus actions, so it is the shadcn/Radix DropdownMenu primitive.
 export function BoardFilterMenu(props: BoardFilterMenuProps): React.ReactNode {
   const { savedFilters = [], selectedFilterId = null, appliedDefinition = null } = props;
   const { appliedFilterName } = props;
@@ -60,23 +46,15 @@ export function BoardFilterMenu(props: BoardFilterMenuProps): React.ReactNode {
   const [pendingDelete, setPendingDelete] = useState<PendingFilterDelete | null>(null);
 
   const filtered = selectedFilterId !== null || appliedDefinition !== null || ownerFiltered;
-  // Board filter state survives a reload, so the trigger is the only thing that can explain why
-  // the board is showing a subset. Name the applied filter rather than a bare "Filter", but only
-  // when it is the one filtering: callers resolve `inlineDefinition ?? savedFilter?.definition`,
-  // so an ad-hoc definition overrides the selection and naming it then would be wrong.
   const appliedName =
     appliedDefinition === null
       ? (savedFilters.find((f) => f.id === selectedFilterId)?.name ?? appliedFilterName)
       : undefined;
   const triggerCopy = appliedName === undefined ? triggerLabel : `${triggerLabel}: ${appliedName}`;
-  // A name is valid up to 120 chars and the trigger never wraps, so the visible copy is capped to
-  // keep it from pushing the pipeline and action controls off the toolbar. aria-label keeps it all.
   const visibleCopy =
     appliedName === undefined
       ? triggerLabel
       : `${triggerLabel}: ${truncateFilterName(appliedName)}`;
-  // The entry names what the dialog it opens will do, since the dialog seeds itself from the
-  // selected filter: opening "Create new filter" onto an Edit form misreports the outcome.
   const selectedFilter = savedFilters.find((f) => f.id === selectedFilterId);
   const createEntryLabel = filterSaveCopy(filterSaveMode(selectedFilter)).title;
   const ordered = [...savedFilters].sort((a, b) => Number(b.favorite) - Number(a.favorite));
@@ -143,7 +121,6 @@ export function BoardFilterMenu(props: BoardFilterMenuProps): React.ReactNode {
         {filtered && <DropdownMenuItem onSelect={clearAll}>Clear filter</DropdownMenuItem>}
       </DropdownMenuContent>
 
-      {/* Sibling of the menu content, so a menu that closes cannot take the dialog with it. */}
       <DeleteSavedFilterConfirm
         pending={pendingDelete}
         noun="filter"

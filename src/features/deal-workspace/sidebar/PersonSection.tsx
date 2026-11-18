@@ -11,11 +11,6 @@ import { SectionHeaderMenu, type SectionHeaderMenuItem } from "./SectionHeaderMe
 
 const NONE: ReadonlySet<string> = new Set();
 
-// One shared Person section for deal, lead, and person-detail surfaces. Keeping the section shell,
-// header bulk-edit action, field rows, and editors together prevents those surfaces from drifting
-// into lookalike implementations with different behavior. showLabels opts a surface into the
-// interactive person-labels row (deal + lead drawers, where the linked person has no header of its
-// own); the contact-detail page leaves it off because its header already carries the label control.
 export function PersonSection({
   person,
   menuItems,

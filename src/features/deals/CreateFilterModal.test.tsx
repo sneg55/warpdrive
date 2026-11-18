@@ -40,8 +40,6 @@ describe("CreateFilterModal", () => {
     expect(screen.getAllByLabelText(/Condition \d+ field/)).toHaveLength(2);
   });
 
-  // The saved-filter modal and the ad-hoc popover used to offer different deal fields. Both now
-  // read the one catalog, so the saved side gets Stage, Expected close, Organization and Label.
   it("offers the whole deal catalog", () => {
     render(<CreateFilterModal onClose={() => {}} onSave={() => {}} stages={STAGES} />);
     fireEvent.click(screen.getByLabelText("Condition 1 field"));
@@ -64,7 +62,6 @@ describe("CreateFilterModal", () => {
     createSavedFilterAction.mockResolvedValue({ ok: true, value: { id: "srv-1" } });
     const onSave = vi.fn();
     render(<CreateFilterModal onClose={() => {}} onSave={onSave} />);
-    // Add a second row and leave it empty so it is dropped.
     fireEvent.click(screen.getByRole("button", { name: /add condition/i }));
     fireEvent.change(screen.getByLabelText("Filter name"), { target: { value: "Big deals" } });
     fireEvent.change(screen.getByLabelText("Condition 1 value"), { target: { value: "Acme" } });
@@ -82,7 +79,6 @@ describe("CreateFilterModal", () => {
       { field: "title", op: "contains", value: "Acme" },
     ]);
 
-    // The server action received the same definition + a shared flag.
     const [input] = createSavedFilterAction.mock.calls[0]!;
     expect((input as { definition: { conditions: unknown[] } }).definition.conditions).toHaveLength(
       1,
@@ -90,7 +86,6 @@ describe("CreateFilterModal", () => {
     expect((input as { isShared: boolean }).isShared).toBe(false);
   });
 
-  // An error id on screen tells the user nothing they can act on. The copy has to name the problem.
   it("renders human copy, not an error id, when the save is rejected", async () => {
     createSavedFilterAction.mockResolvedValue({ ok: false, error: { id: "E_DEAL_008" } });
     const onSave = vi.fn();
@@ -104,9 +99,6 @@ describe("CreateFilterModal", () => {
     expect(onSave).not.toHaveBeenCalled();
   });
 
-  // A value the field cannot accept blocks the save before the round trip. Only the guard's own
-  // unit tests can produce one: type="number" sanitizes a typed "ten" to "", and the DatePicker
-  // has no free-text entry, so the row never carries a malformed value through this UI.
   it("keeps the save available for a value the field accepts", () => {
     render(<CreateFilterModal onClose={() => {}} onSave={() => {}} />);
     fireEvent.click(screen.getByLabelText("Condition 1 field"));
@@ -115,7 +107,6 @@ describe("CreateFilterModal", () => {
     expect(screen.getByRole("button", { name: "Save" })).toBeEnabled();
   });
 
-  // A saved deal filter was AND-only, so "any of these" was unreachable from the saved side.
   it("offers the all/any combinator once there is more than one condition", () => {
     render(<CreateFilterModal onClose={() => {}} onSave={() => {}} />);
     expect(screen.queryByLabelText("Match combinator")).toBeNull();
@@ -194,7 +185,6 @@ describe("CreateFilterModal", () => {
     fireEvent.change(screen.getByLabelText("Condition 1 value"), { target: { value: "Acme" } });
     const nameInput = screen.getByLabelText<HTMLInputElement>("Filter name");
     expect(nameInput.value).toBe("Title contains Acme");
-    // Once the user types their own name, auto-population stops overwriting it.
     fireEvent.change(nameInput, { target: { value: "My filter" } });
     fireEvent.change(screen.getByLabelText("Condition 1 value"), {
       target: { value: "Acme Corp" },
@@ -221,7 +211,6 @@ describe("CreateFilterModal", () => {
       combinator: "and",
       conditions: [{ field: "title", op: "contains", value: "Acme" }],
     });
-    // Preview must not persist anything.
     expect(createSavedFilterAction).not.toHaveBeenCalled();
   });
 
@@ -237,7 +226,6 @@ describe("CreateFilterModal", () => {
       conditions: [{ field: "title", op: "contains", value: "Acme" }],
     });
     expect(onClose).toHaveBeenCalledTimes(1);
-    // Apply is ad-hoc: it must not persist a saved filter.
     expect(createSavedFilterAction).not.toHaveBeenCalled();
   });
 });

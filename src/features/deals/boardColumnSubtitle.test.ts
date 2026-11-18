@@ -1,8 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { stageSubtitle } from "./boardColumnSubtitle";
 
-// A filtered board drops its columns to "$0" with the count suppressed, so the line changes
-// shape exactly when the rep most needs to read it as a real answer rather than a blank.
 describe("stageSubtitle", () => {
   it("names the count alongside the value", () => {
     expect(stageSubtitle("$232,000", 7)).toBe("$232,000 · 7 deals");

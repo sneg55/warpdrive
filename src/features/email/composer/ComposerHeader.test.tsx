@@ -30,8 +30,6 @@ describe("ComposerHeader", () => {
   });
 
   it("omits the Close button when onClose is not provided (inbox reply)", () => {
-    // ThreadPane renders the composer without onClose; a visible Close that no-ops is a dead
-    // affordance. The Settings cog (a plain link) is still valid in that context.
     render(<ComposerHeader />);
     expect(screen.getByRole("link", { name: /settings/i })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /close/i })).not.toBeInTheDocument();

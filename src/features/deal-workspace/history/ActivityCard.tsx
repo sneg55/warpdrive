@@ -22,8 +22,6 @@ function formatDate(at: Date): string {
   return at.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
 }
 
-// Completion stamp includes the time of day (Pipedrive shows "Done <date> <time>"): the user
-// wants to see WHEN an activity was actually completed, not just the day.
 function formatDateTime(at: Date): string {
   return at.toLocaleString(undefined, {
     month: "short",
@@ -34,10 +32,6 @@ function formatDateTime(at: Date): string {
   });
 }
 
-// Enriched activity card (Pipedrive parity): interactive mark-as-done checkbox,
-// a footer with due date / created-by / linked person + org, and a "More actions"
-// overflow. Mark-done is a two-way toggle: the checkbox (and the menu item) let
-// the user complete an open activity or reopen a completed one.
 export function ActivityCard({
   activity,
   at,
@@ -47,8 +41,6 @@ export function ActivityCard({
   activity: CalendarActivity;
   at: Date;
   onChanged?: () => void;
-  // Opens this activity in the inline composer for editing (deal workspace). The subject line and
-  // the "Edit" menu item both call it; omitted where editing is not offered.
   onEdit?: () => void;
 }): React.ReactNode {
   const [done, setDone] = useState(activity.done);
@@ -59,8 +51,6 @@ export function ActivityCard({
   const { emailLinksNewTab } = useInterfacePrefs();
   const promptAfterDone = useFollowUpAfterDone();
 
-  // Every listForEntity timeline this activity appears in (deal / person / org pages). Flipping
-  // its done in each cache moves it between Focus and History instantly, before the server replies.
   const entityKeys = useMemo<EntityKey[]>(() => {
     const keys: EntityKey[] = [];
     if (activity.dealId !== null) keys.push({ entityType: "deal", entityId: activity.dealId });
@@ -76,9 +66,7 @@ export function ActivityCard({
     if (busy) return;
     const next = !done;
     setBusy(true);
-    setDone(next); // optimistic (checkbox + the lead fallback where no listForEntity cache matches)
-    // Optimistic move: reflect the new done (and completion time) in every timeline cache so the
-    // card leaves Focus / enters History immediately.
+    setDone(next);
     const doneAt = next ? new Date() : null;
     for (const key of entityKeys) {
       utils.activities.listForEntity.setData(key, (old) =>
@@ -90,11 +78,9 @@ export function ActivityCard({
     const res = await completeActivityAction({ id: activity.id, done: next }, readCsrfToken());
     if (res.ok) {
       await invalidateActivityLists();
-      onChanged?.(); // reconcile with server truth (real doneAt, ordering)
+      onChanged?.();
       if (next) promptAfterDone(followUpLinksOf(activity), onChanged);
     } else {
-      // Roll the optimistic move back by refetching, and explain the failure instead of a silent
-      // revert (matches the deal sidebar's action-error handling).
       setDone(!next);
       for (const key of entityKeys) void utils.activities.listForEntity.invalidate(key);
       reportError(res.error.id);
@@ -112,8 +98,6 @@ export function ActivityCard({
     promptAfterDone,
   ]);
 
-  // Delete is not optimistic: the row leaves every timeline cache only once the server has
-  // accepted it, so a denied delete leaves the card exactly where it was.
   const remove = useCallback(async () => {
     if (busy) return;
     setBusy(true);
@@ -143,8 +127,6 @@ export function ActivityCard({
           className="mt-0.5 rounded-full data-[state=checked]:border-success data-[state=checked]:bg-success data-[state=checked]:text-success-foreground"
         />
         <div className="min-w-0 flex-1">
-          {/* Subject is a button so clicking it opens the inline edit composer (deal workspace);
-              keyboard-accessible, and avoids nesting the card's links inside a clickable region. */}
           <button
             type="button"
             onClick={() => onEdit?.()}
@@ -219,10 +201,7 @@ export function ActivityCard({
       {activity.note != null && activity.note !== "" && (
         <div
           data-testid="activity-note"
-          // Preflight resets anchors to inherit colour and decoration, so a note's links would
-          // otherwise be indistinguishable from the text around them.
           className="border-t bg-warning/10 px-3 py-2 text-pretty text-xs text-foreground/80 [&_a]:text-link [&_a]:underline [&_p]:m-0"
-          // Note HTML is sanitized on write (createActivity -> sanitizeAuthorHtml); safe to render.
           // biome-ignore lint/security/noDangerouslySetInnerHtml: sanitized server-side before storage
           dangerouslySetInnerHTML={{
             __html: linkifyHtml(activity.note, { emailNewTab: emailLinksNewTab }),

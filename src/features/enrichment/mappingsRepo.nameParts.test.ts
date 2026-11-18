@@ -3,7 +3,6 @@ import { makeTestDb, type TestDb } from "@/test/db";
 import { listMappings, upsertMapping } from "./mappingsRepo";
 
 let h: TestDb;
-// The migrated state, captured before any test writes to the table.
 let seeded: Awaited<ReturnType<typeof listMappings>>;
 const signal = new AbortController().signal;
 

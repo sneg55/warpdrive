@@ -69,7 +69,6 @@ describe("dealFilterFields", () => {
       kind: "select",
       options: [{ value: "s1", label: "Qualified" }],
     });
-    // Labels take a list: PD's label filter is "is any of", which is one condition, not two.
     expect(byField("labels")).toEqual({
       kind: "multiselect",
       options: [{ value: "Hot", label: "Hot" }],

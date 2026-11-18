@@ -17,20 +17,11 @@ export async function createNotification(
 ): Promise<Result<ProduceOk, AppError>> {
   signal.throwIfAborted();
 
-  // Hydrate the recipient the same way the request path does (hydrateActor), NOT with the
-  // mailbox-owner hydrator: that one omits managedUserIds, so the gate below was stricter than
-  // the read-time filter in feed.ts and silently dropped notifications for a team manager who
-  // sees a record through team.viewMembers (canSee rule 4b).
-  // A null actor means the recipient is missing or inactive: suppress, no insert, no publish.
   const recipientUser = await hydrateActor(db, input.recipientId, signal);
   if (recipientUser === null) {
     return ok({ suppressed: true });
   }
 
-  // Visibility gate: any non-null entityType names a gated record and ALWAYS
-  // requires a check. A gated type with a null id can never pass a visibility
-  // check, so it is suppressed rather than inserted unchecked (leak surface).
-  // Both-null (a system notification with no gating entity) skips the gate.
   if (input.entityType !== null) {
     if (input.entityId === null) return ok({ suppressed: true });
     const canAccess = await canActorAccessParent(
@@ -41,13 +32,11 @@ export async function createNotification(
       signal,
     );
     signal.throwIfAborted();
-    // Leak-prevention core: never insert or publish when the recipient cannot see the entity.
     if (canAccess !== true) {
       return ok({ suppressed: true });
     }
   }
 
-  // Insert and publish in a single transaction so a rollback emits nothing.
   const notificationId = await db.transaction(async (tx) => {
     const [row] = await tx
       .insert(notifications)
@@ -90,8 +79,6 @@ export async function createNotification(
   return ok({ notificationId });
 }
 
-// Fan-out: map each input through createNotification. A single failure becomes
-// an err entry and does NOT abort the batch. AbortError is always rethrown.
 export async function fanOut(
   db: Db,
   inputs: CreateNotificationInput[],
@@ -104,7 +91,6 @@ export async function fanOut(
     try {
       results.push(await createNotification(db, input, signal));
     } catch (e) {
-      // AbortError must never be swallowed.
       if (e instanceof Error && e.name === "AbortError") throw e;
       const msg = e instanceof Error ? e.message : String(e);
       results.push(

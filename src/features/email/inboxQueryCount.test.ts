@@ -1,9 +1,3 @@
-// listInbox resolved visibility one thread at a time: canSeeEmail issued
-// `SELECT user_id FROM email_accounts` for every row, sequentially. A mailbox with thousands of
-// threads therefore cost thousands of sequential round trips on every inbox load.
-//
-// Real Postgres via Testcontainers (no DB mocking, see CLAUDE.md); we wrap the real pool's query
-// method to count statements, then hand the untouched db handle to listInbox.
 import { sql } from "drizzle-orm";
 import { afterAll, beforeAll, expect, it } from "vitest";
 import type { AuthUser } from "@/features/permissions/types";
@@ -65,8 +59,6 @@ async function seedThreads(accountId: string, n: number, prefix: string): Promis
   }
 }
 
-// Loading an owner's inbox must cost a fixed number of statements regardless of how many threads
-// the mailbox holds. Growth here is the N+1: one visibility lookup per row.
 it("issues the same number of queries no matter how many threads the mailbox holds", async () => {
   const { actor, accountId } = await seedOwnerWithAccount();
 
@@ -80,7 +72,6 @@ it("issues the same number of queries no matter how many threads the mailbox hol
   const many = (await listInbox(h.db, { actor, filter: "all" }, sig())).threads;
   b.restore();
 
-  // Sanity: the second load really does see more threads, so the counts are comparable.
   expect(few).toHaveLength(5);
   expect(many).toHaveLength(20);
 

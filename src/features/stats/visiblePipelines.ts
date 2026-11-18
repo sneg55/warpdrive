@@ -1,11 +1,3 @@
-// Which pipelines an actor may see, and the gate for one named pipeline.
-// Reproduces pipelineRouter.listVisiblePipelines exactly: archived pipelines are never
-// visible, an admin sees the rest, and everyone else sees only unrestricted pipelines plus
-// those in a visibility group they belong to.
-//
-// Both the single-pipeline view and the "All pipelines" aggregate run through here. Stage
-// names are pipeline metadata, so a path that skipped this gate would leak the stage names of
-// a restricted pipeline even while its deals stayed hidden.
 import { and, eq, inArray, isNull, or, type SQL, sql } from "drizzle-orm";
 import type { Db } from "@/db/client";
 import { pipelines } from "@/db/schema";
@@ -20,8 +12,6 @@ function predicate(actor: PermSetUser): SQL | undefined {
   );
 }
 
-// id + name, for pickers. Same gate: a restricted pipeline's NAME is protected metadata, so
-// an options list built from a raw select leaks it to anyone who can open the picker.
 export async function visiblePipelineOptions(
   db: Db,
   actor: PermSetUser,

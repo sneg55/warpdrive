@@ -6,11 +6,6 @@ import { Consent } from "./consent";
 
 afterEach(cleanup);
 
-// Approving here grants an OAuth client a token that can read and write the whole CRM through
-// /api/mcp. With dynamic registration open, the client name is a string an unauthenticated
-// stranger POSTed to /oauth/register, so the screen must not repeat it in the product's own
-// voice ("Allow Warpdrive Gmail Sync to access warpdrive?" reads as an endorsement). What the
-// user can actually verify is where the grant gets sent, so that has to be on screen.
 function renderConsent(overrides: Partial<Parameters<typeof Consent>[0]> = {}) {
   render(
     <Consent
@@ -32,7 +27,6 @@ describe("OAuth consent screen", () => {
     renderConsent();
     const label = screen.getByTestId("consent-client-name");
     expect(label).toHaveTextContent("Warpdrive Gmail Sync");
-    // The name and the product's own assertion must not be the same sentence.
     expect(label.textContent).not.toContain("warpdrive?");
   });
 
@@ -52,15 +46,11 @@ describe("OAuth consent screen", () => {
     expect(screen.getByRole("button", { name: /allow/i })).toBeInTheDocument();
   });
 
-  // A loopback redirect is the normal shape for a desktop MCP client, and showing a bare
-  // "localhost" is the honest answer rather than dressing it up as a domain.
   it("shows loopback redirects as-is", () => {
     renderConsent({ redirectUri: "http://127.0.0.1:8765/callback" });
     expect(screen.getByTestId("consent-redirect-host")).toHaveTextContent("127.0.0.1");
   });
 
-  // A private-use scheme has no host at all; the screen must degrade rather than render
-  // an empty box that looks like a missing value.
   it("falls back to the full uri when the scheme carries no host", () => {
     renderConsent({ redirectUri: "com.example.app:/oauth-callback" });
     expect(screen.getByTestId("consent-redirect-host")).toHaveTextContent("com.example.app");

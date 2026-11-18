@@ -23,19 +23,10 @@ interface RecipientFieldProps {
   onChange: (v: string[]) => void;
 }
 
-// Custom chip input + autocomplete panel (kept, not migrated to ui/MultiCombobox). MultiCombobox
-// can only toggle values that exist in a fixed option list, so it cannot represent the two things a
-// recipient field must do: accept an arbitrary free-typed email (type + Enter, validated) that is
-// not a known contact, and render that email as a chip. Its value model is email strings, not
-// option ids, and its options are remote-fetched contacts (the async-search case the spec flags as
-// legitimately custom). A trigger-button popover would also break the inline "To:" pixel parity.
 export function RecipientField({ label, values, onChange }: RecipientFieldProps): React.ReactNode {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // Mirrors `query` so the blur handler reads what is in the box right now rather than the value
-  // captured when the handler was created: picking a suggestion clears the query and blurs in the
-  // same tick, and a stale closure would re-commit the half-typed search text.
   const queryRef = useRef("");
 
   const typed = query.trim().slice(0, RECIPIENT_SEARCH_MAX_QUERY);
@@ -70,9 +61,6 @@ export function RecipientField({ label, values, onChange }: RecipientFieldProps)
     setQuery(value);
   }
 
-  // Commits whatever is typed but not yet a chip. Leaving the field (blur, Tab) or typing a
-  // separator has to commit, because an address that only looks committed leaves the list empty
-  // and Send disabled with nothing on screen to explain why.
   function commitPending(): void {
     if (queryRef.current.trim().length > 0) addEmail(queryRef.current);
   }
@@ -115,7 +103,6 @@ export function RecipientField({ label, values, onChange }: RecipientFieldProps)
             addEmail(query);
             return;
           }
-          // Tab commits but keeps its default action so focus still moves on.
           if (e.key === "Tab") addEmail(query);
         }}
         onBlur={() => {

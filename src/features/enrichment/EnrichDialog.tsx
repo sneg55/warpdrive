@@ -21,14 +21,11 @@ const S = ENRICHMENT_STRINGS.dialog;
 
 export type EnrichRunState =
   | { kind: "loading" }
-  // `canRefresh` is false for a failure a fresh run cannot change, such as a record with no
-  // identifier: offering a retry there only spends the user's attention.
   | { kind: "error"; message: string; canRefresh: boolean }
   | { kind: "loaded"; run: RunView };
 
 export interface EnrichApplyError {
   message: string;
-  // A stale record is recoverable by re-running, so that error alone offers the escape hatch.
   canRefresh: boolean;
 }
 
@@ -65,8 +62,6 @@ function outcomeText(outcome: ProviderOutcome): string {
     : S.outcomeLineUntil(outcome.provider, verdict, clock(outcome.retryAfterIso));
 }
 
-// Always rendered for a completed run, including one that proposed nothing: without it a thin
-// result reads as "nobody knows this person" when the truth is "two providers were throttled".
 function OutcomeFooter({ outcomes }: { outcomes: ProviderOutcome[] }): React.ReactNode {
   return (
     <p data-testid="enrich-outcomes" className="text-xs text-muted-foreground">
@@ -78,7 +73,6 @@ function OutcomeFooter({ outcomes }: { outcomes: ProviderOutcome[] }): React.Rea
 interface Pick {
   checked: boolean;
   value: string;
-  // Only meaningful on a field whose target holds a set; ignored everywhere else.
   makePrimary: boolean;
 }
 
@@ -95,8 +89,6 @@ function initialState(fields: ProposedField[]): Record<string, Pick> {
   );
 }
 
-// Mounted with the run id as its key, so a Refresh replaces the whole review rather than leaving
-// last run's ticks on this run's rows.
 function RunPanel({
   run,
   applyBusy,
@@ -115,8 +107,6 @@ function RunPanel({
     if (pick === undefined || !pick.checked) return [];
     const match = field.values.find((v) => String(v.value) === pick.value);
     const value = match?.value ?? pick.value;
-    // A target with nothing to promote does not carry the key at all, so the plan never reads a
-    // promotion choice into a field that has no primary to move.
     return field.supportsPrimary
       ? [{ canonicalKey: field.canonicalKey, value, makePrimary: pick.makePrimary }]
       : [{ canonicalKey: field.canonicalKey, value }];
@@ -176,8 +166,6 @@ export function EnrichDialog({
   now = new Date(),
 }: EnrichDialogProps): React.ReactNode {
   const run = state.kind === "loaded" ? state.run : null;
-  // A failed run is cached like any other, so without this the record replays that failure for the
-  // whole TTL with no way to ask again.
   const showRefresh =
     state.kind === "error"
       ? state.canRefresh
@@ -200,8 +188,6 @@ export function EnrichDialog({
               {run?.cached === true ? S.cached(age(run.createdAtIso, now)) : S.subtitle}
             </DialogDescription>
             {showRefresh ? (
-              // A refresh is a paid fan-out. Starting one while an apply is in flight would let the
-              // two answers land in either order on the same dialog.
               <Button variant="outline" size="sm" onClick={onRefresh} disabled={applyBusy}>
                 {S.refresh}
               </Button>
@@ -234,9 +220,6 @@ export function EnrichDialog({
         ) : null}
 
         {run !== null && run.fields.length > 0 ? (
-          // Keyed on the run alone. A partial apply keeps the run and only drops the rows it
-          // committed, and a pick for a row that is gone is inert, so remounting on the record
-          // version would only undo the choices the user made about the rows that remain.
           <RunPanel
             key={run.runId}
             run={run}

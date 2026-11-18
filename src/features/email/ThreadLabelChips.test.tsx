@@ -3,7 +3,6 @@ import "@testing-library/jest-dom/vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-// The chips resolve names + colors from the mail-label catalog (seeded built-ins + custom labels).
 const catalog = [
   { id: "l1", key: "important", name: "Important", color: "red", order: 0 },
   { id: "l2", key: "to_do", name: "To do", color: "orange", order: 1 },
@@ -53,14 +52,11 @@ it("skips keys with no catalog entry", () => {
   expect(screen.queryByText("bogus")).not.toBeInTheDocument();
 });
 
-// A15 (Pipedrive parity): applied-label chips render uppercase (10px) so they read as tags.
 it("renders each chip uppercase (A15)", () => {
   render(<ThreadLabelChips labels={["important"]} />);
   expect(screen.getByText("Important")).toHaveClass("uppercase");
 });
 
-// B5 (Pipedrive parity): the label editor hides behind a pencil affordance instead of being an
-// always-visible picker. Display-only usage (no onLabelsChange) shows no pencil.
 describe("ThreadLabelChips editor behind a pencil (B5)", () => {
   it("shows no pencil affordance when read-only (no onLabelsChange)", () => {
     render(<ThreadLabelChips labels={["important"]} />);
@@ -69,11 +65,9 @@ describe("ThreadLabelChips editor behind a pencil (B5)", () => {
 
   it("renders a pencil trigger that reveals the editor only after activation", async () => {
     render(<ThreadLabelChips labels={["important"]} onLabelsChange={() => {}} />);
-    // The editor (the "+ Add label" picker) is hidden until the pencil is clicked.
     expect(screen.queryByRole("button", { name: "+ Add label" })).not.toBeInTheDocument();
     const pencil = screen.getByRole("button", { name: /edit labels/i });
     fireEvent.click(pencil);
-    // MailLabelPicker is code-split (next/dynamic), so it arrives a tick after the click.
     expect(await screen.findByRole("button", { name: "+ Add label" })).toBeInTheDocument();
   });
 });

@@ -1,8 +1,3 @@
-// The fields the import mapping step can target, keyed by the ENTITY that owns them rather than
-// by the import's target. A CSV row routinely describes more than one record (a BD shortlist row
-// is a lead AND its organization), and Pipedrive's picker is entity-tabbed for exactly that
-// reason. mapRow groups the mapped cells back out by entity; commit writes each group through its
-// own authority. Custom fields come from listDefs at render time.
 import type { ImportSource } from "@/constants/importSources";
 import {
   PIPEDRIVE_ACTIVITY_FIELDS,
@@ -14,9 +9,6 @@ import {
 } from "./pipedriveImportFields";
 import type { ImportTarget } from "./wizardState";
 
-// Upper bound for a client-parsed CSV (25 MB, matching the attachment cap). The browser
-// reads the whole file into memory and tokenizes it char by char, so an unbounded file
-// (a 500 MB mis-selection) would freeze the tab; the upload step rejects anything larger.
 export const MAX_IMPORT_CSV_BYTES = 26_214_400;
 
 export type MappableEntity = ImportTarget | "note";
@@ -25,18 +17,12 @@ export interface StandardImportField {
   field: string;
   label: string;
   required: boolean;
-  // Other fields of the same entity that stand in for this one. Person > Name is required, but a
-  // contact export routinely splits it, so mapping either part satisfies it and mapRow joins them.
   satisfiedBy?: readonly string[];
   sources?: readonly ImportSource[];
 }
 
-// The person columns whose values a display name can be built from, in the order they are joined.
 export const PERSON_NAME_PARTS = ["firstName", "lastName"] as const;
 
-// Nested-object leaves are offered as dotted paths ("address.city"). orgCreateInput.address is a
-// structured object that would reject a raw CSV cell, so mapRow reassembles the leaves instead of
-// exposing a bare "address" field.
 export const ADDRESS_PREFIX = "address.";
 
 const CSV_ONLY = ["csv"] as const;
@@ -99,11 +85,6 @@ export const ENTITY_LABELS: Record<MappableEntity, string> = {
   note: "Note",
 };
 
-// A picker label that carries its destination record: "Organization[Name]", "Person[Name]". The
-// group heading above an open menu says which entity a field belongs to, but a COLLAPSED picker
-// shows the label alone, and a person import can map one column to Person > Name and another to
-// Organization > Name. Unqualified, both read "Name": one string for two different writes. The
-// note entity's only field is already called "Note", so qualifying it would stutter.
 export function qualifiedFieldLabel(entity: MappableEntity, fieldLabel: string): string {
   const entityLabel = ENTITY_LABELS[entity];
   if (fieldLabel === entityLabel) return entityLabel;
@@ -114,11 +95,6 @@ export function primaryEntityOf(target: ImportTarget): MappableEntity {
   return target;
 }
 
-// Which entities each target's row may write, primary first. A deal row can name its organization
-// and its contact person.
-//
-// Activity has no note group: notes attach only to deal/person/organization/lead (ENTITY_TYPES),
-// so offering "Note" on an activity import would produce a mapping that fails at commit.
 export const TARGET_ENTITY_GROUPS: Record<ImportTarget, readonly MappableEntity[]> = {
   person: ["person", "organization", "note"],
   organization: ["organization", "note"],

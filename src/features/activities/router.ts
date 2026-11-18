@@ -32,8 +32,6 @@ export const activitiesRouter = router({
     return listActivityRows(ctx.db, ctx.actor, filter, signal, sort, zone);
   }),
 
-  // Activity type catalog for the create modal (call/meeting/task/deadline/email/lunch).
-  // Only active (non-archived) types are offered when creating an activity.
   listTypes: protectedProcedure.query(({ ctx }) =>
     ctx.db
       .select({ id: activityTypes.id, key: activityTypes.key, name: activityTypes.name })
@@ -42,8 +40,6 @@ export const activitiesRouter = router({
       .orderBy(asc(activityTypes.order)),
   ),
 
-  // calendarRange returns CalendarActivity[] (not a Result); no unwrap needed.
-  // Client sends ISO datetime strings; convert to Date before the repo call.
   calendarRange: protectedProcedure
     .input(z.object({ from: z.string().datetime(), to: z.string().datetime() }))
     .query(({ ctx, input }) =>
@@ -72,8 +68,6 @@ export const activitiesRouter = router({
       ),
     ),
 
-  // Full activity (incl. guest/participant sets) for prefilling the inline edit composer.
-  // Visibility-gated in getActivityForEdit; NOT_FOUND on missing/invisible so nothing leaks.
   getForEdit: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
     .query(async ({ ctx, input }) => {
@@ -82,8 +76,6 @@ export const activitiesRouter = router({
       return r.value;
     }),
 
-  // Read-only Free/Busy signal for the composer: is the assignee already booked in [from, to]?
-  // Defaults the assignee to the current actor. Returns a coarse boolean, never activity details.
   availability: protectedProcedure
     .input(
       z.object({
