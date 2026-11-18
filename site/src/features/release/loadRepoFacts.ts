@@ -8,7 +8,11 @@ const packageSchema = z.object({ version: z.string() });
 
 async function fetchJsonOrNull(url: string, signal: AbortSignal): Promise<unknown> {
   try {
-    const res = await fetch(url, { headers: { Accept: "application/vnd.github+json" }, signal });
+    const res = await fetch(url, {
+      headers: { Accept: "application/vnd.github+json" },
+      cache: "no-store",
+      signal,
+    });
     return res.ok ? await res.json() : null;
   } catch {
     return null;

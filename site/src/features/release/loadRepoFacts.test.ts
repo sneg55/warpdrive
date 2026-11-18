@@ -59,6 +59,20 @@ describe("loadRepoFacts", () => {
     expect(facts).toEqual({ stars: null, release: null });
   });
 
+  it("bypasses the Next data cache so a cached build never freezes the star count", async () => {
+    const spy = stubGitHub({});
+    await loadRepoFacts({
+      repoSlug: "sneg55/warpdrive",
+      packageJsonPath: await packageJsonWith("1.0.0"),
+      now: NOW,
+      signal: AbortSignal.timeout(5000),
+    });
+    expect(spy).toHaveBeenCalledTimes(2);
+    for (const call of spy.mock.calls) {
+      expect(call[1]?.cache).toBe("no-store");
+    }
+  });
+
   it("passes the abort signal to every GitHub request", async () => {
     const spy = stubGitHub({});
     const signal = AbortSignal.timeout(5000);
