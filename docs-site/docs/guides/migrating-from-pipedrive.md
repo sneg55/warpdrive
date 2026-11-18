@@ -14,7 +14,7 @@ Warpdrive reads Pipedrive's CSV exports directly. You export each record type fr
 
 ## Export from Pipedrive
 
-Export each record type as **CSV** (not XLSX) with all columns. For every file, add the **ID** column in Pipedrive's column chooser before you export. The ID column is required in every file. Warpdrive uses it to link records across files and to make re-runs safe.
+Export each record type as **CSV** (not XLSX) with all columns. For every file, add the **ID** column in Pipedrive's column chooser before you export. The ID column is required in every file. Warpdrive uses it to link records across files and to make re-runs safe. If your Pipedrive instance is set in a non-English language, the column headers would be translated in that language and this breaks the automatic matching; before exporting from Pipedrive it is best to switch to `English (US)`, the setting is in my account -> General -> Language. 
 
 ## Import order
 
