@@ -3,6 +3,8 @@ import type { Db } from "@/db/client";
 import { changeLogs, users } from "@/db/schema";
 import type { DbOrTx } from "@/server/realtime/channelVersions";
 import type { EntityType } from "@/types/entityRef";
+import type { DealVisibilitySession } from "@/types/session";
+import { resolveChangeLogRefNames } from "./changeLogRefNames";
 
 export type ChangeLogEntry = {
   id: string;
@@ -89,7 +91,7 @@ export async function listChangeLog(
     .leftJoin(users, eq(users.id, changeLogs.actorId))
     .where(and(eq(changeLogs.entityType, entityType), eq(changeLogs.entityId, entityId)))
     .orderBy(desc(changeLogs.createdAt));
-  return rows.map((r) => ({
+  const entries = rows.map((r) => ({
     id: r.id,
     field: r.field,
     oldValue: parseJsonbText(r.oldValue),
@@ -98,4 +100,16 @@ export async function listChangeLog(
     actorName: r.actorName ?? null,
     createdAt: r.createdAt,
   }));
+  return entries;
+}
+
+export async function listChangeLogForViewer(
+  db: Db,
+  viewer: DealVisibilitySession,
+  entityType: EntityType,
+  entityId: string,
+  signal: AbortSignal,
+): Promise<ChangeLogEntry[]> {
+  const entries = await listChangeLog(db, entityType, entityId, signal);
+  return resolveChangeLogRefNames(db, viewer, entityType, entries, signal);
 }

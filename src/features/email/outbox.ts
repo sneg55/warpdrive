@@ -120,7 +120,7 @@ async function deliver(
   if (inputs === undefined)
     return err(new AppError("E_DB_002", "send inputs not found", { id: attempt.id }));
   run.signal.throwIfAborted();
-  const { from, payload, gmailThreadId, parentGmailMessageId } = inputs;
+  const { from, fromName, payload, gmailThreadId, parentGmailMessageId } = inputs;
 
   const limit = checkRecipientLimit(run.provider.kind, payload);
   if (!limit.ok) return settle({ kind: "rejected", error: limit.error });
@@ -142,6 +142,7 @@ async function deliver(
   const sent = await run.provider.send({
     message: {
       from,
+      fromName,
       to: payload.to,
       cc: payload.cc ?? [],
       bcc: payload.bcc ?? [],

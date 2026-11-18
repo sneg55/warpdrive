@@ -86,7 +86,7 @@ export type AgenticMailbox = z.infer<typeof mailboxSchema>;
 
 export interface AgenticSendBody {
   to: string | string[];
-  from?: string;
+  from?: string | { email: string; name: string };
   subject: string;
   html?: string;
   text?: string;

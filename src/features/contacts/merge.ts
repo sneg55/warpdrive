@@ -1,4 +1,5 @@
 import { and, eq, isNull } from "drizzle-orm";
+import { CHANGE_FIELD_MERGE } from "@/constants/changeLogFields";
 import { AppError, ERROR_IDS } from "@/constants/errorIds";
 import type { Db } from "@/db/client";
 import type { Organization, Person } from "@/db/schema";
@@ -75,7 +76,7 @@ export async function mergePersons(
       {
         entityType: "person",
         entityId: args.survivorId,
-        field: "__merge__",
+        field: CHANGE_FIELD_MERGE,
         oldValue: args.mergedId,
         newValue: args.survivorId,
         actorId: actor.id,
@@ -136,7 +137,7 @@ export async function mergeOrgs(
       {
         entityType: "organization",
         entityId: args.survivorId,
-        field: "__merge__",
+        field: CHANGE_FIELD_MERGE,
         oldValue: args.mergedId,
         newValue: args.survivorId,
         actorId: actor.id,

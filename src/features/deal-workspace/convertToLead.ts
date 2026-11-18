@@ -6,6 +6,10 @@
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { z } from "zod";
 import { BOARD_EVENT, dealChannel, dealMovedChannel } from "@/constants/boardChannels";
+import {
+  CHANGE_FIELD_CONVERTED_TO_LEAD,
+  CHANGE_FIELD_CREATED_FROM_DEAL,
+} from "@/constants/changeLogFields";
 import { AppError, ERROR_IDS } from "@/constants/errorIds";
 import type { Db } from "@/db/client";
 import { deals } from "@/db/schema/deals";
@@ -120,7 +124,7 @@ export async function convertDealToLead(
         {
           entityType: "deal",
           entityId: deal.id,
-          field: "convertedToLeadId",
+          field: CHANGE_FIELD_CONVERTED_TO_LEAD,
           oldValue: null,
           newValue: lead.id,
           actorId: actor.id,
@@ -132,7 +136,7 @@ export async function convertDealToLead(
         {
           entityType: "lead",
           entityId: lead.id,
-          field: "createdFromDealId",
+          field: CHANGE_FIELD_CREATED_FROM_DEAL,
           oldValue: null,
           newValue: deal.id,
           actorId: actor.id,

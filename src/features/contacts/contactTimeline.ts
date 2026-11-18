@@ -6,7 +6,7 @@
 // creation card in the design, only the three read boundaries below.
 import type { Db } from "@/db/client";
 import { listActivitiesForEntity } from "@/features/activities/forEntity";
-import { listChangeLog } from "@/features/collaboration/changeLog";
+import { listChangeLogForViewer } from "@/features/collaboration/changeLog";
 import { listNotes } from "@/features/collaboration/notesRepo";
 import {
   buildHistoryTimeline,
@@ -59,7 +59,13 @@ export async function contactTimeline(
     entityId,
   }));
 
-  const changelog = await listChangeLog(db, entityType, entityId, signal);
+  const changelog = await listChangeLogForViewer(
+    db,
+    toRefActor(actor),
+    entityType,
+    entityId,
+    signal,
+  );
   signal.throwIfAborted();
 
   return { items: buildHistoryTimeline(activityItems, changelog, noteItems) };

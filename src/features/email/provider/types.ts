@@ -10,6 +10,7 @@ export type ProviderKind = "gmail" | "agentic_inbox";
 
 export interface OutboundMessage {
   from: string;
+  fromName: string | null;
   to: string[];
   cc: string[];
   bcc: string[];

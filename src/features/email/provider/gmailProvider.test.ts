@@ -11,6 +11,7 @@ const signal = new AbortController().signal;
 function outbound(overrides: Partial<OutboundMessage> = {}): OutboundMessage {
   return {
     from: "me@acme.com",
+    fromName: null,
     to: ["you@example.com"],
     cc: [],
     bcc: [],

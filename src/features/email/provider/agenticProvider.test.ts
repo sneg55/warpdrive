@@ -18,6 +18,7 @@ afterEach(async () => {
 function outbound(partial: Partial<OutboundMessage> = {}): OutboundMessage {
   return {
     from: MAILBOX,
+    fromName: null,
     to: ["jane@acme.com"],
     cc: [],
     bcc: [],

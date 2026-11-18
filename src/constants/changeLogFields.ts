@@ -6,6 +6,25 @@ export const CHANGE_FIELD_STAGE_ID = "stageId";
 // Won/lost/open transitions, written by the won/lost flow rather than updateDeal.
 export const CHANGE_FIELD_STATUS = "status";
 
+export const CHANGE_FIELD_OWNER_ID = "ownerId";
+export const CHANGE_FIELD_MERGED_DEAL = "mergedDealId";
+export const CHANGE_FIELD_DUPLICATED_FROM_DEAL = "duplicatedFromDealId";
+export const CHANGE_FIELD_CONVERTED_TO_LEAD = "convertedToLeadId";
+export const CHANGE_FIELD_CREATED_FROM_DEAL = "createdFromDealId";
+export const CHANGE_FIELD_CONVERTED_DEAL = "convertedDealId";
+export const CHANGE_FIELD_MERGE = "__merge__";
+
+export const REMOVED_USER_LABEL = "(removed user)";
+export const UNAVAILABLE_RECORD_LABEL = "(not available)";
+
+export const CHANGE_LABEL_OWNER = "Owner";
+export const CHANGE_LABEL_MERGED_WITH = "Merged with";
+export const CHANGE_LABEL_MERGED_DEAL = "Merged deal";
+export const CHANGE_LABEL_DUPLICATED_FROM_DEAL = "Duplicated from deal";
+export const CHANGE_LABEL_CONVERTED_TO_LEAD = "Converted to lead";
+export const CHANGE_LABEL_CREATED_FROM_DEAL = "Created from deal";
+export const CHANGE_LABEL_CONVERTED_DEAL = "Converted to deal";
+
 // updateDeal writes these when the corresponding deal column changes (data-model
 // deal-history parity). `status` is intentionally absent: won/lost/open transitions
 // are logged by the won/lost flow, not here, to avoid double-logging.

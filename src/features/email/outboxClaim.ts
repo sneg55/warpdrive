@@ -69,6 +69,7 @@ export async function loadAttempt(
 
 export interface SendInputs {
   from: string;
+  fromName: string | null;
   payload: SendPayload;
   gmailThreadId: string | null;
   parentGmailMessageId: string | null;
@@ -82,7 +83,7 @@ export async function loadSendInputs(
 ): Promise<SendInputs | undefined> {
   signal.throwIfAborted();
   const res = await db.execute(sql`
-    SELECT a.email_address AS from_email, s.payload, t.gmail_thread_id,
+    SELECT a.email_address AS from_email, a.display_name AS from_name, s.payload, t.gmail_thread_id,
       (
         SELECT m.gmail_message_id FROM email_messages m
         WHERE m.thread_id = t.id AND m.account_id = t.account_id
@@ -98,6 +99,7 @@ export async function loadSendInputs(
   const row = res.rows[0] as
     | {
         from_email: string;
+        from_name: string | null;
         payload: SendPayload;
         gmail_thread_id: string | null;
         parent_gmail_message_id: string | null;
@@ -106,6 +108,7 @@ export async function loadSendInputs(
   if (row === undefined) return undefined;
   return {
     from: row.from_email,
+    fromName: row.from_name,
     payload: row.payload,
     gmailThreadId: row.gmail_thread_id,
     parentGmailMessageId: row.parent_gmail_message_id,

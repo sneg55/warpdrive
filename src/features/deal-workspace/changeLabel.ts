@@ -1,18 +1,32 @@
 // Change-log row -> display label. Split out of historyTimeline.ts, which owns the shape of the
 // feed rather than the wording of an individual audit row.
 import {
+  CHANGE_FIELD_CONVERTED_DEAL,
+  CHANGE_FIELD_CONVERTED_TO_LEAD,
+  CHANGE_FIELD_CREATED_FROM_DEAL,
   CHANGE_FIELD_CUSTOM_PREFIX,
+  CHANGE_FIELD_DUPLICATED_FROM_DEAL,
   CHANGE_FIELD_FOLLOWER,
+  CHANGE_FIELD_MERGE,
+  CHANGE_FIELD_MERGED_DEAL,
   CHANGE_FIELD_ORG,
+  CHANGE_FIELD_OWNER_ID,
   CHANGE_FIELD_PARTICIPANT,
   CHANGE_FIELD_PERSON,
   CHANGE_FIELD_STATUS,
+  CHANGE_LABEL_CONVERTED_DEAL,
+  CHANGE_LABEL_CONVERTED_TO_LEAD,
+  CHANGE_LABEL_CREATED_FROM_DEAL,
   CHANGE_LABEL_CUSTOM_FIELD,
+  CHANGE_LABEL_DUPLICATED_FROM_DEAL,
   CHANGE_LABEL_FOLLOWER_ADDED,
   CHANGE_LABEL_FOLLOWER_REMOVED,
+  CHANGE_LABEL_MERGED_DEAL,
+  CHANGE_LABEL_MERGED_WITH,
   CHANGE_LABEL_ORG_CHANGED,
   CHANGE_LABEL_ORG_LINKED,
   CHANGE_LABEL_ORG_UNLINKED,
+  CHANGE_LABEL_OWNER,
   CHANGE_LABEL_PARTICIPANT_ADDED,
   CHANGE_LABEL_PARTICIPANT_REMOVED,
   CHANGE_LABEL_PERSON_CHANGED,
@@ -144,6 +158,23 @@ function lostStatusLabel(field: string, oldValue: unknown, newValue: unknown): s
   return suffix === "" ? head : `${head} · ${suffix}`;
 }
 
+const LINKED_RECORD_LABELS: Readonly<Record<string, string>> = {
+  [CHANGE_FIELD_MERGED_DEAL]: CHANGE_LABEL_MERGED_DEAL,
+  [CHANGE_FIELD_DUPLICATED_FROM_DEAL]: CHANGE_LABEL_DUPLICATED_FROM_DEAL,
+  [CHANGE_FIELD_CONVERTED_TO_LEAD]: CHANGE_LABEL_CONVERTED_TO_LEAD,
+  [CHANGE_FIELD_CREATED_FROM_DEAL]: CHANGE_LABEL_CREATED_FROM_DEAL,
+  [CHANGE_FIELD_CONVERTED_DEAL]: CHANGE_LABEL_CONVERTED_DEAL,
+};
+
+function referenceLabel(field: string, oldValue: unknown, newValue: unknown): string | null {
+  if (field === CHANGE_FIELD_OWNER_ID) {
+    return `${CHANGE_LABEL_OWNER}: ${formatValue(oldValue)} → ${formatValue(newValue)}`;
+  }
+  if (field === CHANGE_FIELD_MERGE) return `${CHANGE_LABEL_MERGED_WITH}: ${formatValue(oldValue)}`;
+  const linked = LINKED_RECORD_LABELS[field];
+  return linked === undefined ? null : `${linked}: ${formatValue(newValue)}`;
+}
+
 export function formatChangeLabel(entry: {
   field: string;
   oldValue: unknown;
@@ -151,6 +182,8 @@ export function formatChangeLabel(entry: {
 }): string {
   const lost = lostStatusLabel(entry.field, entry.oldValue, entry.newValue);
   if (lost !== null) return lost;
+  const reference = referenceLabel(entry.field, entry.oldValue, entry.newValue);
+  if (reference !== null) return reference;
   const directional = directionalLabel(entry.field, entry.oldValue, entry.newValue);
   if (directional !== null) return directional;
   const enriched = asEnrichedValue(entry.newValue);

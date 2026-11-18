@@ -22,7 +22,7 @@ import { leads } from "@/db/schema/leads";
 import type { CalendarActivity } from "@/features/activities/calendar";
 import { isActivityOverdue } from "@/features/activities/overdue";
 import { linkedParentVisible } from "@/features/activities/parentLinkVisibility";
-import { listChangeLog } from "@/features/collaboration/changeLog";
+import { listChangeLogForViewer } from "@/features/collaboration/changeLog";
 import {
   buildHistoryTimeline,
   type HistoryItem,
@@ -185,7 +185,7 @@ export async function leadTimeline(
     .orderBy(desc(emailMessages.sentAt));
   signal.throwIfAborted();
 
-  const changelog = await listChangeLog(db, "lead", leadId, signal);
+  const changelog = await listChangeLogForViewer(db, session, "lead", leadId, signal);
   signal.throwIfAborted();
 
   return {

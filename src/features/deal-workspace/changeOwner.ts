@@ -3,6 +3,7 @@
 // because reassigning ownership is a stronger capability than editing fields. Mirrors the
 // create path's owner-override gate (resolveOwnerId) so ownership can never be spoofed.
 import { and, eq, sql } from "drizzle-orm";
+import { CHANGE_FIELD_OWNER_ID } from "@/constants/changeLogFields";
 import { AppError, ERROR_IDS } from "@/constants/errorIds";
 import type { Db } from "@/db/client";
 import type { Deal } from "@/db/schema/deals";
@@ -88,7 +89,7 @@ export async function changeOwner(
       {
         entityType: "deal",
         entityId: input.dealId,
-        field: "ownerId",
+        field: CHANGE_FIELD_OWNER_ID,
         oldValue: deal.ownerId,
         newValue: row.ownerId,
         actorId: actor.id,

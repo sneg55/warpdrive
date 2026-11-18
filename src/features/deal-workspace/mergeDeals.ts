@@ -7,6 +7,7 @@
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { z } from "zod";
 import { BOARD_EVENT, dealChannel, dealMovedChannel } from "@/constants/boardChannels";
+import { CHANGE_FIELD_MERGED_DEAL } from "@/constants/changeLogFields";
 import { AppError, ERROR_IDS } from "@/constants/errorIds";
 import type { Db } from "@/db/client";
 import { deals } from "@/db/schema/deals";
@@ -99,7 +100,7 @@ export async function mergeDeals(
         {
           entityType: "deal",
           entityId: input.targetDealId,
-          field: "mergedDealId",
+          field: CHANGE_FIELD_MERGED_DEAL,
           oldValue: null,
           newValue: input.sourceDealId,
           actorId: actor.id,

@@ -4,6 +4,7 @@
 import { and, desc, eq, isNull } from "drizzle-orm";
 import { z } from "zod";
 import { BOARD_EVENT, dealMovedChannel } from "@/constants/boardChannels";
+import { CHANGE_FIELD_DUPLICATED_FROM_DEAL } from "@/constants/changeLogFields";
 import { AppError, ERROR_IDS } from "@/constants/errorIds";
 import type { Db } from "@/db/client";
 import { deals } from "@/db/schema/deals";
@@ -155,7 +156,7 @@ export async function duplicateDeal(
       {
         entityType: "deal",
         entityId: clone.id,
-        field: "duplicatedFromDealId",
+        field: CHANGE_FIELD_DUPLICATED_FROM_DEAL,
         oldValue: null,
         newValue: source.id,
         actorId: actor.id,

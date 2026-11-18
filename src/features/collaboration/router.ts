@@ -6,7 +6,7 @@ import type { PermSetUser } from "@/features/permissions/effective";
 import { assertReferenceVisible } from "@/features/permissions/referenceCheck";
 import { protectedProcedure, router } from "@/server/trpc/trpc";
 import type { EntityType } from "@/types/entityRef";
-import { listChangeLog } from "./changeLog";
+import { listChangeLogForViewer } from "./changeLog";
 import { listCommentsForEntity } from "./commentsRepo";
 import { listNotes } from "./notesRepo";
 
@@ -59,7 +59,13 @@ export const collaborationRouter = router({
   listChangeLog: protectedProcedure.input(entityInput).query(async ({ ctx, input }) => {
     const signal = AbortSignal.timeout(10_000);
     await gateParent(ctx.db, ctx.actor, input.entityType, input.entityId, signal);
-    return listChangeLog(ctx.db, input.entityType, input.entityId, signal);
+    return listChangeLogForViewer(
+      ctx.db,
+      toRefActor(ctx.actor),
+      input.entityType,
+      input.entityId,
+      signal,
+    );
   }),
 
   listComments: protectedProcedure.input(entityInput).query(async ({ ctx, input }) => {

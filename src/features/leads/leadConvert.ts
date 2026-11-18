@@ -1,6 +1,7 @@
 import { and, asc, desc, eq, isNull, sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { BOARD_EVENT, dealMovedChannel } from "@/constants/boardChannels";
+import { CHANGE_FIELD_CONVERTED_DEAL } from "@/constants/changeLogFields";
 import { AppError, ERROR_IDS } from "@/constants/errorIds";
 import type * as schema from "@/db/schema";
 import { deals } from "@/db/schema/deals";
@@ -246,7 +247,7 @@ export async function convertLead(
         {
           entityType: LEAD_ENTITY,
           entityId: lead.id,
-          field: "convertedDealId",
+          field: CHANGE_FIELD_CONVERTED_DEAL,
           oldValue: null,
           newValue: deal.id,
           actorId: session.userId,

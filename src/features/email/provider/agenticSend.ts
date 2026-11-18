@@ -20,7 +20,10 @@ export function agenticSendBody(message: OutboundMessage): AgenticSendBody {
     .filter((r) => r !== "");
   return {
     to: message.to,
-    from: message.from,
+    from:
+      message.fromName === null || message.fromName.trim() === ""
+        ? message.from
+        : { email: message.from, name: message.fromName.trim() },
     subject: message.subject,
     ...(message.html === null ? {} : { html: message.html }),
     ...(message.text === null ? {} : { text: message.text }),
