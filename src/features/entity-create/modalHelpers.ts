@@ -1,5 +1,6 @@
 import { createOrgAction, createPersonAction } from "@/features/contacts/actions";
 import type { ContactPoint } from "@/features/deals/AddDealPersonColumn";
+import { createFailureMessage, settleCreate } from "./createFailure";
 import type { EntityCreateState, Option } from "./modalState";
 
 // Drop blank contact rows so an empty row never becomes a "" contact point; mark the first
@@ -62,8 +63,8 @@ export async function resolveNewOrgId(
   const key = JSON.stringify(input);
   const earlier = reuse(created.current.org, key);
   if (earlier !== null) return earlier;
-  const r = await createOrgAction(input, csrf);
-  if (!r.ok) return { error: `Could not create organization (${r.error.id})` };
+  const r = await settleCreate(() => createOrgAction(input, csrf));
+  if (!r.ok) return { error: createFailureMessage("organization", r.error.id) };
   created.current = { ...created.current, org: { key, id: r.value.id } };
   return r.value.id;
 }
@@ -86,8 +87,8 @@ export async function resolveNewPersonId(
   const key = JSON.stringify(input);
   const earlier = reuse(created.current.person, key);
   if (earlier !== null) return earlier;
-  const r = await createPersonAction(input, csrf);
-  if (!r.ok) return { error: `Could not create person (${r.error.id})` };
+  const r = await settleCreate(() => createPersonAction(input, csrf));
+  if (!r.ok) return { error: createFailureMessage("person", r.error.id) };
   created.current = { ...created.current, person: { key, id: r.value.id } };
   return r.value.id;
 }

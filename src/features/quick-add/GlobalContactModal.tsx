@@ -13,6 +13,7 @@ import {
   firstMissingImportantField,
 } from "@/features/custom-fields/CustomFieldCreateFields";
 import { AddDealPersonColumn, type ContactPoint } from "@/features/deals/AddDealPersonColumn";
+import { createFailureMessage, settleCreate } from "@/features/entity-create/createFailure";
 import { EntityCreateDialogShell } from "@/features/entity-create/EntityCreateDialogShell";
 import { useInterfacePrefs } from "@/features/identity/InterfacePrefsProvider";
 import { trpc } from "@/lib/trpc-client";
@@ -115,9 +116,9 @@ function ContactCreateModal({
     setError(null);
     try {
       const csrf = readCsrfToken();
-      const result =
+      const result = await settleCreate(() =>
         kind === "person"
-          ? await createPersonAction(
+          ? createPersonAction(
               {
                 name: trimmed,
                 emails: nonEmptyPoints(emails),
@@ -127,17 +128,20 @@ function ContactCreateModal({
               },
               csrf,
             )
-          : await createOrgAction(
+          : createOrgAction(
               {
                 name: trimmed,
                 address: cleanAddress(address),
                 customFields: submittedCustomFields,
               },
               csrf,
-            );
+            ),
+      );
 
       if (!result.ok) {
-        setError(result.error.id);
+        setError(
+          createFailureMessage(kind === "person" ? "person" : "organization", result.error.id),
+        );
         return;
       }
 

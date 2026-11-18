@@ -73,6 +73,7 @@ export function SavedViewMenu({
           {ordered.map((v) => (
             <div key={v.id} className="flex items-center">
               <DropdownMenuItem
+                redactLabel
                 aria-current={selectedViewId === v.id ? "true" : undefined}
                 onSelect={() => onSelect(v)}
                 className={cn("min-w-0 flex-1", selectedViewId === v.id && "bg-accent font-medium")}

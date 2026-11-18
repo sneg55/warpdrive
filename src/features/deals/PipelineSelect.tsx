@@ -43,6 +43,7 @@ export function PipelineSelect(props: PipelineSelectProps): React.ReactNode {
           {pipelines.map((p) => (
             <DropdownMenuItem
               key={p.id}
+              redactLabel
               onSelect={() => router.push(`/pipeline/${p.id}`)}
               className={cn("truncate", p.id === pipelineId && "font-semibold text-foreground")}
             >

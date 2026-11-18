@@ -116,7 +116,12 @@ export function UserRowControls({
               <DropdownMenuSubContent className="max-h-56 min-w-40 overflow-auto">
                 <DropdownMenuRadioGroup value={permissionSetId ?? ""} onValueChange={assignSet}>
                   {permissionSets.map((set) => (
-                    <DropdownMenuRadioItem key={set.id} value={set.id} disabled={isPending}>
+                    <DropdownMenuRadioItem
+                      key={set.id}
+                      value={set.id}
+                      disabled={isPending}
+                      redactLabel
+                    >
                       {set.name}
                     </DropdownMenuRadioItem>
                   ))}

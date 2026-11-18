@@ -76,7 +76,7 @@ export function OwnerBlock({
               <p className="px-2 py-1.5 text-sm text-muted-foreground">No assignable users</p>
             ) : (
               assignableUsers.map((u) => (
-                <DropdownMenuItem key={u.id} onSelect={() => void reassign(u.id)}>
+                <DropdownMenuItem key={u.id} redactLabel onSelect={() => void reassign(u.id)}>
                   {u.name}
                 </DropdownMenuItem>
               ))

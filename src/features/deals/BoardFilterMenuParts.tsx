@@ -56,6 +56,7 @@ export function SavedFilterItem({
   return (
     <div className="flex items-center">
       <DropdownMenuItem
+        redactLabel
         aria-current={selected ? "true" : undefined}
         onSelect={onPick}
         className={cn("min-w-0 flex-1", selected && "bg-accent font-medium")}

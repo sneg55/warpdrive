@@ -4,6 +4,7 @@ export const EVENTS = {
   consoleForward: "client_console",
   modalOpened: "modal_opened",
   modalClosed: "modal_closed",
+  menuItemSelected: "menu_item_selected",
   boardDragStarted: "board_drag_started",
   boardDragEnded: "board_drag_ended",
   boardDragCancelled: "board_drag_cancelled",

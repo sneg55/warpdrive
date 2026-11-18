@@ -10,6 +10,7 @@ import {
   firstMissingImportantField,
 } from "@/features/custom-fields/CustomFieldCreateFields";
 import { deriveEntityTitle } from "@/features/deals/dealTitleAutofill";
+import { createFailureMessage, settleCreate } from "@/features/entity-create/createFailure";
 import { EntityCreateModalShell } from "@/features/entity-create/EntityCreateModalShell";
 import {
   type InlineCreated,
@@ -128,17 +129,15 @@ export function AddLeadModal({
         setError(personId.error);
         return;
       }
-      const result = await createLeadAction(
-        {
-          ...parsed.input,
-          personId,
-          orgId,
-          customFields: customFieldCreatePayload(leadFields, state.leadCustomFields),
-        },
-        csrf,
-      );
+      const leadInput = {
+        ...parsed.input,
+        personId,
+        orgId,
+        customFields: customFieldCreatePayload(leadFields, state.leadCustomFields),
+      };
+      const result = await settleCreate(() => createLeadAction(leadInput, csrf));
       if (!result.ok) {
-        setError(`Could not create lead (${result.error.id})`);
+        setError(createFailureMessage("lead", result.error.id));
         return;
       }
       onCreated();

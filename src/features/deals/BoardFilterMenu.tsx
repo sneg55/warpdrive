@@ -94,6 +94,7 @@ export function BoardFilterMenu(props: BoardFilterMenuProps): React.ReactNode {
           variant="outline"
           size="sm"
           aria-label={triggerCopy}
+          data-telemetry-redact="true"
           data-filtered={filtered}
           className={cn(
             "bg-card font-normal",

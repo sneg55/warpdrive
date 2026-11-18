@@ -97,29 +97,31 @@ export async function createLead(
   }
   signal.throwIfAborted();
 
-  const [row] = await db
-    .insert(leads)
-    .values({
-      title: input.title,
-      value: input.value === null ? null : input.value.toFixed(2),
-      personId: input.personId,
-      orgId: input.orgId,
-      expectedCloseDate: input.expectedCloseDate,
-      labels: input.labels,
-      customFields: customFields.value,
-      sourceChannel: input.sourceChannel,
-      sourceChannelId: input.sourceChannelId,
-      sourceOrigin: input.sourceOrigin,
-      ownerId: ownerResult.value,
-      visibilityLevel: level,
-      visibilityGroupId,
-    })
-    .returning();
-  if (row === undefined) {
-    throw new AppError(ERROR_IDS.DB_INSERT_FAILED, "createLead: insert returned no rows");
-  }
-  await syncEntityLabelNames(db, "lead", row.id, row.labels, signal);
-  return ok(row);
+  return db.transaction(async (tx) => {
+    const [row] = await tx
+      .insert(leads)
+      .values({
+        title: input.title,
+        value: input.value === null ? null : input.value.toFixed(2),
+        personId: input.personId,
+        orgId: input.orgId,
+        expectedCloseDate: input.expectedCloseDate,
+        labels: input.labels,
+        customFields: customFields.value,
+        sourceChannel: input.sourceChannel,
+        sourceChannelId: input.sourceChannelId,
+        sourceOrigin: input.sourceOrigin,
+        ownerId: ownerResult.value,
+        visibilityLevel: level,
+        visibilityGroupId,
+      })
+      .returning();
+    if (row === undefined) {
+      throw new AppError(ERROR_IDS.DB_INSERT_FAILED, "createLead: insert returned no rows");
+    }
+    await syncEntityLabelNames(tx, "lead", row.id, row.labels, signal);
+    return ok(row);
+  });
 }
 
 export async function archiveLead(

@@ -48,6 +48,7 @@ export function SignatureDropdown({
         {signatures.map((s) => (
           <DropdownMenuItem
             key={s.id}
+            redactLabel
             aria-label={s.name}
             className="text-xs"
             onSelect={() => onChange(s.id)}

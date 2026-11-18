@@ -56,6 +56,7 @@ export function CatalogLabelPicker({
           catalog.map((label) => (
             <DropdownMenuCheckboxItem
               key={label.id}
+              redactLabel
               checked={isActive(label.name)}
               // Keep the menu open while toggling several labels in a row.
               onSelect={(e) => e.preventDefault()}

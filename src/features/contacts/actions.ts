@@ -5,6 +5,7 @@ import { db } from "@/db/client";
 import { guardCsrf } from "@/features/identity/actions/shared";
 import { SIG } from "@/features/identity/actions/sig";
 import { can } from "@/features/permissions/can";
+import { guardWrite } from "@/server/guardWrite";
 import { createContext } from "@/server/trpc/context";
 import { loadContactActor, toContactActor } from "./actorAdapters";
 import {
@@ -70,11 +71,8 @@ export async function createPersonAction(
   const parsed = personCreateInput.safeParse(input);
   if (!parsed.success) return { ok: false, error: { id: ERROR_IDS.CONTACT_CREATE_INPUT_INVALID } };
 
-  const result = await createPerson(
-    db,
-    await loadContactActor(db, actor, SIG()),
-    parsed.data,
-    SIG(),
+  const result = await guardWrite("createPersonAction", actor.id, async () =>
+    createPerson(db, await loadContactActor(db, actor, SIG()), parsed.data, SIG()),
   );
   if (!result.ok) return { ok: false, error: { id: result.error.id } };
   return { ok: true, value: { id: result.value.id } };
@@ -137,7 +135,9 @@ export async function createOrgAction(
     return { ok: false, error: { id: ERROR_IDS.PERM_DENIED } };
   }
 
-  const result = await createOrg(db, await loadContactActor(db, actor, SIG()), input, SIG());
+  const result = await guardWrite("createOrgAction", actor.id, async () =>
+    createOrg(db, await loadContactActor(db, actor, SIG()), input, SIG()),
+  );
   if (!result.ok) return { ok: false, error: { id: result.error.id } };
   return { ok: true, value: { id: result.value.id } };
 }

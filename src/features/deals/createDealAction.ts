@@ -5,6 +5,7 @@ import { db } from "@/db/client";
 import { users } from "@/db/schema";
 import { guardCsrf } from "@/features/identity/actions/shared";
 import { SIG } from "@/features/identity/actions/sig";
+import { guardWrite } from "@/server/guardWrite";
 import { createContext } from "@/server/trpc/context";
 import { isDealVisibleToSession } from "./createdVisibility";
 import { createDeal } from "./dealActions";
@@ -53,7 +54,9 @@ export async function createDealAction(
     flags,
   };
 
-  const result = await createDeal(db, session, input, SIG());
+  const result = await guardWrite("createDealAction", actor.id, () =>
+    createDeal(db, session, input, SIG()),
+  );
   if (!result.ok) return { ok: false, error: { id: result.error.id } };
 
   if (!(await isDealVisibleToSession(db, session, result.value.id, SIG()))) {

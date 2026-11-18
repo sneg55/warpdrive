@@ -2,6 +2,10 @@
 import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu";
 import { Check, ChevronRight, Circle } from "lucide-react";
 import { forwardRef } from "react";
+import {
+  captureMenuItemSelected,
+  type MenuItemKind,
+} from "@/features/observability/menuItemTelemetry";
 import { cn } from "@/lib/utils";
 
 // shadcn (new-york) DropdownMenu wrapper over @radix-ui/react-dropdown-menu. This is the
@@ -65,12 +69,35 @@ export const DropdownMenuContent = forwardRef<
 ));
 DropdownMenuContent.displayName = "DropdownMenuContent";
 
+interface TelemetryProps {
+  redactLabel?: boolean;
+}
+
+function reporting<E extends Event>(
+  kind: MenuItemKind,
+  redactLabel: boolean | undefined,
+  disabled: boolean | undefined,
+  onSelect: ((event: E) => void) | undefined,
+): (event: E) => void {
+  return (event) => {
+    captureMenuItemSelected({
+      item: event.currentTarget instanceof HTMLElement ? event.currentTarget : null,
+      kind,
+      redactLabel: redactLabel === true,
+      disabled: disabled === true,
+    });
+    onSelect?.(event);
+  };
+}
+
 export const DropdownMenuItem = forwardRef<
   React.ElementRef<typeof DropdownMenuPrimitive.Item>,
-  React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Item> & { inset?: boolean }
->(({ className, inset, ...props }, ref) => (
+  React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Item> &
+    TelemetryProps & { inset?: boolean }
+>(({ className, inset, redactLabel, onSelect, ...props }, ref) => (
   <DropdownMenuPrimitive.Item
     ref={ref}
+    onSelect={reporting("item", redactLabel, props.disabled, onSelect)}
     className={cn(
       "relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors duration-150 focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
       inset === true && "pl-8",
@@ -83,11 +110,12 @@ DropdownMenuItem.displayName = "DropdownMenuItem";
 
 export const DropdownMenuCheckboxItem = forwardRef<
   React.ElementRef<typeof DropdownMenuPrimitive.CheckboxItem>,
-  React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.CheckboxItem>
->(({ className, children, checked, ...props }, ref) => (
+  React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.CheckboxItem> & TelemetryProps
+>(({ className, children, checked, redactLabel, onSelect, ...props }, ref) => (
   <DropdownMenuPrimitive.CheckboxItem
     ref={ref}
     checked={checked}
+    onSelect={reporting("checkbox", redactLabel, props.disabled, onSelect)}
     className={cn(
       "relative flex cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none transition-colors duration-150 focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
       className,
@@ -106,10 +134,11 @@ DropdownMenuCheckboxItem.displayName = "DropdownMenuCheckboxItem";
 
 export const DropdownMenuRadioItem = forwardRef<
   React.ElementRef<typeof DropdownMenuPrimitive.RadioItem>,
-  React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.RadioItem>
->(({ className, children, ...props }, ref) => (
+  React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.RadioItem> & TelemetryProps
+>(({ className, children, redactLabel, onSelect, ...props }, ref) => (
   <DropdownMenuPrimitive.RadioItem
     ref={ref}
+    onSelect={reporting("radio", redactLabel, props.disabled, onSelect)}
     className={cn(
       "relative flex cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none transition-colors duration-150 focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
       className,

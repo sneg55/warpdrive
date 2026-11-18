@@ -23,6 +23,7 @@ export function DeleteSavedFilterItem({
 }): React.ReactNode {
   return (
     <DropdownMenuItem
+      redactLabel
       aria-label={`Delete ${target.name}`}
       onSelect={(e) => {
         e.preventDefault();

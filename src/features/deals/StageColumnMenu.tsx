@@ -46,6 +46,7 @@ export function StageColumnMenu(props: StageColumnMenuProps): React.ReactNode {
       <DropdownMenu>
         <DropdownMenuTrigger
           aria-label={triggerLabel}
+          data-telemetry-redact="true"
           className="relative flex h-6 w-6 items-center justify-center rounded text-muted-foreground transition-[color,background-color,scale] duration-150 ease-out after:absolute after:-inset-2 after:content-[''] hover:bg-accent hover:text-foreground active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-colors"
         >
           <Ellipsis aria-hidden="true" className="h-4 w-4" />

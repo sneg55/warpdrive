@@ -55,7 +55,7 @@ export function XTemplatePicker({
           <DropdownMenuItem disabled>{X_DM_STRINGS.noTemplates}</DropdownMenuItem>
         ) : (
           templates.map((t) => (
-            <DropdownMenuItem key={t.id} onSelect={() => void insert(t.id)}>
+            <DropdownMenuItem key={t.id} redactLabel onSelect={() => void insert(t.id)}>
               {t.name}
             </DropdownMenuItem>
           ))

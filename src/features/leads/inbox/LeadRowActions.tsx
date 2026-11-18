@@ -70,7 +70,7 @@ export function LeadRowActions({
             </DropdownMenuSubTrigger>
             <DropdownMenuSubContent className="max-h-56 min-w-40 overflow-auto">
               {assignableUsers.map((u) => (
-                <DropdownMenuItem key={u.id} onSelect={() => onChangeOwner(u.id)}>
+                <DropdownMenuItem key={u.id} redactLabel onSelect={() => onChangeOwner(u.id)}>
                   {u.name}
                 </DropdownMenuItem>
               ))}

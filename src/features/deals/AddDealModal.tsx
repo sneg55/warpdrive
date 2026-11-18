@@ -8,6 +8,7 @@ import {
   customFieldCreatePayload,
   firstMissingImportantField,
 } from "@/features/custom-fields/CustomFieldCreateFields";
+import { createFailureMessage, settleCreate } from "@/features/entity-create/createFailure";
 import { EntityCreateModalShell } from "@/features/entity-create/EntityCreateModalShell";
 import {
   type InlineCreated,
@@ -210,9 +211,9 @@ export function AddDealModal(props: AddDealModalProps): React.ReactNode {
         state.visibilityGroupId === ""
           ? resolved
           : { ...resolved, visibilityGroupId: state.visibilityGroupId };
-      const result = await createDealAction(input, csrf);
+      const result = await settleCreate(() => createDealAction(input, csrf));
       if (!result.ok) {
-        setError(`Could not create deal (${result.error.id})`);
+        setError(createFailureMessage("deal", result.error.id));
         return;
       }
       finishCreate(result.deal, parsed.input.title);
