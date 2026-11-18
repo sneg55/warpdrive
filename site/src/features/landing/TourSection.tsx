@@ -1,19 +1,12 @@
-import type { StaticImageData } from "next/image";
 import type { ReactNode } from "react";
 import { STRINGS } from "@/constants/strings";
-import contactsShot from "./assets/contacts.png";
-import dealShot from "./assets/deal-workspace.png";
-import inboxShot from "./assets/inbox.png";
 import { Reveal } from "./Reveal";
+import { SCREENSHOTS, type Screenshot } from "./screenshots";
 import { ShotFrame } from "./ShotFrame";
 
 const S = STRINGS.landing.tour;
 
-const SHOTS: Record<(typeof S.items)[number]["image"], StaticImageData> = {
-  deal: dealShot,
-  inbox: inboxShot,
-  contacts: contactsShot,
-};
+const SHOTS: Record<(typeof S.items)[number]["image"], Screenshot> = SCREENSHOTS;
 
 export function TourSection(): ReactNode {
   return (
@@ -30,7 +23,7 @@ export function TourSection(): ReactNode {
             {S.items.map((item, i) => (
               <div key={item.title} data-reveal className="grid items-center gap-8 lg:grid-cols-2">
                 <div className={i % 2 === 1 ? "lg:order-2" : undefined}>
-                  <ShotFrame src={SHOTS[item.image]} alt={item.alt} />
+                  <ShotFrame shot={SHOTS[item.image]} alt={item.alt} />
                 </div>
                 <div className={i % 2 === 1 ? "lg:order-1" : undefined}>
                   <h3 className="text-xl font-semibold">{item.title}</h3>

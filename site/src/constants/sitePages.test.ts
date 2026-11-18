@@ -5,23 +5,41 @@ import { SITE_PAGES } from "./sitePages";
 
 const SECURE_URL = new RegExp("^https:[/][/]");
 
+const NON_COPY_KEYS = new Set(["updated"]);
+
 function allStrings(value: unknown): string[] {
   if (typeof value === "string") return [value];
   if (Array.isArray(value)) return value.flatMap(allStrings);
-  if (typeof value === "object" && value !== null) return Object.values(value).flatMap(allStrings);
+  if (typeof value === "object" && value !== null) {
+    return Object.entries(value)
+      .filter(([key]) => !NON_COPY_KEYS.has(key))
+      .flatMap(([, entry]) => allStrings(entry));
+  }
   return [];
 }
 
 const COPY = allStrings([COMPETITORS, MIGRATION_STRINGS, SITE_PAGES]);
 
 describe("site pages", () => {
-  it("lists the home, both comparisons, and the migration page", () => {
+  it("lists the home, every comparison, and the migration page", () => {
     expect(SITE_PAGES.map((page) => page.path)).toEqual([
       "/",
+      "/vs/pipedrive",
       "/vs/twenty",
       "/vs/espocrm",
+      "/vs/krayin",
+      "/vs/frappe-crm",
+      "/vs/atomic-crm",
+      "/vs/suitecrm",
       "/migrate-from-pipedrive",
     ]);
+  });
+
+  it("gives every competitor its own /vs page", () => {
+    for (const competitor of Object.values(COMPETITORS)) {
+      expect(competitor.page.path).toBe(`/vs/${competitor.slug}`);
+      expect(SITE_PAGES).toContain(competitor.page);
+    }
   });
 
   it("keeps every page description inside the search snippet length", () => {
@@ -45,6 +63,14 @@ describe("competitor comparisons", () => {
     for (const row of competitor.rows) {
       expect(row.warpdrive.trim()).not.toBe("");
       expect(row.competitor.trim()).not.toBe("");
+    }
+  });
+
+  it.each(Object.values(COMPETITORS))("answers at least three $name questions", (competitor) => {
+    expect(competitor.faq.length).toBeGreaterThanOrEqual(3);
+    for (const item of competitor.faq) {
+      expect(item.q.trim()).toMatch(/[?]$/);
+      expect(item.a.trim()).not.toBe("");
     }
   });
 

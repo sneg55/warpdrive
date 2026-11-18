@@ -163,8 +163,13 @@ export const LANDING_STRINGS = {
     bottom: "Open source · MIT licensed",
     linksLabel: "More about Warpdrive",
     links: [
+      { label: "Warpdrive vs Pipedrive", href: "/vs/pipedrive" },
       { label: "Warpdrive vs Twenty", href: "/vs/twenty" },
       { label: "Warpdrive vs EspoCRM", href: "/vs/espocrm" },
+      { label: "Warpdrive vs Krayin CRM", href: "/vs/krayin" },
+      { label: "Warpdrive vs Frappe CRM", href: "/vs/frappe-crm" },
+      { label: "Warpdrive vs Atomic CRM", href: "/vs/atomic-crm" },
+      { label: "Warpdrive vs SuiteCRM", href: "/vs/suitecrm" },
       { label: "Migrate from Pipedrive", href: "/migrate-from-pipedrive" },
       { label: "Documentation", href: DOCS_URL },
     ],

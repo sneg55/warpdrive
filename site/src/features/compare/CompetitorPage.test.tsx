@@ -4,6 +4,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { COMPETITORS } from "@/constants/competitors";
 import { CompetitorPage } from "./CompetitorPage";
 
+function graphNode(container: HTMLElement, type: string): Record<string, unknown> {
+  const script = container.querySelector('script[type="application/ld+json"]');
+  const data = JSON.parse(script?.textContent ?? "{}") as { "@graph"?: Array<Record<string, unknown>> };
+  const node = data["@graph"]?.find((entry) => entry["@type"] === type);
+  if (node === undefined) expect.unreachable(`no ${type} node in the JSON-LD graph`);
+  return node;
+}
+
 beforeEach(() => {
   vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("{}", { status: 500 }));
 });
@@ -41,11 +49,27 @@ describe.each(Object.values(COMPETITORS))("CompetitorPage for $name", (competito
   });
 
   it("emits WebPage JSON-LD about the Warpdrive software", () => {
-    const { container } = render(<CompetitorPage competitor={competitor} initialStars={null} />);
-    const script = container.querySelector('script[type="application/ld+json"]');
-    const data = JSON.parse(script?.textContent ?? "{}") as Record<string, unknown>;
-    expect(data["@type"]).toBe("WebPage");
-    expect(data.url).toBe(`https://warpdrivecrm.com/vs/${competitor.slug}`);
-    expect(data.about).toEqual({ "@id": "https://warpdrivecrm.com/#software" });
+    const page = graphNode(render(<CompetitorPage competitor={competitor} initialStars={null} />).container, "WebPage");
+    expect(page.url).toBe(`https://warpdrivecrm.com/vs/${competitor.slug}`);
+    expect(page.about).toEqual({ "@id": "https://warpdrivecrm.com/#software" });
+  });
+
+  it("answers the comparison questions on the page", () => {
+    render(<CompetitorPage competitor={competitor} initialStars={null} />);
+    for (const item of competitor.faq) {
+      expect(screen.getByRole("heading", { level: 3, name: item.q })).toBeInTheDocument();
+      expect(screen.getByText(item.a)).toBeInTheDocument();
+    }
+  });
+
+  it("mirrors the visible questions in FAQPage JSON-LD", () => {
+    const faq = graphNode(render(<CompetitorPage competitor={competitor} initialStars={null} />).container, "FAQPage");
+    expect(faq.mainEntity).toEqual(
+      competitor.faq.map((item) => ({
+        "@type": "Question",
+        name: item.q,
+        acceptedAnswer: { "@type": "Answer", text: item.a },
+      })),
+    );
   });
 });

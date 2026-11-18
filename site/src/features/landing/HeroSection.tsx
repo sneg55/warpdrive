@@ -1,9 +1,9 @@
 import type { ReactNode } from "react";
 import { STRINGS } from "@/constants/strings";
 import type { ReleaseFacts } from "@/types/repoFacts";
-import pipelineShot from "./assets/pipeline.png";
 import { CTA_PRIMARY } from "./ctaClasses";
 import { ReleaseLine } from "./ReleaseLine";
+import { SCREENSHOTS } from "./screenshots";
 import { ShotFrame } from "./ShotFrame";
 
 const S = STRINGS.landing.hero;
@@ -38,7 +38,7 @@ export function HeroSection({ release }: { release: ReleaseFacts | null }): Reac
           <ReleaseLine release={release} />
         </div>
         <div className="landing-rise landing-rise-2">
-          <ShotFrame src={pipelineShot} alt={S.shotAlt} priority />
+          <ShotFrame shot={SCREENSHOTS.pipeline} alt={S.shotAlt} priority />
         </div>
       </div>
     </section>

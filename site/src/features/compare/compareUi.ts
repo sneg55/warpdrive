@@ -4,4 +4,5 @@ export const COMPARE_UI = {
   choosePrefix: "Choose",
   chooseSuffix: "if",
   sourcesHeading: "Sources",
+  faqHeading: "Questions",
 } as const;

@@ -6,10 +6,6 @@ import "./globals.css";
 
 export { metadata } from "@/constants/siteMetadata";
 
-// Inter is vendored (./fonts) and loaded via next/font/local, so there is no build-time or runtime
-// request to Google Fonts. The latin variable subset covers Western-European text; missing glyphs
-// fall back to the system stack. Exposes `--font-inter` for globals.css. Matches the app so the
-// marketing chrome and the product screenshots share one typeface.
 const inter = localFont({
   src: "./fonts/inter-latin-var.woff2",
   weight: "100 900",
@@ -18,28 +14,26 @@ const inter = localFont({
   display: "swap",
 });
 
+const ANALYTICS_STRATEGY = "lazyOnload";
+
 export default function RootLayout({ children }: { children: ReactNode }): ReactNode {
   return (
     <html lang="en" className={`${inter.variable} antialiased`}>
       <body>{children}</body>
-      {/* Google Analytics (gtag.js). afterInteractive so it never blocks first paint; the tags are
-          emitted into the static export, so no Node server is involved. */}
       <Script
         src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
-        strategy="afterInteractive"
+        strategy={ANALYTICS_STRATEGY}
       />
-      <Script id="gtag-init" strategy="afterInteractive">
+      <Script id="gtag-init" strategy={ANALYTICS_STRATEGY}>
         {`window.dataLayer = window.dataLayer || [];
 function gtag(){dataLayer.push(arguments);}
 gtag('js', new Date());
 gtag('config', '${GA_MEASUREMENT_ID}');`}
       </Script>
-      {/* Ahrefs Web Analytics, for the SEO side of the funnel (keyword/backlink attribution that GA4
-          does not give us). Same afterInteractive treatment as gtag. */}
       <Script
         src="https://analytics.ahrefs.com/analytics.js"
         data-key={AHREFS_ANALYTICS_KEY}
-        strategy="afterInteractive"
+        strategy={ANALYTICS_STRATEGY}
       />
     </html>
   );

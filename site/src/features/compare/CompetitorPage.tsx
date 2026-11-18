@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import type { Competitor } from "@/constants/competitors";
-import { buildWebPageData } from "@/constants/pageStructuredData";
+import { buildComparisonData } from "@/constants/pageStructuredData";
 import { BulletCard } from "@/features/landing/BulletCard";
 import { SiteShell } from "@/features/landing/SiteShell";
 import { SubpageSection } from "@/features/landing/SubpageSection";
@@ -14,7 +14,7 @@ export function CompetitorPage({
   initialStars: number | null;
 }): ReactNode {
   return (
-    <SiteShell initialStars={initialStars} structuredData={buildWebPageData(competitor.page)}>
+    <SiteShell initialStars={initialStars} structuredData={buildComparisonData(competitor)}>
       <SubpageSection heading={competitor.heading} summary={competitor.summary}>
         <div className="mt-10 overflow-x-auto rounded-lg border bg-card shadow-sm">
           <table className="w-full text-sm">
@@ -46,6 +46,15 @@ export function CompetitorPage({
             heading={`${COMPARE_UI.choosePrefix} ${competitor.name} ${COMPARE_UI.chooseSuffix}`}
             items={competitor.chooseCompetitor}
           />
+        </div>
+        <h2 className="mt-12 text-lg font-semibold">{COMPARE_UI.faqHeading}</h2>
+        <div className="mt-4 space-y-4">
+          {competitor.faq.map((item) => (
+            <div key={item.q} className="rounded-lg border bg-card p-5">
+              <h3 className="font-semibold">{item.q}</h3>
+              <p className="mt-2 text-pretty text-sm text-muted-foreground">{item.a}</p>
+            </div>
+          ))}
         </div>
         <h2 className="mt-12 text-lg font-semibold">{COMPARE_UI.sourcesHeading}</h2>
         <ul className="mt-3 space-y-1.5 text-sm">

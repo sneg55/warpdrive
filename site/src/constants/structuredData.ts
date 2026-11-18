@@ -81,15 +81,19 @@ interface FaqPageNode {
   mainEntity: QuestionNode[];
 }
 
-export const FAQ_PAGE: FaqPageNode = {
-  "@type": "FAQPage",
-  "@id": `${SITE_URL}/#faq`,
-  mainEntity: LANDING_STRINGS.faq.items.map((item) => ({
-    "@type": "Question",
-    name: item.q,
-    acceptedAnswer: { "@type": "Answer", text: item.a },
-  })),
-};
+export function faqPageNode(id: string, items: ReadonlyArray<{ q: string; a: string }>): FaqPageNode {
+  return {
+    "@type": "FAQPage",
+    "@id": id,
+    mainEntity: items.map((item) => ({
+      "@type": "Question",
+      name: item.q,
+      acceptedAnswer: { "@type": "Answer", text: item.a },
+    })),
+  };
+}
+
+export const FAQ_PAGE: FaqPageNode = faqPageNode(`${SITE_URL}/#faq`, LANDING_STRINGS.faq.items);
 
 export function buildStructuredData(release: ReleaseFacts | null) {
   const software: SoftwareApplicationNode =

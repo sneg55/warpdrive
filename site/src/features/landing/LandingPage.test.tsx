@@ -2,6 +2,7 @@
 import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { COMPETITORS } from "@/constants/competitors";
 import { LANDING_STRINGS } from "@/constants/landingStrings";
 import type { RepoFacts } from "@/types/repoFacts";
 import { LandingPage } from "./LandingPage";
@@ -69,6 +70,27 @@ describe("LandingPage", () => {
       expect(screen.getByAltText(item.alt)).toBeInTheDocument();
       expect(screen.getByText(item.caption)).toBeInTheDocument();
     }
+  });
+
+  it("serves every product screenshot as WebP, not PNG", () => {
+    render(<LandingPage facts={NO_REPO_FACTS} />);
+    const alts = [LANDING_STRINGS.hero.shotAlt, ...LANDING_STRINGS.tour.items.map((item) => item.alt)];
+    for (const alt of alts) {
+      expect(screen.getByAltText(alt).getAttribute("src")).toMatch(/-1600\.webp/);
+    }
+  });
+
+  it("opens the full-resolution WebP in the lightbox", async () => {
+    const user = userEvent.setup();
+    render(<LandingPage facts={NO_REPO_FACTS} />);
+    const [first] = screen.getAllByRole("button", {
+      name: new RegExp(`^${LANDING_STRINGS.shot.enlargeLabel}`),
+    });
+    if (first === undefined) expect.unreachable("no screenshot triggers rendered");
+    await user.click(first);
+    const dialog = await screen.findByRole("dialog");
+    const zoomed = within(dialog).getByAltText(LANDING_STRINGS.hero.shotAlt);
+    expect(zoomed.getAttribute("src")).toMatch(/-3200\.webp/);
   });
 
   it("zooms a screenshot into a lightbox on click", async () => {
@@ -139,10 +161,11 @@ describe("LandingPage", () => {
     expect(section?.textContent ?? "").toMatch(/Pipedrive/);
   });
 
-  it("links the comparison and migration pages from the footer", () => {
+  it("links every comparison page and the migration page from the footer", () => {
     render(<LandingPage facts={NO_REPO_FACTS} />);
     const footer = screen.getByRole("contentinfo");
-    for (const href of ["/vs/twenty", "/vs/espocrm", "/migrate-from-pipedrive"]) {
+    const comparisons = Object.values(COMPETITORS).map((competitor) => competitor.page.path);
+    for (const href of [...comparisons, "/migrate-from-pipedrive"]) {
       expect(within(footer).getAllByRole("link").map((a) => a.getAttribute("href"))).toContain(
         href,
       );
