@@ -1,4 +1,4 @@
-import { LANDING_STRINGS } from "@/constants/landingStrings";
+import { LANDING_STRINGS, PRODUCT_SUMMARY } from "@/constants/landingStrings";
 import { pageUrl } from "@/constants/siteMetadata";
 import { HOME_PAGE, SITE_PAGES } from "@/constants/sitePages";
 import { OPENALTERNATIVE_URL } from "@/constants/structuredData";
@@ -21,7 +21,7 @@ export function buildLlmsTxt(release: ReleaseFacts | null): string {
     "",
     `> ${HOME_PAGE.description}`,
     "",
-    LANDING_STRINGS.hero.subtitle,
+    PRODUCT_SUMMARY,
     "",
   ];
   if (release !== null) {

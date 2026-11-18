@@ -12,7 +12,7 @@ export const LANDING_FAQ = {
     },
     {
       q: "How do I self-host Warpdrive?",
-      a: "Warpdrive ships as a single Docker Compose file. Copy .env.example to .env, set your domain and Google OAuth, then run docker compose up -d --build. That starts the app, WebSocket server, background worker, Postgres, and Garage, with Caddy provisioning HTTPS for your domain automatically.",
+      a: "Warpdrive ships as a single Docker Compose file. Clone the GitHub repository, copy .env.example to .env, set your domain and Google OAuth, then run docker compose up -d --build. That starts the app, WebSocket server, background worker, Postgres, and Garage, with Caddy provisioning HTTPS for your domain automatically.",
     },
     {
       q: "Can I import my data from Pipedrive?",
@@ -28,7 +28,7 @@ export const LANDING_FAQ = {
     },
     {
       q: "How is Warpdrive different from Pipedrive?",
-      a: "Warpdrive is open source (MIT), self-hosted, and free, and your customer data never leaves your infrastructure. Pipedrive is proprietary, vendor-hosted, and billed per seat. Warpdrive focuses on the core business-development loop and leaves products, invoicing, forecasts, and workflow automation deliberately out of scope.",
+      a: "Warpdrive is open source (MIT), self-hosted, and free, and your customer data never leaves your infrastructure. Pipedrive is a commercial, cloud-based service billed per seat. Warpdrive focuses on the core business-development loop and leaves products, invoicing, forecasts, and workflow automation deliberately out of scope.",
     },
     {
       q: "What is Warpdrive built on?",

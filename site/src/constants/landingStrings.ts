@@ -1,8 +1,12 @@
-// Landing page copy (the marketing surface at /). Same house rule as strings.ts: UI text
-// lives in constants, not components, so a future locale layer is a drop-in. No em dashes.
-// Positioning and feature details follow the public README (oss/overlay/README.md).
+import { LANDING_COMPARISON } from "./landingComparison";
 import { LANDING_FAQ } from "./landingFaq";
+import { LANDING_SELF_HOST } from "./landingSelfHost";
 import { DOCS_URL, REPO_URL } from "./urls";
+
+export const PRODUCT_SUMMARY =
+  "Warpdrive is an open-source, self-hosted Pipedrive alternative for business-development teams: pipeline management, a deal workspace, contacts, two-way Gmail, and an MCP server for AI assistants, running entirely on your own infrastructure.";
+
+const INSTALL_GUIDE = { label: "Read the install guide", href: `${DOCS_URL}/setup/` } as const;
 
 export const LANDING_STRINGS = {
   nav: {
@@ -11,7 +15,7 @@ export const LANDING_STRINGS = {
     featuresHref: "/#features",
     tour: "Tour",
     tourHref: "/#tour",
-    compare: "Warpdrive vs Pipedrive",
+    compare: "Compare",
     compareHref: "/#compare",
     docs: "Docs",
     docsHref: DOCS_URL,
@@ -24,9 +28,11 @@ export const LANDING_STRINGS = {
     title: "The open-source, self-hosted Pipedrive alternative",
     tagline: "Your pipeline. Your infrastructure.",
     subtitle:
-      "Warpdrive is an open-source, self-hosted Pipedrive alternative for business-development teams: pipeline management, a deal workspace, contacts, two-way Gmail, and an MCP server for AI assistants, running entirely on your own infrastructure.",
+      "Pipelines, deals, contacts, and two-way Gmail for business-development teams. Bring your Pipedrive CSV exports across, then let Claude or ChatGPT work the pipeline over MCP, with no tools to delete records or send email.",
     cta: "View on GitHub",
     ctaHref: REPO_URL,
+    installCta: INSTALL_GUIDE.label,
+    installHref: INSTALL_GUIDE.href,
     note: "No per-seat bill. Your customer data never leaves your infrastructure.",
     shotAlt: "Warpdrive pipeline board",
     releasePrefix: "Latest release",
@@ -77,6 +83,7 @@ export const LANDING_STRINGS = {
         body: "Import Pipedrive CSV exports of organizations, people, leads, deals, activities, and notes, with owners and links kept.",
       },
     ],
+    highlightIcons: ["bot", "import"],
   },
   tour: {
     heading: "See it working",
@@ -103,56 +110,8 @@ export const LANDING_STRINGS = {
       },
     ],
   },
-  comparison: {
-    heading: "Warpdrive vs Pipedrive",
-    sub: "The core BD loop, self-hosted and free. The rest is deliberately out of scope.",
-    warpdriveCol: "Warpdrive",
-    pipedriveCol: "Pipedrive",
-    rows: [
-      { label: "License", warpdrive: "MIT, open source", pipedrive: "Proprietary" },
-      { label: "Hosting", warpdrive: "Self-hosted, single-tenant", pipedrive: "Vendor cloud" },
-      {
-        label: "Pricing",
-        warpdrive: "Free, your infrastructure only",
-        pipedrive: "Paid, per seat",
-      },
-      {
-        label: "Your data",
-        warpdrive: "Stays on your infrastructure",
-        pipedrive: "Vendor servers",
-      },
-    ],
-    covered:
-      "Covered: kanban pipelines, deal workspace, contacts with custom fields, leads inbox with CSV import, Pipedrive import, two-way Gmail with tracking, permissions, saved filters, notifications, basic stats, MCP server for AI assistants.",
-    outOfScope:
-      "Out of scope by design: products, invoicing, forecasts, workflow automation, web forms, marketplace, native mobile apps.",
-    disclaimer: "Warpdrive is not affiliated with or endorsed by Pipedrive.",
-  },
-  selfHost: {
-    heading: "One box. docker compose up.",
-    body: "The whole topology ships as a single Docker Compose file: app, WebSocket server, background worker, Postgres, and Garage, with Caddy provisioning HTTPS for your domain automatically. Databases and storage stay on the internal network.",
-    bullets: [
-      "Google Workspace SSO and Gmail OAuth: your accounts, your consent screen",
-      "Postgres LISTEN/NOTIFY realtime, no paid pub-sub",
-      "Garage or any S3-compatible store for files",
-    ],
-    terminalTitle: "terminal",
-    code: [
-      { text: "cp .env.example .env", comment: "domain, Google OAuth, secrets" },
-      { text: "docker compose up -d --build", comment: null },
-    ],
-    stackLabel: "Built on",
-    stack: [
-      "Next.js",
-      "React",
-      "TypeScript",
-      "Postgres",
-      "Drizzle",
-      "tRPC",
-      "Tailwind",
-      "shadcn/ui",
-    ],
-  },
+  comparison: LANDING_COMPARISON,
+  selfHost: LANDING_SELF_HOST,
   faq: LANDING_FAQ,
   shot: {
     enlargeLabel: "Enlarge screenshot",
@@ -161,17 +120,28 @@ export const LANDING_STRINGS = {
     heading: "Run your pipeline on your own terms.",
     sub: "Spin it up on a spare box and import your first CSV the same afternoon.",
     bottom: "Open source · MIT licensed",
-    linksLabel: "More about Warpdrive",
-    links: [
-      { label: "Warpdrive vs Pipedrive", href: "/vs/pipedrive" },
-      { label: "Warpdrive vs Twenty", href: "/vs/twenty" },
-      { label: "Warpdrive vs EspoCRM", href: "/vs/espocrm" },
-      { label: "Warpdrive vs Krayin CRM", href: "/vs/krayin" },
-      { label: "Warpdrive vs Frappe CRM", href: "/vs/frappe-crm" },
-      { label: "Warpdrive vs Atomic CRM", href: "/vs/atomic-crm" },
-      { label: "Warpdrive vs SuiteCRM", href: "/vs/suitecrm" },
-      { label: "Migrate from Pipedrive", href: "/migrate-from-pipedrive" },
-      { label: "Documentation", href: DOCS_URL },
+    groups: [
+      {
+        label: "Compare",
+        links: [
+          { label: "Warpdrive vs Pipedrive", href: "/vs/pipedrive" },
+          { label: "Warpdrive vs Twenty", href: "/vs/twenty" },
+          { label: "Warpdrive vs EspoCRM", href: "/vs/espocrm" },
+          { label: "Warpdrive vs Krayin CRM", href: "/vs/krayin" },
+          { label: "Warpdrive vs Frappe CRM", href: "/vs/frappe-crm" },
+          { label: "Warpdrive vs Atomic CRM", href: "/vs/atomic-crm" },
+          { label: "Warpdrive vs SuiteCRM", href: "/vs/suitecrm" },
+        ],
+      },
+      {
+        label: "Resources",
+        links: [
+          { label: "Migrate from Pipedrive", href: "/migrate-from-pipedrive" },
+          { label: "Documentation", href: DOCS_URL },
+          { label: "Install guide", href: INSTALL_GUIDE.href },
+          { label: "Source on GitHub", href: REPO_URL },
+        ],
+      },
     ],
   },
 } as const;

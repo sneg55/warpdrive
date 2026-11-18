@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { LANDING_STRINGS } from "@/constants/landingStrings";
+import { LANDING_STRINGS, PRODUCT_SUMMARY } from "@/constants/landingStrings";
 import { SITE_PAGES } from "@/constants/sitePages";
 import { buildLlmsTxt } from "./buildLlmsTxt";
 
@@ -11,6 +11,12 @@ describe("buildLlmsTxt", () => {
     expect(title).toBe("# Warpdrive");
     expect(blank).toBe("");
     expect(summary).toMatch(/^> .*Pipedrive alternative/);
+  });
+
+  it("states the product summary, not the hero marketing line", () => {
+    const text = buildLlmsTxt(null);
+    expect(text.split("\n")).toContain(PRODUCT_SUMMARY);
+    expect(text).not.toContain(LANDING_STRINGS.hero.subtitle);
   });
 
   it("links every site page with its description", () => {

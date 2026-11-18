@@ -1,5 +1,5 @@
 import type { ReleaseFacts } from "@/types/repoFacts";
-import { LANDING_STRINGS } from "./landingStrings";
+import { LANDING_STRINGS, PRODUCT_SUMMARY } from "./landingStrings";
 import { SITE_URL } from "./siteMetadata";
 
 const REPO_URL = LANDING_STRINGS.hero.ctaHref;
@@ -40,7 +40,7 @@ export const SOFTWARE_APPLICATION: SoftwareApplicationNode = {
   applicationCategory: "BusinessApplication",
   applicationSubCategory: "CRM",
   operatingSystem: "Docker, Linux, Web",
-  description: LANDING_STRINGS.hero.subtitle,
+  description: PRODUCT_SUMMARY,
   url: SITE_URL,
   downloadUrl: REPO_URL,
   license: MIT_LICENSE_URL,

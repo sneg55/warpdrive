@@ -29,6 +29,15 @@
   --color-border: hsl(var(--border));
   --color-input: hsl(var(--input));
   --color-ring: hsl(var(--ring));
+  --color-link: var(--link);
+  --color-brand-tint: var(--brand-tint);
+  --color-action: var(--action);
+  --color-action-foreground: var(--action-foreground);
+  --color-stage-1: var(--stage-1);
+  --color-stage-2: var(--stage-2);
+  --color-stage-3: var(--stage-3);
+  --color-stage-4: var(--stage-4);
+  --color-stage-5: var(--stage-5);
 
   --radius-sm: calc(var(--radius) - 2px);
   --radius-md: var(--radius);
@@ -66,11 +75,25 @@
     --destructive-foreground: 210 40% 98%;
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --ring: 244.5 57.9% 50.6%;
 
-    /* Success role (used by the comparison + self-host checkmarks); not shipped by shadcn. */
-    --success: 142 71% 45%;
+    --success: 162.9 93.5% 24.3%;
     --success-foreground: 0 0% 100%;
+
+    --link: #4338ca;
+    --brand-tint: #eef2ff;
+    --action: #047857;
+    --action-foreground: #ffffff;
+
+    --stage-1: #94a3b8;
+    --stage-2: #60a5fa;
+    --stage-3: #818cf8;
+    --stage-4: #a78bfa;
+    --stage-5: #34d399;
+  }
+
+  ::selection {
+    background-color: #e0e7ff;
   }
 
   /* Paint the page with the semantic tokens (Tailwind v4 Preflight leaves body transparent and

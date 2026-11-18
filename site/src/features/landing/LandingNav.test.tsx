@@ -31,6 +31,16 @@ describe("LandingNav", () => {
     await waitFor(() => expect(link).toHaveTextContent("1.2K"));
   });
 
+  it("labels the comparison anchor differently from the footer's full-page link", () => {
+    stubFetch(500, {});
+    render(<LandingNav />);
+    expect(screen.getByRole("link", { name: LANDING_STRINGS.nav.compare })).toHaveAttribute(
+      "href",
+      "/#compare",
+    );
+    expect(LANDING_STRINGS.nav.compare).toBe("Compare");
+  });
+
   it("links Docs at the documentation site", () => {
     stubFetch(500, {});
     render(<LandingNav />);

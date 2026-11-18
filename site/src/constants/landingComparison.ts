@@ -1,0 +1,25 @@
+export const LANDING_COMPARISON = {
+  heading: "Warpdrive vs Pipedrive",
+  sub: "The core BD loop, self-hosted and free. The rest is deliberately out of scope.",
+  warpdriveCol: "Warpdrive",
+  pipedriveCol: "Pipedrive",
+  yes: "Yes",
+  no: "No",
+  rows: [
+    { label: "License", warpdrive: "MIT, open source", pipedrive: "Commercial subscription" },
+    { label: "Hosting", warpdrive: "Self-hosted, single-tenant", pipedrive: "Cloud-based" },
+    { label: "Pricing", warpdrive: "Free, your infrastructure only", pipedrive: "Paid, per seat" },
+    { label: "Your data", warpdrive: "Stays on your infrastructure", pipedrive: "Vendor servers" },
+    { label: "Drag-and-drop deal pipeline", warpdrive: true, pipedrive: true },
+    { label: "Lead management", warpdrive: true, pipedrive: true },
+    { label: "Two-way email sync", warpdrive: true, pipedrive: true },
+    { label: "Open and click tracking", warpdrive: true, pipedrive: true },
+    { label: "Microsoft 365 and Exchange mailboxes", warpdrive: false, pipedrive: true },
+    { label: "Workflow automation", warpdrive: false, pipedrive: true },
+  ],
+  outOfScope:
+    "Out of scope by design: products, invoicing, forecasts, workflow automation, web forms, marketplace, native mobile apps.",
+  fullLink: "Full comparison, with sources",
+  fullHref: "/vs/pipedrive",
+  disclaimer: "Warpdrive is not affiliated with or endorsed by Pipedrive.",
+} as const;

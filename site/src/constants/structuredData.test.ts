@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { LANDING_STRINGS } from "./landingStrings";
+import { LANDING_STRINGS, PRODUCT_SUMMARY } from "./landingStrings";
 import {
   buildStructuredData,
   FAQ_PAGE,
@@ -34,6 +34,14 @@ describe("structured data (JSON-LD)", () => {
       expect(node.sameAs).toContain(LANDING_STRINGS.hero.ctaHref);
       expect(node.sameAs).toContain(OPENALTERNATIVE_URL);
     }
+  });
+
+  it("keeps the product summary as the software description, independent of the hero copy", () => {
+    expect(SOFTWARE_APPLICATION.description).toBe(
+      "Warpdrive is an open-source, self-hosted Pipedrive alternative for business-development teams: pipeline management, a deal workspace, contacts, two-way Gmail, and an MCP server for AI assistants, running entirely on your own infrastructure.",
+    );
+    expect(SOFTWARE_APPLICATION.description).toBe(PRODUCT_SUMMARY);
+    expect(LANDING_STRINGS.hero.subtitle).not.toBe(PRODUCT_SUMMARY);
   });
 
   it("stamps the latest release version and date onto the software node", () => {

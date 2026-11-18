@@ -7,15 +7,15 @@ export const pipedrive: Competitor = {
   name: "Pipedrive",
   heading: "Warpdrive vs Pipedrive",
   summary:
-    "Warpdrive is a free, open-source, self-hosted alternative to Pipedrive that reimplements its business-development workflow: the kanban deal board, the deal workspace, contacts and organizations, and two-way Gmail. Pipedrive is a proprietary, vendor-hosted sales CRM billed per seat, with built-in automations and a large integrations marketplace. Warpdrive runs on your own server under the MIT license and imports Pipedrive CSV exports directly.",
+    "Warpdrive is a free, open-source, self-hosted alternative to Pipedrive that reimplements its business-development workflow: the kanban deal board, the deal workspace, contacts and organizations, and two-way Gmail. Pipedrive is a commercial, cloud-based sales CRM billed per seat, with built-in automations and a large integrations marketplace. Warpdrive runs on your own server under the MIT license and imports Pipedrive CSV exports directly.",
   rows: [
-    { label: "License", warpdrive: WARPDRIVE.license, competitor: "Proprietary, closed source" },
+    { label: "License", warpdrive: WARPDRIVE.license, competitor: "Commercial subscription" },
     {
       label: "Focus",
       warpdrive: WARPDRIVE.focus,
       competitor: "Sales pipeline CRM for sales, marketing, and project management",
     },
-    { label: "Self-hosting", warpdrive: WARPDRIVE.selfHost, competitor: "None, vendor-hosted only" },
+    { label: "Self-hosting", warpdrive: WARPDRIVE.selfHost, competitor: "None, a cloud-based service" },
     {
       label: "Hosted plan",
       warpdrive: WARPDRIVE.hosted,
@@ -68,6 +68,7 @@ export const pipedrive: Competitor = {
   ],
   sources: [
     { label: "Pipedrive pricing", href: "https://www.pipedrive.com/en/pricing" },
+    { label: "Pipedrive product overview", href: "https://www.pipedrive.com/llms.txt" },
     { label: "Pipedrive sales pipeline", href: "https://www.pipedrive.com/en/features/sales-pipeline" },
     { label: "Pipedrive email sync", href: "https://support.pipedrive.com/en/article/email-sync" },
     {

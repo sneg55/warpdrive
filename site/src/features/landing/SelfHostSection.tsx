@@ -1,10 +1,12 @@
-import { Check } from "lucide-react";
+import { ArrowRight, Check } from "lucide-react";
 import type { ReactNode } from "react";
 import { STRINGS } from "@/constants/strings";
+import { CopyCommands } from "./CopyCommands";
 import { Reveal } from "./Reveal";
 import { TypeTerminal } from "./TypeTerminal";
 
 const S = STRINGS.landing.selfHost;
+const HERO = STRINGS.landing.hero;
 
 export function SelfHostSection(): ReactNode {
   return (
@@ -38,18 +40,26 @@ export function SelfHostSection(): ReactNode {
               </div>
             </div>
           </div>
-          {/* Token-based dark panel: primary is the slate-900 role, no literal colors needed. */}
-          <div
-            data-reveal
-            className="rounded-lg bg-primary p-5 font-mono text-sm text-primary-foreground shadow-[0_1px_2px_rgb(15_23_42/0.08),0_16px_40px_-16px_rgb(15_23_42/0.35)]"
-          >
-            <div className="flex items-center gap-1.5">
-              <span className="size-2.5 rounded-full bg-primary-foreground/25" />
-              <span className="size-2.5 rounded-full bg-primary-foreground/25" />
-              <span className="size-2.5 rounded-full bg-primary-foreground/25" />
-              <span className="ml-2 text-xs text-primary-foreground/50">{S.terminalTitle}</span>
+          <div data-reveal>
+            <div className="rounded-lg bg-primary p-5 font-mono text-sm text-primary-foreground shadow-[0_1px_2px_rgb(15_23_42/0.08),0_16px_40px_-16px_rgb(15_23_42/0.35)]">
+              <div className="flex items-center justify-between gap-3">
+                <div aria-hidden="true" className="flex items-center gap-1.5">
+                  <span className="size-2.5 rounded-full bg-primary-foreground/25" />
+                  <span className="size-2.5 rounded-full bg-primary-foreground/25" />
+                  <span className="size-2.5 rounded-full bg-primary-foreground/25" />
+                </div>
+                <CopyCommands lines={S.code} />
+              </div>
+              <TypeTerminal lines={S.code} />
             </div>
-            <TypeTerminal lines={S.code} />
+            <p className="mt-4 text-pretty text-sm text-muted-foreground">{S.prerequisites}</p>
+            <a
+              href={HERO.installHref}
+              className="mt-3 inline-flex items-center gap-1.5 rounded-sm text-sm font-semibold text-link underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+            >
+              {HERO.installCta}
+              <ArrowRight className="size-4" aria-hidden="true" />
+            </a>
           </div>
         </Reveal>
       </div>

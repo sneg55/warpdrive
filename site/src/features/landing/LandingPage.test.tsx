@@ -7,6 +7,11 @@ import { LANDING_STRINGS } from "@/constants/landingStrings";
 import type { RepoFacts } from "@/types/repoFacts";
 import { LandingPage } from "./LandingPage";
 
+function cellText(value: string | boolean): string {
+  if (typeof value === "string") return value;
+  return value ? LANDING_STRINGS.comparison.yes : LANDING_STRINGS.comparison.no;
+}
+
 const FACTS: RepoFacts = { stars: 74, release: { version: "1.4.0", releasedOn: "2026-10-30" } };
 const NO_REPO_FACTS: RepoFacts = { stars: null, release: null };
 
@@ -72,11 +77,30 @@ describe("LandingPage", () => {
     }
   });
 
-  it("serves every product screenshot as WebP, not PNG", () => {
+  it("serves the wide hero board at full resolution and the tour shots at half", () => {
     render(<LandingPage facts={NO_REPO_FACTS} />);
-    const alts = [LANDING_STRINGS.hero.shotAlt, ...LANDING_STRINGS.tour.items.map((item) => item.alt)];
-    for (const alt of alts) {
-      expect(screen.getByAltText(alt).getAttribute("src")).toMatch(/-1600\.webp/);
+    expect(screen.getByAltText(LANDING_STRINGS.hero.shotAlt).getAttribute("src")).toMatch(
+      /-3200\.webp/,
+    );
+    for (const item of LANDING_STRINGS.tour.items) {
+      expect(screen.getByAltText(item.alt).getAttribute("src")).toMatch(/-1600\.webp/);
+    }
+  });
+
+  it("pitches what only Warpdrive has in the hero subtitle", () => {
+    render(<LandingPage facts={NO_REPO_FACTS} />);
+    const subtitle = screen.getByText(LANDING_STRINGS.hero.subtitle);
+    expect(subtitle.textContent).toMatch(/MCP/);
+    expect(subtitle.textContent).toMatch(/Pipedrive/);
+    expect(subtitle.textContent).not.toMatch(/open-source, self-hosted/);
+  });
+
+  it("offers the install guide next to the GitHub CTA", () => {
+    render(<LandingPage facts={NO_REPO_FACTS} />);
+    const links = screen.getAllByRole("link", { name: LANDING_STRINGS.hero.installCta });
+    expect(links.length).toBeGreaterThan(0);
+    for (const link of links) {
+      expect(link).toHaveAttribute("href", "https://docs.warpdrivecrm.com/setup/");
     }
   });
 
@@ -109,6 +133,22 @@ describe("LandingPage", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
+  it("starts the self-host commands with cloning the repository", () => {
+    expect(LANDING_STRINGS.selfHost.code[0]?.text).toBe(
+      "git clone https://github.com/sneg55/warpdrive.git && cd warpdrive",
+    );
+  });
+
+  it("states the self-host prerequisites and links the install guide", () => {
+    const { container } = render(<LandingPage facts={NO_REPO_FACTS} />);
+    const section = container.querySelector<HTMLElement>("#self-host");
+    if (section === null) expect.unreachable("self-host section not rendered");
+    expect(within(section).getByText(LANDING_STRINGS.selfHost.prerequisites)).toBeInTheDocument();
+    expect(
+      within(section).getByRole("link", { name: LANDING_STRINGS.hero.installCta }),
+    ).toHaveAttribute("href", "https://docs.warpdrivecrm.com/setup/");
+  });
+
   it("renders the self-host commands in full (typing replays only in the browser)", () => {
     render(<LandingPage facts={NO_REPO_FACTS} />);
     for (const line of LANDING_STRINGS.selfHost.code) {
@@ -121,12 +161,32 @@ describe("LandingPage", () => {
     expect(
       screen.getByRole("heading", { name: LANDING_STRINGS.comparison.heading }),
     ).toBeInTheDocument();
+    const table = screen.getByRole("table");
     for (const row of LANDING_STRINGS.comparison.rows) {
-      expect(screen.getByText(row.label)).toBeInTheDocument();
-      expect(screen.getByText(row.warpdrive)).toBeInTheDocument();
-      expect(screen.getByText(row.pipedrive)).toBeInTheDocument();
+      const header = within(table).getByRole("rowheader", { name: row.label });
+      const tr = header.closest("tr");
+      if (tr === null) expect.unreachable("row header outside a row");
+      expect(tr).toHaveTextContent(cellText(row.warpdrive));
+      expect(tr).toHaveTextContent(cellText(row.pipedrive));
     }
     expect(screen.getByText(LANDING_STRINGS.comparison.disclaimer)).toBeInTheDocument();
+  });
+
+  it("marks capability rows with a text alternative, not color alone", () => {
+    render(<LandingPage facts={NO_REPO_FACTS} />);
+    const table = screen.getByRole("table");
+    const marked = LANDING_STRINGS.comparison.rows.filter((row) => typeof row.warpdrive === "boolean");
+    expect(marked.length).toBeGreaterThan(3);
+    expect(within(table).getAllByText(LANDING_STRINGS.comparison.yes).length).toBeGreaterThan(0);
+    expect(within(table).getAllByText(LANDING_STRINGS.comparison.no).length).toBeGreaterThan(0);
+  });
+
+  it("links the full, sourced Pipedrive comparison", () => {
+    render(<LandingPage facts={NO_REPO_FACTS} />);
+    expect(screen.getByRole("link", { name: LANDING_STRINGS.comparison.fullLink })).toHaveAttribute(
+      "href",
+      "/vs/pipedrive",
+    );
   });
 
   it("answers the priority questions in an anchored FAQ section", () => {
@@ -139,7 +199,7 @@ describe("LandingPage", () => {
 
   it("shows the latest release version and date when the build knew them", () => {
     render(<LandingPage facts={FACTS} />);
-    const line = screen.getByText(/Latest release/);
+    const line = screen.getByText(/Latest release/).closest("p");
     expect(line).toHaveTextContent("v1.4.0");
     expect(line).toHaveTextContent("October 30, 2026");
   });
@@ -159,6 +219,22 @@ describe("LandingPage", () => {
     const section = container.querySelector<HTMLElement>("#features");
     expect(section?.textContent ?? "").toMatch(/MCP/);
     expect(section?.textContent ?? "").toMatch(/Pipedrive/);
+  });
+
+  it("groups the footer links into comparisons and resources", () => {
+    render(<LandingPage facts={NO_REPO_FACTS} />);
+    const footer = screen.getByRole("contentinfo");
+    for (const group of LANDING_STRINGS.footer.groups) {
+      expect(within(footer).getByRole("navigation", { name: group.label })).toBeInTheDocument();
+    }
+  });
+
+  it("closes with the install guide, not a second copy of the hero CTA alone", () => {
+    render(<LandingPage facts={NO_REPO_FACTS} />);
+    const footer = screen.getByRole("contentinfo");
+    expect(
+      within(footer).getByRole("link", { name: LANDING_STRINGS.hero.installCta }),
+    ).toBeInTheDocument();
   });
 
   it("links every comparison page and the migration page from the footer", () => {
