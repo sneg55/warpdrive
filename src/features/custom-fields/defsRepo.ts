@@ -1,4 +1,4 @@
-import { and, asc, eq, isNull } from "drizzle-orm";
+import { and, asc, eq, isNull, sql } from "drizzle-orm";
 import type { CustomFieldTarget, CustomFieldType } from "@/constants/customFieldTypes";
 import { AppError, ERROR_IDS } from "@/constants/errorIds";
 import type { Db } from "@/db/client";
@@ -133,7 +133,7 @@ export async function archiveDef(
   signal.throwIfAborted();
   const [row] = await db
     .update(customFieldDefs)
-    .set({ archivedAt: new Date() })
+    .set({ archivedAt: sql`coalesce(${customFieldDefs.archivedAt}, now())` })
     .where(eq(customFieldDefs.id, id))
     .returning();
   if (row === undefined) {

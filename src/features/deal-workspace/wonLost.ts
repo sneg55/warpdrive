@@ -1,7 +1,7 @@
 // markWon / markLost: dedicated won/lost workspace actions.
 // Reuses loadEditableDeal (the single shared deal-auth authority) and mirrors the
 // publishBoardEvent pattern from updateDeal so the board reflects transitions.
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, isNull, ne } from "drizzle-orm";
 import type { z } from "zod";
 import { BOARD_EVENT, dealChannel, dealMovedChannel } from "@/constants/boardChannels";
 import { CHANGE_FIELD_STATUS } from "@/constants/changeLogFields";
@@ -27,7 +27,9 @@ export async function markWon(
     const editable = await loadEditableDeal(tx, actor, dealId, signal);
     if (editable.ok === false) return editable;
 
-    const oldStatus = editable.value.deal.status;
+    const current = editable.value.deal;
+    const oldStatus = current.status;
+    if (oldStatus === "won") return ok(current);
 
     const [row] = await tx
       .update(deals)
@@ -38,14 +40,9 @@ export async function markWon(
         lostReason: null,
         lostReasonId: null,
       })
-      .where(eq(deals.id, dealId))
+      .where(and(eq(deals.id, dealId), ne(deals.status, "won")))
       .returning();
-
-    if (row === undefined) {
-      throw new AppError(ERROR_IDS.DB_INVARIANT, "markWon: UPDATE RETURNING produced undefined", {
-        dealId,
-      });
-    }
+    if (row === undefined) return ok(current);
 
     await recordChange(
       tx,
@@ -183,6 +180,7 @@ export async function markLost(
       }
       reasonName = reason.name;
     }
+    if (oldStatus === "lost") return ok(editable.value.deal);
 
     const [row] = await tx
       .update(deals)
@@ -193,14 +191,9 @@ export async function markLost(
         lostReasonId: input.lostReasonId,
         lostReason: input.lostReason,
       })
-      .where(eq(deals.id, dealId))
+      .where(and(eq(deals.id, dealId), ne(deals.status, "lost")))
       .returning();
-
-    if (row === undefined) {
-      throw new AppError(ERROR_IDS.DB_INVARIANT, "markLost: UPDATE RETURNING produced undefined", {
-        dealId,
-      });
-    }
+    if (row === undefined) return ok(editable.value.deal);
 
     await recordChange(
       tx,

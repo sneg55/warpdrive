@@ -56,7 +56,7 @@ vi.mock("@/utils/csrfCookie", () => ({ readCsrfToken: () => "csrf" }));
 import { ReaderTopBar } from "./ReaderTopBar";
 
 it("returns to the team mailbox after opening and archiving its thread", async () => {
-  render(<ReaderTopBar threadId="t1" canManage />);
+  render(<ReaderTopBar threadId="t1" canManage archived={false} />);
   expect(screen.getByRole("link", { name: /back/i })).toHaveAttribute(
     "href",
     "/inbox?mailbox=team-id",

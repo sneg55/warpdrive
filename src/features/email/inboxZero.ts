@@ -1,6 +1,7 @@
 import type { EMAIL_ACCOUNT_STATUS } from "@/constants/email";
 import type { ActorMailbox } from "./actorMailboxes";
 import type { InboxFilter } from "./emailReads";
+import type { MailboxSyncPhase } from "./mailboxSyncPhase";
 import type { ThreadFolder } from "./ThreadRow";
 import type { AttributeFilterState } from "./threadAttributeFilter";
 import { NO_ATTRIBUTE_FILTER } from "./threadAttributeFilter";
@@ -37,6 +38,16 @@ export function isInboxZero(input: InboxZeroInput): boolean {
     !input.failed &&
     input.threadCount === 0
   );
+}
+
+export type InboxEmptyState = "inboxZero" | "syncing" | "failed" | "awaitingMail" | "none";
+
+export function inboxEmptyState(
+  input: InboxZeroInput & { syncPhase: MailboxSyncPhase },
+): InboxEmptyState {
+  if (!isInboxZero(input)) return "none";
+  if (input.syncPhase === "ready") return "inboxZero";
+  return input.syncPhase;
 }
 
 const CONNECTED: (typeof EMAIL_ACCOUNT_STATUS)[number] = "connected";

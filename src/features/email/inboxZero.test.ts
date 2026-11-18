@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isInboxZero, isMailboxConnected } from "./inboxZero";
+import { inboxEmptyState, isInboxZero, isMailboxConnected } from "./inboxZero";
 import { NO_ATTRIBUTE_FILTER } from "./threadAttributeFilter";
 
 const ZERO = {
@@ -78,5 +78,29 @@ describe("isMailboxConnected", () => {
   it("follows the selected mailbox's own status", () => {
     expect(isMailboxConnected([personal, team], "t1")).toBe(false);
     expect(isMailboxConnected([personal, { ...team, status: "connected" }], "t1")).toBe(true);
+  });
+});
+
+describe("inboxEmptyState", () => {
+  it("is inbox zero only once the mailbox is ready", () => {
+    expect(inboxEmptyState({ ...ZERO, syncPhase: "ready" })).toBe("inboxZero");
+  });
+
+  it("shows the syncing state instead of inbox zero while the first sync or import runs", () => {
+    expect(inboxEmptyState({ ...ZERO, syncPhase: "syncing" })).toBe("syncing");
+  });
+
+  it("shows the awaiting-mail state for a synced mailbox that has never held a thread", () => {
+    expect(inboxEmptyState({ ...ZERO, syncPhase: "awaitingMail" })).toBe("awaitingMail");
+  });
+
+  it("shows the failed state when the mailbox's first sync failed", () => {
+    expect(inboxEmptyState({ ...ZERO, syncPhase: "failed" })).toBe("failed");
+  });
+
+  it("is none when the view is filtered, searched or still loading, whatever the phase", () => {
+    expect(inboxEmptyState({ ...ZERO, syncPhase: "syncing", searching: true })).toBe("none");
+    expect(inboxEmptyState({ ...ZERO, syncPhase: "syncing", pending: true })).toBe("none");
+    expect(inboxEmptyState({ ...ZERO, syncPhase: "syncing", threadCount: 2 })).toBe("none");
   });
 });

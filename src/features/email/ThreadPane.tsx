@@ -102,6 +102,7 @@ export function ThreadPane({
       <ReaderTopBar
         threadId={inboxThread.id}
         canManage={canCompose}
+        archived={data.archived}
         canTrash={data.provider !== EMAIL_PROVIDER_KIND.agenticInbox}
       />
       <header className="px-4 py-3 border-b border-border">

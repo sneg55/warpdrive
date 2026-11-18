@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 beforeAll(() => {
@@ -136,9 +136,12 @@ describe("DataFieldsClient", () => {
     expect(screen.queryByText("Budget")).not.toBeInTheDocument();
   });
 
-  it("archives a field via archiveDefAction", async () => {
+  it("archives a field via archiveDefAction once the confirm is accepted", async () => {
     render(<DataFieldsClient byTarget={BY_TARGET} />);
     fireEvent.click(screen.getByRole("button", { name: "Archive" }));
+    fireEvent.click(
+      within(screen.getByRole("alertdialog")).getByRole("button", { name: "Archive" }),
+    );
     await waitFor(() =>
       expect(actions.archiveDefAction).toHaveBeenCalledWith({ id: "d1" }, "csrf"),
     );

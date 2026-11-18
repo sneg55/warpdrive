@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useActionError } from "@/components/shell/ActionErrorProvider";
+import { ERROR_IDS } from "@/constants/errorIds";
 import { ROW_ACTION_BUTTON } from "@/constants/formStyles";
 import { trpc } from "@/lib/trpc-client";
 import { readCsrfToken } from "@/utils/csrfCookie";
@@ -14,16 +15,33 @@ export function DraftsList({
   onResume: (draft: DraftSummary) => void;
 }): React.ReactNode {
   const utils = trpc.useUtils();
-  const { data: drafts = [] } = trpc.email.drafts.list.useQuery();
-  const [busyId, setBusyId] = useState<string | null>(null);
+  const { data: allDrafts = [] } = trpc.email.drafts.list.useQuery();
+  const [busyIds, setBusyIds] = useState<ReadonlySet<string>>(new Set());
+  const [deletedIds, setDeletedIds] = useState<ReadonlySet<string>>(new Set());
   const reportError = useActionError();
+  const drafts = allDrafts.filter((d) => !deletedIds.has(d.id));
+
+  function withId(set: ReadonlySet<string>, id: string, present: boolean): ReadonlySet<string> {
+    const next = new Set(set);
+    if (present) next.add(id);
+    else next.delete(id);
+    return next;
+  }
 
   async function remove(id: string): Promise<void> {
-    setBusyId(id);
-    const res = await deleteDraftAction(readCsrfToken(), { draftId: id });
-    setBusyId(null);
-    if (res.ok) void utils.email.drafts.list.invalidate();
-    else reportError(res.error.id);
+    if (busyIds.has(id)) return;
+    setBusyIds((s) => withId(s, id, true));
+    try {
+      const res = await deleteDraftAction(readCsrfToken(), { draftId: id });
+      if (res.ok) {
+        setDeletedIds((s) => withId(s, id, true));
+        void utils.email.drafts.list.invalidate();
+      } else reportError(res.error.id);
+    } catch {
+      reportError(ERROR_IDS.UI_ACTION_UNCONFIRMED);
+    } finally {
+      setBusyIds((s) => withId(s, id, false));
+    }
   }
 
   if (drafts.length === 0) {
@@ -44,7 +62,7 @@ export function DraftsList({
           </button>
           <button
             type="button"
-            disabled={busyId === d.id}
+            disabled={busyIds.has(d.id)}
             onClick={() => void remove(d.id)}
             className={ROW_ACTION_BUTTON}
           >

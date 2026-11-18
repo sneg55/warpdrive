@@ -13,7 +13,7 @@ import { DEAL_LIST_QUERY_ROOT } from "./dealListQueryKey";
 export interface DealListActions {
   bulkStage: (dealIds: string[], toStageId: string) => Promise<boolean>;
   bulkArchive: (dealIds: string[]) => Promise<boolean>;
-  unarchive: (dealId: string) => void;
+  unarchive: (dealId: string) => Promise<boolean>;
 }
 
 export function useDealListActions(): DealListActions {
@@ -54,13 +54,20 @@ export function useDealListActions(): DealListActions {
   );
 
   const unarchive = useCallback(
-    (dealId: string): void => {
-      void archiveDealAction({ dealId, archived: false }, readCsrfToken()).then((r) => {
-        if (r.ok) router.refresh();
-        else reportError(r.error.id);
-      });
+    async (dealId: string): Promise<boolean> => {
+      const r = await archiveDealAction({ dealId, archived: false }, readCsrfToken()).catch(() => ({
+        ok: false as const,
+        error: { id: ERROR_IDS.UI_ACTION_UNCONFIRMED },
+      }));
+      if (!r.ok) {
+        reportError(r.error.id);
+        return false;
+      }
+      await queryClient.invalidateQueries({ queryKey: [DEAL_LIST_QUERY_ROOT] });
+      router.refresh();
+      return true;
     },
-    [router, reportError],
+    [router, reportError, queryClient],
   );
 
   return { bulkStage, bulkArchive, unarchive };

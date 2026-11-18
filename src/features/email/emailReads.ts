@@ -36,6 +36,7 @@ export interface ThreadView {
   thread: InboxThread;
   messages: ThreadMessage[];
   accountId: string;
+  archived: boolean;
   canCompose: boolean;
   ownerEmail: string;
   provider: "gmail" | "agentic_inbox";
@@ -56,10 +57,10 @@ export async function getThread(
   const t = (
     await db.execute(sql`
       SELECT id, subject, last_message_at, person_id, deal_id, visibility, account_id,
-        follow_up_status, labels
+        follow_up_status, labels, archived_at IS NOT NULL AS archived
       FROM email_threads WHERE id=${args.threadId} AND trashed_at IS NULL
     `)
-  ).rows[0] as unknown as ThreadRow | undefined;
+  ).rows[0] as unknown as (ThreadRow & { archived: boolean }) | undefined;
   signal.throwIfAborted();
   if (t === undefined || !(await canSeeEmail(db, args.actor, toVisibilityRow(t), signal))) {
     return err(new AppError("E_GMAIL_011", "thread not found", {}));
@@ -158,6 +159,7 @@ export async function getThread(
     },
     messages,
     accountId: t.account_id,
+    archived: t.archived,
     canCompose,
     ownerEmail: acctRow?.email_address ?? "",
     provider: acctRow?.provider ?? "gmail",

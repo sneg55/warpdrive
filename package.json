@@ -1,6 +1,6 @@
 {
   "name": "warpdrive",
-  "version": "2.10.0",
+  "version": "2.10.1",
   "description": "An open-source, self-hosted CRM for a company business-development team.",
   "main": "index.js",
   "packageManager": "pnpm@9.15.9",
@@ -81,6 +81,7 @@
     "react-day-picker": "^10.0.1",
     "react-dom": "^19.2.7",
     "recharts": "^3.10.1",
+    "sonner": "^2.0.8",
     "superjson": "^2.2.6",
     "tailwind-merge": "^3.6.0",
     "ws": "^8.21.0",

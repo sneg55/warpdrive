@@ -31,6 +31,7 @@ import { useActivityBulkActions } from "./useActivityBulkActions";
 
 afterEach(() => {
   vi.clearAllMocks();
+  completeActivityAction.mockImplementation(() => Promise.resolve({ ok: true }));
 });
 
 function makeSelection(ids: readonly string[]): RowSelection {
@@ -46,6 +47,17 @@ function makeSelection(ids: readonly string[]): RowSelection {
     clear: vi.fn(() => selected.clear()),
     allSelected: () => false,
   };
+}
+
+function deferred(): {
+  promise: Promise<ActionResult>;
+  resolve: (r: ActionResult) => void;
+} {
+  let resolve: (r: ActionResult) => void = () => undefined;
+  const promise = new Promise<ActionResult>((r) => {
+    resolve = r;
+  });
+  return { promise, resolve };
 }
 
 function renderActions(ids: readonly string[]) {
@@ -98,6 +110,52 @@ describe("useActivityBulkActions", () => {
     const { result } = renderActions(["a1", "a2"]);
     await act(() => result.current.bulkMarkDone());
     expect(invalidateDayLoad).toHaveBeenCalledTimes(1);
+  });
+
+  it("ignores a second mark-done while the first run is still in flight", async () => {
+    const pending = deferred();
+    completeActivityAction.mockImplementation(() => pending.promise);
+    const { result } = renderActions(["a1", "a2"]);
+    let first: Promise<void> = Promise.resolve();
+    act(() => {
+      first = result.current.bulkMarkDone();
+    });
+    act(() => {
+      void result.current.bulkMarkDone();
+    });
+    pending.resolve({ ok: true });
+    await act(() => first);
+    expect(completeActivityAction).toHaveBeenCalledTimes(2);
+  });
+
+  it("reports progress while a bulk run is in flight, then clears it", async () => {
+    const one = deferred();
+    const two = deferred();
+    completeActivityAction.mockImplementationOnce(() => one.promise);
+    completeActivityAction.mockImplementationOnce(() => two.promise);
+    const { result } = renderActions(["a1", "a2"]);
+    let run: Promise<void> = Promise.resolve();
+    act(() => {
+      run = result.current.bulkMarkDone();
+    });
+    expect(result.current.progress).toEqual({ kind: "markDone", done: 0, total: 2 });
+    await act(async () => {
+      one.resolve({ ok: true });
+      await one.promise;
+    });
+    expect(result.current.progress).toEqual({ kind: "markDone", done: 1, total: 2 });
+    two.resolve({ ok: true });
+    await act(() => run);
+    expect(result.current.progress).toBeNull();
+  });
+
+  it("counts a rejected action as failed and still ends the run", async () => {
+    completeActivityAction.mockImplementationOnce(() => Promise.reject(new Error("network")));
+    const { result } = renderActions(["a1", "a2"]);
+    await act(() => result.current.bulkMarkDone());
+    expect(result.current.progress).toBeNull();
+    expect(result.current.error).not.toBeNull();
+    expect(invalidateListRows).toHaveBeenCalledTimes(1);
   });
 
   it("does nothing when the selection is empty", async () => {

@@ -30,6 +30,7 @@ const workspace = {
     title: "Acme renewal",
     pipelineId: "p1",
     status: "open",
+    archivedAt: null,
     updatedAt: new Date("2026-07-02T00:00:00.000Z"),
   },
   pipelineName: "Sales pipeline",
@@ -71,4 +72,18 @@ it("renders the title, pipeline name, owner name, and stage names", () => {
   expect(screen.getByText("Ada Lovelace")).toBeTruthy();
   expect(screen.getByRole("option", { name: /Qualified/ })).toBeTruthy();
   expect(screen.getByRole("option", { name: /Proposal/ })).toBeTruthy();
+});
+
+it("an open deal shows no archived marker", () => {
+  render(<DealHeader {...props} />);
+  expect(screen.queryByText("Archived")).toBeNull();
+});
+
+it("an archived deal shows an Archived marker under the title", () => {
+  const archivedWorkspace = {
+    ...workspace,
+    deal: { ...workspace.deal, archivedAt: new Date("2026-11-18T10:00:00.000Z") },
+  } as DealWorkspace;
+  render(<DealHeader {...props} workspace={archivedWorkspace} />);
+  expect(screen.getByText("Archived")).toBeTruthy();
 });

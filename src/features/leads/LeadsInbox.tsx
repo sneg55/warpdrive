@@ -3,7 +3,6 @@ import { useRouter } from "next/navigation";
 import type React from "react";
 import { useEffect, useMemo, useState } from "react";
 import { useColumns } from "@/components/data-table/useColumns";
-import { useActionError } from "@/components/shell/ActionErrorProvider";
 import { DEFAULT_BASE_CURRENCY } from "@/constants/currency";
 import { STRINGS } from "@/constants/strings";
 import { addFormCustomFieldDefs } from "@/features/custom-fields/CustomFieldCreateFields";
@@ -11,7 +10,6 @@ import { customFieldColumns } from "@/features/custom-fields/listColumns";
 import { CustomFieldRefLabelsProvider } from "@/features/custom-fields/refLabelsContext";
 import { trpc } from "@/lib/trpc-client";
 import type { CustomFieldDef } from "@/types/customFields";
-import { readCsrfToken } from "@/utils/csrfCookie";
 import { ConvertLeadDialog } from "./ConvertLeadDialog";
 import { BulkEditPanel } from "./inbox/BulkEditPanel";
 import { LEAD_COLUMNS, type LeadColumn } from "./inbox/columns";
@@ -24,13 +22,14 @@ import { LeadsFilterControls } from "./inbox/LeadsFilterControls";
 import { LeadsLoadMore } from "./inbox/LeadsLoadMore";
 import { LeadsTable } from "./inbox/LeadsTable";
 import { useLeadConvert } from "./inbox/useLeadConvert";
+import { useLeadExport } from "./inbox/useLeadExport";
 import { useLeadList } from "./inbox/useLeadList";
+import { useLeadMutations } from "./inbox/useLeadMutations";
 import { useLeadSelection } from "./inbox/useLeadSelection";
 import { type LeadSort, useLeadSort } from "./inbox/useLeadSort";
 import { useLeadsViewPersist } from "./inbox/useLeadsViewPersist";
 import type { LeadRow } from "./leadRepo";
-import { archiveLeadAction, bulkUpdateLeadsAction } from "./leadServerActions";
-import type { BulkUpdateLeadsInput, LeadConditionInput, LeadNextActivityBucket } from "./schemas";
+import type { LeadConditionInput, LeadNextActivityBucket } from "./schemas";
 
 type Filter = "inbox" | "archived";
 
@@ -50,7 +49,6 @@ export function LeadsInbox({
   customFieldDefs = [],
 }: LeadsInboxProps): React.ReactNode {
   const router = useRouter();
-  const reportError = useActionError();
   const currency = baseCurrency ?? DEFAULT_BASE_CURRENCY;
   // Null on the server and the first client render so SSR and hydration produce identical markup
   // (a render-time `new Date()` differs between the two and causes a hydration mismatch). The real
@@ -98,14 +96,10 @@ export function LeadsInbox({
     await list.refetch();
   }
 
-  async function bulkChange(ids: string[], change: BulkUpdateLeadsInput["change"]): Promise<void> {
-    if (ids.length === 0) return;
-    const r = await bulkUpdateLeadsAction({ ids, change }, readCsrfToken());
-    if (r.ok) {
-      selection.clear();
-      await refetch();
-    } else reportError(r.error.id);
-  }
+  const { applying, isRowBusy, bulkChange, archiveToggle } = useLeadMutations({
+    refetch,
+    clearSelection: selection.clear,
+  });
 
   const {
     convertError,
@@ -120,25 +114,19 @@ export function LeadsInbox({
     goToDeal: (dealId) => router.push(`/deals/${dealId}`),
   });
 
-  async function archiveToggle(id: string, archived: boolean): Promise<void> {
-    const r = await archiveLeadAction({ leadId: id, archived }, readCsrfToken());
-    if (r.ok) await refetch();
-    else reportError(r.error.id);
-  }
-
-  // Export the FULL server-filtered result set: navigate to the route with the current filter,
-  // sort, inline condition, and visible-column order as query params. The route re-applies the
-  // visibility gate and streams text/csv (not just the loaded page).
+  const leadExport = useLeadExport();
   function exportCsv(): void {
-    window.location.href = buildLeadExportHref({
-      filter,
-      sort: sort.effective,
-      ownerIds,
-      labelKeys,
-      nextActivity,
-      columns: columns.order,
-      condition,
-    });
+    void leadExport.start(
+      buildLeadExportHref({
+        filter,
+        sort: sort.effective,
+        ownerIds,
+        labelKeys,
+        nextActivity,
+        columns: columns.order,
+        condition,
+      }),
+    );
   }
 
   useLeadsViewPersist(columns.order, sort.effective);
@@ -175,6 +163,7 @@ export function LeadsInbox({
       <LeadRowActions
         archived={row.archivedAt !== null}
         converted={row.convertedDealId !== null}
+        busy={applying || isRowBusy(row.id)}
         assignableUsers={users}
         onOpen={() => router.push(`/leads/${row.id}`)}
         onConvert={() => {
@@ -211,6 +200,8 @@ export function LeadsInbox({
         onToggleColumn={columns.toggle}
         onReorderColumn={columns.reorder}
         onExport={exportCsv}
+        exporting={leadExport.exporting}
+        exportError={leadExport.error}
         filterBuilder={
           <LeadsFilterControls users={users} condition={condition} onCondition={setCondition} />
         }
@@ -237,6 +228,7 @@ export function LeadsInbox({
               else void bulkConvert([...selection.selected]);
             }}
             converting={bulkConvertPending}
+            applying={applying}
             onClear={selection.clear}
           />
         </div>

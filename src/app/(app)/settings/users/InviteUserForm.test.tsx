@@ -130,4 +130,18 @@ describe("InviteUserForm link invite (no email is sent)", () => {
     await vi.waitFor(() => expect(writeText).toHaveBeenCalled());
     expect(writeText.mock.calls[0]?.[0]).toContain("/login");
   });
+
+  it("shows Copy failed when the browser denies the clipboard write", async () => {
+    const denied = new DOMException("Write permission denied.", "NotAllowedError");
+    Object.assign(navigator, { clipboard: { writeText: () => Promise.reject(denied) } });
+    inviteUserAction.mockResolvedValueOnce({ ok: true, userId: "u-9" });
+    render(<InviteUserForm onInvited={() => {}} />);
+    fireEvent.change(screen.getByLabelText("Email"), { target: { value: "new@example.com" } });
+    fireEvent.change(screen.getByLabelText("Name"), { target: { value: "New Person" } });
+    fireEvent.click(screen.getByRole("button", { name: /invite/i }));
+
+    await screen.findByRole("status");
+    fireEvent.click(screen.getByRole("button", { name: /copy/i }));
+    expect(await screen.findByRole("button", { name: "Copy failed" })).toBeInTheDocument();
+  });
 });

@@ -36,11 +36,9 @@ export async function recordChange(
   signal: AbortSignal,
 ): Promise<void> {
   signal.throwIfAborted();
-  // Raw sql via .execute(): Drizzle's query-builder methods (.insert) do not type
-  // -resolve over the Db | Tx union, so the codebase uses sql() for DbOrTx writes
-  // (mirrors notify.ts / channelVersions.ts). JSON values are stringified for jsonb.
   const oldJson = JSON.stringify(args.oldValue ?? null);
   const newJson = JSON.stringify(args.newValue ?? null);
+  if (oldJson === newJson) return;
   await db.execute(sql`
     INSERT INTO ${changeLogs}
       (entity_type, entity_id, field, old_value, new_value, actor_id)

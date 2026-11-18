@@ -1,7 +1,7 @@
 "use client";
 import { useRouter } from "next/navigation";
 import type React from "react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { HiddenRecordNotice } from "@/components/HiddenRecordNotice";
 import { DEFAULT_BASE_CURRENCY } from "@/constants/currency";
 import {
@@ -12,6 +12,8 @@ import {
 import { deriveEntityTitle } from "@/features/deals/dealTitleAutofill";
 import { EntityCreateModalShell } from "@/features/entity-create/EntityCreateModalShell";
 import {
+  type InlineCreated,
+  noInlineCreated,
   optionsOrNull,
   resolveNewOrgId,
   resolveNewPersonId,
@@ -41,6 +43,7 @@ export function AddLeadModal({
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [hiddenTitle, setHiddenTitle] = useState<string | null>(null);
+  const inlineCreated = useRef<InlineCreated>(noInlineCreated());
 
   const peopleQ = trpc.contacts.personOptions.useQuery();
   const orgsQ = trpc.contacts.orgOptions.useQuery();
@@ -115,12 +118,12 @@ export function AddLeadModal({
         personCustomFields: customFieldCreatePayload(personFields, state.personCustomFields),
         orgCustomFields: customFieldCreatePayload(orgFields, state.orgCustomFields),
       };
-      const orgId = await resolveNewOrgId(submitState, csrf);
+      const orgId = await resolveNewOrgId(submitState, csrf, inlineCreated);
       if (orgId !== null && typeof orgId === "object") {
         setError(orgId.error);
         return;
       }
-      const personId = await resolveNewPersonId(submitState, orgId, csrf);
+      const personId = await resolveNewPersonId(submitState, orgId, csrf, inlineCreated);
       if (personId !== null && typeof personId === "object") {
         setError(personId.error);
         return;

@@ -4,6 +4,7 @@ import { STRINGS } from "@/constants/strings";
 import { listActorMailboxes } from "@/features/email/actorMailboxes";
 import { parseFolder } from "@/features/email/inboxFolders";
 import { isMailboxConnected } from "@/features/email/inboxZero";
+import { readMailboxSyncPhase } from "@/features/email/mailboxSyncPhase";
 import { createContext } from "@/server/trpc/context";
 import { InboxListClient } from "./InboxListClient";
 
@@ -27,6 +28,11 @@ export default async function InboxPage({
   if (mailbox !== undefined) {
     if (!choices.some((choice) => choice.id === mailbox && choice.kind === "team")) notFound();
   }
+  const initialSyncPhase = await readMailboxSyncPhase(
+    ctx.db,
+    { actorId: ctx.actor.id, mailbox },
+    AbortSignal.timeout(8000),
+  );
   const folder = parseFolder(typeof sp.folder === "string" ? sp.folder : undefined);
   return (
     <InboxListClient
@@ -34,6 +40,7 @@ export default async function InboxPage({
       folder={folder}
       mailbox={mailbox}
       mailboxConnected={isMailboxConnected(choices, mailbox)}
+      initialSyncPhase={initialSyncPhase}
     />
   );
 }

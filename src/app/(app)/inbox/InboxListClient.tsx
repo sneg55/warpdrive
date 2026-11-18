@@ -7,9 +7,11 @@ import { DraftsList } from "@/features/email/DraftsList";
 import type { InboxFilter } from "@/features/email/emailReads";
 import { InboxSearchBar } from "@/features/email/InboxSearchBar";
 import type { FolderKey } from "@/features/email/inboxFolders";
+import type { MailboxSyncPhase } from "@/features/email/mailboxSyncPhase";
 import { OutboxList } from "@/features/email/OutboxList";
 import { ThreadList } from "@/features/email/ThreadList";
 import { useInboxRealtime } from "@/features/email/useInboxRealtime";
+import { useMailboxSyncPhase } from "@/features/email/useMailboxSyncPhase";
 import { trpc } from "@/lib/trpc-client";
 
 interface InboxListClientProps {
@@ -17,6 +19,7 @@ interface InboxListClientProps {
   selfActorId: string;
   folder: FolderKey;
   mailboxConnected: boolean;
+  initialSyncPhase: MailboxSyncPhase;
 }
 
 export function InboxListClient({
@@ -24,6 +27,7 @@ export function InboxListClient({
   folder,
   mailbox,
   mailboxConnected,
+  initialSyncPhase,
 }: InboxListClientProps): React.ReactNode {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
@@ -31,6 +35,7 @@ export function InboxListClient({
   const isSearching = searchQuery.trim() !== "";
 
   useInboxRealtime({ selfActorId });
+  const sync = useMailboxSyncPhase(mailbox, initialSyncPhase);
 
   const searchResults = trpc.email.search.useQuery(
     { q: searchQuery, filter: quickFilter, mailbox },
@@ -50,6 +55,8 @@ export function InboxListClient({
             quickFilter={quickFilter}
             onQuickFilterChange={setQuickFilter}
             mailboxConnected={mailboxConnected}
+            syncPhase={sync.phase}
+            onRefresh={sync.refetch}
             threads={isSearching ? (searchResults.data ?? []) : undefined}
             threadsPending={
               isSearching && searchResults.data === undefined && searchResults.error === null

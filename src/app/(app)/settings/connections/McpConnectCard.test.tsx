@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { COPY_STATUS_RESET_MS } from "@/constants/clipboard";
 import { McpConnectCard } from "./McpConnectCard";
 
 afterEach(cleanup);
@@ -34,5 +35,23 @@ describe("McpConnectCard", () => {
     fireEvent.click(screen.getByRole("button", { name: "Copy" }));
     await vi.waitFor(() => expect(writeText).toHaveBeenCalledWith(ENDPOINT));
     expect(await screen.findByRole("button", { name: "Copied" })).not.toBeNull();
+  });
+
+  it("shows Copy failed instead of staying on Copy when the browser denies the write", async () => {
+    const denied = new DOMException("Write permission denied.", "NotAllowedError");
+    Object.assign(navigator, { clipboard: { writeText: () => Promise.reject(denied) } });
+    render(<McpConnectCard endpointUrl={ENDPOINT} />);
+    fireEvent.click(screen.getByRole("button", { name: "Copy" }));
+    expect(await screen.findByRole("button", { name: "Copy failed" })).not.toBeNull();
+  });
+
+  it("returns the label to Copy after the confirmation window", async () => {
+    Object.assign(navigator, { clipboard: { writeText: () => Promise.resolve() } });
+    render(<McpConnectCard endpointUrl={ENDPOINT} />);
+    fireEvent.click(screen.getByRole("button", { name: "Copy" }));
+    await screen.findByRole("button", { name: "Copied" });
+    expect(
+      await screen.findByRole("button", { name: "Copy" }, { timeout: COPY_STATUS_RESET_MS + 1500 }),
+    ).not.toBeNull();
   });
 });

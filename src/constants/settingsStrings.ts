@@ -147,6 +147,10 @@ export const SETTINGS_STRINGS = {
   rename: "Rename",
   delete: "Delete",
   archive: "Archive",
+  archiving: "Archiving...",
+  archiveFieldTitle: (name: string) => `Archive "${name}"?`,
+  archiveFieldBody:
+    "The field disappears from every record, list and form. Values already saved stay in the database but are no longer shown, and an archived field cannot be restored from Settings.",
   moveUp: "Move up",
   moveDown: "Move down",
   enable: "Enable",

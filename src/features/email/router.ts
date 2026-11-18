@@ -8,6 +8,7 @@ import { listDrafts } from "./draftRepo";
 import * as emailReads from "./emailReads";
 import { listMessagesForContact, listMessagesForDeal } from "./entityMessageReads";
 import { listArchivedThreads, listOutbox, listSentThreads } from "./folderReads";
+import { readMailboxSyncPhase } from "./mailboxSyncPhase";
 import { mergeContextProcedure } from "./mergeContextProcedure";
 import { getMessage } from "./messageReads";
 import { inboxUnreadCount } from "./readState";
@@ -45,6 +46,11 @@ const folderPageInput = z.object({
 
 export const emailRouter = router({
   mailboxes: protectedProcedure.query(({ ctx }) => listActorMailboxes(ctx.db, ctx.actor.id, SIG())),
+  mailboxSyncPhase: protectedProcedure
+    .input(z.object({ mailbox: z.uuid().optional() }))
+    .query(({ ctx, input }) =>
+      readMailboxSyncPhase(ctx.db, { actorId: ctx.actor.id, mailbox: input.mailbox }, SIG()),
+    ),
   inbox: router({
     list: protectedProcedure
       .input(

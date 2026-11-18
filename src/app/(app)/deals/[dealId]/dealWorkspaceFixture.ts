@@ -22,6 +22,7 @@ export const workspace = {
     personId: "pe1",
     orgId: "o1",
     lostReasonId: null,
+    archivedAt: null,
     boardPosition: "1",
     ownerId: "u1",
     visibilityLevel: "owner" as const,

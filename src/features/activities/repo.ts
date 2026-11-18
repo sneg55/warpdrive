@@ -244,11 +244,15 @@ export async function completeActivity(
     const [row] = await tx
       .update(activities)
       .set({ done, doneAt: done ? new Date() : null })
-      .where(eq(activities.id, id))
+      .where(and(eq(activities.id, id), eq(activities.done, !done)))
       .returning();
 
     if (row === undefined) {
-      return err(new AppError(ERROR_IDS.DB_INSERT_FAILED, "activity update returned no rows", {}));
+      const [unchanged] = await tx.select().from(activities).where(eq(activities.id, id));
+      if (unchanged === undefined) {
+        return err(new AppError(ERROR_IDS.ACTIVITY_NOT_FOUND, "activity not found", { id }));
+      }
+      return ok(unchanged);
     }
 
     if (row.dealId !== null) {

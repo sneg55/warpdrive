@@ -11,6 +11,7 @@ import { DealStatusBadge } from "./DealStatusBadge";
 import { DealTitleCell } from "./DealTitleCell";
 import { fmtDate, fmtDateOnly } from "./dealListFormat";
 import type { DealListRow } from "./dealListTypes";
+import { UnarchiveButton } from "./UnarchiveButton";
 
 interface RenderWindow {
   visible: DealListRow[];
@@ -31,7 +32,7 @@ interface DealListTableBodyProps {
   onStartEdit: (id: string) => void;
   onCancelEdit: () => void;
   onCommitTitle: (row: DealListRow, value: string) => void;
-  onUnarchive?: (dealId: string) => void;
+  onUnarchive?: (dealId: string) => Promise<boolean>;
   empty?: React.ReactNode;
   currency: string;
 }
@@ -125,13 +126,7 @@ export function DealListTableBody(props: DealListTableBodyProps): React.ReactNod
           ))}
           {onUnarchive ? (
             <td className="px-3 py-2">
-              <button
-                type="button"
-                onClick={() => onUnarchive(row.id)}
-                className="rounded border px-2 py-1 text-xs font-medium text-foreground hover:bg-muted"
-              >
-                Unarchive
-              </button>
+              <UnarchiveButton onUnarchive={() => onUnarchive(row.id)} />
             </td>
           ) : null}
         </tr>

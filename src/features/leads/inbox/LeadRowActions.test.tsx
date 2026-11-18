@@ -10,6 +10,7 @@ afterEach(cleanup);
 const baseProps = {
   archived: false,
   converted: false,
+  busy: false,
   onOpen: vi.fn(),
   onConvert: vi.fn(),
   onArchiveToggle: vi.fn(),

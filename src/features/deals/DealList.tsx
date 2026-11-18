@@ -29,9 +29,7 @@ export interface DealListProps {
   visibleColumns: readonly ColumnDef[];
   // The Customize-columns cog, rendered by the stateful client above the table.
   columnsMenu?: React.ReactNode;
-  // Present only on the Archive view: renders a per-row Unarchive control. When set the table
-  // grows a trailing actions column; the normal list passes nothing and stays unchanged.
-  onUnarchive?: (dealId: string) => void;
+  onUnarchive?: (dealId: string) => Promise<boolean>;
   // What to show in place of the rows when there are none. With nothing filtered the table goes
   // with them: a header, a select-all, a gear and a "0 deals" footer over zero rows is machinery.
   empty?: React.ReactNode;

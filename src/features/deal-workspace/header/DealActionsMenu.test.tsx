@@ -28,6 +28,14 @@ vi.mock("./MergeDealDialog", () => ({
   MergeDealDialog: ({ open }: { open: boolean }) =>
     open ? <div data-testid="merge-dialog" /> : null,
 }));
+const toastSuccess = vi.fn();
+const toastError = vi.fn();
+vi.mock("sonner", () => ({
+  toast: {
+    success: (...a: unknown[]) => toastSuccess(...a),
+    error: (...a: unknown[]) => toastError(...a),
+  },
+}));
 const push = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: () => {}, push }) }));
 vi.mock("@/utils/csrfCookie", () => ({ readCsrfToken: () => "csrf" }));
@@ -56,6 +64,8 @@ afterEach(() => {
   archiveDealAction.mockClear();
   duplicateDealAction.mockClear();
   writeText.mockClear();
+  toastSuccess.mockClear();
+  toastError.mockClear();
   push.mockClear();
   reportError.mockClear();
   vi.restoreAllMocks();
@@ -66,6 +76,7 @@ const props = {
   pipelineId: "p1",
   expectedUpdatedAt: "2026-07-02T00:00:00.000Z",
   canDelete: true,
+  archived: false,
 };
 
 it("the ellipsis opens the actions menu", async () => {
@@ -98,6 +109,27 @@ it("Copy link writes the deal URL to the clipboard", async () => {
   await user.click(screen.getByRole("button", { name: "Deal actions" }));
   await user.click(screen.getByRole("menuitem", { name: "Copy link" }));
   await waitFor(() => expect(writeText).toHaveBeenCalledWith(`${location.origin}/deals/d1`));
+  await waitFor(() => expect(toastSuccess).toHaveBeenCalled());
+  expect(toastError).not.toHaveBeenCalled();
+});
+
+it("Copy link raises a copy-manually toast with the link when the clipboard write is denied", async () => {
+  const user = userEvent.setup();
+  const denied = new DOMException("Write permission denied.", "NotAllowedError");
+  Object.defineProperty(navigator, "clipboard", {
+    configurable: true,
+    value: { writeText: () => Promise.reject(denied) },
+  });
+  render(<DealActionsMenu {...props} />);
+  await user.click(screen.getByRole("button", { name: "Deal actions" }));
+  await user.click(screen.getByRole("menuitem", { name: "Copy link" }));
+  await waitFor(() =>
+    expect(toastError).toHaveBeenCalledWith(
+      expect.stringMatching(/manually/i),
+      expect.objectContaining({ description: `${location.origin}/deals/d1` }),
+    ),
+  );
+  expect(toastSuccess).not.toHaveBeenCalled();
 });
 
 it("Duplicate calls duplicateDealAction and navigates to the new deal", async () => {

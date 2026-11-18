@@ -15,6 +15,14 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
+const toastSuccess = vi.fn();
+const toastError = vi.fn();
+vi.mock("sonner", () => ({
+  toast: {
+    success: (...a: unknown[]) => toastSuccess(...a),
+    error: (...a: unknown[]) => toastError(...a),
+  },
+}));
 const push = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push, refresh: vi.fn() }) }));
 vi.mock("@/utils/csrfCookie", () => ({ readCsrfToken: () => "tok" }));
@@ -98,4 +106,34 @@ it("cancelling the dialog closes it without deleting", async () => {
   await user.click(within(dialog).getByRole("button", { name: "Cancel" }));
   await waitFor(() => expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument());
   expect(deletePersonAction).not.toHaveBeenCalled();
+});
+
+it("confirms Copy link with a toast", async () => {
+  const user = userEvent.setup();
+  const writeText = vi.fn(() => Promise.resolve());
+  Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
+  renderMenu();
+  await user.click(screen.getByRole("button", { name: "Contact actions" }));
+  await user.click(screen.getByRole("menuitem", { name: "Copy link" }));
+  await waitFor(() => expect(toastSuccess).toHaveBeenCalled());
+  expect(writeText).toHaveBeenCalledWith(`${location.origin}/contacts/people/pe1`);
+  expect(toastError).not.toHaveBeenCalled();
+});
+
+it("raises a copy-manually toast with the link when the clipboard write is denied", async () => {
+  const user = userEvent.setup();
+  const denied = new DOMException("Write permission denied.", "NotAllowedError");
+  Object.defineProperty(navigator, "clipboard", {
+    value: { writeText: () => Promise.reject(denied) },
+    configurable: true,
+  });
+  renderMenu();
+  await user.click(screen.getByRole("button", { name: "Contact actions" }));
+  await user.click(screen.getByRole("menuitem", { name: "Copy link" }));
+  await waitFor(() => expect(toastError).toHaveBeenCalled());
+  expect(toastError).toHaveBeenCalledWith(
+    expect.stringMatching(/manually/i),
+    expect.objectContaining({ description: `${location.origin}/contacts/people/pe1` }),
+  );
+  expect(toastSuccess).not.toHaveBeenCalled();
 });

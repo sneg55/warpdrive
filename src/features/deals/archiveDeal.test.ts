@@ -88,3 +88,50 @@ it("publishes a board event on the pipeline channel on archive", async () => {
   expect(rows[0]).toBeDefined();
   expect(Number(rows[0]?.version ?? 0)).toBeGreaterThanOrEqual(1);
 });
+
+async function archivedLogCount(dealId: string): Promise<number> {
+  const rows = await h.db
+    .select()
+    .from(changeLogs)
+    .where(and(eq(changeLogs.entityId, dealId), eq(changeLogs.field, "archived")));
+  return rows.length;
+}
+
+async function pipelineVersion(pipelineId: string): Promise<number> {
+  const [row] = await h.db
+    .select()
+    .from(channelVersions)
+    .where(eq(channelVersions.channel, wsChannel.pipeline(pipelineId)));
+  return Number(row?.version ?? 0);
+}
+
+it("a repeated archive keeps the first timestamp and logs no second change", async () => {
+  const u = await seedUser(h.db);
+  const d = await seedDeal(u.id);
+  await archiveDeal(h.db, actor(u.id), { dealId: d.id, archived: true }, sig());
+  const first = await readDeal(d.id);
+  const versionAfterFirst = await pipelineVersion(d.pipelineId);
+
+  const again = await archiveDeal(h.db, actor(u.id), { dealId: d.id, archived: true }, sig());
+
+  expect(again.ok).toBe(true);
+  const second = await readDeal(d.id);
+  expect(second.archivedAt?.toISOString()).toBe(first.archivedAt?.toISOString());
+  expect(second.updatedAt.toISOString()).toBe(first.updatedAt.toISOString());
+  expect(await archivedLogCount(d.id)).toBe(1);
+  expect(await pipelineVersion(d.pipelineId)).toBe(versionAfterFirst);
+});
+
+it("unarchiving a deal that is not archived is a no-op that still returns ok", async () => {
+  const u = await seedUser(h.db);
+  const d = await seedDeal(u.id);
+  const before = await readDeal(d.id);
+
+  const r = await archiveDeal(h.db, actor(u.id), { dealId: d.id, archived: false }, sig());
+
+  expect(r.ok).toBe(true);
+  const after = await readDeal(d.id);
+  expect(after.archivedAt).toBeNull();
+  expect(after.updatedAt.toISOString()).toBe(before.updatedAt.toISOString());
+  expect(await archivedLogCount(d.id)).toBe(0);
+});

@@ -103,6 +103,83 @@ describe("archive/unarchive", () => {
     });
   });
 
+  it("the thread read reports whether the thread is archived", async () => {
+    await withTestDb(async (db) => {
+      const owner = await seedUser(db, { email: "o@gunsnation.com" });
+      const acctId = await seedAccount(db, owner.id);
+      const threadId = await seedThread(db, acctId);
+      const actor = actorOf(owner.id);
+      const archived = async (): Promise<boolean | undefined> => {
+        const r = await getThread(db, { actor, threadId, allowRemote: false }, SIG());
+        return r.ok ? r.value.archived : undefined;
+      };
+
+      expect(await archived()).toBe(false);
+      await archiveThread(db, { actor, threadId }, SIG());
+      expect(await archived()).toBe(true);
+      await unarchiveThread(db, { actor, threadId }, SIG());
+      expect(await archived()).toBe(false);
+    });
+  });
+
+  it("a repeated archive keeps the first archived_at and still succeeds", async () => {
+    await withTestDb(async (db) => {
+      const owner = await seedUser(db, { email: "o@gunsnation.com" });
+      const acctId = await seedAccount(db, owner.id);
+      const threadId = await seedThread(db, acctId);
+      const actor = actorOf(owner.id);
+      const archivedAt = async (): Promise<string | null> =>
+        (
+          (
+            await db.execute(
+              sql`SELECT archived_at::text AS at FROM email_threads WHERE id=${threadId}`,
+            )
+          ).rows[0] as { at: string | null }
+        ).at;
+
+      expect((await archiveThread(db, { actor, threadId }, SIG())).ok).toBe(true);
+      const first = await archivedAt();
+      expect(first).not.toBeNull();
+      await db.execute(sql`SELECT pg_sleep(0.02)`);
+      expect((await archiveThread(db, { actor, threadId }, SIG())).ok).toBe(true);
+      expect(await archivedAt()).toBe(first);
+
+      expect((await unarchiveThread(db, { actor, threadId }, SIG())).ok).toBe(true);
+      expect((await unarchiveThread(db, { actor, threadId }, SIG())).ok).toBe(true);
+      expect(await archivedAt()).toBeNull();
+    });
+  });
+
+  it("a repeated archive of a team thread publishes no second update event", async () => {
+    await withTestDb(async (db) => {
+      const member = await seedUser(db, { email: "m@gunsnation.com" });
+      const acct = (
+        await db.execute(
+          sql`INSERT INTO email_accounts (kind, email_address, display_name) VALUES ('team', 'team@gunsnation.com', 'Team') RETURNING id`,
+        )
+      ).rows[0] as { id: string };
+      await db.execute(
+        sql`INSERT INTO email_account_members (account_id, user_id) VALUES (${acct.id}, ${member.id})`,
+      );
+      const threadId = await seedThread(db, acct.id);
+      const actor = actorOf(member.id);
+      const version = async (): Promise<number> =>
+        (
+          (
+            await db.execute(
+              sql`SELECT COALESCE(max(version), 0)::int AS v FROM channel_versions WHERE channel=${`user:${member.id}`}`,
+            )
+          ).rows[0] as { v: number }
+        ).v;
+
+      expect((await archiveThread(db, { actor, threadId }, SIG())).ok).toBe(true);
+      const afterFirst = await version();
+      expect(afterFirst).toBeGreaterThan(0);
+      expect((await archiveThread(db, { actor, threadId }, SIG())).ok).toBe(true);
+      expect(await version()).toBe(afterFirst);
+    });
+  });
+
   it("archive of a non-owned thread returns E_GMAIL_011", async () => {
     await withTestDb(async (db) => {
       const owner = await seedUser(db, { email: "o@gunsnation.com" });

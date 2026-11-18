@@ -61,3 +61,21 @@ it("reports the error id when deleting a draft is denied (no silent no-op)", asy
   screen.getByRole("button", { name: "Delete" }).click();
   await waitFor(() => expect(reportError).toHaveBeenCalledWith("E_PERM_001"));
 });
+
+it("removes a deleted draft's row before the list refetch lands, so Delete cannot fire twice", async () => {
+  deleteMock.mockClear();
+  invalidate.mockReturnValueOnce(new Promise(() => {}));
+  render(<DraftsList onResume={vi.fn()} />);
+  screen.getByRole("button", { name: "Delete" }).click();
+  await waitFor(() => expect(screen.queryByText("Hello")).toBeNull());
+  expect(screen.queryByRole("button", { name: "Delete" })).toBeNull();
+  expect(deleteMock).toHaveBeenCalledTimes(1);
+});
+
+it("re-enables Delete and reports when the delete rejects instead of answering", async () => {
+  deleteMock.mockRejectedValueOnce(new Error("network"));
+  render(<DraftsList onResume={vi.fn()} />);
+  screen.getByRole("button", { name: "Delete" }).click();
+  await waitFor(() => expect(reportError).toHaveBeenCalledWith("E_UI_003"));
+  expect(screen.getByRole("button", { name: "Delete" })).not.toBeDisabled();
+});

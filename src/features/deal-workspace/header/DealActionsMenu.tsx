@@ -2,7 +2,7 @@
 import { EllipsisVertical } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type React from "react";
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import {
   DropdownMenu,
@@ -10,12 +10,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { ERROR_IDS } from "@/constants/errorIds";
 import { ICON_BUTTON } from "@/constants/formStyles";
 import { deleteDealAction } from "@/features/deal-workspace/actions";
 import { useDealActionError } from "@/features/deal-workspace/DealActionErrorProvider";
 import { duplicateDealAction } from "@/features/deal-workspace/duplicateDealAction";
 import { archiveDealAction } from "@/features/deals/archiveActions";
 import { useDetailDrawerClose } from "@/features/navigation/detailDrawerClose";
+import { copyWithToast } from "@/lib/clipboard/copyWithToast";
 import { readCsrfToken } from "@/utils/csrfCookie";
 import { ConvertToLeadDialog } from "./ConvertToLeadDialog";
 import { MergeDealDialog } from "./MergeDealDialog";
@@ -32,26 +34,22 @@ interface DealActionsMenuProps {
   // Whether the actor holds deal.delete (own/any) for this deal. Server-enforced in deleteDeal;
   // this only hides the item so a user without the capability is not offered an action that 403s.
   canDelete: boolean;
+  archived: boolean;
 }
 
-// Overflow (ellipsis) menu for deal-level actions (Pipedrive parity): Copy link, Duplicate,
-// Convert to a lead, Merge, Archive, Delete deal. Each item is backed by a real, permission-gated
-// action; the destructive Convert/Merge/Delete flows confirm before firing.
 export function DealActionsMenu({
   dealId,
   pipelineId,
   expectedUpdatedAt,
   canDelete,
+  archived,
 }: DealActionsMenuProps): React.ReactNode {
   const router = useRouter();
   const reportError = useDealActionError();
   const closeDrawer = useDetailDrawerClose();
   const [pending, setPending] = useState(false);
+  const [refreshing, startRefresh] = useTransition();
   const [flow, setFlow] = useState<Flow>(null);
-
-  async function copyLink(): Promise<void> {
-    await navigator.clipboard.writeText(`${location.origin}/deals/${dealId}`);
-  }
 
   async function duplicate(): Promise<void> {
     setPending(true);
@@ -61,11 +59,13 @@ export function DealActionsMenu({
     else reportError(r.error.id);
   }
 
-  async function archive(): Promise<void> {
+  async function toggleArchive(): Promise<void> {
     setPending(true);
-    const r = await archiveDealAction({ dealId, archived: true }, readCsrfToken());
+    const r = await archiveDealAction({ dealId, archived: !archived }, readCsrfToken()).catch(
+      () => ({ ok: false as const, error: { id: ERROR_IDS.UI_ACTION_UNCONFIRMED } }),
+    );
     setPending(false);
-    if (r.ok) router.refresh();
+    if (r.ok) startRefresh(() => router.refresh());
     else reportError(r.error.id);
   }
 
@@ -85,15 +85,23 @@ export function DealActionsMenu({
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger aria-label="Deal actions" disabled={pending} className={ICON_BUTTON}>
+      <DropdownMenuTrigger
+        aria-label="Deal actions"
+        disabled={pending || refreshing}
+        className={ICON_BUTTON}
+      >
         <EllipsisVertical aria-hidden="true" className="h-4 w-4" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-44">
-        <DropdownMenuItem onSelect={() => void copyLink()}>Copy link</DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => void copyWithToast(`${location.origin}/deals/${dealId}`)}>
+          Copy link
+        </DropdownMenuItem>
         <DropdownMenuItem onSelect={() => void duplicate()}>Duplicate</DropdownMenuItem>
         <DropdownMenuItem onSelect={() => setFlow("convert")}>Convert to a lead</DropdownMenuItem>
         <DropdownMenuItem onSelect={() => setFlow("merge")}>Merge</DropdownMenuItem>
-        <DropdownMenuItem onSelect={() => void archive()}>Archive</DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => void toggleArchive()}>
+          {archived ? "Unarchive" : "Archive"}
+        </DropdownMenuItem>
         {canDelete && (
           <DropdownMenuItem onSelect={() => setFlow("delete")} className="text-destructive">
             Delete deal

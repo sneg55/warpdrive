@@ -8,13 +8,10 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Input } from "@/components/ui/Input";
 import { Switch } from "@/components/ui/Switch";
 import { STRINGS } from "@/constants/strings";
-import {
-  archiveDefAction,
-  renameDefAction,
-  setDefFlagsAction,
-} from "@/features/custom-fields/actions";
+import { renameDefAction, setDefFlagsAction } from "@/features/custom-fields/actions";
 import { readCsrfToken } from "@/utils/csrfCookie";
 import { ReorderControls } from "../company/ReorderControls";
+import { ArchiveFieldButton } from "./ArchiveFieldButton";
 import { OptionEditor } from "./OptionEditor";
 import type { FieldRow } from "./types";
 
@@ -54,12 +51,6 @@ export function FieldRowItem({
       setEditing(false);
       router.refresh();
     } else reportError(r.error.id);
-  }
-
-  async function archive(): Promise<void> {
-    const r = await archiveDefAction({ id: row.id }, readCsrfToken());
-    if (r.ok) router.refresh();
-    else reportError(r.error.id);
   }
 
   // Always sends the full { isImportant, showInAddForm } pair so toggling one flag can never
@@ -144,9 +135,7 @@ export function FieldRowItem({
               </Button>
             </CollapsibleTrigger>
           )}
-          <Button variant="ghost" size="sm" onClick={() => void archive()} className={ROW_ACTION}>
-            {S.archive}
-          </Button>
+          <ArchiveFieldButton id={row.id} name={row.name} className={ROW_ACTION} />
         </div>
         <div className="mt-2 flex flex-wrap items-center gap-x-5 gap-y-2 border-t pt-2">
           <span className="flex items-center gap-1.5">

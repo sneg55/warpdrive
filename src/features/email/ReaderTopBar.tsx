@@ -16,11 +16,12 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { ERROR_IDS } from "@/constants/errorIds";
 import { STRINGS } from "@/constants/strings";
 import { trpc } from "@/lib/trpc-client";
 import { readCsrfToken } from "@/utils/csrfCookie";
 import { trashThreadAction } from "./actions";
-import { archiveThreadAction } from "./folderActions";
+import { archiveThreadAction, unarchiveThreadAction } from "./folderActions";
 import { invalidateRecordTimelines } from "./invalidateRecordTimelines";
 import type { NeighborFolder } from "./threadNeighbors";
 
@@ -31,10 +32,12 @@ function readFolder(raw: string | null): NeighborFolder {
 export function ReaderTopBar({
   threadId,
   canManage,
+  archived,
   canTrash = true,
 }: {
   threadId: string;
   canManage: boolean;
+  archived: boolean;
   canTrash?: boolean;
 }): React.ReactNode {
   const router = useRouter();
@@ -47,6 +50,15 @@ export function ReaderTopBar({
   const mailboxSuffix = mailbox === null ? "" : `&mailbox=${encodeURIComponent(mailbox)}`;
   const { data: neighbors } = trpc.email.thread.neighbors.useQuery({ threadId, folder });
   const [busy, setBusy] = useState(false);
+  const [archiving, setArchiving] = useState(false);
+  const listHref = folder === "archive" ? `/inbox?folder=archive${mailboxSuffix}` : inboxHref;
+  const archiveLabel = archived
+    ? archiving
+      ? STRINGS.inbox.unarchiving
+      : STRINGS.inbox.unarchive
+    : archiving
+      ? STRINGS.inbox.archiving
+      : STRINGS.inbox.archive;
 
   function invalidateFeeds(): void {
     void utils.email.inbox.list.invalidate();
@@ -57,14 +69,22 @@ export function ReaderTopBar({
     invalidateRecordTimelines(utils);
   }
 
-  async function archive(): Promise<void> {
-    setBusy(true);
-    const res = await archiveThreadAction(readCsrfToken(), { threadId });
-    setBusy(false);
-    if (res.ok) {
-      invalidateFeeds();
-      router.push(inboxHref);
-    } else reportError(res.error.id);
+  async function toggleArchive(): Promise<void> {
+    setArchiving(true);
+    try {
+      const action = archived ? unarchiveThreadAction : archiveThreadAction;
+      const res = await action(readCsrfToken(), { threadId });
+      if (res.ok) {
+        invalidateFeeds();
+        void utils.email.thread.get.invalidate({ threadId });
+        router.push(listHref);
+        return;
+      }
+      reportError(res.error.id);
+    } catch {
+      reportError(ERROR_IDS.UI_ACTION_UNCONFIRMED);
+    }
+    setArchiving(false);
   }
 
   async function del(): Promise<void> {
@@ -122,17 +142,18 @@ export function ReaderTopBar({
         <div data-reader-actions-group className="flex items-center gap-1">
           <button
             type="button"
-            disabled={busy}
-            onClick={() => void archive()}
+            disabled={busy || archiving}
+            aria-busy={archiving}
+            onClick={() => void toggleArchive()}
             className="rounded-md border border-border px-3 py-1 text-sm transition-transform hover:bg-accent active:scale-[0.96] disabled:opacity-50"
           >
-            {STRINGS.inbox.archive}
+            {archiveLabel}
           </button>
 
           {canTrash && (
             <AlertDialog>
               <AlertDialogTrigger
-                disabled={busy}
+                disabled={busy || archiving}
                 className="rounded-md border border-border px-3 py-1 text-sm text-destructive transition-transform hover:bg-destructive/10 active:scale-[0.96] disabled:opacity-50"
               >
                 {STRINGS.inbox.delete}

@@ -1,5 +1,6 @@
 "use client";
 import type React from "react";
+import { Badge } from "@/components/ui/Badge";
 import type { DealBlockId } from "@/constants/dealBlocks";
 import { wsChannel } from "@/constants/wsChannels";
 import { DealCloseActions } from "@/features/deal-workspace/DealCloseActions";
@@ -55,6 +56,7 @@ export function DealHeader({
   // Deal.updatedAt may arrive as a Date (RSC) or string; normalize to the ISO CAS precondition.
   const expectedUpdatedAt = new Date(deal.updatedAt).toISOString();
   const currentStageName = stageProgress.chips.find((c) => c.current)?.name ?? null;
+  const archived = deal.archivedAt !== null;
 
   return (
     <div className="mb-4">
@@ -65,6 +67,11 @@ export function DealHeader({
             title={deal.title}
             expectedUpdatedAt={expectedUpdatedAt}
           />
+          {archived && (
+            <Badge variant="secondary" className="mt-1">
+              Archived
+            </Badge>
+          )}
         </div>
         <div className="flex shrink-0 items-center gap-3">
           <OwnerBlock
@@ -94,6 +101,7 @@ export function DealHeader({
             pipelineId={deal.pipelineId}
             expectedUpdatedAt={expectedUpdatedAt}
             canDelete={canDelete}
+            archived={archived}
           />
         </div>
       </div>

@@ -105,6 +105,7 @@ vi.mock("@/lib/trpc-client", () => ({
           unreadCount: { invalidate: invalidateUnreadCount },
         },
         folders: { archive: { invalidate: invalidateFoldersArchive } },
+        thread: { get: { invalidate: vi.fn() } },
       },
     }),
   },

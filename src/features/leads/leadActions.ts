@@ -1,4 +1,4 @@
-import { and, eq, isNull, sql } from "drizzle-orm";
+import { and, eq, isNotNull, isNull, sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { AppError, ERROR_IDS } from "@/constants/errorIds";
 import type * as schema from "@/db/schema";
@@ -148,14 +148,24 @@ export async function archiveLead(
   const [row] = await db
     .update(leads)
     .set({ archivedAt: input.archived ? sql`now()` : null, updatedAt: new Date() })
-    .where(eq(leads.id, input.leadId))
+    .where(
+      and(
+        eq(leads.id, input.leadId),
+        input.archived ? isNull(leads.archivedAt) : isNotNull(leads.archivedAt),
+      ),
+    )
     .returning();
-  if (row === undefined) {
+  if (row !== undefined) return ok(row);
+  const [unchanged] = await db
+    .select()
+    .from(leads)
+    .where(and(eq(leads.id, input.leadId), isNull(leads.deletedAt)));
+  if (unchanged === undefined) {
     return err(
       new AppError(ERROR_IDS.LEAD_NOT_FOUND, "Lead vanished before archive", {
         leadId: input.leadId,
       }),
     );
   }
-  return ok(row);
+  return ok(unchanged);
 }

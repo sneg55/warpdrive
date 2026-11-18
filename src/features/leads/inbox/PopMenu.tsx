@@ -10,6 +10,7 @@ export interface PopMenuProps {
   triggerClassName: string;
   panelClassName?: string;
   align?: "left" | "right";
+  disabled?: boolean;
   children: (close: () => void) => React.ReactNode;
 }
 
@@ -25,6 +26,7 @@ export function PopMenu({
   triggerClassName,
   panelClassName,
   align = "left",
+  disabled = false,
   children,
 }: PopMenuProps): React.ReactNode {
   const [open, setOpen] = useState(false);
@@ -32,7 +34,7 @@ export function PopMenu({
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger aria-label={triggerLabel} className={triggerClassName}>
+      <PopoverTrigger aria-label={triggerLabel} className={triggerClassName} disabled={disabled}>
         {trigger}
       </PopoverTrigger>
       <PopoverContent

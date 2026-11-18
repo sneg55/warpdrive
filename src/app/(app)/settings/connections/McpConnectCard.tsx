@@ -1,22 +1,24 @@
 "use client";
 
 import { Bot } from "lucide-react";
-import { useId, useState } from "react";
+import { useId } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { CLIPBOARD_STRINGS } from "@/constants/clipboard";
 import { STRINGS } from "@/constants/strings";
+import { useCopyToClipboard } from "@/lib/clipboard/useCopyToClipboard";
 import { SettingsCard, SettingsCardBody, SettingsCardHeader } from "../SettingsSurface";
 
 const S = STRINGS.settings;
 
 export function McpConnectCard({ endpointUrl }: { endpointUrl: string }): React.ReactNode {
   const inputId = useId();
-  const [copied, setCopied] = useState(false);
-
-  async function copy(): Promise<void> {
-    await navigator.clipboard.writeText(endpointUrl);
-    setCopied(true);
-  }
+  const { status, copy } = useCopyToClipboard();
+  const copyLabel = {
+    idle: S.mcpConnectCopy,
+    copied: S.mcpConnectCopied,
+    failed: CLIPBOARD_STRINGS.failedLabel,
+  }[status];
 
   return (
     <SettingsCard>
@@ -38,8 +40,8 @@ export function McpConnectCard({ endpointUrl }: { endpointUrl: string }): React.
               className="font-mono text-xs"
               onFocus={(event) => event.currentTarget.select()}
             />
-            <Button type="button" variant="outline" onClick={() => void copy()}>
-              {copied ? S.mcpConnectCopied : S.mcpConnectCopy}
+            <Button type="button" variant="outline" onClick={() => void copy(endpointUrl)}>
+              {copyLabel}
             </Button>
           </div>
         </div>

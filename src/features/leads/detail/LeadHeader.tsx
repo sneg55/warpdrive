@@ -72,12 +72,31 @@ export function LeadHeader({ lead }: { lead: LeadDetail }): React.ReactNode {
     return { ok: false, error: r.error.id };
   }
 
+  async function leaveForList(): Promise<void> {
+    if (closeDrawer !== null) closeDrawer();
+    else router.push("/leads");
+    await utils.lead.list.invalidate();
+  }
+
   async function toggleArchive(): Promise<void> {
     setPending(true);
-    const r = await archiveLeadAction({ leadId: lead.id, archived: !archived }, readCsrfToken());
-    setPending(false);
-    if (r.ok) router.refresh();
-    else reportError(r.error.id);
+    try {
+      const r = await archiveLeadAction({ leadId: lead.id, archived: !archived }, readCsrfToken());
+      if (!r.ok) {
+        reportError(r.error.id);
+        return;
+      }
+      if (!archived) {
+        await leaveForList();
+        return;
+      }
+      router.refresh();
+      await utils.lead.list.invalidate();
+    } catch {
+      reportError();
+    } finally {
+      setPending(false);
+    }
   }
 
   async function del(): Promise<void> {
@@ -96,11 +115,7 @@ export function LeadHeader({ lead }: { lead: LeadDetail }): React.ReactNode {
     // the lead we just deleted, so the delete reads as a no-op and a second Delete re-renders the
     // missing lead into LeadDetailView's notFound(). Dismiss the drawer instead; only the standalone
     // page (deep link / hard load), which has no drawer, navigates.
-    if (closeDrawer !== null) closeDrawer();
-    else router.push("/leads");
-    // The Leads inbox list is a tRPC query, not part of the route payload, so neither the drawer
-    // close nor the push refreshes it: without this the list comes back still showing the lead.
-    await utils.lead.list.invalidate();
+    await leaveForList();
   }
 
   return (

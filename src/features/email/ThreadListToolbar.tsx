@@ -1,14 +1,12 @@
 "use client";
 
+import { LoaderCircle } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { STRINGS } from "@/constants/strings";
 import type { InboxFilter } from "./emailReads";
 import { InboxAttributeFilters } from "./InboxAttributeFilters";
 import type { ThreadFolder } from "./ThreadRow";
 import type { AttributeFilterState } from "./threadAttributeFilter";
-
-// Toolbar Refresh control label (A1). Local constant, no magic string.
-const REFRESH_LABEL = "Refresh";
 
 const FILTERS: { key: InboxFilter; label: string }[] = [
   { key: "all", label: STRINGS.inbox.filterAll },
@@ -23,14 +21,35 @@ interface ThreadListToolbarProps {
   attrFilter: AttributeFilterState;
   onAttrFilterChange: (next: AttributeFilterState) => void;
   onRefresh: () => void;
+  refreshing?: boolean;
 }
 
-// The per-folder filter/search toolbar (D2). Pipedrive keeps a toolbar in every folder; Warpdrive
-// previously showed it only on the Inbox, leaving Sent/Archive with an empty header. The Inbox gets
-// the full row (match/needs-linking tabs + follow-up/label/quick filters + Refresh). Sent/Archive
-// get a Refresh-only row: their reads do not project unread/attachment, so the attribute + quick
-// filters would wrongly hide every row (see ThreadList's filterByAttributes note). "linked" is
-// chrome-less and renders no toolbar.
+function RefreshButton({
+  onRefresh,
+  refreshing,
+}: {
+  onRefresh: () => void;
+  refreshing: boolean;
+}): React.ReactNode {
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={onRefresh}
+      disabled={refreshing}
+      aria-busy={refreshing}
+    >
+      {refreshing && (
+        <LoaderCircle
+          aria-hidden="true"
+          className="h-3.5 w-3.5 animate-spin motion-reduce:hidden"
+        />
+      )}
+      {refreshing ? STRINGS.inbox.refreshing : STRINGS.inbox.refresh}
+    </Button>
+  );
+}
+
 export function ThreadListToolbar({
   folder,
   filter,
@@ -38,6 +57,7 @@ export function ThreadListToolbar({
   attrFilter,
   onAttrFilterChange,
   onRefresh,
+  refreshing = false,
 }: ThreadListToolbarProps): React.ReactNode {
   if (folder === "linked") return null;
 
@@ -45,9 +65,7 @@ export function ThreadListToolbar({
     return (
       <div className="flex items-center border-b p-2">
         <div className="ml-auto">
-          <Button variant="outline" size="sm" onClick={onRefresh}>
-            {REFRESH_LABEL}
-          </Button>
+          <RefreshButton onRefresh={onRefresh} refreshing={refreshing} />
         </div>
       </div>
     );
@@ -79,9 +97,7 @@ export function ThreadListToolbar({
           quickFilter={filter}
           onQuickFilterChange={onFilterChange}
         />
-        <Button variant="outline" size="sm" onClick={onRefresh}>
-          {REFRESH_LABEL}
-        </Button>
+        <RefreshButton onRefresh={onRefresh} refreshing={refreshing} />
       </div>
     </div>
   );

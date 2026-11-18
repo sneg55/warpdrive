@@ -13,13 +13,13 @@ import { leadVisibilityClause } from "./visibility";
 
 type Db = NodePgDatabase<typeof schema>;
 
-// Build the UPDATE ... SET payload from one bulk change. Multiple fields may be set together; each
-// maps to the same column semantics as the single-lead actions (archive/delete toggle a timestamp).
 function buildSet(change: BulkUpdateLeadsInput["change"]): Record<string, unknown> {
   const set: Record<string, unknown> = { updatedAt: new Date() };
   if (change.ownerId !== undefined) set.ownerId = change.ownerId;
   if (change.labels !== undefined) set.labels = change.labels;
-  if (change.archived !== undefined) set.archivedAt = change.archived ? sql`now()` : null;
+  if (change.archived !== undefined) {
+    set.archivedAt = change.archived ? sql`coalesce(${leads.archivedAt}, now())` : null;
+  }
   if (change.deleted !== undefined) set.deletedAt = change.deleted ? sql`now()` : null;
   return set;
 }

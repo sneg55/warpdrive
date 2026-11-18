@@ -30,6 +30,7 @@ export interface ActivityRowProps {
   selected: boolean;
   onToggleSelect: (id: string) => void;
   onToggleDone: (id: string, currentDone: boolean) => void;
+  donePending: boolean;
   onRowClick: (row: ActivityTableRow) => void;
   // True for the single row under the j/k keyboard cursor.
   cursor: boolean;
@@ -44,6 +45,7 @@ export function ActivityRow({
   selected,
   onToggleSelect,
   onToggleDone,
+  donePending,
   onRowClick,
   cursor,
 }: ActivityRowProps): React.ReactNode {
@@ -87,8 +89,7 @@ export function ActivityRow({
             label={`Complete ${row.subject}`}
             checked={row.done}
             onCheckedChange={() => onToggleDone(row.id, row.done)}
-            // Round and green, matching the deal workspace's activity card, so Done never
-            // reads as a second copy of the square selection box sitting next to it.
+            disabled={donePending}
             className="rounded-full data-[state=checked]:border-success data-[state=checked]:bg-success data-[state=checked]:text-success-foreground"
           />
         </span>

@@ -25,43 +25,69 @@ type PersonFields = Pick<
 >;
 type OrgFields = Pick<EntityCreateState, "orgMode" | "orgId" | "newOrgName" | "orgCustomFields">;
 
-// Resolve the org id for the create: an existing selection, or an org created inline by name.
-// Returns null (no org), the id, or { error } to surface inline. Run before resolveNewPersonId so a
-// newly created person can be linked to a newly created org.
+interface RememberedCreate {
+  key: string;
+  id: string;
+}
+
+export interface InlineCreated {
+  org: RememberedCreate | null;
+  person: RememberedCreate | null;
+}
+
+export interface InlineCreatedRef {
+  current: InlineCreated;
+}
+
+export function noInlineCreated(): InlineCreated {
+  return { org: null, person: null };
+}
+
+function reuse(remembered: RememberedCreate | null, key: string): string | null {
+  return remembered !== null && remembered.key === key ? remembered.id : null;
+}
+
 export async function resolveNewOrgId(
   state: OrgFields,
   csrf: string | null,
+  created: InlineCreatedRef,
 ): Promise<string | null | { error: string }> {
   if (state.orgMode === "existing") return state.orgId === "" ? null : state.orgId;
   if (state.newOrgName.trim() === "") return null;
-  const r = await createOrgAction(
-    { name: state.newOrgName.trim(), address: null, customFields: state.orgCustomFields },
-    csrf,
-  );
+  const input = {
+    name: state.newOrgName.trim(),
+    address: null,
+    customFields: state.orgCustomFields,
+  };
+  const key = JSON.stringify(input);
+  const earlier = reuse(created.current.org, key);
+  if (earlier !== null) return earlier;
+  const r = await createOrgAction(input, csrf);
   if (!r.ok) return { error: `Could not create organization (${r.error.id})` };
+  created.current = { ...created.current, org: { key, id: r.value.id } };
   return r.value.id;
 }
 
-// Resolve the person id for the create: an existing selection, or a person created inline from the
-// name + contact-point fields, linked to the already-resolved org id. Returns null (no person), the
-// id, or { error } to surface inline.
 export async function resolveNewPersonId(
   state: PersonFields,
   orgId: string | null,
   csrf: string | null,
+  created: InlineCreatedRef,
 ): Promise<string | null | { error: string }> {
   if (state.personMode === "existing") return state.personId === "" ? null : state.personId;
   if (state.newPersonName.trim() === "") return null;
-  const r = await createPersonAction(
-    {
-      name: state.newPersonName.trim(),
-      phones: cleanPoints(state.phones),
-      emails: cleanPoints(state.emails),
-      orgId,
-      customFields: state.personCustomFields,
-    },
-    csrf,
-  );
+  const input = {
+    name: state.newPersonName.trim(),
+    phones: cleanPoints(state.phones),
+    emails: cleanPoints(state.emails),
+    orgId,
+    customFields: state.personCustomFields,
+  };
+  const key = JSON.stringify(input);
+  const earlier = reuse(created.current.person, key);
+  if (earlier !== null) return earlier;
+  const r = await createPersonAction(input, csrf);
   if (!r.ok) return { error: `Could not create person (${r.error.id})` };
+  created.current = { ...created.current, person: { key, id: r.value.id } };
   return r.value.id;
 }

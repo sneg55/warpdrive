@@ -35,6 +35,7 @@ vi.mock("@/lib/trpc-client", () => ({
   },
 }));
 
+import { EMAIL_SYNC_STRINGS } from "@/app/(app)/settings/email-sync/strings";
 import { STRINGS } from "@/constants/strings";
 import { ThreadList } from "./ThreadList";
 
@@ -68,5 +69,25 @@ describe("ThreadList inbox zero", () => {
     inboxListQuery.mockReturnValue({ ...emptyFeed, data: undefined, isError: true });
     render(<ThreadList folder="inbox" mailboxConnected />);
     expect(screen.queryByText(STRINGS.inbox.inboxZeroTitle)).toBeNull();
+  });
+
+  it("shows the syncing state, not inbox zero, while a fresh mailbox's first sync runs", () => {
+    render(<ThreadList folder="inbox" mailboxConnected syncPhase="syncing" />);
+    expect(screen.getByText(STRINGS.inbox.inboxSyncingTitle)).toBeInTheDocument();
+    expect(screen.queryByText(STRINGS.inbox.inboxZeroTitle)).toBeNull();
+    expect(screen.queryByText(STRINGS.inbox.noThreads)).toBeNull();
+  });
+
+  it("says the mailbox is connected and waiting for mail when it has never held a thread", () => {
+    render(<ThreadList folder="inbox" mailboxConnected syncPhase="awaitingMail" />);
+    expect(screen.getByText(STRINGS.inbox.inboxAwaitingMailTitle)).toBeInTheDocument();
+    expect(screen.queryByText(STRINGS.inbox.inboxZeroTitle)).toBeNull();
+  });
+
+  it("shows the app's not-syncing copy, not the connected state, when the first sync failed", () => {
+    render(<ThreadList folder="inbox" mailboxConnected syncPhase="failed" />);
+    expect(screen.getByText(EMAIL_SYNC_STRINGS.statusStalled)).toBeInTheDocument();
+    expect(screen.getByText(EMAIL_SYNC_STRINGS.stalledHint)).toBeInTheDocument();
+    expect(screen.queryByText(STRINGS.inbox.inboxAwaitingMailTitle)).toBeNull();
   });
 });

@@ -5,8 +5,10 @@ import { useRef, useState, useTransition } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Switch } from "@/components/ui/Switch";
+import { CLIPBOARD_STRINGS } from "@/constants/clipboard";
 import { ERROR_IDS } from "@/constants/errorIds";
 import { inviteUserAction } from "@/features/identity/actions/invite";
+import { useCopyToClipboard } from "@/lib/clipboard/useCopyToClipboard";
 import { isValidEmail } from "@/lib/isValidEmail";
 import { readCsrfToken } from "@/utils/csrfCookie";
 
@@ -71,7 +73,7 @@ export function InviteUserForm({ onInvited }: Props): React.ReactElement {
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>(NO_FIELD_ERRORS);
   // Set on a successful invite so we can surface the no-email notice + shareable link.
   const [invited, setInvited] = useState<{ name: string; email: string } | null>(null);
-  const [copied, setCopied] = useState(false);
+  const { status: copyStatus, copy } = useCopyToClipboard();
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>): void {
     e.preventDefault();
@@ -91,7 +93,6 @@ export function InviteUserForm({ onInvited }: Props): React.ReactElement {
       if (emailRef.current !== null) emailRef.current.value = "";
       if (nameRef.current !== null) nameRef.current.value = "";
       setIsAdmin(false);
-      setCopied(false);
       setInvited({ name, email });
       onInvited();
     });
@@ -99,10 +100,11 @@ export function InviteUserForm({ onInvited }: Props): React.ReactElement {
 
   const loginUrl = typeof window === "undefined" ? "/login" : `${window.location.origin}/login`;
 
-  async function copyLink(): Promise<void> {
-    await navigator.clipboard.writeText(loginUrl);
-    setCopied(true);
-  }
+  const copyLabel = {
+    idle: T.copy,
+    copied: T.copied,
+    failed: CLIPBOARD_STRINGS.failedLabel,
+  }[copyStatus];
 
   return (
     <form
@@ -194,9 +196,9 @@ export function InviteUserForm({ onInvited }: Props): React.ReactElement {
                 variant="outline"
                 size="sm"
                 className="shrink-0"
-                onClick={() => void copyLink()}
+                onClick={() => void copy(loginUrl)}
               >
-                {copied ? T.copied : T.copy}
+                {copyLabel}
               </Button>
             </div>
           </div>

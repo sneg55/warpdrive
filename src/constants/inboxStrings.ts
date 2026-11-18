@@ -17,6 +17,13 @@ export const INBOX_STRINGS = {
   noThreads: "No threads found.",
   inboxZeroTitle: "Inbox zero",
   inboxZeroBody: "Every conversation is handled. New mail will show up here as it arrives.",
+  inboxSyncingTitle: "Syncing your mailbox",
+  inboxSyncingBody:
+    "Conversations appear here as soon as the sync finishes. This page updates on its own.",
+  inboxAwaitingMailTitle: "Your mailbox is connected",
+  inboxAwaitingMailBody: "Mail that arrives from now on will show up here.",
+  refresh: "Refresh",
+  refreshing: "Refreshing…",
   // Inbox pages 50 threads at a time (INBOX_PAGE_SIZE), matching the People/Orgs lists.
   loadMore: "Load more",
   loadingMore: "Loading...",
@@ -61,6 +68,9 @@ export const INBOX_STRINGS = {
   previousConversation: "Previous conversation",
   nextConversation: "Next conversation",
   archive: "Archive",
+  unarchive: "Unarchive",
+  archiving: "Archiving…",
+  unarchiving: "Unarchiving…",
   delete: "Delete",
   deleteConfirmTitle: "Move this conversation to Trash?",
   deleteConfirmBody: "It moves to your Gmail Trash.",

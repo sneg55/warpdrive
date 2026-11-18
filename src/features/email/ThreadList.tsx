@@ -4,21 +4,22 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useRowSelection } from "@/components/data-table/useRowSelection";
 import { ThreadRowsSkeleton } from "@/components/shell/skeletons";
-import { EmptyState } from "@/components/ui/EmptyState";
 import { STRINGS } from "@/constants/strings";
 import { trpc } from "@/lib/trpc-client";
 import type { ActionResult } from "@/types/actionResult";
 import { readCsrfToken } from "@/utils/csrfCookie";
 import type { InboxFilter, InboxThread } from "./emailReads";
 import { archiveThreadAction, unarchiveThreadAction } from "./folderActions";
-import { InboxZeroIllustration } from "./InboxZeroIllustration";
-import { isInboxZero } from "./inboxZero";
+import { InboxEmptyNotice } from "./InboxEmptyNotice";
+import { inboxEmptyState } from "./inboxZero";
+import type { MailboxSyncPhase } from "./mailboxSyncPhase";
 import { markThreadReadAction, markThreadUnreadAction } from "./readActions";
 import { ThreadListToolbar } from "./ThreadListToolbar";
 import { type ThreadFolder, ThreadRow } from "./ThreadRow";
 import { ThreadSelectionControls } from "./ThreadSelectionControls";
 import { filterByAttributes, NO_ATTRIBUTE_FILTER } from "./threadAttributeFilter";
 import { BULK_ACTION_ERROR, runBulk } from "./threadBulkActions";
+import { useFolderRefresh } from "./useFolderRefresh";
 import { useThreadFeed } from "./useThreadFeed";
 
 interface ThreadListProps {
@@ -32,6 +33,8 @@ interface ThreadListProps {
   quickFilter?: InboxFilter;
   onQuickFilterChange?: (next: InboxFilter) => void;
   mailboxConnected?: boolean;
+  syncPhase?: MailboxSyncPhase;
+  onRefresh?: () => Promise<unknown>;
 }
 
 export function ThreadList({
@@ -46,6 +49,8 @@ export function ThreadList({
   quickFilter,
   onQuickFilterChange,
   mailboxConnected = false,
+  syncPhase = "ready",
+  onRefresh,
 }: ThreadListProps): React.ReactNode {
   const router = useRouter();
   const utils = trpc.useUtils();
@@ -62,7 +67,7 @@ export function ThreadList({
   const selection = useRowSelection();
   const pending = providedThreads !== undefined ? threadsPending : feed.pending;
   const showSkeleton = pending && threads.length === 0;
-  const inboxZero = isInboxZero({
+  const emptyState = inboxEmptyState({
     folder,
     quickFilter: filter,
     attrFilter,
@@ -71,30 +76,19 @@ export function ThreadList({
     pending,
     failed: providedThreads === undefined && feed.failed,
     threadCount: threads.length,
+    syncPhase,
   });
+  const folderRefresh = useFolderRefresh(folder, onRefresh);
 
   function afterArchive(): Promise<unknown> {
     return Promise.all([
       utils.email.inbox.list.invalidate(),
       utils.email.folders.archive.invalidate(),
+      utils.email.thread.get.invalidate(),
     ]);
   }
 
   function afterReadChange(): void {
-    void utils.email.inbox.unreadCount.invalidate();
-  }
-
-  function refreshFolder(): void {
-    void utils.email.search.invalidate();
-    if (folder === "sent") {
-      void utils.email.folders.sent.invalidate();
-      return;
-    }
-    if (folder === "archive") {
-      void utils.email.folders.archive.invalidate();
-      return;
-    }
-    void utils.email.inbox.list.invalidate();
     void utils.email.inbox.unreadCount.invalidate();
   }
 
@@ -155,7 +149,8 @@ export function ThreadList({
         onFilterChange={setFilter}
         attrFilter={attrFilter}
         onAttrFilterChange={setAttrFilter}
-        onRefresh={refreshFolder}
+        onRefresh={folderRefresh.refresh}
+        refreshing={folderRefresh.refreshing}
       />
 
       <ThreadSelectionControls
@@ -178,16 +173,12 @@ export function ThreadList({
 
       <ul className="flex-1 divide-y overflow-y-auto">
         {showSkeleton && <ThreadRowsSkeleton />}
-        {inboxZero && (
+        {emptyState !== "none" && (
           <li>
-            <EmptyState
-              illustration={<InboxZeroIllustration />}
-              title={STRINGS.inbox.inboxZeroTitle}
-              body={STRINGS.inbox.inboxZeroBody}
-            />
+            <InboxEmptyNotice state={emptyState} />
           </li>
         )}
-        {!inboxZero && !pending && threads.length === 0 && (
+        {emptyState === "none" && !pending && threads.length === 0 && (
           <li className="p-4 text-sm text-muted-foreground">{STRINGS.inbox.noThreads}</li>
         )}
         {threads.map((thread) => (

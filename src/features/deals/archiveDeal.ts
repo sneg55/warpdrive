@@ -1,7 +1,7 @@
-import { eq, sql } from "drizzle-orm";
+import { and, eq, isNotNull, isNull, sql } from "drizzle-orm";
 import { z } from "zod";
 import { BOARD_EVENT, dealChannel, dealMovedChannel } from "@/constants/boardChannels";
-import { AppError, ERROR_IDS } from "@/constants/errorIds";
+import type { AppError } from "@/constants/errorIds";
 import { deals } from "@/db/schema";
 import type { Deal } from "@/db/schema/deals";
 import { recordChange } from "@/features/collaboration/changeLog";
@@ -29,23 +29,22 @@ export async function archiveDeal(
     const editable = await loadEditableDeal(tx, actor, input.dealId, signal);
     if (editable.ok === false) return editable;
 
-    const wasArchived = editable.value.deal.archivedAt !== null;
+    const current = editable.value.deal;
+    const wasArchived = current.archivedAt !== null;
+    if (wasArchived === input.archived) return ok(current);
 
     const [row] = await tx
       .update(deals)
       .set({ archivedAt: input.archived ? sql`now()` : null })
-      .where(eq(deals.id, input.dealId))
+      .where(
+        and(
+          eq(deals.id, input.dealId),
+          input.archived ? isNull(deals.archivedAt) : isNotNull(deals.archivedAt),
+        ),
+      )
       .returning();
-    if (row === undefined) {
-      throw new AppError(
-        ERROR_IDS.DB_INVARIANT,
-        "archiveDeal: UPDATE RETURNING produced undefined",
-        { dealId: input.dealId },
-      );
-    }
+    if (row === undefined) return ok(current);
 
-    // Log the transition so the deal history timeline shows archive/unarchive events,
-    // consistent with how won/lost/moves are recorded.
     await recordChange(
       tx,
       {

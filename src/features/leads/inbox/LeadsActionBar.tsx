@@ -1,5 +1,5 @@
 "use client";
-import { Archive, Ellipsis, Inbox } from "lucide-react";
+import { Archive, Ellipsis, Inbox, LoaderCircle } from "lucide-react";
 import type React from "react";
 import { ColumnsMenu } from "@/components/data-table/ColumnsMenu";
 import type { LeadNextActivityBucket } from "../schemas";
@@ -30,8 +30,9 @@ export interface LeadsActionBarProps {
   visibleKeys: ReadonlySet<string>;
   onToggleColumn: (key: string) => void;
   onReorderColumn: (from: string, to: string) => void;
-  // Export the current filtered/sorted rows to CSV (client-side).
   onExport: () => void;
+  exporting: boolean;
+  exportError: string | null;
   // Inline ad-hoc condition builder, rendered alongside the fixed-chip LeadFilters (additive).
   filterBuilder?: React.ReactNode;
 }
@@ -65,78 +66,101 @@ function ToggleIcon({
   );
 }
 
+function MoreActionsIcon({ exporting }: { exporting: boolean }): React.ReactNode {
+  if (!exporting) return <Ellipsis aria-hidden="true" className="h-4 w-4" />;
+  return (
+    <LoaderCircle aria-hidden="true" className="h-4 w-4 animate-spin motion-reduce:animate-none" />
+  );
+}
+
 // Full-width action bar (replaces the old left sub-rail). Inbox/Archive icon group, add-lead split
 // button, counter, filters, column cog, and a more-actions menu with CSV export.
 export function LeadsActionBar(props: LeadsActionBarProps): React.ReactNode {
   const { filter, onFilter, count } = props;
   return (
-    <div className="mb-3 flex flex-wrap items-center gap-3">
-      <div className="inline-flex overflow-hidden rounded-md border">
-        <ToggleIcon
-          active={filter === "inbox"}
-          label="Inbox"
-          onClick={() => onFilter("inbox")}
-          rounded="rounded-l-md"
-        >
-          <Inbox aria-hidden="true" className="h-4 w-4" />
-        </ToggleIcon>
-        <ToggleIcon
-          active={filter === "archived"}
-          label="Archive"
-          onClick={() => onFilter("archived")}
-          rounded="rounded-r-md border-l"
-        >
-          <Archive aria-hidden="true" className="h-4 w-4" />
-        </ToggleIcon>
-      </div>
+    <>
+      <div className="mb-3 flex flex-wrap items-center gap-3">
+        <div className="inline-flex overflow-hidden rounded-md border">
+          <ToggleIcon
+            active={filter === "inbox"}
+            label="Inbox"
+            onClick={() => onFilter("inbox")}
+            rounded="rounded-l-md"
+          >
+            <Inbox aria-hidden="true" className="h-4 w-4" />
+          </ToggleIcon>
+          <ToggleIcon
+            active={filter === "archived"}
+            label="Archive"
+            onClick={() => onFilter("archived")}
+            rounded="rounded-r-md border-l"
+          >
+            <Archive aria-hidden="true" className="h-4 w-4" />
+          </ToggleIcon>
+        </div>
 
-      <AddLeadButton
-        baseCurrency={props.baseCurrency}
-        canImport={props.canImport}
-        onCreated={props.onCreated}
-      />
-
-      <span className="text-sm tabular-nums text-muted-foreground">
-        {count} {count === 1 ? "lead" : "leads"}
-      </span>
-
-      <div className="ml-auto flex items-center gap-2">
-        {props.filterBuilder}
-        <LeadFilters
-          labelKeys={props.labelKeys}
-          onLabelKeys={props.onLabelKeys}
-          nextActivity={props.nextActivity}
-          onNextActivity={props.onNextActivity}
-          owner={props.owner}
+        <AddLeadButton
+          baseCurrency={props.baseCurrency}
+          canImport={props.canImport}
+          onCreated={props.onCreated}
         />
-        <ColumnsMenu
-          catalog={props.catalog}
-          order={props.order}
-          visibleKeys={props.visibleKeys}
-          onToggle={props.onToggleColumn}
-          onReorder={props.onReorderColumn}
-        />
-        <PopMenu
-          triggerLabel="More actions"
-          triggerClassName="rounded-md border p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground"
-          align="right"
-          trigger={<Ellipsis aria-hidden="true" className="h-4 w-4" />}
-        >
-          {(close) => (
-            <button
-              type="button"
-              role="menuitem"
-              className={POP_ITEM}
-              onClick={() => {
-                close();
-                props.onExport();
-              }}
-            >
-              Export leads
-            </button>
+
+        <span className="text-sm tabular-nums text-muted-foreground">
+          {count} {count === 1 ? "lead" : "leads"}
+        </span>
+
+        <div className="ml-auto flex items-center gap-2">
+          {props.filterBuilder}
+          <LeadFilters
+            labelKeys={props.labelKeys}
+            onLabelKeys={props.onLabelKeys}
+            nextActivity={props.nextActivity}
+            onNextActivity={props.onNextActivity}
+            owner={props.owner}
+          />
+          <ColumnsMenu
+            catalog={props.catalog}
+            order={props.order}
+            visibleKeys={props.visibleKeys}
+            onToggle={props.onToggleColumn}
+            onReorder={props.onReorderColumn}
+          />
+          {props.exporting && (
+            <span role="status" className="sr-only">
+              Exporting leads...
+            </span>
           )}
-        </PopMenu>
+          <PopMenu
+            triggerLabel="More actions"
+            triggerClassName="rounded-md border p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground"
+            align="right"
+            trigger={<MoreActionsIcon exporting={props.exporting} />}
+          >
+            {(close) => (
+              <button
+                type="button"
+                role="menuitem"
+                disabled={props.exporting}
+                className={`${POP_ITEM} disabled:pointer-events-none disabled:opacity-50`}
+                onClick={() => {
+                  close();
+                  props.onExport();
+                }}
+              >
+                {props.exporting ? "Exporting..." : "Export leads"}
+              </button>
+            )}
+          </PopMenu>
+        </div>
       </div>
-    </div>
+      {props.exportError !== null && (
+        <div
+          role="alert"
+          className="mb-3 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+        >
+          {props.exportError}
+        </div>
+      )}
+    </>
   );
 }

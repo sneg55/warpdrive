@@ -14,6 +14,7 @@ import {
 export interface LeadRowActionsProps {
   archived: boolean;
   converted: boolean;
+  busy: boolean;
   onOpen: () => void;
   onConvert: () => void;
   onArchiveToggle: () => void;
@@ -29,6 +30,7 @@ export interface LeadRowActionsProps {
 export function LeadRowActions({
   archived,
   converted,
+  busy,
   onOpen,
   onConvert,
   onArchiveToggle,
@@ -60,7 +62,12 @@ export function LeadRowActions({
         </DropdownMenuItem>
         {assignableUsers.length > 0 && (
           <DropdownMenuSub>
-            <DropdownMenuSubTrigger>Change owner</DropdownMenuSubTrigger>
+            <DropdownMenuSubTrigger
+              disabled={busy}
+              className="data-[disabled]:pointer-events-none data-[disabled]:opacity-50"
+            >
+              Change owner
+            </DropdownMenuSubTrigger>
             <DropdownMenuSubContent className="max-h-56 min-w-40 overflow-auto">
               {assignableUsers.map((u) => (
                 <DropdownMenuItem key={u.id} onSelect={() => onChangeOwner(u.id)}>
@@ -70,10 +77,10 @@ export function LeadRowActions({
             </DropdownMenuSubContent>
           </DropdownMenuSub>
         )}
-        <DropdownMenuItem onSelect={onArchiveToggle}>
+        <DropdownMenuItem onSelect={onArchiveToggle} disabled={busy}>
           {archived ? "Restore" : "Archive"}
         </DropdownMenuItem>
-        <DropdownMenuItem onSelect={onDelete} className="text-destructive">
+        <DropdownMenuItem onSelect={onDelete} disabled={busy} className="text-destructive">
           Delete
         </DropdownMenuItem>
       </DropdownMenuContent>

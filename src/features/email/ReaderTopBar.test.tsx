@@ -74,12 +74,12 @@ afterEach(() => {
 });
 
 it("links Back to the inbox", () => {
-  render(<ReaderTopBar threadId="t1" canManage />);
+  render(<ReaderTopBar threadId="t1" archived={false} canManage />);
   expect(screen.getByRole("link", { name: /back/i })).toHaveAttribute("href", "/inbox");
 });
 
 it("archives then returns to the inbox on success", async () => {
-  render(<ReaderTopBar threadId="t1" canManage />);
+  render(<ReaderTopBar threadId="t1" archived={false} canManage />);
   screen.getByRole("button", { name: "Archive" }).click();
   await waitFor(() => expect(archiveMock).toHaveBeenCalledWith("csrf", { threadId: "t1" }));
   await waitFor(() => expect(push).toHaveBeenCalledWith("/inbox"));
@@ -87,7 +87,7 @@ it("archives then returns to the inbox on success", async () => {
 
 it("reports the error and stays put when archiving is denied (no silent no-op)", async () => {
   archiveMock.mockResolvedValueOnce({ ok: false, error: { id: "E_PERM_001" } } as never);
-  render(<ReaderTopBar threadId="t1" canManage />);
+  render(<ReaderTopBar threadId="t1" archived={false} canManage />);
   screen.getByRole("button", { name: "Archive" }).click();
   await waitFor(() => expect(reportError).toHaveBeenCalledWith("E_PERM_001"));
   expect(push).not.toHaveBeenCalled();
@@ -96,7 +96,7 @@ it("reports the error and stays put when archiving is denied (no silent no-op)",
 it("shows the N / total position and navigates to prev/next carrying the folder", () => {
   neighborsData = { prevId: "t0", nextId: "t2", index: 2, total: 3 };
   searchParamsStr = "folder=sent";
-  render(<ReaderTopBar threadId="t1" canManage />);
+  render(<ReaderTopBar threadId="t1" archived={false} canManage />);
   expect(screen.getByText("2 / 3")).toBeInTheDocument();
   screen.getByRole("button", { name: /previous/i }).click();
   expect(push).toHaveBeenCalledWith("/inbox/t0?folder=sent");
@@ -106,20 +106,20 @@ it("shows the N / total position and navigates to prev/next carrying the folder"
 
 it("disables prev at the newest thread and next at the oldest", () => {
   neighborsData = { prevId: null, nextId: "t2", index: 1, total: 3 };
-  render(<ReaderTopBar threadId="t1" canManage />);
+  render(<ReaderTopBar threadId="t1" archived={false} canManage />);
   expect(screen.getByRole("button", { name: /previous/i })).toBeDisabled();
   expect(screen.getByRole("button", { name: /next/i })).not.toBeDisabled();
 });
 
 it("renders no position nav for a non-owner (neighbors null)", () => {
   neighborsData = null;
-  render(<ReaderTopBar threadId="t1" canManage />);
+  render(<ReaderTopBar threadId="t1" archived={false} canManage />);
   expect(screen.queryByRole("button", { name: /previous/i })).toBeNull();
   expect(screen.queryByRole("button", { name: /next/i })).toBeNull();
 });
 
 it("deletes to Gmail Trash after confirming, then returns to the inbox", async () => {
-  render(<ReaderTopBar threadId="t1" canManage />);
+  render(<ReaderTopBar threadId="t1" archived={false} canManage />);
   screen.getByRole("button", { name: "Delete" }).click();
   // Confirm in the AlertDialog (role=alertdialog, its Action button).
   const confirm = await screen.findByRole("button", { name: /move to trash/i });
@@ -133,7 +133,7 @@ it("deletes to Gmail Trash after confirming, then returns to the inbox", async (
 });
 
 it("refreshes the record timelines so a deleted thread leaves the deal and person pages", async () => {
-  render(<ReaderTopBar threadId="t1" canManage />);
+  render(<ReaderTopBar threadId="t1" archived={false} canManage />);
   screen.getByRole("button", { name: "Delete" }).click();
   (await screen.findByRole("button", { name: /move to trash/i })).click();
   await waitFor(() => expect(invalidateDealMessages).toHaveBeenCalled());
@@ -141,7 +141,7 @@ it("refreshes the record timelines so a deleted thread leaves the deal and perso
 });
 
 it("refreshes the record timelines on archive too", async () => {
-  render(<ReaderTopBar threadId="t1" canManage />);
+  render(<ReaderTopBar threadId="t1" archived={false} canManage />);
   screen.getByRole("button", { name: "Archive" }).click();
   await waitFor(() => expect(invalidateDealMessages).toHaveBeenCalled());
   expect(invalidateContactMessages).toHaveBeenCalled();
@@ -149,7 +149,7 @@ it("refreshes the record timelines on archive too", async () => {
 
 it("surfaces a failed delete and stays put (no silent no-op)", async () => {
   trashMock.mockResolvedValueOnce({ ok: false, error: { id: "E_GMAIL_001" } } as never);
-  render(<ReaderTopBar threadId="t1" canManage />);
+  render(<ReaderTopBar threadId="t1" archived={false} canManage />);
   screen.getByRole("button", { name: "Delete" }).click();
   (await screen.findByRole("button", { name: /move to trash/i })).click();
   await waitFor(() => expect(reportError).toHaveBeenCalledWith("E_GMAIL_001"));
@@ -157,7 +157,7 @@ it("surfaces a failed delete and stays put (no silent no-op)", async () => {
 });
 
 it("groups Archive and Delete together on the left, not pushed to the far right (B3)", () => {
-  render(<ReaderTopBar threadId="t1" canManage />);
+  render(<ReaderTopBar threadId="t1" archived={false} canManage />);
   const archive = screen.getByRole("button", { name: "Archive" });
   const del = screen.getByRole("button", { name: "Delete" });
   // PD groups the reader actions top-left; WD previously pushed Archive right with ml-auto.
@@ -172,18 +172,18 @@ it("groups Archive and Delete together on the left, not pushed to the far right 
 });
 
 it("hides Archive and Delete for a non-owner (canManage false)", () => {
-  render(<ReaderTopBar threadId="t1" canManage={false} />);
+  render(<ReaderTopBar threadId="t1" archived={false} canManage={false} />);
   expect(screen.queryByRole("button", { name: "Archive" })).toBeNull();
   expect(screen.queryByRole("button", { name: "Delete" })).toBeNull();
 });
 
 it("hides the trash action when the mailbox cannot trash", () => {
-  render(<ReaderTopBar threadId="t1" canManage canTrash={false} />);
+  render(<ReaderTopBar threadId="t1" archived={false} canManage canTrash={false} />);
   expect(screen.getByRole("button", { name: "Archive" })).toBeInTheDocument();
   expect(screen.queryByRole("button", { name: STRINGS.inbox.delete })).not.toBeInTheDocument();
 });
 
 it("shows the trash action by default", () => {
-  render(<ReaderTopBar threadId="t1" canManage />);
+  render(<ReaderTopBar threadId="t1" archived={false} canManage />);
   expect(screen.getByRole("button", { name: STRINGS.inbox.delete })).toBeInTheDocument();
 });

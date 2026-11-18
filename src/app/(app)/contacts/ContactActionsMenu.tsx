@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ICON_BUTTON } from "@/constants/formStyles";
 import { deleteOrgAction, deletePersonAction } from "@/features/contacts/actions";
+import { copyWithToast } from "@/lib/clipboard/copyWithToast";
 import { readCsrfToken } from "@/utils/csrfCookie";
 
 interface ContactActionsMenuProps {
@@ -39,10 +40,6 @@ export function ContactActionsMenu({
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const basePath = entityType === "person" ? "/contacts/people" : "/contacts/orgs";
 
-  async function copyLink(): Promise<void> {
-    await navigator.clipboard.writeText(`${location.origin}${basePath}/${entityId}`);
-  }
-
   async function remove(): Promise<void> {
     setPending(true);
     const r =
@@ -59,7 +56,11 @@ export function ContactActionsMenu({
         <EllipsisVertical aria-hidden="true" className="h-4 w-4" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-44">
-        <DropdownMenuItem onSelect={() => void copyLink()}>Copy link</DropdownMenuItem>
+        <DropdownMenuItem
+          onSelect={() => void copyWithToast(`${location.origin}${basePath}/${entityId}`)}
+        >
+          Copy link
+        </DropdownMenuItem>
         {canMerge && <DropdownMenuItem onSelect={onMerge}>Merge duplicates</DropdownMenuItem>}
         {canDelete && (
           <DropdownMenuItem onSelect={() => setConfirmingDelete(true)} className="text-destructive">

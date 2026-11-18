@@ -15,9 +15,8 @@ export interface BulkEditPanelProps {
   // Distinct callback (not a bulkUpdateLeadsInput.change field): converts the whole selection to
   // deals via bulkConvertLeadsAction. Only rendered in the non-archived inbox view.
   onConvert: () => void;
-  // True while a bulkConvertLeadsAction call is in flight: disables the button so a rapid
-  // double-click cannot fire two overlapping batches.
   converting?: boolean;
+  applying?: boolean;
   onClear: () => void;
 }
 
@@ -25,17 +24,23 @@ const BTN =
   "rounded-md border px-2.5 py-1 text-sm transition-[background-color,scale] duration-150 ease-out hover:bg-accent active:scale-[0.96] motion-reduce:transition-colors";
 const PANEL = "max-h-56 min-w-40 overflow-auto";
 
-// Dropdown built on the shared PopMenu (shadcn DropdownMenu underneath). `label` is both the visible
-// trigger text and its accessible name; children render rows and call close() after applying.
 function Menu({
   label,
+  disabled,
   children,
 }: {
   label: string;
+  disabled: boolean;
   children: (close: () => void) => React.ReactNode;
 }): React.ReactNode {
   return (
-    <PopMenu trigger={label} triggerLabel={label} triggerClassName={BTN} panelClassName={PANEL}>
+    <PopMenu
+      trigger={label}
+      triggerLabel={label}
+      triggerClassName={`${BTN} disabled:opacity-50`}
+      panelClassName={PANEL}
+      disabled={disabled}
+    >
       {children}
     </PopMenu>
   );
@@ -52,6 +57,7 @@ export function BulkEditPanel({
   onApply,
   onConvert,
   converting = false,
+  applying = false,
   onClear,
 }: BulkEditPanelProps): React.ReactNode {
   const labelNames = (trpc.labels.listByTarget.useQuery({ target: "lead" }).data ?? []).map(
@@ -60,7 +66,7 @@ export function BulkEditPanel({
   return (
     <BulkActionBar count={count} onClear={onClear}>
       {assignableUsers.length > 0 && (
-        <Menu label="Change owner">
+        <Menu label="Change owner" disabled={applying}>
           {(close) =>
             assignableUsers.map((u) => (
               <button
@@ -80,7 +86,7 @@ export function BulkEditPanel({
         </Menu>
       )}
 
-      <Menu label="Set label">
+      <Menu label="Set label" disabled={applying}>
         {(close) => (
           <>
             {labelNames.map((name) => (
@@ -123,13 +129,19 @@ export function BulkEditPanel({
         </button>
       )}
 
-      <button type="button" onClick={() => onApply({ archived: !archived })} className={BTN}>
+      <button
+        type="button"
+        disabled={applying}
+        onClick={() => onApply({ archived: !archived })}
+        className={`${BTN} disabled:opacity-50`}
+      >
         {archived ? "Restore" : "Archive"}
       </button>
       <button
         type="button"
+        disabled={applying}
         onClick={() => onApply({ deleted: true })}
-        className="rounded-md border border-destructive/40 px-2.5 py-1 text-sm text-destructive transition-[background-color,scale] duration-150 ease-out hover:bg-destructive/10 active:scale-[0.96] motion-reduce:transition-colors"
+        className="rounded-md border border-destructive/40 px-2.5 py-1 text-sm text-destructive transition-[background-color,scale] duration-150 ease-out hover:bg-destructive/10 active:scale-[0.96] disabled:opacity-50 motion-reduce:transition-colors"
       >
         Delete
       </button>

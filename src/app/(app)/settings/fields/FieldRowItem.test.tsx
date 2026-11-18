@@ -2,7 +2,7 @@
 import "@testing-library/jest-dom/vitest";
 import { DndContext } from "@dnd-kit/core";
 import { SortableContext } from "@dnd-kit/sortable";
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { STRINGS } from "@/constants/strings";
 import type { FieldRow } from "./types";
@@ -106,11 +106,43 @@ describe("FieldRowItem placement toggles", () => {
   });
 });
 
+function confirmArchive(): void {
+  fireEvent.click(screen.getByRole("button", { name: S.archive }));
+  const dialog = screen.getByRole("alertdialog", { name: S.archiveFieldTitle(ROW.name) });
+  fireEvent.click(within(dialog).getByRole("button", { name: S.archive }));
+}
+
+describe("FieldRowItem archive", () => {
+  it("asks for confirmation before archiving", () => {
+    renderRow(ROW);
+    fireEvent.click(screen.getByRole("button", { name: S.archive }));
+    expect(screen.getByRole("alertdialog", { name: S.archiveFieldTitle("Budget") })).toBeVisible();
+    expect(actions.archiveDefAction).not.toHaveBeenCalled();
+  });
+
+  it("disables Archive while the archive is in flight", async () => {
+    let finish: () => void = () => undefined;
+    actions.archiveDefAction.mockImplementationOnce(
+      () =>
+        new Promise((r) => {
+          finish = () => r({ ok: true, value: { id: "d1" } });
+        }),
+    );
+    renderRow(ROW);
+    confirmArchive();
+    const busy = await screen.findByRole("button", { name: S.archiving });
+    expect(busy).toBeDisabled();
+    expect(actions.archiveDefAction).toHaveBeenCalledTimes(1);
+    finish();
+    await waitFor(() => expect(screen.getByRole("button", { name: S.archive })).toBeEnabled());
+  });
+});
+
 describe("FieldRowItem surfaces failed mutations", () => {
   it("reports the error id when archive is denied", async () => {
     actions.archiveDefAction.mockResolvedValueOnce({ ok: false, error: { id: "E_PERM_001" } });
     renderRow(ROW);
-    fireEvent.click(screen.getByRole("button", { name: S.archive }));
+    confirmArchive();
     await waitFor(() => expect(report).toHaveBeenCalledWith("E_PERM_001"));
   });
 

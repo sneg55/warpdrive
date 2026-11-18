@@ -3,23 +3,20 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type React from "react";
 import { useCallback, useMemo, useState } from "react";
-import { BulkActionBar } from "@/components/data-table/BulkActionBar";
 import { type ColumnSort, useColumnSort } from "@/components/data-table/useColumnSort";
 import { RENDER_WINDOW_STEP, useRenderWindow } from "@/components/data-table/useRenderWindow";
 import { useRowSelection } from "@/components/data-table/useRowSelection";
-import { useActionError } from "@/components/shell/ActionErrorProvider";
 import { useRecordPreview } from "@/features/navigation/recordPreviewStore";
 import { useRowCursor } from "@/features/shortcuts/useRowCursor";
 import { browserTimeZone } from "@/lib/browserTimeZone";
 import { trpc } from "@/lib/trpc-client";
-import { readCsrfToken } from "@/utils/csrfCookie";
 import { ActivitiesFilters } from "./ActivitiesFilters";
 import { ActivitiesTableHead } from "./ActivitiesTableHead";
+import { ActivityBulkBar } from "./ActivityBulkBar";
 import { ActivityEditModal } from "./ActivityEditModal";
 import { ActivityRow } from "./ActivityRow";
 import { ActivityTableBody } from "./ActivityTableBody";
 import { AddActivityModal } from "./AddActivityModal";
-import { completeActivityAction } from "./actions";
 import type { ActivityTableRow } from "./activityRows";
 import { activityRowTarget } from "./activityRowTarget";
 import { followUpLinksOf, useFollowUpAfterDone } from "./followUpAfterDone";
@@ -27,6 +24,7 @@ import type { ActivityListFilter, ActivitySortField } from "./schemas";
 import { toEditableActivity } from "./toEditableActivity";
 import { useActivityBulkActions } from "./useActivityBulkActions";
 import { useActivityListFilter } from "./useActivityListFilter";
+import { useActivityRowComplete } from "./useActivityRowComplete";
 
 // Stable module reference: passed as useColumnSort's fallback, so `effective` only changes
 // reference when the sort state itself changes (see PeopleList for the same concern).
@@ -56,16 +54,16 @@ export function ActivitiesTable({
 
   const router = useRouter();
   const setPreview = useRecordPreview((s) => s.setPreview);
-  const reportError = useActionError();
   const rowsQ = trpc.activities.listRows.useQuery(
     { ...filter, sort: effective, timeZone: browserTimeZone() },
     { enabled: ready },
   );
   const typesQ = trpc.activities.listTypes.useQuery();
   const ownersQ = trpc.identity.assignableUsers.useQuery();
-  const { error, bulkMarkDone, bulkDelete } = useActivityBulkActions(selection);
+  const { error, progress, bulkMarkDone, bulkDelete } = useActivityBulkActions(selection);
   const promptAfterDone = useFollowUpAfterDone();
   const rows = useMemo(() => rowsQ.data ?? [], [rowsQ.data]);
+  const rowComplete = useActivityRowComplete(rows, rowsQ.refetch);
   // Cap how many rows are painted; the count header, select-all, and bulk actions all operate
   // over the full `rows` set, so this bounds render cost only. listRows is pagination-free, so
   // without this the default open-activities view mounts every row at once.
@@ -134,22 +132,12 @@ export function ActivitiesTable({
         row={r}
         selected={selection.isSelected(r.id)}
         onToggleSelect={selection.toggle}
-        onToggleDone={(id, currentDone) => void complete(id, currentDone)}
+        onToggleDone={(id, currentDone) => void rowComplete.complete(id, currentDone)}
+        donePending={rowComplete.isPending(r.id)}
         onRowClick={openRow}
         cursor={r.id === cursorId}
       />
     );
-  }
-
-  async function complete(id: string, currentDone: boolean): Promise<void> {
-    const r = await completeActivityAction({ id, done: !currentDone }, readCsrfToken());
-    if (!r.ok) {
-      reportError(r.error.id);
-      return;
-    }
-    await rowsQ.refetch();
-    const row = rows.find((x) => x.id === id);
-    if (!currentDone && row !== undefined) promptAfterDone(followUpLinksOf(row));
   }
 
   return (
@@ -192,22 +180,13 @@ export function ActivitiesTable({
       </div>
 
       {selection.count > 0 && (
-        <BulkActionBar count={selection.count} onClear={selection.clear}>
-          <button
-            type="button"
-            onClick={() => void bulkMarkDone()}
-            className="rounded-md border px-3 py-1 text-sm transition-transform hover:bg-accent active:scale-[0.96]"
-          >
-            Mark done
-          </button>
-          <button
-            type="button"
-            onClick={() => void bulkDelete()}
-            className="rounded-md border px-3 py-1 text-sm transition-transform hover:bg-accent active:scale-[0.96]"
-          >
-            Delete
-          </button>
-        </BulkActionBar>
+        <ActivityBulkBar
+          count={selection.count}
+          progress={progress}
+          onClear={selection.clear}
+          onMarkDone={() => void bulkMarkDone()}
+          onDelete={() => void bulkDelete()}
+        />
       )}
 
       <div className="min-h-0 flex-1 overflow-auto rounded-lg border">
