@@ -97,6 +97,7 @@ export function LeadsInbox({
 
   const {
     convertError,
+    reportConvertError,
     convertTarget,
     setConvertTarget,
     bulkConvertPending,
@@ -256,10 +257,13 @@ export function LeadsInbox({
         <ConvertLeadDialog
           defs={dealFields}
           onClose={() => setConvertTarget(null)}
+          onLateFailure={(outcome) => {
+            if (!outcome.ok) reportConvertError(outcome.message);
+          }}
           onConvert={(customFields) =>
             convertTarget === "bulk"
-              ? bulkConvert([...selection.selected], customFields)
-              : convertRow(convertTarget, customFields)
+              ? bulkConvert([...selection.selected], customFields, "dialog")
+              : convertRow(convertTarget, customFields, "dialog")
           }
         />
       )}

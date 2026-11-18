@@ -24,4 +24,16 @@ describe("actionErrorContent", () => {
     expect(content.title).not.toBe("Couldn't complete that action");
     expect(content.body).toMatch(/deal/i);
   });
+
+  it("explains a stale build instead of the generic copy", () => {
+    const content = actionErrorContent(ERROR_IDS.UI_STALE_BUILD);
+    expect(content.title).not.toBe("Couldn't complete that action");
+    expect(content.body).toMatch(/reload/i);
+  });
+
+  it("tells the user the outcome is unconfirmed when the request never answered", () => {
+    const content = actionErrorContent(ERROR_IDS.UI_ACTION_UNCONFIRMED);
+    expect(content.title).not.toBe("Couldn't complete that action");
+    expect(content.title).toMatch(/confirm/i);
+  });
 });

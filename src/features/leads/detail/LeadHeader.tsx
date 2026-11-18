@@ -9,10 +9,12 @@ import { EditableHeading } from "@/features/inline-edit/EditableHeading";
 import type { InlineSaveResult } from "@/features/inline-edit/useInlineEditField";
 import { useLabelChipResolver } from "@/features/labels/useLabelChipResolver";
 import { useDetailDrawerClose } from "@/features/navigation/detailDrawerClose";
+import { settleAction } from "@/lib/actionFailure";
 import { trpc } from "@/lib/trpc-client";
 import { readCsrfToken } from "@/utils/csrfCookie";
 import { ConvertLeadDialog } from "../ConvertLeadDialog";
 import { carryCustomFields } from "../convertCustomFields";
+import { type ConvertOutcome, convertFailure } from "../convertOutcome";
 import { POP_ITEM, PopMenu } from "../inbox/PopMenu";
 import type { LeadDetail } from "../leadRepo";
 import {
@@ -42,19 +44,25 @@ export function LeadHeader({ lead }: { lead: LeadDetail }): React.ReactNode {
   const resolveLabels = useLabelChipResolver("lead");
   const labels = resolveLabels(lead.labels);
 
-  async function convert(customFields: Record<string, unknown> = {}): Promise<boolean> {
+  async function convert(customFields: Record<string, unknown> = {}): Promise<ConvertOutcome> {
     setPending(true);
-    const r = await convertLeadAction(
-      { leadId: lead.id, expectedUpdatedAt: lead.updatedAt.toISOString(), customFields },
-      readCsrfToken(),
+    const r = await settleAction(() =>
+      convertLeadAction(
+        { leadId: lead.id, expectedUpdatedAt: lead.updatedAt.toISOString(), customFields },
+        readCsrfToken(),
+      ),
     );
     setPending(false);
     if (r.ok) {
       router.push(`/deals/${r.value.dealId}`);
-      return true;
+      return { ok: true };
     }
-    reportError(r.error.id);
-    return false;
+    return convertFailure(r.error.id);
+  }
+
+  async function convertWithoutDialog(): Promise<void> {
+    const outcome = await convert();
+    if (!outcome.ok) reportError(outcome.id);
   }
 
   async function updateTitle(title: string): Promise<InlineSaveResult> {
@@ -99,9 +107,8 @@ export function LeadHeader({ lead }: { lead: LeadDetail }): React.ReactNode {
 
   async function del(): Promise<void> {
     setPending(true);
-    const r = await bulkUpdateLeadsAction(
-      { ids: [lead.id], change: { deleted: true } },
-      readCsrfToken(),
+    const r = await settleAction(() =>
+      bulkUpdateLeadsAction({ ids: [lead.id], change: { deleted: true } }, readCsrfToken()),
     );
     setPending(false);
     if (!r.ok) {
@@ -135,7 +142,7 @@ export function LeadHeader({ lead }: { lead: LeadDetail }): React.ReactNode {
             disabled={pending || converted || dealFieldsQ.isLoading || leadFieldsQ.isLoading}
             onClick={() => {
               if (addFormCustomFieldDefs(dealFields).length > 0) setConvertDialogOpen(true);
-              else void convert();
+              else void convertWithoutDialog();
             }}
             className="rounded-md bg-success px-3 py-1.5 text-sm font-medium text-success-foreground transition-[opacity,scale] duration-150 ease-out hover:opacity-90 active:scale-[0.96] disabled:opacity-50 motion-reduce:transition-opacity"
           >
@@ -177,6 +184,9 @@ export function LeadHeader({ lead }: { lead: LeadDetail }): React.ReactNode {
           initialValues={carried}
           onClose={() => setConvertDialogOpen(false)}
           onConvert={convert}
+          onLateFailure={(outcome) => {
+            if (!outcome.ok) reportError(outcome.id);
+          }}
         />
       )}
     </header>

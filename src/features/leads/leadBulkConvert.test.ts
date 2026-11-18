@@ -79,7 +79,7 @@ describe("bulkConvertLeads", () => {
       );
       expect(r.ok).toBe(true);
       if (!r.ok) return;
-      expect(r.value).toEqual({ converted: 2, skipped: 1 });
+      expect(r.value).toEqual({ converted: 2, skipped: 1, failed: 0, failureId: null });
 
       const rows = await db
         .select()
@@ -106,7 +106,7 @@ describe("bulkConvertLeads", () => {
       );
       expect(r.ok).toBe(true);
       if (!r.ok) return;
-      expect(r.value).toEqual({ converted: 1, skipped: 1 });
+      expect(r.value).toEqual({ converted: 1, skipped: 1, failed: 0, failureId: null });
 
       const [hiddenAfter] = await db
         .select()
@@ -143,7 +143,7 @@ describe("bulkConvertLeads", () => {
       );
       expect(r.ok).toBe(true);
       if (!r.ok) return;
-      expect(r.value).toEqual({ converted: 2, skipped: 1 });
+      expect(r.value).toEqual({ converted: 2, skipped: 1, failed: 0, failureId: null });
 
       const [badAfter] = await db
         .select()
@@ -231,7 +231,7 @@ describe("bulkConvertLeads", () => {
       const r = await bulkConvertLeads(db, session(owner.id), { ids: [a.id, b.id] }, sig());
       expect(r.ok).toBe(true);
       if (!r.ok) return;
-      expect(r.value).toEqual({ converted: 2, skipped: 0 });
+      expect(r.value).toEqual({ converted: 2, skipped: 0, failed: 0, failureId: null });
 
       const rows = await db
         .select()

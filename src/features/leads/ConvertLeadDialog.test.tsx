@@ -22,13 +22,14 @@ const grade: CustomFieldDef = {
 };
 
 it("opens prefilled with initialValues and submits them merged with edits", async () => {
-  const onConvert = vi.fn(() => Promise.resolve(true));
+  const onConvert = vi.fn(() => Promise.resolve({ ok: true as const }));
   render(
     <ConvertLeadDialog
       defs={[grade]}
       initialValues={{ grade: "A" }}
       onClose={() => {}}
       onConvert={onConvert}
+      onLateFailure={vi.fn()}
     />,
   );
   expect(screen.getByLabelText("Grade")).toHaveValue("A");
@@ -38,7 +39,7 @@ it("opens prefilled with initialValues and submits them merged with edits", asyn
 });
 
 it("leaves a carried value it never rendered out of the payload", async () => {
-  const onConvert = vi.fn(() => Promise.resolve(true));
+  const onConvert = vi.fn(() => Promise.resolve({ ok: true as const }));
   render(
     <ConvertLeadDialog
       defs={[
@@ -48,6 +49,7 @@ it("leaves a carried value it never rendered out of the payload", async () => {
       initialValues={{ grade: "A", hidden: "keep" }}
       onClose={() => {}}
       onConvert={onConvert}
+      onLateFailure={vi.fn()}
     />,
   );
   fireEvent.click(screen.getByRole("button", { name: "Save" }));
@@ -55,13 +57,14 @@ it("leaves a carried value it never rendered out of the payload", async () => {
 });
 
 it("submits an explicit null when a prefilled value is cleared", async () => {
-  const onConvert = vi.fn(() => Promise.resolve(true));
+  const onConvert = vi.fn(() => Promise.resolve({ ok: true as const }));
   render(
     <ConvertLeadDialog
       defs={[grade]}
       initialValues={{ grade: "A" }}
       onClose={() => {}}
       onConvert={onConvert}
+      onLateFailure={vi.fn()}
     />,
   );
   fireEvent.change(screen.getByLabelText("Grade"), { target: { value: "" } });

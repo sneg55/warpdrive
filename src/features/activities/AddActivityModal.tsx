@@ -11,9 +11,11 @@ import { ActivityDatePicker } from "@/features/activities/ActivityDatePicker";
 import { composeDueAt } from "@/features/activities/activityTime";
 import { ComposerFieldRow } from "@/features/deal-workspace/composer/ComposerFieldRow";
 import { TypeIconRail } from "@/features/deal-workspace/composer/TypeIconRail";
+import { actionFailureMessage, settleAction } from "@/lib/actionFailure";
 import { trpc } from "@/lib/trpc-client";
 import { readCsrfToken } from "@/utils/csrfCookie";
 import { createActivityAction } from "./actions";
+import { ACTIVITY_CREATE_COPY } from "./activityFailureCopy";
 import { useInvalidateActivityLists } from "./useInvalidateActivityLists";
 
 const ICON = "h-4 w-4";
@@ -72,30 +74,35 @@ export function AddActivityModal({
     }
     setPending(true);
     setError(null);
-    const r = await createActivityAction(
-      {
-        typeId: effectiveTypeId,
-        subject: subject.trim(),
-        priority: priority === "" ? null : priority,
-        ...(due === "" ? { dueAt: null, allDay: false } : composedDue(due, startTime)),
-        durationMinutes: null,
-        dealId,
-        leadId,
-        personId: personId === "" ? null : personId,
-        orgId: orgId === "" ? null : orgId,
-        guestPersonIds: [],
-        participantUserIds: [],
-        customFields: {},
-      },
-      readCsrfToken(),
+    const r = await settleAction(() =>
+      createActivityAction(
+        {
+          typeId: effectiveTypeId,
+          subject: subject.trim(),
+          priority: priority === "" ? null : priority,
+          ...(due === "" ? { dueAt: null, allDay: false } : composedDue(due, startTime)),
+          durationMinutes: null,
+          dealId,
+          leadId,
+          personId: personId === "" ? null : personId,
+          orgId: orgId === "" ? null : orgId,
+          guestPersonIds: [],
+          participantUserIds: [],
+          customFields: {},
+        },
+        readCsrfToken(),
+      ),
     );
     if (!r.ok) {
       setPending(false);
-      setError(`Could not create activity (${r.error.id})`);
+      setError(actionFailureMessage(ACTIVITY_CREATE_COPY, r.error.id));
       return;
     }
-    await invalidateActivityLists();
-    setPending(false);
+    try {
+      await invalidateActivityLists();
+    } finally {
+      setPending(false);
+    }
     onCreated?.();
     onClose();
   }

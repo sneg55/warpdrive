@@ -10,7 +10,7 @@ import { createContext } from "@/server/trpc/context";
 import { isLeadVisibleToSession } from "./createdVisibility";
 import { archiveLead, createLead, type LeadSession } from "./leadActions";
 import { bulkUpdateLeads } from "./leadBulk";
-import { bulkConvertLeads } from "./leadBulkConvert";
+import { type BulkConvertSummary, bulkConvertLeads } from "./leadBulkConvert";
 import { convertLead } from "./leadConvert";
 import { updateLead } from "./leadUpdate";
 import type {
@@ -89,7 +89,9 @@ export async function convertLeadAction(
 ): Promise<LeadActionResult<{ dealId: string }>> {
   const auth = await authorize(csrfToken);
   if (!auth.ok) return auth;
-  const r = await convertLead(db, auth.session, input, SIG());
+  const r = await guardWrite("convertLeadAction", auth.session.userId, () =>
+    convertLead(db, auth.session, input, SIG()),
+  );
   if (!r.ok) return { ok: false, error: { id: r.error.id } };
   return { ok: true, value: r.value };
 }
@@ -119,7 +121,7 @@ export async function updateLeadAction(
 export async function bulkConvertLeadsAction(
   input: BulkConvertLeadsInput,
   csrfToken: string | null = null,
-): Promise<LeadActionResult<{ converted: number; skipped: number }>> {
+): Promise<LeadActionResult<BulkConvertSummary>> {
   const auth = await authorize(csrfToken);
   if (!auth.ok) return auth;
   const r = await bulkConvertLeads(db, auth.session, input, SIG());

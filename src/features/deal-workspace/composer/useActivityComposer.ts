@@ -1,8 +1,13 @@
 "use client";
 import { useState } from "react";
 import { createActivityAction, editActivityAction } from "@/features/activities/actions";
+import {
+  ACTIVITY_CREATE_COPY,
+  ACTIVITY_SAVE_COPY,
+} from "@/features/activities/activityFailureCopy";
 import type { EditableActivity } from "@/features/activities/getForEdit";
 import { useInvalidateActivityLists } from "@/features/activities/useInvalidateActivityLists";
+import { actionFailureMessage, settleAction } from "@/lib/actionFailure";
 import { trpc } from "@/lib/trpc-client";
 import { readCsrfToken } from "@/utils/csrfCookie";
 import {
@@ -147,18 +152,26 @@ export function useActivityComposer(props: ActivityComposerProps) {
     setPending(true);
     setError(null);
     const csrf = readCsrfToken();
-    const r =
+    const r = await settleAction(() =>
       editing !== null
-        ? await editActivityAction(buildActivityUpdateInput(editing.id, draft(), editing), csrf)
-        : await createActivityAction(buildActivityInput(draft()), csrf);
+        ? editActivityAction(buildActivityUpdateInput(editing.id, draft(), editing), csrf)
+        : createActivityAction(buildActivityInput(draft()), csrf),
+    );
     if (!r.ok) {
       setPending(false);
-      const verb = editing !== null ? "save" : "create";
-      setError(`Could not ${verb} activity (${r.error.id})`);
+      setError(
+        actionFailureMessage(
+          editing !== null ? ACTIVITY_SAVE_COPY : ACTIVITY_CREATE_COPY,
+          r.error.id,
+        ),
+      );
       return;
     }
-    await invalidateActivityLists();
-    setPending(false);
+    try {
+      await invalidateActivityLists();
+    } finally {
+      setPending(false);
+    }
     if (editing === null) resetForNext();
     onCreated();
   }

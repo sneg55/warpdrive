@@ -18,4 +18,20 @@ describe("convertErrorMessage", () => {
   it("falls back for unknown ids", () => {
     expect(convertErrorMessage("E_WHATEVER")).toMatch(/could not convert/i);
   });
+
+  it("names the id for a failed write", () => {
+    expect(convertErrorMessage(ERROR_IDS.DB_WRITE_FAILED)).toContain("E_DB_003");
+  });
+
+  it("asks for a reload on a stale build", () => {
+    const m = convertErrorMessage(ERROR_IDS.UI_STALE_BUILD);
+    expect(m).toMatch(/reload the page/i);
+    expect(m).toContain("E_UI_002");
+  });
+
+  it("asks the user to check the lead on an unconfirmed outcome", () => {
+    const m = convertErrorMessage(ERROR_IDS.UI_ACTION_UNCONFIRMED);
+    expect(m).toMatch(/could not confirm the lead was converted/i);
+    expect(m).toContain("E_UI_003");
+  });
 });

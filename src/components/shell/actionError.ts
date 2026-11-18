@@ -31,6 +31,14 @@ const CONTENT: Record<string, ActionErrorContent> = {
     title: "This lead is already converted",
     body: "It already has a deal. Refresh the page to see the current state.",
   },
+  [ERROR_IDS.UI_STALE_BUILD]: {
+    title: "Warpdrive was updated",
+    body: "This page is out of date. Reload the page, then try again. (E_UI_002)",
+  },
+  [ERROR_IDS.UI_ACTION_UNCONFIRMED]: {
+    title: "We could not confirm that change",
+    body: "The request did not get an answer, so it may not have been saved. Check the record before trying again. (E_UI_003)",
+  },
   [ERROR_IDS.DEAL_FILTER_INVALID]: {
     title: "One of these conditions isn't valid",
     body: "Check each condition's value: a number field needs a number, and a date field needs a date.",

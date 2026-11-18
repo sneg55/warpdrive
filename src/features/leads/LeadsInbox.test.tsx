@@ -153,7 +153,7 @@ describe("LeadsInbox", () => {
     const { bulkConvertLeadsAction } = await import("./leadServerActions");
     vi.mocked(bulkConvertLeadsAction).mockResolvedValue({
       ok: true,
-      value: { converted: 1, skipped: 0 },
+      value: { converted: 1, skipped: 0, failed: 0, failureId: null },
     });
     listQuery.mockReturnValue({ data: { rows: [LEAD], total: 1, refLabels: REF_LABELS }, refetch });
     render(<LeadsInbox />);
@@ -259,8 +259,10 @@ describe("LeadsInbox", () => {
 
   it("guards the bulk Convert to deal button against a rapid double-click", async () => {
     const { bulkConvertLeadsAction } = await import("./leadServerActions");
-    let resolveAction: (v: { ok: true; value: { converted: number; skipped: number } }) => void =
-      () => {};
+    let resolveAction: (v: {
+      ok: true;
+      value: { converted: number; skipped: number; failed: number; failureId: string | null };
+    }) => void = () => {};
     vi.mocked(bulkConvertLeadsAction).mockReturnValue(
       new Promise((resolve) => {
         resolveAction = resolve;
@@ -276,6 +278,6 @@ describe("LeadsInbox", () => {
     await waitFor(() => {
       expect(bulkConvertLeadsAction).toHaveBeenCalledTimes(1);
     });
-    resolveAction({ ok: true, value: { converted: 1, skipped: 0 } });
+    resolveAction({ ok: true, value: { converted: 1, skipped: 0, failed: 0, failureId: null } });
   });
 });
