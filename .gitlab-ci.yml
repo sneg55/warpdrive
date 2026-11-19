@@ -1,0 +1,310 @@
+---
+
+# GitLab CI for warpdrive.
+#
+# One Dockerfile serves every compose service: app, ws, worker and migrate run the same
+# production image with different commands (postgres, garage, caddy and the storagecors
+# one-shot are third-party images and are not built here).
+#
+# Stages:
+#   prepare            -> content-addressed tag for the deps images (git rev-list over
+#                         package.json, pnpm-lock.yaml and the Dockerfile) plus the
+#                         commit+pipeline tag for the final image; hadolint on the Dockerfile.
+#   build deps images  -> deps (full node_modules, base of every test job and of the final
+#                         build) and prod-deps (production node_modules, base of the runtime
+#                         stage). Rebuilt only when their inputs change; otherwise the job
+#                         sees the tag already in the registry and skips the build.
+#   test               -> lint, typecheck, unit and integration (testcontainers Postgres in
+#                         dind), all running inside the deps image: no pnpm install at test time.
+#   build final images -> the production image, assembled on top of the two deps images via
+#                         build args, so its only real work is `next build`.
+#   final tests        -> smoke test: the image runs as compose services against a real
+#                         Postgres; migrate, ws, worker and the app entrypoints all boot.
+#   tag                -> -dev and latest tags on the default branch (skopeo).
+#
+# Required CI/CD variable (Settings -> CI/CD -> Variables):
+#   NEXT_PUBLIC_WS_URL  wss://<APP_DOMAIN>/_ws of the box the images ship to. Inlined into the
+#                       client bundle at build time; the Dockerfile fails the build when it
+#                       is empty, on purpose.
+#
+# Images produced in $CI_REGISTRY_IMAGE:
+#   deps:deps-<stamp>-<count>-<hash>-<ref>       (intermediate, tests + build base)
+#   prod-deps:deps-<stamp>-<count>-<hash>-<ref>  (intermediate, runtime base)
+#   <project>:<commit>-<pipeline>                (production, all compose services)
+#   <project>:<commit>-<pipeline>-dev, :latest   (default branch only)
+
+stages:
+  - prepare
+  - build deps images
+  - test
+  - build final images
+  - final tests
+  - tag
+
+variables:
+  # Bump to force rebuilding the deps images even when their inputs are unchanged.
+  DEPS_STAMP: "1"
+
+include:
+  - remote: https://gitlab.com/simevo/pipelines/-/raw/main/jobs/build_docker_image_buildkit.yml
+
+# ─────────────────────────────────────────────────────────────────────────────
+# prepare: compute the tags and export them to the later jobs via dotenv.
+# ─────────────────────────────────────────────────────────────────────────────
+
+prepare:
+  stage: prepare
+  image:
+    name: docker.io/alpine/git
+    entrypoint: [""]
+  variables:
+    # disable shallow cloning or `git rev-list --count` used below won't work
+    GIT_DEPTH: 0
+  script:
+    - GIT_VERSION=$(git log -n1 --pretty='%h')
+    - TAG="${GIT_VERSION}-${CI_PIPELINE_ID}"
+    # deps inputs: the lockfiles (the install is a pure function of them) and the
+    # Dockerfile, whose deps/prod-deps stages define the images.
+    - DEPS_COMMIT_HASH=$(git rev-list -1 HEAD -- package.json pnpm-lock.yaml Dockerfile)
+    - DEPS_COMMIT_COUNT=$(git rev-list --count "${DEPS_COMMIT_HASH}")
+    # Tags like `deps-1-89-56fcfcc403a7-main` ensure that the deps images are rebuilt
+    # when DEPS_STAMP is bumped or a commit touches their inputs; otherwise the
+    # existing image is re-used per branch, skipping the pnpm install in every job.
+    - DEPS_TAG="deps-${DEPS_STAMP}-${DEPS_COMMIT_COUNT}-${DEPS_COMMIT_HASH}-${CI_COMMIT_REF_SLUG}"
+    - echo "TAG=${TAG}" | tee -a build-env.txt
+    - echo "DEPS_TAG=${DEPS_TAG}" | tee -a build-env.txt
+  artifacts:
+    reports:
+      dotenv: build-env.txt
+
+lint-dockerfile:
+  stage: prepare
+  image: docker.io/hadolint/hadolint:latest-debian
+  script:
+    # DL3008: node:24-alpine is pinned to a minor, not a patch, by design (.nvmrc parity).
+    # DL3059: the runtime stage keeps ENV/ARG instructions separate on purpose, so the
+    # per-commit APP_COMMIT layer does not invalidate the node_modules/.next copies.
+    - hadolint --ignore DL3008 --ignore DL3059 Dockerfile
+
+# ─────────────────────────────────────────────────────────────────────────────
+# deps images: node_modules baked in, reused by every test job and as the base of
+# the production image (the Dockerfile's DEPS_IMAGE / PROD_DEPS_IMAGE build args).
+# ─────────────────────────────────────────────────────────────────────────────
+
+build-docker-image-deps:
+  extends: .build-docker-image
+  stage: build deps images
+  variables:
+    DOCKERFILE: ./Dockerfile
+    REPO: $CI_REGISTRY_IMAGE/deps
+    JOB_TAG: $DEPS_TAG
+    ARGS: --target deps
+
+build-docker-image-prod-deps:
+  extends: .build-docker-image
+  stage: build deps images
+  variables:
+    DOCKERFILE: ./Dockerfile
+    REPO: $CI_REGISTRY_IMAGE/prod-deps
+    JOB_TAG: $DEPS_TAG
+    ARGS: --target prod-deps
+
+# ─────────────────────────────────────────────────────────────────────────────
+# tests: run inside the deps image; the repo is checked out in the job and
+# node_modules comes from the image via a symlink. No pnpm install, no cache.
+# ─────────────────────────────────────────────────────────────────────────────
+
+lint:
+  stage: test
+  image: $CI_REGISTRY_IMAGE/deps:$DEPS_TAG
+  before_script:
+    - ln -s /app/node_modules node_modules
+  script:
+    - pnpm lint
+
+typecheck:
+  stage: test
+  image: $CI_REGISTRY_IMAGE/deps:$DEPS_TAG
+  before_script:
+    - ln -s /app/node_modules node_modules
+  script:
+    - pnpm typecheck
+
+test:unit:
+  stage: test
+  image: $CI_REGISTRY_IMAGE/deps:$DEPS_TAG
+  before_script:
+    - ln -s /app/node_modules node_modules
+  script:
+    - pnpm test:unit -- --reporter=default --reporter=junit --outputFile=junit.xml
+  artifacts:
+    when: always
+    paths:
+      - junit.xml
+    reports:
+      junit: junit.xml
+    expire_in: 1 week
+
+test:integration:
+  stage: test
+  image: $CI_REGISTRY_IMAGE/deps:$DEPS_TAG
+  services:
+    - name: docker:27-dind
+      alias: docker
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    # the dind daemon is disposable per job, so the ryuk cleanup container is unnecessary
+    TESTCONTAINERS_RYUK_DISABLED: "true"
+  before_script:
+    - ln -s /app/node_modules node_modules
+  script:
+    - pnpm test:integration -- --reporter=default --reporter=junit --outputFile=junit.xml
+  artifacts:
+    when: always
+    paths:
+      - junit.xml
+    reports:
+      junit: junit.xml
+    expire_in: 1 week
+
+# ─────────────────────────────────────────────────────────────────────────────
+# final image: the production image for all compose services, built on top of the
+# deps images pushed above (build args point the Dockerfile's build/runtime stages
+# at them), so this job's only real work is `next build`.
+# ─────────────────────────────────────────────────────────────────────────────
+
+build-docker-image:
+  extends: .build-docker-image
+  stage: build final images
+  variables:
+    DOCKERFILE: ./Dockerfile
+    REPO: $CI_REGISTRY_IMAGE
+    JOB_TAG: $TAG
+    ARGS: >-
+      --target runtime
+      --build-arg DEPS_IMAGE=$CI_REGISTRY_IMAGE/deps:$DEPS_TAG
+      --build-arg PROD_DEPS_IMAGE=$CI_REGISTRY_IMAGE/prod-deps:$DEPS_TAG
+      --build-arg NEXT_PUBLIC_WS_URL=$NEXT_PUBLIC_WS_URL
+      --build-arg APP_COMMIT=$CI_COMMIT_SHA
+      --build-arg APP_VERSION=$CI_COMMIT_TAG
+
+# ─────────────────────────────────────────────────────────────────────────────
+# final tests: boot the production image the way docker-compose does (same image,
+# per-service command) against a real Postgres, and verify every entrypoint comes
+# up. The job itself runs in the deps image (root), so it is not subject to the
+# non-root user of the runtime image.
+# ─────────────────────────────────────────────────────────────────────────────
+
+smoke-test:
+  stage: final tests
+  image: $CI_REGISTRY_IMAGE/deps:$DEPS_TAG
+  services:
+    - name: docker.io/postgres:16-alpine
+      alias: postgres
+      variables:
+        POSTGRES_USER: warpdrive
+        POSTGRES_PASSWORD: warpdrive
+        POSTGRES_DB: warpdrive
+    # app: compose runs migrate as a one-shot service gating the app; here the same
+    # container applies the migrations and then serves, mirroring that ordering.
+    - name: $CI_REGISTRY_IMAGE:$TAG
+      alias: app
+      command:
+        [
+          "sh",
+          "-c",
+          "i=0; until node dist/migrate.mjs; do i=$((i+1)); if [ \"$i\" -ge 60 ]; then echo \"migrate failed after 60 attempts\"; exit 1; fi; sleep 2; done; exec node_modules/.bin/next start"
+        ]
+    - name: $CI_REGISTRY_IMAGE:$TAG
+      alias: ws
+      command:
+        [
+          "sh",
+          "-c",
+          "i=0; until node dist/ws.mjs; do i=$((i+1)); if [ \"$i\" -ge 60 ]; then echo \"ws failed after 60 attempts\"; exit 1; fi; sleep 2; done"
+        ]
+    - name: $CI_REGISTRY_IMAGE:$TAG
+      alias: worker
+      command:
+        [
+          "sh",
+          "-c",
+          "i=0; until node dist/worker.mjs; do i=$((i+1)); if [ \"$i\" -ge 60 ]; then echo \"worker failed after 60 attempts\"; exit 1; fi; sleep 2; done"
+        ]
+  variables:
+    # schema-satisfying placeholders: the app is not talking to Google, Garage or
+    # anyone in this job, it only has to boot and answer /api/health.
+    DATABASE_URL: postgres://warpdrive:warpdrive@postgres:5432/warpdrive
+    GOOGLE_OAUTH_CLIENT_ID: ci
+    GOOGLE_OAUTH_CLIENT_SECRET: ci
+    GOOGLE_WORKSPACE_DOMAIN: ci.example.com
+    BASE_URL: https://ci.example.com
+    WS_TICKET_SECRET: ci_smoke_ws_ticket_secret_0123456789abcdef
+    WS_PUBLIC_URL: ws://localhost:8080
+    S3_ENDPOINT: http://localhost:3900
+    S3_ACCESS_KEY: ci
+    S3_SECRET_KEY: ci
+    S3_BUCKET: warpdrive
+    S3_REGION: garage
+    TOKEN_ENCRYPTION_KEY: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+    OAUTH_SIGNING_KEY: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+    SEED_ADMIN_EMAIL: ci@example.com
+    DISABLE_UPDATE_CHECK: "true"
+  before_script:
+    - ln -s /app/node_modules node_modules
+    # wait for postgres (no pg_isready in the image, plain node net check)
+    - |
+      for i in $(seq 1 30); do
+        node -e "require('net').createConnection({host:'postgres',port:5432}).on('connect',()=>process.exit(0)).on('error',()=>process.exit(1))" && break
+        echo "waiting for postgres..."; sleep 2
+      done
+  script:
+    # app: migrations applied + first /api/health answered (migrate runs inside the
+    # app service before `next start`, so this also gates the migration step).
+    - |
+      ok=0; i=0
+      while [ "$i" -lt 60 ]; do
+        if wget -q -O /dev/null http://app:3000/api/health; then ok=1; break; fi
+        i=$((i+1)); sleep 2
+      done
+      if [ "$ok" != "1" ]; then echo "app never became healthy at http://app:3000/api/health"; exit 1; fi
+      body=$(wget -qO- http://app:3000/api/health)
+      echo "health: $body"
+      echo "$body" | grep -q '"ok":true'
+    # ws: relay listening on its port.
+    - |
+      ok=0; i=0
+      while [ "$i" -lt 90 ]; do
+        if node -e "require('net').createConnection({host:'ws',port:8080}).on('connect',()=>process.exit(0)).on('error',()=>process.exit(1))"; then ok=1; break; fi
+        i=$((i+1)); sleep 1
+      done
+      if [ "$ok" != "1" ]; then echo "ws never listened on ws:8080"; exit 1; fi
+    # worker: pg-boss started, meaning it created its schema/tables in the real DB.
+    - |
+      node -e "const { Pool } = require('pg'); const pool = new Pool({ connectionString: process.env.DATABASE_URL, connectionTimeoutMillis: 3000 }); (async () => { const deadline = Date.now() + 120000; for (;;) { const r = await pool.query(\"SELECT 1 FROM information_schema.tables WHERE table_schema = 'pgboss' AND table_name = 'job'\"); if (r.rowCount > 0) { await pool.end(); process.exit(0); } if (Date.now() > deadline) { await pool.end(); process.exit(1); } await new Promise((res) => setTimeout(res, 2000)); } })().catch(() => process.exit(1));" || {
+        echo "worker never created its pg-boss tables";
+        exit 1;
+      }
+    - echo "smoke test passed"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# tag: mark the latest image built on the default branch as -dev and latest.
+# ─────────────────────────────────────────────────────────────────────────────
+
+tag-images:
+  stage: tag
+  image: quay.io/skopeo/stable
+  variables:
+    AUTH: $CI_REGISTRY_USER:$CI_REGISTRY_PASSWORD
+  rules:
+    - if: '$CI_MERGE_REQUEST_ID'
+      when: never
+    - if: '$CI_DEFAULT_BRANCH == $CI_COMMIT_BRANCH'
+      when: on_success
+    - when: never
+  script:
+    - |
+      skopeo copy --src-creds "$AUTH" --dest-creds "$AUTH" docker://${CI_REGISTRY_IMAGE}:${TAG} docker://${CI_REGISTRY_IMAGE}:${TAG}-dev
+      echo "Tagged ${CI_REGISTRY_IMAGE}:${TAG}-dev"
+      skopeo copy --src-creds "$AUTH" --dest-creds "$AUTH" docker://${CI_REGISTRY_IMAGE}:${TAG} docker://${CI_REGISTRY_IMAGE}:latest
+      echo "Tagged ${CI_REGISTRY_IMAGE}:latest"
