@@ -25,5 +25,5 @@ export function avatarPublicUrl(userId: string, version: string): string {
 const UPLOADED_AVATAR_PREFIX = "/api/users/";
 
 export function isUploadedAvatarUrl(url: string | null): boolean {
-  return url !== null && url.startsWith(UPLOADED_AVATAR_PREFIX);
+  return url?.startsWith(UPLOADED_AVATAR_PREFIX);
 }
