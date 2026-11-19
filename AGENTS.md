@@ -82,6 +82,33 @@ Biome (`biome.json`) plus type-aware ESLint (`eslint.config.mjs`, ESLint flat co
 
 Type-aware rules on include: `no-floating-promises`, `no-misused-promises`, `no-explicit-any`, `no-non-null-assertion`, `strict-boolean-expressions`, `switch-exhaustiveness-check`, `no-unnecessary-condition`, `consistent-type-imports`, import checks, `no-console` (allow warn/error), a `no-restricted-properties` guard on `process.env`, and `sonarjs/cognitive-complexity`. A `no-restricted-syntax` block bans raw `throw new Error` (use `AppError`), flags `fetch(` without `{ signal }`, and flags hand-rolled menus/modals so they use the shadcn primitives (only `src/components/ui/**` is exempt). `warpdrive/no-comments` reports every comment that is not a toolchain directive (see Conventions).
 
+## Releases
+
+Releases are tags of the form `vX.Y.Z` on `main`. To release:
+
+1. Bump `version` in `package.json` to the new `X.Y.Z`.
+
+2. Add the release's entry to `CHANGELOG.md` following the ["Keep a Changelog"](https://keepachangelog.com/en/1.1.0/) format; code lines are counted with tokei i.e.:
+
+    ```sh
+    tokei . \
+      --exclude node_modules \
+      --exclude .next \
+      --exclude drizzle \
+      --exclude pnpm-lock.yaml \
+      --exclude "*.min.js" \
+      --type TypeScript,TSX,JavaScript,JSX,CSS,SQL
+    ```
+
+3. Commit, tag, and push the tag:
+
+    ```sh
+    git tag -a vX.Y.Z -m "Release vX.Y.Z"
+    git push origin vX.Y.Z
+    ```
+
+4. Create the GitHub Release from the tag.
+
 ## Git Safety
 
 - Never force push
