@@ -185,6 +185,12 @@ The app is then at `http://localhost:3000`, the Garage S3 API at
 `S3_SERVER_ENDPOINT=http://garage:3900` for this mode. Inside the Compose network the containers cannot reach the host-published `localhost:9000`, so the
 server side dials Garage by its Compose service name.
 
+To sign in without Google, open the `dev-login` route:
+`http://localhost:3000/auth/dev-login?email=admin@example.com`, where `admin@example.com`
+is the address you set in `SEED_ADMIN_EMAIL`. The route only works when
+`ALLOW_FIRST_LOGIN_ADMIN=true` and `NODE_ENV=development` are also set (the image defaults
+to `NODE_ENV=production`). Never set either on a real deployment.
+
 ## Operating the deployment
 
 See [Updating](./operations/updating.md) for upgrades, backups, and day-to-day

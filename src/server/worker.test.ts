@@ -3,6 +3,8 @@ import {
   PGBOSS_QUEUE_EMAIL_SEND,
   PGBOSS_QUEUE_EMAIL_SYNC,
   PGBOSS_QUEUE_FILE_REAPER,
+  PGBOSS_QUEUE_INTERCOM_DEAL_SEARCH,
+  PGBOSS_QUEUE_INTERCOM_DEAL_SEARCH_BACKFILL,
   PGBOSS_QUEUE_INTERCOM_SYNC,
   PGBOSS_QUEUE_RELEASE_CHECK,
 } from "@/constants/jobNames";
@@ -94,6 +96,8 @@ describe("registerAllJobs", () => {
       expect(queueNames).toContain(PGBOSS_QUEUE_RELEASE_CHECK);
       expect(fakeBoss.schedules.some((s) => s.name === PGBOSS_QUEUE_RELEASE_CHECK)).toBe(true);
 
+      expect(queueNames).toContain(PGBOSS_QUEUE_INTERCOM_DEAL_SEARCH);
+      expect(queueNames).toContain(PGBOSS_QUEUE_INTERCOM_DEAL_SEARCH_BACKFILL);
       expect(queueNames).not.toContain(PGBOSS_QUEUE_INTERCOM_SYNC);
       expect(fakeBoss.schedules.some((s) => s.name === PGBOSS_QUEUE_INTERCOM_SYNC)).toBe(false);
     } finally {

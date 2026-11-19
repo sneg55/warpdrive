@@ -27,6 +27,12 @@ test("applyMigrations brings an empty db to a usable schema", async () => {
   expect(tables.rows).toHaveLength(1);
 });
 
+test("applyMigrations builds the trigram search indexes", async () => {
+  const db = drizzle(pool);
+  const r = await db.execute(sql`SELECT 1 FROM pg_indexes WHERE indexname = 'deals_title_trgm'`);
+  expect(r.rows).toHaveLength(1);
+});
+
 test("applyMigrations honors an explicit migrations folder", async () => {
   const db = drizzle(pool);
   const result = await applyMigrations(db, undefined, "/nonexistent/drizzle/folder");

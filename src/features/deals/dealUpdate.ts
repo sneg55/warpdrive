@@ -2,6 +2,7 @@ import { and, eq, sql } from "drizzle-orm";
 import { BOARD_EVENT, dealChannel } from "@/constants/boardChannels";
 import { AppError, ERROR_IDS } from "@/constants/errorIds";
 import { deals } from "@/db/schema/deals";
+import { enqueueDealSearchRefresh } from "@/features/intercom/dealSearch/enqueue";
 import { syncEntityLabelNames } from "@/features/labels/labelsRepo.entities";
 import type { PermSetUser } from "@/features/permissions/effective";
 import { assertReferenceVisible } from "@/features/permissions/referenceCheck";
@@ -121,6 +122,9 @@ export async function updateDeal(
           dealId: input.dealId,
         }),
       );
+    }
+    if (input.personId !== undefined && input.personId !== before.personId) {
+      await enqueueDealSearchRefresh(tx, [input.dealId], signal);
     }
 
     const row = updated[0];

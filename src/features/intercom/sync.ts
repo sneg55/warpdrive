@@ -11,6 +11,7 @@ import {
 import type * as schema from "@/db/schema";
 import { uniqueBy } from "./batch";
 import { refreshStaleContacts } from "./contactRefresh";
+import { enqueueDealSearchForWrite } from "./dealSearch/enqueueForWrite";
 import { fetchPageItems, type ItemOutcome } from "./fetchItems";
 import { isTransientIntercomError } from "./intercomClient";
 import type { SyncState } from "./repo";
@@ -70,7 +71,7 @@ async function syncPage(
     nextCursor === null
       ? null
       : { updatedAfter: ctx.updatedAfter, startingAfter: nextCursor, held: report.heldAt !== null };
-  await writePage(
+  const changedContactIds = await writePage(
     ctx.deps.db,
     {
       conversations: ok.map((o) => o.stored),
@@ -80,6 +81,11 @@ async function syncPage(
       resume,
       fetchedAt: new Date(ctx.deps.nowMs()),
     },
+    ctx.signal,
+  );
+  await enqueueDealSearchForWrite(
+    ctx.deps.db,
+    { conversationIds: ok.map((o) => o.stored.conversation.id), changedContactIds },
     ctx.signal,
   );
   report.written += ok.length;

@@ -12,6 +12,7 @@ import { recordChange } from "@/features/collaboration/changeLog";
 import { midpoint } from "@/features/deals/boardPosition";
 import { toVisibleDeal } from "@/features/deals/dealAuth";
 import { validateDealCustomFieldsForCreate } from "@/features/deals/dealCustomFieldsValidation";
+import { enqueueDealSearchRefresh } from "@/features/intercom/dealSearch/enqueue";
 import { canSee } from "@/features/permissions/canSee";
 import type { PermSetUser } from "@/features/permissions/effective";
 import { resolveVisibilityGroup } from "@/features/permissions/entityCreate";
@@ -136,6 +137,7 @@ export async function duplicateDeal(
       throw new AppError(ERROR_IDS.DB_INSERT_FAILED, "duplicateDeal: insert returned no rows");
     }
 
+    await enqueueDealSearchRefresh(tx, [clone.id], signal);
     await recordChange(
       tx,
       {

@@ -2,6 +2,7 @@ import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { INTERCOM_CONTACT_REFRESH_BATCH } from "@/constants/intercom";
 import type * as schema from "@/db/schema";
 import { staleContactIds, upsertContacts } from "./contactRepo";
+import { enqueueDealSearchForWrite } from "./dealSearch/enqueueForWrite";
 import { fetchContact, inBatches } from "./fetchItems";
 import type { IntercomClient } from "./types";
 
@@ -17,6 +18,7 @@ export async function refreshStaleContacts(
   const outcomes = await inBatches(ids, (id) => fetchContact(deps.client, id, signal), signal);
   const rows = outcomes.flatMap((o) => (o.ok ? [o.row] : []));
   signal.throwIfAborted();
-  await upsertContacts(deps.db, rows, fetchedAt);
+  const changedContactIds = await upsertContacts(deps.db, rows, fetchedAt);
+  await enqueueDealSearchForWrite(deps.db, { conversationIds: [], changedContactIds }, signal);
   return rows.length;
 }

@@ -3,6 +3,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { SearchResultsSkeleton } from "@/components/shell/skeletons";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { SEARCH_MATCH_SEPARATOR } from "@/constants/search";
 import { STRINGS } from "@/constants/strings";
 import { trpc } from "@/lib/trpc-client";
 import type { SearchResult, SearchResults } from "@/types/search";
@@ -103,7 +104,14 @@ function Section({
               }`}
               onClick={() => onSelect(r)}
             >
-              <span className="flex-1 truncate">{r.primary}</span>
+              <span className="flex min-w-0 flex-1 flex-col">
+                <span className="truncate">{r.primary}</span>
+                {r.match === null ? null : (
+                  <span className="truncate text-xs text-muted-foreground">
+                    {r.match.label} {SEARCH_MATCH_SEPARATOR} {r.match.snippet}
+                  </span>
+                )}
+              </span>
               {r.secondary != null ? (
                 <span className="shrink-0 text-xs text-muted-foreground">{r.secondary}</span>
               ) : null}

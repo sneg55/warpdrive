@@ -13,6 +13,7 @@ import { recordChange } from "@/features/collaboration/changeLog";
 import { listDefs } from "@/features/custom-fields/defsRepo";
 import { midpoint } from "@/features/deals/boardPosition";
 import { validateDealCustomFieldsForCreate } from "@/features/deals/dealCustomFieldsValidation";
+import { enqueueDealSearchRefresh } from "@/features/intercom/dealSearch/enqueue";
 import { syncEntityLabelNames } from "@/features/labels/labelsRepo.entities";
 import { resolveVisibilityGroup } from "@/features/permissions/entityCreate";
 import { publishBoardEvent } from "@/server/realtime/events";
@@ -199,6 +200,7 @@ export async function convertLead(
       }
 
       await syncEntityLabelNames(tx, "deal", deal.id, lead.labels, signal);
+      if (refs.value.personId !== null) await enqueueDealSearchRefresh(tx, [deal.id], signal);
 
       await carryLeadHistoryToDeal(tx, { leadId: lead.id, dealId: deal.id, signal });
 

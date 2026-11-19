@@ -27,7 +27,7 @@ beforeEach(() => {
 const ACME = {
   deals: [],
   people: [],
-  organizations: [{ id: "org-1", primary: "Acme Inc", secondary: null }],
+  organizations: [{ id: "org-1", primary: "Acme Inc", secondary: null, match: null }],
   leads: [],
 };
 

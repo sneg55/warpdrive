@@ -1,6 +1,6 @@
 {
   "name": "warpdrive",
-  "version": "2.12.0",
+  "version": "2.13.0",
   "description": "An open-source, self-hosted CRM for a company business-development team.",
   "main": "index.js",
   "packageManager": "pnpm@9.15.9",
@@ -22,7 +22,7 @@
     "typecheck": "tsc --noEmit",
     "format": "biome format --write .",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate",
+    "db:migrate": "tsx --env-file .env src/entrypoints/migrate.ts",
     "db:seed:smoke": "tsx --env-file .env scripts/seed-smoke.ts",
     "db:seed:smoke:phase5": "tsx --env-file .env scripts/seed-smoke-phase5.ts",
     "db:seed:demo": "tsx --env-file .env scripts/seed-demo.ts",

@@ -45,13 +45,29 @@ export async function staleContactIds(
   return rows.map((r) => r.id);
 }
 
+async function changedEmailIds(db: Db | Tx, batch: ContactRow[]): Promise<string[]> {
+  const existing = await db
+    .select({ id: intercomContacts.id, email: intercomContacts.email })
+    .from(intercomContacts)
+    .where(
+      inArray(
+        intercomContacts.id,
+        batch.map((c) => c.id),
+      ),
+    );
+  const before = new Map(existing.map((r) => [r.id, r.email]));
+  return batch.filter((c) => !before.has(c.id) || before.get(c.id) !== c.email).map((c) => c.id);
+}
+
 export async function upsertContacts(
   db: Db | Tx,
   contacts: ContactRow[],
   fetchedAt: Date,
-): Promise<void> {
+): Promise<string[]> {
   const unique = uniqueBy(contacts, (c) => c.id);
+  const changed: string[] = [];
   for (const batch of chunks(unique.filter((c) => c.gone !== true))) {
+    changed.push(...(await changedEmailIds(db, batch)));
     await db
       .insert(intercomContacts)
       .values(batch.map((c) => ({ id: c.id, email: c.email, role: c.role, updatedAt: fetchedAt })))
@@ -73,4 +89,5 @@ export async function upsertContacts(
         set: { updatedAt: sql`excluded.updated_at` },
       });
   }
+  return changed;
 }

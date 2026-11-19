@@ -15,6 +15,9 @@ export const EMAIL_NOTIFICATION_QUEUE = "notification.email";
 export const PGBOSS_QUEUE_RELEASE_CHECK = "release.check";
 
 export const PGBOSS_QUEUE_INTERCOM_SYNC = "intercom.sync";
+export const PGBOSS_QUEUE_INTERCOM_DEAL_SEARCH = "intercom.deal-search";
+export const PGBOSS_QUEUE_INTERCOM_DEAL_SEARCH_BACKFILL = "intercom.deal-search-backfill";
+export const PGBOSS_QUEUE_INTERCOM_DEAL_SEARCH_SWEEP = "intercom.deal-search-sweep";
 export const PGBOSS_QUEUE_X_SYNC = "x.sync";
 export const PGBOSS_QUEUE_X_CHAT_BACKFILL = "x-chat-backfill";
 

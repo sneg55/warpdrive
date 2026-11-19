@@ -3,6 +3,7 @@ import { AppError, ERROR_IDS } from "@/constants/errorIds";
 import type { Db } from "@/db/client";
 import type { Person } from "@/db/schema";
 import { persons, users } from "@/db/schema";
+import { enqueueDealSearchRefreshForPersons } from "@/features/intercom/dealSearch/enqueue";
 import { syncEntityLabelNames } from "@/features/labels/labelsRepo.entities";
 import { can } from "@/features/permissions/can";
 import { canSee } from "@/features/permissions/canSee";
@@ -10,6 +11,7 @@ import type { PermSetUser } from "@/features/permissions/effective";
 import { assertReferenceVisible } from "@/features/permissions/referenceCheck";
 import type { VisiblePersonOrOrg } from "@/features/permissions/types";
 import { isUuidParam } from "@/lib/isUuidParam";
+import type { DbOrTx } from "@/server/realtime/channelVersions";
 import { err, ok, type Result } from "@/types/result";
 import type { DealVisibilitySession } from "@/types/session";
 import { validateContactCustomFields } from "./customFieldsValidation";
@@ -102,6 +104,16 @@ export async function createPerson(
   });
 }
 
+async function queueDealSearchForEmailEdit(
+  tx: DbOrTx,
+  input: PersonUpdateInput,
+  personId: string,
+  signal: AbortSignal,
+): Promise<void> {
+  if (input.emails === undefined) return;
+  await enqueueDealSearchRefreshForPersons(tx, [personId], signal);
+}
+
 export type PersonEditAuthority = "requires-contact-edit" | "actor-just-created-this-person";
 
 export async function updatePerson(
@@ -186,6 +198,7 @@ export async function updatePerson(
     if (input.labels !== undefined) {
       await syncEntityLabelNames(tx, "person", row.id, row.labels, signal);
     }
+    await queueDealSearchForEmailEdit(tx, input, row.id, signal);
     return ok(row);
   });
 }

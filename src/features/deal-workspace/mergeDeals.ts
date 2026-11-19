@@ -9,6 +9,7 @@ import { recordChange } from "@/features/collaboration/changeLog";
 import { loadEditableDeal } from "@/features/deals/dealAuth";
 import { lockImportMutation } from "@/features/import/importLock";
 import { repointMappings } from "@/features/import/repointMappings";
+import { enqueueDealSearchRefresh } from "@/features/intercom/dealSearch/enqueue";
 import type { PermSetUser } from "@/features/permissions/effective";
 import { publishBoardEvent } from "@/server/realtime/events";
 import { err, ok, type Result } from "@/types/result";
@@ -86,6 +87,7 @@ export async function mergeDeals(
 
       await repointDealChildren(tx, input.sourceDealId, input.targetDealId, signal);
       await repointMappings(tx, "deal", input.targetDealId, input.sourceDealId, signal);
+      await enqueueDealSearchRefresh(tx, [input.targetDealId], signal);
 
       await recordChange(
         tx,

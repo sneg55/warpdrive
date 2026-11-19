@@ -44,9 +44,9 @@ describe("SearchResultsList", () => {
     render(
       <SearchResultsList
         results={{
-          deals: [{ id: "d1", primary: "Acme renewal", secondary: "25000" }],
+          deals: [{ id: "d1", primary: "Acme renewal", secondary: "25000", match: null }],
           people: [],
-          organizations: [{ id: "o1", primary: "Acme Inc", secondary: "acme.com" }],
+          organizations: [{ id: "o1", primary: "Acme Inc", secondary: "acme.com", match: null }],
           leads: [],
         }}
         onSelect={() => {}}
@@ -75,7 +75,7 @@ describe("SearchResultsList", () => {
     render(
       <SearchResultsList
         results={{
-          deals: [{ id: "d1", primary: "Big deal", secondary: null }],
+          deals: [{ id: "d1", primary: "Big deal", secondary: null, match: null }],
           people: [],
           organizations: [],
           leads: [],
@@ -88,6 +88,7 @@ describe("SearchResultsList", () => {
       id: "d1",
       primary: "Big deal",
       secondary: null,
+      match: null,
     });
   });
 
@@ -99,7 +100,7 @@ describe("SearchResultsList", () => {
           deals: [],
           people: [],
           organizations: [],
-          leads: [{ id: "l1", primary: "Zephyr expansion", secondary: null }],
+          leads: [{ id: "l1", primary: "Zephyr expansion", secondary: null, match: null }],
         }}
         onSelect={onSelect}
       />,
@@ -110,6 +111,7 @@ describe("SearchResultsList", () => {
       id: "l1",
       primary: "Zephyr expansion",
       secondary: null,
+      match: null,
     });
   });
 
@@ -117,7 +119,7 @@ describe("SearchResultsList", () => {
     render(
       <SearchResultsList
         results={{
-          deals: [{ id: "d1", primary: "Acme renewal", secondary: null }],
+          deals: [{ id: "d1", primary: "Acme renewal", secondary: null, match: null }],
           people: [],
           organizations: [],
           leads: [],
@@ -132,10 +134,10 @@ describe("SearchResultsList", () => {
     render(
       <SearchResultsList
         results={{
-          deals: [{ id: "d1", primary: "Deal A", secondary: null }],
+          deals: [{ id: "d1", primary: "Deal A", secondary: null, match: null }],
           people: [],
           organizations: [],
-          leads: [{ id: "l1", primary: "Lead B", secondary: null }],
+          leads: [{ id: "l1", primary: "Lead B", secondary: null, match: null }],
         }}
         activeId="l1"
         onSelect={() => {}}
@@ -153,7 +155,7 @@ describe("CommandPalette", () => {
       deals: [],
       people: [],
       organizations: [],
-      leads: [{ id: "l1", primary: "Zephyr expansion", secondary: null }],
+      leads: [{ id: "l1", primary: "Zephyr expansion", secondary: null, match: null }],
     });
     render(<CommandPalette />);
     fireEvent(window, new Event(OPEN_SEARCH_EVENT));

@@ -9,6 +9,7 @@ import { deals } from "@/db/schema/deals";
 import { pipelines } from "@/db/schema/pipelines";
 import { stages } from "@/db/schema/stages";
 import { settings } from "@/db/schema/system";
+import { enqueueDealSearchRefresh } from "@/features/intercom/dealSearch/enqueue";
 import { syncEntityLabelNames } from "@/features/labels/labelsRepo.entities";
 import {
   type EntityCreateSession,
@@ -184,6 +185,7 @@ export async function createDeal(
     }
 
     await syncEntityLabelNames(tx, "deal", row.id, row.labels, signal);
+    if (row.personId !== null) await enqueueDealSearchRefresh(tx, [row.id], signal);
 
     await publishBoardEvent(
       tx,

@@ -52,10 +52,10 @@ function openAndSearch(query: string) {
 
 describe("CommandPalette keyboard navigation", () => {
   const MIXED_RESULTS: SearchResults = {
-    deals: [{ id: "d1", primary: "Deal A", secondary: null }],
+    deals: [{ id: "d1", primary: "Deal A", secondary: null, match: null }],
     people: [],
     organizations: [],
-    leads: [{ id: "l1", primary: "Lead B", secondary: null }],
+    leads: [{ id: "l1", primary: "Lead B", secondary: null, match: null }],
   };
 
   it("moves the active row with arrow keys and selects it with Enter", () => {
@@ -109,7 +109,7 @@ describe("CommandPalette keyboard navigation", () => {
     fireEvent.keyDown(input, { key: "ArrowDown" });
 
     setResults({
-      deals: [{ id: "d3", primary: "Only Deal", secondary: null }],
+      deals: [{ id: "d3", primary: "Only Deal", secondary: null, match: null }],
       people: [],
       organizations: [],
       leads: [],
@@ -131,10 +131,10 @@ describe("CommandPalette keyboard navigation", () => {
     fireEvent.keyDown(input, { key: "ArrowDown" });
 
     setResults({
-      deals: [{ id: "d9", primary: "New Deal", secondary: null }],
+      deals: [{ id: "d9", primary: "New Deal", secondary: null, match: null }],
       people: [],
       organizations: [],
-      leads: [{ id: "l9", primary: "New Lead", secondary: null }],
+      leads: [{ id: "l9", primary: "New Lead", secondary: null, match: null }],
     });
     fireEvent.change(input, { target: { value: "y" } });
     act(() => {

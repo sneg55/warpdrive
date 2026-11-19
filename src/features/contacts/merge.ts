@@ -7,6 +7,7 @@ import { organizations, persons } from "@/db/schema";
 import { recordChange } from "@/features/collaboration/changeLog";
 import { lockImportMutation } from "@/features/import/importLock";
 import { repointMappings } from "@/features/import/repointMappings";
+import { enqueueDealSearchRefreshForPersons } from "@/features/intercom/dealSearch/enqueue";
 import type { PermSetUser } from "@/features/permissions/effective";
 import { err, ok, type Result } from "@/types/result";
 import {
@@ -83,6 +84,7 @@ export async function mergePersons(
       },
       signal,
     );
+    await enqueueDealSearchRefreshForPersons(tx, [args.survivorId], signal);
     return ok(updated);
   });
 }

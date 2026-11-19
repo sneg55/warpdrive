@@ -6,6 +6,8 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
 import { Pool } from "pg";
 import type { TestProject } from "vitest/node";
+import { AppError, ERROR_IDS } from "./src/constants/errorIds";
+import { ensureSearchIndexes } from "./src/db/searchIndexes";
 
 const MIGRATIONS_FOLDER = fileURLToPath(new URL("./drizzle", import.meta.url));
 const MIGRATIONS_JOURNAL = fileURLToPath(new URL("./drizzle/meta/_journal.json", import.meta.url));
@@ -60,6 +62,9 @@ export default async function setup(project: TestProject): Promise<() => Promise
   await templateDb.execute(sql`CREATE EXTENSION IF NOT EXISTS citext`);
   if (existsSync(MIGRATIONS_JOURNAL)) {
     await migrate(templateDb, { migrationsFolder: MIGRATIONS_FOLDER });
+    const indexes = await ensureSearchIndexes(templateDb, new AbortController().signal);
+    if (!indexes.ok)
+      throw new AppError(ERROR_IDS.DB_INVARIANT, `ensureSearchIndexes failed: ${indexes.error}`);
   }
   await templatePool.end();
 

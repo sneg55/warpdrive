@@ -6,6 +6,7 @@ import type { Deal } from "@/db/schema";
 import { dealParticipants, deals, persons, pipelines } from "@/db/schema";
 import { recordChange } from "@/features/collaboration/changeLog";
 import { loadEditableDeal, toVisibleDeal } from "@/features/deals/dealAuth";
+import { enqueueDealSearchRefresh } from "@/features/intercom/dealSearch/enqueue";
 import { canSee } from "@/features/permissions/canSee";
 import type { PermSetUser } from "@/features/permissions/effective";
 import { assertReferenceVisible } from "@/features/permissions/referenceCheck";
@@ -61,6 +62,7 @@ export async function addParticipant(
         },
         signal,
       );
+      await enqueueDealSearchRefresh(tx, [dealId], signal);
     }
     return ok(undefined);
   });
@@ -94,6 +96,7 @@ export async function removeParticipant(
         },
         signal,
       );
+      await enqueueDealSearchRefresh(tx, [dealId], signal);
     }
     return ok(undefined);
   });

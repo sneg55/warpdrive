@@ -41,3 +41,28 @@ export function conversationMatchesPersonEmails(conversationId: SQL): SQL {
     WHERE l.conversation_id = ${conversationId}
   )`;
 }
+
+const PERSON_EMAIL_VALUES = sql`
+  SELECT lower(btrim(p.primary_email::text)) AS email
+  UNION ALL
+  SELECT lower(btrim(x->>'value'))
+  FROM jsonb_array_elements(
+    CASE WHEN jsonb_typeof(p.emails) = 'array' THEN p.emails ELSE '[]'::jsonb END
+  ) x`;
+
+export function personEmailPairsSql(personIds: SQL): SQL {
+  return sql`
+    SELECT DISTINCT p.id AS person_id, v.email
+    FROM persons p
+    CROSS JOIN LATERAL (${PERSON_EMAIL_VALUES}) v
+    WHERE p.id IN (${personIds}) AND p.deleted_at IS NULL AND ${matchableEmailSql(sql`v.email`)}`;
+}
+
+export function contactEmailBelongsToPersonSql(personId: SQL, contactEmail: SQL): SQL {
+  return sql`EXISTS (
+    SELECT 1 FROM persons p
+    CROSS JOIN LATERAL (${PERSON_EMAIL_VALUES}) v
+    WHERE p.id = ${personId} AND p.deleted_at IS NULL
+      AND v.email = ${contactEmail} AND ${matchableEmailSql(sql`v.email`)}
+  )`;
+}

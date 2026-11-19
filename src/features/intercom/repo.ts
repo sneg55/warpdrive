@@ -103,7 +103,7 @@ function pageRows(page: PageWrite) {
   };
 }
 
-export async function writePage(db: Db, page: PageWrite, signal: AbortSignal): Promise<void> {
+export async function writePage(db: Db, page: PageWrite, signal: AbortSignal): Promise<string[]> {
   signal.throwIfAborted();
   const rows = pageRows(page);
   const state = {
@@ -113,8 +113,8 @@ export async function writePage(db: Db, page: PageWrite, signal: AbortSignal): P
     resumeStartingAfter: page.resume?.startingAfter ?? null,
     resumeHeld: page.resume?.held ?? false,
   };
-  await db.transaction(async (tx) => {
-    await upsertContacts(tx, page.contacts, page.fetchedAt);
+  return db.transaction(async (tx) => {
+    const changedContactIds = await upsertContacts(tx, page.contacts, page.fetchedAt);
     for (const batch of chunks(rows.parts)) {
       const ids = batch.map((p) => p.id);
       await tx.delete(intercomConversationParts).where(inArray(intercomConversationParts.id, ids));
@@ -134,5 +134,6 @@ export async function writePage(db: Db, page: PageWrite, signal: AbortSignal): P
       .insert(intercomSyncState)
       .values(state)
       .onConflictDoUpdate({ target: intercomSyncState.id, set: state });
+    return changedContactIds;
   });
 }

@@ -45,7 +45,7 @@ Always capture against a database created fresh for the purpose.
 
    ```sh
    export $(grep -E '^DATABASE_URL' .env.docs | xargs)
-   npx drizzle-kit migrate
+   npx tsx --env-file .env.docs src/entrypoints/migrate.ts
    npx tsx --env-file .env.docs scripts/seed-demo.ts
    ```
 
