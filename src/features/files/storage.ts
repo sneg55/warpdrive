@@ -38,8 +38,8 @@ export interface StorageClient {
   getObjectBytes(key: string, signal: AbortSignal): Promise<Result<Buffer, AppError>>;
 }
 
-function buildS3Client(): Minio.Client {
-  const parsed = new URL(env.S3_ENDPOINT);
+function buildS3Client(endpoint: string): Minio.Client {
+  const parsed = new URL(endpoint);
   const useSSL = parsed.protocol === "https:";
   const port = parsed.port.length > 0 ? Number(parsed.port) : useSSL ? 443 : 80;
   return new Minio.Client({
@@ -67,10 +67,12 @@ function storageErr(
 }
 
 class S3StorageClient implements StorageClient {
-  private readonly client: Minio.Client;
+  private readonly server: Minio.Client;
+  private readonly browser: Minio.Client;
 
-  constructor(client: Minio.Client) {
-    this.client = client;
+  constructor(server: Minio.Client, browser: Minio.Client) {
+    this.server = server;
+    this.browser = browser;
   }
 
   async presignPost(
@@ -81,13 +83,13 @@ class S3StorageClient implements StorageClient {
   ): Promise<Result<PresignedPost, AppError>> {
     signal.throwIfAborted();
     try {
-      const policy = this.client.newPostPolicy();
+      const policy = this.browser.newPostPolicy();
       policy.setBucket(env.S3_BUCKET);
       policy.setKey(objectKey);
       policy.setContentLengthRange(1, Math.min(maxBytes, env.MAX_FILE_BYTES));
       policy.setContentType(contentType);
       policy.setExpires(new Date(Date.now() + PRESIGN_TTL_SECONDS * 1000));
-      const result = await this.client.presignedPostPolicy(policy);
+      const result = await this.browser.presignedPostPolicy(policy);
       signal.throwIfAborted();
       return ok({ url: result.postURL, fields: result.formData });
     } catch (cause) {
@@ -98,7 +100,7 @@ class S3StorageClient implements StorageClient {
   async headObject(key: string, signal: AbortSignal): Promise<Result<ObjectMetadata, AppError>> {
     signal.throwIfAborted();
     try {
-      const stat = await this.client.statObject(env.S3_BUCKET, key);
+      const stat = await this.server.statObject(env.S3_BUCKET, key);
       signal.throwIfAborted();
       const metaData = stat.metaData as Record<string, string | undefined>;
       return ok({
@@ -118,7 +120,7 @@ class S3StorageClient implements StorageClient {
   ): Promise<Result<string, AppError>> {
     signal.throwIfAborted();
     try {
-      const url = await this.client.presignedGetObject(env.S3_BUCKET, key, PRESIGN_TTL_SECONDS, {
+      const url = await this.browser.presignedGetObject(env.S3_BUCKET, key, PRESIGN_TTL_SECONDS, {
         "response-content-disposition": `attachment; filename="${displayFilename}"`,
       });
       signal.throwIfAborted();
@@ -135,7 +137,7 @@ class S3StorageClient implements StorageClient {
   ): Promise<Result<void, AppError>> {
     signal.throwIfAborted();
     try {
-      await this.client.copyObject(
+      await this.server.copyObject(
         env.S3_BUCKET,
         destKey,
         `/${env.S3_BUCKET}/${sourceKey}`,
@@ -151,7 +153,7 @@ class S3StorageClient implements StorageClient {
   async deleteObject(key: string, signal: AbortSignal): Promise<Result<void, AppError>> {
     signal.throwIfAborted();
     try {
-      await this.client.removeObject(env.S3_BUCKET, key);
+      await this.server.removeObject(env.S3_BUCKET, key);
       signal.throwIfAborted();
       return ok(undefined);
     } catch (cause) {
@@ -162,7 +164,7 @@ class S3StorageClient implements StorageClient {
   async getObjectBytes(key: string, signal: AbortSignal): Promise<Result<Buffer, AppError>> {
     signal.throwIfAborted();
     try {
-      const stream = await this.client.getObject(env.S3_BUCKET, key);
+      const stream = await this.server.getObject(env.S3_BUCKET, key);
       signal.throwIfAborted();
       const chunks: Buffer[] = [];
       await new Promise<void>((resolve, reject) => {
@@ -178,5 +180,5 @@ class S3StorageClient implements StorageClient {
 }
 
 export function makeStorageClient(): StorageClient {
-  return new S3StorageClient(buildS3Client());
+  return new S3StorageClient(buildS3Client(env.S3_SERVER_ENDPOINT), buildS3Client(env.S3_ENDPOINT));
 }

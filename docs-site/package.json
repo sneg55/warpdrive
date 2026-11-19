@@ -35,7 +35,11 @@
     "typescript": "~6.0.2"
   },
   "browserslist": {
-    "production": [">0.5%", "not dead", "not op_mini all"],
+    "production": [
+      ">0.5%",
+      "not dead",
+      "not op_mini all"
+    ],
     "development": [
       "last 3 chrome version",
       "last 3 firefox version",
@@ -44,5 +48,32 @@
   },
   "engines": {
     "node": ">=20.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "proxy-addr@<2.0.8": "^2.0.8",
+      "shell-quote@<1.11.0": "^1.11.0",
+      "body-parser@>=1 <1.20.9": "^1.20.9",
+      "brace-expansion@>=1 <1.1.21": "^1.1.21",
+      "browserslist@<4.28.7": "^4.28.7",
+      "compression@<1.8.2": "^1.8.2",
+      "fast-uri@<3.1.9": "^3.1.9",
+      "follow-redirects@<1.16.2": "^1.16.2",
+      "image-size@>=2 <2.0.3": "^2.0.3",
+      "joi@>=17 <17.13.9": "^17.13.9",
+      "js-yaml@>=4 <4.3.2": "^4.3.2",
+      "launch-editor@<2.14.2": "^2.14.2",
+      "nanoid@>=3 <3.3.18": "^3.3.18",
+      "postcss@>=8 <8.5.23": "^8.5.23",
+      "postcss-selector-parser@>=6 <6.1.5": "^6.1.5",
+      "postcss-selector-parser@>=7 <7.1.6": "^7.1.6",
+      "source-map-js@<1.2.2": "^1.2.2",
+      "svgo@>=3 <3.3.5": "^3.3.5",
+      "undici@>=7 <7.30.1": "^7.30.1",
+      "webpack-dev-middleware@>=7 <7.4.6": "^7.4.6",
+      "colord@<2.9.4": "^2.9.4",
+      "qs@>=6 <6.16.1": "^6.16.1",
+      "baseline-browser-mapping@<2.11.0": "^2.11.0"
+    }
   }
 }

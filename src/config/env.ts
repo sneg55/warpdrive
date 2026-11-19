@@ -47,6 +47,11 @@ const boolFromString = z.enum(["true", "false"]).transform((v) => v === "true");
 
 const flagFromString = z.string().transform((v) => v === "true" || v === "1");
 
+const optionalUrl = z
+  .union([z.literal(""), z.string().url()])
+  .optional()
+  .transform((v) => (v == null || v.length === 0 ? undefined : v));
+
 const base = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   GOOGLE_OAUTH_CLIENT_ID: z.string().min(1),
@@ -57,6 +62,7 @@ const base = z.object({
   WS_TICKET_SECRET: z.string().min(32),
   WS_PUBLIC_URL: z.string().min(1),
   S3_ENDPOINT: z.string().url(),
+  S3_SERVER_ENDPOINT: optionalUrl,
   S3_ACCESS_KEY: z.string().min(1),
   S3_SECRET_KEY: z.string().min(1),
   S3_BUCKET: z.string().min(1).default("warpdrive"),
@@ -88,35 +94,40 @@ const base = z.object({
   X_CLIENT_SECRET: z.string().default(""),
 });
 
-const schema = base.superRefine((v, ctx) => {
-  if (v.MCP_ENABLED && Buffer.from(v.OAUTH_SIGNING_KEY, "base64").length !== 32) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      path: ["OAUTH_SIGNING_KEY"],
-      message: "OAUTH_SIGNING_KEY (base64 32 bytes) is required when MCP_ENABLED",
-    });
-  }
-  if (v.NODE_ENV === "production") {
-    if (v.ALLOW_FIRST_LOGIN_ADMIN) {
+const schema = base
+  .superRefine((v, ctx) => {
+    if (v.MCP_ENABLED && Buffer.from(v.OAUTH_SIGNING_KEY, "base64").length !== 32) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        path: ["ALLOW_FIRST_LOGIN_ADMIN"],
-        message: "ALLOW_FIRST_LOGIN_ADMIN must be false in production",
+        path: ["OAUTH_SIGNING_KEY"],
+        message: "OAUTH_SIGNING_KEY (base64 32 bytes) is required when MCP_ENABLED",
       });
     }
-    if (v.SEED_ADMIN_EMAIL === "") {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["SEED_ADMIN_EMAIL"],
-        message: "SEED_ADMIN_EMAIL is required in production",
-      });
+    if (v.NODE_ENV === "production") {
+      if (v.ALLOW_FIRST_LOGIN_ADMIN) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["ALLOW_FIRST_LOGIN_ADMIN"],
+          message: "ALLOW_FIRST_LOGIN_ADMIN must be false in production",
+        });
+      }
+      if (v.SEED_ADMIN_EMAIL === "") {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["SEED_ADMIN_EMAIL"],
+          message: "SEED_ADMIN_EMAIL is required in production",
+        });
+      }
     }
-  }
-});
+  })
+  .transform((v) => ({
+    ...v,
+    S3_SERVER_ENDPOINT: v.S3_SERVER_ENDPOINT ?? v.S3_ENDPOINT,
+  }));
 
 export const envSchema = schema;
 
-export type Env = z.infer<typeof base>;
+export type Env = z.infer<typeof schema>;
 
 export function parseEnv(raw: NodeJS.ProcessEnv): Result<Env, string> {
   const resolved = applyLegacyStorageNames(resolveFileVars(raw));

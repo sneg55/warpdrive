@@ -33,6 +33,7 @@ Fill it in. The deployment-specific values:
 | `NEXT_PUBLIC_WS_URL` | `wss://crm.example.com/_ws` |
 | `WS_PUBLIC_URL` | `ws://ws:8080` (internal compose address) |
 | `S3_ENDPOINT` | `https://s3.crm.example.com` (public: the browser uploads directly here) |
+| `S3_SERVER_ENDPOINT` | leave empty (falls back to `S3_ENDPOINT`); set `http://garage:3900` only if the containers cannot reach the public URL |
 | `DATABASE_URL` | `postgres://warpdrive:warpdrive@postgres:5432/warpdrive` |
 | `SEED_ADMIN_EMAIL` | the first admin's email (required in production) |
 | `ALLOW_FIRST_LOGIN_ADMIN` | `false` (the env boundary rejects `true` in production) |
@@ -140,5 +141,6 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
 ```
 
 Then the app is at `http://localhost:3000`, the Garage S3 API at `http://localhost:9000` (`S3_ENDPOINT`), and Postgres
-at `localhost:5433`. Set `BASE_URL=http://localhost:3000` and `NEXT_PUBLIC_WS_URL=ws://localhost:8080`
-in `.env` for this mode.
+at `localhost:5433`. Set `BASE_URL=http://localhost:3000`, `NEXT_PUBLIC_WS_URL=ws://localhost:8080` and
+`S3_SERVER_ENDPOINT=http://garage:3900` in `.env` for this mode. The containers cannot reach the host-published `localhost:9000`, so the server side dials Garage by
+its Compose service name.

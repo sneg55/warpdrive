@@ -5,7 +5,7 @@ import { TWENTY_PAGE } from "./sitePages";
 describe("site metadata", () => {
   it("uses warpdrivecrm.com as the canonical origin", () => {
     expect(SITE_URL).toBe("https://warpdrivecrm.com");
-    expect(metadata.metadataBase?.href).toBe("https://warpdrivecrm.com/");
+    expect(metadata.metadataBase?.toString()).toBe("https://warpdrivecrm.com/");
     expect(metadata.alternates?.canonical).toBe(SITE_URL);
   });
 
@@ -18,7 +18,7 @@ describe("site metadata", () => {
     expect(description).toMatch(/open-source/i);
     expect(description).toMatch(/Pipedrive/i);
     expect(metadata.openGraph?.title).toBeTruthy();
-    expect(metadata.twitter?.card).toBe("summary_large_image");
+    expect(metadata.twitter).toMatchObject({ card: "summary_large_image" });
   });
 
   it("gives each subpage its own canonical URL, title, and description", () => {
