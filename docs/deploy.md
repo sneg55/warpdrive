@@ -133,8 +133,14 @@ SSO. Nothing else is affected.
 
 ## Local development against this stack
 
-The base compose file is production-only (no host ports, TLS via Caddy). For a local run, merge the
-dev overrides (which expose host ports and drop Caddy):
+The base compose file is production-only (no host ports, TLS via Caddy). For a local run,
+configure local `.env`:
+
+```sh
+cp .env.example.local .env
+```
+
+and merge the dev overrides (which expose host ports and drop Caddy):
 
 ```sh
 docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
