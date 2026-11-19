@@ -14,8 +14,9 @@
 #                         build) and prod-deps (production node_modules, base of the runtime
 #                         stage). Rebuilt only when their inputs change; otherwise the job
 #                         sees the tag already in the registry and skips the build.
-#   test               -> lint, typecheck, unit and integration (testcontainers Postgres in
-#                         dind), all running inside the deps image: no pnpm install at test time.
+#   test               -> lint, typecheck, unit and integration (against a postgres service
+#                         container via DATABASE_URL), all running inside the deps image: no
+#                         pnpm install at test time, no docker access at all.
 #   build final images -> the production image, assembled on top of the two deps images via
 #                         build args, so its only real work is `next build`.
 #   final tests        -> smoke test: the image runs as compose services against a real
@@ -148,15 +149,37 @@ test:unit:
 test:integration:
   stage: test
   image: $CI_REGISTRY_IMAGE/deps:$DEPS_TAG
-  services:
-    - name: docker:27-dind
-      alias: docker
   variables:
-    DOCKER_HOST: tcp://docker:2375
-    # the dind daemon is disposable per job, so the ryuk cleanup container is unnecessary
-    TESTCONTAINERS_RYUK_DISABLED: "true"
+    # vitest.globalSetup.ts sees DATABASE_URL and prepares this server (template
+    # database, extensions, migrations) instead of pulling a container, so the job
+    # needs no docker access at all.
+    DATABASE_URL: postgres://warpdrive:warpdrive@postgres:5432/warpdrive
+  services:
+    - name: docker.io/postgres:16-alpine
+      alias: postgres
+      # the tuning the testcontainers setup used to apply to its container
+      command:
+        [
+          "postgres",
+          "-c",
+          "max_connections=300",
+          "-c",
+          "fsync=off",
+          "-c",
+          "full_page_writes=off",
+        ]
+      variables:
+        POSTGRES_USER: warpdrive
+        POSTGRES_PASSWORD: warpdrive
+        POSTGRES_DB: warpdrive
   before_script:
     - ln -s /app/node_modules node_modules
+    # wait for the postgres service (no pg_isready in the image, plain node net check)
+    - |
+      for i in $(seq 1 30); do
+        node -e "require('net').createConnection({host:'postgres',port:5432}).on('connect',()=>process.exit(0)).on('error',()=>process.exit(1))" && break
+        echo "waiting for postgres..."; sleep 2
+      done
   script:
     - node_modules/.bin/vitest run --project integration --reporter=default --reporter=junit --outputFile.junit=junit.xml
   artifacts:
