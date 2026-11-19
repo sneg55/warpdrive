@@ -35,8 +35,15 @@ const legacy = {
 function storageOf(raw: EnvFragment) {
   const result = parseEnv({ ...base, ...raw });
   if (!result.ok) throw new Error(result.error);
-  const { S3_ENDPOINT, S3_ACCESS_KEY, S3_SECRET_KEY, S3_BUCKET, S3_REGION } = result.value;
-  return { S3_ENDPOINT, S3_ACCESS_KEY, S3_SECRET_KEY, S3_BUCKET, S3_REGION };
+  const {
+    S3_ENDPOINT,
+    S3_SERVER_ENDPOINT,
+    S3_ACCESS_KEY,
+    S3_SECRET_KEY,
+    S3_BUCKET,
+    S3_REGION,
+  } = result.value;
+  return { S3_ENDPOINT, S3_SERVER_ENDPOINT, S3_ACCESS_KEY, S3_SECRET_KEY, S3_BUCKET, S3_REGION };
 }
 
 describe("storage env", () => {
@@ -48,6 +55,7 @@ describe("storage env", () => {
   test("reads the S3_* names with bucket warpdrive and no region by default", () => {
     expect(storageOf(s3)).toEqual({
       S3_ENDPOINT: "https://s3.example.com",
+      S3_SERVER_ENDPOINT: "https://s3.example.com",
       S3_ACCESS_KEY: "GKnew",
       S3_SECRET_KEY: "new-secret",
       S3_BUCKET: "warpdrive",
@@ -62,6 +70,7 @@ describe("storage env", () => {
   test("an install still on the MINIO_* names keeps booting with the same values", () => {
     expect(storageOf(legacy)).toEqual({
       S3_ENDPOINT: "https://legacy.example.com",
+      S3_SERVER_ENDPOINT: "https://legacy.example.com",
       S3_ACCESS_KEY: "old-access",
       S3_SECRET_KEY: "old-secret",
       S3_BUCKET: "old-bucket",
@@ -85,6 +94,26 @@ describe("storage env", () => {
 
   test("S3_REGION pins the signing region when set", () => {
     expect(storageOf({ ...s3, S3_REGION: "garage" }).S3_REGION).toBe("garage");
+  });
+
+  test("S3_SERVER_ENDPOINT defaults to S3_ENDPOINT when unset", () => {
+    expect(storageOf(s3).S3_SERVER_ENDPOINT).toBe("https://s3.example.com");
+  });
+
+  test("an empty S3_SERVER_ENDPOINT falls back to S3_ENDPOINT", () => {
+    expect(storageOf({ ...s3, S3_SERVER_ENDPOINT: "" }).S3_SERVER_ENDPOINT).toBe(
+      "https://s3.example.com",
+    );
+  });
+
+  test("S3_SERVER_ENDPOINT is read when set", () => {
+    expect(storageOf({ ...s3, S3_SERVER_ENDPOINT: "http://garage:3900" }).S3_SERVER_ENDPOINT).toBe(
+      "http://garage:3900",
+    );
+  });
+
+  test("rejects a bare-hostname S3_SERVER_ENDPOINT the container could not reach", () => {
+    expect(parseEnv({ ...base, ...s3, S3_SERVER_ENDPOINT: "garage" }).ok).toBe(false);
   });
 
   test("rejects a bare-hostname endpoint the browser could not reach", () => {

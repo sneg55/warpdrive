@@ -43,6 +43,7 @@ boot rather than misbehaving hours later.
 | `NEXT_PUBLIC_WS_URL` | `wss://crm.example.com/_ws` |
 | `WS_PUBLIC_URL` | `ws://ws:8080`, the internal Compose address |
 | `S3_ENDPOINT` | `https://s3.crm.example.com` |
+| `S3_SERVER_ENDPOINT` | optional; the address the app and worker containers dial for their own storage calls (empty falls back to `S3_ENDPOINT`) |
 | `GARAGE_RPC_SECRET` | 32 bytes of hex, required by the Compose file (see below) |
 | `DATABASE_URL` | `postgres://warpdrive:warpdrive@postgres:5432/warpdrive` |
 | `SEED_ADMIN_EMAIL` | the first admin's email address, required in production |
@@ -54,7 +55,12 @@ stating plainly:
 - **`S3_ENDPOINT` must be the public `https://s3.<domain>` URL**, not the internal
   `garage` Compose alias. The browser POSTs presigned uploads directly to this address,
   so an internal hostname is unreachable from where it actually gets used. Every
-  upload fails if this is wrong.
+  upload fails if this is wrong. The app and worker containers use
+  `S3_SERVER_ENDPOINT` for their own storage calls (verifying an upload, copying and
+  deleting objects), which defaults to `S3_ENDPOINT`. Set it to the compose-internal
+  `http://garage:3900` whenever the containers cannot reach the public URL; otherwise
+  uploads land in the bucket but the follow-up verification fails. It is read by the
+  server side only and never appears in a URL the browser uses.
 - **`NEXT_PUBLIC_WS_URL` must be set at build time.** `NEXT_PUBLIC_*` variables are
   inlined into the client bundle when the image is built, not read at runtime. If it
   is missing, the app still starts and looks healthy, but the board, inbox,
@@ -176,7 +182,9 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
 The app is then at `http://localhost:3000`, the Garage S3 API at
 `http://localhost:9000` (use it as `S3_ENDPOINT`), and Postgres at `localhost:5433`. Set
 `BASE_URL=http://localhost:3000` and `NEXT_PUBLIC_WS_URL=ws://localhost:8080` for this
-mode.
+mode. `.env.example.local` also sets `S3_SERVER_ENDPOINT=http://garage:3900`: inside the
+Compose network the containers cannot reach the host-published `localhost:9000`, so the
+server side dials Garage by its Compose service name.
 
 ## Operating the deployment
 

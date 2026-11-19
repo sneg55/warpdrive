@@ -47,6 +47,11 @@ const boolFromString = z.enum(["true", "false"]).transform((v) => v === "true");
 
 const flagFromString = z.string().transform((v) => v === "true" || v === "1");
 
+const optionalUrl = z
+  .union([z.literal(""), z.string().url()])
+  .optional()
+  .transform((v) => (v == null || v.length === 0 ? undefined : v));
+
 const base = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   GOOGLE_OAUTH_CLIENT_ID: z.string().min(1),
@@ -57,6 +62,7 @@ const base = z.object({
   WS_TICKET_SECRET: z.string().min(32),
   WS_PUBLIC_URL: z.string().min(1),
   S3_ENDPOINT: z.string().url(),
+  S3_SERVER_ENDPOINT: optionalUrl,
   S3_ACCESS_KEY: z.string().min(1),
   S3_SECRET_KEY: z.string().min(1),
   S3_BUCKET: z.string().min(1).default("warpdrive"),
@@ -112,11 +118,14 @@ const schema = base.superRefine((v, ctx) => {
       });
     }
   }
-});
+}).transform((v) => ({
+  ...v,
+  S3_SERVER_ENDPOINT: v.S3_SERVER_ENDPOINT ?? v.S3_ENDPOINT,
+}));
 
 export const envSchema = schema;
 
-export type Env = z.infer<typeof base>;
+export type Env = z.infer<typeof schema>;
 
 export function parseEnv(raw: NodeJS.ProcessEnv): Result<Env, string> {
   const resolved = applyLegacyStorageNames(resolveFileVars(raw));
