@@ -18,6 +18,7 @@ export interface SyncDeps {
   client: XClient;
   nowMs: () => number;
   accountTimeoutMs?: number;
+  accountTimeoutSignal?: (timeoutMs: number) => AbortSignal;
 }
 
 export interface SyncCounts {
@@ -135,7 +136,8 @@ async function runAccount(
   await deps.db.update(xAccounts).set({ updatedAt: new Date() }).where(eq(xAccounts.id, accountId));
   runSignal.throwIfAborted();
   const timeoutMs = deps.accountTimeoutMs ?? X_SYNC_ACCOUNT_TIMEOUT_MS;
-  const signal = AbortSignal.any([runSignal, AbortSignal.timeout(timeoutMs)]);
+  const timeoutSignal = deps.accountTimeoutSignal?.(timeoutMs) ?? AbortSignal.timeout(timeoutMs);
+  const signal = AbortSignal.any([runSignal, timeoutSignal]);
   try {
     return await runXSync(deps, accountId, signal);
   } catch (e) {

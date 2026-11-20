@@ -5,9 +5,22 @@ import { commitRow, type ImportActor } from "./commit";
 import { seedBatchWithRows, type TestDb } from "./pipedriveImport.testHelpers";
 import type { ImportTarget } from "./wizardState";
 
-const signal = AbortSignal.timeout(20000);
+export const OWNERS_RUN_TIMEOUT_MS = 20_000;
 
-export async function run(db: TestDb, actor: ImportActor, target: ImportTarget, row: MappedRow) {
+export interface RunOptions {
+  timeoutMs?: number;
+  timeoutSignal?: (timeoutMs: number) => AbortSignal;
+}
+
+export async function run(
+  db: TestDb,
+  actor: ImportActor,
+  target: ImportTarget,
+  row: MappedRow,
+  options: RunOptions = {},
+) {
+  const timeoutMs = options.timeoutMs ?? OWNERS_RUN_TIMEOUT_MS;
+  const signal = options.timeoutSignal?.(timeoutMs) ?? AbortSignal.timeout(timeoutMs);
   const { rowIds } = await seedBatchWithRows(db, actor.id, {
     source: "pipedrive",
     target,

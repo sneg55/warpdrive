@@ -53,3 +53,37 @@ export async function makeTestDb(): Promise<TestDb> {
     },
   };
 }
+
+export interface EmptyTestDb {
+  db: NodePgDatabase<Record<string, never>>;
+  url: string;
+  name: string;
+  pool: Pool;
+  close: () => Promise<void>;
+  drop: () => Promise<void>;
+}
+
+export async function makeEmptyDb(): Promise<EmptyTestDb> {
+  const pg = inject("testPg");
+  const admin = getAdminPool(pg);
+  const name = `t_${randomUUID().replace(/-/g, "")}`;
+
+  await admin.query(`CREATE DATABASE "${name}"`);
+
+  const url = connectionUri(pg, name);
+  const pool = new Pool({ connectionString: url, max: 4 });
+  const db = drizzle(pool);
+
+  return {
+    db,
+    url,
+    name,
+    pool,
+    close: async () => {
+      await pool.end();
+    },
+    drop: async () => {
+      await admin.query(`DROP DATABASE IF EXISTS "${name}"`);
+    },
+  };
+}
