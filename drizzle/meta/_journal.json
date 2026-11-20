@@ -603,6 +603,13 @@
       "when": 1795127346081,
       "tag": "0085_intercom_search_backfill",
       "breakpoints": true
+    },
+    {
+      "idx": 86,
+      "version": "7",
+      "when": 1795133559719,
+      "tag": "0086_search_plain_columns",
+      "breakpoints": true
     }
   ]
 }

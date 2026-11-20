@@ -34,7 +34,7 @@ function linkFor({ section, ctx }: SourceContext): EmailLink {
 const MESSAGE_COLUMNS: SQL[] = [
   sql`m.subject`,
   sql`m.body_text`,
-  sql`search_plain_text(m.body_html)`,
+  sql`m.body_html_plain`,
   sql`m.from_name`,
   sql`m.from_email::text`,
 ];

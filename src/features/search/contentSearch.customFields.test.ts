@@ -1,6 +1,9 @@
+import { sql } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import * as schema from "@/db/schema";
 import { withTestDb } from "@/db/testing";
+import { customFieldsSource } from "./contentSources/customFields";
+import { buildSearchPattern } from "./pattern";
 import {
   actorOf,
   addActivity,
@@ -10,6 +13,7 @@ import {
   seedWorld,
   type TestDb,
 } from "./search.test-helpers";
+import { toVisibilityCtx } from "./visibilitySql";
 
 type FieldType = (typeof schema.customFieldDefs.$inferInsert)["type"];
 
@@ -119,6 +123,42 @@ describe("custom field source", () => {
       await addActivity(db, w, "Call", { dealId: deal, customFields: { actf: "actfieldterm" } });
       const r = await run(db, actorOf(w.alice.id), "actfieldterm");
       expect(r.deals[0]?.match).toMatchObject({ source: "custom_field", label: "Call outcome" });
+    });
+  });
+
+  it("still finds a value containing a quote or backslash", async () => {
+    await withTestDb(async (db) => {
+      const w = await seedWorld(db);
+      await def(db, "q", "text");
+      const quoted = await addDeal(db, w, "Quoted", {
+        customFields: { q: 'said "quotedterm" loudly' },
+      });
+      const slashed = await addDeal(db, w, "Slashed", {
+        customFields: { q: "path a\\slashedterm" },
+      });
+      const a = actorOf(w.alice.id);
+      expect((await run(db, a, '"quotedterm"')).deals.map((x) => x.id)).toContain(quoted);
+      expect((await run(db, a, "a\\slashedterm")).deals.map((x) => x.id)).toContain(slashed);
+    });
+  });
+
+  it("prefilters candidate rows through the custom fields trigram index", async () => {
+    await withTestDb(async (db) => {
+      const w = await seedWorld(db);
+      const pattern = buildSearchPattern("prefilterterm");
+      const source = customFieldsSource({
+        section: "deal",
+        pattern,
+        ctx: toVisibilityCtx(actorOf(w.alice.id)),
+        optionIds: [["opt-x"]],
+      });
+      let text = "";
+      await db.transaction(async (tx) => {
+        await tx.execute(sql`SET LOCAL enable_seqscan = off`);
+        const r = await tx.execute(sql`EXPLAIN ${source}`);
+        text = r.rows.map((x) => (x as Record<string, string>)["QUERY PLAN"]).join("\n");
+      });
+      expect(text).toContain("Bitmap Index Scan on deals_custom_fields_trgm");
     });
   });
 });

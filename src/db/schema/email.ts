@@ -72,6 +72,7 @@ export const emailMessages = pgTable(
     snippet: text("snippet"),
     bodyHtml: text("body_html"),
     bodyText: text("body_text"),
+    bodyHtmlPlain: text("body_html_plain").generatedAlwaysAs(sql`search_plain_text(body_html)`),
     sentAt: timestamp("sent_at", { withTimezone: true }),
     trackingEnabled: boolean("tracking_enabled").notNull().default(false),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

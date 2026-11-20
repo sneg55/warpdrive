@@ -29,17 +29,13 @@ const CASES: Array<[string, string, string]> = [
     "",
   ],
   [
-    "notes_body_plain_trgm",
-    "SELECT 1 FROM notes WHERE deleted_at IS NULL AND search_plain_text(body) ILIKE '%abc%'",
+    "notes_body_plain_col_trgm",
+    "SELECT 1 FROM notes WHERE deleted_at IS NULL AND body_plain ILIKE '%abc%'",
     "notes_entity_idx",
   ],
   ["comments_body_trgm", "SELECT 1 FROM comments WHERE body ILIKE '%abc%'", ""],
   ["activities_subject_trgm", "SELECT 1 FROM activities WHERE subject ILIKE '%abc%'", ""],
-  [
-    "activities_note_plain_trgm",
-    "SELECT 1 FROM activities WHERE search_plain_text(note) ILIKE '%abc%'",
-    "",
-  ],
+  ["activities_note_plain_col_trgm", "SELECT 1 FROM activities WHERE note_plain ILIKE '%abc%'", ""],
   ["email_threads_subject_trgm", "SELECT 1 FROM email_threads WHERE subject ILIKE '%abc%'", ""],
   ["email_messages_subject_trgm", "SELECT 1 FROM email_messages WHERE subject ILIKE '%abc%'", ""],
   [
@@ -48,8 +44,8 @@ const CASES: Array<[string, string, string]> = [
     "",
   ],
   [
-    "email_messages_body_html_plain_trgm",
-    "SELECT 1 FROM email_messages WHERE search_plain_text(body_html) ILIKE '%abc%'",
+    "email_messages_body_html_plain_col_trgm",
+    "SELECT 1 FROM email_messages WHERE body_html_plain ILIKE '%abc%'",
     "",
   ],
   [
@@ -70,6 +66,23 @@ const CASES: Array<[string, string, string]> = [
   [
     "files_filename_trgm",
     "SELECT 1 FROM files WHERE status = 'ready' AND filename ILIKE '%abc%'",
+    "",
+  ],
+  ["deals_custom_fields_trgm", "SELECT 1 FROM deals WHERE custom_fields::text ILIKE '%abc%'", ""],
+  [
+    "persons_custom_fields_trgm",
+    "SELECT 1 FROM persons WHERE custom_fields::text ILIKE '%abc%'",
+    "",
+  ],
+  ["leads_custom_fields_trgm", "SELECT 1 FROM leads WHERE custom_fields::text ILIKE '%abc%'", ""],
+  [
+    "organizations_custom_fields_trgm",
+    "SELECT 1 FROM organizations WHERE custom_fields::text ILIKE '%abc%'",
+    "",
+  ],
+  [
+    "activities_custom_fields_trgm",
+    "SELECT 1 FROM activities WHERE custom_fields::text ILIKE '%abc%'",
     "",
   ],
 ];

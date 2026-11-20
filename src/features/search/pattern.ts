@@ -17,7 +17,7 @@ const LIKE_SPECIALS = /[\\%_]/g;
 const WHITESPACE = /\s+/;
 const ALNUM_RUN = new RegExp(`[\\p{L}\\p{N}]{${SEARCH_CONTENT_MIN_RUN},}`, "u");
 
-function escapeLike(value: string): string {
+export function escapeLike(value: string): string {
   return value.replace(LIKE_SPECIALS, (c) => `\\${c}`);
 }
 

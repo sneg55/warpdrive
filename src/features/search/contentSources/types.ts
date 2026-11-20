@@ -7,6 +7,7 @@ export interface SourceContext {
   section: SearchSection;
   pattern: SearchPattern;
   ctx: VisibilityCtx;
+  optionIds: string[][];
 }
 
 export type ContentSource = (c: SourceContext) => SQL | null;

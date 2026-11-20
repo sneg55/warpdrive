@@ -8,6 +8,14 @@ export interface SearchIndexDef {
 const NORMALISED_DOMAIN =
   "split_part(regexp_replace(lower(coalesce(domain, '')), '^(https?://)?(www\\.)?', ''), '/', 1)";
 
+const CUSTOM_FIELD_TABLES = ["deals", "persons", "leads", "organizations", "activities"] as const;
+
+export const LEGACY_SEARCH_INDEX_NAMES: readonly string[] = [
+  "notes_body_plain_trgm",
+  "activities_note_plain_trgm",
+  "email_messages_body_html_plain_trgm",
+];
+
 export const SEARCH_INDEXES: readonly SearchIndexDef[] = [
   { name: "deals_title_trgm", table: "deals", expression: "title" },
   { name: "leads_title_trgm", table: "leads", expression: "title" },
@@ -16,25 +24,25 @@ export const SEARCH_INDEXES: readonly SearchIndexDef[] = [
   { name: "organizations_name_trgm", table: "organizations", expression: "name" },
   { name: "organizations_domain_trgm", table: "organizations", expression: NORMALISED_DOMAIN },
   {
-    name: "notes_body_plain_trgm",
+    name: "notes_body_plain_col_trgm",
     table: "notes",
-    expression: "search_plain_text(body)",
+    expression: "body_plain",
     where: "deleted_at IS NULL",
   },
   { name: "comments_body_trgm", table: "comments", expression: "body" },
   { name: "activities_subject_trgm", table: "activities", expression: "subject" },
   {
-    name: "activities_note_plain_trgm",
+    name: "activities_note_plain_col_trgm",
     table: "activities",
-    expression: "search_plain_text(note)",
+    expression: "note_plain",
   },
   { name: "email_threads_subject_trgm", table: "email_threads", expression: "subject" },
   { name: "email_messages_subject_trgm", table: "email_messages", expression: "subject" },
   { name: "email_messages_body_text_trgm", table: "email_messages", expression: "body_text" },
   {
-    name: "email_messages_body_html_plain_trgm",
+    name: "email_messages_body_html_plain_col_trgm",
     table: "email_messages",
-    expression: "search_plain_text(body_html)",
+    expression: "body_html_plain",
   },
   { name: "email_messages_from_name_trgm", table: "email_messages", expression: "from_name" },
   {
@@ -42,6 +50,11 @@ export const SEARCH_INDEXES: readonly SearchIndexDef[] = [
     table: "email_messages",
     expression: "(from_email::text)",
   },
+  ...CUSTOM_FIELD_TABLES.map((table) => ({
+    name: `${table}_custom_fields_trgm`,
+    table,
+    expression: "(custom_fields::text)",
+  })),
   {
     name: "deal_intercom_search_plain_trgm",
     table: "deal_intercom_search",

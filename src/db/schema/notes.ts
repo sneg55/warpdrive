@@ -9,6 +9,7 @@ export const notes = pgTable(
     entityType: text("entity_type").notNull(),
     entityId: uuid("entity_id").notNull(),
     body: text("body").notNull(),
+    bodyPlain: text("body_plain").generatedAlwaysAs(sql`search_plain_text(body)`),
     pinned: boolean("pinned").notNull().default(false),
     authorId: uuid("author_id")
       .notNull()

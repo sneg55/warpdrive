@@ -81,6 +81,7 @@ function toActivity(row: ActivityRow): Activity {
     customFields: {},
     location: null,
     note: null,
+    notePlain: null,
     videoCallUrl: null,
     createdAt: new Date(0),
     updatedAt: new Date(0),

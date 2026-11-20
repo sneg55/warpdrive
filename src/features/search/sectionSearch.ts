@@ -10,6 +10,7 @@ import { buildUuidArray, type VisibilityCtx } from "@/features/permissions/sql";
 import type { SearchResult } from "@/types/search";
 import { contentSourcesFor } from "./contentSources";
 import { fieldMatchSql } from "./fieldMatch";
+import { resolveOptionIds } from "./optionIds";
 import type { SearchPattern } from "./pattern";
 import { SECTION_DEFS } from "./sections";
 import { buildSnippet } from "./snippet";
@@ -53,9 +54,9 @@ async function fieldHits(q: SectionQuery): Promise<SearchResult[]> {
   return rowsOf<FieldRow>(result).map((r) => ({ ...r, match: null }));
 }
 
-function unionOfSources(q: SectionQuery): SQL | null {
+function unionOfSources(q: SectionQuery, optionIds: string[][]): SQL | null {
   const parts = contentSourcesFor(q.section)
-    .map((source) => source({ section: q.section, pattern: q.pattern, ctx: q.ctx }))
+    .map((source) => source({ section: q.section, pattern: q.pattern, ctx: q.ctx, optionIds }))
     .filter((part): part is SQL => part !== null);
   return parts.length === 0 ? null : sql.join(parts, sql` UNION ALL `);
 }
@@ -65,7 +66,8 @@ async function contentHits(
   excludeIds: string[],
   limit: number,
 ): Promise<SearchResult[]> {
-  const union = unionOfSources(q);
+  const optionIds = await resolveOptionIds(q.db, q.pattern, q.signal);
+  const union = unionOfSources(q, optionIds);
   if (union === null) return [];
   const def = SECTION_DEFS[q.section];
   const result = await q.db.execute(sql`

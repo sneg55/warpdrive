@@ -30,8 +30,5 @@ export const activitiesSource: ContentSource = ({ section, pattern, ctx }) => {
     FROM activities a
     WHERE ${parent} IS NOT NULL AND a.deleted_at IS NULL AND ${predicate} AND ${visible}`;
   return sql`${branch(sql`a.subject`, matchesEveryTerm(sql`a.subject`, pattern))}
-    UNION ALL ${branch(
-      sql`search_plain_text(a.note)`,
-      matchesEveryTerm(sql`search_plain_text(a.note)`, pattern),
-    )}`;
+    UNION ALL ${branch(sql`a.note_plain`, matchesEveryTerm(sql`a.note_plain`, pattern))}`;
 };

@@ -2,6 +2,12 @@
 
 Notable changes to Warpdrive, newest first. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 2.13.2 - 2026-11-19
+
+### Changed
+
+- **search**: store plain text in generated columns and prefilter custom fields by trigram index
+
 ## 2.13.1 - 2026-11-19
 
 No user-facing changes.

@@ -1,7 +1,7 @@
 import { sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { err, ok, type Result } from "@/types/result";
-import { SEARCH_INDEXES, type SearchIndexDef } from "./searchIndexDefs";
+import { LEGACY_SEARCH_INDEX_NAMES, SEARCH_INDEXES, type SearchIndexDef } from "./searchIndexDefs";
 
 type AnyDb = NodePgDatabase<Record<string, unknown>>;
 
@@ -36,6 +36,10 @@ export async function ensureSearchIndexes(
         rebuilt.push(idx.name);
       }
       await db.execute(createStatement(idx));
+    }
+    for (const name of LEGACY_SEARCH_INDEX_NAMES) {
+      signal.throwIfAborted();
+      await db.execute(sql.raw(`DROP INDEX CONCURRENTLY IF EXISTS ${name}`));
     }
     return ok({ rebuilt });
   } catch (e) {

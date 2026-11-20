@@ -45,6 +45,7 @@ export const activities = pgTable(
     customFields: jsonb("custom_fields").notNull().default(sql`'{}'::jsonb`),
     location: text("location"),
     note: text("note"),
+    notePlain: text("note_plain").generatedAlwaysAs(sql`search_plain_text(note)`),
     videoCallUrl: text("video_call_url"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true })
