@@ -136,7 +136,7 @@ test:unit:
   before_script:
     - ln -s /app/node_modules node_modules
   script:
-    - pnpm test:unit -- --reporter=default --reporter=junit --outputFile=junit.xml
+    - node_modules/.bin/vitest run --project unit --reporter=default --reporter=junit --outputFile.junit=junit.xml
   artifacts:
     when: always
     paths:
@@ -158,7 +158,7 @@ test:integration:
   before_script:
     - ln -s /app/node_modules node_modules
   script:
-    - pnpm test:integration -- --reporter=default --reporter=junit --outputFile=junit.xml
+    - node_modules/.bin/vitest run --project integration --reporter=default --reporter=junit --outputFile.junit=junit.xml
   artifacts:
     when: always
     paths:
