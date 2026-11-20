@@ -120,11 +120,14 @@ describe("AddActivityModal", () => {
         expect.objectContaining({
           leadId: "lead-1",
           subject: "Log a call",
-          dueAt: expect.stringMatching(/-10T/),
+          dueAt: expect.any(String),
+          allDay: true,
         }),
         expect.anything(),
       ),
     );
+    const [payload] = createActivityAction.mock.calls[0] as unknown as [{ dueAt: string }, string];
+    expect(new Date(payload.dueAt).getDate()).toBe(10);
   });
 
   it("blocks a lead activity with no due date (leadTimeline hides undated rows)", async () => {
