@@ -1,5 +1,5 @@
 import { ESLint } from "eslint";
-import { describe, expect, test } from "vitest";
+import { beforeAll, describe, expect, test } from "vitest";
 
 const RULE_ID = "warpdrive/no-comments";
 const TS = "src/features/demo/comments.ts";
@@ -8,6 +8,10 @@ const MJS = "scripts/comments-demo.mjs";
 const VITEST_ENV = `@vitest-${"environment"}`;
 
 const eslint = new ESLint();
+
+beforeAll(async () => {
+  await eslint.lintText("export const a = 1;\n", { filePath: TS });
+}, 180_000);
 
 async function noCommentFindings(code: string, filePath: string): Promise<string[]> {
   const [result] = await eslint.lintText(code, { filePath });

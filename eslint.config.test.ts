@@ -1,9 +1,16 @@
 import { ESLint } from "eslint";
-import { describe, expect, test } from "vitest";
+import { beforeAll, describe, expect, test } from "vitest";
+
+const eslint = new ESLint();
+
+beforeAll(async () => {
+  await eslint.lintText("export const a = 1;\n", {
+    filePath: "src/features/demo/warmup.ts",
+  });
+}, 180_000);
 
 describe("eslint custom rules", () => {
   test("flags raw process.env outside the env boundary", async () => {
-    const eslint = new ESLint();
     const results = await eslint.lintText("export const x = process.env.SECRET;\n", {
       filePath: "src/features/demo/leak.ts",
     });
@@ -12,7 +19,6 @@ describe("eslint custom rules", () => {
   });
 
   test("does NOT flag process.env inside src/config/env.ts", async () => {
-    const eslint = new ESLint();
     const results = await eslint.lintText("export const x = process.env.SECRET;\n", {
       filePath: "src/config/env.ts",
     });
@@ -23,7 +29,6 @@ describe("eslint custom rules", () => {
   });
 
   test("flags raw throw new Error in app code", async () => {
-    const eslint = new ESLint();
     const results = await eslint.lintText("export function f(): void { throw new Error('x'); }\n", {
       filePath: "src/features/demo/boom.ts",
     });
@@ -32,7 +37,6 @@ describe("eslint custom rules", () => {
   });
 
   test("does NOT flag throw new Error in src/types/result.ts", async () => {
-    const eslint = new ESLint();
     const results = await eslint.lintText(
       "export function assertNever(x: never): never { throw new Error('Unexpected value'); }\n",
       { filePath: "src/types/result.ts" },
@@ -44,7 +48,6 @@ describe("eslint custom rules", () => {
   });
 
   test("does NOT flag throw new Error in src/config/env.ts", async () => {
-    const eslint = new ESLint();
     const results = await eslint.lintText(
       "export function loadOrThrow(): never { throw new Error('Invalid environment'); }\n",
       { filePath: "src/config/env.ts" },
@@ -56,7 +59,6 @@ describe("eslint custom rules", () => {
   });
 
   test("does NOT flag throw new Error in test files", async () => {
-    const eslint = new ESLint();
     const results = await eslint.lintText("test('x', () => { throw new Error('fail'); });\n", {
       filePath: "src/features/demo/boom.test.ts",
     });
@@ -67,7 +69,6 @@ describe("eslint custom rules", () => {
   });
 
   test("flags fetch() call without a signal argument", async () => {
-    const eslint = new ESLint();
     const results = await eslint.lintText(
       "export async function f() { return fetch('https://example.com/api'); }\n",
       { filePath: "src/features/demo/call.ts" },
@@ -77,7 +78,6 @@ describe("eslint custom rules", () => {
   });
 
   test("does NOT flag fetch() called with a second (options) argument", async () => {
-    const eslint = new ESLint();
     const results = await eslint.lintText(
       "export async function f(s: AbortSignal) { return fetch('https://example.com/api', { signal: s }); }\n",
       { filePath: "src/features/demo/call.ts" },
@@ -89,7 +89,6 @@ describe("eslint custom rules", () => {
   });
 
   test("flags a hand-rolled inline <svg> in app code", async () => {
-    const eslint = new ESLint();
     const results = await eslint.lintText(
       'export function Icon() { return <svg viewBox="0 0 24 24" />; }\n',
       { filePath: "src/components/shell/NavIcons.tsx" },
@@ -99,7 +98,6 @@ describe("eslint custom rules", () => {
   });
 
   test("does NOT flag an inline <svg> inside src/components/ui/**", async () => {
-    const eslint = new ESLint();
     const results = await eslint.lintText(
       'export function Icon() { return <svg viewBox="0 0 24 24" />; }\n',
       { filePath: "src/components/ui/dropdown-menu.tsx" },
@@ -111,7 +109,6 @@ describe("eslint custom rules", () => {
   });
 
   test("import-x/no-cycle rule is configured as error", async () => {
-    const eslint = new ESLint();
     const config = await eslint.calculateConfigForFile("src/features/demo/a.ts");
     const rules = config.rules as Record<string, [number, ...unknown[]] | number | undefined>;
     const cycleEntry = rules["import-x/no-cycle"];
@@ -121,7 +118,6 @@ describe("eslint custom rules", () => {
   });
 
   test("import-x/no-unresolved rule is present (off by design; TypeScript handles resolution)", async () => {
-    const eslint = new ESLint();
     const config = await eslint.calculateConfigForFile("src/features/demo/a.ts");
     const rules = config.rules as Record<string, [number, ...unknown[]] | number | undefined>;
     const unresolvedEntry = rules["import-x/no-unresolved"];
