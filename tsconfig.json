@@ -12,6 +12,7 @@
     "skipLibCheck": true,
     "allowJs": false,
     "noEmit": true,
+    "allowImportingTsExtensions": true,
     "incremental": true,
     "verbatimModuleSyntax": true,
     "isolatedModules": true,

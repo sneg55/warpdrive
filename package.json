@@ -3,6 +3,7 @@
   "version": "2.14.5",
   "description": "An open-source, self-hosted CRM for a company business-development team.",
   "main": "index.js",
+  "type": "module",
   "packageManager": "pnpm@12.21.0",
   "engines": {
     "node": ">=24 <25"
