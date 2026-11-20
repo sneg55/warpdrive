@@ -48,6 +48,16 @@
   },
   "overrides": [
     {
+      "includes": ["gitlabCi.test.ts"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noTemplateCurlyInString": "off"
+          }
+        }
+      }
+    },
+    {
       "includes": ["scripts/**"],
       "linter": {
         "rules": {
