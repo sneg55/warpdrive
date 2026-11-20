@@ -11,6 +11,13 @@ function stage(name: string): string {
   return found;
 }
 
+describe("development stage", () => {
+  it("starts from the full dependency tree and runs in development mode", () => {
+    expect(dockerfile).toMatch(/^FROM deps AS dev$/m);
+    expect(stage("dev")).toMatch(/^ENV NODE_ENV=development$/m);
+  });
+});
+
 describe("build metadata (APP_COMMIT)", () => {
   it("is passed as a build arg by the deploy workflow", () => {
     expect(workflow).toMatch(/APP_COMMIT=\$\{\{\s*github\.sha\s*\}\}/);
