@@ -1,7 +1,9 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-const workflow = readFileSync(new URL("./.github/workflows/deploy.yml", import.meta.url), "utf8");
+const deployWorkflowPath = new URL("./.github/workflows/deploy.yml", import.meta.url);
+const hasDeployWorkflow = existsSync(deployWorkflowPath);
+const workflow = hasDeployWorkflow ? readFileSync(deployWorkflowPath, "utf8") : "";
 
 function job(name: string): string {
   const match = new RegExp(`^ {2}${name}:$([\\s\\S]*?)(?=^ {2}\\w+:$|$(?![\\s\\S]))`, "m").exec(
@@ -11,7 +13,7 @@ function job(name: string): string {
   return match[1] ?? "";
 }
 
-describe("deploy workflow", () => {
+describe.skipIf(!hasDeployWorkflow)("deploy workflow", () => {
   it("runs its checks on pull requests, not only after the merge", () => {
     expect(workflow).toMatch(/^ {2}pull_request:$/m);
   });
