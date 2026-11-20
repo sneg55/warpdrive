@@ -193,6 +193,7 @@ export default tseslint.config(
     rules: {
       "no-restricted-properties": "off",
       "@typescript-eslint/strict-boolean-expressions": "off",
+      "@typescript-eslint/unbound-method": "off",
     },
   },
 
