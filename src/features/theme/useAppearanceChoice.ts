@@ -19,6 +19,7 @@ function prefersDark(): boolean {
 }
 
 function applyAppearance(value: Appearance): void {
+  // biome-ignore lint/suspicious/noDocumentCookie: the cookie must stay a real HTTP cookie for server-side SSR seeding, and cookieStore is async and absent in jsdom
   document.cookie = appearanceCookieValue(value);
   document.documentElement.classList.toggle(DARK_CLASS, isDarkAppearance(value, prefersDark()));
 }
