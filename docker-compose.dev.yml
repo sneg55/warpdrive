@@ -89,6 +89,13 @@ services:
   caddy:
     profiles: ["never"]
 
+  adminer:
+    image: docker.io/adminer
+    ports:
+      - "8097:8080"
+    depends_on:
+      - postgres
+
 volumes:
   dev_node_modules:
   dev_next_cache:
