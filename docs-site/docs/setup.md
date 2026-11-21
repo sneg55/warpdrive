@@ -200,6 +200,10 @@ is the address you set in `SEED_ADMIN_EMAIL`. The development override sets
 `NODE_ENV=development`; the route also requires `ALLOW_FIRST_LOGIN_ADMIN=true`. Never set either
 on a real deployment.
 
+To access the database, use Adminer:
+
+http://localhost:8097/?pgsql=postgres&username=warpdrive&db=warpdrive&ns=public (password: `warpdrive`).
+
 ## Operating the deployment
 
 See [Updating](./operations/updating.md) for upgrades, backups, and day-to-day
