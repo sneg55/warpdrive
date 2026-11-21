@@ -34,4 +34,4 @@ async function main(): Promise<void> {
   if (results.some((r) => !r.ok)) process.exitCode = 1;
 }
 
-await main();
+void main();
