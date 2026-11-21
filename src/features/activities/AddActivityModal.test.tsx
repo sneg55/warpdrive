@@ -3,10 +3,11 @@ import "@testing-library/jest-dom/vitest";
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
-beforeAll(() => {
+beforeAll(async () => {
   Element.prototype.scrollIntoView = vi.fn();
   Element.prototype.hasPointerCapture = vi.fn(() => false);
   Element.prototype.releasePointerCapture = vi.fn();
+  await import("react-day-picker");
 });
 
 afterEach(() => {
@@ -119,11 +120,14 @@ describe("AddActivityModal", () => {
         expect.objectContaining({
           leadId: "lead-1",
           subject: "Log a call",
-          dueAt: expect.stringMatching(/-10T/),
+          dueAt: expect.any(String),
+          allDay: true,
         }),
         expect.anything(),
       ),
     );
+    const [payload] = createActivityAction.mock.calls[0] as unknown as [{ dueAt: string }, string];
+    expect(new Date(payload.dueAt).getDate()).toBe(10);
   });
 
   it("blocks a lead activity with no due date (leadTimeline hides undated rows)", async () => {

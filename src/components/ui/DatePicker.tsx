@@ -15,9 +15,9 @@ const DayPicker = dynamic(async () => (await import("react-day-picker")).DayPick
   loading: () => <div className="min-h-[18rem]" aria-hidden="true" />,
 });
 
-let dayPickerChunk: Promise<unknown> | null = null;
+let _dayPickerChunk: Promise<unknown> | null = null;
 function preloadDayPicker(): void {
-  dayPickerChunk ??= import("react-day-picker");
+  _dayPickerChunk ??= import("react-day-picker");
 }
 
 const DATE_PICKER_PAST_YEARS = 100;

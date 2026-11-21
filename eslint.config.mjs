@@ -189,10 +189,11 @@ export default tseslint.config(
   },
 
   {
-    files: ["vitest.setup.ts"],
+    files: ["vitest.setup.ts", "vitest.globalSetup.ts"],
     rules: {
       "no-restricted-properties": "off",
       "@typescript-eslint/strict-boolean-expressions": "off",
+      "@typescript-eslint/unbound-method": "off",
     },
   },
 
@@ -211,7 +212,7 @@ export default tseslint.config(
   },
 
   {
-    files: ["src/config/env.test.ts"],
+    files: ["src/config/env.test.ts", "vitest.globalSetup.test.ts"],
     rules: { "no-restricted-properties": "off" },
   },
 );

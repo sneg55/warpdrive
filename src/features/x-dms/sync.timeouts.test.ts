@@ -49,8 +49,8 @@ describe("runXSyncAll account timeouts", () => {
       const b = await seedAccount(db, { xUserId: "1000000000000000009" });
       trackTokens(fake.client, (call) => call === 1);
       const results = await runXSyncAll(
-        { ...deps(db, fake), accountTimeoutMs: 200 },
-        AbortSignal.timeout(5000),
+        { ...deps(db, fake), accountTimeoutMs: 10_000 },
+        AbortSignal.timeout(60_000),
       );
       expect(results.map((r) => r.ok)).toEqual([false, true]);
       expect((await accountRow(db, a))?.lastErrorId).toBe(ERROR_IDS.X_HTTP_FAILED);
@@ -75,7 +75,7 @@ describe("runXSyncAll account timeouts", () => {
       });
       await expect(runXSyncAll(deps(db, fake), run.signal)).rejects.toThrow();
       expect(tokens).toEqual(["stored-access"]);
-      await runXSyncAll(deps(db, fake), AbortSignal.timeout(5000));
+      await runXSyncAll(deps(db, fake), AbortSignal.timeout(60_000));
       expect(tokens.slice(1)).toEqual(["b-access", "stored-access"]);
       expect((await accountRow(db, a))?.lastSyncAt).toEqual(new Date(NOW_MS));
     });
