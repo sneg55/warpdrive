@@ -1,11 +1,15 @@
 import { eq } from "drizzle-orm";
+import { drizzle } from "drizzle-orm/node-postgres";
+import { Pool } from "pg";
 import { describe, expect, it } from "vitest";
 import { AppError, ERROR_IDS } from "@/constants/errorIds";
 import type { Db } from "@/db/client";
+import * as schema from "@/db/schema";
 import { xAccounts } from "@/db/schema/xDms";
 import { withTestDb } from "@/db/testing";
 import { seedUser } from "@/db/testing/factories";
 import { encryptToken } from "@/features/email/crypto";
+import { makeTestDb } from "@/test/db";
 import { err, ok } from "@/types/result";
 import { disconnectXAccount } from "./accountAdmin";
 import { withAccessToken } from "./tokens";
@@ -39,15 +43,20 @@ describe("token races", () => {
       const fake = makeXFake();
       const admin = await seedUser(db, { isAdmin: true });
       const id = await seedAccount(db, null);
+      let markRefreshStarted: (() => void) | undefined;
+      const refreshStarted = new Promise<void>((resolve) => {
+        markRefreshStarted = resolve;
+      });
       const slow: XClient = {
         ...fake.client,
         refresh: async (token, s) => {
+          markRefreshStarted?.();
           await sleep(300);
           return fake.client.refresh(token, s);
         },
       };
       const refreshing = withAccessToken(db, slow, id, (t) => Promise.resolve(ok(t)), sig());
-      await sleep(100);
+      await refreshStarted;
       const disconnected = await disconnectXAccount(
         db,
         fake.client,
@@ -59,6 +68,47 @@ describe("token races", () => {
       expect(fake.revoked).toEqual(["fake-refresh-1"]);
       expect(await db.select().from(xAccounts).where(eq(xAccounts.id, id))).toHaveLength(0);
     });
+  });
+
+  it("a disconnect that lands before the refresh transaction starts revokes the stored token and the pending refresh fails not-found", async () => {
+    const h = await makeTestDb();
+    try {
+      const fake = makeXFake();
+      const admin = await seedUser(h.db, { isAdmin: true });
+      const id = await seedAccount(h.db, null);
+      const held = await Promise.all(
+        Array.from({ length: h.pool.options.max ?? 10 }, () => h.pool.connect()),
+      );
+      const refreshing = withAccessToken(
+        h.db,
+        fake.client,
+        id,
+        (t) => Promise.resolve(ok(t)),
+        sig(),
+      );
+      const other = new Pool({ connectionString: h.url, max: 2 });
+      try {
+        const disconnected = await disconnectXAccount(
+          drizzle(other, { schema }),
+          fake.client,
+          { actorId: admin.id, accountId: id },
+          sig(),
+        );
+        expect(disconnected.ok).toBe(true);
+      } finally {
+        await other.end();
+      }
+      held.forEach((client) => {
+        client.release();
+      });
+      const refreshResult = await refreshing;
+      expect(fake.revoked).toEqual(["stored-refresh"]);
+      expect(refreshResult.ok).toBe(false);
+      expect(!refreshResult.ok && refreshResult.error.id).toBe(ERROR_IDS.X_ACCOUNT_NOT_FOUND);
+      expect(await h.db.select().from(xAccounts).where(eq(xAccounts.id, id))).toHaveLength(0);
+    } finally {
+      await h.close();
+    }
   });
 
   it("a stale second 401 does not overwrite an account reconnected meanwhile", async () => {
