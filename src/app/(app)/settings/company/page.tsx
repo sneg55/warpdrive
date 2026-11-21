@@ -1,5 +1,6 @@
 import { eq } from "drizzle-orm";
 import type { ReactNode } from "react";
+import { env } from "@/config/env";
 import { PERMISSION_FLAGS } from "@/constants/permissionFlags";
 import { STRINGS } from "@/constants/strings";
 import { db } from "@/db/client";
@@ -23,7 +24,7 @@ export default async function CompanyGeneralPage(): Promise<ReactNode> {
   return (
     <CompanyGeneralClient
       companyName={row?.companyName ?? ""}
-      baseCurrency={row?.baseCurrency ?? "USD"}
+      baseCurrency={row?.baseCurrency ?? env.BASE_CURRENCY}
     />
   );
 }

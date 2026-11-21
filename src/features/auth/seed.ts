@@ -1,5 +1,6 @@
 import { eq, sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
+import { env } from "@/config/env";
 import {
   buildDefaultStageValues,
   DEFAULT_LABELS,
@@ -22,7 +23,7 @@ export interface SeedHandles {
 export async function ensureSeedData(tx: Tx, signal: AbortSignal): Promise<SeedHandles> {
   signal.throwIfAborted();
 
-  await tx.insert(settings).values({ baseCurrency: "USD" }).onConflictDoNothing();
+  await tx.insert(settings).values({ baseCurrency: env.BASE_CURRENCY }).onConflictDoNothing();
 
   await tx
     .insert(permissionSets)

@@ -1,6 +1,8 @@
 import { fileURLToPath } from "node:url";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
+import { env } from "@/config/env";
+import { syncBaseCurrency } from "@/features/settings/settingsRepo";
 import { err, ok, type Result } from "@/types/result";
 import { ensureSearchIndexes } from "./searchIndexes";
 
@@ -33,13 +35,17 @@ async function runMigrations(
 }
 
 export async function runMigrationsCli(migrationsFolder?: string): Promise<void> {
-  const { pool } = await import("./client");
+  const { db, pool } = await import("./client");
   const result = await runMigrations(undefined, migrationsFolder);
+  if (result.ok) {
+    await syncBaseCurrency(db, env.BASE_CURRENCY, new AbortController().signal);
+  }
   await pool.end();
   if (!result.ok) {
     console.error(`migration failed: ${result.error}`);
     process.exit(1);
   }
   console.warn("migrations applied");
+  console.warn(`base currency synced to ${env.BASE_CURRENCY}`);
   process.exit(0);
 }

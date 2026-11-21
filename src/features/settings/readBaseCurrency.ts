@@ -1,4 +1,5 @@
 import { eq } from "drizzle-orm";
+import { env } from "@/config/env";
 import type { Db } from "@/db/client";
 import { settings } from "@/db/schema/system";
 import { createDbCache } from "@/lib/dbCache";
@@ -18,7 +19,7 @@ export async function readBaseCurrency(db: Db, signal: AbortSignal): Promise<str
     .select({ baseCurrency: settings.baseCurrency })
     .from(settings)
     .where(eq(settings.id, true));
-  const value = row?.baseCurrency ?? "USD";
+  const value = row?.baseCurrency ?? env.BASE_CURRENCY;
   currencyCache.set(db, CURRENCY_KEY, value);
   return value;
 }

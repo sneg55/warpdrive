@@ -9,6 +9,29 @@ export interface SettingsPatch {
   emailTrackingDefaultEnabled?: boolean;
 }
 
+export async function syncBaseCurrency(
+  db: Db,
+  currency: string,
+  signal: AbortSignal,
+): Promise<Settings> {
+  signal.throwIfAborted();
+  const [row] = await db
+    .insert(settings)
+    .values({ id: true, baseCurrency: currency })
+    .onConflictDoUpdate({ target: settings.id, set: { baseCurrency: currency } })
+    .returning();
+  signal.throwIfAborted();
+  invalidateBaseCurrencyCache(db);
+  if (row === undefined) {
+    const [existing] = await db.select().from(settings).where(eq(settings.id, true));
+    if (existing === undefined) {
+      throw new AppError(ERROR_IDS.DB_INVARIANT, "settings singleton missing after upsert", {});
+    }
+    return existing;
+  }
+  return row;
+}
+
 export async function updateSettings(
   db: Db,
   patch: SettingsPatch,
