@@ -133,12 +133,19 @@ SSO. Nothing else is affected.
 
 ## Local development against this stack
 
-The base compose file is production-only (no host ports, TLS via Caddy). For a local run, merge the
-dev overrides (which expose host ports and drop Caddy):
+The base compose file is production-only (no host ports, TLS via Caddy, and a runtime image
+without devDependencies). For a local run, merge the dev overrides, which expose host ports, drop
+Caddy, and run the services from your working tree:
 
 ```sh
 docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
 ```
+
+The override bind-mounts the repository into the `app`, `ws`, `worker`, and `migrate` containers
+and runs `next dev` / `tsx watch`, so source edits reload in place without an image rebuild. A
+one-shot `dev-deps` service installs the full dependency tree into a shared `dev_node_modules`
+volume before the services start; the host's `node_modules` is never used. Re-run with `--build`
+after changing `package.json`, `pnpm-lock.yaml`, or the `Dockerfile`.
 
 Then the app is at `http://localhost:3000`, the Garage S3 API at `http://localhost:9000` (`S3_ENDPOINT`), and Postgres
 at `localhost:5433`. Set `BASE_URL=http://localhost:3000`, `NEXT_PUBLIC_WS_URL=ws://localhost:8080` and
