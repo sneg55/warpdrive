@@ -5,6 +5,13 @@
 # the migration SQL. The workers are transpiled (not inlined): deps like jsdom read their own data
 # files via __dirname-relative reads, so they must stay in a real node_modules, not a bundle.
 # See docs/superpowers/specs/2026-07-07-docker-single-box-deploy-design.md.
+# DEPS_IMAGE and PROD_DEPS_IMAGE: when set, the build and runtime stages start from
+# pre-built deps / prod-deps images (CI builds and pushes them per content-addressed tag,
+# then passes them as build args) so a final build skips both pnpm installs. Unset, they
+# default to the in-file stages and this file builds standalone.
+
+ARG DEPS_IMAGE
+ARG PROD_DEPS_IMAGE
 
 FROM node:24-alpine AS base
 RUN corepack enable
@@ -21,8 +28,10 @@ COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile --prod
 
 # --- build: Next build + transpiled ws/worker/migrate entrypoints ---
-FROM base AS build
-COPY --from=deps /app/node_modules ./node_modules
+# Starts from the deps stage (or a pre-built deps image): node_modules and the lockfile
+# are already in /app, so the stage only overlays the source and runs the build.
+FROM ${DEPS_IMAGE:-deps} AS build
+WORKDIR /app
 COPY . .
 # NEXT_PUBLIC_* vars are inlined into the client bundle at build time, so they must be present
 # during `next build`, not only at runtime (F29). Compose passes this as a build arg.
@@ -60,7 +69,10 @@ RUN NODE_ENV=production \
     pnpm build:docker
 
 # --- runtime: minimal, non-root ---
-FROM base AS runtime
+# Starts from the prod-deps stage (or a pre-built prod-deps image): the production node_modules
+# and the lockfile are already in /app; this stage only assembles the build output.
+FROM ${PROD_DEPS_IMAGE:-prod-deps} AS runtime
+WORKDIR /app
 ENV NODE_ENV=production
 # Optional version stamp for the update-check banner (e.g. a release tag). When unset, the app
 # falls back to the bundled package.json version, then "dev" (banner disabled). Not compile-time
@@ -71,7 +83,6 @@ ENV APP_VERSION=${APP_VERSION}
 # network / from the Caddy proxy.
 ENV HOSTNAME=0.0.0.0
 ENV PORT=3000
-COPY --from=prod-deps /app/node_modules ./node_modules
 # `next start` writes the fetch/route cache under .next/cache at request time, so this tree must be
 # owned by the non-root runtime user or those writes hit EACCES (noisy logs + disabled caching).
 COPY --chown=node:node --from=build /app/.next ./.next

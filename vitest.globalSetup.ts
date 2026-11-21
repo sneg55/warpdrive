@@ -29,9 +29,30 @@ declare module "vitest" {
   }
 }
 
+export interface ExternalTarget {
+  host: string;
+  port: number;
+  user: string;
+  password: string;
+  adminDatabase: string;
+}
+
+export function externalTarget(): ExternalTarget | undefined {
+  const url = process.env.DATABASE_URL;
+  if (url === undefined || url.length === 0) return undefined;
+  const parsed = new URL(url);
+  return {
+    host: parsed.hostname,
+    port: parsed.port === "" ? 5432 : Number(parsed.port),
+    user: decodeURIComponent(parsed.username),
+    password: decodeURIComponent(parsed.password),
+    adminDatabase: parsed.pathname.replace(/^\//, ""),
+  };
+}
+
 let container: StartedPostgreSqlContainer | undefined;
 
-export default async function setup(project: TestProject): Promise<() => Promise<void>> {
+async function containerTarget(): Promise<ExternalTarget> {
   container = await new PostgreSqlContainer("postgres:16-alpine")
     .withCommand([
       "postgres",
@@ -43,20 +64,28 @@ export default async function setup(project: TestProject): Promise<() => Promise
       "full_page_writes=off",
     ])
     .start();
-
-  const adminDatabase = container.getDatabase();
-  const base = {
+  return {
     host: container.getHost(),
     port: container.getPort(),
     user: container.getUsername(),
     password: container.getPassword(),
+    adminDatabase: container.getDatabase(),
   };
+}
 
-  const adminPool = new Pool({ ...base, database: adminDatabase, max: 2 });
-  await adminPool.query(`CREATE DATABASE ${TEMPLATE_DB}`);
+export default async function setup(project: TestProject): Promise<() => Promise<void>> {
+  const target = externalTarget() ?? (await containerTarget());
+  const { adminDatabase, ...endpoint } = target;
+  const adminPool = new Pool({ ...endpoint, database: adminDatabase, max: 2 });
+  const existing = await adminPool.query("SELECT 1 FROM pg_database WHERE datname = $1", [
+    TEMPLATE_DB,
+  ]);
+  if (existing.rows.length === 0) {
+    await adminPool.query(`CREATE DATABASE ${TEMPLATE_DB}`);
+  }
   await adminPool.end();
 
-  const templatePool = new Pool({ ...base, database: TEMPLATE_DB, max: 2 });
+  const templatePool = new Pool({ ...endpoint, database: TEMPLATE_DB, max: 2 });
   const templateDb = drizzle(templatePool);
   await templateDb.execute(sql`CREATE EXTENSION IF NOT EXISTS pgcrypto`);
   await templateDb.execute(sql`CREATE EXTENSION IF NOT EXISTS citext`);
@@ -68,7 +97,7 @@ export default async function setup(project: TestProject): Promise<() => Promise
   }
   await templatePool.end();
 
-  project.provide("testPg", { ...base, adminDatabase, template: TEMPLATE_DB });
+  project.provide("testPg", { ...endpoint, adminDatabase, template: TEMPLATE_DB });
 
   return async () => {
     await container?.stop();
