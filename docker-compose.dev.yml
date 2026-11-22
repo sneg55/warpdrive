@@ -2,8 +2,9 @@
 # auto-merged into every `docker compose up`, which would leak these host-port and no-TLS settings
 # onto the production box. Opt in explicitly instead:
 #   docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
-# This exposes the backing services (and the app/ws) to the host and skips Caddy/TLS, so you can
-# reach the app at http://localhost:3000 and connect the WS at ws://localhost:8080 directly.
+# This exposes the backing services (and the app/ws) to the host, skips Caddy/TLS, and swaps the
+# built runtime image for the development stage: the repository is bind-mounted into the app, ws,
+# worker and migrate containers, and they run `next dev` / `tsx watch`, so edits reload in place.
 services:
   postgres:
     ports: ["5433:5432"]
@@ -12,13 +13,93 @@ services:
     ports:
       - "9000:3900"
 
+  dev-deps:
+    build:
+      context: .
+      target: deps
+    image: warpdrive-dev-dev-deps
+    command: ["pnpm", "install", "--frozen-lockfile", "--prefer-offline"]
+    volumes:
+      - .:/app
+      - dev_node_modules:/app/node_modules
+    restart: "no"
+
   app:
+    build:
+      context: .
+      target: dev
+    image: warpdrive-dev-app
+    command:
+      ["node_modules/.bin/next", "dev", "--hostname", "0.0.0.0", "--port", "3000"]
+    environment:
+      NODE_ENV: development
+    volumes:
+      - .:/app
+      - dev_node_modules:/app/node_modules
+      - dev_next_cache:/app/.next
     ports: ["3000:3000"]
+    depends_on:
+      dev-deps:
+        condition: service_completed_successfully
 
   ws:
+    build:
+      context: .
+      target: dev
+    image: warpdrive-dev-ws
+    command: ["node_modules/.bin/tsx", "watch", "src/entrypoints/ws.ts"]
+    environment:
+      NODE_ENV: development
+    volumes:
+      - .:/app
+      - dev_node_modules:/app/node_modules
     ports: ["8080:8080"]
+    depends_on:
+      dev-deps:
+        condition: service_completed_successfully
+
+  migrate:
+    build:
+      context: .
+      target: dev
+    image: warpdrive-dev-migrate
+    command: ["node_modules/.bin/tsx", "src/entrypoints/migrate.ts"]
+    environment:
+      NODE_ENV: development
+    volumes:
+      - .:/app
+      - dev_node_modules:/app/node_modules
+    depends_on:
+      dev-deps:
+        condition: service_completed_successfully
+
+  worker:
+    build:
+      context: .
+      target: dev
+    image: warpdrive-dev-worker
+    command: ["node_modules/.bin/tsx", "watch", "src/entrypoints/worker.ts"]
+    environment:
+      NODE_ENV: development
+    volumes:
+      - .:/app
+      - dev_node_modules:/app/node_modules
+    depends_on:
+      dev-deps:
+        condition: service_completed_successfully
 
   # Caddy is unnecessary locally (no domain, no TLS). A profile that is never activated keeps it
   # out of the dev stack while leaving the production file untouched.
   caddy:
     profiles: ["never"]
+
+  adminer:
+    image: docker.io/adminer
+    ports:
+      - "8097:8080"
+    depends_on:
+      - postgres
+
+volumes:
+  dev_node_modules:
+  dev_next_cache:

@@ -15,6 +15,12 @@ FROM base AS deps
 COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile
 
+# --- dev: full dependency tree for local development; source comes from a bind mount ---
+FROM deps AS dev
+ENV NODE_ENV=development
+EXPOSE 3000 8080
+CMD ["node_modules/.bin/next", "dev", "--hostname", "0.0.0.0", "--port", "3000"]
+
 # --- prod-deps: production-only tree for the runtime image ---
 FROM base AS prod-deps
 COPY package.json pnpm-lock.yaml ./
