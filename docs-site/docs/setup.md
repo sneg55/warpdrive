@@ -172,12 +172,21 @@ From there, invite the rest of your team from
 
 ## Local development
 
-The base Compose file is production-only: no host ports, TLS through Caddy. For a
-local run, merge the development overrides, which expose host ports and drop Caddy:
+The base Compose file is production-only: no host ports, TLS through Caddy, and a runtime image
+without devDependencies. For a local run, merge the development overrides, which expose host
+ports, drop Caddy, and run the services from your working tree:
 
 ```sh
 docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
 ```
+
+The override bind-mounts the repository into the `app`, `ws`, `worker`, and `migrate`
+containers and runs `next dev` / `tsx watch` instead of the production entrypoints. Editing a
+React component or server module therefore reloads in place; no image rebuild is needed for
+source edits. A one-shot `dev-deps` service installs the full dependency tree into a shared
+`dev_node_modules` volume before the others start, so development dependencies are present and
+the host's `node_modules` is never used. Re-run with `--build` after changing `package.json`,
+`pnpm-lock.yaml`, or the `Dockerfile`.
 
 The app is then at `http://localhost:3000`, the Garage S3 API at
 `http://localhost:9000` (use it as `S3_ENDPOINT`), and Postgres at `localhost:5433`. Set
@@ -187,9 +196,9 @@ server side dials Garage by its Compose service name.
 
 To sign in without Google, open the `dev-login` route:
 `http://localhost:3000/auth/dev-login?email=admin@example.com`, where `admin@example.com`
-is the address you set in `SEED_ADMIN_EMAIL`. The route only works when
-`ALLOW_FIRST_LOGIN_ADMIN=true` and `NODE_ENV=development` are also set (the image defaults
-to `NODE_ENV=production`). Never set either on a real deployment.
+is the address you set in `SEED_ADMIN_EMAIL`. The development override sets
+`NODE_ENV=development`; the route also requires `ALLOW_FIRST_LOGIN_ADMIN=true`. Never set either
+on a real deployment.
 
 ## Operating the deployment
 

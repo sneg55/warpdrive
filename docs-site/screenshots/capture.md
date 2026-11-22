@@ -30,7 +30,7 @@ Always capture against a database created fresh for the purpose.
 1. Bring up local Postgres (port 5433) and Garage:
 
    ```sh
-   docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+   docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d postgres garage storagecors
    ```
 
 2. Create a throwaway database and point an env file at it:
