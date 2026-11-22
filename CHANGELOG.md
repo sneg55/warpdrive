@@ -2,6 +2,10 @@
 
 Notable changes to Warpdrive, newest first. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 2.14.2 - 2026-11-22
+
+No user-facing changes.
+
 ## 2.14.1 - 2026-11-22
 
 ### Fixed

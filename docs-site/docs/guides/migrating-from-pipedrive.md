@@ -65,7 +65,9 @@ Re-running a file skips rows whose Pipedrive ID was already imported. If some ro
 - Files
 - Email history
 - Stage history
-- Currencies: values import as plain numbers, and the currency column is ignored
+- Currencies: values import as plain numbers in the instance's `BASE_CURRENCY`, and
+  the currency column is ignored. Set `BASE_CURRENCY` to your Pipedrive default
+  currency before importing, and convert any deals recorded in other currencies first
 
 ## Related
 

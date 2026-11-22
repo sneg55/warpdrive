@@ -9,6 +9,14 @@ description: "Configure Warpdrive for your team: labels, lost reasons, activity 
 `/settings/company` holds the catalogs that the rest of the application draws from.
 Changing one changes the options everyone sees.
 
+## Company name and currency
+
+The general page at `/settings/company` edits the company name and shows the base
+currency. The currency is read-only here because it comes from the `BASE_CURRENCY`
+environment variable (see [Setup](../setup.md#business-values)). Every amount in the
+application uses it: deal and lead values, board and stage totals, list totals,
+organization revenue, stats, and monetary custom fields.
+
 ## Labels
 
 `/settings/company/labels` manages the coloured labels applied to deals, people, and

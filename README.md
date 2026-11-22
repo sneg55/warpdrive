@@ -105,7 +105,7 @@ goal is a focused, self-hosted CRM, not a feature-for-feature clone.
 | Notifications | ✅ | ✅ |
 | Pipeline stats (funnel, performance) | ✅ Basic | ✅ Advanced |
 | Products, Projects, Invoicing, Forecast | ➖ Out of scope | ✅ |
-| Multi-currency | ➖ Out of scope | ✅ |
+| Multi-currency | ➖ One currency per instance (`BASE_CURRENCY`) | ✅ |
 | Workflow automation | ➖ Email scheduling only | ✅ |
 | Web forms / chatbot / marketplace | ➖ Out of scope | ✅ |
 | Native mobile apps | ➖ Web app | ✅ |

@@ -74,7 +74,7 @@ stating plainly:
 
 | Variable | Meaning |
 | --- | --- |
-| `BASE_CURRENCY` | Currency deal values are recorded in. Defaults to `USD`. |
+| `BASE_CURRENCY` | The single currency every amount is shown in, as a three-letter ISO 4217 code such as `EUR` (case does not matter). Defaults to `USD`. Applied each time migrations run, so changing it later takes effect on the next restart. Stored amounts are relabelled, not converted. A value that is not three letters stops the app at startup. |
 | `MAX_FILE_BYTES` | Upload size ceiling. Defaults to `26214400` (25 MiB). |
 | `GOOGLE_WORKSPACE_DOMAIN` | Restricts sign-in to a single Workspace domain. |
 | `APP_VERSION` | Version shown as "current" by the update banner. |

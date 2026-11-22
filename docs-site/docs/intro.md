@@ -44,7 +44,8 @@ vendor holding your customer data.
 
 Warpdrive reimplements the business-development portion of a CRM. It deliberately
 leaves out products and projects, documents, invoicing, forecast views, and
-multi-currency. If your team needs those, this is not the right tool.
+multi-currency (each instance records every amount in one currency, set by
+`BASE_CURRENCY`). If your team needs those, this is not the right tool.
 
 ## Single-tenant by design
 
