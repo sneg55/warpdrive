@@ -120,13 +120,6 @@ export default tseslint.config(
   },
 
   {
-    files: ["src/config/clientEnv.ts"],
-    rules: {
-      "no-restricted-properties": "off",
-    },
-  },
-
-  {
     files: ["src/instrumentation.ts"],
     rules: {
       "no-restricted-properties": "off",

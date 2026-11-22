@@ -1,10 +1,6 @@
-# Shared build config: pass NEXT_PUBLIC_WS_URL as a build arg so Next inlines it into the client
-# bundle at build time (F29). A runtime-only env_file does NOT reach the client bundle.
 x-app-build: &app-build
   context: .
   args:
-    NEXT_PUBLIC_WS_URL: ${NEXT_PUBLIC_WS_URL:-}
-    # Optional version stamp for the update-check banner. Unset falls back to package.json, then "dev".
     APP_VERSION: ${APP_VERSION:-}
 
 configs:

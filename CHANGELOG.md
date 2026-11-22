@@ -2,6 +2,21 @@
 
 Notable changes to Warpdrive, newest first. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 2.14.0 - 2026-11-22
+
+### Added
+
+- **realtime**: read the browser WebSocket URL at runtime (OSS #29)
+- **dev**: containerized dev mode with hot reload and Adminer (OSS #15)
+
+### Fixed
+
+- **settings**: actually apply the BASE_CURRENCY setting (OSS #24)
+
+### Security
+
+- upgrade the app to pnpm 12.21.0 (OSS #20)
+
 ## 2.13.2 - 2026-11-19
 
 ### Changed

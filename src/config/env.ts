@@ -61,6 +61,7 @@ const base = z.object({
   DATABASE_URL: z.string().min(1),
   WS_TICKET_SECRET: z.string().min(32),
   WS_PUBLIC_URL: z.string().min(1),
+  NEXT_PUBLIC_WS_URL: z.union([z.literal(""), z.string().url()]).default(""),
   S3_ENDPOINT: z.string().url(),
   S3_SERVER_ENDPOINT: optionalUrl,
   S3_ACCESS_KEY: z.string().min(1),

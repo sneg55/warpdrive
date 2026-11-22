@@ -7,6 +7,7 @@ import { LeftNav } from "@/components/shell/LeftNav";
 import { ReconnectBanner } from "@/components/shell/ReconnectBanner";
 import { TopBar } from "@/components/shell/TopBar";
 import { Toaster } from "@/components/ui/sonner";
+import { env } from "@/config/env";
 import { NAV_PREF_COOKIE } from "@/constants/cookies";
 import { db } from "@/db/client";
 import { FollowUpPromptProvider } from "@/features/activities/followUpAfterDone";
@@ -18,6 +19,7 @@ import { getPreferencesForActor } from "@/features/identity/preferencesForActor"
 import { IntercomEnabledProvider } from "@/features/intercom/IntercomEnabledProvider";
 import { isIntercomEnabled } from "@/features/intercom/settings";
 import { IdentifyUser } from "@/features/observability/IdentifyUser";
+import { RealtimeUrlProvider } from "@/features/realtime/RealtimeUrlProvider";
 import { VersionBanner } from "@/features/release/ui/VersionBanner";
 import { CommandPalette } from "@/features/search/ui/CommandPalette";
 import { GlobalShortcuts } from "@/features/shortcuts/GlobalShortcuts";
@@ -47,33 +49,35 @@ export default async function AppLayout({ children }: { children: ReactNode }): 
           __html: appearanceSeedScript(parseAppearance(prefs.ui.appearance)),
         }}
       />
-      <InterfacePrefsProvider value={interfacePrefsFromUi(prefs.ui)}>
-        <IntercomEnabledProvider enabled={isIntercomEnabled()}>
-          <FollowUpPromptProvider>
-            <div data-density={prefs.density} className="flex h-screen flex-col">
-              <CsrfRefresher hasCsrf={hasCsrf} />
-              {ctx.actor.type === "admin" && <VersionBanner />}
-              <ReconnectBanner />
-              <TopBar
-                userId={ctx.actor.id}
-                userName={ctx.actor.name}
-                avatarUrl={ctx.actor.avatarUrl}
-                appearance={parseAppearance(prefs.ui.appearance)}
-              />
-              <div className="flex min-h-0 flex-1">
-                <LeftNav
-                  initialExpanded={navExpanded}
-                  inboxBadge={<InboxNavBadge selfActorId={ctx.actor.id} />}
+      <RealtimeUrlProvider url={env.NEXT_PUBLIC_WS_URL}>
+        <InterfacePrefsProvider value={interfacePrefsFromUi(prefs.ui)}>
+          <IntercomEnabledProvider enabled={isIntercomEnabled()}>
+            <FollowUpPromptProvider>
+              <div data-density={prefs.density} className="flex h-screen flex-col">
+                <CsrfRefresher hasCsrf={hasCsrf} />
+                {ctx.actor.type === "admin" && <VersionBanner />}
+                <ReconnectBanner />
+                <TopBar
+                  userId={ctx.actor.id}
+                  userName={ctx.actor.name}
+                  avatarUrl={ctx.actor.avatarUrl}
+                  appearance={parseAppearance(prefs.ui.appearance)}
                 />
-                <main className="min-w-0 flex-1 overflow-auto bg-muted/70 p-6">{children}</main>
+                <div className="flex min-h-0 flex-1">
+                  <LeftNav
+                    initialExpanded={navExpanded}
+                    inboxBadge={<InboxNavBadge selfActorId={ctx.actor.id} />}
+                  />
+                  <main className="min-w-0 flex-1 overflow-auto bg-muted/70 p-6">{children}</main>
+                </div>
+                <CommandPalette />
+                <GlobalShortcuts />
+                <Toaster />
               </div>
-              <CommandPalette />
-              <GlobalShortcuts />
-              <Toaster />
-            </div>
-          </FollowUpPromptProvider>
-        </IntercomEnabledProvider>
-      </InterfacePrefsProvider>
+            </FollowUpPromptProvider>
+          </IntercomEnabledProvider>
+        </InterfacePrefsProvider>
+      </RealtimeUrlProvider>
     </ActionErrorProvider>
   );
 }

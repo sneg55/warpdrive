@@ -59,7 +59,7 @@ Each browser tab opens **one multiplexed WebSocket connection** shared across ev
 subscribing component, rather than one socket per hook. The server stamps a sequence
 number per channel and tags each frame with its channel.
 
-Realtime depends on `NEXT_PUBLIC_WS_URL` being correct at build time. See
+Realtime depends on `NEXT_PUBLIC_WS_URL` being set to the browser-facing address. See
 [Installation](./setup.md) for why a wrong value fails silently.
 
 ## Code layout

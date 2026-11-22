@@ -12,7 +12,7 @@ WORKDIR /app
 
 # --- deps: full install (build needs devDeps: next, esbuild, drizzle types) ---
 FROM base AS deps
-COPY package.json pnpm-lock.yaml ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN pnpm install --frozen-lockfile
 
 # --- dev: full dependency tree for local development; source comes from a bind mount ---
@@ -23,25 +23,17 @@ CMD ["node_modules/.bin/next", "dev", "--hostname", "0.0.0.0", "--port", "3000"]
 
 # --- prod-deps: production-only tree for the runtime image ---
 FROM base AS prod-deps
-COPY package.json pnpm-lock.yaml ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN pnpm install --frozen-lockfile --prod
 
 # --- build: Next build + transpiled ws/worker/migrate entrypoints ---
 FROM base AS build
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-# NEXT_PUBLIC_* vars are inlined into the client bundle at build time, so they must be present
-# during `next build`, not only at runtime (F29). Compose passes this as a build arg.
-ARG NEXT_PUBLIC_WS_URL
-ENV NEXT_PUBLIC_WS_URL=${NEXT_PUBLIC_WS_URL}
 # Git SHA of this build. Needed here as well as in the runtime stage: a prerendered page reads
 # env.APP_COMMIT once, at build time, so a runtime-only value would leave those pages unstamped.
 # Free cache-wise, since the `COPY . .` above already changes on every commit.
 ARG APP_COMMIT=
-# Fail loudly if it is empty: the value is compile-time-inlined, so an empty build bakes a broken
-# WS URL into the client bundle (board/inbox/import realtime then throw `new WebSocket("")`), and
-# fixing it needs a full rebuild. Better to stop the build than ship a silently-broken bundle.
-RUN test -n "$NEXT_PUBLIC_WS_URL" || (echo "ERROR: NEXT_PUBLIC_WS_URL build arg is required (compile-time inlined)" >&2; exit 1)
 # `next build` imports server modules that load src/config/env.ts, which validates and throws at
 # import. There is no .env in the image, so supply schema-satisfying PLACEHOLDERS just for this
 # command (inline on RUN, so they never persist in a layer). Only NEXT_PUBLIC_* is inlined into

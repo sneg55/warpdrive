@@ -61,10 +61,11 @@ stating plainly:
   `http://garage:3900` whenever the containers cannot reach the public URL; otherwise
   uploads land in the bucket but the follow-up verification fails. It is read by the
   server side only and never appears in a URL the browser uses.
-- **`NEXT_PUBLIC_WS_URL` must be set at build time.** `NEXT_PUBLIC_*` variables are
-  inlined into the client bundle when the image is built, not read at runtime. If it
-  is missing, the app still starts and looks healthy, but the board, inbox,
-  notifications, and presence indicators silently never update.
+- **`NEXT_PUBLIC_WS_URL` is the address browsers use for realtime.** The server reads
+  it at runtime and hands it to each signed-in page, so one image works for any
+  domain and changing it needs only a restart. If it is missing, the app still starts
+  and looks healthy, but the board, inbox, notifications, and presence indicators
+  silently never update.
 - **`ALLOW_FIRST_LOGIN_ADMIN` stays `false` in production.** The environment boundary
   rejects `true` when running in production, because it would promote whoever signs
   in first to administrator.
