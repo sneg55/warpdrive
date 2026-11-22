@@ -9,7 +9,7 @@ import { leadsEmptyState } from "./leadsEmptyState";
 export interface LeadsEmptyProps {
   archived: boolean;
   hasFilter: boolean;
-  baseCurrency?: string;
+  baseCurrency: string;
   onCreated: () => void;
   onClearFilters: () => void;
   onBackToInbox: () => void;

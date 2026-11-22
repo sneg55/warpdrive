@@ -3,7 +3,6 @@ import { useRouter } from "next/navigation";
 import type React from "react";
 import { useEffect, useMemo, useState } from "react";
 import { useColumns } from "@/components/data-table/useColumns";
-import { DEFAULT_BASE_CURRENCY } from "@/constants/currency";
 import { STRINGS } from "@/constants/strings";
 import { addFormCustomFieldDefs } from "@/features/custom-fields/CustomFieldCreateFields";
 import { customFieldColumns } from "@/features/custom-fields/listColumns";
@@ -34,7 +33,7 @@ import type { LeadConditionInput, LeadNextActivityBucket } from "./schemas";
 type Filter = "inbox" | "archived";
 
 export interface LeadsInboxProps {
-  baseCurrency?: string;
+  baseCurrency: string;
   initialView?: { columns: string[]; sort: LeadSort } | null;
   canImport?: boolean;
   customFieldDefs?: CustomFieldDef[];
@@ -47,7 +46,7 @@ export function LeadsInbox({
   customFieldDefs = [],
 }: LeadsInboxProps): React.ReactNode {
   const router = useRouter();
-  const currency = baseCurrency ?? DEFAULT_BASE_CURRENCY;
+  const currency = baseCurrency;
   const [now, setNow] = useState<Date | null>(null);
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => setNow(new Date()), []);

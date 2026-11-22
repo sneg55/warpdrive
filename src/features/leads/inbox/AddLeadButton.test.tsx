@@ -12,7 +12,7 @@ import { AddLeadButton } from "./AddLeadButton";
 
 it("exposes an Import leads link to the import route when the user can import", async () => {
   const user = userEvent.setup();
-  render(<AddLeadButton onCreated={vi.fn()} canImport={true} />);
+  render(<AddLeadButton baseCurrency="USD" onCreated={vi.fn()} canImport={true} />);
   await user.click(screen.getByRole("button", { name: "Add lead options" }));
   const link = screen.getByRole("menuitem", { name: "Import leads" });
   expect(link).toHaveAttribute("href", "/settings/import/new");
@@ -20,7 +20,7 @@ it("exposes an Import leads link to the import route when the user can import", 
 
 it("hides the Import leads link when the user lacks the import permission", async () => {
   const user = userEvent.setup();
-  render(<AddLeadButton onCreated={vi.fn()} canImport={false} />);
+  render(<AddLeadButton baseCurrency="USD" onCreated={vi.fn()} canImport={false} />);
   await user.click(screen.getByRole("button", { name: "Add lead options" }));
   expect(screen.getByRole("menuitem", { name: "New lead" })).toBeInTheDocument();
   expect(screen.queryByRole("menuitem", { name: "Import leads" })).not.toBeInTheDocument();

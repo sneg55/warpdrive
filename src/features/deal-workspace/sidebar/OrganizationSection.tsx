@@ -20,7 +20,7 @@ export function OrganizationSection({
   onExitBulk,
   hidden = NONE,
   customFieldDefs = [],
-  currency = "USD",
+  currency,
   showLabels = false,
   children,
 }: {
@@ -31,7 +31,7 @@ export function OrganizationSection({
   onExitBulk: () => void;
   hidden?: ReadonlySet<string>;
   customFieldDefs?: CustomFieldDef[];
-  currency?: string;
+  currency: string;
   showLabels?: boolean;
   children?: React.ReactNode;
 }): React.ReactNode {

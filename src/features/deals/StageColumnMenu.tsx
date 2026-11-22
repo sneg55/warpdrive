@@ -23,7 +23,7 @@ export interface StageColumnMenuProps {
   stageId: string;
   stageName: string;
   pipelines: Array<Option & { stages: Option[] }>;
-  baseCurrency?: string;
+  baseCurrency: string;
   collapsed: boolean;
   onToggleCollapse: () => void;
 }

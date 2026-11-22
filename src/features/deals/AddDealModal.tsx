@@ -37,7 +37,7 @@ interface PipelineOption extends Option {
 export interface AddDealModalProps {
   pipelineId: string;
   pipelines: PipelineOption[];
-  baseCurrency?: string;
+  baseCurrency: string;
   stageId?: string;
   prefillTitle?: string;
   prefillPerson?: Option;
@@ -56,14 +56,7 @@ function dealDetailsPath(
 }
 
 export function AddDealModal(props: AddDealModalProps): React.ReactNode {
-  const {
-    pipelineId,
-    pipelines,
-    baseCurrency = "USD",
-    stageId,
-    prefillTitle,
-    prefillPerson,
-  } = props;
+  const { pipelineId, pipelines, baseCurrency, stageId, prefillTitle, prefillPerson } = props;
   const { onClose, onCreated, suppressDetailNav = false } = props;
   const router = useRouter();
   const { autoPrefixLeadDealTitles, openDetailsAfterCreate } = useInterfacePrefs();

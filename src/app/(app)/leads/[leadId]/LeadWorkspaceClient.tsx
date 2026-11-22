@@ -24,7 +24,7 @@ export interface LeadWorkspaceClientProps {
   personCustomFieldDefs?: CustomFieldDef[];
   organizationCustomFieldDefs?: CustomFieldDef[];
   leadCustomFieldDefs?: CustomFieldDef[];
-  baseCurrency?: string;
+  baseCurrency: string;
 }
 
 export function LeadWorkspaceClient({
@@ -36,7 +36,7 @@ export function LeadWorkspaceClient({
   personCustomFieldDefs = [],
   organizationCustomFieldDefs = [],
   leadCustomFieldDefs = [],
-  baseCurrency = "USD",
+  baseCurrency,
 }: LeadWorkspaceClientProps): React.ReactNode {
   const timelineQ = trpc.lead.leadTimeline.useQuery({ leadId: lead.id });
   const timeline = timelineQ.data ?? EMPTY_TIMELINE;

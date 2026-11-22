@@ -39,7 +39,7 @@ export function DealPersonSection({
   onExitBulk,
   hidden = NONE,
   customFieldDefs = [],
-  currency = "USD",
+  currency,
 }: {
   person: Person | null;
   dealId: string;
@@ -51,7 +51,7 @@ export function DealPersonSection({
   onExitBulk: () => void;
   hidden?: ReadonlySet<string>;
   customFieldDefs?: CustomFieldDef[];
-  currency?: string;
+  currency: string;
 }): React.ReactNode {
   const router = useRouter();
   const reportError = useDealActionError();

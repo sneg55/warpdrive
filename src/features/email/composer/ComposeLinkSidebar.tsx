@@ -3,6 +3,7 @@ import type React from "react";
 import { useState, useSyncExternalStore } from "react";
 import { STRINGS } from "@/constants/strings";
 import { AddDealModal } from "@/features/deals/AddDealModal";
+import { useBaseCurrency } from "@/features/settings/BaseCurrencyProvider";
 import { trpc } from "@/lib/trpc-client";
 import { LinkExistingCombobox } from "../LinkExistingCombobox";
 
@@ -32,6 +33,7 @@ export function ComposeLinkSidebar({
 }: ComposeLinkSidebarProps): React.ReactNode {
   const [dealModalOpen, setDealModalOpen] = useState(false);
   const isClient = useIsClient();
+  const baseCurrency = useBaseCurrency();
 
   const pipelinesQ = trpc.pipeline.list.useQuery();
   const pipelines = (pipelinesQ.data ?? []).map((p) => ({
@@ -80,6 +82,7 @@ export function ComposeLinkSidebar({
         <AddDealModal
           pipelineId={firstPipelineId}
           pipelines={pipelines}
+          baseCurrency={baseCurrency}
           onClose={() => setDealModalOpen(false)}
           onCreated={(id, title) => {
             setDealModalOpen(false);

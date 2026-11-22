@@ -64,6 +64,7 @@ function ssr(): string {
         pipelines={[{ id: PIPE, name: "Test pipeline", stages: [] }]}
         density="comfortable"
         serverNow={SERVER_NOW}
+        baseCurrency="USD"
       />
     </QueryClientProvider>,
   );

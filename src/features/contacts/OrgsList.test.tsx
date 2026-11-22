@@ -59,25 +59,25 @@ function orgRow(id: string, name: string, overrides?: Partial<OrgsListRow>): Org
 
 describe("OrgsList", () => {
   it("shows an avatar and a link to the org detail for each row", () => {
-    render(<OrgsList rows={[orgRow("o1", "Acme Inc")]} total={1} />);
+    render(<OrgsList baseCurrency="USD" rows={[orgRow("o1", "Acme Inc")]} total={1} />);
     expect(screen.getByRole("img", { name: "Acme Inc" })).toHaveTextContent("AI");
     const row = screen.getByText("Acme Inc").closest("tr") as HTMLElement;
     expect(within(row).getByRole("link")).toHaveAttribute("href", "/contacts/orgs/o1");
   });
 
   it("renders the empty state when there are no orgs", () => {
-    render(<OrgsList rows={[]} total={0} />);
+    render(<OrgsList baseCurrency="USD" rows={[]} total={0} />);
     expect(screen.getByText(/no organizations/i)).toBeInTheDocument();
   });
 
   it("wraps the table in a horizontally scrollable container so extra columns don't clip", () => {
-    render(<OrgsList rows={[orgRow("o1", "Acme Inc")]} total={1} />);
+    render(<OrgsList baseCurrency="USD" rows={[orgRow("o1", "Acme Inc")]} total={1} />);
     const table = screen.getByRole("table");
     expect(table.parentElement).toHaveClass("overflow-x-auto");
   });
 
   it("hides Load more when every org is already loaded", () => {
-    render(<OrgsList rows={[orgRow("o1", "Acme Inc")]} total={1} />);
+    render(<OrgsList baseCurrency="USD" rows={[orgRow("o1", "Acme Inc")]} total={1} />);
     expect(screen.queryByRole("button", { name: /load more/i })).not.toBeInTheDocument();
   });
 
@@ -97,7 +97,7 @@ describe("OrgsList", () => {
       ],
       refLabels: EMPTY_REF_LABELS,
     });
-    render(<OrgsList rows={[orgRow("o1", "Acme Inc")]} total={2} />);
+    render(<OrgsList baseCurrency="USD" rows={[orgRow("o1", "Acme Inc")]} total={2} />);
     fireEvent.click(screen.getByRole("button", { name: /load more/i }));
     await vi.waitFor(() =>
       expect(listOrgsQuery).toHaveBeenCalledWith(expect.objectContaining({ offset: 1, limit: 50 })),
@@ -108,7 +108,7 @@ describe("OrgsList", () => {
 
   it("surfaces a load-more failure as an inline alert instead of swallowing it", async () => {
     listOrgsQuery.mockRejectedValueOnce(new Error("timeout"));
-    render(<OrgsList rows={[orgRow("o1", "Acme Inc")]} total={2} />);
+    render(<OrgsList baseCurrency="USD" rows={[orgRow("o1", "Acme Inc")]} total={2} />);
     fireEvent.click(screen.getByRole("button", { name: /load more/i }));
 
     const alert = await screen.findByRole("alert");
@@ -132,7 +132,7 @@ describe("OrgsList", () => {
       ],
       refLabels: EMPTY_REF_LABELS,
     });
-    render(<OrgsList rows={[orgRow("o1", "Acme Inc")]} total={2} />);
+    render(<OrgsList baseCurrency="USD" rows={[orgRow("o1", "Acme Inc")]} total={2} />);
 
     fireEvent.click(screen.getByRole("button", { name: /load more/i }));
     await screen.findByRole("alert");
@@ -145,6 +145,7 @@ describe("OrgsList", () => {
   it("renders Address, Closed deals, and Open deals columns with the row's data", () => {
     render(
       <OrgsList
+        baseCurrency="USD"
         rows={[
           orgRow("o1", "Acme Inc", {
             address: { city: "Austin", country: "US" },
@@ -169,20 +170,26 @@ describe("OrgsList", () => {
   });
 
   it("renders a blank Address cell when the org has no address", () => {
-    render(<OrgsList rows={[orgRow("o1", "Acme Inc")]} total={1} />);
+    render(<OrgsList baseCurrency="USD" rows={[orgRow("o1", "Acme Inc")]} total={1} />);
     const row = screen.getByText("Acme Inc").closest("tr") as HTMLElement;
     const cells = within(row).getAllByRole("cell");
     expect(cells[2]).toHaveTextContent("");
   });
 
   it("selecting a row shows the bulk action bar with a count", () => {
-    render(<OrgsList rows={[orgRow("o1", "Acme Inc")]} total={1} />);
+    render(<OrgsList baseCurrency="USD" rows={[orgRow("o1", "Acme Inc")]} total={1} />);
     fireEvent.click(screen.getByRole("checkbox", { name: "Select Acme Inc" }));
     expect(screen.getByText("1 selected")).toBeInTheDocument();
   });
 
   it("selecting all visible rows checks the header checkbox", () => {
-    render(<OrgsList rows={[orgRow("o1", "Acme Inc"), orgRow("o2", "Globex")]} total={2} />);
+    render(
+      <OrgsList
+        baseCurrency="USD"
+        rows={[orgRow("o1", "Acme Inc"), orgRow("o2", "Globex")]}
+        total={2}
+      />,
+    );
     fireEvent.click(screen.getByRole("checkbox", { name: "Select all organizations" }));
     expect(screen.getByText("2 selected")).toBeInTheDocument();
     expect(screen.getByRole("checkbox", { name: "Select all organizations" })).toBeChecked();
@@ -190,7 +197,7 @@ describe("OrgsList", () => {
 
   it("clicking the Name header re-queries listOrgs with the new sort", async () => {
     listOrgsQuery.mockResolvedValue({ total: 1, rows: [], refLabels: EMPTY_REF_LABELS });
-    render(<OrgsList rows={[orgRow("o1", "Acme Inc")]} total={1} />);
+    render(<OrgsList baseCurrency="USD" rows={[orgRow("o1", "Acme Inc")]} total={1} />);
 
     fireEvent.click(screen.getByRole("button", { name: "Name" }));
 
@@ -208,7 +215,7 @@ describe("OrgsList", () => {
   it("bulk-deletes the selected orgs and clears the selection", async () => {
     deleteOrgAction.mockResolvedValue({ ok: true, value: { id: "o1" } });
     listOrgsQuery.mockResolvedValue({ total: 0, rows: [], refLabels: EMPTY_REF_LABELS });
-    render(<OrgsList rows={[orgRow("o1", "Acme Inc")]} total={1} />);
+    render(<OrgsList baseCurrency="USD" rows={[orgRow("o1", "Acme Inc")]} total={1} />);
 
     fireEvent.click(screen.getByRole("checkbox", { name: "Select Acme Inc" }));
     fireEvent.click(screen.getByRole("button", { name: "Delete" }));
@@ -241,7 +248,13 @@ describe("OrgsList", () => {
       ],
       refLabels: EMPTY_REF_LABELS,
     });
-    render(<OrgsList rows={[orgRow("o1", "Acme Inc"), orgRow("o2", "Globex")]} total={2} />);
+    render(
+      <OrgsList
+        baseCurrency="USD"
+        rows={[orgRow("o1", "Acme Inc"), orgRow("o2", "Globex")]}
+        total={2}
+      />,
+    );
 
     fireEvent.click(screen.getByRole("checkbox", { name: "Select all organizations" }));
     fireEvent.click(screen.getByRole("button", { name: "Delete" }));

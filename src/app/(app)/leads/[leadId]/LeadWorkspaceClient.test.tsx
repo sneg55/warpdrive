@@ -133,6 +133,7 @@ const NONE: ReadonlySet<string> = new Set();
 function renderClient(over: Partial<LeadDetail> = {}) {
   return render(
     <LeadWorkspaceClient
+      baseCurrency="USD"
       lead={{ ...lead, ...over }}
       person={person}
       org={org}

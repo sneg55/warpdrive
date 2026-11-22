@@ -42,7 +42,7 @@ export function OrgBlock({
   hidden = NONE,
   labels,
   customFieldDefs = [],
-  currency = "USD",
+  currency,
 }: {
   org: Organization;
   bulkEditing?: boolean;
@@ -50,7 +50,7 @@ export function OrgBlock({
   hidden?: ReadonlySet<string>;
   labels?: ResolvedLabelChip[];
   customFieldDefs?: CustomFieldDef[];
-  currency?: string;
+  currency: string;
 }): React.ReactNode {
   const router = useRouter();
   const address = formatAddress(org.address);

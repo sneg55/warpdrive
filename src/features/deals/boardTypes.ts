@@ -15,7 +15,7 @@ export interface BoardProps {
   cards: BoardCard[];
   pipelines: Array<{ id: string; name: string; stages: Array<{ id: string; name: string }> }>;
   density: "comfortable" | "compact";
-  baseCurrency?: string;
+  baseCurrency: string;
   initialView?: BoardViewState;
   serverNow: Date;
   canManagePipelines?: boolean;

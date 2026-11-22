@@ -61,6 +61,17 @@ function selectRowAndMove(stageName: string): void {
   fireEvent.click(screen.getByRole("button", { name: "Move deals" }));
 }
 
+describe("DealList currency", () => {
+  it("renders row values and the total in the instance base currency", () => {
+    render(<DealList {...props} visibleColumns={DEAL_LIST_COLUMNS} currency="EUR" />);
+    const titleRow = screen.getByText("Acme renewal").closest("tr") as HTMLElement;
+    expect(within(titleRow).getByText("€25,000")).toBeInTheDocument();
+    expect(screen.queryByText(/\$25,000/)).toBeNull();
+    const footer = screen.getByRole("table").querySelector("tfoot");
+    expect(footer?.textContent).toContain("total value €25,000");
+  });
+});
+
 describe("DealList", () => {
   it("opens the deal when the title is clicked (title is a link)", () => {
     render(<DealList {...props} />);

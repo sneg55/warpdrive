@@ -22,6 +22,8 @@ import { IdentifyUser } from "@/features/observability/IdentifyUser";
 import { RealtimeUrlProvider } from "@/features/realtime/RealtimeUrlProvider";
 import { VersionBanner } from "@/features/release/ui/VersionBanner";
 import { CommandPalette } from "@/features/search/ui/CommandPalette";
+import { BaseCurrencyProvider } from "@/features/settings/BaseCurrencyProvider";
+import { readBaseCurrency } from "@/features/settings/readBaseCurrency";
 import { GlobalShortcuts } from "@/features/shortcuts/GlobalShortcuts";
 import { appearanceSeedScript, parseAppearance } from "@/features/theme/appearance";
 import { createContext } from "@/server/trpc/context";
@@ -32,7 +34,10 @@ export default async function AppLayout({ children }: { children: ReactNode }): 
   const jar = await cookies();
   const hasCsrf = jar.get(CSRF_COOKIE) !== undefined;
   const navExpanded = jar.get(NAV_PREF_COOKIE)?.value === "1";
-  const prefs = await getPreferencesForActor(db, ctx.actor.id);
+  const [prefs, baseCurrency] = await Promise.all([
+    getPreferencesForActor(db, ctx.actor.id),
+    readBaseCurrency(db, AbortSignal.timeout(8000)),
+  ]);
   return (
     <ActionErrorProvider>
       <IdentifyUser
@@ -52,29 +57,31 @@ export default async function AppLayout({ children }: { children: ReactNode }): 
       <RealtimeUrlProvider url={env.NEXT_PUBLIC_WS_URL}>
         <InterfacePrefsProvider value={interfacePrefsFromUi(prefs.ui)}>
           <IntercomEnabledProvider enabled={isIntercomEnabled()}>
-            <FollowUpPromptProvider>
-              <div data-density={prefs.density} className="flex h-screen flex-col">
-                <CsrfRefresher hasCsrf={hasCsrf} />
-                {ctx.actor.type === "admin" && <VersionBanner />}
-                <ReconnectBanner />
-                <TopBar
-                  userId={ctx.actor.id}
-                  userName={ctx.actor.name}
-                  avatarUrl={ctx.actor.avatarUrl}
-                  appearance={parseAppearance(prefs.ui.appearance)}
-                />
-                <div className="flex min-h-0 flex-1">
-                  <LeftNav
-                    initialExpanded={navExpanded}
-                    inboxBadge={<InboxNavBadge selfActorId={ctx.actor.id} />}
+            <BaseCurrencyProvider currency={baseCurrency}>
+              <FollowUpPromptProvider>
+                <div data-density={prefs.density} className="flex h-screen flex-col">
+                  <CsrfRefresher hasCsrf={hasCsrf} />
+                  {ctx.actor.type === "admin" && <VersionBanner />}
+                  <ReconnectBanner />
+                  <TopBar
+                    userId={ctx.actor.id}
+                    userName={ctx.actor.name}
+                    avatarUrl={ctx.actor.avatarUrl}
+                    appearance={parseAppearance(prefs.ui.appearance)}
                   />
-                  <main className="min-w-0 flex-1 overflow-auto bg-muted/70 p-6">{children}</main>
+                  <div className="flex min-h-0 flex-1">
+                    <LeftNav
+                      initialExpanded={navExpanded}
+                      inboxBadge={<InboxNavBadge selfActorId={ctx.actor.id} />}
+                    />
+                    <main className="min-w-0 flex-1 overflow-auto bg-muted/70 p-6">{children}</main>
+                  </div>
+                  <CommandPalette />
+                  <GlobalShortcuts />
+                  <Toaster />
                 </div>
-                <CommandPalette />
-                <GlobalShortcuts />
-                <Toaster />
-              </div>
-            </FollowUpPromptProvider>
+              </FollowUpPromptProvider>
+            </BaseCurrencyProvider>
           </IntercomEnabledProvider>
         </InterfacePrefsProvider>
       </RealtimeUrlProvider>

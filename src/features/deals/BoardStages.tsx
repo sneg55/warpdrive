@@ -14,7 +14,7 @@ interface BoardStagesProps {
   now: Date;
   pipelineId: string;
   pipelines: BoardProps["pipelines"];
-  baseCurrency?: string;
+  baseCurrency: string;
 }
 
 export function BoardStages({

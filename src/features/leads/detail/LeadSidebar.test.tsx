@@ -105,7 +105,7 @@ const baseLead: LeadDetail = {
 };
 
 it("uses the shared Pipedrive field tokens (small, medium, right-aligned label)", () => {
-  render(<LeadSidebar lead={baseLead} owners={[]} person={null} org={null} />);
+  render(<LeadSidebar baseCurrency="USD" lead={baseLead} owners={[]} person={null} org={null} />);
   const label = screen.getByText("Channel ID");
   expect(label.className).toContain("text-xs");
   expect(label.className).toContain("font-medium");
@@ -113,14 +113,14 @@ it("uses the shared Pipedrive field tokens (small, medium, right-aligned label)"
 });
 
 it("gives each section a kebab options menu but no misleading edit pencil", () => {
-  render(<LeadSidebar lead={baseLead} owners={[]} person={null} org={null} />);
+  render(<LeadSidebar baseCurrency="USD" lead={baseLead} owners={[]} person={null} org={null} />);
   const summary = within(screen.getByRole("region", { name: "Summary" }));
   expect(summary.queryByRole("button", { name: /Edit Summary section/i })).not.toBeInTheDocument();
   expect(summary.getByRole("button", { name: /Summary options/i })).toBeInTheDocument();
 });
 
 it("the Source section's hide-empty-fields funnel hides blank Channel ID row", () => {
-  render(<LeadSidebar lead={baseLead} owners={[]} person={null} org={null} />);
+  render(<LeadSidebar baseCurrency="USD" lead={baseLead} owners={[]} person={null} org={null} />);
   const sourceSection = within(screen.getByRole("region", { name: "Source" }));
   expect(sourceSection.getByText("Channel ID")).toBeInTheDocument();
   fireEvent.click(sourceSection.getByRole("button", { name: "Hide empty fields" }));
@@ -129,7 +129,9 @@ it("the Source section's hide-empty-fields funnel hides blank Channel ID row", (
 });
 
 it("renders the linked person's contact fields (email) via the shared Person block", () => {
-  render(<LeadSidebar lead={baseLead} owners={[]} person={basePerson} org={null} />);
+  render(
+    <LeadSidebar baseCurrency="USD" lead={baseLead} owners={[]} person={basePerson} org={null} />,
+  );
   const personSection = within(screen.getByRole("region", { name: "Person" }));
   expect(personSection.getByText("Jane Roe")).toBeInTheDocument();
   expect(personSection.getByText("Email")).toBeInTheDocument();
@@ -137,7 +139,9 @@ it("renders the linked person's contact fields (email) via the shared Person blo
 });
 
 it("uses the complete deal Person section and its section-wide edit action", () => {
-  render(<LeadSidebar lead={baseLead} owners={[]} person={basePerson} org={null} />);
+  render(
+    <LeadSidebar baseCurrency="USD" lead={baseLead} owners={[]} person={basePerson} org={null} />,
+  );
   const personSection = within(screen.getByRole("region", { name: "Person" }));
   expect(personSection.getByText("First name")).toBeInTheDocument();
   expect(personSection.getByText("Last name")).toBeInTheDocument();
@@ -150,12 +154,14 @@ it("uses the complete deal Person section and its section-wide edit action", () 
 });
 
 it("no Person section when the lead has no linked (or a soft-deleted) person", () => {
-  render(<LeadSidebar lead={baseLead} owners={[]} person={null} org={null} />);
+  render(<LeadSidebar baseCurrency="USD" lead={baseLead} owners={[]} person={null} org={null} />);
   expect(screen.queryByRole("region", { name: "Person" })).not.toBeInTheDocument();
 });
 
 it("renders the linked org's website and firmographics via the shared Org block", () => {
-  render(<LeadSidebar lead={baseLead} owners={[]} person={null} org={baseOrg} />);
+  render(
+    <LeadSidebar baseCurrency="USD" lead={baseLead} owners={[]} person={null} org={baseOrg} />,
+  );
   const orgSection = within(screen.getByRole("region", { name: "Organization" }));
   expect(orgSection.getByText("Acme Corp")).toBeInTheDocument();
   expect(orgSection.getByText("Website")).toBeInTheDocument();
@@ -167,6 +173,7 @@ it("renders the linked org's website and firmographics via the shared Org block"
 it("honors hidden built-in org fields (Settings > Data fields)", () => {
   render(
     <LeadSidebar
+      baseCurrency="USD"
       lead={baseLead}
       owners={[]}
       person={null}
@@ -197,6 +204,7 @@ const leadDef = (over: Partial<CustomFieldDef>): CustomFieldDef => ({
 it("renders one row per lead custom field inside the Organization section", () => {
   render(
     <LeadSidebar
+      baseCurrency="USD"
       lead={{ ...baseLead, customFields: { grade: "A" } }}
       owners={[]}
       person={null}
@@ -212,6 +220,7 @@ it("renders one row per lead custom field inside the Organization section", () =
 it("titles lead custom fields Details, not Organization, on an org-less lead", () => {
   render(
     <LeadSidebar
+      baseCurrency="USD"
       lead={{ ...baseLead, customFields: {} }}
       owners={[]}
       person={null}
@@ -227,6 +236,7 @@ it("titles lead custom fields Details, not Organization, on an org-less lead", (
 it("saves an inline lead custom field through updateLeadAction", async () => {
   render(
     <LeadSidebar
+      baseCurrency="USD"
       lead={{ ...baseLead, customFields: { grade: "A" } }}
       owners={[]}
       person={null}
@@ -246,7 +256,9 @@ it("saves an inline lead custom field through updateLeadAction", async () => {
 });
 
 it("refreshes the lead's support conversations after the linked person is edited", async () => {
-  render(<LeadSidebar lead={baseLead} owners={[]} person={basePerson} org={null} />);
+  render(
+    <LeadSidebar baseCurrency="USD" lead={baseLead} owners={[]} person={basePerson} org={null} />,
+  );
   fireEvent.click(screen.getByRole("button", { name: "Edit First name" }));
   fireEvent.change(screen.getByLabelText("editor-firstName"), { target: { value: "Janet" } });
   fireEvent.click(screen.getByRole("button", { name: "Save" }));

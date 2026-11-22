@@ -62,7 +62,7 @@ import { AddLeadModal } from "./AddLeadModal";
 
 describe("AddLeadModal", () => {
   it("renders the two-column layout without pipeline/stage fields", () => {
-    render(<AddLeadModal onClose={vi.fn()} onCreated={vi.fn()} />);
+    render(<AddLeadModal baseCurrency="USD" onClose={vi.fn()} onCreated={vi.fn()} />);
     expect(screen.getByRole("dialog", { name: "Add lead" })).toBeInTheDocument();
     expect(screen.getByLabelText("Contact person")).toBeInTheDocument();
     expect(screen.getByLabelText("Lead title")).toBeInTheDocument();
@@ -73,7 +73,7 @@ describe("AddLeadModal", () => {
 
   it("submits a parsed lead via createLeadAction", async () => {
     const onCreated = vi.fn();
-    render(<AddLeadModal onClose={vi.fn()} onCreated={onCreated} />);
+    render(<AddLeadModal baseCurrency="USD" onClose={vi.fn()} onCreated={onCreated} />);
     fireEvent.change(screen.getByLabelText("Lead title"), { target: { value: "New lead" } });
     expect(screen.getByText(`8/${TITLE_MAX_LEN}`)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
@@ -100,7 +100,7 @@ describe("AddLeadModal", () => {
       order: 0,
       archivedAt: null,
     });
-    render(<AddLeadModal onClose={vi.fn()} onCreated={vi.fn()} />);
+    render(<AddLeadModal baseCurrency="USD" onClose={vi.fn()} onCreated={vi.fn()} />);
     fireEvent.change(screen.getByLabelText("Contact person"), {
       target: { value: "New Contact" },
     });
@@ -117,7 +117,7 @@ describe("AddLeadModal", () => {
 
   it("picks the expected close date via the DatePicker and submits it as YYYY-MM-DD", async () => {
     const onCreated = vi.fn();
-    render(<AddLeadModal onClose={vi.fn()} onCreated={onCreated} />);
+    render(<AddLeadModal baseCurrency="USD" onClose={vi.fn()} onCreated={onCreated} />);
     fireEvent.change(screen.getByLabelText("Lead title"), { target: { value: "New lead" } });
     fireEvent.click(screen.getByLabelText("Expected close date"));
     fireEvent.click(await screen.findByText("15"));
@@ -132,14 +132,14 @@ describe("AddLeadModal", () => {
   });
 
   it("blocks an empty-title submit with an inline error", async () => {
-    render(<AddLeadModal onClose={vi.fn()} onCreated={vi.fn()} />);
+    render(<AddLeadModal baseCurrency="USD" onClose={vi.fn()} onCreated={vi.fn()} />);
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
     expect(await screen.findByRole("alert")).toHaveTextContent(/title/i);
     expect(createLeadAction).not.toHaveBeenCalled();
   });
 
   it("does not create an inline org/person when the lead is invalid (no orphans)", async () => {
-    render(<AddLeadModal onClose={vi.fn()} onCreated={vi.fn()} />);
+    render(<AddLeadModal baseCurrency="USD" onClose={vi.fn()} onCreated={vi.fn()} />);
     fireEvent.change(screen.getByLabelText("Organization"), { target: { value: "Brand New Org" } });
     fireEvent.blur(screen.getByLabelText("Organization"));
     fireEvent.change(screen.getByLabelText("Lead title"), { target: { value: "" } });
@@ -155,7 +155,7 @@ describe("AddLeadModal", () => {
       <InterfacePrefsProvider
         value={{ ...INTERFACE_PREFS_DEFAULT, autoPrefixLeadDealTitles: true }}
       >
-        <AddLeadModal onClose={vi.fn()} onCreated={vi.fn()} />
+        <AddLeadModal baseCurrency="USD" onClose={vi.fn()} onCreated={vi.fn()} />
       </InterfacePrefsProvider>,
     );
     fireEvent.change(screen.getByLabelText("Organization"), { target: { value: "Acme Corp" } });
@@ -164,7 +164,7 @@ describe("AddLeadModal", () => {
   });
 
   it("prefills just the name when the auto-prefix preference is off (default)", () => {
-    render(<AddLeadModal onClose={vi.fn()} onCreated={vi.fn()} />);
+    render(<AddLeadModal baseCurrency="USD" onClose={vi.fn()} onCreated={vi.fn()} />);
     fireEvent.change(screen.getByLabelText("Organization"), { target: { value: "Acme Corp" } });
     fireEvent.blur(screen.getByLabelText("Organization"));
     expect(screen.getByLabelText<HTMLInputElement>("Lead title").value).toBe("Acme Corp");
@@ -184,7 +184,7 @@ describe("AddLeadModal", () => {
       order: 0,
       archivedAt: null,
     });
-    render(<AddLeadModal onClose={vi.fn()} onCreated={vi.fn()} />);
+    render(<AddLeadModal baseCurrency="USD" onClose={vi.fn()} onCreated={vi.fn()} />);
     fireEvent.change(screen.getByLabelText("Lead title"), { target: { value: "Graded lead" } });
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
     expect(await screen.findByText("Grade is required")).toBeInTheDocument();
@@ -208,7 +208,7 @@ describe("AddLeadModal", () => {
           openDetailsAfterCreate: { leadDeal: true, person: false, org: false },
         }}
       >
-        <AddLeadModal onClose={vi.fn()} onCreated={vi.fn()} />
+        <AddLeadModal baseCurrency="USD" onClose={vi.fn()} onCreated={vi.fn()} />
       </InterfacePrefsProvider>,
     );
     fireEvent.change(screen.getByLabelText("Lead title"), { target: { value: "Big lead" } });
@@ -226,7 +226,7 @@ describe("AddLeadModal", () => {
           openDetailsAfterCreate: { leadDeal: true, person: false, org: false },
         }}
       >
-        <AddLeadModal onClose={onClose} onCreated={vi.fn()} />
+        <AddLeadModal baseCurrency="USD" onClose={onClose} onCreated={vi.fn()} />
       </InterfacePrefsProvider>,
     );
     fireEvent.change(screen.getByLabelText("Lead title"), { target: { value: "Handed away" } });

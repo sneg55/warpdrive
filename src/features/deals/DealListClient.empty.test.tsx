@@ -70,6 +70,7 @@ function renderClient(initial: { rows: DealListRow[]; total: number }): void {
           rows: initial.rows,
           total: initial.total,
           totalValue: "1000.00",
+          baseCurrency: "USD",
         }}
       />
     </QueryClientProvider>,

@@ -53,7 +53,7 @@ describe("LeadsInbox pending mutations", () => {
     const run = held();
     actions.bulkUpdateLeadsAction.mockReturnValue(run.promise);
     listQuery.mockReturnValue({ data: { rows: [LEAD], total: 1, refLabels: REF_LABELS }, refetch });
-    render(<LeadsInbox />);
+    render(<LeadsInbox baseCurrency="USD" />);
     fireEvent.click(screen.getByRole("checkbox", { name: "Select Acme lead" }));
     const archive = bulkBar().getByRole("button", { name: "Archive" });
     fireEvent.click(archive);
@@ -72,7 +72,7 @@ describe("LeadsInbox pending mutations", () => {
     const run = held();
     actions.archiveLeadAction.mockReturnValue(run.promise);
     listQuery.mockReturnValue({ data: { rows: [LEAD], total: 1, refLabels: REF_LABELS }, refetch });
-    render(<LeadsInbox />);
+    render(<LeadsInbox baseCurrency="USD" />);
     await user.click(screen.getByRole("button", { name: "Lead actions" }));
     await user.click(screen.getByRole("menuitem", { name: "Archive" }));
     await user.click(screen.getByRole("button", { name: "Lead actions" }));
@@ -91,7 +91,7 @@ describe("LeadsInbox pending mutations", () => {
     const run = held();
     actions.bulkUpdateLeadsAction.mockReturnValue(run.promise);
     listQuery.mockReturnValue({ data: { rows: [LEAD], total: 1, refLabels: REF_LABELS }, refetch });
-    render(<LeadsInbox />);
+    render(<LeadsInbox baseCurrency="USD" />);
     fireEvent.click(screen.getByRole("checkbox", { name: "Select Acme lead" }));
     fireEvent.click(bulkBar().getByRole("button", { name: "Archive" }));
     expect(bulkBar().getByRole("button", { name: "Change owner" })).toBeDisabled();
@@ -111,7 +111,7 @@ describe("LeadsInbox pending mutations", () => {
       data: { rows: [LEAD, other], total: 2, refLabels: REF_LABELS },
       refetch,
     });
-    render(<LeadsInbox />);
+    render(<LeadsInbox baseCurrency="USD" />);
     fireEvent.click(screen.getByRole("checkbox", { name: "Select Acme lead" }));
     fireEvent.click(bulkBar().getByRole("button", { name: "Archive" }));
     const [, otherRowMenu] = screen.getAllByRole("button", { name: "Lead actions" });
@@ -134,7 +134,7 @@ describe("LeadsInbox pending mutations", () => {
   it("reports and re-enables when a bulk change rejects", async () => {
     actions.bulkUpdateLeadsAction.mockRejectedValue(new Error("network"));
     listQuery.mockReturnValue({ data: { rows: [LEAD], total: 1, refLabels: REF_LABELS }, refetch });
-    render(<LeadsInbox />);
+    render(<LeadsInbox baseCurrency="USD" />);
     fireEvent.click(screen.getByRole("checkbox", { name: "Select Acme lead" }));
     fireEvent.click(bulkBar().getByRole("button", { name: "Archive" }));
     await waitFor(() => expect(reportError).toHaveBeenCalledTimes(1));

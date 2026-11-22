@@ -41,6 +41,7 @@ interface DealCardProps {
   rottingDays: number | null;
   density: "comfortable" | "compact";
   now: Date;
+  currency: string;
   onOpen?: () => void;
   elevated?: boolean;
 }
@@ -58,7 +59,7 @@ export function DealCard(props: DealCardProps): React.ReactNode {
     now,
     onOpen,
   } = props;
-  const { elevated } = props;
+  const { elevated, currency } = props;
   const compact = density === "compact";
   const activity = activityState(card.nextActivityAt, now);
   const activityTip = activityTooltip(card.nextActivityTitle ?? null, card.nextActivityAt, now);
@@ -98,7 +99,7 @@ export function DealCard(props: DealCardProps): React.ReactNode {
       <div className="mt-1 flex flex-wrap items-center gap-2 text-xs">
         {card.value !== null && (
           <span className="font-semibold tabular-nums text-foreground">
-            {formatCurrency(card.value)}
+            {formatCurrency(card.value, currency)}
           </span>
         )}
         {labels.map((label) => (

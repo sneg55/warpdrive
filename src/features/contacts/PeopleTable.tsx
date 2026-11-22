@@ -4,7 +4,6 @@ import { CustomFieldCell, customFieldCellClass } from "@/components/data-table/C
 import type { ColumnSort } from "@/components/data-table/useColumnSort";
 import { Avatar } from "@/components/ui/Avatar";
 import { Checkbox } from "@/components/ui/Checkbox";
-import { DEFAULT_BASE_CURRENCY } from "@/constants/currency";
 import { useInterfacePrefs } from "@/features/identity/InterfacePrefsProvider";
 import { RecordLink } from "@/features/navigation/RecordLink";
 import { formatUsPhone } from "@/utils/phone";
@@ -56,7 +55,7 @@ export interface PeopleTableProps {
   onToggleAll: () => void;
   visibleColumns: readonly PeopleColumn[];
   columnsMenu?: React.ReactNode;
-  currency?: string;
+  currency: string;
 }
 
 function SortGlyph({ dir }: { dir: "asc" | "desc" | null }): React.ReactNode {
@@ -167,7 +166,7 @@ export function PeopleTable({
   onToggleAll,
   visibleColumns,
   columnsMenu,
-  currency = DEFAULT_BASE_CURRENCY,
+  currency,
 }: PeopleTableProps): React.ReactNode {
   const { usPhoneFormat } = useInterfacePrefs();
   return (

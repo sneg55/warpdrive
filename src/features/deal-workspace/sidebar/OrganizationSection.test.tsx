@@ -34,12 +34,12 @@ const base = {
 afterEach(cleanup);
 
 it("renders the organization labels control when labels are opted in", () => {
-  render(<OrganizationSection {...base} showLabels />);
+  render(<OrganizationSection currency="USD" {...base} showLabels />);
   const control = screen.getByTestId("labels-control");
   expect(control).toHaveTextContent("organization:o1:Warm");
 });
 
 it("omits the labels control by default (contact-detail keeps its header control)", () => {
-  render(<OrganizationSection {...base} />);
+  render(<OrganizationSection currency="USD" {...base} />);
   expect(screen.queryByTestId("labels-control")).not.toBeInTheDocument();
 });

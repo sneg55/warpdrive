@@ -18,6 +18,7 @@ describe("DealCard status badge", () => {
         labels={[]}
         rottingDays={null}
         density="comfortable"
+        currency="USD"
         now={new Date("2026-06-10T00:00:00Z")}
       />,
     );
@@ -51,6 +52,7 @@ describe("DealCard", () => {
         labels={[]}
         rottingDays={null}
         density="comfortable"
+        currency="USD"
         now={new Date("2026-06-10T00:00:00Z")}
       />,
     );
@@ -68,6 +70,7 @@ describe("DealCard", () => {
         labels={[]}
         rottingDays={null}
         density="comfortable"
+        currency="USD"
         now={new Date("2026-06-10T00:00:00Z")}
       />,
     );
@@ -88,6 +91,7 @@ describe("DealCard", () => {
         labels={[]}
         rottingDays={null}
         density="comfortable"
+        currency="USD"
         now={new Date("2026-06-10T00:00:00Z")}
       />,
     );
@@ -107,6 +111,7 @@ describe("DealCard", () => {
         labels={[]}
         rottingDays={null}
         density="comfortable"
+        currency="USD"
         now={new Date("2026-06-10T00:00:00Z")}
         elevated
       />,
@@ -126,6 +131,7 @@ describe("DealCard", () => {
         labels={[]}
         rottingDays={null}
         density="comfortable"
+        currency="USD"
         now={new Date("2026-06-10T00:00:00Z")}
         onOpen={onOpen}
       />,
@@ -144,6 +150,7 @@ describe("DealCard", () => {
         labels={[]}
         rottingDays={null}
         density="comfortable"
+        currency="USD"
         now={new Date("2026-06-10T00:00:00Z")}
       />,
     );
@@ -161,6 +168,7 @@ describe("DealCard", () => {
         labels={[]}
         rottingDays={null}
         density="comfortable"
+        currency="USD"
         now={new Date("2026-06-10T00:00:00Z")}
       />,
     );
@@ -179,6 +187,7 @@ describe("DealCard", () => {
         labels={[]}
         rottingDays={null}
         density="comfortable"
+        currency="USD"
         now={new Date("2026-06-10T00:00:00Z")}
       />,
     );
@@ -196,6 +205,7 @@ describe("DealCard", () => {
         labels={[{ name: "Hot", color: "#ef4444" }]}
         rottingDays={null}
         density="comfortable"
+        currency="USD"
         now={new Date("2026-06-10T00:00:00Z")}
       />,
     );
@@ -213,6 +223,7 @@ describe("DealCard", () => {
         labels={[]}
         rottingDays={5}
         density="comfortable"
+        currency="USD"
         now={new Date("2026-06-20T00:00:00Z")}
       />,
     );
@@ -230,6 +241,7 @@ describe("DealCard", () => {
         labels={[]}
         rottingDays={null}
         density="compact"
+        currency="USD"
         now={new Date("2026-06-10T00:00:00Z")}
       />,
     );

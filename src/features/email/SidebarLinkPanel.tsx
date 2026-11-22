@@ -5,6 +5,7 @@ import { useActionError } from "@/components/shell/ActionErrorProvider";
 import { STRINGS } from "@/constants/strings";
 import { QuickAddContact } from "@/features/contacts/QuickAddContact";
 import { AddDealModal } from "@/features/deals/AddDealModal";
+import { useBaseCurrency } from "@/features/settings/BaseCurrencyProvider";
 import { trpc } from "@/lib/trpc-client";
 import { readCsrfToken } from "@/utils/csrfCookie";
 import { LinkExistingCombobox } from "./LinkExistingCombobox";
@@ -30,6 +31,7 @@ export function SidebarLinkPanel(props: SidebarLinkPanelProps): React.ReactNode 
   const { primaryEmail, primaryName, canEdit, onLinked } = props;
   const [dealModalOpen, setDealModalOpen] = useState(false);
   const reportError = useActionError();
+  const baseCurrency = useBaseCurrency();
 
   const pipelinesQ = trpc.pipeline.list.useQuery(undefined, { enabled: canEdit });
   const pipelines = (pipelinesQ.data ?? []).map((p) => ({
@@ -120,6 +122,7 @@ export function SidebarLinkPanel(props: SidebarLinkPanelProps): React.ReactNode 
         <AddDealModal
           pipelineId={firstPipelineId}
           pipelines={pipelines}
+          baseCurrency={baseCurrency}
           prefillTitle={subject ?? undefined}
           prefillPerson={
             personId !== null && personName !== null

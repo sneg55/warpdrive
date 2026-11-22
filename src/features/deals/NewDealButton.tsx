@@ -14,7 +14,7 @@ interface Option {
 export interface NewDealButtonProps {
   pipelineId: string;
   pipelines: Array<Option & { stages: Option[] }>;
-  baseCurrency?: string;
+  baseCurrency: string;
 }
 
 export function NewDealButton({

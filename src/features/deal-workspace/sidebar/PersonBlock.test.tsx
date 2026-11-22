@@ -40,7 +40,7 @@ const blankPerson: Person = {
 it("shows blank First name/Last name/Phone/Email rows when the section is not hiding empties", () => {
   render(
     <HideEmptyContext.Provider value={false}>
-      <PersonBlock person={blankPerson} />
+      <PersonBlock currency="USD" person={blankPerson} />
     </HideEmptyContext.Provider>,
   );
   expect(screen.getByText("First name")).toBeInTheDocument();
@@ -52,7 +52,7 @@ it("shows blank First name/Last name/Phone/Email rows when the section is not hi
 it("hides blank First name/Last name/Phone/Email rows when the funnel is hiding empties", () => {
   render(
     <HideEmptyContext.Provider value={true}>
-      <PersonBlock person={blankPerson} />
+      <PersonBlock currency="USD" person={blankPerson} />
     </HideEmptyContext.Provider>,
   );
   expect(screen.queryByText("First name")).not.toBeInTheDocument();
@@ -65,7 +65,7 @@ it("hides blank First name/Last name/Phone/Email rows when the funnel is hiding 
 it("a filled-in field stays visible even while the funnel is hiding empties", () => {
   render(
     <HideEmptyContext.Provider value={true}>
-      <PersonBlock person={{ ...blankPerson, firstName: "Mia" }} />
+      <PersonBlock currency="USD" person={{ ...blankPerson, firstName: "Mia" }} />
     </HideEmptyContext.Provider>,
   );
   expect(screen.getByText("First name")).toBeInTheDocument();
@@ -76,7 +76,7 @@ it("does NOT report a failure when the write succeeded but router.refresh throws
   refresh.mockImplementationOnce(() => {
     throw new Error("refresh interrupted");
   });
-  render(<PersonBlock person={{ ...blankPerson, firstName: "Mia" }} />);
+  render(<PersonBlock currency="USD" person={{ ...blankPerson, firstName: "Mia" }} />);
 
   fireEvent.click(screen.getByRole("button", { name: "Edit First name" }));
   fireEvent.change(screen.getByLabelText("editor-firstName"), { target: { value: "Mira" } });
@@ -89,7 +89,9 @@ it("does NOT report a failure when the write succeeded but router.refresh throws
 
 it("tells the surface a field was committed, so surface-owned reads can be refreshed", async () => {
   const onSaved = vi.fn();
-  render(<PersonBlock person={{ ...blankPerson, firstName: "Mia" }} onSaved={onSaved} />);
+  render(
+    <PersonBlock currency="USD" person={{ ...blankPerson, firstName: "Mia" }} onSaved={onSaved} />,
+  );
 
   fireEvent.click(screen.getByRole("button", { name: "Edit First name" }));
   fireEvent.change(screen.getByLabelText("editor-firstName"), { target: { value: "Mira" } });
@@ -101,7 +103,9 @@ it("tells the surface a field was committed, so surface-owned reads can be refre
 it("does not announce a save the server refused", async () => {
   updatePersonAction.mockResolvedValueOnce({ ok: false, error: { id: "E_PERM_001" } });
   const onSaved = vi.fn();
-  render(<PersonBlock person={{ ...blankPerson, firstName: "Mia" }} onSaved={onSaved} />);
+  render(
+    <PersonBlock currency="USD" person={{ ...blankPerson, firstName: "Mia" }} onSaved={onSaved} />,
+  );
 
   fireEvent.click(screen.getByRole("button", { name: "Edit First name" }));
   fireEvent.change(screen.getByLabelText("editor-firstName"), { target: { value: "Mira" } });
@@ -118,7 +122,7 @@ it("renders Phone as a tel: link and Email as a mailto: link", () => {
     phones: [{ value: "+1 555 949 5107", primary: true }],
     emails: [{ value: "ava.bauer63@harborsystems.com", primary: true }],
   } as unknown as Person;
-  render(<PersonBlock person={person} />);
+  render(<PersonBlock currency="USD" person={person} />);
 
   const phone = screen.getByRole("link", { name: "+1 555 949 5107" });
   expect(phone).toHaveAttribute("href", "tel:+15559495107");
@@ -135,7 +139,7 @@ it("hides the Phone/Email rows whose built-in key is in the hidden set, keeps th
     phones: [{ value: "+1 555 000 0000", primary: true }],
     emails: [{ value: "mia@acme.com", primary: true }],
   } as unknown as Person;
-  render(<PersonBlock person={person} hidden={new Set(["phones"])} />);
+  render(<PersonBlock currency="USD" person={person} hidden={new Set(["phones"])} />);
 
   expect(screen.queryByText("Phone")).not.toBeInTheDocument();
   expect(screen.getByText("Email")).toBeInTheDocument();
@@ -145,7 +149,9 @@ it("hides the Phone/Email rows whose built-in key is in the hidden set, keeps th
 
 it("hides the name-part rows whose built-in key is in the hidden set", () => {
   const person = { ...blankPerson, firstName: "Mia", lastName: "Bauer" } as unknown as Person;
-  render(<PersonBlock person={person} hidden={new Set(["firstName", "lastName"])} />);
+  render(
+    <PersonBlock currency="USD" person={person} hidden={new Set(["firstName", "lastName"])} />,
+  );
 
   expect(screen.queryByText("First name")).not.toBeInTheDocument();
   expect(screen.queryByText("Last name")).not.toBeInTheDocument();
@@ -154,7 +160,7 @@ it("hides the name-part rows whose built-in key is in the hidden set", () => {
 
 it("surfaces a permission-specific message when the edit is denied (E_PERM_001)", async () => {
   updatePersonAction.mockResolvedValueOnce({ ok: false, error: { id: "E_PERM_001" } });
-  render(<PersonBlock person={{ ...blankPerson, firstName: "Mia" }} />);
+  render(<PersonBlock currency="USD" person={{ ...blankPerson, firstName: "Mia" }} />);
 
   fireEvent.click(screen.getByRole("button", { name: "Edit First name" }));
   fireEvent.change(screen.getByLabelText("editor-firstName"), { target: { value: "Mira" } });
@@ -169,7 +175,11 @@ it("surfaces a permission-specific message when the edit is denied (E_PERM_001)"
 it("hides the First name and Last name rows when hideNameParts is set (lead drawer parity)", () => {
   render(
     <HideEmptyContext.Provider value={false}>
-      <PersonBlock person={{ ...blankPerson, firstName: "Mia", lastName: "Roe" }} hideNameParts />
+      <PersonBlock
+        currency="USD"
+        person={{ ...blankPerson, firstName: "Mia", lastName: "Roe" }}
+        hideNameParts
+      />
     </HideEmptyContext.Provider>,
   );
   expect(screen.queryByText("First name")).not.toBeInTheDocument();
@@ -181,7 +191,11 @@ it("hides the First name and Last name rows when hideNameParts is set (lead draw
 it("renders provided label chips under the section (PD's per-person Labels row)", () => {
   render(
     <HideEmptyContext.Provider value={false}>
-      <PersonBlock person={blankPerson} labels={[{ name: "Hot", classes: "bg-red-100" }]} />
+      <PersonBlock
+        currency="USD"
+        person={blankPerson}
+        labels={[{ name: "Hot", classes: "bg-red-100" }]}
+      />
     </HideEmptyContext.Provider>,
   );
   expect(screen.getByText("Labels")).toBeInTheDocument();
@@ -202,7 +216,7 @@ const multiPointPerson = {
 } as unknown as Person;
 
 it("renders every stored email and phone, not just the primary", () => {
-  render(<PersonBlock person={multiPointPerson} />);
+  render(<PersonBlock currency="USD" person={multiPointPerson} />);
   expect(screen.getByRole("link", { name: "pat.scrimgeour@ottawa.ca" })).toBeInTheDocument();
   expect(screen.getByRole("link", { name: "pat@gmail.com" })).toBeInTheDocument();
   expect(screen.getByRole("link", { name: "+1 555 111 2222" })).toBeInTheDocument();
@@ -215,13 +229,13 @@ it("shows an address held only in the primary_email column alongside the array",
     primaryEmail: "column-only@acme.com",
     emails: [{ label: "work", value: "array@acme.com", primary: false }],
   } as unknown as Person;
-  render(<PersonBlock person={person} />);
+  render(<PersonBlock currency="USD" person={person} />);
   expect(screen.getByRole("link", { name: "column-only@acme.com" })).toBeInTheDocument();
   expect(screen.getByRole("link", { name: "array@acme.com" })).toBeInTheDocument();
 });
 
 it("edits a non-primary email and saves the whole array", async () => {
-  render(<PersonBlock person={multiPointPerson} />);
+  render(<PersonBlock currency="USD" person={multiPointPerson} />);
   fireEvent.click(screen.getByRole("button", { name: "Edit Email" }));
   fireEvent.change(screen.getByLabelText("Email 2"), { target: { value: "pat@home.ca" } });
   fireEvent.click(screen.getByRole("button", { name: "Save" }));
@@ -242,7 +256,7 @@ it("adds a second email without dropping the first", async () => {
     primaryEmail: "one@acme.com",
     emails: [{ label: "work", value: "one@acme.com", primary: true }],
   } as unknown as Person;
-  render(<PersonBlock person={person} />);
+  render(<PersonBlock currency="USD" person={person} />);
   fireEvent.click(screen.getByRole("button", { name: "Edit Email" }));
   fireEvent.click(screen.getByRole("button", { name: "+ Add email" }));
   fireEvent.change(screen.getByLabelText("Email 2"), { target: { value: "two@acme.com" } });
@@ -259,7 +273,7 @@ it("adds a second email without dropping the first", async () => {
 });
 
 it("promotes a non-primary email so the derived primary_email follows it", async () => {
-  render(<PersonBlock person={multiPointPerson} />);
+  render(<PersonBlock currency="USD" person={multiPointPerson} />);
   fireEvent.click(screen.getByRole("button", { name: "Edit Email" }));
   fireEvent.click(screen.getByRole("radio", { name: "Make email 2 primary" }));
   fireEvent.click(screen.getByRole("button", { name: "Save" }));

@@ -149,7 +149,7 @@ export function DealList(props: DealListProps) {
             <tr className="border-t bg-muted/60 font-medium text-foreground">
               <td colSpan={bodyColSpan} className="px-3 py-2 tabular-nums">
                 {total} {total === 1 ? "deal" : "deals"} &middot; total value{" "}
-                {formatCurrency(totalValue)}
+                {formatCurrency(totalValue, currency)}
               </td>
             </tr>
           </tfoot>

@@ -47,7 +47,7 @@ vi.mock("next/navigation", () => ({
 import { AddLeadModal } from "./AddLeadModal";
 
 function renderFilledModal(onCreated = vi.fn()): void {
-  render(<AddLeadModal onClose={vi.fn()} onCreated={onCreated} />);
+  render(<AddLeadModal baseCurrency="USD" onClose={vi.fn()} onCreated={onCreated} />);
   fireEvent.change(screen.getByLabelText("Contact person"), { target: { value: "Test User" } });
   fireEvent.change(screen.getByLabelText("Organization"), { target: { value: "Brand New Org" } });
   fireEvent.change(screen.getByLabelText("Lead title"), { target: { value: "Warm lead" } });

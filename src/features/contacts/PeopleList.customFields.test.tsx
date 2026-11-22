@@ -75,13 +75,13 @@ const cfRows = [
 
 describe("PeopleList custom-field columns", () => {
   it("lists a custom field under Hidden in the columns menu", () => {
-    render(<PeopleList rows={cfRows} total={1} customFieldDefs={[seatsDef]} />);
+    render(<PeopleList baseCurrency="USD" rows={cfRows} total={1} customFieldDefs={[seatsDef]} />);
     fireEvent.click(screen.getByRole("button", { name: "Customize columns" }));
     expect(screen.getByRole("checkbox", { name: "Seats" })).toBeInTheDocument();
   });
 
   it("shows the header and cell value after toggling a custom field on", () => {
-    render(<PeopleList rows={cfRows} total={1} customFieldDefs={[seatsDef]} />);
+    render(<PeopleList baseCurrency="USD" rows={cfRows} total={1} customFieldDefs={[seatsDef]} />);
     fireEvent.click(screen.getByRole("button", { name: "Customize columns" }));
     fireEvent.click(screen.getByRole("checkbox", { name: "Seats" }));
     expect(screen.getByRole("columnheader", { name: "Seats" })).toBeInTheDocument();
@@ -91,6 +91,7 @@ describe("PeopleList custom-field columns", () => {
   it("resolves a reference field's name from refLabels", () => {
     render(
       <PeopleList
+        baseCurrency="USD"
         rows={cfRows}
         total={1}
         customFieldDefs={[championDef]}
@@ -120,6 +121,7 @@ describe("PeopleList custom-field columns", () => {
     });
     render(
       <PeopleList
+        baseCurrency="USD"
         rows={cfRows}
         total={2}
         customFieldDefs={[championDef]}

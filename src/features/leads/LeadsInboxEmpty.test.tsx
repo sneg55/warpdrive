@@ -53,7 +53,7 @@ import { LeadsInbox } from "./LeadsInbox";
 describe("LeadsInbox empty states", () => {
   it("drops the table chrome on an unfiltered empty inbox and offers Add lead", () => {
     listQuery.mockReturnValue({ data: { rows: [], total: 0 }, refetch });
-    render(<LeadsInbox />);
+    render(<LeadsInbox baseCurrency="USD" />);
 
     expect(screen.queryByRole("table")).toBeNull();
     const empty = screen.getByRole("status");
@@ -64,7 +64,7 @@ describe("LeadsInbox empty states", () => {
 
   it("claims no leads exist behind the filter on an empty inbox", () => {
     listQuery.mockReturnValue({ data: { rows: [], total: 0 }, refetch });
-    render(<LeadsInbox />);
+    render(<LeadsInbox baseCurrency="USD" />);
 
     fireEvent.click(screen.getByRole("button", { name: "Filter" }));
     fireEvent.click(screen.getByRole("button", { name: /add condition/i }));
@@ -78,7 +78,7 @@ describe("LeadsInbox empty states", () => {
 
   it("names the archive, not an empty database, on the empty Archive view", () => {
     listQuery.mockReturnValue({ data: { rows: [], total: 0 }, refetch });
-    render(<LeadsInbox />);
+    render(<LeadsInbox baseCurrency="USD" />);
 
     fireEvent.click(screen.getByRole("button", { name: "Archive" }));
     expect(screen.getByRole("status")).toHaveTextContent(STRINGS.leads.emptyArchivedTitle);
@@ -108,7 +108,7 @@ describe("LeadsInbox empty states", () => {
       },
       refetch,
     });
-    render(<LeadsInbox />);
+    render(<LeadsInbox baseCurrency="USD" />);
 
     expect(screen.getByRole("table")).toBeInTheDocument();
   });

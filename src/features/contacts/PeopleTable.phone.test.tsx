@@ -28,6 +28,7 @@ function renderTable(usPhoneFormat: boolean): void {
   render(
     <InterfacePrefsProvider value={{ ...INTERFACE_PREFS_DEFAULT, usPhoneFormat }}>
       <PeopleTable
+        currency="USD"
         rows={[row]}
         sort={{ field: "name", dir: "asc" }}
         onSort={vi.fn()}

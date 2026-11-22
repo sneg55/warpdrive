@@ -31,7 +31,7 @@ export function PersonBlock({
   hideNameParts = false,
   labels,
   customFieldDefs = [],
-  currency = "USD",
+  currency,
   onSaved,
 }: {
   person: Person;
@@ -42,7 +42,7 @@ export function PersonBlock({
   hideNameParts?: boolean;
   labels?: ResolvedLabelChip[];
   customFieldDefs?: CustomFieldDef[];
-  currency?: string;
+  currency: string;
 }): React.ReactNode {
   const router = useRouter();
 

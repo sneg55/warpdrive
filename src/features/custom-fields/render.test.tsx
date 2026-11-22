@@ -20,7 +20,7 @@ const def = (over: Partial<CustomFieldDef>): CustomFieldDef => ({
 describe("formatCustomFieldDisplay", () => {
   it("renders a single_option as its label, not the id", () => {
     const d = def({ type: "single_option", options: [{ id: "opt_a", label: "SaaS" }] });
-    expect(formatCustomFieldDisplay(d, "opt_a")).toBe("SaaS");
+    expect(formatCustomFieldDisplay(d, "opt_a", "USD")).toBe("SaaS");
   });
   it("renders multi_option as a joined label list", () => {
     const d = def({
@@ -30,16 +30,16 @@ describe("formatCustomFieldDisplay", () => {
         { id: "b", label: "Y" },
       ],
     });
-    expect(formatCustomFieldDisplay(d, ["a", "b"])).toBe("X, Y");
+    expect(formatCustomFieldDisplay(d, ["a", "b"], "USD")).toBe("X, Y");
   });
   it('renders a date_range with a "to" separator', () => {
     const d = def({ type: "date_range" });
-    expect(formatCustomFieldDisplay(d, { start: "2026-07-01", end: "2026-07-05" })).toBe(
+    expect(formatCustomFieldDisplay(d, { start: "2026-07-01", end: "2026-07-05" }, "USD")).toBe(
       "2026-07-01 to 2026-07-05",
     );
   });
   it("renders an empty value as an em-dash-free placeholder", () => {
-    expect(formatCustomFieldDisplay(def({}), undefined)).toBe("(empty)");
+    expect(formatCustomFieldDisplay(def({}), undefined, "USD")).toBe("(empty)");
   });
 });
 
@@ -53,7 +53,7 @@ describe("formatCustomFieldDisplay reference labels", () => {
     expect(formatCustomFieldDisplay(userDef, "u2", "USD", labels)).toBe("Restricted");
   });
   it("shows the raw id when no labels are passed", () => {
-    expect(formatCustomFieldDisplay(userDef, "u2")).toBe("u2");
+    expect(formatCustomFieldDisplay(userDef, "u2", "USD")).toBe("u2");
   });
 });
 

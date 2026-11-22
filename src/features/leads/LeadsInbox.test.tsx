@@ -80,7 +80,7 @@ const LEAD = {
 describe("LeadsInbox", () => {
   it("renders the default table columns and a lead row with its label chip", () => {
     listQuery.mockReturnValue({ data: { rows: [LEAD], total: 1, refLabels: REF_LABELS }, refetch });
-    render(<LeadsInbox />);
+    render(<LeadsInbox baseCurrency="USD" />);
     const table = within(screen.getByRole("table"));
     for (const col of [
       "Title",
@@ -100,13 +100,13 @@ describe("LeadsInbox", () => {
 
   it("shows an empty state when there are no leads", () => {
     listQuery.mockReturnValue({ data: { rows: [], total: 0, refLabels: REF_LABELS }, refetch });
-    render(<LeadsInbox />);
+    render(<LeadsInbox baseCurrency="USD" />);
     expect(screen.getByText(/No leads yet/i)).toBeInTheDocument();
   });
 
   it("opens the Add lead modal from the + Lead button", () => {
     listQuery.mockReturnValue({ data: { rows: [], total: 0, refLabels: REF_LABELS }, refetch });
-    render(<LeadsInbox />);
+    render(<LeadsInbox baseCurrency="USD" />);
     fireEvent.click(screen.getByRole("button", { name: "+ Lead" }));
     expect(screen.getByTestId("add-lead-modal")).toBeInTheDocument();
   });
@@ -116,7 +116,7 @@ describe("LeadsInbox", () => {
       data: { rows: [LEAD], total: 250, refLabels: REF_LABELS },
       refetch,
     });
-    render(<LeadsInbox />);
+    render(<LeadsInbox baseCurrency="USD" />);
     expect(screen.getByText("250 leads")).toBeInTheDocument();
   });
 
@@ -131,7 +131,7 @@ describe("LeadsInbox", () => {
         ? { data: { rows: page1, total: 3, refLabels: REF_LABELS }, refetch }
         : { data: { rows: page2, total: 3, refLabels: REF_LABELS }, refetch },
     );
-    render(<LeadsInbox />);
+    render(<LeadsInbox baseCurrency="USD" />);
     expect(screen.getByText("Lead A0")).toBeInTheDocument();
     expect(screen.queryByText("Lead B0")).not.toBeInTheDocument();
 
@@ -144,7 +144,7 @@ describe("LeadsInbox", () => {
 
   it("reveals the bulk-edit panel after selecting a row", () => {
     listQuery.mockReturnValue({ data: { rows: [LEAD], total: 1, refLabels: REF_LABELS }, refetch });
-    render(<LeadsInbox />);
+    render(<LeadsInbox baseCurrency="USD" />);
     fireEvent.click(screen.getByRole("checkbox", { name: "Select Acme lead" }));
     expect(screen.getByText("1 selected")).toBeInTheDocument();
   });
@@ -156,7 +156,7 @@ describe("LeadsInbox", () => {
       value: { converted: 1, skipped: 0, failed: 0, failureId: null },
     });
     listQuery.mockReturnValue({ data: { rows: [LEAD], total: 1, refLabels: REF_LABELS }, refetch });
-    render(<LeadsInbox />);
+    render(<LeadsInbox baseCurrency="USD" />);
     fireEvent.click(screen.getByRole("checkbox", { name: "Select Acme lead" }));
     fireEvent.click(screen.getByRole("button", { name: "Convert to deal" }));
     await waitFor(() => {
@@ -174,7 +174,7 @@ describe("LeadsInbox", () => {
       error: { id: "E_PERM_001" },
     });
     listQuery.mockReturnValue({ data: { rows: [LEAD], total: 1, refLabels: REF_LABELS }, refetch });
-    render(<LeadsInbox />);
+    render(<LeadsInbox baseCurrency="USD" />);
     fireEvent.click(screen.getByRole("checkbox", { name: "Select Acme lead" }));
     fireEvent.click(screen.getByRole("button", { name: "Convert to deal" }));
 
@@ -193,7 +193,7 @@ describe("LeadsInbox", () => {
       error: { id: "E_PERM_001" },
     });
     listQuery.mockReturnValue({ data: { rows: [LEAD], total: 1, refLabels: REF_LABELS }, refetch });
-    render(<LeadsInbox />);
+    render(<LeadsInbox baseCurrency="USD" />);
     fireEvent.click(screen.getByRole("checkbox", { name: "Select Acme lead" }));
     fireEvent.click(screen.getByRole("button", { name: "Delete" }));
 
@@ -209,7 +209,7 @@ describe("LeadsInbox", () => {
     const { archiveLeadAction } = await import("./leadServerActions");
     vi.mocked(archiveLeadAction).mockResolvedValue({ ok: false, error: { id: "E_PERM_001" } });
     listQuery.mockReturnValue({ data: { rows: [LEAD], total: 1, refLabels: REF_LABELS }, refetch });
-    render(<LeadsInbox />);
+    render(<LeadsInbox baseCurrency="USD" />);
 
     await user.click(screen.getByRole("button", { name: "Lead actions" }));
     await user.click(screen.getByRole("menuitem", { name: "Archive" }));
@@ -237,7 +237,7 @@ describe("LeadsInbox", () => {
     ]);
     listQuery.mockReturnValue({ data: { rows: [LEAD], total: 1, refLabels: REF_LABELS }, refetch });
     const user = userEvent.setup();
-    render(<LeadsInbox />);
+    render(<LeadsInbox baseCurrency="USD" />);
 
     await user.click(screen.getByRole("button", { name: "Saved views" }));
     await user.click(screen.getByRole("menuitem", { name: "Web leads" }));
@@ -269,7 +269,7 @@ describe("LeadsInbox", () => {
       }),
     );
     listQuery.mockReturnValue({ data: { rows: [LEAD], total: 1, refLabels: REF_LABELS }, refetch });
-    render(<LeadsInbox />);
+    render(<LeadsInbox baseCurrency="USD" />);
     fireEvent.click(screen.getByRole("checkbox", { name: "Select Acme lead" }));
     const button = screen.getByRole("button", { name: "Convert to deal" });
     fireEvent.click(button);

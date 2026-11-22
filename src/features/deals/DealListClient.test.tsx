@@ -102,6 +102,7 @@ const initial = {
   rows: [rowU1, rowU2],
   total: 500,
   totalValue: "1000000.00",
+  baseCurrency: "USD",
 };
 
 describe("resolveDealListFooter", () => {

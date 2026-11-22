@@ -45,7 +45,7 @@ import { AddLeadModal } from "./AddLeadModal";
 it("retrying Save after a failed lead create reuses the inline org and person", async () => {
   createLeadAction.mockResolvedValueOnce({ ok: false, error: { id: "E_DB_001" } });
   createLeadAction.mockResolvedValueOnce({ ok: true, value: { id: "l1" } });
-  render(<AddLeadModal onClose={vi.fn()} onCreated={vi.fn()} />);
+  render(<AddLeadModal baseCurrency="USD" onClose={vi.fn()} onCreated={vi.fn()} />);
   fireEvent.change(screen.getByLabelText("Contact person"), { target: { value: "Test User" } });
   fireEvent.change(screen.getByLabelText("Organization"), { target: { value: "Brand New Org" } });
 

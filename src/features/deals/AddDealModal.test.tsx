@@ -77,6 +77,7 @@ function renderModal(onCreated = vi.fn(), onClose = vi.fn(), autoPrefixLeadDealT
     <InterfacePrefsProvider value={{ ...INTERFACE_PREFS_DEFAULT, autoPrefixLeadDealTitles }}>
       <QueryClientProvider client={qc}>
         <AddDealModal
+          baseCurrency="USD"
           pipelineId={PIPE}
           pipelines={[
             {
@@ -178,6 +179,7 @@ describe("AddDealModal", () => {
       >
         <QueryClientProvider client={new QueryClient()}>
           <AddDealModal
+            baseCurrency="USD"
             pipelineId={PIPE}
             pipelines={[{ id: PIPE, name: "Sales", stages: [{ id: STAGE_A, name: "Qualified" }] }]}
             onClose={vi.fn()}
@@ -202,6 +204,7 @@ describe("AddDealModal", () => {
       >
         <QueryClientProvider client={new QueryClient()}>
           <AddDealModal
+            baseCurrency="USD"
             pipelineId={PIPE}
             pipelines={[{ id: PIPE, name: "Sales", stages: [{ id: STAGE_A, name: "Qualified" }] }]}
             onClose={vi.fn()}
@@ -283,6 +286,7 @@ describe("AddDealModal", () => {
       <InterfacePrefsProvider value={INTERFACE_PREFS_DEFAULT}>
         <QueryClientProvider client={new QueryClient()}>
           <AddDealModal
+            baseCurrency="USD"
             pipelineId={PIPE}
             pipelines={[{ id: PIPE, name: "Sales", stages: [{ id: STAGE_A, name: "Qualified" }] }]}
             prefillTitle="Partnership"

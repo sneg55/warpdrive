@@ -67,7 +67,7 @@ const rows = [
 
 describe("PeopleList", () => {
   it("shows an initial avatar and the phone for each person (Pipedrive-style row)", () => {
-    render(<PeopleList rows={rows} total={2} />);
+    render(<PeopleList baseCurrency="USD" rows={rows} total={2} />);
     const avatar = screen.getByRole("img", { name: "Jane Roe" });
     expect(avatar).toHaveTextContent("JR");
     expect(screen.getByText("+14155550100")).toBeInTheDocument();
@@ -79,7 +79,7 @@ describe("PeopleList", () => {
   });
 
   it("shows an Organization column linking to the org", () => {
-    render(<PeopleList rows={rows} total={2} />);
+    render(<PeopleList baseCurrency="USD" rows={rows} total={2} />);
     expect(screen.getByRole("columnheader", { name: "Organization" })).toBeInTheDocument();
     const janeRow = screen.getByText("Jane Roe").closest("tr") as HTMLElement;
     expect(within(janeRow).getByRole("link", { name: "Acme Inc" })).toHaveAttribute(
@@ -89,7 +89,7 @@ describe("PeopleList", () => {
   });
 
   it("hides Load more when every person is already loaded", () => {
-    render(<PeopleList rows={rows} total={2} />);
+    render(<PeopleList baseCurrency="USD" rows={rows} total={2} />);
     expect(screen.queryByRole("button", { name: /load more/i })).not.toBeInTheDocument();
   });
 
@@ -108,7 +108,7 @@ describe("PeopleList", () => {
       ],
       refLabels: { user: {}, person: {}, org: {} },
     });
-    render(<PeopleList rows={rows} total={3} orgNames={{ o2: "Globex" }} />);
+    render(<PeopleList baseCurrency="USD" rows={rows} total={3} orgNames={{ o2: "Globex" }} />);
     const loadMore = screen.getByRole("button", { name: /load more/i });
     fireEvent.click(loadMore);
     await vi.waitFor(() =>
@@ -127,7 +127,7 @@ describe("PeopleList", () => {
 
   it("surfaces a load-more failure as an inline alert instead of swallowing it", async () => {
     listPeopleQuery.mockRejectedValueOnce(new Error("timeout"));
-    render(<PeopleList rows={rows} total={3} />);
+    render(<PeopleList baseCurrency="USD" rows={rows} total={3} />);
     fireEvent.click(screen.getByRole("button", { name: /load more/i }));
 
     const alert = await screen.findByRole("alert");
@@ -150,7 +150,7 @@ describe("PeopleList", () => {
       ],
       refLabels: { user: {}, person: {}, org: {} },
     });
-    render(<PeopleList rows={rows} total={3} />);
+    render(<PeopleList baseCurrency="USD" rows={rows} total={3} />);
 
     fireEvent.click(screen.getByRole("button", { name: /load more/i }));
     await screen.findByRole("alert");
@@ -161,13 +161,13 @@ describe("PeopleList", () => {
   });
 
   it("selecting a row shows the bulk action bar with a count", () => {
-    render(<PeopleList rows={rows} total={2} />);
+    render(<PeopleList baseCurrency="USD" rows={rows} total={2} />);
     fireEvent.click(screen.getByRole("checkbox", { name: "Select Jane Roe" }));
     expect(screen.getByText("1 selected")).toBeInTheDocument();
   });
 
   it("selecting all visible rows checks the header checkbox", () => {
-    render(<PeopleList rows={rows} total={2} />);
+    render(<PeopleList baseCurrency="USD" rows={rows} total={2} />);
     fireEvent.click(screen.getByRole("checkbox", { name: "Select all people" }));
     expect(screen.getByText("2 selected")).toBeInTheDocument();
     expect(screen.getByRole("checkbox", { name: "Select all people" })).toBeChecked();
@@ -175,7 +175,7 @@ describe("PeopleList", () => {
 
   it("clicking the Name header re-queries listPeople with the new sort", async () => {
     listPeopleQuery.mockResolvedValue({ total: 2, rows: [] });
-    render(<PeopleList rows={rows} total={2} />);
+    render(<PeopleList baseCurrency="USD" rows={rows} total={2} />);
 
     fireEvent.click(screen.getByRole("button", { name: "Name" }));
 
@@ -193,7 +193,7 @@ describe("PeopleList", () => {
   it("bulk-deletes the selected people and clears the selection", async () => {
     deletePersonAction.mockResolvedValue({ ok: true, value: { id: "p1" } });
     listPeopleQuery.mockResolvedValue({ total: 1, rows: [] });
-    render(<PeopleList rows={rows} total={2} />);
+    render(<PeopleList baseCurrency="USD" rows={rows} total={2} />);
 
     fireEvent.click(screen.getByRole("checkbox", { name: "Select Jane Roe" }));
     fireEvent.click(screen.getByRole("button", { name: "Delete" }));
@@ -215,7 +215,7 @@ describe("PeopleList", () => {
       total: 1,
       rows: [{ id: "p2", name: "John Doe", primaryEmail: null, phones: [], orgId: null }],
     });
-    render(<PeopleList rows={rows} total={2} />);
+    render(<PeopleList baseCurrency="USD" rows={rows} total={2} />);
 
     fireEvent.click(screen.getByRole("checkbox", { name: "Select all people" }));
     fireEvent.click(screen.getByRole("button", { name: "Delete" }));
@@ -228,7 +228,7 @@ describe("PeopleList", () => {
   });
 
   it("offers Merge duplicates only when exactly two people are selected", () => {
-    render(<PeopleList rows={rows} total={2} />);
+    render(<PeopleList baseCurrency="USD" rows={rows} total={2} />);
     fireEvent.click(screen.getByRole("checkbox", { name: "Select Jane Roe" }));
     expect(screen.queryByRole("button", { name: "Merge duplicates" })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("checkbox", { name: "Select John Doe" }));
@@ -251,7 +251,7 @@ describe("PeopleList", () => {
     ]);
     listPeopleQuery.mockResolvedValue({ total: 0, rows: [] });
     const user = userEvent.setup();
-    render(<PeopleList rows={rows} total={2} />);
+    render(<PeopleList baseCurrency="USD" rows={rows} total={2} />);
 
     await user.click(screen.getByRole("button", { name: "Saved views" }));
     await user.click(screen.getByRole("menuitem", { name: "Acme people" }));
@@ -271,7 +271,7 @@ describe("PeopleList", () => {
   it("merges the two selected people via mergePersonsAction (survivor kept)", async () => {
     mergePersonsAction.mockResolvedValue({ ok: true, value: { id: "p1" } });
     listPeopleQuery.mockResolvedValue({ total: 1, rows: [] });
-    render(<PeopleList rows={rows} total={2} />);
+    render(<PeopleList baseCurrency="USD" rows={rows} total={2} />);
 
     fireEvent.click(screen.getByRole("checkbox", { name: "Select Jane Roe" }));
     fireEvent.click(screen.getByRole("checkbox", { name: "Select John Doe" }));

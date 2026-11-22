@@ -84,6 +84,7 @@ function renderBoard(conditions: BoardViewState["conditions"], qc = freshClient(
         pipelines={[{ id: PIPE, name: "Test pipeline", stages: [] }]}
         density="comfortable"
         serverNow={new Date("2026-06-01T00:00:00Z")}
+        baseCurrency="USD"
         initialView={{
           ownerId: null,
           sortKey: "title",

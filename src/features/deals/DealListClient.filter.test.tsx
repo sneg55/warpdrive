@@ -61,6 +61,7 @@ const initial = {
   rows: [],
   total: 500,
   totalValue: "1000000.00",
+  baseCurrency: "USD",
 };
 
 function renderClient(over: Partial<typeof initial> & { initialView?: BoardViewState } = {}) {

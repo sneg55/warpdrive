@@ -7,13 +7,14 @@ import { formatCurrency } from "@/lib/formatCurrency";
 interface BoardSummaryProps {
   totalValue: string;
   dealCount: number;
+  currency: string;
 }
 
 const SHOW_TOTAL_KEY = "wd.board.showTotal:v1";
 const SHOW_TOTAL_KEY_LEGACY = "wd.board.showTotal";
 
 export function BoardSummary(props: BoardSummaryProps): React.ReactNode {
-  const { totalValue, dealCount } = props;
+  const { totalValue, dealCount, currency } = props;
   const [showTotal, setShowTotal] = useState(false);
 
   useEffect(() => {
@@ -42,7 +43,9 @@ export function BoardSummary(props: BoardSummaryProps): React.ReactNode {
         {dealCount} {dealCount === 1 ? "deal" : "deals"}
       </span>
       {showTotal && (
-        <span className="font-semibold text-foreground">{formatCurrency(totalValue)}</span>
+        <span className="font-semibold text-foreground">
+          {formatCurrency(totalValue, currency)}
+        </span>
       )}
       <button
         type="button"

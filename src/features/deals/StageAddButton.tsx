@@ -15,7 +15,7 @@ interface StageAddButtonProps {
   pipelineId: string;
   stageId: string;
   pipelines: Array<Option & { stages: Option[] }>;
-  baseCurrency?: string;
+  baseCurrency: string;
 }
 
 export function StageAddButton(props: StageAddButtonProps): React.ReactNode {

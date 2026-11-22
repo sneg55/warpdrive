@@ -3,7 +3,6 @@ import { useRouter } from "next/navigation";
 import type React from "react";
 import { useRef, useState } from "react";
 import { HiddenRecordNotice } from "@/components/HiddenRecordNotice";
-import { DEFAULT_BASE_CURRENCY } from "@/constants/currency";
 import {
   CustomFieldCreateFields,
   customFieldCreatePayload,
@@ -28,13 +27,13 @@ import { parseNewLead } from "./leadForm";
 import { createLeadAction } from "./leadServerActions";
 
 export interface AddLeadModalProps {
-  baseCurrency?: string;
+  baseCurrency: string;
   onClose: () => void;
   onCreated: () => void;
 }
 
 export function AddLeadModal({
-  baseCurrency = DEFAULT_BASE_CURRENCY,
+  baseCurrency,
   onClose,
   onCreated,
 }: AddLeadModalProps): React.ReactNode {

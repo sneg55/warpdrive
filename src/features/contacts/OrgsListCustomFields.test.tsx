@@ -74,6 +74,7 @@ describe("OrgsList custom fields", () => {
     const def = customFieldDef({ key: "segment", name: "Segment", type: "text" });
     render(
       <OrgsList
+        baseCurrency="USD"
         rows={[orgRow("o1", "Acme Inc", { customFields: { segment: "Enterprise" } })]}
         total={1}
         customFieldDefs={[def]}
@@ -95,6 +96,7 @@ describe("OrgsList custom fields", () => {
     const def = customFieldDef({ key: "csm", name: "CSM", type: "user" });
     render(
       <OrgsList
+        baseCurrency="USD"
         rows={[orgRow("o1", "Acme Inc", { customFields: { csm: "user-1" } })]}
         total={1}
         customFieldDefs={[def]}

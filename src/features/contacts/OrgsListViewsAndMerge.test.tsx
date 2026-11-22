@@ -73,7 +73,7 @@ describe("OrgsList saved views and merge", () => {
     ]);
     listOrgsQuery.mockResolvedValue({ total: 0, rows: [], refLabels: EMPTY_REF_LABELS });
     const user = userEvent.setup();
-    render(<OrgsList rows={[orgRow("o1", "Acme Inc")]} total={1} />);
+    render(<OrgsList baseCurrency="USD" rows={[orgRow("o1", "Acme Inc")]} total={1} />);
 
     await user.click(screen.getByRole("button", { name: "Saved views" }));
     await user.click(screen.getByRole("menuitem", { name: "SaaS orgs" }));
@@ -93,7 +93,13 @@ describe("OrgsList saved views and merge", () => {
   it("merges the two selected orgs via mergeOrgsAction, gated on exactly two", async () => {
     mergeOrgsAction.mockResolvedValue({ ok: true, value: { id: "o1" } });
     listOrgsQuery.mockResolvedValue({ total: 1, rows: [], refLabels: EMPTY_REF_LABELS });
-    render(<OrgsList rows={[orgRow("o1", "Acme Inc"), orgRow("o2", "Globex")]} total={2} />);
+    render(
+      <OrgsList
+        baseCurrency="USD"
+        rows={[orgRow("o1", "Acme Inc"), orgRow("o2", "Globex")]}
+        total={2}
+      />,
+    );
 
     fireEvent.click(screen.getByRole("checkbox", { name: "Select Acme Inc" }));
     expect(screen.queryByRole("button", { name: "Merge duplicates" })).not.toBeInTheDocument();

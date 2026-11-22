@@ -65,7 +65,7 @@ const STAGES = [
   { id: "bbbbbbbb-0000-0000-0000-000000000002", name: "Beta", order: 1, rottingDays: null },
 ];
 
-function renderBoard(initialCards: BoardCard[]) {
+function renderBoard(initialCards: BoardCard[], baseCurrency = "USD") {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(
     <QueryClientProvider client={qc}>
@@ -77,11 +77,24 @@ function renderBoard(initialCards: BoardCard[]) {
         pipelines={[{ id: PIPE, name: "Test pipeline", stages: [] }]}
         density="comfortable"
         serverNow={new Date("2026-06-01T00:00:00Z")}
+        baseCurrency={baseCurrency}
       />
     </QueryClientProvider>,
   );
   return qc;
 }
+
+describe("Board currency", () => {
+  test("renders card values and stage totals in the instance base currency", () => {
+    renderBoard(
+      [card("dddddddd-0000-0000-0000-000000000009", "Card One", STAGES[0]!.id, "1")],
+      "EUR",
+    );
+    const alpha = screen.getByRole("region", { name: "Alpha" });
+    expect(alpha.textContent).toContain("€1,000");
+    expect(alpha.textContent).not.toContain("$");
+  });
+});
 
 describe("Board stage header", () => {
   test("renders a metric icon before the stage value line", () => {

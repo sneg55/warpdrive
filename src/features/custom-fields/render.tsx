@@ -1,4 +1,3 @@
-import { DEFAULT_BASE_CURRENCY } from "@/constants/currency";
 import { STRINGS } from "@/constants/strings";
 import type { CustomFieldDef } from "@/types/customFields";
 import { assertNever } from "@/types/result";
@@ -15,7 +14,7 @@ function labelFor(def: CustomFieldDef, id: string): string {
   return def.options.find((o) => o.id === id)?.label ?? id;
 }
 
-function formatMoney(n: number, currency = DEFAULT_BASE_CURRENCY): string {
+function formatMoney(n: number, currency: string): string {
   return new Intl.NumberFormat(undefined, {
     style: "currency",
     currency,
@@ -25,7 +24,7 @@ function formatMoney(n: number, currency = DEFAULT_BASE_CURRENCY): string {
 export function formatCustomFieldDisplay(
   def: CustomFieldDef,
   value: unknown,
-  currency = DEFAULT_BASE_CURRENCY,
+  currency: string,
   refLabels?: CustomFieldRefLabels,
 ): string {
   if (isCustomFieldValueEmpty(value)) {

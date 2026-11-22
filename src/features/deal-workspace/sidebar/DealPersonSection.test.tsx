@@ -70,6 +70,7 @@ function renderSection(
   const onExitBulk = vi.fn();
   render(
     <DealPersonSection
+      currency="USD"
       person={over.person ?? null}
       dealId="d1"
       expectedUpdatedAt="2026-01-02T00:00:00.000Z"

@@ -93,7 +93,7 @@ function regionDef(over: Partial<CustomFieldDef> = {}): CustomFieldDef {
 }
 
 function renderInbox(props: Partial<React.ComponentProps<typeof LeadsInbox>> = {}): void {
-  render(<LeadsInbox {...props} />);
+  render(<LeadsInbox baseCurrency="USD" {...props} />);
 }
 
 describe("LeadsInbox custom-field columns", () => {

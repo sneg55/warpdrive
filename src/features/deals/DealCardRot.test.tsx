@@ -33,6 +33,7 @@ function renderAt(enteredAt: string) {
       labels={[]}
       rottingDays={6}
       density="comfortable"
+      currency="USD"
       now={now}
     />,
   );
@@ -64,6 +65,7 @@ describe("DealCard rot tint", () => {
           labels={[]}
           rottingDays={6}
           density="comfortable"
+          currency="USD"
           now={now}
         />,
       );

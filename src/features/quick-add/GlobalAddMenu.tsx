@@ -11,6 +11,7 @@ import {
 import { AddActivityModal } from "@/features/activities/AddActivityModal";
 import { AddDealModal } from "@/features/deals/AddDealModal";
 import { AddLeadModal } from "@/features/leads/AddLeadModal";
+import { useBaseCurrency } from "@/features/settings/BaseCurrencyProvider";
 import { isOverlayOpen, isTypingTarget } from "@/features/shortcuts/shortcutTarget";
 import { trpc } from "@/lib/trpc-client";
 import { GlobalContactModal } from "./GlobalContactModal";
@@ -38,6 +39,7 @@ export function GlobalAddMenu(): React.ReactNode {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [modal, setModal] = useState<ModalKind>(null);
+  const baseCurrency = useBaseCurrency();
 
   const pipelinesQ = trpc.pipeline.list.useQuery();
   const pipelines = useMemo(
@@ -127,12 +129,17 @@ export function GlobalAddMenu(): React.ReactNode {
         <AddDealModal
           pipelineId={firstPipelineId}
           pipelines={pipelines}
+          baseCurrency={baseCurrency}
           onClose={() => setModal(null)}
           onCreated={() => router.refresh()}
         />
       )}
       {modal === "lead" && (
-        <AddLeadModal onClose={() => setModal(null)} onCreated={() => router.refresh()} />
+        <AddLeadModal
+          baseCurrency={baseCurrency}
+          onClose={() => setModal(null)}
+          onCreated={() => router.refresh()}
+        />
       )}
       {modal === "activity" && (
         <AddActivityModal onClose={() => setModal(null)} onCreated={() => router.refresh()} />

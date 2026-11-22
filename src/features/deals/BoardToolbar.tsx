@@ -15,6 +15,7 @@ export interface BoardToolbarProps {
   pipelines: Array<{ id: string; name: string }>;
   totalValue: string;
   dealCount: number;
+  currency: string;
   activeView?: BoardToolbarView;
   presence?: React.ReactNode;
   createSlot?: React.ReactNode;
@@ -32,6 +33,7 @@ const IDLE = "text-muted-foreground hover:text-foreground";
 export function BoardToolbar(props: BoardToolbarProps): React.ReactNode {
   const { pipelineId, pipelines, totalValue, dealCount, activeView = "board" } = props;
   const { presence, createSlot, filterSlot, sortSlot, quickFilters, canManagePipelines } = props;
+  const { currency } = props;
   const current = (view: BoardToolbarView): "page" | undefined =>
     activeView === view ? "page" : undefined;
 
@@ -71,7 +73,7 @@ export function BoardToolbar(props: BoardToolbarProps): React.ReactNode {
         {createSlot}
 
         <div className="ml-auto flex items-center gap-3">
-          <BoardSummary totalValue={totalValue} dealCount={dealCount} />
+          <BoardSummary totalValue={totalValue} dealCount={dealCount} currency={currency} />
           <PipelineSelect
             pipelineId={pipelineId}
             pipelines={pipelines}

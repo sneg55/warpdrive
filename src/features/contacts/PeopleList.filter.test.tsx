@@ -56,7 +56,7 @@ function addRow(index: number, value: string): void {
 describe("PeopleList filter round trip", () => {
   it("reopening the filter shows the applied rows and combinator, not a blank builder", async () => {
     listPeopleQuery.mockResolvedValue({ total: 0, rows: [] });
-    render(<PeopleList rows={ROWS} total={1} />);
+    render(<PeopleList baseCurrency="USD" rows={ROWS} total={1} />);
 
     openFilter();
     addRow(1, "acme");

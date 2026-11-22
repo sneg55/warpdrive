@@ -104,6 +104,7 @@ const PETER = {
 function renderSection() {
   render(
     <DealPersonSection
+      currency="USD"
       person={PETER}
       dealId="d1"
       expectedUpdatedAt="2026-01-02T00:00:00.000Z"

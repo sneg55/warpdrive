@@ -6,7 +6,6 @@ import { ColumnsMenu } from "@/components/data-table/ColumnsMenu";
 import type { ColumnDef } from "@/components/data-table/columnModel";
 import { useColumns } from "@/components/data-table/useColumns";
 import { usePersistColumns } from "@/components/data-table/usePersistColumns";
-import { DEFAULT_BASE_CURRENCY } from "@/constants/currency";
 import { customFieldColumns } from "@/features/custom-fields/listColumns";
 import {
   type CustomFieldRefLabels,
@@ -46,7 +45,7 @@ type InitialData = Omit<
   "onBulkStage" | "onBulkArchive" | "onUnarchive" | "visibleColumns" | "columnsMenu" | "currency"
 > & {
   pipelines: PipelineOption[];
-  baseCurrency?: string;
+  baseCurrency: string;
   initialColumns?: string[];
   customFieldDefs?: CustomFieldDef[];
   refLabels?: CustomFieldRefLabels;
@@ -88,7 +87,7 @@ export function DealListClient({
   variant = "list",
 }: DealListClientProps): React.ReactNode {
   const { pipelineId, stages, pipelines, baseCurrency } = initial;
-  const currency = baseCurrency ?? DEFAULT_BASE_CURRENCY;
+  const currency = baseCurrency;
   const actions = useDealListActions();
   const utils = trpc.useUtils();
   const view = useBoardView(initial.initialView, { fromDrillDown: initial.fromDrillDown });
@@ -188,6 +187,7 @@ export function DealListClient({
         pipelines={pipelines}
         totalValue={footer.totalValue}
         dealCount={footer.total}
+        currency={currency}
         activeView={variant}
         canManagePipelines={initial.canManagePipelines}
         createSlot={addDeal}

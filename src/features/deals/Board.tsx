@@ -174,6 +174,7 @@ export function Board(props: BoardProps): React.ReactNode {
         owners={owners}
         totalValue={String(boardTotal)}
         dealCount={shownCards.length}
+        currency={baseCurrency}
         view={view}
         addSlot={addDeal}
         onPreviewFilter={setPreviewDefinition}
@@ -221,6 +222,7 @@ export function Board(props: BoardProps): React.ReactNode {
               rottingDays={null}
               density={density}
               now={now}
+              currency={baseCurrency}
               elevated
             />
           ) : null}

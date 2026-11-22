@@ -19,7 +19,7 @@ export function PersonSection({
   onExitBulk,
   hidden = NONE,
   customFieldDefs = [],
-  currency = "USD",
+  currency,
   showLabels = false,
   onSaved,
 }: {
@@ -30,7 +30,7 @@ export function PersonSection({
   onExitBulk: () => void;
   hidden?: ReadonlySet<string>;
   customFieldDefs?: CustomFieldDef[];
-  currency?: string;
+  currency: string;
   showLabels?: boolean;
   onSaved?: () => void;
 }): React.ReactNode {

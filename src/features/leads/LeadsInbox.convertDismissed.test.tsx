@@ -66,7 +66,7 @@ describe("LeadsInbox convert dialog dismissed before the result arrives", () => 
       }),
     );
     listQuery.mockReturnValue({ data: { rows: [LEAD], total: 1, refLabels: REF_LABELS }, refetch });
-    render(<LeadsInbox />);
+    render(<LeadsInbox baseCurrency="USD" />);
 
     fireEvent.click(screen.getByRole("checkbox", { name: "Select Acme lead" }));
     fireEvent.click(screen.getByRole("button", { name: "Convert to deal" }));

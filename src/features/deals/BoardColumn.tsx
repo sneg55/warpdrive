@@ -18,10 +18,11 @@ interface DraggableCardProps {
   rottingDays: number | null;
   density: "comfortable" | "compact";
   now: Date;
+  currency: string;
 }
 
 function DraggableCard(props: DraggableCardProps): React.ReactNode {
-  const { card, rottingDays, density, now } = props;
+  const { card, rottingDays, density, now, currency } = props;
   const router = useRouter();
   const resolveLabels = useLabelColorResolver("deal");
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
@@ -46,6 +47,7 @@ function DraggableCard(props: DraggableCardProps): React.ReactNode {
         rottingDays={rottingDays}
         density={density}
         now={now}
+        currency={currency}
         onOpen={() => router.push(`/deals/${card.id}`)}
       />
     </div>
@@ -64,7 +66,7 @@ export interface BoardColumnProps {
   now: Date;
   pipelineId: string;
   pipelines: Array<{ id: string; name: string; stages: Array<{ id: string; name: string }> }>;
-  baseCurrency?: string;
+  baseCurrency: string;
 }
 
 export function BoardColumn(props: BoardColumnProps): React.ReactNode {
@@ -113,7 +115,7 @@ export function BoardColumn(props: BoardColumnProps): React.ReactNode {
         <div className="mt-1 flex items-center gap-1 px-1 text-xs text-muted-foreground">
           <Scale data-stage-metric-icon aria-hidden="true" className="h-3.5 w-3.5 shrink-0" />
           <span className="tabular-nums">
-            {stageSubtitle(formatCurrency(totalValue), dealCount)}
+            {stageSubtitle(formatCurrency(totalValue, baseCurrency), dealCount)}
           </span>
         </div>
       </header>
@@ -129,7 +131,13 @@ export function BoardColumn(props: BoardColumnProps): React.ReactNode {
                 key={card.id}
                 className="[content-visibility:auto] [contain-intrinsic-size:auto_96px]"
               >
-                <DraggableCard card={card} rottingDays={rottingDays} density={density} now={now} />
+                <DraggableCard
+                  card={card}
+                  rottingDays={rottingDays}
+                  density={density}
+                  now={now}
+                  currency={baseCurrency}
+                />
               </li>
             ))}
           </ul>

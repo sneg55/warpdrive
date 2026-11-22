@@ -91,6 +91,7 @@ const initial = {
   rows: [row, { ...row, id: "d2" }],
   total: 2,
   totalValue: "50000.00",
+  baseCurrency: "USD",
 };
 
 describe("DealListClient bulk stage wiring", () => {

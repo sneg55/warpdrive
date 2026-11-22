@@ -8,7 +8,6 @@ import { type ColumnSort, useColumnSort } from "@/components/data-table/useColum
 import { useColumns } from "@/components/data-table/useColumns";
 import { usePersistColumns } from "@/components/data-table/usePersistColumns";
 import { useRowSelection } from "@/components/data-table/useRowSelection";
-import { DEFAULT_BASE_CURRENCY } from "@/constants/currency";
 import { STRINGS } from "@/constants/strings";
 import { customFieldColumns } from "@/features/custom-fields/listColumns";
 import {
@@ -42,7 +41,7 @@ export interface PeopleListProps {
   orgNames?: Record<string, string>;
   initialColumns?: string[];
   customFieldDefs?: CustomFieldDef[];
-  baseCurrency?: string;
+  baseCurrency: string;
   refLabels?: CustomFieldRefLabels;
 }
 
@@ -52,7 +51,7 @@ export function PeopleList({
   orgNames = EMPTY_ORG_NAMES,
   initialColumns,
   customFieldDefs = EMPTY_CUSTOM_FIELD_DEFS,
-  baseCurrency = DEFAULT_BASE_CURRENCY,
+  baseCurrency,
   refLabels: initialRefLabels = EMPTY_REF_LABELS,
 }: PeopleListProps): React.ReactNode {
   const catalog = useMemo(

@@ -78,7 +78,11 @@ const base = z.object({
   MCP_ENABLED: boolFromString.default(true),
   OAUTH_SIGNING_KEY: z.string().default(""),
   OAUTH_REGISTRATION: z.enum(["open", "disabled"]).default("open"),
-  BASE_CURRENCY: z.string().length(3).default("USD"),
+  BASE_CURRENCY: z
+    .string()
+    .regex(/^[A-Za-z]{3}$/, "must be a three-letter ISO 4217 currency code")
+    .transform((v) => v.toUpperCase())
+    .default("USD"),
   SEED_ADMIN_EMAIL: z.string().email().or(z.literal("")).default(""),
   ALLOW_FIRST_LOGIN_ADMIN: boolFromString.default(false),
   APP_VERSION: z.string().default(""),

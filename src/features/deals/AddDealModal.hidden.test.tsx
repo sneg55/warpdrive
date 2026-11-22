@@ -64,6 +64,7 @@ describe("AddDealModal when the created deal is hidden from its creator", () => 
       >
         <QueryClientProvider client={new QueryClient()}>
           <AddDealModal
+            baseCurrency="USD"
             pipelineId={PIPE}
             pipelines={[{ id: PIPE, name: "Sales", stages: [{ id: STAGE_A, name: "Qualified" }] }]}
             onClose={onClose}

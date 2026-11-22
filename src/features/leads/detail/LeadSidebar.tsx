@@ -32,7 +32,7 @@ export function LeadSidebar({
   personCustomFieldDefs = [],
   organizationCustomFieldDefs = [],
   leadCustomFieldDefs = [],
-  baseCurrency = "USD",
+  baseCurrency,
 }: {
   lead: LeadDetail;
   owners: { id: string; name: string; avatarUrl?: string | null }[];
@@ -43,7 +43,7 @@ export function LeadSidebar({
   personCustomFieldDefs?: CustomFieldDef[];
   organizationCustomFieldDefs?: CustomFieldDef[];
   leadCustomFieldDefs?: CustomFieldDef[];
-  baseCurrency?: string;
+  baseCurrency: string;
 }): React.ReactNode {
   const router = useRouter();
   const [personBulkEditing, setPersonBulkEditing] = useState(false);

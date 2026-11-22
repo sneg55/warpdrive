@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("next/navigation", () => ({
@@ -11,7 +11,7 @@ import { BoardToolbar } from "./BoardToolbar";
 
 afterEach(cleanup);
 
-function renderToolbar(activeView?: "board" | "list" | "archived") {
+function renderToolbar(activeView?: "board" | "list" | "archived", currency = "USD") {
   return render(
     <BoardToolbar
       pipelineId="p1"
@@ -19,9 +19,18 @@ function renderToolbar(activeView?: "board" | "list" | "archived") {
       totalValue="1000"
       dealCount={2}
       activeView={activeView}
+      currency={currency}
     />,
   );
 }
+
+describe("BoardToolbar total value", () => {
+  it("shows the deals total in the instance base currency", () => {
+    renderToolbar("board", "EUR");
+    fireEvent.click(screen.getByRole("button", { name: "Show deals total value" }));
+    expect(screen.getByText("€1,000")).not.toBeNull();
+  });
+});
 
 describe("BoardToolbar view toggle", () => {
   it("renders Board and List as icon buttons (Pipedrive), with accessible names", () => {

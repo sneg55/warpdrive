@@ -69,9 +69,9 @@ const dealPersonProps = {
 };
 
 const sections: [string, () => React.ReactNode][] = [
-  ["PersonSection", () => <PersonSection {...personProps} />],
-  ["DealPersonSection", () => <DealPersonSection {...dealPersonProps} />],
-  ["OrganizationSection", () => <OrganizationSection {...orgProps} />],
+  ["PersonSection", () => <PersonSection currency="USD" {...personProps} />],
+  ["DealPersonSection", () => <DealPersonSection currency="USD" {...dealPersonProps} />],
+  ["OrganizationSection", () => <OrganizationSection currency="USD" {...orgProps} />],
   ["RecordOrganizationSection", () => <RecordOrganizationSection {...recordOrgProps} />],
 ];
 
@@ -99,6 +99,6 @@ it.each(
 });
 
 it("keeps Fill the gaps off a deal section that has no record to enrich", () => {
-  render(<DealPersonSection {...dealPersonProps} person={null} />);
+  render(<DealPersonSection currency="USD" {...dealPersonProps} person={null} />);
   expect(screen.queryByRole("button", { name: BUTTON })).not.toBeInTheDocument();
 });

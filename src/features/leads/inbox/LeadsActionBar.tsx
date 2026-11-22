@@ -14,7 +14,7 @@ export interface LeadsActionBarProps {
   filter: Filter;
   onFilter: (f: Filter) => void;
   count: number;
-  baseCurrency?: string;
+  baseCurrency: string;
   canImport: boolean;
   onCreated: () => void;
   labelKeys: string[];

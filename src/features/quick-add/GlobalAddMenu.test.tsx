@@ -25,10 +25,14 @@ vi.mock("./GlobalNoteModal", () => ({
   GlobalNoteModal: () => <div data-testid="note-modal" />,
 }));
 vi.mock("@/features/deals/AddDealModal", () => ({
-  AddDealModal: () => <div data-testid="deal-modal" />,
+  AddDealModal: ({ baseCurrency }: { baseCurrency: string }) => (
+    <div data-testid="deal-modal" data-currency={baseCurrency} />
+  ),
 }));
 vi.mock("@/features/leads/AddLeadModal", () => ({
-  AddLeadModal: () => <div data-testid="lead-modal" />,
+  AddLeadModal: ({ baseCurrency }: { baseCurrency: string }) => (
+    <div data-testid="lead-modal" data-currency={baseCurrency} />
+  ),
 }));
 vi.mock("./GlobalContactModal", () => ({
   GlobalContactModal: ({ kind }: { kind: string }) => <div data-testid={`contact-modal-${kind}`} />,
@@ -37,9 +41,34 @@ vi.mock("@/features/activities/AddActivityModal", () => ({
   AddActivityModal: () => <div data-testid="activity-modal" />,
 }));
 
+import { BaseCurrencyProvider } from "@/features/settings/BaseCurrencyProvider";
 import { GlobalAddMenu } from "./GlobalAddMenu";
 
 const PIPE = { id: "p1", name: "Sales", stages: [{ id: "s1", name: "Qualified" }] };
+
+describe("GlobalAddMenu currency", () => {
+  it("opens the Deal and Lead modals in the instance base currency", async () => {
+    const user = userEvent.setup();
+    useQuery.mockReturnValue({ data: [PIPE] });
+    render(
+      <BaseCurrencyProvider currency="EUR">
+        <GlobalAddMenu />
+      </BaseCurrencyProvider>,
+    );
+    await user.click(screen.getByRole("button", { name: "Quick add" }));
+    await user.click(screen.getByRole("menuitem", { name: /Deal/ }));
+    expect(screen.getByTestId("deal-modal")).toHaveAttribute("data-currency", "EUR");
+    cleanup();
+    render(
+      <BaseCurrencyProvider currency="EUR">
+        <GlobalAddMenu />
+      </BaseCurrencyProvider>,
+    );
+    await user.click(screen.getByRole("button", { name: "Quick add" }));
+    await user.click(screen.getByRole("menuitem", { name: /Lead/ }));
+    expect(screen.getByTestId("lead-modal")).toHaveAttribute("data-currency", "EUR");
+  });
+});
 
 describe("GlobalAddMenu", () => {
   it("opens a menu with all five entries and their shortcuts", async () => {

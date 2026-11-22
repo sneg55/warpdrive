@@ -37,7 +37,7 @@ it("renders Website as an https link (adding scheme) and LinkedIn as its url, op
     domain: "uniondynamics.com",
     linkedinUrl: "https://www.linkedin.com/company/uniondynamics",
   } as unknown as Organization;
-  render(<OrgBlock org={org} />);
+  render(<OrgBlock currency="USD" org={org} />);
 
   const website = screen.getByRole("link", { name: "uniondynamics.com" });
   expect(website).toHaveAttribute("href", "https://uniondynamics.com");
@@ -53,7 +53,7 @@ it("renders Website as an https link (adding scheme) and LinkedIn as its url, op
 it("shows blank firmographic rows when the section is not hiding empties", () => {
   render(
     <HideEmptyContext.Provider value={false}>
-      <OrgBlock org={blankOrg} />
+      <OrgBlock currency="USD" org={blankOrg} />
     </HideEmptyContext.Provider>,
   );
   expect(screen.getByText("Website")).toBeInTheDocument();
@@ -67,7 +67,7 @@ it("shows blank firmographic rows when the section is not hiding empties", () =>
 it("hides blank firmographic rows when the funnel is hiding empties", () => {
   render(
     <HideEmptyContext.Provider value={true}>
-      <OrgBlock org={blankOrg} />
+      <OrgBlock currency="USD" org={blankOrg} />
     </HideEmptyContext.Provider>,
   );
   expect(screen.queryByText("Website")).not.toBeInTheDocument();
@@ -84,7 +84,7 @@ it("edits the Address as a composite of subfields, saving a merged address objec
     ...blankOrg,
     address: { street: "1 Main St", city: "Springfield" },
   } as unknown as Organization;
-  render(<OrgBlock org={org} />);
+  render(<OrgBlock currency="USD" org={org} />);
 
   fireEvent.click(screen.getByRole("button", { name: "Edit Address" }));
   fireEvent.change(screen.getByLabelText("City"), { target: { value: "Portland" } });
@@ -105,7 +105,7 @@ it("edits the Address as a composite of subfields, saving a merged address objec
 it("a filled-in field stays visible even while the funnel is hiding empties", () => {
   render(
     <HideEmptyContext.Provider value={true}>
-      <OrgBlock org={{ ...blankOrg, industry: "Media" }} />
+      <OrgBlock currency="USD" org={{ ...blankOrg, industry: "Media" }} />
     </HideEmptyContext.Provider>,
   );
   expect(screen.getByText("Industry")).toBeInTheDocument();
@@ -120,7 +120,7 @@ it("hides a built-in firmographic row whose key is in the hidden set, keeps the 
     annualRevenue: "1000000",
     employeeCount: 42,
   } as unknown as Organization;
-  render(<OrgBlock org={org} hidden={new Set(["industry", "annualRevenue"])} />);
+  render(<OrgBlock currency="USD" org={org} hidden={new Set(["industry", "annualRevenue"])} />);
 
   expect(screen.queryByText("Industry")).not.toBeInTheDocument();
   expect(screen.queryByText("Annual revenue")).not.toBeInTheDocument();
@@ -132,7 +132,11 @@ it("hides a built-in firmographic row whose key is in the hidden set, keeps the 
 it("renders provided label chips under the section (PD's per-organization Labels row)", () => {
   render(
     <HideEmptyContext.Provider value={false}>
-      <OrgBlock org={blankOrg} labels={[{ name: "Partner", classes: "bg-blue-100" }]} />
+      <OrgBlock
+        currency="USD"
+        org={blankOrg}
+        labels={[{ name: "Partner", classes: "bg-blue-100" }]}
+      />
     </HideEmptyContext.Provider>,
   );
   expect(screen.getByText("Labels")).toBeInTheDocument();

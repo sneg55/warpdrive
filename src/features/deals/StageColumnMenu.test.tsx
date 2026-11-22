@@ -22,6 +22,7 @@ function renderMenu(overrides?: Partial<Parameters<typeof StageColumnMenu>[0]>) 
         stageId="s1"
         stageName="Qualified"
         pipelines={PIPELINES}
+        baseCurrency="USD"
         collapsed={false}
         onToggleCollapse={onToggleCollapse}
         {...overrides}

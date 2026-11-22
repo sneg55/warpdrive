@@ -79,6 +79,7 @@ describe("DealListClient opened from the Deals won tile", () => {
             rows: [],
             total: 0,
             totalValue: "0",
+            baseCurrency: "USD",
             initialView: DRILL,
             fromDrillDown: true,
           }}

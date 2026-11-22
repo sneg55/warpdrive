@@ -34,12 +34,12 @@ const base = {
 afterEach(cleanup);
 
 it("renders the person labels control when labels are opted in", () => {
-  render(<PersonSection {...base} showLabels />);
+  render(<PersonSection currency="USD" {...base} showLabels />);
   const control = screen.getByTestId("labels-control");
   expect(control).toHaveTextContent("person:p1:Hot");
 });
 
 it("omits the labels control by default (contact-detail keeps its header control)", () => {
-  render(<PersonSection {...base} />);
+  render(<PersonSection currency="USD" {...base} />);
   expect(screen.queryByTestId("labels-control")).not.toBeInTheDocument();
 });

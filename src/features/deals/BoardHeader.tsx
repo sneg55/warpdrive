@@ -21,6 +21,7 @@ interface BoardHeaderProps {
   owners: BoardOwner[];
   totalValue: string;
   dealCount: number;
+  currency: string;
   view: BoardViewControls;
   addSlot: React.ReactNode;
   onPreviewFilter: (definition: FilterDefinition | null) => void;
@@ -29,7 +30,7 @@ interface BoardHeaderProps {
 
 export function BoardHeader(props: BoardHeaderProps): React.ReactNode {
   const { pipelineId, pipelines, stages, selfActorId, owners, view, addSlot } = props;
-  const { totalValue, dealCount, onPreviewFilter, canManagePipelines } = props;
+  const { totalValue, dealCount, currency, onPreviewFilter, canManagePipelines } = props;
   const ownerName =
     view.ownerId === null
       ? null
@@ -41,6 +42,7 @@ export function BoardHeader(props: BoardHeaderProps): React.ReactNode {
       pipelines={pipelines}
       totalValue={totalValue}
       dealCount={dealCount}
+      currency={currency}
       canManagePipelines={canManagePipelines}
       createSlot={addSlot}
       sortSlot={

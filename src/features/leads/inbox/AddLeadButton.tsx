@@ -13,7 +13,7 @@ import { STRINGS } from "@/constants/strings";
 import { AddLeadModal } from "../AddLeadModal";
 
 export interface AddLeadButtonProps {
-  baseCurrency?: string;
+  baseCurrency: string;
   canImport: boolean;
   onCreated: () => void;
 }

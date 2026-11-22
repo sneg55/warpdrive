@@ -80,7 +80,7 @@ export function DealListTableBody(props: DealListTableBodyProps): React.ReactNod
           (row.orgName ?? "")
         );
       case "value":
-        return row.value !== null ? formatCurrency(row.value) : "";
+        return row.value !== null ? formatCurrency(row.value, currency) : "";
       case "stage":
         return stageNameById.get(row.stageId) ?? row.stageId;
       case "owner":

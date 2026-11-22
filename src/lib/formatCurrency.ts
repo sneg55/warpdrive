@@ -1,4 +1,4 @@
-export function formatCurrency(value: string | number, currency = "USD"): string {
+export function formatCurrency(value: string | number, currency: string): string {
   const n = typeof value === "number" ? value : Number(value);
   if (Number.isNaN(n)) return "";
   return new Intl.NumberFormat("en-US", {

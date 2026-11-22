@@ -8,7 +8,6 @@ import { type ColumnSort, useColumnSort } from "@/components/data-table/useColum
 import { useColumns } from "@/components/data-table/useColumns";
 import { usePersistColumns } from "@/components/data-table/usePersistColumns";
 import { useRowSelection } from "@/components/data-table/useRowSelection";
-import { DEFAULT_BASE_CURRENCY } from "@/constants/currency";
 import { STRINGS } from "@/constants/strings";
 import { customFieldColumns } from "@/features/custom-fields/listColumns";
 import {
@@ -40,7 +39,7 @@ export interface OrgsListProps {
   total: number;
   initialColumns?: string[];
   customFieldDefs?: CustomFieldDef[];
-  baseCurrency?: string;
+  baseCurrency: string;
   refLabels?: CustomFieldRefLabels;
 }
 
@@ -49,7 +48,7 @@ export function OrgsList({
   total: initialTotal,
   initialColumns,
   customFieldDefs = [],
-  baseCurrency = DEFAULT_BASE_CURRENCY,
+  baseCurrency,
   refLabels: initialRefLabels = EMPTY_REF_LABELS,
 }: OrgsListProps): React.ReactNode {
   const catalog = useMemo(

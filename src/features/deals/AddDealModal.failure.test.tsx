@@ -62,6 +62,7 @@ function renderFilledModal(onCreated = vi.fn()): void {
     <InterfacePrefsProvider value={INTERFACE_PREFS_DEFAULT}>
       <QueryClientProvider client={new QueryClient()}>
         <AddDealModal
+          baseCurrency="USD"
           pipelineId={PIPE}
           pipelines={[{ id: PIPE, name: "Sales", stages: [{ id: STAGE, name: "Qualified" }] }]}
           onClose={vi.fn()}

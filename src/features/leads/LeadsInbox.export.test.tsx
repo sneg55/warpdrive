@@ -59,7 +59,7 @@ describe("LeadsInbox export", () => {
         land = r;
       }),
     );
-    render(<LeadsInbox />);
+    render(<LeadsInbox baseCurrency="USD" />);
     await clickExport(user);
 
     expect(screen.getByRole("status")).toHaveTextContent("Exporting leads...");
@@ -82,7 +82,7 @@ describe("LeadsInbox export", () => {
   it("says so in the bar when the export fails", async () => {
     const user = userEvent.setup();
     fetchMock.mockResolvedValue(new Response("Export failed", { status: 500 }));
-    render(<LeadsInbox />);
+    render(<LeadsInbox baseCurrency="USD" />);
     await clickExport(user);
     expect(await screen.findByRole("alert")).toHaveTextContent("Couldn't export leads");
     expect(anchorClick).not.toHaveBeenCalled();

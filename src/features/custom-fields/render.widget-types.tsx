@@ -1,6 +1,6 @@
 import type { CustomFieldDef } from "@/types/customFields";
 
-export type DetailProps = { def: CustomFieldDef; value: unknown; currency?: string };
+export type DetailProps = { def: CustomFieldDef; value: unknown; currency: string };
 export type ControlProps = {
   def: CustomFieldDef;
   value: unknown;

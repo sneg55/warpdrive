@@ -59,6 +59,7 @@ it("retrying Save after a failed deal create reuses the inline org and person", 
     <InterfacePrefsProvider value={INTERFACE_PREFS_DEFAULT}>
       <QueryClientProvider client={new QueryClient()}>
         <AddDealModal
+          baseCurrency="USD"
           pipelineId={PIPE}
           pipelines={[{ id: PIPE, name: "Sales", stages: [{ id: STAGE, name: "Qualified" }] }]}
           onClose={vi.fn()}
