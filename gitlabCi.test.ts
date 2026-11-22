@@ -103,6 +103,10 @@ describe("gitlab ci pipeline", () => {
     expect(block).toContain("/api/health");
   });
 
+  it("gives the smoke test one network per build so its services resolve each other", () => {
+    expect(job("smoke-test")).toContain('FF_NETWORK_PER_BUILD: "true"');
+  });
+
   it("tags the default-branch image as -dev and latest, and never tags a merge request", () => {
     const block = job("tag-images");
     expect(block).toContain("if: '$CI_MERGE_REQUEST_ID'");

@@ -255,6 +255,7 @@ smoke-test:
           "i=0; until node dist/worker.mjs; do i=$((i+1)); if [ \"$i\" -ge 60 ]; then echo \"worker failed after 60 attempts\"; exit 1; fi; sleep 2; done"
         ]
   variables:
+    FF_NETWORK_PER_BUILD: "true"
     # schema-satisfying placeholders: the app is not talking to Google, Garage or
     # anyone in this job, it only has to boot and answer /api/health.
     DATABASE_URL: postgres://warpdrive:warpdrive@postgres:5432/warpdrive
