@@ -2,6 +2,12 @@
 
 Notable changes to Warpdrive, newest first. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 2.14.4 - 2026-11-23
+
+### Fixed
+
+- **tests**: make the suite pass on the public mirror and in any timezone (OSS #16)
+
 ## 2.14.3 - 2026-11-22
 
 ### Fixed
