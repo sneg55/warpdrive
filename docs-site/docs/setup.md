@@ -133,7 +133,7 @@ client in the Google Cloud console for the project that owns your Workspace, the
 
 Register both redirect URIs:
 
-- the application sign-in callback, and
+- the application sign-in callback `https://<your-domain>/auth/callback`, and
 - `https://<your-domain>/api/gmail/oauth/callback` for mailbox connection.
 
 Connecting a mailbox needs the `openid` and `email` scopes in addition to the Gmail

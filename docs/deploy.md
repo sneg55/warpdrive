@@ -14,8 +14,10 @@ thing. Design: `docs/superpowers/specs/2026-07-07-docker-single-box-deploy-desig
   box. The browser uploads files (CSV import, avatars, attachments) directly to Garage through this
   host, so it needs its own hostname, cert, and `S3_ENDPOINT` value.
 - Ports 80 and 443 open to the internet (Caddy needs 80 for the ACME challenge).
-- A Google OAuth client (Workspace) with the redirect URI set to
-  `https://<your-domain>/api/gmail/oauth/callback` and the app's sign-in callback.
+- A Google OAuth client (Workspace) with both redirect URIs registered:
+  `https://<your-domain>/auth/callback` (sign-in) and
+  `https://<your-domain>/api/gmail/oauth/callback` (mailbox connection)
+  see [docs-site setup](../docs-site/docs/setup.md#2-set-up-google-oauth).
 
 ## 1. Configure `.env`
 
