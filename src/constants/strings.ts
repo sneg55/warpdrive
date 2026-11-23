@@ -27,6 +27,9 @@ export const STRINGS = {
     loginTitle: "Sign in to Warpdrive",
     domainOnly: "Use your company Google Workspace account.",
     anyAccount: "Use the account your administrator set up for you.",
+    signInFailedTitle: "Sign-in failed",
+    signInFailedBody:
+      "We could not complete the sign-in. Try again. If it keeps failing, ask your administrator to check the server logs.",
   },
   contacts: {
     peopleHeading: "People",

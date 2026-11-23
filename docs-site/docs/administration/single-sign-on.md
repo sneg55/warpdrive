@@ -139,6 +139,6 @@ ignores, and exist only for local development. Delete the contents of that direc
 | Symptom | Likely cause |
 | --- | --- |
 | Login page shows no buttons | No provider configured for this environment. Check `GOOGLE_SIGNIN_ENABLED` and `OIDC_ISSUER_URL`. |
-| Redirected to `/login?error=auth_failed` after the IdP | Provider unreachable, discovery document invalid, nonce or state mismatch, signature failure, unverified email, or no allowed group. The app log names the reason. |
+| Returned to the login page with a "Sign-in failed" alert | Provider unreachable, discovery document invalid, nonce or state mismatch, signature failure, unverified email, or no allowed group. The alert never says which; the app log does. |
 | `identity_conflict` in the log | The email already holds a different identity. Reset sign-in identities for that user. |
 | Signed in but the email looks wrong | The IdP is not returning the workspace address, so personal Gmail binding will refuse it. |
