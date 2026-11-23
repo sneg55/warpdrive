@@ -21,6 +21,72 @@ process.env.BASE_CURRENCY ??= "USD";
 process.env.SEED_ADMIN_EMAIL ??= "admin@example.com";
 process.env.ALLOW_FIRST_LOGIN_ADMIN ??= "false";
 
+const TEST_LOCALE = "en-US";
+
+function pinnedLocale(locales: Intl.LocalesArgument | undefined): Intl.LocalesArgument {
+  return locales ?? TEST_LOCALE;
+}
+
+const BuiltinNumberFormat = Intl.NumberFormat;
+
+const pinnedNumberFormat = Object.assign(
+  function pinnedNumberFormat(
+    this: unknown,
+    locales?: Intl.LocalesArgument,
+    options?: Intl.NumberFormatOptions,
+  ): Intl.NumberFormat {
+    return new BuiltinNumberFormat(pinnedLocale(locales), options);
+  },
+  { supportedLocalesOf: BuiltinNumberFormat.supportedLocalesOf.bind(BuiltinNumberFormat) },
+);
+
+Intl.NumberFormat = pinnedNumberFormat as unknown as typeof Intl.NumberFormat;
+
+const BuiltinDateTimeFormat = Intl.DateTimeFormat;
+
+const pinnedDateTimeFormat = Object.assign(
+  function pinnedDateTimeFormat(
+    this: unknown,
+    locales?: Intl.LocalesArgument,
+    options?: Intl.DateTimeFormatOptions,
+  ): Intl.DateTimeFormat {
+    return new BuiltinDateTimeFormat(pinnedLocale(locales), options);
+  },
+  { supportedLocalesOf: BuiltinDateTimeFormat.supportedLocalesOf.bind(BuiltinDateTimeFormat) },
+);
+
+Intl.DateTimeFormat = pinnedDateTimeFormat as unknown as typeof Intl.DateTimeFormat;
+
+const builtinToLocaleDateString = Date.prototype.toLocaleDateString;
+
+Date.prototype.toLocaleDateString = function (
+  this: Date,
+  locale?: Intl.LocalesArgument,
+  options?: Intl.DateTimeFormatOptions,
+): string {
+  return builtinToLocaleDateString.call(this, pinnedLocale(locale), options);
+};
+
+const builtinToLocaleTimeString = Date.prototype.toLocaleTimeString;
+
+Date.prototype.toLocaleTimeString = function (
+  this: Date,
+  locale?: Intl.LocalesArgument,
+  options?: Intl.DateTimeFormatOptions,
+): string {
+  return builtinToLocaleTimeString.call(this, pinnedLocale(locale), options);
+};
+
+const builtinToLocaleString = Date.prototype.toLocaleString;
+
+Date.prototype.toLocaleString = function (
+  this: Date,
+  locale?: Intl.LocalesArgument,
+  options?: Intl.DateTimeFormatOptions,
+): string {
+  return builtinToLocaleString.call(this, pinnedLocale(locale), options);
+};
+
 if (typeof Element !== "undefined") {
   const { configure } = await import("@testing-library/react");
   configure({ asyncUtilTimeout: 15_000 });

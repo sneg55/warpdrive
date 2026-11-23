@@ -6,6 +6,7 @@ import {
   avatarPublicUrl,
   avatarUploadKey,
   isAvatarContentType,
+  isUploadedAvatarUrl,
 } from "./avatarStorage";
 
 const USER = "11111111-1111-1111-1111-111111111111";
@@ -26,6 +27,18 @@ describe("avatar storage keys", () => {
 
   it("builds a stable serve URL with a cache-busting version", () => {
     expect(avatarPublicUrl(USER, VERSION)).toBe(`/api/users/${USER}/avatar?v=${VERSION}`);
+  });
+});
+
+describe("isUploadedAvatarUrl", () => {
+  it("returns a strict boolean false for a null url", () => {
+    expect(isUploadedAvatarUrl(null)).toBe(false);
+  });
+
+  it("returns true only for self-hosted uploaded avatar urls", () => {
+    expect(isUploadedAvatarUrl(`/api/users/${USER}/avatar?v=${VERSION}`)).toBe(true);
+    expect(isUploadedAvatarUrl(`/api/users/${USER}/avatar`)).toBe(true);
+    expect(isUploadedAvatarUrl("https://example.com/me.png")).toBe(false);
   });
 });
 

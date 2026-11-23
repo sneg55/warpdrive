@@ -28,11 +28,16 @@ const hangUntilAborted = (s: AbortSignal): Promise<never> =>
     s.addEventListener("abort", () => reject(s.reason as Error), { once: true });
   });
 
-function trackTokens(client: XClient, hang: (call: number) => boolean) {
+function trackTokens(
+  client: XClient,
+  hang: (call: number) => boolean,
+  onCall?: (call: number) => void,
+) {
   const tokens: string[] = [];
   const list = client.listConversations.bind(client);
   client.listConversations = (t, a, s) => {
     tokens.push(t);
+    if (onCall) onCall(tokens.length);
     return hang(tokens.length) ? hangUntilAborted(s) : list(t, a, s);
   };
   return tokens;
@@ -47,11 +52,32 @@ describe("runXSyncAll account timeouts", () => {
       });
       const a = await seedAccount(db);
       const b = await seedAccount(db, { xUserId: "1000000000000000009" });
-      trackTokens(fake.client, (call) => call === 1);
-      const results = await runXSyncAll(
-        { ...deps(db, fake), accountTimeoutMs: 200 },
-        AbortSignal.timeout(5000),
+      let stallEngaged!: () => void;
+      const stalled = new Promise<void>((resolve) => {
+        stallEngaged = resolve;
+      });
+      trackTokens(
+        fake.client,
+        (call) => call === 1,
+        (call) => {
+          if (call === 1) stallEngaged();
+        },
       );
+      const accountTimeouts: AbortController[] = [];
+      const run = runXSyncAll(
+        {
+          ...deps(db, fake),
+          accountTimeoutSignal: () => {
+            const controller = new AbortController();
+            accountTimeouts.push(controller);
+            return controller.signal;
+          },
+        },
+        AbortSignal.timeout(60_000),
+      );
+      await stalled;
+      accountTimeouts[0]?.abort();
+      const results = await run;
       expect(results.map((r) => r.ok)).toEqual([false, true]);
       expect((await accountRow(db, a))?.lastErrorId).toBe(ERROR_IDS.X_HTTP_FAILED);
       expect((await accountRow(db, a))?.lastSyncAt).toBeNull();
@@ -75,7 +101,7 @@ describe("runXSyncAll account timeouts", () => {
       });
       await expect(runXSyncAll(deps(db, fake), run.signal)).rejects.toThrow();
       expect(tokens).toEqual(["stored-access"]);
-      await runXSyncAll(deps(db, fake), AbortSignal.timeout(5000));
+      await runXSyncAll(deps(db, fake), AbortSignal.timeout(60_000));
       expect(tokens.slice(1)).toEqual(["b-access", "stored-access"]);
       expect((await accountRow(db, a))?.lastSyncAt).toEqual(new Date(NOW_MS));
     });

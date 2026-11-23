@@ -82,8 +82,8 @@ COPY package.json next.config.ts ./
 # which read it at request time.
 ARG APP_COMMIT=
 ENV APP_COMMIT=${APP_COMMIT}
-# node:alpine ships an unprivileged `node` user; run as it, not root.
-USER node
+# node:alpine ships an unprivileged `node` user (1000:1000); run as it, not root.
+USER 1000:1000
 EXPOSE 3000 8080
 # App is the default; compose overrides command per service (ws/worker/migrate).
 CMD ["node_modules/.bin/next", "start"]
