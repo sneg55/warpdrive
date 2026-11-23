@@ -2,6 +2,16 @@
 
 Notable changes to Warpdrive, newest first. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 2.14.3 - 2026-11-22
+
+### Fixed
+
+- **files**: destructure S3 credentials so the mirror's gitleaks gate passes
+
+### Security
+
+- clear 11 advisories, replace minio with the AWS S3 SDK
+
 ## 2.14.2 - 2026-11-22
 
 No user-facing changes.

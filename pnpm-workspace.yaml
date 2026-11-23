@@ -18,6 +18,8 @@ overrides:
   "qs@>=6 <6.16.1": "^6.16.1"
   "nanoid@>=3 <3.3.18": "^3.3.18"
   "source-map-js@<1.2.2": "^1.2.2"
+  "@esbuild-kit/core-utils>esbuild": "^0.25.0"
+  "eslint-plugin-sonarjs>minimatch": "^11.0.9"
 allowBuilds:
   esbuild: true
   unrs-resolver: true
