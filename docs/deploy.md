@@ -17,7 +17,7 @@ thing. Design: `docs/superpowers/specs/2026-07-07-docker-single-box-deploy-desig
 - A Google OAuth client (Workspace) with both redirect URIs registered:
   `https://<your-domain>/auth/callback` (sign-in) and
   `https://<your-domain>/api/gmail/oauth/callback` (mailbox connection)
-  see [docs-site setup](../docs-site/docs/setup.md#2-set-up-google-oauth)).
+  see [docs-site setup](../docs-site/docs/setup.md#2-set-up-google-oauth).
 
 ## 1. Configure `.env`
 
