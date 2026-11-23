@@ -13,7 +13,7 @@ describe("scheduled_at column", () => {
     await withTestDb(async (db) => {
       const u = (
         await db.execute(
-          sql`INSERT INTO users (email, name, google_sub) VALUES ('sched-col@x.com','SC','sub-sc') RETURNING id`,
+          sql`INSERT INTO users (email, name) VALUES ('sched-col@x.com','SC') RETURNING id`,
         )
       ).rows[0] as { id: string };
       const acctRow = (
@@ -42,7 +42,7 @@ describe("scheduled_at column", () => {
 describe("sendEmail with scheduledSendAt", () => {
   it("stores scheduled_at and does NOT call Gmail when scheduledSendAt is in the future", async () => {
     await withTestDb(async (db) => {
-      const user = await seedUser(db, { email: "sched2@x.com", googleSub: "sub-sched2" });
+      const user = await seedUser(db, { email: "sched2@x.com" });
       const acct = (
         await db.execute(
           sql`INSERT INTO email_accounts (user_id, email_address) VALUES (${user.id},'sched2@x.com') RETURNING id`,
@@ -87,7 +87,7 @@ describe("outboxClaim: scheduled_at due filter", () => {
     await withTestDb(async (db) => {
       const u = (
         await db.execute(
-          sql`INSERT INTO users (email, name, google_sub) VALUES ('sched3@x.com','S3','sub-s3') RETURNING id`,
+          sql`INSERT INTO users (email, name) VALUES ('sched3@x.com','S3') RETURNING id`,
         )
       ).rows[0] as { id: string };
       const acct = (
@@ -113,7 +113,7 @@ describe("outboxClaim: scheduled_at due filter", () => {
     await withTestDb(async (db) => {
       const u = (
         await db.execute(
-          sql`INSERT INTO users (email, name, google_sub) VALUES ('sched4@x.com','S4','sub-s4') RETURNING id`,
+          sql`INSERT INTO users (email, name) VALUES ('sched4@x.com','S4') RETURNING id`,
         )
       ).rows[0] as { id: string };
       const acct = (
@@ -139,7 +139,7 @@ describe("outboxClaim: scheduled_at due filter", () => {
     await withTestDb(async (db) => {
       const u = (
         await db.execute(
-          sql`INSERT INTO users (email, name, google_sub) VALUES ('sched5@x.com','S5','sub-s5') RETURNING id`,
+          sql`INSERT INTO users (email, name) VALUES ('sched5@x.com','S5') RETURNING id`,
         )
       ).rows[0] as { id: string };
       const acct = (

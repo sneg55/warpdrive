@@ -67,7 +67,7 @@ https://<your-domain>/api/mcp
 
 Warpdrive is a full OAuth 2.1 authorization server: it handles discovery, dynamic
 client registration, the authorization code flow, and PKCE (S256), and it delegates the
-actual login to your existing Google sign-in. So connecting is a one-click "sign in and
+actual login to your existing sign-in. So connecting is a one-click "sign in and
 approve", with no API keys to copy.
 
 To connect from Claude or Claude Desktop:

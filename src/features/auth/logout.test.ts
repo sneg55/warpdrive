@@ -14,7 +14,7 @@ beforeAll(async () => {
   h = await makeTestDb();
   const [u] = await h.db
     .insert(users)
-    .values({ email: "logout@example.com", name: "Logout User", googleSub: "g-lo" })
+    .values({ email: "logout@example.com", name: "Logout User" })
     .returning();
   userId = u!.id;
 });

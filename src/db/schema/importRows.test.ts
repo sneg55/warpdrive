@@ -12,10 +12,7 @@ afterAll(async () => {
 });
 
 it("enforces (batch_id, row_number) uniqueness as the idempotency guard", async () => {
-  const [u] = await h.db
-    .insert(users)
-    .values({ email: "i@test.com", name: "I", googleSub: "sub-i" })
-    .returning();
+  const [u] = await h.db.insert(users).values({ email: "i@test.com", name: "I" }).returning();
 
   const [batch] = await h.db
     .insert(importBatches)

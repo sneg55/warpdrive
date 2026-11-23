@@ -46,6 +46,9 @@ export const setActiveInput = z.object({
   userId: z.string().uuid(),
   isActive: z.boolean(),
 });
+export const resetIdentitiesInput = z.object({
+  userId: z.string().uuid(),
+});
 
 export const inviteUserInput = z.object({
   email: z.string().email(),

@@ -14,10 +14,13 @@ thing. Design: `docs/superpowers/specs/2026-07-07-docker-single-box-deploy-desig
   box. The browser uploads files (CSV import, avatars, attachments) directly to Garage through this
   host, so it needs its own hostname, cert, and `S3_ENDPOINT` value.
 - Ports 80 and 443 open to the internet (Caddy needs 80 for the ACME challenge).
-- A Google OAuth client (Workspace) with both redirect URIs registered:
-  `https://<your-domain>/auth/callback` (sign-in) and
+- A sign-in provider: a Google OAuth client (Workspace), any OpenID Connect provider, or both.
+  Google needs both redirect URIs registered: `https://<your-domain>/auth/callback`
+  (sign-in, sent exactly as written) and
   `https://<your-domain>/api/gmail/oauth/callback` (mailbox connection)
-  see [docs-site setup](../docs-site/docs/setup.md#2-set-up-google-oauth).
+  see [docs-site setup](../docs-site/docs/setup.md#2-set-up-sign-in).
+- OIDC providers need the redirect URI `https://<your-domain>/auth/callback/oidc`, the
+  `openid email profile groups` scopes, and a `groups` claim; see [Single sign-on](sso.md).
 
 ## 1. Configure `.env`
 
@@ -37,6 +40,8 @@ Fill it in. The deployment-specific values:
 | `S3_ENDPOINT` | `https://s3.crm.example.com` (public: the browser uploads directly here) |
 | `S3_SERVER_ENDPOINT` | leave empty (falls back to `S3_ENDPOINT`); set `http://garage:3900` only if the containers cannot reach the public URL |
 | `DATABASE_URL` | `postgres://warpdrive:warpdrive@postgres:5432/warpdrive` |
+| `OIDC_ISSUER_URL` | leave empty for Google-only sign-in, or the https issuer of your OIDC provider |
+| `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET`, `OIDC_ALLOWED_GROUPS` | required once the issuer is set; groups are fail-closed, so an empty list rejects all OIDC sign-ins |
 | `SEED_ADMIN_EMAIL` | the first admin's email (required in production) |
 | `ALLOW_FIRST_LOGIN_ADMIN` | `false` (the env boundary rejects `true` in production) |
 
@@ -75,8 +80,8 @@ curl -fsS https://<APP_DOMAIN>/api/health   # -> {"ok":true}
 
 ## 3. First admin login
 
-`SEED_ADMIN_EMAIL` is bootstrapped as the initial admin. Sign in with that Google account through
-the normal OAuth flow; it is promoted on first login. `ALLOW_FIRST_LOGIN_ADMIN` stays `false` in
+`SEED_ADMIN_EMAIL` is bootstrapped as the initial admin. Sign in with that account through whichever
+provider you configured; it is promoted on first login. `ALLOW_FIRST_LOGIN_ADMIN` stays `false` in
 production (the env boundary enforces this).
 
 ## Operating the box

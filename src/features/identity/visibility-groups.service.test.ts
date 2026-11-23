@@ -38,8 +38,8 @@ beforeEach(async () => {
     sql`TRUNCATE visibility_group_members, visibility_groups, pipelines, sessions, users, permission_sets, audit_events, settings RESTART IDENTITY CASCADE`,
   );
   await h.db.insert(users).values([
-    { id: admin.id, email: "admin@example.com", name: "Admin", googleSub: "g-a", isAdmin: true },
-    { id: manager.id, email: "mgr@example.com", name: "Mgr", googleSub: "g-m" },
+    { id: admin.id, email: "admin@example.com", name: "Admin", isAdmin: true },
+    { id: manager.id, email: "mgr@example.com", name: "Mgr" },
   ]);
 });
 
@@ -59,7 +59,7 @@ describe("visibility-groups service", () => {
     await h.db.insert(pipelines).values({ name: "Secret Pipe", visibilityGroupId: g.value.id });
     const [target] = await h.db
       .insert(users)
-      .values({ email: "tgt@example.com", name: "Tgt", googleSub: "g-tgt" })
+      .values({ email: "tgt@example.com", name: "Tgt" })
       .returning();
     const r = await addGroupMember(
       h.db,
@@ -76,7 +76,7 @@ describe("visibility-groups service", () => {
     await h.db.insert(pipelines).values({ name: "Secret Pipe", visibilityGroupId: g.value.id });
     const [target] = await h.db
       .insert(users)
-      .values({ email: "tgt@example.com", name: "Tgt", googleSub: "g-tgt" })
+      .values({ email: "tgt@example.com", name: "Tgt" })
       .returning();
     await h.db.insert(visibilityGroupMembers).values({ groupId: g.value.id, userId: target!.id });
     const r = await removeGroupMember(
@@ -93,7 +93,7 @@ describe("visibility-groups service", () => {
     if (g.ok === false) throw new Error("setup: group create failed");
     const [target] = await h.db
       .insert(users)
-      .values({ email: "tgt2@example.com", name: "Tgt2", googleSub: "g-tgt2" })
+      .values({ email: "tgt2@example.com", name: "Tgt2" })
       .returning();
     const r = await addGroupMember(
       h.db,
@@ -109,7 +109,7 @@ describe("visibility-groups service", () => {
     if (g.ok === false) throw new Error("setup: group create failed");
     const [ann] = await h.db
       .insert(users)
-      .values({ email: "ann@example.com", name: "Ann", googleSub: "g-ann" })
+      .values({ email: "ann@example.com", name: "Ann" })
       .returning();
     const added = await addGroupMember(
       h.db,
@@ -135,7 +135,7 @@ describe("visibility-groups service", () => {
     };
     await h.db
       .insert(users)
-      .values({ id: plainUser.id, email: "plain@example.com", name: "Plain", googleSub: "g-p" });
+      .values({ id: plainUser.id, email: "plain@example.com", name: "Plain" });
     const r = await listGroupMembers(h.db, plainUser, g.value.id, SIG());
     expect(r.ok).toBe(false);
   });

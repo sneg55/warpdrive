@@ -29,8 +29,8 @@ async function seedMailbox(tag: string): Promise<Mailbox> {
   const email = `${tag}-${randomUUID().slice(0, 8)}@acme.com`;
   const u = (
     await h.db.execute(
-      sql`INSERT INTO users (email, name, google_sub)
-          VALUES (${email}, ${tag}, ${`sub-${email}`}) RETURNING id`,
+      sql`INSERT INTO users (email, name)
+          VALUES (${email}, ${tag}) RETURNING id`,
     )
   ).rows[0] as { id: string };
   const acct = (

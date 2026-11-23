@@ -1,7 +1,7 @@
 ---
 sidebar_position: 2
 title: Installation
-description: "Deploy Warpdrive on a single box with Docker Compose: prerequisites, environment variables, TLS, Garage object storage, Google OAuth, and the first admin login."
+description: "Deploy Warpdrive on a single box with Docker Compose: prerequisites, environment variables, TLS, Garage object storage, sign-in through Google or any OIDC provider, and the first admin login."
 ---
 
 # Installation
@@ -21,7 +21,9 @@ reverse proxy that terminates TLS with automatic Let's Encrypt certificates. One
   imports, avatars, attachments) directly to Garage through this hostname, so it needs
   its own DNS record and certificate. Skipping this breaks every upload.
 - Ports 80 and 443 open. Caddy needs port 80 for the ACME challenge.
-- A Google OAuth client (Workspace), covered below.
+- A sign-in provider: a Google OAuth client (Workspace) or any OpenID Connect provider such as
+  Authelia, Authentik or Keycloak. Google is only needed for sign-in if you use it, but it is
+  needed if you want the Gmail integration. Covered below.
 
 ## 1. Configure the environment
 
@@ -76,7 +78,11 @@ stating plainly:
 | --- | --- |
 | `BASE_CURRENCY` | The single currency every amount is shown in, as a three-letter ISO 4217 code such as `EUR` (case does not matter). Defaults to `USD`. Applied each time migrations run, so changing it later takes effect on the next restart. Stored amounts are relabelled, not converted. A value that is not three letters stops the app at startup. |
 | `MAX_FILE_BYTES` | Upload size ceiling. Defaults to `26214400` (25 MiB). |
-| `GOOGLE_WORKSPACE_DOMAIN` | Restricts sign-in to a single Workspace domain. |
+| `GOOGLE_WORKSPACE_DOMAIN` | The Workspace domain. Required whenever the Google client values are set. Restricts Google sign-in to that domain and is the domain personal mailbox connections must match. |
+| `GOOGLE_SIGNIN_ENABLED` | Defaults to true when `GOOGLE_OAUTH_CLIENT_ID` is set. Set it to `false` to keep Gmail connect while signing users in through another IdP. |
+| `OIDC_ISSUER_URL` | Turns on generic OIDC sign-in for this issuer. Use https; Authelia refuses to start with a non-https issuer URL, and a self-signed certificate needs `NODE_EXTRA_CA_CERTS`. Leave empty to disable. See [Single sign-on](./administration/single-sign-on.md). |
+| `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET` | Credentials of the client registered at that issuer. Required once `OIDC_ISSUER_URL` is set. |
+| `OIDC_ALLOWED_GROUPS` | Comma-separated group names allowed to sign in. Required once `OIDC_ISSUER_URL` is set, and fail-closed: an empty value rejects every OIDC sign-in. |
 | `APP_VERSION` | Version shown as "current" by the update banner. |
 | `MCP_ENABLED` | Defaults to `true`. Turns on the MCP server and its OAuth endpoints, and requires `OAUTH_SIGNING_KEY`. Set `false` to opt out. |
 | `OAUTH_SIGNING_KEY` | Base64 of exactly 32 bytes. Signs MCP access tokens. Required while `MCP_ENABLED` is `true`. |
@@ -125,15 +131,22 @@ its `MINIO_*` counterpart when unset.
 | `TELEMETRY_CONSOLE_FORWARDING` | Set `true` to also forward browser `console.warn` and `console.error` messages. Off by default. |
 | `APP_COMMIT` | Git SHA of the running build, attached to telemetry events. Empty by default. |
 
-## 2. Set up Google OAuth
+## 2. Set up sign-in
 
-Warpdrive uses Google for sign-in and for the Gmail integration. Create an OAuth
-client in the Google Cloud console for the project that owns your Workspace, then set
-`GOOGLE_OAUTH_CLIENT_ID` and `GOOGLE_OAUTH_CLIENT_SECRET`.
+Pick one provider, or both. Users can sign in through either when both are enabled; the
+login page shows one button per enabled provider.
+
+### Google
+
+Create an OAuth client in the Google Cloud console for the project that owns your
+Workspace, then set `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET` and
+`GOOGLE_WORKSPACE_DOMAIN`.
 
 Register both redirect URIs:
 
-- the application sign-in callback `https://<your-domain>/auth/callback`, and
+- the application sign-in callback `https://<your-domain>/auth/callback` (the path the
+  app sends to Google, so it must be registered exactly; internally it forwards to
+  `/auth/callback/google`), and
 - `https://<your-domain>/api/gmail/oauth/callback` for mailbox connection.
 
 Connecting a mailbox needs the `openid` and `email` scopes in addition to the Gmail
@@ -143,6 +156,19 @@ screen, which reads like a Gmail problem but is not.
 
 See [Email sync](./administration/email-sync.md) for connecting mailboxes once the
 app is running.
+
+### Any other OIDC provider
+
+Register a confidential client at your IdP with the redirect URI
+`https://<your-domain>/auth/callback/oidc` and the scopes `openid`, `email`, `profile`
+and `groups`, then set `OIDC_ISSUER_URL`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET` and
+`OIDC_ALLOWED_GROUPS`.
+
+Sign-in is allowed only for users whose `groups` claim contains one of the allowed
+groups, and the provider must return the user's workspace address as a verified
+`email` claim. [Single sign-on](./administration/single-sign-on.md) covers the
+identity matching rules, the full claim requirements, and how to move users between
+providers.
 
 ## 3. Bring it up
 
@@ -166,7 +192,7 @@ curl -fsS https://<APP_DOMAIN>/api/health   # -> {"ok":true}
 ## 4. First admin login
 
 `SEED_ADMIN_EMAIL` is bootstrapped as the initial administrator. Sign in with that
-Google account through the normal flow and it is promoted on first login.
+account through your configured provider and it is promoted on first login.
 
 From there, invite the rest of your team from
 [Users and teams](./administration/users-and-teams.md).
@@ -195,7 +221,13 @@ The app is then at `http://localhost:3000`, the Garage S3 API at
 `S3_SERVER_ENDPOINT=http://garage:3900` for this mode. Inside the Compose network the containers cannot reach the host-published `localhost:9000`, so the
 server side dials Garage by its Compose service name.
 
-To sign in without Google, open the `dev-login` route:
+The development overrides also run a pre-configured Authelia provider, so you can exercise SSO
+without a Google tenant: choose **Sign in with SSO** on the login page and sign in as
+`admin@example.com` with the password `warpdrive-dev`. See
+[Single sign-on](./administration/single-sign-on.md#local-development) for the available users
+and the one-time certificate warning.
+
+To sign in without any provider, open the `dev-login` route:
 `http://localhost:3000/auth/dev-login?email=admin@example.com`, where `admin@example.com`
 is the address you set in `SEED_ADMIN_EMAIL`. The development override sets
 `NODE_ENV=development`; the route also requires `ALLOW_FIRST_LOGIN_ADMIN=true`. Never set either

@@ -36,7 +36,6 @@ export async function seedUser(
     .values({
       email: `test-${ts}-${Math.random()}@example.com`,
       name: "Test User",
-      googleSub: `sub-${ts}-${Math.random()}`,
       isAdmin: false,
       ...overrides,
     })

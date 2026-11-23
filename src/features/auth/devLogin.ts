@@ -47,10 +47,11 @@ export async function devLoginCore(
     email,
     sub: `dev-${email}`,
     name: email,
+    preferredUsername: null,
     avatarUrl: null,
   };
 
-  const upsertResult = await upsertUserOnLogin(db, identity, signal);
+  const upsertResult = await upsertUserOnLogin(db, { provider: "dev", identity }, signal);
   if (!upsertResult.ok) return err(`upsert failed: ${upsertResult.error}`);
 
   const sessionResult = await createSession(db, upsertResult.value.userId, signal);

@@ -1,7 +1,7 @@
 import { and, eq, isNull, sql } from "drizzle-orm";
 import type { PermissionFlagKey } from "@/constants/permissionFlags";
 import type { Db } from "@/db/client";
-import { permissionSets, sessions, users } from "@/db/schema";
+import { permissionSets, sessions, userIdentities, users } from "@/db/schema";
 import type { PermSetUser } from "@/features/permissions/effective";
 import { err, ok, type Result } from "@/types/result";
 import { recordAudit } from "./audit";
@@ -186,6 +186,43 @@ export async function setUserActive(
   await recordAudit(
     db,
     { actorId: actor.id, targetType: "user", targetId: input.userId, action: "user.activate" },
+    signal,
+  );
+  return ok(true);
+}
+
+export async function resetUserIdentities(
+  db: Db,
+  actor: PermSetUser,
+  input: { userId: string },
+  signal: AbortSignal,
+): Promise<Result<true, string>> {
+  if (actor.type !== "admin") return err("admin required to reset sign-in identities");
+  signal.throwIfAborted();
+
+  const result = await db.transaction(async (tx): Promise<Result<true, string>> => {
+    const [target] = await tx
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.id, input.userId))
+      .limit(1);
+    if (target === undefined) return err("not_found");
+    await tx.delete(userIdentities).where(eq(userIdentities.userId, input.userId));
+    await tx
+      .update(sessions)
+      .set({ revokedAt: new Date() })
+      .where(and(eq(sessions.userId, input.userId), isNull(sessions.revokedAt)));
+    return ok(true);
+  });
+  if (result.ok === false) return result;
+  await recordAudit(
+    db,
+    {
+      actorId: actor.id,
+      targetType: "user",
+      targetId: input.userId,
+      action: "user.reset_identities",
+    },
     signal,
   );
   return ok(true);

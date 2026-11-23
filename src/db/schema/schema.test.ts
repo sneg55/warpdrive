@@ -35,7 +35,6 @@ describe("identity schema", () => {
       .values({
         email: "a@example.com",
         name: "A",
-        googleSub: "sub-1",
         isAdmin: false,
         permissionSetId: ps!.id,
       })
@@ -50,10 +49,7 @@ describe("identity schema", () => {
 
   test("group membership composite PK rejects duplicates", async () => {
     const [g] = await h.db.insert(visibilityGroups).values({ name: "Everyone" }).returning();
-    const [u] = await h.db
-      .insert(users)
-      .values({ email: "b@example.com", name: "B", googleSub: "sub-2" })
-      .returning();
+    const [u] = await h.db.insert(users).values({ email: "b@example.com", name: "B" }).returning();
     await h.db.insert(visibilityGroupMembers).values({ groupId: g!.id, userId: u!.id });
     await expect(
       h.db.insert(visibilityGroupMembers).values({ groupId: g!.id, userId: u!.id }),
@@ -68,9 +64,9 @@ describe("identity schema", () => {
   });
 
   test("email is unique (citext) and case-insensitive", async () => {
-    await h.db.insert(users).values({ email: "Case@example.com", name: "C", googleSub: "sub-3" });
+    await h.db.insert(users).values({ email: "Case@example.com", name: "C" });
     await expect(
-      h.db.insert(users).values({ email: "case@example.com", name: "C2", googleSub: "sub-4" }),
+      h.db.insert(users).values({ email: "case@example.com", name: "C2" }),
     ).rejects.toThrow();
   });
 });
@@ -82,7 +78,6 @@ describe("activities single-parent constraint", () => {
       .values({
         email: `both-${Date.now()}@example.com`,
         name: "P",
-        googleSub: `both-${Date.now()}`,
       })
       .returning();
     const [lead] = await h.db
@@ -120,7 +115,6 @@ describe("activities single-parent constraint", () => {
       .values({
         email: `leadonly-${Date.now()}@example.com`,
         name: "P",
-        googleSub: `leadonly-${Date.now()}`,
       })
       .returning();
     const [lead] = await h.db

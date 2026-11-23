@@ -12,10 +12,7 @@ afterAll(async () => {
 });
 
 it("attaches a note to a deal polymorphically and threads a comment", async () => {
-  const [u] = await h.db
-    .insert(users)
-    .values({ email: "n@test.com", name: "N", googleSub: "sub-n" })
-    .returning();
+  const [u] = await h.db.insert(users).values({ email: "n@test.com", name: "N" }).returning();
 
   const [note] = await h.db
     .insert(notes)

@@ -11,7 +11,7 @@ type TestDb = Parameters<Parameters<typeof withTestDb>[0]>[0];
 
 async function seedAccount(db: TestDb, email = "a@example.com"): Promise<string> {
   const uRes = await db.execute(
-    sql`INSERT INTO users (email, name, google_sub) VALUES (${email},'A',${`sub-${email}`}) RETURNING id`,
+    sql`INSERT INTO users (email, name) VALUES (${email},'A') RETURNING id`,
   );
   const u = uRes.rows[0] as { id: string };
   const enc = encryptToken("refresh-1");

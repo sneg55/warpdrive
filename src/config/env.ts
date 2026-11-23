@@ -4,6 +4,7 @@ import { err, ok, type Result } from "@/types/result";
 
 const SECRET_FILE_VARS = [
   "GOOGLE_OAUTH_CLIENT_SECRET",
+  "OIDC_CLIENT_SECRET",
   "WS_TICKET_SECRET",
   "TOKEN_ENCRYPTION_KEY",
   "S3_SECRET_KEY",
@@ -55,9 +56,14 @@ const optionalUrl = z
 
 const base = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
-  GOOGLE_OAUTH_CLIENT_ID: z.string().min(1),
-  GOOGLE_OAUTH_CLIENT_SECRET: z.string().min(1),
-  GOOGLE_WORKSPACE_DOMAIN: z.string().min(1),
+  GOOGLE_OAUTH_CLIENT_ID: z.string().default(""),
+  GOOGLE_OAUTH_CLIENT_SECRET: z.string().default(""),
+  GOOGLE_WORKSPACE_DOMAIN: z.string().default(""),
+  GOOGLE_SIGNIN_ENABLED: boolFromString.optional(),
+  OIDC_ISSUER_URL: optionalUrl,
+  OIDC_CLIENT_ID: z.string().default(""),
+  OIDC_CLIENT_SECRET: z.string().default(""),
+  OIDC_ALLOWED_GROUPS: z.string().default(""),
   BASE_URL: z.string().url(),
   DATABASE_URL: z.string().min(1),
   WS_TICKET_SECRET: z.string().min(32),
@@ -101,8 +107,62 @@ const base = z.object({
   X_CLIENT_SECRET: z.string().default(""),
 });
 
+type BaseEnv = z.infer<typeof base>;
+type IssueContext = z.RefinementCtx;
+
+function requireWhenEmpty(v: BaseEnv, ctx: IssueContext, name: keyof BaseEnv): void {
+  if (v[name] !== "") return;
+  ctx.addIssue({
+    code: z.ZodIssueCode.custom,
+    path: [name],
+    message: `${name} is required for Google sign-in (or Gmail) or set GOOGLE_SIGNIN_ENABLED=false`,
+  });
+}
+
+function googleSigninEnabled(v: BaseEnv): boolean {
+  return v.GOOGLE_SIGNIN_ENABLED ?? v.GOOGLE_OAUTH_CLIENT_ID !== "";
+}
+
+function checkGoogleCredentials(v: BaseEnv, ctx: IssueContext): void {
+  if (!googleSigninEnabled(v)) return;
+  requireWhenEmpty(v, ctx, "GOOGLE_OAUTH_CLIENT_ID");
+  requireWhenEmpty(v, ctx, "GOOGLE_OAUTH_CLIENT_SECRET");
+  requireWhenEmpty(v, ctx, "GOOGLE_WORKSPACE_DOMAIN");
+}
+
+function checkOidcConfiguration(v: BaseEnv, ctx: IssueContext): void {
+  if (v.OIDC_ISSUER_URL !== undefined) {
+    for (const name of ["OIDC_CLIENT_ID", "OIDC_CLIENT_SECRET", "OIDC_ALLOWED_GROUPS"] as const) {
+      if (v[name] === "") {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: [name],
+          message: `${name} is required when OIDC_ISSUER_URL is set`,
+        });
+      }
+    }
+    return;
+  }
+  if (v.OIDC_CLIENT_ID === "" && v.OIDC_CLIENT_SECRET === "" && v.OIDC_ALLOWED_GROUPS === "")
+    return;
+  ctx.addIssue({
+    code: z.ZodIssueCode.custom,
+    path: ["OIDC_ISSUER_URL"],
+    message: "OIDC_CLIENT_ID, OIDC_CLIENT_SECRET and OIDC_ALLOWED_GROUPS require OIDC_ISSUER_URL",
+  });
+}
+
 const schema = base
   .superRefine((v, ctx) => {
+    checkGoogleCredentials(v, ctx);
+    checkOidcConfiguration(v, ctx);
+    if (v.NODE_ENV === "production" && !googleSigninEnabled(v) && v.OIDC_ISSUER_URL === undefined) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["NODE_ENV"],
+        message: "at least one sign-in provider (Google or OIDC) must be configured",
+      });
+    }
     if (v.MCP_ENABLED && Buffer.from(v.OAUTH_SIGNING_KEY, "base64").length !== 32) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -129,6 +189,8 @@ const schema = base
   })
   .transform((v) => ({
     ...v,
+    googleSigninEnabled: v.GOOGLE_SIGNIN_ENABLED ?? v.GOOGLE_OAUTH_CLIENT_ID !== "",
+    oidcEnabled: v.OIDC_ISSUER_URL !== undefined,
     S3_SERVER_ENDPOINT: v.S3_SERVER_ENDPOINT ?? v.S3_ENDPOINT,
   }));
 

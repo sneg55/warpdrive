@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from "vitest";
-import { sessions, users } from "@/db/schema";
+import { sessions, userIdentities, users } from "@/db/schema";
 import { makeTestDb, type TestDb } from "@/test/db";
 import { type DevLoginDeps, devLoginCore } from "./devLogin";
 
@@ -17,7 +17,7 @@ afterAll(async () => {
 
 beforeEach(async () => {
   await h.db.execute(
-    sql`TRUNCATE visibility_group_members, visibility_groups, sessions, users, permission_sets, settings, audit_events RESTART IDENTITY CASCADE`,
+    sql`TRUNCATE visibility_group_members, visibility_groups, user_identities, sessions, users, permission_sets, settings, audit_events RESTART IDENTITY CASCADE`,
   );
 });
 
@@ -93,10 +93,12 @@ describe("devLoginCore: valid guard enabled path", () => {
     expect(dbUsers[0]!.email).toBe("admin@example.com");
   });
 
-  test("builds synthetic sub prefixed dev-", async () => {
+  test("stores a dev provider identity with the synthetic subject", async () => {
     await devLoginCore("admin@example.com", makeDeps());
-    const dbUsers = await h.db.select().from(users);
-    expect(dbUsers[0]!.googleSub).toBe("dev-admin@example.com");
+    const rows = await h.db.select().from(userIdentities);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]!.provider).toBe("dev");
+    expect(rows[0]!.subject).toBe("dev-admin@example.com");
   });
 
   test("second call for same email is idempotent (upsert)", async () => {

@@ -35,8 +35,8 @@ beforeEach(async () => {
     sql`TRUNCATE visibility_group_members, visibility_groups, team_members, teams, sessions, users, permission_sets, audit_events, settings RESTART IDENTITY CASCADE`,
   );
   await h.db.insert(users).values([
-    { id: admin.id, email: "admin@example.com", name: "Admin", googleSub: "g-a", isAdmin: true },
-    { id: manager.id, email: "mgr@example.com", name: "Mgr", googleSub: "g-m" },
+    { id: admin.id, email: "admin@example.com", name: "Admin", isAdmin: true },
+    { id: manager.id, email: "mgr@example.com", name: "Mgr" },
   ]);
 });
 
@@ -68,7 +68,7 @@ describe("identity services", () => {
   test("deactivating a user revokes their sessions", async () => {
     const [target] = await h.db
       .insert(users)
-      .values({ email: "t@example.com", name: "T", googleSub: "g-t" })
+      .values({ email: "t@example.com", name: "T" })
       .returning();
     await h.db
       .insert(sessions)
@@ -89,7 +89,7 @@ describe("identity services", () => {
   test("cannot deactivate the last remaining active admin (lockout prevention)", async () => {
     const [admin2] = await h.db
       .insert(users)
-      .values({ email: "admin2@example.com", name: "Admin2", googleSub: "g-a2", isAdmin: true })
+      .values({ email: "admin2@example.com", name: "Admin2", isAdmin: true })
       .returning();
     const actor2: PermSetUser = {
       id: admin2!.id,
@@ -150,7 +150,7 @@ describe("identity services", () => {
   test("demoting one admin when two exist is allowed", async () => {
     const [admin2] = await h.db
       .insert(users)
-      .values({ email: "admin2@example.com", name: "Admin2", googleSub: "g-a2b", isAdmin: true })
+      .values({ email: "admin2@example.com", name: "Admin2", isAdmin: true })
       .returning();
     const actor2: PermSetUser = {
       id: admin2!.id,
@@ -175,7 +175,6 @@ describe("identity services", () => {
         Array.from({ length: 6 }, (_, i) => ({
           email: `admin${i}@example.com`,
           name: `A${i}`,
-          googleSub: `g-a${i}`,
           isAdmin: true,
         })),
       )

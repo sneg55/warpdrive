@@ -47,6 +47,7 @@ const sidebars: SidebarsConfig = {
         "administration/company-settings",
         "administration/data-fields",
         "administration/email-sync",
+        "administration/single-sign-on",
       ],
     },
     {

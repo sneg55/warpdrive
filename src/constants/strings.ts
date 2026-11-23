@@ -23,8 +23,10 @@ export const STRINGS = {
   },
   auth: {
     signInWithGoogle: "Sign in with Google",
+    signInWithSso: "Sign in with SSO",
     loginTitle: "Sign in to Warpdrive",
     domainOnly: "Use your company Google Workspace account.",
+    anyAccount: "Use the account your administrator set up for you.",
   },
   contacts: {
     peopleHeading: "People",

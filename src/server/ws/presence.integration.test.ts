@@ -32,7 +32,7 @@ async function seedDealChannel(db: typeof h.db, ownerId: string): Promise<string
 beforeEach(async () => {
   const [a] = await h.db
     .insert(users)
-    .values({ email: "pa@example.com", name: "Alice", googleSub: "g-pa", isAdmin: true })
+    .values({ email: "pa@example.com", name: "Alice", isAdmin: true })
     .returning();
   adminIdA = a!.id;
   const [sa] = await h.db
@@ -43,7 +43,7 @@ beforeEach(async () => {
 
   const [b] = await h.db
     .insert(users)
-    .values({ email: "pb@example.com", name: "Bob", googleSub: "g-pb", isAdmin: true })
+    .values({ email: "pb@example.com", name: "Bob", isAdmin: true })
     .returning();
   adminIdB = b!.id;
   const [sb] = await h.db

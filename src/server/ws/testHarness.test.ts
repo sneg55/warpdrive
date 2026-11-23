@@ -40,15 +40,9 @@ beforeEach(async () => {
   await h.db.execute(
     sql`TRUNCATE ws_tickets, sessions, users, permission_sets, channel_versions RESTART IDENTITY CASCADE`,
   );
-  const [u] = await h.db
-    .insert(users)
-    .values({ email: "w@example.com", name: "W", googleSub: "g-w" })
-    .returning();
+  const [u] = await h.db.insert(users).values({ email: "w@example.com", name: "W" }).returning();
   userId = u!.id;
-  const [o] = await h.db
-    .insert(users)
-    .values({ email: "o@example.com", name: "O", googleSub: "g-o" })
-    .returning();
+  const [o] = await h.db.insert(users).values({ email: "o@example.com", name: "O" }).returning();
   otherUserId = o!.id;
   const [s] = await h.db
     .insert(sessions)

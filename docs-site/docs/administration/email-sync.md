@@ -26,6 +26,11 @@ for (`GOOGLE_WORKSPACE_DOMAIN`). A personal Gmail account, or an account on anot
 domain, is rejected. A personal connection must also be the same address you signed in
 with.
 
+This is independent of how you sign in: mailboxes are always Google, even when sign-in
+goes through another provider. That provider therefore has to report your workspace
+address as your verified email, or personal connection is refused. See
+[Single sign-on](./single-sign-on.md#gmail-and-sso-together).
+
 ### Required scopes
 
 The OAuth client needs the **`openid` and `email` scopes in addition to the Gmail

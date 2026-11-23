@@ -15,8 +15,8 @@ async function seedMailboxAndMessage(db: Db): Promise<{
 }> {
   const u = (
     await db.execute(
-      sql`INSERT INTO users (email, name, google_sub)
-          VALUES (${`track-${Date.now()}@example.com`}, 'Track User', ${`sub-track-${Date.now()}`})
+      sql`INSERT INTO users (email, name)
+          VALUES (${`track-${Date.now()}@example.com`}, 'Track User')
           RETURNING id`,
     )
   ).rows[0] as { id: string };

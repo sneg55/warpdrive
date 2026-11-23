@@ -13,7 +13,6 @@ export async function seedUser(
     .values({
       email: `test-${Date.now()}-${Math.random().toString(36).slice(2)}@example.com`,
       name: "Test User",
-      googleSub: `sub-${Date.now()}-${Math.random().toString(36).slice(2)}`,
       isAdmin: false,
       ...overrides,
     })

@@ -1,0 +1,19 @@
+users:
+  admin@example.com:
+    displayname: Dev Admin
+    password: '$argon2id$v=19$m=65536,t=3,p=4$qHo5RKxBxdCjRoSLdvzQFA$worXQfpTu0Ldw4RKHG7vmol2XngwChR+p0htwKColpI'
+    email: admin@example.com
+    groups:
+      - warpdrive-users
+  colleague@example.com:
+    displayname: Dev Colleague
+    password: '$argon2id$v=19$m=65536,t=3,p=4$qHo5RKxBxdCjRoSLdvzQFA$worXQfpTu0Ldw4RKHG7vmol2XngwChR+p0htwKColpI'
+    email: colleague@example.com
+    groups:
+      - warpdrive-users
+  outsider@example.com:
+    displayname: Dev Outsider
+    password: '$argon2id$v=19$m=65536,t=3,p=4$qHo5RKxBxdCjRoSLdvzQFA$worXQfpTu0Ldw4RKHG7vmol2XngwChR+p0htwKColpI'
+    email: outsider@example.com
+    groups:
+      - other-team

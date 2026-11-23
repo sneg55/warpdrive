@@ -28,10 +28,7 @@ beforeEach(async () => {
   await h.db.execute(
     sql`TRUNCATE ws_tickets, sessions, users, permission_sets, visibility_groups RESTART IDENTITY CASCADE`,
   );
-  const [u] = await h.db
-    .insert(users)
-    .values({ email: "w@example.com", name: "W", googleSub: "g-w" })
-    .returning();
+  const [u] = await h.db.insert(users).values({ email: "w@example.com", name: "W" }).returning();
   userId = u!.id;
   const [s] = await h.db
     .insert(sessions)
@@ -100,7 +97,7 @@ describe("ws authorize deal channel", () => {
   test("deal: regular user who is NOT owner/group/visible_to of an owner-visibility deal is denied", async () => {
     const [owner] = await h.db
       .insert(users)
-      .values({ email: "owner@example.com", name: "Owner", googleSub: "g-owner" })
+      .values({ email: "owner@example.com", name: "Owner" })
       .returning();
     const { pipelineId, stageId } = await seedPipelineStage(h.db);
     const dealId = await seedDeal(h.db, {
@@ -128,7 +125,7 @@ describe("ws authorize deal channel", () => {
 
     const [owner] = await h.db
       .insert(users)
-      .values({ email: "owner2@example.com", name: "Owner2", googleSub: "g-owner2" })
+      .values({ email: "owner2@example.com", name: "Owner2" })
       .returning();
     const { pipelineId, stageId } = await seedPipelineStage(h.db);
     const dealId = await seedDeal(h.db, {
@@ -207,7 +204,7 @@ describe("ws authorize deal channel", () => {
   test("deal: admin can subscribe to any deal (regression check)", async () => {
     const [admin] = await h.db
       .insert(users)
-      .values({ email: "admin@example.com", name: "Admin", googleSub: "g-admin", isAdmin: true })
+      .values({ email: "admin@example.com", name: "Admin", isAdmin: true })
       .returning();
     const [adminSession] = await h.db
       .insert(sessions)
@@ -260,7 +257,6 @@ describe("ws authorize deal channel", () => {
       .values({
         email: "admin-arch@example.com",
         name: "AdminArch",
-        googleSub: "g-admin-arch",
         isAdmin: true,
       })
       .returning();

@@ -26,7 +26,6 @@ export async function seedUser(
     .values({
       email: `stats-${uniq()}@example.com`,
       name: "Stats User",
-      googleSub: `sub-${uniq()}`,
       isAdmin: false,
       ...overrides,
     })

@@ -59,7 +59,6 @@ export const users = pgTable(
     email: citext("email").notNull().unique(),
     name: text("name").notNull(),
     avatarUrl: text("avatar_url"),
-    googleSub: text("google_sub").unique(),
     isAdmin: boolean("is_admin").notNull().default(false),
     permissionSetId: uuid("permission_set_id").references(() => permissionSets.id),
     primaryVisibilityGroupId: uuid("primary_visibility_group_id").references(
@@ -75,6 +74,27 @@ export const users = pgTable(
       .$onUpdate(() => new Date()),
   },
   (t) => [index("users_permission_set_idx").on(t.permissionSetId)],
+);
+
+export const userIdentities = pgTable(
+  "user_identities",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    provider: text("provider").notNull(),
+    subject: text("subject").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (t) => [
+    uniqueIndex("user_identities_provider_subject_uq").on(t.provider, t.subject),
+    index("user_identities_user_idx").on(t.userId),
+  ],
 );
 
 export const sessions = pgTable(

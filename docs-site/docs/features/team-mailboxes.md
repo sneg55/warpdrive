@@ -16,7 +16,8 @@ Personal mailboxes are unchanged. See [Email](./email.md) for those.
 
 The mailbox must be a Google Workspace account on the domain the deployment is
 configured for. Consumer Gmail accounts are not supported, and neither are accounts on
-other domains. An address that is already connected as someone's personal mailbox
+other domains. Team mailboxes check only the domain, not who is signed in, so they are
+unaffected by whether users sign in through Google or another provider. An address that is already connected as someone's personal mailbox
 cannot be connected as a team mailbox.
 
 ## Setting one up

@@ -1,9 +1,15 @@
 "use server";
 
 import { db } from "@/db/client";
-import { assignSetInput, setActiveInput, setAdminInput } from "@/features/identity/schemas";
+import {
+  assignSetInput,
+  resetIdentitiesInput,
+  setActiveInput,
+  setAdminInput,
+} from "@/features/identity/schemas";
 import {
   assignPermissionSet,
+  resetUserIdentities,
   setUserActive,
   setUserAdmin,
 } from "@/features/identity/users.service";
@@ -46,4 +52,16 @@ export async function setUserActiveAction(
   if (!parsed.success) return err("invalid input");
   const { actor } = await createContext();
   return runWithActor(actor, (a) => setUserActive(db, a, parsed.data, SIG()));
+}
+
+export async function resetUserIdentitiesAction(
+  csrf: string | null,
+  raw: unknown,
+): Promise<Result<true, string>> {
+  const csrfOk = await guardCsrf(csrf);
+  if (!csrfOk.ok) return csrfOk;
+  const parsed = resetIdentitiesInput.safeParse(raw);
+  if (!parsed.success) return err("invalid input");
+  const { actor } = await createContext();
+  return runWithActor(actor, (a) => resetUserIdentities(db, a, parsed.data, SIG()));
 }

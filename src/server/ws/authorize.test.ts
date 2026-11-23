@@ -28,10 +28,7 @@ beforeEach(async () => {
   await h.db.execute(
     sql`TRUNCATE ws_tickets, sessions, users, permission_sets, visibility_groups RESTART IDENTITY CASCADE`,
   );
-  const [u] = await h.db
-    .insert(users)
-    .values({ email: "w@example.com", name: "W", googleSub: "g-w" })
-    .returning();
+  const [u] = await h.db.insert(users).values({ email: "w@example.com", name: "W" }).returning();
   userId = u!.id;
   const [s] = await h.db
     .insert(sessions)
@@ -140,7 +137,7 @@ describe("ws authorize", () => {
     const { pipelineId } = await seedPipelineStage(h.db, { visibilityGroupId: grp!.id });
     const [admin] = await h.db
       .insert(users)
-      .values({ email: "adm2@example.com", name: "Adm", googleSub: "g-adm2", isAdmin: true })
+      .values({ email: "adm2@example.com", name: "Adm", isAdmin: true })
       .returning();
     const [adminSess] = await h.db
       .insert(sessions)

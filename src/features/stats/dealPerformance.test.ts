@@ -34,7 +34,6 @@ async function seedUser(overrides: Partial<typeof schema.users.$inferInsert> = {
     .values({
       email: `test-${ts}-${Math.random().toString(36).slice(2)}@example.com`,
       name: "Test User",
-      googleSub: `sub-${ts}-${Math.random().toString(36).slice(2)}`,
       isAdmin: false,
       ...overrides,
     })
