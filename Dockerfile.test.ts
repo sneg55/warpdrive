@@ -42,3 +42,13 @@ describe("build metadata (APP_COMMIT)", () => {
     expect(runtime.indexOf("ARG APP_COMMIT")).toBeGreaterThan(runtime.lastIndexOf("\nCOPY "));
   });
 });
+
+describe("runtime dependencies", () => {
+  it("takes only node_modules from the prod-deps source, leaving the pnpm store and caches behind", () => {
+    expect(dockerfile).toMatch(/^FROM \$\{PROD_DEPS_IMAGE:-prod-deps\} AS prod-deps-src$/m);
+    expect(dockerfile).toMatch(/^FROM base AS runtime$/m);
+    expect(stage("runtime")).toMatch(
+      /^COPY --from=prod-deps-src \/app\/node_modules \.\/node_modules$/m,
+    );
+  });
+});

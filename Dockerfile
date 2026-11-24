@@ -66,11 +66,10 @@ RUN NODE_ENV=production \
     ALLOW_FIRST_LOGIN_ADMIN=false \
     pnpm build:docker
 
+FROM ${PROD_DEPS_IMAGE:-prod-deps} AS prod-deps-src
+
 # --- runtime: minimal, non-root ---
-# Starts from the prod-deps stage (or a pre-built prod-deps image): the production node_modules
-# and the lockfile are already in /app; this stage only assembles the build output.
-FROM ${PROD_DEPS_IMAGE:-prod-deps} AS runtime
-WORKDIR /app
+FROM base AS runtime
 ENV NODE_ENV=production
 # Optional version stamp for the update-check banner (e.g. a release tag). When unset, the app
 # falls back to the bundled package.json version, then "dev" (banner disabled). Not compile-time
@@ -81,6 +80,7 @@ ENV APP_VERSION=${APP_VERSION}
 # network / from the Caddy proxy.
 ENV HOSTNAME=0.0.0.0
 ENV PORT=3000
+COPY --from=prod-deps-src /app/node_modules ./node_modules
 # `next start` writes the fetch/route cache under .next/cache at request time, so this tree must be
 # owned by the non-root runtime user or those writes hit EACCES (noisy logs + disabled caching).
 COPY --chown=node:node --from=build /app/.next ./.next
