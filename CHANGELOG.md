@@ -2,6 +2,12 @@
 
 Notable changes to Warpdrive, newest first. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 2.14.5 - 2026-11-23
+
+### Fixed
+
+- **files**: discover the bucket region when S3_REGION is unset
+
 ## 2.14.4 - 2026-11-23
 
 ### Fixed

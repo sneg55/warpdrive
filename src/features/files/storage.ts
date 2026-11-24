@@ -10,6 +10,7 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { env } from "@/config/env";
 import { AppError, ERROR_IDS } from "@/constants/errorIds";
 import { err, ok, type Result } from "@/types/result";
+import { discoverBucketRegion, memoizedRegionProvider, type S3Credentials } from "./storageRegion";
 
 const PRESIGN_TTL_SECONDS = 300;
 
@@ -46,13 +47,28 @@ export interface StorageClient {
   getObjectBytes(key: string, signal: AbortSignal): Promise<Result<Buffer, AppError>>;
 }
 
-function buildS3Client(endpoint: string): S3Client {
+const REGION_DISCOVERY_TIMEOUT_MS = 10_000;
+
+function credentials(): S3Credentials {
   const { S3_ACCESS_KEY: accessKeyId, S3_SECRET_KEY: secretAccessKey } = env;
+  return { accessKeyId, secretAccessKey };
+}
+
+const discoveredRegion = memoizedRegionProvider(() =>
+  discoverBucketRegion(
+    env.S3_SERVER_ENDPOINT,
+    env.S3_BUCKET,
+    credentials(),
+    AbortSignal.timeout(REGION_DISCOVERY_TIMEOUT_MS),
+  ),
+);
+
+function buildS3Client(endpoint: string): S3Client {
   return new S3Client({
     endpoint,
-    region: env.S3_REGION,
+    region: env.S3_REGION ?? discoveredRegion,
     forcePathStyle: true,
-    credentials: { accessKeyId, secretAccessKey },
+    credentials: credentials(),
     requestChecksumCalculation: "WHEN_REQUIRED",
     responseChecksumValidation: "WHEN_REQUIRED",
   });
