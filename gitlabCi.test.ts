@@ -61,6 +61,14 @@ describe("gitlab ci pipeline", () => {
     expect(job("test:integration")).toContain("vitest run --project integration");
   });
 
+  it("points the integration harness at the postgres service through its own variable", () => {
+    const block = job("test:integration");
+    expect(block).toContain(
+      "WD_TEST_PG_URL: postgres://warpdrive:warpdrive@postgres:5432/warpdrive",
+    );
+    expect(block).not.toContain("DATABASE_URL:");
+  });
+
   it("records junit output for both test suites, with the reporter vitest can actually parse", () => {
     for (const name of ["test:unit", "test:integration"]) {
       const block = job(name);

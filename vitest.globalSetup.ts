@@ -38,7 +38,7 @@ export interface ExternalTarget {
 }
 
 export function externalTarget(): ExternalTarget | undefined {
-  const url = process.env.DATABASE_URL;
+  const url = process.env.WD_TEST_PG_URL;
   if (url === undefined || url.length === 0) return undefined;
   const parsed = new URL(url);
   return {

@@ -15,7 +15,7 @@
 #                         stage). Rebuilt only when their inputs change; otherwise the job
 #                         sees the tag already in the registry and skips the build.
 #   test               -> lint, typecheck, unit and integration (against a postgres service
-#                         container via DATABASE_URL), all running inside the deps image: no
+#                         container via WD_TEST_PG_URL), all running inside the deps image: no
 #                         pnpm install at test time, no docker access at all.
 #   build final images -> the production image, assembled on top of the two deps images via
 #                         build args, so its only real work is `next build`.
@@ -150,10 +150,7 @@ test:integration:
   stage: test
   image: $CI_REGISTRY_IMAGE/deps:$DEPS_TAG
   variables:
-    # vitest.globalSetup.ts sees DATABASE_URL and prepares this server (template
-    # database, extensions, migrations) instead of pulling a container, so the job
-    # needs no docker access at all.
-    DATABASE_URL: postgres://warpdrive:warpdrive@postgres:5432/warpdrive
+    WD_TEST_PG_URL: postgres://warpdrive:warpdrive@postgres:5432/warpdrive
   services:
     - name: docker.io/postgres:16-alpine
       alias: postgres
