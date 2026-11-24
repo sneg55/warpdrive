@@ -34,6 +34,25 @@ the bug, and a feature begins with a test that expresses the next behavior.
 reason is specific rather than dogmatic: mocked database tests pass while a migration
 is broken, which is exactly the failure a CRM cannot absorb.
 
+```sh
+pnpm test:integration
+```
+
+The integration suite starts a disposable Postgres with Testcontainers, so it needs
+Docker. Where Docker is unavailable but a Postgres server is running, point the harness
+at it:
+
+```sh
+WD_TEST_PG_URL=postgres://postgres@127.0.0.1:5432/postgres pnpm test:integration
+```
+
+The URL must name the user and an admin database; the harness defaults neither. It then
+runs against that server instead of a container, creating its `wd_template` database
+when missing and reusing it otherwise. It still applies the real migrations, extensions
+and search indexes, so tests see the same schema either way. Runs must not overlap on
+the same server, and nothing is dropped at teardown, so do not point it at a server
+whose `wd_template` already matters.
+
 ## Conventions
 
 Most conventions are enforced by lint and by hooks rather than by review, so the
