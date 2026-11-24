@@ -135,7 +135,7 @@ export default tseslint.config(
     files: [
       "next.config.ts",
       "drizzle.config.ts",
-      "vitest.config.ts",
+      "vitest.config.mts",
       "postcss.config.mjs",
       "eslint.config.mjs",
       "eslint.restricted-syntax.mjs",

@@ -12,6 +12,7 @@
     "skipLibCheck": true,
     "allowJs": false,
     "noEmit": true,
+    "allowImportingTsExtensions": true,
     "incremental": true,
     "verbatimModuleSyntax": true,
     "isolatedModules": true,
@@ -23,6 +24,7 @@
     "next-env.d.ts",
     "**/*.ts",
     "**/*.tsx",
+    "**/*.mts",
     // Wildcards skip dot-directories, so app routes under one need naming outright or they fall
     // out of the program in a clean checkout and typed linting cannot resolve them.
     "src/app/.well-known/**/*.ts",
