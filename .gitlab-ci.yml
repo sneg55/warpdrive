@@ -260,7 +260,7 @@ smoke-test:
     GOOGLE_OAUTH_CLIENT_SECRET: ci
     GOOGLE_WORKSPACE_DOMAIN: ci.example.com
     BASE_URL: https://ci.example.com
-    WS_TICKET_SECRET: ci_smoke_ws_ticket_secret_0123456789abcdef
+    WS_TICKET_SECRET: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     WS_PUBLIC_URL: ws://localhost:8080
     S3_ENDPOINT: http://localhost:3900
     S3_ACCESS_KEY: ci
