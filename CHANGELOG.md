@@ -2,6 +2,12 @@
 
 Notable changes to Warpdrive, newest first. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 2.15.1 - 2026-11-24
+
+### Fixed
+
+- load the Vitest configs as ESM without a package module type (#19)
+
 ## 2.15.0 - 2026-11-24
 
 No user-facing changes.
