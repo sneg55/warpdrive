@@ -126,7 +126,7 @@ describe("warpdrive/no-comments", () => {
   });
 
   test("is wired as an error for app, script and root config files", async () => {
-    for (const filePath of [TS, TSX, MJS, "eslint.config.mjs", "vitest.config.ts"]) {
+    for (const filePath of [TS, TSX, MJS, "eslint.config.mjs", "vitest.config.mts"]) {
       const config = (await eslint.calculateConfigForFile(filePath)) as {
         rules: Record<string, unknown>;
       };

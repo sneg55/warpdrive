@@ -1,10 +1,11 @@
+import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import type { Logger } from "vite";
 import { loadConfigFromFile } from "vite";
 import { describe, expect, it } from "vitest";
 
 const ROOT = fileURLToPath(new URL(".", import.meta.url));
-const CONFIG_FILE = `${ROOT}vitest.config.ts`;
+const CONFIG_FILE = `${ROOT}vitest.config.mts`;
 const NATIVE_LOADER_WARNING = "unsupported by `configLoader: 'native'`";
 
 function warningRecorder(warnings: string[]): Logger {
@@ -50,5 +51,12 @@ describe("vitest config loader compatibility", () => {
       "native",
     );
     expect(loaded?.config).toBeDefined();
+  });
+});
+
+describe("module type of plain .js files", () => {
+  it("leaves package.json without a module type so .js scripts keep loading as CommonJS", () => {
+    const pkg = JSON.parse(readFileSync(`${ROOT}package.json`, "utf8")) as { type?: string };
+    expect(pkg.type).toBeUndefined();
   });
 });
