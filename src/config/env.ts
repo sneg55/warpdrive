@@ -59,13 +59,17 @@ const optionalUrl = z
   .optional()
   .transform((v) => (v == null || v.length === 0 ? undefined : v));
 
+const TRAILING_SLASHES = /\/+$/;
+
+const oidcIssuerUrl = optionalUrl.transform((v) => v?.replace(TRAILING_SLASHES, ""));
+
 const base = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   GOOGLE_OAUTH_CLIENT_ID: z.string().default(""),
   GOOGLE_OAUTH_CLIENT_SECRET: z.string().default(""),
   GOOGLE_WORKSPACE_DOMAIN: z.string().default(""),
   GOOGLE_SIGNIN_ENABLED: optionalBoolFromString,
-  OIDC_ISSUER_URL: optionalUrl,
+  OIDC_ISSUER_URL: oidcIssuerUrl,
   OIDC_CLIENT_ID: z.string().default(""),
   OIDC_CLIENT_SECRET: z.string().default(""),
   OIDC_ALLOWED_GROUPS: z.string().default(""),

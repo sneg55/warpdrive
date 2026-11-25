@@ -19,6 +19,10 @@ Generic OIDC:
 
 - `OIDC_ISSUER_URL` enables the provider; `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET` and
   `OIDC_ALLOWED_GROUPS` become required with it.
+- `OIDC_ISSUER_URL` is normalized by removing trailing slashes at the env boundary. The normalized
+  value is used for discovery, for the ID token `iss` check and as the stored sign-in identity
+  provider key. ID tokens are accepted when `iss` has the same value with or without a trailing
+  slash.
 - `OIDC_ALLOWED_GROUPS` is a comma-separated list. A sign-in succeeds only when the verified ID
   token's `groups` claim contains at least one of them; an empty list therefore rejects everyone.
   This is fail-closed on purpose.
@@ -29,6 +33,22 @@ use the dev-login route instead.
 
 The provider must report the user's workspace address as the verified `email` claim, because binding
 a personal Gmail account requires that address to match the signed-in user.
+
+## Issuer normalization
+
+`OIDC_ISSUER_URL` is normalized once at startup, so the same issuer with and without a trailing
+slash produces the same provider key. If a deployment previously ran with a trailing slash, its
+`user_identities.provider` rows still contain that slash. After upgrading, the next sign-in misses
+the known identity and is refused as an identity conflict because the email already holds another
+identity. Normalize the existing rows once, or reset sign-in identities for each affected user:
+
+```sql
+UPDATE user_identities
+SET provider = regexp_replace(provider, '/+$', '')
+WHERE provider ~ '^https?://';
+```
+
+The Google and dev provider keys are not URL-shaped and are unaffected.
 
 ## Identity matching
 

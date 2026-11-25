@@ -36,7 +36,7 @@ mailbox checks the mailbox's hosted domain against it.
 
 | Variable | Meaning |
 | --- | --- |
-| `OIDC_ISSUER_URL` | The issuer exactly as it appears in the provider's discovery document and ID tokens. Setting it turns OIDC on; the other three become required. |
+| `OIDC_ISSUER_URL` | The issuer as it appears in the provider's discovery document and ID tokens. Trailing slashes are ignored. Setting it turns OIDC on; the other three become required. |
 | `OIDC_CLIENT_ID` | Client identifier registered with the provider. |
 | `OIDC_CLIENT_SECRET` | Client secret. Sent with HTTP Basic authentication at the token endpoint. |
 | `OIDC_ALLOWED_GROUPS` | Comma-separated group names. A sign-in succeeds only when the verified ID token's `groups` claim contains at least one of them. An empty list rejects everyone. |
@@ -45,6 +45,10 @@ Use an https issuer: Authelia refuses to start with a non-https session URL, and
 certificate has to be trusted by the app (`NODE_EXTRA_CA_CERTS`) and by the browser. Warpdrive reads
 `/.well-known/openid-configuration` from the issuer at sign-in time and caches the result, so the
 provider must be reachable from the app container.
+
+Warpdrive strips trailing slashes from `OIDC_ISSUER_URL` once at startup and uses the normalized
+value for discovery, the ID token `iss` check, and the stored sign-in identity. ID tokens are
+accepted whether `iss` carries a trailing slash or not.
 
 The client must be confidential and accept `client_secret_basic` at the token endpoint, the standard
 HTTP Basic form. Redirect URI: `https://<your-domain>/auth/callback/oidc`.
@@ -90,6 +94,19 @@ revokes that user's sessions.
 
 Changing an email address at the provider updates the existing profile; the identity pair, not the
 address, is what identifies the account.
+
+If an existing deployment was configured with a trailing slash in `OIDC_ISSUER_URL`, its stored
+identity rows still contain that slash. Normalize them once after upgrading, otherwise affected
+users hit the conflict rule above. Either run this against the database:
+
+```sql
+UPDATE user_identities
+SET provider = regexp_replace(provider, '/+$', '')
+WHERE provider ~ '^https?://';
+```
+
+or use **Reset sign-in identities** for each affected user. The Google and dev provider keys are not
+URL-shaped and are unaffected.
 
 ## Gmail and SSO together
 

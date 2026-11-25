@@ -48,13 +48,13 @@ async function makeSignedToken(
 async function verify(
   token: string,
   getKey: ReturnType<typeof createLocalJWKSet>,
-  overrides: { nonce?: string; allowedGroups?: string[] } = {},
+  overrides: { nonce?: string; allowedGroups?: string[]; issuer?: string } = {},
 ) {
   return verifyOidcIdToken(token, {
     getKey,
     clientId: CLIENT_ID,
     nonce: overrides.nonce ?? NONCE,
-    issuer: ISSUER,
+    issuer: overrides.issuer ?? ISSUER,
     allowedGroups: overrides.allowedGroups ?? ["warpdrive-users"],
     signal: AbortSignal.timeout(5000),
   });
@@ -80,6 +80,35 @@ describe("verifyOidcIdToken", () => {
       expect(result.value.avatarUrl).toBe("https://pics.example.com/alice.png");
       expect(result.value.groups).toEqual(["warpdrive-users"]);
     }
+  });
+
+  test("accepts a token whose issuer has a trailing slash", async () => {
+    const { privateKey, publicKey } = await generateKeyPair("RS256");
+    const token = await makeSignedToken(privateKey, { iss: `${ISSUER}/` });
+
+    const result = await verify(token, getKeyFor(await jwkFor(publicKey)));
+
+    expect(result.ok).toBe(true);
+  });
+
+  test("accepts a token whose issuer lacks a trailing slash when configured with one", async () => {
+    const { privateKey, publicKey } = await generateKeyPair("RS256");
+    const token = await makeSignedToken(privateKey);
+
+    const result = await verify(token, getKeyFor(await jwkFor(publicKey)), {
+      issuer: `${ISSUER}/`,
+    });
+
+    expect(result.ok).toBe(true);
+  });
+
+  test("rejects a token from a different issuer", async () => {
+    const { privateKey, publicKey } = await generateKeyPair("RS256");
+    const token = await makeSignedToken(privateKey, { iss: "https://evil.example.com" });
+
+    const result = await verify(token, getKeyFor(await jwkFor(publicKey)));
+
+    expect(result.ok).toBe(false);
   });
 
   test("maps absent name, username and picture claims to null", async () => {

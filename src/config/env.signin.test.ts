@@ -100,6 +100,60 @@ describe("sign-in provider configuration", () => {
     if (result.ok) expect(result.value.oidcEnabled).toBe(true);
   });
 
+  test("normalizes a trailing slash on the oidc issuer", () => {
+    const result = parseEnv(
+      raw({
+        OIDC_ISSUER_URL: "http://authelia.localhost:9091/",
+        OIDC_CLIENT_ID: "warpdrive",
+        OIDC_CLIENT_SECRET: "oidc-secret",
+        OIDC_ALLOWED_GROUPS: "warpdrive-users",
+      }),
+    );
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.value.OIDC_ISSUER_URL).toBe("http://authelia.localhost:9091");
+  });
+
+  test("normalizes repeated trailing slashes on the oidc issuer", () => {
+    const result = parseEnv(
+      raw({
+        OIDC_ISSUER_URL: "http://authelia.localhost:9091//",
+        OIDC_CLIENT_ID: "warpdrive",
+        OIDC_CLIENT_SECRET: "oidc-secret",
+        OIDC_ALLOWED_GROUPS: "warpdrive-users",
+      }),
+    );
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.value.OIDC_ISSUER_URL).toBe("http://authelia.localhost:9091");
+  });
+
+  test("strips only the trailing slash from an issuer with a path", () => {
+    const result = parseEnv(
+      raw({
+        OIDC_ISSUER_URL: "https://auth.example.com/realms/warpdrive/",
+        OIDC_CLIENT_ID: "warpdrive",
+        OIDC_CLIENT_SECRET: "oidc-secret",
+        OIDC_ALLOWED_GROUPS: "warpdrive-users",
+      }),
+    );
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.OIDC_ISSUER_URL).toBe("https://auth.example.com/realms/warpdrive");
+    }
+  });
+
+  test("leaves an issuer without a trailing slash unchanged", () => {
+    const result = parseEnv(
+      raw({
+        OIDC_ISSUER_URL: "http://authelia.localhost:9091",
+        OIDC_CLIENT_ID: "warpdrive",
+        OIDC_CLIENT_SECRET: "oidc-secret",
+        OIDC_ALLOWED_GROUPS: "warpdrive-users",
+      }),
+    );
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.value.OIDC_ISSUER_URL).toBe("http://authelia.localhost:9091");
+  });
+
   test("fails closed when OIDC groups are missing", () => {
     const result = parseEnv(
       raw({

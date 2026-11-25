@@ -4,6 +4,17 @@ import { err, ok, type Result } from "@/types/result";
 
 export const OIDC_SCOPES = "openid email profile groups";
 
+const TRAILING_SLASHES = /\/+$/;
+
+function canonicalIssuer(issuer: string): string {
+  return issuer.replace(TRAILING_SLASHES, "");
+}
+
+function issuerVariants(issuer: string): string[] {
+  const canonical = canonicalIssuer(issuer);
+  return [canonical, `${canonical}/`];
+}
+
 export interface OidcProviderConfig {
   issuer: string;
   authorizationEndpoint: string;
@@ -28,7 +39,7 @@ export function parseAllowedGroups(raw: string): string[] {
 }
 
 export function discoveryUrl(issuer: string): string {
-  return `${issuer.replace(/\/+$/, "")}/.well-known/openid-configuration`;
+  return `${canonicalIssuer(issuer)}/.well-known/openid-configuration`;
 }
 
 const discoverySchema = z.object({
@@ -64,7 +75,7 @@ export async function fetchOidcConfig(
 
   const parsed = discoverySchema.safeParse(await res.json());
   if (!parsed.success) return err("unavailable");
-  if (parsed.data.issuer.replace(/\/+$/, "") !== issuer.replace(/\/+$/, "")) {
+  if (canonicalIssuer(parsed.data.issuer) !== canonicalIssuer(issuer)) {
     return err("unavailable");
   }
 
@@ -127,7 +138,7 @@ export async function verifyOidcIdToken(
   let payload: Record<string, unknown>;
   try {
     const { payload: verified } = await jwtVerify(idToken, deps.getKey, {
-      issuer: [deps.issuer],
+      issuer: issuerVariants(deps.issuer),
       audience: deps.clientId,
     });
     payload = verified;
