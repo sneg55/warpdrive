@@ -95,11 +95,14 @@ async function adoptByEmail(
   if (linked.length > 0) return { kind: "conflict" };
 
   await tx.insert(userIdentities).values({ userId: candidate.id, provider, subject: identity.sub });
+  const avatarUrl = isUploadedAvatarUrl(candidate.avatarUrl)
+    ? candidate.avatarUrl
+    : fallbackAvatar(identity, email, candidate.avatarUrl);
   await tx
     .update(users)
     .set({
       ...(identity.name !== null ? { name: identity.name } : {}),
-      avatarUrl: fallbackAvatar(identity, candidate.avatarUrl),
+      avatarUrl,
       invitedAt: null,
     })
     .where(eq(users.id, candidate.id));

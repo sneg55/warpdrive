@@ -1,11 +1,20 @@
 import { eq, sql } from "drizzle-orm";
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from "vitest";
-import { users } from "@/db/schema";
+import { userIdentities, users } from "@/db/schema";
+import { resetUserIdentities } from "@/features/identity/users.service";
 import { makeTestDb, type TestDb } from "@/test/db";
 import { upsertUserOnLogin, type VerifiedIdentity } from "./bootstrap";
 
 let h: TestDb;
 const SIG = () => AbortSignal.timeout(8000);
+
+const ADMIN = {
+  id: "00000000-0000-4000-8000-0000000000aa",
+  type: "admin" as const,
+  flags: new Set<never>(),
+  isActive: true,
+  groupIds: new Set<string>(),
+};
 
 beforeAll(async () => {
   h = await makeTestDb();
@@ -55,6 +64,50 @@ describe("avatar preservation across re-login", () => {
 
   test("re-login still refreshes a provider photo when no avatar was uploaded", async () => {
     const userId = await firstLogin({ avatarUrl: "https://lh3.googleusercontent.com/old" });
+
+    const again = await upsertUserOnLogin(
+      h.db,
+      {
+        provider: "google",
+        identity: ident({ avatarUrl: "https://lh3.googleusercontent.com/new" }),
+      },
+      SIG(),
+    );
+    expect(again.ok).toBe(true);
+
+    const [row] = await h.db.select().from(users).where(eq(users.id, userId));
+    expect(row?.avatarUrl).toBe("https://lh3.googleusercontent.com/new");
+  });
+
+  test("login after an admin identity reset does NOT clobber an uploaded avatar with a provider photo", async () => {
+    const userId = await firstLogin();
+    const uploaded = `/api/users/${userId}/avatar?v=abc123`;
+    await h.db.update(users).set({ avatarUrl: uploaded }).where(eq(users.id, userId));
+    await h.db
+      .insert(users)
+      .values({ id: ADMIN.id, email: "admin@example.com", name: "Admin", isAdmin: true });
+
+    const reset = await resetUserIdentities(h.db, ADMIN, { userId }, SIG());
+    expect(reset.ok).toBe(true);
+
+    const again = await upsertUserOnLogin(
+      h.db,
+      {
+        provider: "google",
+        identity: ident({ avatarUrl: "https://lh3.googleusercontent.com/new" }),
+      },
+      SIG(),
+    );
+    expect(again.ok).toBe(true);
+    if (again.ok) expect(again.value.userId).toBe(userId);
+
+    const [row] = await h.db.select().from(users).where(eq(users.id, userId));
+    expect(row?.avatarUrl).toBe(uploaded);
+  });
+
+  test("login after an admin identity reset still refreshes a provider photo when no avatar was uploaded", async () => {
+    const userId = await firstLogin({ avatarUrl: "https://lh3.googleusercontent.com/old" });
+    await h.db.delete(userIdentities).where(eq(userIdentities.userId, userId));
 
     const again = await upsertUserOnLogin(
       h.db,
