@@ -142,6 +142,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     return finished.value;
   } catch (e) {
     if (e instanceof Error && e.name === "AbortError") return loginError("login flow timed out");
-    throw e;
+    console.error("[auth/callback/oidc] infra error during login:", e);
+    return loginError("internal error");
   }
 }
