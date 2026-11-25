@@ -18,5 +18,6 @@ export const EMAIL_SYNC_STRINGS = {
   connecting: "Connecting...",
   disconnecting: "Disconnecting...",
   actionError: "Could not complete that action. Please try again.",
+  gmailNotConfigured: "Gmail is not configured for this deployment.",
   requiresAuth: "Please sign in to view this page.",
 } as const;

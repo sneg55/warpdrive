@@ -1,6 +1,7 @@
 "use client";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { EMAIL_SYNC_STRINGS } from "@/app/(app)/settings/email-sync/strings";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -20,10 +21,12 @@ export function TeamMailboxSettingsCard({
   mailbox,
   users,
   agenticEnabled,
+  googleConfigured = true,
 }: {
   mailbox: TeamMailboxSettings;
   users: { id: string; name: string }[];
   agenticEnabled: boolean;
+  googleConfigured?: boolean;
 }): React.ReactNode {
   const router = useRouter();
   const [name, setName] = useState(mailbox.display_name);
@@ -100,8 +103,14 @@ export function TeamMailboxSettingsCard({
       )}
       {disconnected && !agentic && (
         <p className="text-sm text-destructive">
-          Google disconnected this mailbox, so sync and sending are stopped. Reconnect it by signing
-          in as {mailbox.email_address}.
+          {googleConfigured ? (
+            <>
+              Google disconnected this mailbox, so sync and sending are stopped. Reconnect it by
+              signing in as {mailbox.email_address}.
+            </>
+          ) : (
+            EMAIL_SYNC_STRINGS.gmailNotConfigured
+          )}
         </p>
       )}
       <p className="text-sm">
@@ -155,9 +164,11 @@ export function TeamMailboxSettingsCard({
             )}
           </>
         ) : disconnected ? (
-          <Button variant="outline" disabled={pending} onClick={() => void reconnect()}>
-            Reconnect
-          </Button>
+          googleConfigured ? (
+            <Button variant="outline" disabled={pending} onClick={() => void reconnect()}>
+              Reconnect
+            </Button>
+          ) : null
         ) : (
           <Button variant="outline" disabled={pending} onClick={() => setConfirm(true)}>
             Disconnect

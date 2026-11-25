@@ -124,19 +124,31 @@ function requireWhenEmpty(v: BaseEnv, ctx: IssueContext, name: keyof BaseEnv): v
   ctx.addIssue({
     code: z.ZodIssueCode.custom,
     path: [name],
-    message: `${name} is required for Google sign-in (or Gmail) or set GOOGLE_SIGNIN_ENABLED=false`,
+    message: `${name} is required when any Google credential is set or Google sign-in is enabled`,
   });
 }
+
+const GOOGLE_CREDENTIAL_VARS = [
+  "GOOGLE_OAUTH_CLIENT_ID",
+  "GOOGLE_OAUTH_CLIENT_SECRET",
+  "GOOGLE_WORKSPACE_DOMAIN",
+] as const;
 
 function googleSigninEnabled(v: BaseEnv): boolean {
   return v.GOOGLE_SIGNIN_ENABLED ?? v.GOOGLE_OAUTH_CLIENT_ID !== "";
 }
 
+function hasAnyGoogleValue(v: BaseEnv): boolean {
+  return GOOGLE_CREDENTIAL_VARS.some((name) => v[name] !== "");
+}
+
+function isGoogleConfigured(v: BaseEnv): boolean {
+  return GOOGLE_CREDENTIAL_VARS.every((name) => v[name] !== "");
+}
+
 function checkGoogleCredentials(v: BaseEnv, ctx: IssueContext): void {
-  if (!googleSigninEnabled(v)) return;
-  requireWhenEmpty(v, ctx, "GOOGLE_OAUTH_CLIENT_ID");
-  requireWhenEmpty(v, ctx, "GOOGLE_OAUTH_CLIENT_SECRET");
-  requireWhenEmpty(v, ctx, "GOOGLE_WORKSPACE_DOMAIN");
+  if (!hasAnyGoogleValue(v) && !googleSigninEnabled(v)) return;
+  for (const name of GOOGLE_CREDENTIAL_VARS) requireWhenEmpty(v, ctx, name);
 }
 
 function checkOidcConfiguration(v: BaseEnv, ctx: IssueContext): void {
@@ -199,6 +211,7 @@ const schema = base
   .transform((v) => ({
     ...v,
     googleSigninEnabled: v.GOOGLE_SIGNIN_ENABLED ?? v.GOOGLE_OAUTH_CLIENT_ID !== "",
+    googleConfigured: isGoogleConfigured(v),
     oidcEnabled: v.OIDC_ISSUER_URL !== undefined,
     S3_SERVER_ENDPOINT: v.S3_SERVER_ENDPOINT ?? v.S3_ENDPOINT,
   }));

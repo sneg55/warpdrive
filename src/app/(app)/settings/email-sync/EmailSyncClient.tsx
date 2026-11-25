@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import type React from "react";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
+import { ERROR_IDS } from "@/constants/errorIds";
 import { connectGmailStart, disconnectMailboxAction } from "@/features/email/actions";
 import { readCsrfToken } from "@/utils/csrfCookie";
 import {
@@ -30,7 +31,48 @@ function formatSync(iso: string | null): string {
   return S.lastSynced(new Date(iso).toLocaleString());
 }
 
-export function EmailSyncClient({ mailbox }: { mailbox: MailboxView | null }): React.ReactNode {
+function connectError(errorId: string): string {
+  return errorId === ERROR_IDS.GMAIL_NOT_CONFIGURED ? S.gmailNotConfigured : S.actionError;
+}
+
+function MailboxActionButton({
+  connected,
+  hasMailbox,
+  pending,
+  googleConfigured,
+  onConnect,
+  onDisconnect,
+}: {
+  connected: boolean;
+  hasMailbox: boolean;
+  pending: boolean;
+  googleConfigured: boolean;
+  onConnect: () => void;
+  onDisconnect: () => void;
+}): React.ReactNode {
+  if (connected) {
+    return (
+      <Button type="button" variant="outline" disabled={pending} onClick={onDisconnect}>
+        {pending ? S.disconnecting : S.disconnect}
+      </Button>
+    );
+  }
+  if (!googleConfigured)
+    return <p className="text-sm text-muted-foreground">{S.gmailNotConfigured}</p>;
+  return (
+    <Button type="button" disabled={pending} onClick={onConnect}>
+      {pending ? S.connecting : hasMailbox ? S.reconnect : S.connect}
+    </Button>
+  );
+}
+
+export function EmailSyncClient({
+  mailbox,
+  googleConfigured = true,
+}: {
+  mailbox: MailboxView | null;
+  googleConfigured?: boolean;
+}): React.ReactNode {
   const router = useRouter();
   const [now, setNow] = useState<Date | null>(null);
   // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -44,8 +86,13 @@ export function EmailSyncClient({ mailbox }: { mailbox: MailboxView | null }): R
     setPending(true);
     setError(null);
     try {
-      const { url } = await connectGmailStart();
-      window.location.href = url;
+      const result = await connectGmailStart();
+      if (result.ok) {
+        window.location.href = result.value.url;
+        return;
+      }
+      setPending(false);
+      setError(connectError(result.error.id));
     } catch {
       setPending(false);
       setError(S.actionError);
@@ -103,20 +150,14 @@ export function EmailSyncClient({ mailbox }: { mailbox: MailboxView | null }): R
 
       <SettingsCardFooter>
         {error !== null ? <span className="mr-auto text-sm text-red-600">{error}</span> : null}
-        {connected ? (
-          <Button
-            type="button"
-            variant="outline"
-            disabled={pending}
-            onClick={() => void disconnect()}
-          >
-            {pending ? S.disconnecting : S.disconnect}
-          </Button>
-        ) : (
-          <Button type="button" disabled={pending} onClick={() => void startConnect()}>
-            {pending ? S.connecting : mailbox === null ? S.connect : S.reconnect}
-          </Button>
-        )}
+        <MailboxActionButton
+          connected={connected}
+          hasMailbox={mailbox !== null}
+          pending={pending}
+          googleConfigured={googleConfigured}
+          onConnect={() => void startConnect()}
+          onDisconnect={() => void disconnect()}
+        />
       </SettingsCardFooter>
     </SettingsCard>
   );

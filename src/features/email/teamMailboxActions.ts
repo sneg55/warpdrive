@@ -2,6 +2,7 @@
 
 import { cookies } from "next/headers";
 import { z } from "zod";
+import { env } from "@/config/env";
 import { AppError, ERROR_IDS } from "@/constants/errorIds";
 import { TEAM_MAILBOX_INTENT_MAX_AGE } from "@/constants/teamMailbox";
 import { guardCsrf } from "@/features/identity/actions/shared";
@@ -41,6 +42,10 @@ export async function connectTeamMailboxStart(
   signal.throwIfAborted();
   if (ctx.session === null)
     return clientErr(new AppError(ERROR_IDS.PERM_DENIED, "unauthenticated", {}));
+  if (!env.googleConfigured)
+    return clientErr(
+      new AppError(ERROR_IDS.GMAIL_NOT_CONFIGURED, "Google OAuth is not configured", {}),
+    );
   const state = await createTeamMailboxIntent(
     ctx.db,
     {

@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { EMAIL_SYNC_STRINGS } from "@/app/(app)/settings/email-sync/strings";
 import { Button } from "@/components/ui/Button";
 import { Select } from "@/components/ui/Select";
 import {
@@ -15,10 +16,12 @@ export function TeamMailboxSettings({
   mailboxes,
   users,
   agenticEnabled = false,
+  googleConfigured = true,
 }: {
   mailboxes: MailboxSettings[];
   users: { id: string; name: string }[];
   agenticEnabled?: boolean;
+  googleConfigured?: boolean;
 }): React.ReactNode {
   const [backfill, setBackfill] = useState(String(TEAM_MAILBOX_DEFAULT_BACKFILL));
   const [pending, setPending] = useState(false);
@@ -35,24 +38,31 @@ export function TeamMailboxSettings({
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center gap-3">
-        <Select
-          ariaLabel="Import history"
-          value={backfill}
-          onChange={setBackfill}
-          options={TEAM_MAILBOX_BACKFILL_CHOICES.map((value) => ({
-            value: String(value),
-            label: `${value} days`,
-          }))}
-        />
-        <Button disabled={pending} onClick={() => void connect()}>
-          Connect team mailbox
-        </Button>
+        {googleConfigured && (
+          <>
+            <Select
+              ariaLabel="Import history"
+              value={backfill}
+              onChange={setBackfill}
+              options={TEAM_MAILBOX_BACKFILL_CHOICES.map((value) => ({
+                value: String(value),
+                label: `${value} days`,
+              }))}
+            />
+            <Button disabled={pending} onClick={() => void connect()}>
+              Connect team mailbox
+            </Button>
+          </>
+        )}
         {agenticEnabled && (
           <Button variant="outline" onClick={() => setAgenticOpen(true)}>
             Connect agentic inbox
           </Button>
         )}
       </div>
+      {!googleConfigured && (
+        <p className="text-sm text-muted-foreground">{EMAIL_SYNC_STRINGS.gmailNotConfigured}</p>
+      )}
       <p className="text-sm text-muted-foreground">
         Imported conversations start read. Unanswered conversations keep their original reply
         status.
@@ -64,6 +74,7 @@ export function TeamMailboxSettings({
           mailbox={mailbox}
           users={users}
           agenticEnabled={agenticEnabled}
+          googleConfigured={googleConfigured}
         />
       ))}
       {agenticEnabled && (

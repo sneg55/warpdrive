@@ -68,6 +68,57 @@ describe("sign-in provider configuration", () => {
     }
   });
 
+  test("rejects a google secret without the client id and workspace domain", () => {
+    const result = parseEnv(raw({ GOOGLE_OAUTH_CLIENT_SECRET: "secret" }));
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error).toContain("GOOGLE_OAUTH_CLIENT_ID");
+      expect(result.error).toContain("GOOGLE_WORKSPACE_DOMAIN");
+    }
+  });
+
+  test("rejects a google workspace domain without the client id and secret", () => {
+    const result = parseEnv(raw({ GOOGLE_WORKSPACE_DOMAIN: "example.com" }));
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error).toContain("GOOGLE_OAUTH_CLIENT_ID");
+      expect(result.error).toContain("GOOGLE_OAUTH_CLIENT_SECRET");
+    }
+  });
+
+  test("rejects a partial google set even when google sign-in is disabled", () => {
+    const result = parseEnv(
+      raw({ GOOGLE_SIGNIN_ENABLED: "false", GOOGLE_OAUTH_CLIENT_SECRET: "secret" }),
+    );
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error).toContain("GOOGLE_OAUTH_CLIENT_ID");
+      expect(result.error).toContain("GOOGLE_WORKSPACE_DOMAIN");
+    }
+  });
+
+  test("reports google as configured when the full set is present", () => {
+    const result = parseEnv(
+      raw({
+        GOOGLE_SIGNIN_ENABLED: "false",
+        GOOGLE_OAUTH_CLIENT_ID: "cid",
+        GOOGLE_OAUTH_CLIENT_SECRET: "secret",
+        GOOGLE_WORKSPACE_DOMAIN: "example.com",
+      }),
+    );
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.googleConfigured).toBe(true);
+      expect(result.value.googleSigninEnabled).toBe(false);
+    }
+  });
+
+  test("reports google as not configured when no google value is present", () => {
+    const result = parseEnv(raw({}));
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.value.googleConfigured).toBe(false);
+  });
+
   test("rejects GOOGLE_SIGNIN_ENABLED=true without the google credentials", () => {
     const result = parseEnv(raw({ GOOGLE_SIGNIN_ENABLED: "true" }));
     expect(result.ok).toBe(false);
