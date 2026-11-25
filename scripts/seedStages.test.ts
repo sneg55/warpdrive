@@ -4,7 +4,7 @@ import { pipelines, stages } from "@/db/schema";
 import { makeTestDb, type TestDb } from "@/test/db";
 import { seedPipelineAndStage } from "./seed-smoke";
 import { SMOKE_PIPELINE_NAME, SMOKE_STAGE_NAME } from "./seed-smoke-config";
-import { type Db, makeDb } from "./seed-smoke-phase5-infra";
+import { type Db, makeDb, seedVisibilityGroups } from "./seed-smoke-phase5-infra";
 import { upsertPipeline, upsertStage } from "./seed-smoke-phase5-records";
 
 let h: TestDb;
@@ -24,8 +24,10 @@ beforeEach(async () => {
 });
 
 describe("seed scripts write stages without the dropped probability column", () => {
-  test("seedPipelineAndStage creates the smoke pipeline and stage", async () => {
+  test("seedPipelineAndStage creates the smoke pipeline and stage and is idempotent", async () => {
     const first = await seedPipelineAndStage(db);
+    const again = await seedPipelineAndStage(db);
+    expect(again).toEqual(first);
 
     const pipelineRows = await h.db.select().from(pipelines);
     expect(pipelineRows).toHaveLength(1);
@@ -50,5 +52,32 @@ describe("seed scripts write stages without the dropped probability column", () 
       ["Lead", 0],
       ["Qualified", 1],
     ]);
+  });
+
+  test("upsertPipeline is idempotent by name, with and without a visibility group", async () => {
+    const { restrictedGroupId } = await seedVisibilityGroups(db);
+    const open = await upsertPipeline(db, "Acme BD", null);
+    const restricted = await upsertPipeline(db, "Restricted Pipeline", restrictedGroupId);
+    expect(await upsertPipeline(db, "Acme BD", null)).toBe(open);
+    expect(await upsertPipeline(db, "Restricted Pipeline", restrictedGroupId)).toBe(restricted);
+
+    const rows = await h.db.select().from(pipelines);
+    expect(rows.map((r) => r.name).sort()).toEqual(["Acme BD", "Restricted Pipeline"]);
+    expect(rows.find((r) => r.id === restricted)?.visibilityGroupId).toBe(restrictedGroupId);
+  });
+
+  test("upsertPipeline picks the oldest pipeline when earlier runs left duplicates", async () => {
+    const [newer] = await h.db
+      .insert(pipelines)
+      .values({ name: "Acme BD", createdAt: new Date("2026-02-01T00:00:00Z") })
+      .returning();
+    const [older] = await h.db
+      .insert(pipelines)
+      .values({ name: "Acme BD", createdAt: new Date("2026-01-01T00:00:00Z") })
+      .returning();
+    expect(newer?.id).not.toBe(older?.id);
+
+    expect(await upsertPipeline(db, "Acme BD", null)).toBe(older?.id);
+    expect(await h.db.select().from(pipelines)).toHaveLength(2);
   });
 });

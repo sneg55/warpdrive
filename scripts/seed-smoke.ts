@@ -14,7 +14,7 @@ import {
   SMOKE_PIPELINE_NAME,
   SMOKE_STAGE_NAME,
 } from "./seed-smoke-config";
-import { type Db, ensureDevIdentity } from "./seed-smoke-phase5-infra";
+import { type Db, ensureDevIdentity, ensurePipeline } from "./seed-smoke-phase5-infra";
 
 const pool = new Pool({ connectionString: DATABASE_URL });
 
@@ -76,14 +76,7 @@ async function seedPerson(ownerId: string): Promise<string> {
 export async function seedPipelineAndStage(
   db: Db,
 ): Promise<{ pipelineId: string; stageId: string }> {
-  await db.q(`INSERT INTO pipelines (name, "order") VALUES ($1, 0) ON CONFLICT DO NOTHING`, [
-    SMOKE_PIPELINE_NAME,
-  ]);
-  const pFound = await db.q<{ id: string }>(`SELECT id FROM pipelines WHERE name = $1 LIMIT 1`, [
-    SMOKE_PIPELINE_NAME,
-  ]);
-  const pipelineId = pFound[0]?.id;
-  if (pipelineId === undefined) throw new Error("pipeline not found after upsert");
+  const pipelineId = await ensurePipeline(db, SMOKE_PIPELINE_NAME, 0, null);
 
   const existingStage = await db.q<{ id: string }>(
     `SELECT id FROM stages WHERE pipeline_id = $1 AND name = $2 LIMIT 1`,

@@ -104,6 +104,25 @@ export async function seedVisibilityGroups(
   return { everyoneGroupId: everyone.id, restrictedGroupId: restricted.id };
 }
 
+export async function ensurePipeline(
+  db: Db,
+  name: string,
+  order: number,
+  visibilityGroupId: string | null,
+): Promise<string> {
+  const [existing] = await db.q<{ id: string }>(
+    `SELECT id FROM pipelines WHERE name = $1 ORDER BY created_at ASC, id ASC LIMIT 1`,
+    [name],
+  );
+  if (existing) return existing.id;
+  const [created] = await db.q<{ id: string }>(
+    `INSERT INTO pipelines (name, "order", visibility_group_id) VALUES ($1, $2, $3) RETURNING id`,
+    [name, order, visibilityGroupId],
+  );
+  if (!created) throw new Error(`pipeline '${name}' insert failed`);
+  return created.id;
+}
+
 export async function ensureDevIdentity(db: Db, userId: string, email: string): Promise<void> {
   await db.q(
     `INSERT INTO user_identities (user_id, provider, subject)
