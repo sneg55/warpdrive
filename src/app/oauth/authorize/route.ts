@@ -4,7 +4,9 @@ import { env } from "@/config/env";
 import { OAUTH_CONSENT_CSRF_MAX_AGE_SECONDS, OAUTH_REQUEST_TIMEOUT_MS } from "@/constants/oauth";
 import { db } from "@/db/client";
 import { CSRF_COOKIE, mintCsrfToken, validateCsrf } from "@/features/auth/csrf";
+import { enabledSigninProviders } from "@/features/auth/enabledProviders";
 import { loadLiveSessionByToken, SESSION_COOKIE } from "@/features/auth/session";
+import { signinEntryPath } from "@/features/auth/signinEntry";
 import {
   type AuthorizationRequest,
   authorizationPostQueryInput,
@@ -33,9 +35,8 @@ function authorizationPath(input: AuthorizationRequest): string {
 }
 
 function loginRedirect(input: AuthorizationRequest): Response {
-  const target = new URL("/auth/start", env.BASE_URL);
-  target.searchParams.set("next", authorizationPath(input));
-  return NextResponse.redirect(target, { status: 302 });
+  const entry = signinEntryPath(enabledSigninProviders(), authorizationPath(input));
+  return NextResponse.redirect(new URL(entry, env.BASE_URL), { status: 302 });
 }
 
 function clientRedirect(redirectUri: string, values: Record<string, string>): Response {
