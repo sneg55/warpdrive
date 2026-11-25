@@ -1,7 +1,12 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { z } from "zod";
 
 const ci = readFileSync(new URL("./.gitlab-ci.yml", import.meta.url), "utf8");
+
+const packageJson = z
+  .object({ scripts: z.record(z.string(), z.string()) })
+  .parse(JSON.parse(readFileSync(new URL("./package.json", import.meta.url), "utf8")));
 
 function blockOf(startLine: string): string {
   const lines = ci.split("\n");
@@ -59,6 +64,17 @@ describe("gitlab ci pipeline", () => {
     expect(job("typecheck")).toContain("pnpm typecheck");
     expect(job("test:unit")).toContain("vitest run --project unit");
     expect(job("test:integration")).toContain("vitest run --project integration");
+  });
+
+  it("caps the heap of the lint job through NODE_OPTIONS", () => {
+    expect(job("lint")).toMatch(/^ {4}NODE_OPTIONS: "--max-old-space-size=3584"$/m);
+  });
+
+  it("keeps the heap cap out of the shared lint scripts so local runs are not capped", () => {
+    expect(packageJson.scripts.lint).toBe("biome check . && eslint . --no-warn-ignored");
+    expect(packageJson.scripts["lint:fix"]).toBe(
+      "biome check --write . && eslint . --fix --no-warn-ignored",
+    );
   });
 
   it("points the integration harness at the postgres service through its own variable", () => {

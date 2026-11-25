@@ -118,6 +118,8 @@ build-docker-image-prod-deps:
 lint:
   stage: test
   image: $CI_REGISTRY_IMAGE/deps:$DEPS_TAG
+  variables:
+    NODE_OPTIONS: "--max-old-space-size=3584"
   before_script:
     - ln -s /app/node_modules node_modules
   script:
