@@ -2,6 +2,7 @@ import { randomBytes } from "node:crypto";
 import { cookies } from "next/headers";
 import { type NextRequest, NextResponse } from "next/server";
 import { env } from "@/config/env";
+import { enabledSigninProviders } from "@/features/auth/enabledProviders";
 import { buildAuthUrl, generatePkce } from "@/features/auth/google";
 import { LOGIN_RETURN_COOKIE, safeLoginReturnPath } from "@/features/auth/loginReturn";
 import { checkRateLimit, tooManyRequestsResponse } from "@/server/rateLimitGuard";
@@ -21,6 +22,10 @@ const COOKIE_OPTS = {
 export async function GET(req: NextRequest): Promise<Response> {
   const limit = checkRateLimit("authStart", req.headers);
   if (!limit.allowed) return tooManyRequestsResponse(limit);
+
+  if (!enabledSigninProviders().google) {
+    return NextResponse.redirect(new URL("/login?error=auth_failed", env.BASE_URL));
+  }
 
   const state = randomBytes(32).toString("base64url");
   const nonce = randomBytes(32).toString("base64url");

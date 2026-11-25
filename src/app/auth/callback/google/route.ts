@@ -5,9 +5,11 @@ import { z } from "zod";
 import { env } from "@/config/env";
 import { db } from "@/db/client";
 import { upsertUserOnLogin } from "@/features/auth/bootstrap";
+import { enabledSigninProviders } from "@/features/auth/enabledProviders";
 import { finishLogin } from "@/features/auth/finishLogin";
 import { LOGIN_RETURN_COOKIE, safeLoginReturnPath } from "@/features/auth/loginReturn";
 import { verifyGoogleIdToken } from "@/features/auth/verifyGoogleIdToken";
+import { err, ok, type Result } from "@/types/result";
 
 const STATE_COOKIE = "wd_oauth_state";
 const NONCE_COOKIE = "wd_oauth_nonce";
@@ -29,7 +31,39 @@ function loginError(reason: string): NextResponse {
   return NextResponse.redirect(new URL("/login?error=auth_failed", env.BASE_URL));
 }
 
+async function exchangeCodeForIdToken(
+  code: string,
+  codeVerifier: string,
+  signal: AbortSignal,
+): Promise<Result<string, string>> {
+  try {
+    const tokenRes = await fetch(GOOGLE_TOKEN_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        code,
+        client_id: env.GOOGLE_OAUTH_CLIENT_ID,
+        client_secret: env.GOOGLE_OAUTH_CLIENT_SECRET,
+        redirect_uri: `${env.BASE_URL}/auth/callback`,
+        grant_type: "authorization_code",
+        code_verifier: codeVerifier,
+      }),
+      signal,
+    });
+    signal.throwIfAborted();
+    if (!tokenRes.ok) return err("token exchange failed");
+    const parsed = tokenResponseSchema.safeParse(await tokenRes.json());
+    if (!parsed.success) return err("token response invalid");
+    return ok(parsed.data.id_token);
+  } catch (e) {
+    if (e instanceof Error && e.name === "AbortError") return err("token exchange timed out");
+    throw e;
+  }
+}
+
 export async function GET(req: NextRequest): Promise<NextResponse> {
+  if (!enabledSigninProviders().google) return loginError("google sign-in is disabled");
+
   const signal = AbortSignal.timeout(10_000);
   const jar = await cookies();
 
@@ -61,31 +95,9 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   jar.delete(PKCE_COOKIE);
   jar.delete(LOGIN_RETURN_COOKIE);
 
-  let idToken: string;
-  try {
-    const tokenRes = await fetch(GOOGLE_TOKEN_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({
-        code,
-        client_id: env.GOOGLE_OAUTH_CLIENT_ID,
-        client_secret: env.GOOGLE_OAUTH_CLIENT_SECRET,
-        redirect_uri: `${env.BASE_URL}/auth/callback`,
-        grant_type: "authorization_code",
-        code_verifier: pkceVerifier,
-      }),
-      signal,
-    });
-    signal.throwIfAborted();
-    if (!tokenRes.ok) return loginError("token exchange failed");
-    const parsed = tokenResponseSchema.safeParse(await tokenRes.json());
-    if (!parsed.success) return loginError("token response invalid");
-    idToken = parsed.data.id_token;
-  } catch (e) {
-    if (e instanceof Error && e.name === "AbortError")
-      return loginError("token exchange timed out");
-    throw e;
-  }
+  const exchanged = await exchangeCodeForIdToken(code, pkceVerifier, signal);
+  if (exchanged.ok === false) return loginError(exchanged.error);
+  const idToken = exchanged.value;
 
   const verifyResult = await verifyGoogleIdToken(idToken, {
     getKey: googleJwks,
