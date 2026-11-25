@@ -44,7 +44,6 @@ describe("scheduled-send promotion: end-to-end (findings #1 and #2)", () => {
     await withTestDb(async (db) => {
       const user = await seedUser(db, {
         email: "promo-e2e@x.com",
-        googleSub: "sub-promo-e2e",
       });
       const acctId = await seedAccount(db, user.id, "promo-e2e@x.com");
       const sigId = await seedSignature(db, user.id, "<p>-- Best, Eve</p>");
@@ -131,7 +130,6 @@ describe("scheduled-send promotion: end-to-end (findings #1 and #2)", () => {
     await withTestDb(async (db) => {
       const user = await seedUser(db, {
         email: "promo-notdue@x.com",
-        googleSub: "sub-promo-notdue",
       });
       const acctId = await seedAccount(db, user.id, "promo-notdue@x.com");
 

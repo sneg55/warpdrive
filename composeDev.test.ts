@@ -75,3 +75,61 @@ describe("docker compose development stack", () => {
     expect(service(name)).toContain("NODE_ENV: development");
   });
 });
+
+describe("oidc development provider", () => {
+  it("runs a pinned authelia image so the IdP config matches the container", () => {
+    expect(service("authelia")).toMatch(/^ {4}image: authelia\/authelia:4\.39\.28$/m);
+  });
+
+  it("generates the certificates and secrets with the same pinned image before authelia starts", () => {
+    const init = service("authelia-init");
+    expect(init).toMatch(/^ {4}image: authelia\/authelia:4\.39\.28$/m);
+    expect(init).toContain('entrypoint: ["/bin/sh", "/init/generate.sh"]');
+    expect(init).toContain("./contrib/authelia/generate.sh:/init/generate.sh:ro");
+    expect(init).toContain("./contrib/authelia/generated:/generated");
+    expect(init).not.toContain("/generated:ro");
+    expect(init).toContain('restart: "no"');
+  });
+
+  it("mounts the dev-only IdP config and the generated files read-only", () => {
+    const authelia = service("authelia");
+    expect(authelia).toContain("./contrib/authelia/configuration.yml:/config/configuration.yml:ro");
+    expect(authelia).toContain(
+      "./contrib/authelia/users_database.yml:/config/users_database.yml:ro",
+    );
+    expect(authelia).toContain("./contrib/authelia/generated:/config/generated:ro");
+    expect(authelia).not.toContain("contrib/authelia/certs");
+  });
+
+  it("enables the template filter that reads the secrets from the generated files", () => {
+    expect(service("authelia")).toContain("X_AUTHELIA_CONFIG_FILTERS: template");
+  });
+
+  it.each(["authelia", "app"])("%s waits for the generated material to exist", (name) => {
+    expect(service(name)).toMatch(/authelia-init:\n\s+condition: service_completed_successfully/);
+  });
+
+  it("is reachable on the issuer hostname from both the browser and the app container", () => {
+    const authelia = service("authelia");
+    expect(authelia).toContain('"authelia.localhost"');
+    expect(authelia).toMatch(/ports:\s*\n\s+- "9091:9091"/);
+  });
+
+  it("gives the app the oidc client id, the allowed group and the issuer", () => {
+    const app = service("app");
+    expect(app).toContain("OIDC_ISSUER_URL: https://authelia.localhost:9091");
+    expect(app).toContain("OIDC_CLIENT_ID: warpdrive");
+    expect(app).toContain("OIDC_ALLOWED_GROUPS: warpdrive-users");
+  });
+
+  it("reads the oidc client secret from the generated file and commits no plaintext secret", () => {
+    expect(service("app")).toContain(
+      "OIDC_CLIENT_SECRET_FILE: /app/contrib/authelia/generated/oidc_client_secret",
+    );
+    expect(compose).not.toMatch(/OIDC_CLIENT_SECRET:/);
+  });
+
+  it("trusts the generated dev CA so the app can reach the https issuer", () => {
+    expect(service("app")).toContain("NODE_EXTRA_CA_CERTS: /app/contrib/authelia/generated/ca.crt");
+  });
+});

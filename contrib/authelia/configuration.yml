@@ -1,0 +1,81 @@
+theme: dark
+server:
+  address: tcp://0.0.0.0:9091
+  tls:
+    certificate: /config/generated/authelia-chain.crt
+    key: /config/generated/authelia.key
+log:
+  level: debug
+totp:
+  disable: true
+webauthn:
+  disable: true
+authentication_backend:
+  password_reset:
+    disable: true
+  file:
+    path: /config/users_database.yml
+    password:
+      algorithm: argon2id
+      iterations: 3
+      memory: 65536
+      parallelism: 4
+      key_length: 32
+      salt_length: 16
+access_control:
+  default_policy: one_factor
+session:
+  secret: '{{ secret "/config/generated/session_secret" }}'
+  cookies:
+    - name: authelia_session
+      domain: authelia.localhost
+      authelia_url: https://authelia.localhost:9091
+      expiration: 1h
+regulation:
+  max_retries: 5
+  find_time: 2m
+  ban_time: 5m
+storage:
+  encryption_key: '{{ secret "/config/generated/storage_encryption_key" }}'
+  local:
+    path: /config/db.sqlite3
+notifier:
+  filesystem:
+    filename: /config/notifications.txt
+identity_providers:
+  oidc:
+    hmac_secret: '{{ secret "/config/generated/oidc_hmac_secret" }}'
+    jwks:
+      - key_id: warpdrive-dev
+        algorithm: RS256
+        use: sig
+        key: {{ secret "/config/generated/oidc_jwks.pem" | mindent 10 "|" | msquote }}
+    lifespans:
+      access_token: 1h
+      id_token: 1h
+      refresh_token: 90d
+    claims_policies:
+      warpdrive:
+        id_token:
+          - email
+          - email_verified
+          - name
+          - preferred_username
+          - groups
+    clients:
+      - client_id: warpdrive
+        client_name: Warpdrive
+        client_secret: '{{ secret "/config/generated/oidc_client_secret_digest" }}'
+        public: false
+        authorization_policy: one_factor
+        consent_mode: implicit
+        require_pkce: true
+        claims_policy: warpdrive
+        token_endpoint_auth_method: client_secret_basic
+        redirect_uris:
+          - http://localhost:3000/auth/callback/oidc
+        scopes:
+          - openid
+          - email
+          - profile
+          - groups

@@ -32,8 +32,8 @@ afterAll(async () => {
 beforeEach(async () => {
   await h.db.execute(sql`TRUNCATE users, permission_sets, audit_events RESTART IDENTITY CASCADE`);
   await h.db.insert(users).values([
-    { id: admin.id, email: "admin@example.com", name: "Admin", googleSub: "g-a", isAdmin: true },
-    { id: manager.id, email: "mgr@example.com", name: "Mgr", googleSub: "g-m" },
+    { id: admin.id, email: "admin@example.com", name: "Admin", isAdmin: true },
+    { id: manager.id, email: "mgr@example.com", name: "Mgr" },
   ]);
 });
 
@@ -47,7 +47,7 @@ test("a non-admin manager cannot assign a set carrying high-risk flags", async (
   if (set.ok === false) throw new Error("setup: could not create set");
   const [target] = await h.db
     .insert(users)
-    .values({ email: "t@example.com", name: "T", googleSub: "g-t" })
+    .values({ email: "t@example.com", name: "T" })
     .returning();
   const r = await assignPermissionSet(
     h.db,
@@ -68,7 +68,7 @@ test("a non-admin manager can assign a set with only non-high-risk flags", async
   if (set.ok === false) throw new Error("setup: could not create set");
   const [target] = await h.db
     .insert(users)
-    .values({ email: "t2@example.com", name: "T2", googleSub: "g-t2" })
+    .values({ email: "t2@example.com", name: "T2" })
     .returning();
   const r = await assignPermissionSet(
     h.db,
@@ -101,7 +101,7 @@ test("an admin can assign a set to another admin account", async () => {
   if (set.ok === false) throw new Error("setup: could not create set");
   const [target] = await h.db
     .insert(users)
-    .values({ email: "a2@example.com", name: "A2", googleSub: "g-a2", isAdmin: true })
+    .values({ email: "a2@example.com", name: "A2", isAdmin: true })
     .returning();
   const r = await assignPermissionSet(
     h.db,
@@ -122,7 +122,7 @@ test("an admin can assign a set carrying high-risk flags", async () => {
   if (set.ok === false) throw new Error("setup: could not create set");
   const [target] = await h.db
     .insert(users)
-    .values({ email: "t3@example.com", name: "T3", googleSub: "g-t3" })
+    .values({ email: "t3@example.com", name: "T3" })
     .returning();
   const r = await assignPermissionSet(
     h.db,

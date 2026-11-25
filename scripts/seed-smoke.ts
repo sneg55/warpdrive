@@ -1,10 +1,10 @@
+import { fileURLToPath } from "node:url";
 import { Pool } from "pg";
 import {
   BASE_CURRENCY,
   DATABASE_URL,
   SMOKE_EMAIL,
   SMOKE_GMAIL_THREAD_ID,
-  SMOKE_GOOGLE_SUB,
   SMOKE_IDEMPOTENCY_KEY,
   SMOKE_INBOUND_BODY_HTML,
   SMOKE_MESSAGE_ID_HEADER,
@@ -14,6 +14,7 @@ import {
   SMOKE_PIPELINE_NAME,
   SMOKE_STAGE_NAME,
 } from "./seed-smoke-config";
+import { type Db, ensureDevIdentity, ensurePipeline } from "./seed-smoke-phase5-infra";
 
 const pool = new Pool({ connectionString: DATABASE_URL });
 
@@ -25,20 +26,20 @@ async function q<T extends Record<string, unknown>>(
   return result.rows as T[];
 }
 
-async function seedUser(): Promise<string> {
-  const rows = await q<{ id: string }>(
-    `INSERT INTO users (email, name, google_sub, is_admin, is_active)
-     VALUES ($1, $2, $3, true, true)
+export async function seedUser(db: Db): Promise<string> {
+  const rows = await db.q<{ id: string }>(
+    `INSERT INTO users (email, name, is_admin, is_active)
+     VALUES ($1, $2, true, true)
      ON CONFLICT (email) DO UPDATE
-       SET google_sub = EXCLUDED.google_sub,
-           is_admin   = true,
+       SET is_admin   = true,
            is_active  = true,
            updated_at = now()
      RETURNING id`,
-    [SMOKE_EMAIL, "Smoke Test User", SMOKE_GOOGLE_SUB],
+    [SMOKE_EMAIL, "Smoke Test User"],
   );
   const row = rows[0];
   if (row === undefined) throw new Error("user upsert returned no row");
+  await ensureDevIdentity(db, row.id, SMOKE_EMAIL);
   return row.id;
 }
 
@@ -72,17 +73,12 @@ async function seedPerson(ownerId: string): Promise<string> {
   return row.id;
 }
 
-async function seedPipelineAndStage(): Promise<{ pipelineId: string; stageId: string }> {
-  await q(`INSERT INTO pipelines (name, "order") VALUES ($1, 0) ON CONFLICT DO NOTHING`, [
-    SMOKE_PIPELINE_NAME,
-  ]);
-  const pFound = await q<{ id: string }>(`SELECT id FROM pipelines WHERE name = $1 LIMIT 1`, [
-    SMOKE_PIPELINE_NAME,
-  ]);
-  const pipelineId = pFound[0]?.id;
-  if (pipelineId === undefined) throw new Error("pipeline not found after upsert");
+export async function seedPipelineAndStage(
+  db: Db,
+): Promise<{ pipelineId: string; stageId: string }> {
+  const pipelineId = await ensurePipeline(db, SMOKE_PIPELINE_NAME, 0, null);
 
-  const existingStage = await q<{ id: string }>(
+  const existingStage = await db.q<{ id: string }>(
     `SELECT id FROM stages WHERE pipeline_id = $1 AND name = $2 LIMIT 1`,
     [pipelineId, SMOKE_STAGE_NAME],
   );
@@ -90,9 +86,9 @@ async function seedPipelineAndStage(): Promise<{ pipelineId: string; stageId: st
     return { pipelineId, stageId: existingStage[0].id };
   }
 
-  const sRows = await q<{ id: string }>(
-    `INSERT INTO stages (pipeline_id, name, "order", probability)
-     VALUES ($1, $2, 0, 50) RETURNING id`,
+  const sRows = await db.q<{ id: string }>(
+    `INSERT INTO stages (pipeline_id, name, "order")
+     VALUES ($1, $2, 0) RETURNING id`,
     [pipelineId, SMOKE_STAGE_NAME],
   );
   const stageId = sRows[0]?.id;
@@ -225,10 +221,10 @@ async function seedTrackingToken(
 }
 
 async function main(): Promise<void> {
-  const userId = await seedUser();
+  const userId = await seedUser({ q });
   await seedSettings();
   const personId = await seedPerson(userId);
-  const { pipelineId, stageId } = await seedPipelineAndStage();
+  const { pipelineId, stageId } = await seedPipelineAndStage({ q });
   const dealId = await seedDeal(personId, pipelineId, stageId, userId);
   const accountId = await seedEmailAccount(userId);
   const threadId = await seedEmailThread(accountId, personId, dealId);
@@ -240,11 +236,13 @@ async function main(): Promise<void> {
   console.warn(`smoke_open_token=${SMOKE_OPEN_TOKEN}`);
 }
 
-main()
-  .catch((e: unknown) => {
-    console.error("seed-smoke failed:", e);
-    process.exit(1);
-  })
-  .finally(() => {
-    void pool.end();
-  });
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  main()
+    .catch((e: unknown) => {
+      console.error("seed-smoke failed:", e);
+      process.exit(1);
+    })
+    .finally(() => {
+      void pool.end();
+    });
+}

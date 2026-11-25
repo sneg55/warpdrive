@@ -1,6 +1,7 @@
+import { readFileSync } from "node:fs";
 import { sql } from "drizzle-orm";
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from "vitest";
-import { sessions, users } from "@/db/schema";
+import { sessions, userIdentities, users } from "@/db/schema";
 import { makeTestDb, type TestDb } from "@/test/db";
 import { type DevLoginDeps, devLoginCore } from "./devLogin";
 
@@ -17,7 +18,7 @@ afterAll(async () => {
 
 beforeEach(async () => {
   await h.db.execute(
-    sql`TRUNCATE visibility_group_members, visibility_groups, sessions, users, permission_sets, settings, audit_events RESTART IDENTITY CASCADE`,
+    sql`TRUNCATE visibility_group_members, visibility_groups, user_identities, sessions, users, permission_sets, settings, audit_events RESTART IDENTITY CASCADE`,
   );
 });
 
@@ -93,10 +94,12 @@ describe("devLoginCore: valid guard enabled path", () => {
     expect(dbUsers[0]!.email).toBe("admin@example.com");
   });
 
-  test("builds synthetic sub prefixed dev-", async () => {
+  test("stores a dev provider identity with the synthetic subject", async () => {
     await devLoginCore("admin@example.com", makeDeps());
-    const dbUsers = await h.db.select().from(users);
-    expect(dbUsers[0]!.googleSub).toBe("dev-admin@example.com");
+    const rows = await h.db.select().from(userIdentities);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]!.provider).toBe("dev");
+    expect(rows[0]!.subject).toBe("dev-admin@example.com");
   });
 
   test("second call for same email is idempotent (upsert)", async () => {
@@ -105,6 +108,35 @@ describe("devLoginCore: valid guard enabled path", () => {
     expect(r2.ok).toBe(true);
     const dbUsers = await h.db.select().from(users);
     expect(dbUsers).toHaveLength(1);
+  });
+});
+
+describe("devLoginCore: users carried over by the 0088 migration", () => {
+  test("an existing dev user is not locked out: dev- subjects backfill as provider dev", async () => {
+    await h.db.execute(sql`ALTER TABLE "users" ADD COLUMN "google_sub" text`);
+    await h.db.execute(
+      sql`INSERT INTO "users" ("email", "name", "google_sub") VALUES ('alice@example.com', 'Alice', 'dev-alice@example.com'), ('bob@example.com', 'Bob', '12345')`,
+    );
+
+    const migration = readFileSync(
+      new URL("../../../drizzle/0088_provider_neutral_identities.sql", import.meta.url),
+      "utf8",
+    );
+    const backfill = migration
+      .split("--> statement-breakpoint")
+      .map((statement) => statement.trim())
+      .find((statement) => statement.startsWith('INSERT INTO "user_identities"'));
+    if (backfill === undefined) throw new Error("0088 backfill statement not found");
+    await h.db.execute(sql.raw(backfill));
+    await h.db.execute(sql`ALTER TABLE "users" DROP COLUMN "google_sub"`);
+
+    const result = await devLoginCore("alice@example.com", makeDeps());
+    expect(result.ok).toBe(true);
+
+    const identities = await h.db.select().from(userIdentities);
+    expect(identities).toHaveLength(2);
+    expect(identities.find((i) => i.subject === "dev-alice@example.com")?.provider).toBe("dev");
+    expect(identities.find((i) => i.subject === "12345")?.provider).toBe("google");
   });
 });
 

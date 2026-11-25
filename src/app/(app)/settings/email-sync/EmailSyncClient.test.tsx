@@ -41,7 +41,8 @@ afterEach(() => {
 describe("EmailSyncClient", () => {
   it("shows Connect when no mailbox is linked and redirects to the consent URL", async () => {
     connectGmailStart.mockResolvedValue({
-      url: "https://accounts.google.com/o/oauth2/v2/auth?x=1",
+      ok: true,
+      value: { url: "https://accounts.google.com/o/oauth2/v2/auth?x=1" },
     });
     render(<EmailSyncClient mailbox={null} />);
     expect(screen.getByText("No mailbox is connected yet.")).toBeInTheDocument();
@@ -50,6 +51,26 @@ describe("EmailSyncClient", () => {
       expect(window.location.href).toBe("https://accounts.google.com/o/oauth2/v2/auth?x=1"),
     );
     expect(connectGmailStart).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows the not-configured message when the connect action refuses", async () => {
+    connectGmailStart.mockResolvedValue({ ok: false, error: { id: "E_GMAIL_030" } });
+    render(<EmailSyncClient mailbox={null} />);
+    fireEvent.click(screen.getByRole("button", { name: "Connect Gmail" }));
+    await waitFor(() =>
+      expect(screen.getByText("Gmail is not configured for this deployment.")).toBeInTheDocument(),
+    );
+  });
+
+  it("hides Connect Gmail when Google is not configured", () => {
+    render(<EmailSyncClient mailbox={null} googleConfigured={false} />);
+    expect(screen.queryByRole("button", { name: "Connect Gmail" })).not.toBeInTheDocument();
+    expect(screen.getByText("Gmail is not configured for this deployment.")).toBeInTheDocument();
+  });
+
+  it("keeps Disconnect available for a connected mailbox when Google is not configured", () => {
+    render(<EmailSyncClient mailbox={connected} googleConfigured={false} />);
+    expect(screen.getByRole("button", { name: "Disconnect" })).toBeInTheDocument();
   });
 
   it("shows the connected address, last sync, and a Disconnect button when connected", () => {

@@ -19,8 +19,8 @@ const sig = (): AbortSignal => new AbortController().signal;
 async function seedOwner(tag: string): Promise<{ actor: AuthUser; accountId: string }> {
   const u = (
     await h.db.execute(
-      sql`INSERT INTO users (email, name, google_sub)
-          VALUES (${`${tag}@acme.com`}, ${tag}, ${`sub-${tag}`}) RETURNING id`,
+      sql`INSERT INTO users (email, name)
+          VALUES (${`${tag}@acme.com`}, ${tag}) RETURNING id`,
     )
   ).rows[0] as { id: string };
   const acct = (

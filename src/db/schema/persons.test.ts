@@ -15,7 +15,7 @@ afterAll(async () => {
 it("inserts a person with labeled emails and derives a citext primary_email", async () => {
   const [u] = await h.db
     .insert(users)
-    .values({ email: "owner@test.com", name: "Owner", googleSub: "sub-test-1" })
+    .values({ email: "owner@test.com", name: "Owner" })
     .returning();
 
   const [org] = await h.db

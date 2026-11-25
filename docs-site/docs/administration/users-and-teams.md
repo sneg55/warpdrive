@@ -30,21 +30,25 @@ The first sign-in also seeds the defaults: the Regular and Admin permission sets
 
 ### Inviting
 
-Inviting creates a placeholder account with no Google identity attached, assigns a
-permission set, and puts the user in the Everyone group.
+Inviting creates a placeholder account with no sign-in identity attached, assigns a
+permission set, and puts the user in the Everyone group. Its avatar stays empty until a
+sign-in supplies a picture, or the user uploads one.
 
-The placeholder is claimed on the invitee's first verified Google sign-in with a
-matching address. Until then it shows as invited.
+The placeholder is claimed on the invitee's first verified sign-in with a matching
+address, through whichever provider they use. Until then it shows as invited.
 
-### Accounts are bound to Google identity, not email
+### Accounts are bound to sign-in identities, not email
 
-A user is identified by their stable Google account, not their address. Changing
-someone's email in Google updates their existing Warpdrive profile rather than
-creating a second user.
+A user is identified by a stable provider-plus-subject pair, not their address.
+Changing someone's email at the provider updates their existing Warpdrive profile
+rather than creating a second user. A user can hold one identity per provider, so a
+deployment moving between providers keeps the same records.
 
-The reverse is refused: an address reused by a **different** Google account is
-rejected, unless the existing record is an unclaimed invitation. This is what stops a
-recycled address from inheriting a departed colleague's records.
+The reverse is refused: an address reused by a **different** identity is rejected, even
+from another provider, unless the existing record is an unclaimed invitation or an
+administrator has reset it. This is what stops a recycled address from inheriting a
+departed colleague's records. See [Single sign-on](./single-sign-on.md) for the matching
+rules and the **Reset sign-in identities** action that unblocks a provider migration.
 
 ### Changing a permission set
 

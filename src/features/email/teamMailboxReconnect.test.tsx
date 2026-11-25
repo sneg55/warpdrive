@@ -37,6 +37,17 @@ it("offers a reconnect for a disconnected team mailbox, signed in as that mailbo
   expect(connect).toHaveBeenCalledWith({ backfillDays: 90, loginHint: "sales@example.com" }, null);
 });
 
+it("hides the reconnect for a disconnected Gmail mailbox when Google is not configured", () => {
+  render(
+    <TeamMailboxSettings
+      users={[]}
+      mailboxes={[{ ...mailbox, status: "disconnected" }]}
+      googleConfigured={false}
+    />,
+  );
+  expect(screen.queryByRole("button", { name: "Reconnect" })).not.toBeInTheDocument();
+});
+
 it("shows no reconnect for a connected team mailbox", () => {
   render(<TeamMailboxSettings users={[]} mailboxes={[{ ...mailbox, status: "connected" }]} />);
   expect(screen.queryByRole("button", { name: "Reconnect" })).not.toBeInTheDocument();

@@ -10,7 +10,7 @@ async function seedMessageWithAttachment(
 ): Promise<{ messageId: string }> {
   const u = (
     await db.execute(
-      sql`INSERT INTO users (email, name, google_sub) VALUES ('o@gunsnation.com','O','sub-o') RETURNING id`,
+      sql`INSERT INTO users (email, name) VALUES ('o@gunsnation.com','O') RETURNING id`,
     )
   ).rows[0] as { id: string };
   const acct = (
@@ -57,7 +57,7 @@ describe("attachmentsForMessages", () => {
     await withTestDb(async (db) => {
       const u = (
         await db.execute(
-          sql`INSERT INTO users (email, name, google_sub) VALUES ('o2@gunsnation.com','O','sub-o2') RETURNING id`,
+          sql`INSERT INTO users (email, name) VALUES ('o2@gunsnation.com','O') RETURNING id`,
         )
       ).rows[0] as { id: string };
       const acct = (

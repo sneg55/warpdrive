@@ -8,7 +8,6 @@ const WORKSPACE_DOMAIN = process.env.GOOGLE_WORKSPACE_DOMAIN ?? "example.com";
 export const BASE_CURRENCY = process.env.BASE_CURRENCY ?? "USD";
 
 export const SMOKE_EMAIL = `smoke@${WORKSPACE_DOMAIN}`;
-export const SMOKE_GOOGLE_SUB = `dev-${SMOKE_EMAIL}`;
 
 export const SMOKE_PIPELINE_NAME = "BD";
 export const SMOKE_STAGE_NAME = "Lead";

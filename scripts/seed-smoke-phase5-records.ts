@@ -1,4 +1,4 @@
-import type { Db } from "./seed-smoke-phase5-infra";
+import { type Db, ensurePipeline } from "./seed-smoke-phase5-infra";
 
 export async function ensureActivityType(db: Db): Promise<string> {
   await db.q(
@@ -17,21 +17,7 @@ export async function upsertPipeline(
   name: string,
   visibilityGroupId: string | null,
 ): Promise<string> {
-  if (visibilityGroupId !== null) {
-    await db.q(
-      `INSERT INTO pipelines (name, "order", visibility_group_id) VALUES ($1, 1, $2) ON CONFLICT DO NOTHING`,
-      [name, visibilityGroupId],
-    );
-  } else {
-    await db.q(`INSERT INTO pipelines (name, "order") VALUES ($1, 0) ON CONFLICT DO NOTHING`, [
-      name,
-    ]);
-  }
-  const [row] = await db.q<{ id: string }>(`SELECT id FROM pipelines WHERE name = $1 LIMIT 1`, [
-    name,
-  ]);
-  if (!row) throw new Error(`pipeline '${name}' not found after upsert`);
-  return row.id;
+  return ensurePipeline(db, name, visibilityGroupId === null ? 0 : 1, visibilityGroupId);
 }
 
 export async function upsertStage(
@@ -39,7 +25,6 @@ export async function upsertStage(
   pipelineId: string,
   name: string,
   order: number,
-  probability: number,
 ): Promise<string> {
   const [existing] = await db.q<{ id: string }>(
     `SELECT id FROM stages WHERE pipeline_id = $1 AND name = $2 LIMIT 1`,
@@ -47,8 +32,8 @@ export async function upsertStage(
   );
   if (existing) return existing.id;
   const [row] = await db.q<{ id: string }>(
-    `INSERT INTO stages (pipeline_id, name, "order", probability) VALUES ($1, $2, $3, $4) RETURNING id`,
-    [pipelineId, name, order, probability],
+    `INSERT INTO stages (pipeline_id, name, "order") VALUES ($1, $2, $3) RETURNING id`,
+    [pipelineId, name, order],
   );
   if (!row) throw new Error(`stage '${name}' insert failed`);
   return row.id;

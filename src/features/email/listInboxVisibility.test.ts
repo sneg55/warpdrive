@@ -19,8 +19,8 @@ const sig = (): AbortSignal => new AbortController().signal;
 async function seedUserWithMailbox(tag: string): Promise<{ actor: AuthUser; accountId: string }> {
   const u = (
     await h.db.execute(
-      sql`INSERT INTO users (email, name, google_sub)
-          VALUES (${`${tag}@acme.com`}, ${tag}, ${`sub-${tag}`}) RETURNING id`,
+      sql`INSERT INTO users (email, name)
+          VALUES (${`${tag}@acme.com`}, ${tag}) RETURNING id`,
     )
   ).rows[0] as { id: string };
   const acct = (
@@ -104,8 +104,8 @@ it("hides another user's shared thread from the personal Inbox even when its lin
 it("shows an empty Inbox to a user who owns no mailbox, even with a visible shared thread", async () => {
   const u = (
     await h.db.execute(
-      sql`INSERT INTO users (email, name, google_sub)
-          VALUES ('evgeny@acme.com', 'evgeny', 'sub-evgeny') RETURNING id`,
+      sql`INSERT INTO users (email, name)
+          VALUES ('evgeny@acme.com', 'evgeny') RETURNING id`,
     )
   ).rows[0] as { id: string };
   const evgeny: AuthUser = { id: u.id, type: "regular", isActive: true, groupIds: new Set() };

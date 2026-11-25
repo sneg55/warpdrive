@@ -1,0 +1,8 @@
+title = "warpdrive"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "dev IdP keys generated at startup into a directory git ignores"
+paths = ['''contrib/authelia/generated/''']

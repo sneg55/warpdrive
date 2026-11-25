@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
-import { render, screen } from "@testing-library/react";
+import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { expect, it, vi } from "vitest";
+import { afterEach, expect, it, vi } from "vitest";
 import { TeamMailboxSettings } from "./TeamMailboxSettings";
 
 const update = vi.hoisted(() => vi.fn().mockResolvedValue({ ok: true }));
@@ -13,6 +13,14 @@ vi.mock("./teamMailboxActions", () => ({
   connectTeamMailboxStart: vi.fn(),
 }));
 vi.mock("./actions", () => ({ disconnectMailboxAction: vi.fn() }));
+afterEach(cleanup);
+
+it("hides the team mailbox connect controls when Google is not configured", () => {
+  render(<TeamMailboxSettings users={[]} mailboxes={[]} googleConfigured={false} />);
+  expect(screen.queryByRole("button", { name: "Connect team mailbox" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("combobox", { name: "Import history" })).not.toBeInTheDocument();
+  expect(screen.getByText("Gmail is not configured for this deployment.")).toBeInTheDocument();
+});
 
 it("shows import status and design-system controls and saves team settings", async () => {
   render(

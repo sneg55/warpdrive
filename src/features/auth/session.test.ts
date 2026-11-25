@@ -19,7 +19,7 @@ beforeAll(async () => {
   const [ps] = await h.db.insert(permissionSets).values({ name: "Regular", flags: {} }).returning();
   const [u] = await h.db
     .insert(users)
-    .values({ email: "s@example.com", name: "S", googleSub: "g-s", permissionSetId: ps!.id })
+    .values({ email: "s@example.com", name: "S", permissionSetId: ps!.id })
     .returning();
   userId = u!.id;
 });

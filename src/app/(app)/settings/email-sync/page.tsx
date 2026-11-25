@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { env } from "@/config/env";
 import { db } from "@/db/client";
 import { getActorMailboxStatus } from "@/features/email/mailboxOwnership";
 import { createContext } from "@/server/trpc/context";
@@ -20,6 +21,7 @@ export default async function EmailSyncPage(): Promise<ReactNode> {
     <SettingsPage>
       <SettingsHeading title={EMAIL_SYNC_STRINGS.title} description={EMAIL_SYNC_STRINGS.intro} />
       <EmailSyncClient
+        googleConfigured={env.googleConfigured}
         mailbox={
           mailbox === null
             ? null

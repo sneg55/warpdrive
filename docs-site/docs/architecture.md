@@ -25,7 +25,7 @@ just want to use it, start with the feature pages instead.
 | Object storage | Garage, S3-compatible |
 | Email | Gmail API over OAuth |
 | Support history | Intercom API, optional |
-| Auth | Google SSO |
+| Auth | Google SSO or any OpenID Connect provider, with server-side sessions |
 | Package manager | pnpm |
 
 Custom fields are stored as JSONB rather than as migrated columns, which is what lets

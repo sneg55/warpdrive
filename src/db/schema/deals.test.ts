@@ -19,7 +19,7 @@ afterAll(async () => {
 async function seedUser(db: typeof h.db, suffix: string) {
   const [u] = await db
     .insert(users)
-    .values({ email: `u${suffix}@ex.com`, name: "Test User", googleSub: `sub-deals-${suffix}` })
+    .values({ email: `u${suffix}@ex.com`, name: "Test User" })
     .returning();
   return u!;
 }

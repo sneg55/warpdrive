@@ -64,7 +64,6 @@ export async function inviteUser(
         .values({
           email,
           name: input.name,
-          googleSub: null,
           invitedAt: new Date(),
           isAdmin: input.isAdmin,
           permissionSetId: input.isAdmin ? seed.adminSetId : seed.regularSetId,

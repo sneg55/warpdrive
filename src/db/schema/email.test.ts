@@ -6,9 +6,7 @@ describe("email schema constraints", () => {
   it("enforces per-account message dedup, not global", async () => {
     await withTestDb(async (db) => {
       const uA = (
-        await db.execute(
-          sql`INSERT INTO users (email, name, google_sub) VALUES ('a@x.com','A','sub-a') RETURNING id`,
-        )
+        await db.execute(sql`INSERT INTO users (email, name) VALUES ('a@x.com','A') RETURNING id`)
       ).rows[0] as { id: string };
       const acctA = (
         await db.execute(
@@ -16,9 +14,7 @@ describe("email schema constraints", () => {
         )
       ).rows[0] as { id: string };
       const uB = (
-        await db.execute(
-          sql`INSERT INTO users (email, name, google_sub) VALUES ('b@x.com','B','sub-b') RETURNING id`,
-        )
+        await db.execute(sql`INSERT INTO users (email, name) VALUES ('b@x.com','B') RETURNING id`)
       ).rows[0] as { id: string };
       const acctB = (
         await db.execute(
@@ -54,9 +50,7 @@ describe("email schema constraints", () => {
   it("blocks attaching a message to a thread in a different mailbox (composite FK)", async () => {
     await withTestDb(async (db) => {
       const uC = (
-        await db.execute(
-          sql`INSERT INTO users (email, name, google_sub) VALUES ('c@x.com','C','sub-c') RETURNING id`,
-        )
+        await db.execute(sql`INSERT INTO users (email, name) VALUES ('c@x.com','C') RETURNING id`)
       ).rows[0] as { id: string };
       const acctA = (
         await db.execute(
@@ -64,9 +58,7 @@ describe("email schema constraints", () => {
         )
       ).rows[0] as { id: string };
       const uD = (
-        await db.execute(
-          sql`INSERT INTO users (email, name, google_sub) VALUES ('d@x.com','D','sub-d') RETURNING id`,
-        )
+        await db.execute(sql`INSERT INTO users (email, name) VALUES ('d@x.com','D') RETURNING id`)
       ).rows[0] as { id: string };
       const acctB = (
         await db.execute(
@@ -90,9 +82,7 @@ describe("email schema constraints", () => {
   it("allows duplicate gmail_thread_id across different accounts (per-account scope)", async () => {
     await withTestDb(async (db) => {
       const uE = (
-        await db.execute(
-          sql`INSERT INTO users (email, name, google_sub) VALUES ('e@x.com','E','sub-e') RETURNING id`,
-        )
+        await db.execute(sql`INSERT INTO users (email, name) VALUES ('e@x.com','E') RETURNING id`)
       ).rows[0] as { id: string };
       const acctE = (
         await db.execute(
@@ -100,9 +90,7 @@ describe("email schema constraints", () => {
         )
       ).rows[0] as { id: string };
       const uF = (
-        await db.execute(
-          sql`INSERT INTO users (email, name, google_sub) VALUES ('f@x.com','F','sub-f') RETURNING id`,
-        )
+        await db.execute(sql`INSERT INTO users (email, name) VALUES ('f@x.com','F') RETURNING id`)
       ).rows[0] as { id: string };
       const acctF = (
         await db.execute(

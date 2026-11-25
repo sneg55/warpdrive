@@ -13,13 +13,9 @@ const goodDeps = {
     Promise.resolve(ok({ email: "me@example.com", emailVerified: true, hd: "example.com" })),
 };
 type TestDb = Parameters<Parameters<typeof withTestDb>[0]>[0];
-async function seedUser(
-  db: TestDb,
-  email = "me@example.com",
-  sub = "sub-me",
-): Promise<{ id: string }> {
+async function seedUser(db: TestDb, email = "me@example.com"): Promise<{ id: string }> {
   const res = await db.execute(
-    sql`INSERT INTO users (email, name, google_sub) VALUES (${email},'Me',${sub}) RETURNING id`,
+    sql`INSERT INTO users (email, name) VALUES (${email},'Me') RETURNING id`,
   );
   return res.rows[0] as { id: string };
 }
@@ -147,7 +143,7 @@ describe("OAuth identity binding", () => {
 
   it("rejects a second user binding an address already connected to another user (no 500, no clobber)", async () => {
     await withTestDb(async (db) => {
-      const a = await seedUser(db, "a@example.com", "sub-a");
+      const a = await seedUser(db, "a@example.com");
       const aBind = await exchangeAndBind({
         signal: new AbortController().signal,
         db,
@@ -164,7 +160,7 @@ describe("OAuth identity binding", () => {
       });
       expect(aBind.ok).toBe(true);
 
-      const b = await seedUser(db, "shared@example.com", "sub-b");
+      const b = await seedUser(db, "shared@example.com");
       const bBind = await exchangeAndBind({
         signal: new AbortController().signal,
         db,

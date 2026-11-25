@@ -4,6 +4,7 @@ import { err, ok, type Result } from "@/types/result";
 
 const SECRET_FILE_VARS = [
   "GOOGLE_OAUTH_CLIENT_SECRET",
+  "OIDC_CLIENT_SECRET",
   "WS_TICKET_SECRET",
   "TOKEN_ENCRYPTION_KEY",
   "S3_SECRET_KEY",
@@ -46,6 +47,11 @@ function applyLegacyStorageNames(
 
 const boolFromString = z.enum(["true", "false"]).transform((v) => v === "true");
 
+const optionalBoolFromString = z.preprocess(
+  (v) => (v === "" ? undefined : v),
+  boolFromString.optional(),
+);
+
 const flagFromString = z.string().transform((v) => v === "true" || v === "1");
 
 const optionalUrl = z
@@ -53,11 +59,20 @@ const optionalUrl = z
   .optional()
   .transform((v) => (v == null || v.length === 0 ? undefined : v));
 
+const TRAILING_SLASHES = /\/+$/;
+
+const oidcIssuerUrl = optionalUrl.transform((v) => v?.replace(TRAILING_SLASHES, ""));
+
 const base = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
-  GOOGLE_OAUTH_CLIENT_ID: z.string().min(1),
-  GOOGLE_OAUTH_CLIENT_SECRET: z.string().min(1),
-  GOOGLE_WORKSPACE_DOMAIN: z.string().min(1),
+  GOOGLE_OAUTH_CLIENT_ID: z.string().default(""),
+  GOOGLE_OAUTH_CLIENT_SECRET: z.string().default(""),
+  GOOGLE_WORKSPACE_DOMAIN: z.string().default(""),
+  GOOGLE_SIGNIN_ENABLED: optionalBoolFromString,
+  OIDC_ISSUER_URL: oidcIssuerUrl,
+  OIDC_CLIENT_ID: z.string().default(""),
+  OIDC_CLIENT_SECRET: z.string().default(""),
+  OIDC_ALLOWED_GROUPS: z.string().default(""),
   BASE_URL: z.string().url(),
   DATABASE_URL: z.string().min(1),
   WS_TICKET_SECRET: z.string().min(32),
@@ -101,8 +116,74 @@ const base = z.object({
   X_CLIENT_SECRET: z.string().default(""),
 });
 
+type BaseEnv = z.infer<typeof base>;
+type IssueContext = z.RefinementCtx;
+
+function requireWhenEmpty(v: BaseEnv, ctx: IssueContext, name: keyof BaseEnv): void {
+  if (v[name] !== "") return;
+  ctx.addIssue({
+    code: z.ZodIssueCode.custom,
+    path: [name],
+    message: `${name} is required when any Google credential is set or Google sign-in is enabled`,
+  });
+}
+
+const GOOGLE_CREDENTIAL_VARS = [
+  "GOOGLE_OAUTH_CLIENT_ID",
+  "GOOGLE_OAUTH_CLIENT_SECRET",
+  "GOOGLE_WORKSPACE_DOMAIN",
+] as const;
+
+function googleSigninEnabled(v: BaseEnv): boolean {
+  return v.GOOGLE_SIGNIN_ENABLED ?? v.GOOGLE_OAUTH_CLIENT_ID !== "";
+}
+
+function hasAnyGoogleValue(v: BaseEnv): boolean {
+  return GOOGLE_CREDENTIAL_VARS.some((name) => v[name] !== "");
+}
+
+function isGoogleConfigured(v: BaseEnv): boolean {
+  return GOOGLE_CREDENTIAL_VARS.every((name) => v[name] !== "");
+}
+
+function checkGoogleCredentials(v: BaseEnv, ctx: IssueContext): void {
+  if (!hasAnyGoogleValue(v) && !googleSigninEnabled(v)) return;
+  for (const name of GOOGLE_CREDENTIAL_VARS) requireWhenEmpty(v, ctx, name);
+}
+
+function checkOidcConfiguration(v: BaseEnv, ctx: IssueContext): void {
+  if (v.OIDC_ISSUER_URL !== undefined) {
+    for (const name of ["OIDC_CLIENT_ID", "OIDC_CLIENT_SECRET", "OIDC_ALLOWED_GROUPS"] as const) {
+      if (v[name] === "") {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: [name],
+          message: `${name} is required when OIDC_ISSUER_URL is set`,
+        });
+      }
+    }
+    return;
+  }
+  if (v.OIDC_CLIENT_ID === "" && v.OIDC_CLIENT_SECRET === "" && v.OIDC_ALLOWED_GROUPS === "")
+    return;
+  ctx.addIssue({
+    code: z.ZodIssueCode.custom,
+    path: ["OIDC_ISSUER_URL"],
+    message: "OIDC_CLIENT_ID, OIDC_CLIENT_SECRET and OIDC_ALLOWED_GROUPS require OIDC_ISSUER_URL",
+  });
+}
+
 const schema = base
   .superRefine((v, ctx) => {
+    checkGoogleCredentials(v, ctx);
+    checkOidcConfiguration(v, ctx);
+    if (v.NODE_ENV === "production" && !googleSigninEnabled(v) && v.OIDC_ISSUER_URL === undefined) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["NODE_ENV"],
+        message: "at least one sign-in provider (Google or OIDC) must be configured",
+      });
+    }
     if (v.MCP_ENABLED && Buffer.from(v.OAUTH_SIGNING_KEY, "base64").length !== 32) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -129,6 +210,9 @@ const schema = base
   })
   .transform((v) => ({
     ...v,
+    googleSigninEnabled: v.GOOGLE_SIGNIN_ENABLED ?? v.GOOGLE_OAUTH_CLIENT_ID !== "",
+    googleConfigured: isGoogleConfigured(v),
+    oidcEnabled: v.OIDC_ISSUER_URL !== undefined,
     S3_SERVER_ENDPOINT: v.S3_SERVER_ENDPOINT ?? v.S3_ENDPOINT,
   }));
 

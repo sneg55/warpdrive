@@ -25,10 +25,7 @@ it("seeds the 6 system activity types", async () => {
 });
 
 it("inserts an activity with an owner and assignee, defaulting done to false", async () => {
-  const [u] = await h.db
-    .insert(users)
-    .values({ email: "a@test.com", name: "A", googleSub: "sub-a" })
-    .returning();
+  const [u] = await h.db.insert(users).values({ email: "a@test.com", name: "A" }).returning();
 
   const [type] = await h.db.select().from(activityTypes).where(eq(activityTypes.key, "call"));
 

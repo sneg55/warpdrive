@@ -10,7 +10,7 @@ const newSignal = (): AbortSignal => new AbortController().signal;
 async function seedAccount(db: TestDb): Promise<string> {
   const u = (
     await db.execute(
-      sql`INSERT INTO users (email, name, google_sub) VALUES ('o@gunsnation.com','O','sub-o') RETURNING id`,
+      sql`INSERT INTO users (email, name) VALUES ('o@gunsnation.com','O') RETURNING id`,
     )
   ).rows[0] as { id: string };
   const a = (

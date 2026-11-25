@@ -12,7 +12,7 @@ import { ADMIN_DEFAULT_FLAGS, REGULAR_DEFAULT_FLAGS } from "@/constants/permissi
 import type * as schema from "@/db/schema";
 import { labels, permissionSets, pipelines, settings, stages, visibilityGroups } from "@/db/schema";
 
-type Tx = Parameters<Parameters<NodePgDatabase<typeof schema>["transaction"]>[0]>[0];
+export type Tx = Parameters<Parameters<NodePgDatabase<typeof schema>["transaction"]>[0]>[0];
 
 export interface SeedHandles {
   everyoneGroupId: string;

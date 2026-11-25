@@ -41,7 +41,7 @@ function decodeMimeBody(mimeText: string): string {
 describe("scheduled send bakes tracking + signature into the stored payload (fix #2)", () => {
   it("a PAST (due) scheduled send calls Gmail once with the signature and a rewritten tracked link", async () => {
     await withTestDb(async (db) => {
-      const user = await seedUser(db, { email: "sched-due@x.com", googleSub: "sub-sd" });
+      const user = await seedUser(db, { email: "sched-due@x.com" });
       const acctId = await seedAccountFor(db, user.id, "sched-due@x.com");
       const sigId = await seedSignatureFor(db, user.id, "<p>-- Regards, Bob</p>");
 
@@ -85,7 +85,7 @@ describe("scheduled send bakes tracking + signature into the stored payload (fix
 
   it("a FUTURE scheduled send does NOT call Gmail but persists the prepared (signed + rewritten) payload", async () => {
     await withTestDb(async (db) => {
-      const user = await seedUser(db, { email: "sched-fut@x.com", googleSub: "sub-sf" });
+      const user = await seedUser(db, { email: "sched-fut@x.com" });
       const acctId = await seedAccountFor(db, user.id, "sched-fut@x.com");
       const sigId = await seedSignatureFor(db, user.id, "<p>-- Thanks, Carol</p>");
 
@@ -126,7 +126,7 @@ describe("scheduled send bakes tracking + signature into the stored payload (fix
 
   it("the worker (processSendAttempt) sends a due scheduled row unchanged: sig + rewritten link in MIME", async () => {
     await withTestDb(async (db) => {
-      const user = await seedUser(db, { email: "sched-wrk@x.com", googleSub: "sub-swk" });
+      const user = await seedUser(db, { email: "sched-wrk@x.com" });
       const acctId = await seedAccountFor(db, user.id, "sched-wrk@x.com");
       const sigId = await seedSignatureFor(db, user.id, "<p>-- Best, Dana</p>");
 

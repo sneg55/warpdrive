@@ -42,6 +42,7 @@ export default async function TeamMailboxesPage({
         mailboxes={mailboxes.value}
         users={assignable}
         agenticEnabled={env.AGENTIC_INBOX_ENABLED}
+        googleConfigured={env.googleConfigured}
       />
       <XAccountsCard
         enabled={xEnabled}

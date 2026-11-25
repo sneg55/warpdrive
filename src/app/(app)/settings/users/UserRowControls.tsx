@@ -16,6 +16,7 @@ import {
 import { identityErrorMessage } from "@/constants/settingsIdentity";
 import {
   assignPermissionSetAction,
+  resetUserIdentitiesAction,
   setUserActiveAction,
   setUserAdminAction,
 } from "@/features/identity/actions/users";
@@ -28,6 +29,7 @@ const T = {
   activate: "Activate",
   deactivate: "Deactivate",
   changeSet: "Change permission set",
+  resetIdentities: "Reset sign-in identities",
 } as const;
 
 interface Props {
@@ -80,6 +82,19 @@ export function UserRowControls({
     });
   }
 
+  function resetIdentities(): void {
+    setError(null);
+    const csrf = readCsrfToken();
+    startTransition(async () => {
+      const result = await resetUserIdentitiesAction(csrf, { userId });
+      if (result.ok) {
+        onChanged();
+      } else {
+        setError(identityErrorMessage(result.error));
+      }
+    });
+  }
+
   function toggleActive(): void {
     setError(null);
     const csrf = readCsrfToken();
@@ -110,6 +125,11 @@ export function UserRowControls({
           <DropdownMenuItem disabled={isPending} onSelect={toggleActive}>
             {isActive ? T.deactivate : T.activate}
           </DropdownMenuItem>
+          {viewerIsAdmin && (
+            <DropdownMenuItem disabled={isPending} onSelect={resetIdentities}>
+              {T.resetIdentities}
+            </DropdownMenuItem>
+          )}
           {canAssignSet && (
             <DropdownMenuSub>
               <DropdownMenuSubTrigger disabled={isPending}>{T.changeSet}</DropdownMenuSubTrigger>

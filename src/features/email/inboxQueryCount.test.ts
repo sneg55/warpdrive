@@ -35,7 +35,7 @@ function countQueries(pool: typeof h.pool): { total: () => number; restore: () =
 async function seedOwnerWithAccount(): Promise<{ actor: AuthUser; accountId: string }> {
   const u = (
     await h.db.execute(
-      sql`INSERT INTO users (email, name, google_sub) VALUES ('owner@acme.com','Owner','sub-owner') RETURNING id`,
+      sql`INSERT INTO users (email, name) VALUES ('owner@acme.com','Owner') RETURNING id`,
     )
   ).rows[0] as { id: string };
   const acct = (

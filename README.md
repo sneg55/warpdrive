@@ -19,8 +19,9 @@
 
 warpdrive reimplements the core business-development workflow of Pipedrive as software you
 run yourself. It is **single-tenant and self-hosted**: your own box, your own Postgres and
-object storage, authenticated with your own Google Workspace. Your customer data never
-leaves your infrastructure, and there is no per-seat bill.
+object storage, signing users in through your own Google Workspace or any OpenID Connect
+provider. Your customer data never leaves your infrastructure, and there is no per-seat
+bill.
 
 The information architecture and workflows follow the tools BD teams already know, but all
 code, styling, and assets are original, and the interface ships its own visual layer built
@@ -133,9 +134,22 @@ pnpm db:migrate
 pnpm dev
 ```
 
-The app runs at `http://localhost:3000`. Google sign-in and Gmail need an OAuth client (see
-[`docs/deploy.md`](docs/deploy.md)); for local exploration you can sign in without Google
-using the dev-login route.
+The app runs at `http://localhost:3000`. Sign-in needs a provider: Google (see
+[`docs/deploy.md`](docs/deploy.md)) or any OIDC IdP. For local exploration you can sign in without
+either, using the dev-login route or the bundled Authelia provider.
+
+To exercise single sign-on without a Google tenant, bring up the bundled Authelia provider and sign
+in with **Sign in with SSO**:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d authelia
+```
+
+The first start generates the provider's certificates and secrets into `contrib/authelia/generated/`
+(git-ignored), so nothing secret is committed. Dev users, the issuer, and the claims an IdP must
+provide are documented in
+[`docs/sso.md`](docs/sso.md). Warpdrive also supports any generic OIDC provider (Authentik,
+Keycloak, Authelia) in production; see the same page.
 
 ## Self-hosting
 

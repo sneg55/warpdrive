@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto";
 import { sql } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { z } from "zod";
+import { env } from "@/config/env";
 import { AppError, ERROR_IDS } from "@/constants/errorIds";
 import { db } from "@/db/client";
 import { makeStorageClient } from "@/features/files/storage";
@@ -135,10 +136,17 @@ export async function trashThreadAction(
   );
 }
 
-export async function connectGmailStart(): Promise<{ url: string }> {
+export async function connectGmailStart(): Promise<ActionResult<{ url: string }>> {
   const ctx = await createContext();
   if (ctx.session === null) {
-    throw new AppError("E_AUTH_001", "connectGmailStart called without a session", {});
+    return clientErr(
+      new AppError(ERROR_IDS.AUTH_LOGIN_REJECTED, "connectGmailStart called without a session", {}),
+    );
+  }
+  if (!env.googleConfigured) {
+    return clientErr(
+      new AppError(ERROR_IDS.GMAIL_NOT_CONFIGURED, "Google OAuth is not configured", {}),
+    );
   }
 
   const state = randomUUID();
@@ -151,7 +159,7 @@ export async function connectGmailStart(): Promise<{ url: string }> {
     maxAge: 600,
   });
 
-  return { url: buildAuthUrl({ userId: ctx.session.userId, state }) };
+  return ok({ url: buildAuthUrl({ userId: ctx.session.userId, state }) });
 }
 
 const disconnectMailboxInput = z.object({ accountId: z.string().uuid() });
