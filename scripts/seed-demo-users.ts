@@ -1,4 +1,4 @@
-import { addToGroup, type Db, upsertUser } from "./seed-smoke-phase5-infra";
+import { addToGroup, type Db, ensureDevIdentity, upsertUser } from "./seed-smoke-phase5-infra";
 
 export type DemoUser = { email: string; name: string; admin: boolean };
 
@@ -40,12 +40,15 @@ export async function setupDemoUsers(
     userIds.push(id);
   }
 
-  await db.q(
-    `INSERT INTO users (email, name, google_sub, is_admin, is_active, permission_set_id, primary_visibility_group_id)
-     VALUES ('demo6@example.com', 'Demo Former Rep', 'dev-demo6@example.com', false, false, $1, $2)
-     ON CONFLICT (email) DO UPDATE SET is_active = false, updated_at = now()`,
+  const [formerRep] = await db.q<{ id: string }>(
+    `INSERT INTO users (email, name, is_admin, is_active, permission_set_id, primary_visibility_group_id)
+     VALUES ('demo6@example.com', 'Demo Former Rep', false, false, $1, $2)
+     ON CONFLICT (email) DO UPDATE SET is_active = false, updated_at = now()
+     RETURNING id`,
     [regularSetId, everyoneGroupId],
   );
+  if (!formerRep) throw new Error("user upsert failed for demo6@example.com");
+  await ensureDevIdentity(db, formerRep.id, "demo6@example.com");
 
   return { userIds, westGroupId: west.id };
 }

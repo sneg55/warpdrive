@@ -104,6 +104,16 @@ export async function seedVisibilityGroups(
   return { everyoneGroupId: everyone.id, restrictedGroupId: restricted.id };
 }
 
+export async function ensureDevIdentity(db: Db, userId: string, email: string): Promise<void> {
+  await db.q(
+    `INSERT INTO user_identities (user_id, provider, subject)
+     VALUES ($1, 'dev', $2)
+     ON CONFLICT (provider, subject) DO UPDATE
+       SET user_id = EXCLUDED.user_id, updated_at = now()`,
+    [userId, `dev-${email}`],
+  );
+}
+
 export async function upsertUser(
   db: Db,
   email: string,
@@ -114,18 +124,19 @@ export async function upsertUser(
 ): Promise<string> {
   const [row] = await db.q<{ id: string }>(
     `INSERT INTO users
-       (email, name, google_sub, is_admin, is_active, permission_set_id, primary_visibility_group_id)
-     VALUES ($1, $2, $3, $4, true, $5, $6)
+       (email, name, is_admin, is_active, permission_set_id, primary_visibility_group_id)
+     VALUES ($1, $2, $3, true, $4, $5)
      ON CONFLICT (email) DO UPDATE
-       SET name = EXCLUDED.name, google_sub = EXCLUDED.google_sub,
+       SET name = EXCLUDED.name,
            is_admin = EXCLUDED.is_admin, is_active = true,
            permission_set_id = EXCLUDED.permission_set_id,
            primary_visibility_group_id = EXCLUDED.primary_visibility_group_id,
            updated_at = now()
      RETURNING id`,
-    [email, name, `dev-${email}`, isAdmin, permissionSetId, everyoneGroupId],
+    [email, name, isAdmin, permissionSetId, everyoneGroupId],
   );
   if (!row) throw new Error(`user upsert failed for ${email}`);
+  await ensureDevIdentity(db, row.id, email);
   return row.id;
 }
 

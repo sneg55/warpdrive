@@ -57,12 +57,12 @@ export async function seedInvitedUser(
 ): Promise<void> {
   await db.q(
     `INSERT INTO users
-       (email, name, google_sub, is_admin, is_active, permission_set_id,
+       (email, name, is_admin, is_active, permission_set_id,
         primary_visibility_group_id, invited_at)
-     VALUES ('demo-invited@example.com', 'Demo Invited Rep', NULL, false, true, $1, $2,
+     VALUES ('demo-invited@example.com', 'Demo Invited Rep', false, true, $1, $2,
         now() - interval '2 days')
      ON CONFLICT (email) DO UPDATE
-       SET google_sub = NULL, invited_at = now() - interval '2 days',
+       SET invited_at = now() - interval '2 days',
            is_active = true, updated_at = now()`,
     [regularSetId, everyoneGroupId],
   );

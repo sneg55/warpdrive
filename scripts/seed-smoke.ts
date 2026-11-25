@@ -1,10 +1,10 @@
+import { fileURLToPath } from "node:url";
 import { Pool } from "pg";
 import {
   BASE_CURRENCY,
   DATABASE_URL,
   SMOKE_EMAIL,
   SMOKE_GMAIL_THREAD_ID,
-  SMOKE_GOOGLE_SUB,
   SMOKE_IDEMPOTENCY_KEY,
   SMOKE_INBOUND_BODY_HTML,
   SMOKE_MESSAGE_ID_HEADER,
@@ -14,6 +14,7 @@ import {
   SMOKE_PIPELINE_NAME,
   SMOKE_STAGE_NAME,
 } from "./seed-smoke-config";
+import { type Db, ensureDevIdentity } from "./seed-smoke-phase5-infra";
 
 const pool = new Pool({ connectionString: DATABASE_URL });
 
@@ -25,20 +26,20 @@ async function q<T extends Record<string, unknown>>(
   return result.rows as T[];
 }
 
-async function seedUser(): Promise<string> {
-  const rows = await q<{ id: string }>(
-    `INSERT INTO users (email, name, google_sub, is_admin, is_active)
-     VALUES ($1, $2, $3, true, true)
+export async function seedUser(db: Db): Promise<string> {
+  const rows = await db.q<{ id: string }>(
+    `INSERT INTO users (email, name, is_admin, is_active)
+     VALUES ($1, $2, true, true)
      ON CONFLICT (email) DO UPDATE
-       SET google_sub = EXCLUDED.google_sub,
-           is_admin   = true,
+       SET is_admin   = true,
            is_active  = true,
            updated_at = now()
      RETURNING id`,
-    [SMOKE_EMAIL, "Smoke Test User", SMOKE_GOOGLE_SUB],
+    [SMOKE_EMAIL, "Smoke Test User"],
   );
   const row = rows[0];
   if (row === undefined) throw new Error("user upsert returned no row");
+  await ensureDevIdentity(db, row.id, SMOKE_EMAIL);
   return row.id;
 }
 
@@ -225,7 +226,7 @@ async function seedTrackingToken(
 }
 
 async function main(): Promise<void> {
-  const userId = await seedUser();
+  const userId = await seedUser({ q });
   await seedSettings();
   const personId = await seedPerson(userId);
   const { pipelineId, stageId } = await seedPipelineAndStage();
@@ -240,11 +241,13 @@ async function main(): Promise<void> {
   console.warn(`smoke_open_token=${SMOKE_OPEN_TOKEN}`);
 }
 
-main()
-  .catch((e: unknown) => {
-    console.error("seed-smoke failed:", e);
-    process.exit(1);
-  })
-  .finally(() => {
-    void pool.end();
-  });
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  main()
+    .catch((e: unknown) => {
+      console.error("seed-smoke failed:", e);
+      process.exit(1);
+    })
+    .finally(() => {
+      void pool.end();
+    });
+}
