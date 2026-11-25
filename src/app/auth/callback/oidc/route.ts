@@ -5,6 +5,7 @@ import { z } from "zod";
 import { env } from "@/config/env";
 import { db } from "@/db/client";
 import { upsertUserOnLogin } from "@/features/auth/bootstrap";
+import { clientSecretBasicHeader } from "@/features/auth/clientSecretBasic";
 import { finishLogin } from "@/features/auth/finishLogin";
 import { LOGIN_RETURN_COOKIE, safeLoginReturnPath } from "@/features/auth/loginReturn";
 import { fetchOidcConfig, parseAllowedGroups, verifyOidcIdToken } from "@/features/auth/oidc";
@@ -25,11 +26,6 @@ function loginError(reason: string): NextResponse {
   return NextResponse.redirect(new URL("/login?error=auth_failed", env.BASE_URL));
 }
 
-function basicAuthHeader(clientId: string, clientSecret: string): string {
-  const raw = `${clientId}:${clientSecret}`;
-  return `Basic ${Buffer.from(raw, "utf8").toString("base64")}`;
-}
-
 async function exchangeCode(args: {
   tokenEndpoint: string;
   code: string;
@@ -42,7 +38,7 @@ async function exchangeCode(args: {
       method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
-        Authorization: basicAuthHeader(env.OIDC_CLIENT_ID, env.OIDC_CLIENT_SECRET),
+        Authorization: clientSecretBasicHeader(env.OIDC_CLIENT_ID, env.OIDC_CLIENT_SECRET),
       },
       body: new URLSearchParams({
         grant_type: "authorization_code",
