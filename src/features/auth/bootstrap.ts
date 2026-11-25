@@ -97,7 +97,7 @@ async function adoptByEmail(
   await tx.insert(userIdentities).values({ userId: candidate.id, provider, subject: identity.sub });
   const avatarUrl = isUploadedAvatarUrl(candidate.avatarUrl)
     ? candidate.avatarUrl
-    : fallbackAvatar(identity, email, candidate.avatarUrl);
+    : fallbackAvatar(identity, candidate.avatarUrl);
   await tx
     .update(users)
     .set({
