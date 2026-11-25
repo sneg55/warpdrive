@@ -40,6 +40,25 @@ describe("sign-in provider configuration", () => {
     if (result.ok) expect(result.value.googleSigninEnabled).toBe(true);
   });
 
+  test("treats an empty GOOGLE_SIGNIN_ENABLED as unset", () => {
+    const result = parseEnv(raw({ GOOGLE_SIGNIN_ENABLED: "" }));
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.value.googleSigninEnabled).toBe(false);
+  });
+
+  test("an empty GOOGLE_SIGNIN_ENABLED still defers to the client id", () => {
+    const result = parseEnv(
+      raw({
+        GOOGLE_SIGNIN_ENABLED: "",
+        GOOGLE_OAUTH_CLIENT_ID: "cid",
+        GOOGLE_OAUTH_CLIENT_SECRET: "secret",
+        GOOGLE_WORKSPACE_DOMAIN: "example.com",
+      }),
+    );
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.value.googleSigninEnabled).toBe(true);
+  });
+
   test("rejects a client id without secret or workspace domain", () => {
     const result = parseEnv(raw({ GOOGLE_OAUTH_CLIENT_ID: "cid" }));
     expect(result.ok).toBe(false);
