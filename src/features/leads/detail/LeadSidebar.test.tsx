@@ -8,6 +8,7 @@ import type { LeadDetail } from "../leadRepo";
 import { LeadSidebar } from "./LeadSidebar";
 
 const invalidateSupport = vi.hoisted(() => vi.fn(() => Promise.resolve()));
+const invalidateBrevo = vi.hoisted(() => vi.fn(() => Promise.resolve()));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 vi.mock("@/lib/trpc-client", () => ({
   trpc: {
@@ -16,6 +17,7 @@ vi.mock("@/lib/trpc-client", () => ({
     useUtils: () => ({
       contacts: { contactTimeline: { invalidate: () => Promise.resolve() } },
       intercom: { list: { invalidate: invalidateSupport } },
+      brevo: { list: { invalidate: invalidateBrevo } },
     }),
   },
 }));
@@ -263,4 +265,14 @@ it("refreshes the lead's support conversations after the linked person is edited
   fireEvent.change(screen.getByLabelText("editor-firstName"), { target: { value: "Janet" } });
   fireEvent.click(screen.getByRole("button", { name: "Save" }));
   await vi.waitFor(() => expect(invalidateSupport).toHaveBeenCalled());
+});
+
+it("refreshes the lead's marketing campaigns after the linked person is edited", async () => {
+  render(
+    <LeadSidebar baseCurrency="USD" lead={baseLead} owners={[]} person={basePerson} org={null} />,
+  );
+  fireEvent.click(screen.getByRole("button", { name: "Edit First name" }));
+  fireEvent.change(screen.getByLabelText("editor-firstName"), { target: { value: "Janet" } });
+  fireEvent.click(screen.getByRole("button", { name: "Save" }));
+  await vi.waitFor(() => expect(invalidateBrevo).toHaveBeenCalled());
 });

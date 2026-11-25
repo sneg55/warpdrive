@@ -2,11 +2,11 @@ import { sql } from "drizzle-orm";
 import { AppError, ERROR_IDS } from "@/constants/errorIds";
 import { INTERCOM_SOURCE_PART_TYPE, INTERCOM_VISIBLE_PART_TYPES } from "@/constants/intercom";
 import type { Db } from "@/db/client";
+import { visiblePersonsForScope } from "@/features/contacts/scopePersons";
 import { sanitizeInboundHtml } from "@/features/email/sanitizeHtml";
 import type { PermSetUser } from "@/features/permissions/effective";
 import { err, ok, type Result } from "@/types/result";
 import { conversationMatchesPersonEmails, personEmailsCte } from "./personMatch";
-import { visiblePersonsForScope } from "./scopePersons";
 import type { SupportConversationPart, SupportScope } from "./supportTypes";
 
 interface PartRow {

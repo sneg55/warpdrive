@@ -11,6 +11,7 @@ const SECRET_FILE_VARS = [
   "DATABASE_URL",
   "OAUTH_SIGNING_KEY",
   "INTERCOM_ACCESS_TOKEN",
+  "BREVO_API_KEY",
   "X_CLIENT_SECRET",
 ] as const;
 
@@ -95,6 +96,7 @@ const base = z.object({
   AGENTIC_INBOX_ENABLED: flagFromString.default(false),
   INTERCOM_ACCESS_TOKEN: z.string().default(""),
   INTERCOM_REGION: z.enum(["us", "eu", "au"]).default("us"),
+  BREVO_API_KEY: z.string().default(""),
   X_CLIENT_ID: z.string().default(""),
   X_CLIENT_SECRET: z.string().default(""),
 });

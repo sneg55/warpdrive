@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import {
+  PGBOSS_QUEUE_BREVO_SYNC,
   PGBOSS_QUEUE_EMAIL_SEND,
   PGBOSS_QUEUE_EMAIL_SYNC,
   PGBOSS_QUEUE_FILE_REAPER,
@@ -100,6 +101,8 @@ describe("registerAllJobs", () => {
       expect(queueNames).toContain(PGBOSS_QUEUE_INTERCOM_DEAL_SEARCH_BACKFILL);
       expect(queueNames).not.toContain(PGBOSS_QUEUE_INTERCOM_SYNC);
       expect(fakeBoss.schedules.some((s) => s.name === PGBOSS_QUEUE_INTERCOM_SYNC)).toBe(false);
+      expect(queueNames).not.toContain(PGBOSS_QUEUE_BREVO_SYNC);
+      expect(fakeBoss.schedules.some((s) => s.name === PGBOSS_QUEUE_BREVO_SYNC)).toBe(false);
     } finally {
       testDbHolder.db = null;
       await h.close();

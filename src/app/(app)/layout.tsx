@@ -12,6 +12,8 @@ import { NAV_PREF_COOKIE } from "@/constants/cookies";
 import { db } from "@/db/client";
 import { FollowUpPromptProvider } from "@/features/activities/followUpAfterDone";
 import { CSRF_COOKIE } from "@/features/auth/csrf";
+import { BrevoEnabledProvider } from "@/features/brevo/BrevoEnabledProvider";
+import { isBrevoEnabled } from "@/features/brevo/settings";
 import { InboxNavBadge } from "@/features/email/InboxNavBadge";
 import { InterfacePrefsProvider } from "@/features/identity/InterfacePrefsProvider";
 import { interfacePrefsFromUi } from "@/features/identity/interfacePrefs";
@@ -57,31 +59,35 @@ export default async function AppLayout({ children }: { children: ReactNode }): 
       <RealtimeUrlProvider url={env.NEXT_PUBLIC_WS_URL}>
         <InterfacePrefsProvider value={interfacePrefsFromUi(prefs.ui)}>
           <IntercomEnabledProvider enabled={isIntercomEnabled()}>
-            <BaseCurrencyProvider currency={baseCurrency}>
-              <FollowUpPromptProvider>
-                <div data-density={prefs.density} className="flex h-screen flex-col">
-                  <CsrfRefresher hasCsrf={hasCsrf} />
-                  {ctx.actor.type === "admin" && <VersionBanner />}
-                  <ReconnectBanner />
-                  <TopBar
-                    userId={ctx.actor.id}
-                    userName={ctx.actor.name}
-                    avatarUrl={ctx.actor.avatarUrl}
-                    appearance={parseAppearance(prefs.ui.appearance)}
-                  />
-                  <div className="flex min-h-0 flex-1">
-                    <LeftNav
-                      initialExpanded={navExpanded}
-                      inboxBadge={<InboxNavBadge selfActorId={ctx.actor.id} />}
+            <BrevoEnabledProvider enabled={isBrevoEnabled()}>
+              <BaseCurrencyProvider currency={baseCurrency}>
+                <FollowUpPromptProvider>
+                  <div data-density={prefs.density} className="flex h-screen flex-col">
+                    <CsrfRefresher hasCsrf={hasCsrf} />
+                    {ctx.actor.type === "admin" && <VersionBanner />}
+                    <ReconnectBanner />
+                    <TopBar
+                      userId={ctx.actor.id}
+                      userName={ctx.actor.name}
+                      avatarUrl={ctx.actor.avatarUrl}
+                      appearance={parseAppearance(prefs.ui.appearance)}
                     />
-                    <main className="min-w-0 flex-1 overflow-auto bg-muted/70 p-6">{children}</main>
+                    <div className="flex min-h-0 flex-1">
+                      <LeftNav
+                        initialExpanded={navExpanded}
+                        inboxBadge={<InboxNavBadge selfActorId={ctx.actor.id} />}
+                      />
+                      <main className="min-w-0 flex-1 overflow-auto bg-muted/70 p-6">
+                        {children}
+                      </main>
+                    </div>
+                    <CommandPalette />
+                    <GlobalShortcuts />
+                    <Toaster />
                   </div>
-                  <CommandPalette />
-                  <GlobalShortcuts />
-                  <Toaster />
-                </div>
-              </FollowUpPromptProvider>
-            </BaseCurrencyProvider>
+                </FollowUpPromptProvider>
+              </BaseCurrencyProvider>
+            </BrevoEnabledProvider>
           </IntercomEnabledProvider>
         </InterfacePrefsProvider>
       </RealtimeUrlProvider>

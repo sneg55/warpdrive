@@ -34,6 +34,7 @@ export function useParticipants(
     await Promise.all([
       utils.deal.participants.invalidate({ dealId }),
       utils.intercom.list.invalidate(),
+      utils.brevo.list.invalidate(),
     ]);
     router.refresh();
   }

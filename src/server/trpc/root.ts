@@ -1,4 +1,5 @@
 import { activitiesRouter } from "@/features/activities/router";
+import { brevoRouter } from "@/features/brevo/router";
 import { collaborationRouter } from "@/features/collaboration/router";
 import { contactsRouter } from "@/features/contacts/router";
 import { customFieldsRouter } from "@/features/custom-fields/router";
@@ -35,6 +36,7 @@ export const appRouter = router({
   activities: activitiesRouter,
   import: importRouter,
   intercom: intercomRouter,
+  brevo: brevoRouter,
   labels: labelsRouter,
   mailLabels: mailLabelsRouter,
   lead: leadRouter,

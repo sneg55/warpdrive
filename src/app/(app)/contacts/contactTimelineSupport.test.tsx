@@ -7,6 +7,7 @@ import type { SupportConversationSummary } from "@/features/intercom/supportType
 
 vi.mock("@/lib/trpc-client", () => ({
   trpc: {
+    brevo: { list: { useQuery: () => ({ data: undefined }) } },
     contacts: { contactTimeline: { useQuery: () => ({ data: { items: [] } }) } },
     email: { listMessagesForContact: { useQuery: () => ({ data: [], isError: false }) } },
     files: { listForEntity: { useQuery: () => ({ data: [] }) } },

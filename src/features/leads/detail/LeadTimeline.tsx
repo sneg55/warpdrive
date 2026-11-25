@@ -59,7 +59,12 @@ export function LeadTimeline({
   const { pinned, focus, history } = useMemo(() => partitionFocusHistory(items), [items]);
   const activities = history.filter((i) => i.kind === "activity");
   const notes = history.filter((i) => i.kind === "note");
-  const support = history.filter((i) => i.kind === "supportConversation");
+  const support = history.filter(
+    (i) =>
+      i.kind === "supportConversation" ||
+      i.kind === "marketingCampaign" ||
+      i.kind === "marketingTruncated",
+  );
 
   return (
     <div className="space-y-6">

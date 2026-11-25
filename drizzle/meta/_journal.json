@@ -610,6 +610,13 @@
       "when": 1795133559719,
       "tag": "0086_search_plain_columns",
       "breakpoints": true
+    },
+    {
+      "idx": 87,
+      "version": "7",
+      "when": 1795605328268,
+      "tag": "0087_brevo_marketing_history",
+      "breakpoints": true
     }
   ]
 }

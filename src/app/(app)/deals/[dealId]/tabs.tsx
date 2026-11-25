@@ -2,6 +2,7 @@
 import { useCallback, useMemo } from "react";
 import type { Deal } from "@/db/schema";
 import type { CalendarActivity } from "@/features/activities/calendar";
+import { useMarketingCampaigns } from "@/features/brevo/useMarketingCampaigns";
 import { HistoryFeed } from "@/features/deal-workspace/HistoryFeed";
 import type { HistoryTab } from "@/features/deal-workspace/HistoryTypeTabs";
 import { HistoryTypeTabs } from "@/features/deal-workspace/HistoryTypeTabs";
@@ -12,6 +13,7 @@ import {
   buildHistoryTimeline,
   mergeDraftItems,
   mergeEmailItems,
+  mergeMarketingItems,
   mergeSupportItems,
   partitionFocusHistory,
 } from "@/features/deal-workspace/historyTimeline";
@@ -46,7 +48,12 @@ export function bucketByType(history: HistoryItem[]): Record<Tab, HistoryItem[]>
     notes: history.filter((i) => i.kind === "note"),
     changelog: history.filter((i) => i.kind === "event"),
     email: history.filter(
-      (i) => i.kind === "email" || i.kind === "emailDraft" || i.kind === "supportConversation",
+      (i) =>
+        i.kind === "email" ||
+        i.kind === "emailDraft" ||
+        i.kind === "supportConversation" ||
+        i.kind === "marketingCampaign" ||
+        i.kind === "marketingTruncated",
     ),
     files: [],
   };
@@ -88,21 +95,36 @@ export function WorkspaceTabs({
   const utils = trpc.useUtils();
   const supportScope = useMemo(() => ({ kind: "deal" as const, dealId: deal.id }), [deal.id]);
   const support = useSupportConversations(supportScope);
+  const marketing = useMarketingCampaigns(supportScope);
 
   const allItems = useMemo(
     () =>
-      mergeSupportItems(
-        mergeDraftItems(
-          mergeEmailItems(
-            buildHistoryTimeline(activities, resolvedChangelog, notes, createdAnchor),
-            emails,
+      mergeMarketingItems(
+        mergeSupportItems(
+          mergeDraftItems(
+            mergeEmailItems(
+              buildHistoryTimeline(activities, resolvedChangelog, notes, createdAnchor),
+              emails,
+            ),
+            drafts,
           ),
-          drafts,
+          support,
+          supportScope,
         ),
-        support,
+        marketing,
         supportScope,
       ),
-    [activities, resolvedChangelog, notes, createdAnchor, emails, drafts, support, supportScope],
+    [
+      activities,
+      resolvedChangelog,
+      notes,
+      createdAnchor,
+      emails,
+      drafts,
+      support,
+      marketing,
+      supportScope,
+    ],
   );
   const { pinned, focus, history } = useMemo(() => partitionFocusHistory(allItems), [allItems]);
   const historyByType = useMemo(() => bucketByType(history), [history]);

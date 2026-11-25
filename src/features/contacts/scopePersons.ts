@@ -3,10 +3,10 @@ import type { Db } from "@/db/client";
 import { leads } from "@/db/schema";
 import { toRefActor } from "@/features/contacts/actorAdapters";
 import { canSeeLinkedDeal, canSeeLinkedPerson } from "@/features/email/emailVisibility";
+import type { SupportScope } from "@/features/intercom/supportTypes";
 import { leadVisibilityClause } from "@/features/leads/visibility";
 import type { PermSetUser } from "@/features/permissions/effective";
 import { assertNever } from "@/types/result";
-import type { SupportScope } from "./supportTypes";
 
 async function visibleOnly(
   db: Db,

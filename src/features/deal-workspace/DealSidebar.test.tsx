@@ -52,6 +52,7 @@ vi.mock("@/lib/trpc-client", () => ({
   trpc: {
     useUtils: () => ({
       intercom: { list: { invalidate: vi.fn() } },
+      brevo: { list: { invalidate: vi.fn() } },
       deal: { participants: { invalidate: vi.fn() } },
       contacts: {
         dealsForPerson: { invalidate: vi.fn() },

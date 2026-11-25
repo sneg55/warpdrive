@@ -6,5 +6,6 @@ export function useRefreshSupportConversations(): () => void {
   const utils = trpc.useUtils();
   return () => {
     void utils.intercom.list.invalidate();
+    void utils.brevo.list.invalidate();
   };
 }

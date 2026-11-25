@@ -2,6 +2,7 @@ import type { PgBoss as PgBossType } from "pg-boss";
 import { PgBoss } from "pg-boss";
 import { env } from "@/config/env";
 import { registerReminderWorker } from "@/features/activities/reminders";
+import { registerBrevoSyncJob } from "@/features/brevo/job";
 import { registerEmailJobs } from "@/features/email/workerJobs";
 import { registerReaperJob } from "@/features/files/reaper";
 import { registerImportWorkers } from "@/features/import/registerImportWorkers";
@@ -20,6 +21,7 @@ export async function registerAllJobs(boss: PgBossType): Promise<void> {
   await registerReminderWorker(boss);
   await registerReleaseCheckJob(boss);
   await registerIntercomSyncJob(boss);
+  await registerBrevoSyncJob(boss);
   await registerDealSearchJobs(boss);
   await registerXSyncJob(boss);
 }

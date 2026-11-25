@@ -2,8 +2,9 @@
 import type React from "react";
 import { useMemo } from "react";
 import type { Organization, Person } from "@/db/schema";
+import { useMarketingCampaigns } from "@/features/brevo/useMarketingCampaigns";
 import { SharedComposeBar } from "@/features/compose/SharedComposeBar";
-import { mergeSupportItems } from "@/features/deal-workspace/historyTimeline";
+import { mergeMarketingItems, mergeSupportItems } from "@/features/deal-workspace/historyTimeline";
 import { useSupportConversations } from "@/features/intercom/useSupportConversations";
 import { LeadHeader } from "@/features/leads/detail/LeadHeader";
 import { LeadSidebar } from "@/features/leads/detail/LeadSidebar";
@@ -42,9 +43,15 @@ export function LeadWorkspaceClient({
   const timeline = timelineQ.data ?? EMPTY_TIMELINE;
   const supportScope = useMemo(() => ({ kind: "lead" as const, leadId: lead.id }), [lead.id]);
   const support = useSupportConversations(supportScope);
+  const marketing = useMarketingCampaigns(supportScope);
   const items = useMemo(
-    () => mergeSupportItems(timeline.items, support, supportScope),
-    [timeline.items, support, supportScope],
+    () =>
+      mergeMarketingItems(
+        mergeSupportItems(timeline.items, support, supportScope),
+        marketing,
+        supportScope,
+      ),
+    [timeline.items, support, marketing, supportScope],
   );
   const ownersQ = trpc.identity.assignableUsers.useQuery();
   const owners = ownersQ.data ?? [];

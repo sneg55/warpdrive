@@ -75,6 +75,7 @@ export function DealPersonSection({
       utils.contacts.dealsForPerson.invalidate(),
       utils.contacts.personOptions.invalidate(),
       utils.intercom.list.invalidate(),
+      utils.brevo.list.invalidate(),
     ]);
     router.refresh();
   }

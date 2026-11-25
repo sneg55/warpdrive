@@ -9,6 +9,7 @@ import { WorkspaceTabs } from "./tabs";
 vi.mock("@/lib/trpc-client", () => ({
   trpc: {
     intercom: { list: { useQuery: () => ({ data: undefined }) } },
+    brevo: { list: { useQuery: () => ({ data: undefined }) } },
     useUtils: () => ({
       activities: { listForEntity: { setData: () => {}, invalidate: () => {} } },
       email: {

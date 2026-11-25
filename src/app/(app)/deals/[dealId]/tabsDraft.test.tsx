@@ -8,6 +8,7 @@ const draftsQuery = vi.fn();
 vi.mock("@/lib/trpc-client", () => ({
   trpc: {
     intercom: { list: { useQuery: () => ({ data: undefined }) } },
+    brevo: { list: { useQuery: () => ({ data: undefined }) } },
     files: { listForEntity: { useQuery: () => ({ data: [] }) } },
     collaboration: {
       listNotes: { useQuery: () => ({ data: [] }) },

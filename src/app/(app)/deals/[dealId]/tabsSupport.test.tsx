@@ -6,6 +6,7 @@ import type { SupportConversationSummary, SupportScope } from "@/features/interc
 
 vi.mock("@/lib/trpc-client", () => ({
   trpc: {
+    brevo: { list: { useQuery: () => ({ data: undefined }) } },
     files: { listForEntity: { useQuery: () => ({ data: [] }) } },
     collaboration: {
       listNotes: { useQuery: () => ({ data: [] }) },

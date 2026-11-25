@@ -2,10 +2,12 @@
 import type React from "react";
 import { bucketByType } from "@/app/(app)/deals/[dealId]/tabs";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useMarketingCampaigns } from "@/features/brevo/useMarketingCampaigns";
 import { HistoryFeed } from "@/features/deal-workspace/HistoryFeed";
 import { countHistoryTabs } from "@/features/deal-workspace/historyTabCounts";
 import {
   mergeEmailItems,
+  mergeMarketingItems,
   mergeSupportItems,
   partitionFocusHistory,
 } from "@/features/deal-workspace/historyTimeline";
@@ -86,9 +88,16 @@ export function ContactTimelinePanel({
   const supportScope =
     entityType === "person" ? ({ kind: "person", personId: entityId } as const) : null;
   const support = useSupportConversations(supportScope);
+  const marketing = useMarketingCampaigns(supportScope);
   const withEmail = mergeEmailItems(rawItems, emailQuery.data ?? []);
   const items =
-    supportScope === null ? withEmail : mergeSupportItems(withEmail, support, supportScope);
+    supportScope === null
+      ? withEmail
+      : mergeMarketingItems(
+          mergeSupportItems(withEmail, support, supportScope),
+          marketing,
+          supportScope,
+        );
   const { pinned, focus, history } = partitionFocusHistory(items);
   const historyByType = bucketByType(history);
 

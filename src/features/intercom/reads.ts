@@ -1,9 +1,9 @@
 import { sql } from "drizzle-orm";
 import { INTERCOM_TIMELINE_LIMIT } from "@/constants/intercom";
 import type { Db } from "@/db/client";
+import { visiblePersonsForScope } from "@/features/contacts/scopePersons";
 import type { PermSetUser } from "@/features/permissions/effective";
 import { conversationMatchesPersonEmails, personEmailsCte } from "./personMatch";
-import { visiblePersonsForScope } from "./scopePersons";
 import type { SupportConversationSummary, SupportScope } from "./supportTypes";
 
 interface SummaryRow {

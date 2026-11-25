@@ -1,5 +1,7 @@
-import { Mail, MessagesSquare } from "lucide-react";
+import { Mail, Megaphone, MessagesSquare } from "lucide-react";
 import type React from "react";
+import { MARKETING_STRINGS } from "@/constants/marketingStrings";
+import { MarketingCampaignCard } from "@/features/brevo/MarketingCampaignCard";
 import type { DraftSummary } from "@/features/email/draftRepo";
 import { EmailDraftCard } from "@/features/email/EmailDraftCard";
 import type { EmailCardScope } from "@/features/email/EmailTimelineCard";
@@ -61,6 +63,14 @@ function RailMarker({ item }: { item: HistoryItem }): React.ReactNode {
       </IconRailBadge>
     );
   }
+  if (item.kind === "marketingCampaign") {
+    return (
+      <IconRailBadge rail="marketing">
+        <Megaphone className="h-3 w-3" />
+      </IconRailBadge>
+    );
+  }
+  if (item.kind === "marketingTruncated") return null;
   return (
     <span
       aria-hidden="true"
@@ -137,6 +147,14 @@ export function HistoryFeed({
           )}
           {item.kind === "supportConversation" && (
             <SupportConversationCard conversation={item.conversation} scope={item.scope} />
+          )}
+          {item.kind === "marketingCampaign" && (
+            <MarketingCampaignCard campaign={item.campaign} scope={item.scope} />
+          )}
+          {item.kind === "marketingTruncated" && (
+            <p className="text-xs text-muted-foreground">
+              {MARKETING_STRINGS.truncated(item.limit)}
+            </p>
           )}
           {item.kind === "email" && emailScope !== undefined && (
             <EmailTimelineCard

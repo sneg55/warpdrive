@@ -33,6 +33,7 @@ describe("error IDs", () => {
       "ENRICH",
       "UI",
       "INTERCOM",
+      "BREVO",
       "X",
       "AINBOX",
     ];
@@ -74,5 +75,13 @@ describe("error IDs", () => {
     expect(ERROR_IDS.INTERCOM_PARSE_FAILED).toBe("E_INTERCOM_004");
     expect(ERROR_IDS.INTERCOM_NOT_FOUND).toBe("E_INTERCOM_005");
     expect(ERROR_IDS.INTERCOM_CONVERSATION_DENIED).toBe("E_INTERCOM_006");
+  });
+
+  test("the Brevo integration has its own ids", () => {
+    expect(ERROR_IDS.BREVO_HTTP_FAILED).toBe("E_BREVO_001");
+    expect(ERROR_IDS.BREVO_RATE_LIMITED).toBe("E_BREVO_002");
+    expect(ERROR_IDS.BREVO_NETWORK_FAILED).toBe("E_BREVO_003");
+    expect(ERROR_IDS.BREVO_PARSE_FAILED).toBe("E_BREVO_004");
+    expect(ERROR_IDS.BREVO_UNAUTHORIZED).toBe("E_BREVO_005");
   });
 });

@@ -2,6 +2,16 @@
 
 Notable changes to Warpdrive, newest first. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 2.16.0 - 2026-11-25
+
+### Added
+
+- **brevo**: show Brevo marketing campaigns in person, deal and lead history
+
+### Security
+
+- clear 6 docs-site advisories (tinypool@1.1.1 -> 2.2.0, serialize-javascript@6.0.2 -> 7.1.4, @swc/html@1.15.46 -> 1.16.22)
+
 ## 2.15.1 - 2026-11-24
 
 ### Fixed

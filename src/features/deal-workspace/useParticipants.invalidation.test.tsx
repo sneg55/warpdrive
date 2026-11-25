@@ -4,17 +4,18 @@ import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, expect, it, vi } from "vitest";
 
-const { invalidatePersonOptions, invalidatePeopleForOrg, invalidateParticipants } = vi.hoisted(
-  () => ({
+const { invalidatePersonOptions, invalidatePeopleForOrg, invalidateParticipants, invalidateBrevo } =
+  vi.hoisted(() => ({
     invalidatePersonOptions: vi.fn(),
     invalidatePeopleForOrg: vi.fn(),
     invalidateParticipants: vi.fn(),
-  }),
-);
+    invalidateBrevo: vi.fn(),
+  }));
 vi.mock("@/lib/trpc-client", () => ({
   trpc: {
     useUtils: () => ({
       intercom: { list: { invalidate: vi.fn() } },
+      brevo: { list: { invalidate: invalidateBrevo } },
       deal: { participants: { invalidate: invalidateParticipants } },
       contacts: {
         personOptions: { invalidate: invalidatePersonOptions },
@@ -55,6 +56,12 @@ it("refreshes the organization's people after creating and linking one of them",
   await userEvent.click(screen.getByRole("button", { name: "create" }));
   await waitFor(() => expect(invalidatePersonOptions).toHaveBeenCalled());
   expect(invalidatePeopleForOrg).toHaveBeenCalledWith({ orgId: "o1" });
+});
+
+it("refreshes the deal's marketing campaigns after linking a participant", async () => {
+  render(<Harness orgId={null} />);
+  await userEvent.click(screen.getByRole("button", { name: "create" }));
+  await waitFor(() => expect(invalidateBrevo).toHaveBeenCalled());
 });
 
 it("skips the organization refresh when the deal has no organization", async () => {

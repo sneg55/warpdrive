@@ -33,6 +33,7 @@ vi.mock("@/utils/csrfCookie", () => ({ readCsrfToken: () => "csrf" }));
 vi.mock("@/lib/trpc-client", () => ({
   trpc: {
     intercom: { list: { useQuery: () => ({ data: undefined }) } },
+    brevo: { list: { useQuery: () => ({ data: undefined }) } },
     enrichment: { status: { useQuery: () => ({ data: { ready: false, providers: [] } }) } },
     useUtils: () => ({
       activities: {

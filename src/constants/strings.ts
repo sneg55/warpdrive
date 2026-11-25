@@ -1,6 +1,7 @@
 import { DEAL_SIDEBAR_STRINGS } from "./dealSidebarStrings";
 import { ENRICHMENT_STRINGS } from "./enrichmentStrings";
 import { INBOX_STRINGS } from "./inboxStrings";
+import { MARKETING_STRINGS } from "./marketingStrings";
 import { SETTINGS_STRINGS } from "./settingsStrings";
 import { SUPPORT_STRINGS } from "./supportStrings";
 
@@ -90,6 +91,7 @@ export const STRINGS = {
   enrichment: ENRICHMENT_STRINGS,
   inbox: INBOX_STRINGS,
   support: SUPPORT_STRINGS,
+  marketing: MARKETING_STRINGS,
   notifications: {
     title: "Notifications",
     markAllRead: "Mark all read",

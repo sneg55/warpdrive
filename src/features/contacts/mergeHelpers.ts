@@ -18,6 +18,7 @@ import { canSee } from "@/features/permissions/canSee";
 import type { PermSetUser } from "@/features/permissions/effective";
 import type { VisiblePersonOrOrg } from "@/features/permissions/types";
 import { err, ok, type Result } from "@/types/result";
+import { repointOrgRefs, repointPersonRefs } from "./mergeRepointRefs";
 
 export type MergeArgs = {
   survivorId: string;
@@ -134,6 +135,7 @@ export async function repointPersonFks(
       ),
     );
   await tx.delete(personLabels).where(eq(personLabels.personId, mergedId));
+  await repointPersonRefs(tx, survivorId, mergedId);
 }
 
 export async function repointOrgFks(tx: Tx, survivorId: string, mergedId: string): Promise<void> {
@@ -165,4 +167,5 @@ export async function repointOrgFks(tx: Tx, survivorId: string, mergedId: string
       ),
     );
   await tx.delete(orgLabels).where(eq(orgLabels.orgId, mergedId));
+  await repointOrgRefs(tx, survivorId, mergedId);
 }

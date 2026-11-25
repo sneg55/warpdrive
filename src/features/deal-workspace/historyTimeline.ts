@@ -1,7 +1,9 @@
+import { BREVO_HISTORY_ID_PREFIX, BREVO_TIMELINE_LIMIT } from "@/constants/brevo";
 import { CHANGE_FIELD_STAGE_ID } from "@/constants/changeLogFields";
 import { type CommentableEntityType, isCommentableEntityType } from "@/constants/comments";
 import { INTERCOM_HISTORY_ID_PREFIX } from "@/constants/intercom";
 import type { CalendarActivity } from "@/features/activities/calendar";
+import type { MarketingCampaignItem, MarketingCampaignList } from "@/features/brevo/types";
 import type { ChangeLogEntry } from "@/features/collaboration/changeLog";
 import type { DraftSummary } from "@/features/email/draftRepo";
 import type { EmailTimelineMessage } from "@/features/email/entityMessageReads";
@@ -32,7 +34,15 @@ export type HistoryItem =
       at: Date;
       conversation: SupportConversationSummary;
       scope: SupportScope;
-    };
+    }
+  | {
+      kind: "marketingCampaign";
+      id: string;
+      at: Date;
+      campaign: MarketingCampaignItem;
+      scope: SupportScope;
+    }
+  | { kind: "marketingTruncated"; id: string; at: Date; limit: number };
 
 export interface NoteItem {
   id: string;
@@ -153,4 +163,37 @@ export function mergeSupportItems(
     scope,
   }));
   return [...items, ...supportItems].sort((a, b) => b.at.getTime() - a.at.getTime());
+}
+
+const BREVO_TRUNCATED_ID = `${BREVO_HISTORY_ID_PREFIX}truncated`;
+
+function campaignHistoryId(c: MarketingCampaignItem): string {
+  return `${BREVO_HISTORY_ID_PREFIX}${c.campaignId}:${c.recipientPersonId}:${c.recipientEmail}`;
+}
+
+export function mergeMarketingItems(
+  items: HistoryItem[],
+  campaigns: MarketingCampaignList,
+  scope: SupportScope,
+): HistoryItem[] {
+  if (campaigns.items.length === 0) return items;
+  const campaignItems: HistoryItem[] = campaigns.items.map((c) => ({
+    kind: "marketingCampaign",
+    id: campaignHistoryId(c),
+    at: new Date(c.at),
+    campaign: c,
+    scope,
+  }));
+  const oldest = Math.min(...campaignItems.map((i) => i.at.getTime()));
+  const notice: HistoryItem[] = campaigns.truncated
+    ? [
+        {
+          kind: "marketingTruncated",
+          id: BREVO_TRUNCATED_ID,
+          at: new Date(oldest - 1),
+          limit: BREVO_TIMELINE_LIMIT,
+        },
+      ]
+    : [];
+  return [...items, ...campaignItems, ...notice].sort((a, b) => b.at.getTime() - a.at.getTime());
 }
