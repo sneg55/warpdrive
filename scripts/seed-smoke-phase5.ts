@@ -65,13 +65,13 @@ async function main(): Promise<void> {
   const actTypeId = await ensureActivityType(db);
 
   const mainPipelineId = await upsertPipeline(db, "Acme BD", null);
-  const stageLeadId = await upsertStage(db, mainPipelineId, "Lead", 0, 20);
-  const stageQualifiedId = await upsertStage(db, mainPipelineId, "Qualified", 1, 50);
-  const stageWonId = await upsertStage(db, mainPipelineId, "Won", 2, 100);
-  const stageLostId = await upsertStage(db, mainPipelineId, "Lost", 3, 0);
+  const stageLeadId = await upsertStage(db, mainPipelineId, "Lead", 0);
+  const stageQualifiedId = await upsertStage(db, mainPipelineId, "Qualified", 1);
+  const stageWonId = await upsertStage(db, mainPipelineId, "Won", 2);
+  const stageLostId = await upsertStage(db, mainPipelineId, "Lost", 3);
 
   const restrictedPipelineId = await upsertPipeline(db, "Restricted Pipeline", restrictedGroupId);
-  const restrictedStageId = await upsertStage(db, restrictedPipelineId, "Stage 1", 0, 50);
+  const restrictedStageId = await upsertStage(db, restrictedPipelineId, "Stage 1", 0);
 
   const orgId = await upsertOrg(db, "Acme Corp", userAId);
   const personId = await upsertPerson(db, "Acme Jane", "acme.jane@example.com", userAId, orgId);

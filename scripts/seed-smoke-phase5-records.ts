@@ -39,7 +39,6 @@ export async function upsertStage(
   pipelineId: string,
   name: string,
   order: number,
-  probability: number,
 ): Promise<string> {
   const [existing] = await db.q<{ id: string }>(
     `SELECT id FROM stages WHERE pipeline_id = $1 AND name = $2 LIMIT 1`,
@@ -47,8 +46,8 @@ export async function upsertStage(
   );
   if (existing) return existing.id;
   const [row] = await db.q<{ id: string }>(
-    `INSERT INTO stages (pipeline_id, name, "order", probability) VALUES ($1, $2, $3, $4) RETURNING id`,
-    [pipelineId, name, order, probability],
+    `INSERT INTO stages (pipeline_id, name, "order") VALUES ($1, $2, $3) RETURNING id`,
+    [pipelineId, name, order],
   );
   if (!row) throw new Error(`stage '${name}' insert failed`);
   return row.id;
