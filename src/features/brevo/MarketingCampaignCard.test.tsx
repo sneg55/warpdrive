@@ -40,6 +40,17 @@ describe("MarketingCampaignCard", () => {
     expect(screen.getByText("Meet the new dashboard")).toBeInTheDocument();
   });
 
+  it("shows the subject with Brevo merge tags rendered, not raw template syntax", () => {
+    render(
+      <MarketingCampaignCard
+        campaign={item({ subject: '{{ contact.FIRSTNAME | default : "Trader" }} , VIP access.' })}
+        scope={personScope}
+      />,
+    );
+    expect(screen.getByText("Trader, VIP access.")).toBeInTheDocument();
+    expect(screen.queryByText(/contact\.FIRSTNAME/)).not.toBeInTheDocument();
+  });
+
   it("renders only the badges that have a timestamp, in the fixed order", () => {
     render(
       <MarketingCampaignCard

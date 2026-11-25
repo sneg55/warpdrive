@@ -10,6 +10,7 @@ import { formatReaderDate, formatTimelineEmailDate } from "@/features/email/inbo
 import type { SupportScope } from "@/features/intercom/supportTypes";
 import { MASK_CLASS } from "@/features/observability/replayMasking";
 import { cn } from "@/lib/utils";
+import { renderMergeTags } from "./mergeTags";
 import type { MarketingCampaignItem } from "./types";
 
 interface MarketingCampaignCardProps {
@@ -96,7 +97,7 @@ export function MarketingCampaignCard({
       </h3>
       {campaign.subject !== null && (
         <p className={cn("mt-0.5 truncate text-xs text-muted-foreground", MASK_CLASS)}>
-          {campaign.subject}
+          {renderMergeTags(campaign.subject)}
         </p>
       )}
       <p className="mt-0.5 truncate text-xs text-muted-foreground">
