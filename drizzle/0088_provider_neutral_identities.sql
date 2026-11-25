@@ -10,5 +10,5 @@ CREATE TABLE "user_identities" (
 ALTER TABLE "user_identities" ADD CONSTRAINT "user_identities_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE cascade;--> statement-breakpoint
 CREATE UNIQUE INDEX "user_identities_provider_subject_uq" ON "user_identities" USING btree ("provider","subject");--> statement-breakpoint
 CREATE INDEX "user_identities_user_idx" ON "user_identities" USING btree ("user_id");--> statement-breakpoint
-INSERT INTO "user_identities" ("user_id","provider","subject") SELECT "id", 'google', "google_sub" FROM "users" WHERE "google_sub" IS NOT NULL;--> statement-breakpoint
+INSERT INTO "user_identities" ("user_id","provider","subject") SELECT "id", CASE WHEN "google_sub" LIKE 'dev-%' THEN 'dev' ELSE 'google' END, "google_sub" FROM "users" WHERE "google_sub" IS NOT NULL;--> statement-breakpoint
 ALTER TABLE "users" DROP COLUMN "google_sub";
