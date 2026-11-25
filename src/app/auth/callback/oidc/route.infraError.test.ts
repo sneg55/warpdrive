@@ -34,7 +34,7 @@ vi.mock("@/features/auth/oidc", async (importOriginal) => ({
 async function loadRoute(): Promise<typeof RouteModule> {
   vi.stubEnv("OIDC_ISSUER_URL", ISSUER);
   vi.stubEnv("OIDC_CLIENT_ID", "warpdrive");
-  vi.stubEnv("OIDC_CLIENT_SECRET", "0123456789abcdef");
+  vi.stubEnv("OIDC_CLIENT_SECRET", "x".repeat(16));
   vi.stubEnv("OIDC_ALLOWED_GROUPS", "warpdrive-users");
   vi.resetModules();
   return import("./route");
