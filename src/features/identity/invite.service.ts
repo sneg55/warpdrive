@@ -1,9 +1,11 @@
 import { eq } from "drizzle-orm";
+import { env } from "@/config/env";
 import { AppError, ERROR_IDS } from "@/constants/errorIds";
 import { PERMISSION_FLAGS } from "@/constants/permissionFlags";
 import type { Db } from "@/db/client";
 import { users, visibilityGroupMembers } from "@/db/schema";
 import { readSeedHandles } from "@/features/auth/seed";
+import { gravatarUrl } from "@/features/identity/avatar/gravatar";
 import type { PermSetUser } from "@/features/permissions/effective";
 import { err, ok, type Result } from "@/types/result";
 import { recordAudit } from "./audit";
@@ -64,6 +66,7 @@ export async function inviteUser(
         .values({
           email,
           name: input.name,
+          avatarUrl: env.AVATAR_GRAVATAR_ENABLED ? gravatarUrl(email) : null,
           invitedAt: new Date(),
           isAdmin: input.isAdmin,
           permissionSetId: input.isAdmin ? seed.adminSetId : seed.regularSetId,

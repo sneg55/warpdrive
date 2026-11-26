@@ -1,6 +1,8 @@
 import { eq, sql } from "drizzle-orm";
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from "vitest";
+import { env } from "@/config/env";
 import { userIdentities, users } from "@/db/schema";
+import { gravatarUrl } from "@/features/identity/avatar/gravatar";
 import { makeTestDb, type TestDb } from "@/test/db";
 import { upsertUserOnLogin, type VerifiedIdentity } from "./bootstrap";
 
@@ -161,6 +163,17 @@ describe("optional claims fallbacks", () => {
     expect(u!.avatarUrl).toBeNull();
   });
 
+  test("creation without a picture claim falls back to the gravatar URL when AVATAR_GRAVATAR_ENABLED is on", async () => {
+    env.AVATAR_GRAVATAR_ENABLED = true;
+    try {
+      await login("google", identity({ email: "gravatar@ex.com", sub: "s3" }));
+      const [u] = await h.db.select().from(users);
+      expect(u!.avatarUrl).toBe(gravatarUrl("gravatar@ex.com"));
+    } finally {
+      env.AVATAR_GRAVATAR_ENABLED = false;
+    }
+  });
+
   test("a picture claim is stored as-is", async () => {
     await login("google", identity({ avatarUrl: "https://pics.example.com/a.png" }));
     const [u] = await h.db.select().from(users);
@@ -184,5 +197,47 @@ describe("optional claims fallbacks", () => {
     await login("google", identity({ email: "null@ex.com", sub: "s4", avatarUrl: null }));
     const [u] = await h.db.select().from(users);
     expect(u!.avatarUrl).toBeNull();
+  });
+
+  test("a login without a picture claim fills a null avatar with the gravatar URL when AVATAR_GRAVATAR_ENABLED is on", async () => {
+    env.AVATAR_GRAVATAR_ENABLED = true;
+    try {
+      const [placeholder] = await h.db
+        .insert(users)
+        .values({ email: "null@ex.com", name: "Null Avatar", invitedAt: new Date() })
+        .returning();
+      expect(placeholder!.avatarUrl).toBeNull();
+
+      await login("google", identity({ email: "null@ex.com", sub: "s4", avatarUrl: null }));
+      const [u] = await h.db.select().from(users);
+      expect(u!.avatarUrl).toBe(gravatarUrl("null@ex.com"));
+    } finally {
+      env.AVATAR_GRAVATAR_ENABLED = false;
+    }
+  });
+
+  test("a login with AVATAR_GRAVATAR_ENABLED off clears a stored gravatar URL", async () => {
+    await h.db.insert(users).values({
+      email: "was@ex.com",
+      name: "Was Gravatar",
+      avatarUrl: gravatarUrl("was@ex.com"),
+      invitedAt: new Date(),
+    });
+
+    await login("google", identity({ email: "was@ex.com", sub: "s5", avatarUrl: null }));
+    const [u] = await h.db.select().from(users);
+    expect(u!.avatarUrl).toBeNull();
+  });
+
+  test("a login after an email change refreshes a stored gravatar URL to the new address", async () => {
+    env.AVATAR_GRAVATAR_ENABLED = true;
+    try {
+      await login("google", identity({ email: "old@ex.com", sub: "s6" }));
+      await login("google", identity({ email: "new@ex.com", sub: "s6" }));
+      const [u] = await h.db.select().from(users);
+      expect(u!.avatarUrl).toBe(gravatarUrl("new@ex.com"));
+    } finally {
+      env.AVATAR_GRAVATAR_ENABLED = false;
+    }
   });
 });

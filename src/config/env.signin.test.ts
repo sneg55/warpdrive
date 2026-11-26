@@ -242,3 +242,17 @@ describe("sign-in provider configuration", () => {
     expect(result.ok).toBe(true);
   });
 });
+
+describe("avatar gravatar fallback switch", () => {
+  test("defaults to disabled", () => {
+    const result = parseEnv(raw({}));
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.value.AVATAR_GRAVATAR_ENABLED).toBe(false);
+  });
+
+  test("can be turned on", () => {
+    const result = parseEnv(raw({ AVATAR_GRAVATAR_ENABLED: "true" }));
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.value.AVATAR_GRAVATAR_ENABLED).toBe(true);
+  });
+});

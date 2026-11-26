@@ -1,5 +1,6 @@
 import { eq, sql } from "drizzle-orm";
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from "vitest";
+import { env } from "@/config/env";
 import { ERROR_IDS } from "@/constants/errorIds";
 import { ADMIN_DEFAULT_FLAGS, REGULAR_DEFAULT_FLAGS } from "@/constants/permissionFlags";
 import {
@@ -10,6 +11,7 @@ import {
   visibilityGroupMembers,
   visibilityGroups,
 } from "@/db/schema";
+import { gravatarUrl } from "@/features/identity/avatar/gravatar";
 import type { PermSetUser } from "@/features/permissions/effective";
 import { makeTestDb, type TestDb } from "@/test/db";
 import { inviteUser } from "./invite.service";
@@ -101,6 +103,24 @@ describe("inviteUser", () => {
 
     const [u] = await h.db.select().from(users).where(eq(users.email, "avatar@ex.com"));
     expect(u!.avatarUrl).toBeNull();
+  });
+
+  test("fills the placeholder avatar from gravatar when AVATAR_GRAVATAR_ENABLED is on", async () => {
+    env.AVATAR_GRAVATAR_ENABLED = true;
+    try {
+      const r = await inviteUser(
+        h.db,
+        admin,
+        { email: "avatar@ex.com", name: "Avatar", isAdmin: false },
+        SIG(),
+      );
+      expect(r.ok).toBe(true);
+
+      const [u] = await h.db.select().from(users).where(eq(users.email, "avatar@ex.com"));
+      expect(u!.avatarUrl).toBe(gravatarUrl("avatar@ex.com"));
+    } finally {
+      env.AVATAR_GRAVATAR_ENABLED = false;
+    }
   });
 
   test("invites an admin placeholder when isAdmin is true", async () => {
