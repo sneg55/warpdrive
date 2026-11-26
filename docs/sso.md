@@ -111,7 +111,9 @@ at once, and the committed tests cover the invariants. When an `authelia` binary
 the same test file also runs `generate.sh` into a temporary directory, checks the certificate chain,
 the secrets and the client secret digest, and validates the configuration against them. To see what
 the provider actually emits, sign in once with the stack running: the name and email shown under
-Settings, Users come from the ID token claims, and the app log names the reason for any rejection.
+Settings, Users come from the ID token claims. A failed sign-in returns to the login page with a
+generic "Sign-in failed" alert, deliberately without the cause; the app log names the reason for
+any rejection.
 
 ## Storage of credentials
 
