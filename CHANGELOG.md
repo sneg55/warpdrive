@@ -2,6 +2,12 @@
 
 Notable changes to Warpdrive, newest first. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 2.18.0 - 2026-11-26
+
+### Added
+
+- **auth**: login failure alert and opt-in gravatar avatars (OSS #36, #37)
+
 ## 2.17.1 - 2026-11-26
 
 ### Changed
