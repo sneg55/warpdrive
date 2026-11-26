@@ -83,7 +83,7 @@ stating plainly:
 | `OIDC_ISSUER_URL` | Turns on generic OIDC sign-in for this issuer. Use https; Authelia refuses to start with a non-https issuer URL, and a self-signed certificate needs `NODE_EXTRA_CA_CERTS`. Leave empty to disable. See [Single sign-on](./administration/single-sign-on.md). |
 | `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET` | Credentials of the client registered at that issuer. Required once `OIDC_ISSUER_URL` is set. |
 | `OIDC_ALLOWED_GROUPS` | Comma-separated group names allowed to sign in. Required once `OIDC_ISSUER_URL` is set, and fail-closed: an empty value rejects every OIDC sign-in. |
-| `AVATAR_GRAVATAR_ENABLED` | Defaults to `false`. Uses gravatar.com for users whose IdP sends no picture, and as the fallback for existing users without an avatar. Set `false` to stop browsers from requesting images from that domain. |
+| `AVATAR_GRAVATAR_ENABLED` | Defaults to `false`, so browsers never request images from gravatar.com. Set `true` to use gravatar.com for invited users and for users whose IdP sends no picture; existing users without an avatar get one at their next sign-in. Turning it back off clears each stored gravatar.com avatar at that user's next sign-in. |
 | `APP_VERSION` | Version shown as "current" by the update banner. |
 | `MCP_ENABLED` | Defaults to `true`. Turns on the MCP server and its OAuth endpoints, and requires `OAUTH_SIGNING_KEY`. Set `false` to opt out. |
 | `OAUTH_SIGNING_KEY` | Base64 of exactly 32 bytes. Signs MCP access tokens. Required while `MCP_ENABLED` is `true`. |

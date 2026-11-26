@@ -4,7 +4,7 @@ import { AppError, ERROR_IDS } from "@/constants/errorIds";
 import type { Db } from "@/db/client";
 import { settings, userIdentities, users, visibilityGroupMembers } from "@/db/schema";
 import { isUploadedAvatarUrl } from "@/features/identity/avatar/avatarStorage";
-import { gravatarUrl } from "@/features/identity/avatar/gravatar";
+import { gravatarUrl, isGravatarUrl } from "@/features/identity/avatar/gravatar";
 import { err, ok, type Result } from "@/types/result";
 import { ensureSeedData, readSeedHandles, type Tx } from "./seed";
 
@@ -37,7 +37,7 @@ function fallbackAvatar(
   current: string | null,
 ): string | null {
   if (identity.avatarUrl !== null) return identity.avatarUrl;
-  if (current !== null) return current;
+  if (current !== null && !isGravatarUrl(current)) return current;
   return env.AVATAR_GRAVATAR_ENABLED ? gravatarUrl(email) : null;
 }
 

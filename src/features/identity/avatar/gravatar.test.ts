@@ -1,5 +1,17 @@
 import { describe, expect, test } from "vitest";
-import { GRAVATAR_SIZE, gravatarUrl } from "./gravatar";
+import { GRAVATAR_SIZE, gravatarUrl, isGravatarUrl } from "./gravatar";
+
+describe("isGravatarUrl", () => {
+  test("recognizes a URL built by gravatarUrl", () => {
+    expect(isGravatarUrl(gravatarUrl("admin@example.com"))).toBe(true);
+  });
+
+  test("rejects other avatar URLs and null", () => {
+    expect(isGravatarUrl("https://pics.example.com/a.png")).toBe(false);
+    expect(isGravatarUrl("https://gravatar.com.evil.example/avatar/x")).toBe(false);
+    expect(isGravatarUrl(null)).toBe(false);
+  });
+});
 
 describe("gravatarUrl", () => {
   test("builds the canonical URL from the SHA-256 of the normalized email", () => {

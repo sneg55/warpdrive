@@ -216,10 +216,28 @@ describe("optional claims fallbacks", () => {
     }
   });
 
-  test("the migration backfill expression produces exactly the helper's url", async () => {
-    const res = await h.db.execute(
-      sql`SELECT 'https://gravatar.com/avatar/' || encode(digest(lower(trim(${"  Mixed@Case.COM  "})),'sha256'),'hex') || '?d=identicon&s=100' AS url`,
-    );
-    expect((res.rows[0] as { url: string }).url).toBe(gravatarUrl("  Mixed@Case.COM  "));
+  test("a login with AVATAR_GRAVATAR_ENABLED off clears a stored gravatar URL", async () => {
+    await h.db.insert(users).values({
+      email: "was@ex.com",
+      name: "Was Gravatar",
+      avatarUrl: gravatarUrl("was@ex.com"),
+      invitedAt: new Date(),
+    });
+
+    await login("google", identity({ email: "was@ex.com", sub: "s5", avatarUrl: null }));
+    const [u] = await h.db.select().from(users);
+    expect(u!.avatarUrl).toBeNull();
+  });
+
+  test("a login after an email change refreshes a stored gravatar URL to the new address", async () => {
+    env.AVATAR_GRAVATAR_ENABLED = true;
+    try {
+      await login("google", identity({ email: "old@ex.com", sub: "s6" }));
+      await login("google", identity({ email: "new@ex.com", sub: "s6" }));
+      const [u] = await h.db.select().from(users);
+      expect(u!.avatarUrl).toBe(gravatarUrl("new@ex.com"));
+    } finally {
+      env.AVATAR_GRAVATAR_ENABLED = false;
+    }
   });
 });
