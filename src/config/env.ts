@@ -73,6 +73,7 @@ const base = z.object({
   OIDC_CLIENT_ID: z.string().default(""),
   OIDC_CLIENT_SECRET: z.string().default(""),
   OIDC_ALLOWED_GROUPS: z.string().default(""),
+  AVATAR_GRAVATAR_ENABLED: boolFromString.default(false),
   BASE_URL: z.string().url(),
   DATABASE_URL: z.string().min(1),
   WS_TICKET_SECRET: z.string().min(32),

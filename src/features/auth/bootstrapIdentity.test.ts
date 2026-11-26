@@ -1,6 +1,8 @@
 import { eq, sql } from "drizzle-orm";
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from "vitest";
+import { env } from "@/config/env";
 import { userIdentities, users } from "@/db/schema";
+import { gravatarUrl } from "@/features/identity/avatar/gravatar";
 import { makeTestDb, type TestDb } from "@/test/db";
 import { upsertUserOnLogin, type VerifiedIdentity } from "./bootstrap";
 
@@ -161,6 +163,17 @@ describe("optional claims fallbacks", () => {
     expect(u!.avatarUrl).toBeNull();
   });
 
+  test("creation without a picture claim falls back to the gravatar URL when AVATAR_GRAVATAR_ENABLED is on", async () => {
+    env.AVATAR_GRAVATAR_ENABLED = true;
+    try {
+      await login("google", identity({ email: "gravatar@ex.com", sub: "s3" }));
+      const [u] = await h.db.select().from(users);
+      expect(u!.avatarUrl).toBe(gravatarUrl("gravatar@ex.com"));
+    } finally {
+      env.AVATAR_GRAVATAR_ENABLED = false;
+    }
+  });
+
   test("a picture claim is stored as-is", async () => {
     await login("google", identity({ avatarUrl: "https://pics.example.com/a.png" }));
     const [u] = await h.db.select().from(users);
@@ -184,5 +197,29 @@ describe("optional claims fallbacks", () => {
     await login("google", identity({ email: "null@ex.com", sub: "s4", avatarUrl: null }));
     const [u] = await h.db.select().from(users);
     expect(u!.avatarUrl).toBeNull();
+  });
+
+  test("a login without a picture claim fills a null avatar with the gravatar URL when AVATAR_GRAVATAR_ENABLED is on", async () => {
+    env.AVATAR_GRAVATAR_ENABLED = true;
+    try {
+      const [placeholder] = await h.db
+        .insert(users)
+        .values({ email: "null@ex.com", name: "Null Avatar", invitedAt: new Date() })
+        .returning();
+      expect(placeholder!.avatarUrl).toBeNull();
+
+      await login("google", identity({ email: "null@ex.com", sub: "s4", avatarUrl: null }));
+      const [u] = await h.db.select().from(users);
+      expect(u!.avatarUrl).toBe(gravatarUrl("null@ex.com"));
+    } finally {
+      env.AVATAR_GRAVATAR_ENABLED = false;
+    }
+  });
+
+  test("the migration backfill expression produces exactly the helper's url", async () => {
+    const res = await h.db.execute(
+      sql`SELECT 'https://gravatar.com/avatar/' || encode(digest(lower(trim(${"  Mixed@Case.COM  "})),'sha256'),'hex') || '?d=identicon&s=100' AS url`,
+    );
+    expect((res.rows[0] as { url: string }).url).toBe(gravatarUrl("  Mixed@Case.COM  "));
   });
 });

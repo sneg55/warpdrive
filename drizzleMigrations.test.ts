@@ -11,7 +11,8 @@ describe("0088 provider neutral identities migration", () => {
     expect(migration).toContain('INSERT INTO "user_identities"');
   });
 
-  it("does not write avatar urls", () => {
+  it("does not write avatar urls, since AVATAR_GRAVATAR_ENABLED is runtime config", () => {
+    expect(migration).not.toMatch(/gravatar/i);
     expect(migration).not.toContain('"avatar_url"');
   });
 });

@@ -31,8 +31,8 @@ The first sign-in also seeds the defaults: the Regular and Admin permission sets
 ### Inviting
 
 Inviting creates a placeholder account with no sign-in identity attached, assigns a
-permission set, and puts the user in the Everyone group. Its avatar stays empty until a
-sign-in supplies a picture, or the user uploads one.
+permission set, and puts the user in the Everyone group. If `AVATAR_GRAVATAR_ENABLED`
+is on, its avatar starts as the one gravatar.com serves for that address.
 
 The placeholder is claimed on the invitee's first verified sign-in with a matching
 address, through whichever provider they use. Until then it shows as invited.

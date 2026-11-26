@@ -4,6 +4,7 @@ import { AppError, ERROR_IDS } from "@/constants/errorIds";
 import type { Db } from "@/db/client";
 import { settings, userIdentities, users, visibilityGroupMembers } from "@/db/schema";
 import { isUploadedAvatarUrl } from "@/features/identity/avatar/avatarStorage";
+import { gravatarUrl } from "@/features/identity/avatar/gravatar";
 import { err, ok, type Result } from "@/types/result";
 import { ensureSeedData, readSeedHandles, type Tx } from "./seed";
 
@@ -30,9 +31,14 @@ function fallbackName(identity: VerifiedIdentity, email: string): string {
   return email.split("@")[0] ?? email;
 }
 
-function fallbackAvatar(identity: VerifiedIdentity, current: string | null): string | null {
+function fallbackAvatar(
+  identity: VerifiedIdentity,
+  email: string,
+  current: string | null,
+): string | null {
   if (identity.avatarUrl !== null) return identity.avatarUrl;
-  return current;
+  if (current !== null) return current;
+  return env.AVATAR_GRAVATAR_ENABLED ? gravatarUrl(email) : null;
 }
 
 type Outcome = { kind: "ok"; userId: string; isAdmin: boolean } | { kind: "conflict" };
@@ -66,7 +72,7 @@ async function signInKnownIdentity(
 
   const avatarUrl = isUploadedAvatarUrl(existing.avatarUrl)
     ? existing.avatarUrl
-    : fallbackAvatar(identity, existing.avatarUrl);
+    : fallbackAvatar(identity, email, existing.avatarUrl);
   await tx
     .update(users)
     .set({
@@ -97,7 +103,7 @@ async function adoptByEmail(
   await tx.insert(userIdentities).values({ userId: candidate.id, provider, subject: identity.sub });
   const avatarUrl = isUploadedAvatarUrl(candidate.avatarUrl)
     ? candidate.avatarUrl
-    : fallbackAvatar(identity, candidate.avatarUrl);
+    : fallbackAvatar(identity, email, candidate.avatarUrl);
   await tx
     .update(users)
     .set({
@@ -131,7 +137,7 @@ async function createUserFromIdentity(
     .values({
       email,
       name: fallbackName(identity, email),
-      avatarUrl: fallbackAvatar(identity, null),
+      avatarUrl: fallbackAvatar(identity, email, null),
       isAdmin: electAdmin,
       permissionSetId: electAdmin ? seed.adminSetId : seed.regularSetId,
       primaryVisibilityGroupId: seed.everyoneGroupId,
