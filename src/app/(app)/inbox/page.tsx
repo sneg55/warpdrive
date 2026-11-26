@@ -5,6 +5,7 @@ import { listActorMailboxes } from "@/features/email/actorMailboxes";
 import { parseFolder } from "@/features/email/inboxFolders";
 import { isMailboxConnected } from "@/features/email/inboxZero";
 import { readMailboxSyncPhase } from "@/features/email/mailboxSyncPhase";
+import { timed, timingRoute } from "@/features/observability/serverTiming";
 import { createContext } from "@/server/trpc/context";
 import { InboxListClient } from "./InboxListClient";
 
@@ -15,6 +16,7 @@ export default async function InboxPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }): Promise<React.ReactNode> {
+  await timingRoute("/inbox");
   const ctx = await createContext();
   if (ctx.actor === null) {
     redirect("/login");
@@ -24,14 +26,15 @@ export default async function InboxPage({
   const parsed = z.uuid().optional().safeParse(rawMailbox);
   if (!parsed.success) notFound();
   const mailbox = parsed.data;
-  const choices = await listActorMailboxes(ctx.db, ctx.actor.id, new AbortController().signal);
+  const actorId = ctx.actor.id;
+  const choices = await timed("inbox.mailboxes", () =>
+    listActorMailboxes(ctx.db, actorId, new AbortController().signal),
+  );
   if (mailbox !== undefined) {
     if (!choices.some((choice) => choice.id === mailbox && choice.kind === "team")) notFound();
   }
-  const initialSyncPhase = await readMailboxSyncPhase(
-    ctx.db,
-    { actorId: ctx.actor.id, mailbox },
-    AbortSignal.timeout(8000),
+  const initialSyncPhase = await timed("inbox.syncPhase", () =>
+    readMailboxSyncPhase(ctx.db, { actorId, mailbox }, AbortSignal.timeout(8000)),
   );
   const folder = parseFolder(typeof sp.folder === "string" ? sp.folder : undefined);
   return (

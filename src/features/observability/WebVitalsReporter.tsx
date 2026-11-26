@@ -7,6 +7,7 @@ interface WebVitalMetric {
   value: number;
   id: string;
   rating: string;
+  navigationType: string;
 }
 
 export function WebVitalsReporter(): null {
@@ -16,6 +17,7 @@ export function WebVitalsReporter(): null {
       value: metric.value,
       id: metric.id,
       rating: metric.rating,
+      navigationType: metric.navigationType,
     });
   });
   return null;

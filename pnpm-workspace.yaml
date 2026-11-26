@@ -20,6 +20,7 @@ overrides:
   "source-map-js@<1.2.2": "^1.2.2"
   "@esbuild-kit/core-utils>esbuild": "^0.25.0"
   "eslint-plugin-sonarjs>minimatch": "^11.0.9"
+  "archiver-utils>glob": "^14.0.2"
 allowBuilds:
   esbuild: true
   unrs-resolver: true

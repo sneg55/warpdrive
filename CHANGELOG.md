@@ -2,6 +2,16 @@
 
 Notable changes to Warpdrive, newest first. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 2.17.1 - 2026-11-26
+
+### Changed
+
+- server render timing per page, soft-nav-aware web vitals, one-hop landing
+
+### Security
+
+- clear 3 advisories (glob@10.5.0 -> 14.0.6, minimatch@9.0.9 -> 11.x, uuid@8.3.2 -> 11.1.1)
+
 ## 2.17.0 - 2026-11-25
 
 ### Added

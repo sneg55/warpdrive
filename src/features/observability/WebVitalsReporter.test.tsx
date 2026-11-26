@@ -2,7 +2,13 @@
 import { render } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 
-const metric = { name: "LCP", value: 1234, id: "abc", rating: "good" };
+const metric = {
+  name: "LCP",
+  value: 1234,
+  id: "abc",
+  rating: "good",
+  navigationType: "soft-navigation",
+};
 vi.mock("next/web-vitals", () => ({
   useReportWebVitals: (cb: (m: typeof metric) => void) => cb(metric),
 }));
@@ -20,5 +26,6 @@ it("reports each web vital via capture with mapped props", () => {
     value: 1234,
     id: "abc",
     rating: "good",
+    navigationType: "soft-navigation",
   });
 });

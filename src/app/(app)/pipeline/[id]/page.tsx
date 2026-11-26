@@ -9,6 +9,7 @@ import { rowToView } from "@/features/deals/savedFilterView";
 import { getPreferencesForActor } from "@/features/identity/preferencesForActor";
 import { entityTitle } from "@/features/navigation/pageTitle";
 import { resolveVisiblePipeline } from "@/features/navigation/resolvePipeline";
+import { timed, timingRoute } from "@/features/observability/serverTiming";
 import { canManagePipelines } from "@/features/pipelines/canManagePipelines";
 import { readBaseCurrency } from "@/features/settings/readBaseCurrency";
 import { createContext } from "@/server/trpc/context";
@@ -19,7 +20,7 @@ const load = cache(async () => {
   if (ctx.actor === null) {
     return { kind: "unauth" as const };
   }
-  const pipelines = await createCaller(ctx).pipeline.list();
+  const pipelines = await timed("board.pipelines", () => createCaller(ctx).pipeline.list());
   return { kind: "ok" as const, ctx, actor: ctx.actor, pipelines };
 });
 
@@ -39,6 +40,7 @@ export default async function PipelineBoardPage({
 }: {
   params: Promise<{ id: string }>;
 }): Promise<React.ReactNode> {
+  await timingRoute("/pipeline/[id]");
   const { id } = await params;
   const ctx = await createContext();
   if (ctx.actor === null) {
@@ -46,17 +48,24 @@ export default async function PipelineBoardPage({
   }
   const actor = ctx.actor;
 
-  const prefsPromise = getPreferencesForActor(db, actor.id);
-  const viewPromise = prefsPromise.then((p) =>
-    resolveInitialBoardView(p.ui, async () =>
-      (await createCaller(ctx).deal.savedFilters()).map(rowToView),
-    ),
-  );
-  void viewPromise.catch(() => {});
-  const boardPromise = viewPromise.then((view) =>
-    createCaller(ctx).deal.board({ pipelineId: id, definition: boardViewDefinition(view) }),
-  );
-  void boardPromise.catch(() => {});
+  const boardData = timed("board.data", () => {
+    const prefsPromise = getPreferencesForActor(db, actor.id);
+    const viewPromise = prefsPromise.then((p) =>
+      resolveInitialBoardView(p.ui, async () =>
+        (await createCaller(ctx).deal.savedFilters()).map(rowToView),
+      ),
+    );
+    const boardPromise = viewPromise.then((view) =>
+      createCaller(ctx).deal.board({ pipelineId: id, definition: boardViewDefinition(view) }),
+    );
+    return Promise.all([
+      boardPromise,
+      readBaseCurrency(db, AbortSignal.timeout(8000)),
+      prefsPromise,
+      viewPromise,
+    ]);
+  });
+  void boardData.catch(() => {});
 
   const loaded = await load();
   if (loaded.kind !== "ok") {
@@ -66,12 +75,7 @@ export default async function PipelineBoardPage({
 
   const pipeline = resolveVisiblePipeline(pipelines, id);
 
-  const [board, baseCurrency, prefs, initialView] = await Promise.all([
-    boardPromise,
-    readBaseCurrency(db, AbortSignal.timeout(8000)),
-    prefsPromise,
-    viewPromise,
-  ]);
+  const [board, baseCurrency, prefs, initialView] = await boardData;
 
   return (
     <main aria-label={`Board ${pipeline.name}`} className="h-full">

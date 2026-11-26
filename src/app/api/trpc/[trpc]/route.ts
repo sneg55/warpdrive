@@ -1,7 +1,12 @@
 import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
 import { withServerTiming } from "@/app/api/trpc/withServerTiming";
-import { captureServerError } from "@/features/observability/server";
+import {
+  captureServerError,
+  captureServerTiming,
+  serverTelemetryEnabled,
+} from "@/features/observability/server";
 import { createContext } from "@/server/trpc/context";
+import { isRegisteredProcedure } from "@/server/trpc/procedureRegistry";
 import { appRouter } from "@/server/trpc/root";
 
 const EXPECTED = new Set([
@@ -29,6 +34,10 @@ function handler(req: Request): Promise<Response> {
   });
 }
 
-const wrapped = withServerTiming(handler);
+const wrapped = withServerTiming(handler, {
+  report: captureServerTiming,
+  isKnownProcedure: isRegisteredProcedure,
+  enabled: serverTelemetryEnabled,
+});
 
 export { wrapped as GET, wrapped as POST };

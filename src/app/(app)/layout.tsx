@@ -21,6 +21,7 @@ import { getPreferencesForActor } from "@/features/identity/preferencesForActor"
 import { IntercomEnabledProvider } from "@/features/intercom/IntercomEnabledProvider";
 import { isIntercomEnabled } from "@/features/intercom/settings";
 import { IdentifyUser } from "@/features/observability/IdentifyUser";
+import { timed } from "@/features/observability/serverTiming";
 import { RealtimeUrlProvider } from "@/features/realtime/RealtimeUrlProvider";
 import { VersionBanner } from "@/features/release/ui/VersionBanner";
 import { CommandPalette } from "@/features/search/ui/CommandPalette";
@@ -31,15 +32,18 @@ import { appearanceSeedScript, parseAppearance } from "@/features/theme/appearan
 import { createContext } from "@/server/trpc/context";
 
 export default async function AppLayout({ children }: { children: ReactNode }): Promise<ReactNode> {
-  const ctx = await createContext();
+  const ctx = await timed("layout.session", () => createContext());
   if (ctx.actor === null) redirect("/login");
   const jar = await cookies();
   const hasCsrf = jar.get(CSRF_COOKIE) !== undefined;
   const navExpanded = jar.get(NAV_PREF_COOKIE)?.value === "1";
-  const [prefs, baseCurrency] = await Promise.all([
-    getPreferencesForActor(db, ctx.actor.id),
-    readBaseCurrency(db, AbortSignal.timeout(8000)),
-  ]);
+  const actorId = ctx.actor.id;
+  const [prefs, baseCurrency] = await timed("layout.prefs", () =>
+    Promise.all([
+      getPreferencesForActor(db, actorId),
+      readBaseCurrency(db, AbortSignal.timeout(8000)),
+    ]),
+  );
   return (
     <ActionErrorProvider>
       <IdentifyUser
